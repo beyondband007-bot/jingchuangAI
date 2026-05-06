@@ -42,7 +42,7 @@ function mapTask(row) {
     quality: row.quality,
     count: row.image_count,
     time: displayTime(row.created_at),
-    price: `¥${(row.cost_points / 100).toFixed(2)}`,
+    price: `${row.cost_points} ����`,
     points: row.cost_points,
     prompt: row.prompt,
     image: urls[0] || null,
@@ -194,7 +194,7 @@ export async function createTask(payload) {
       taskId
     ]);
   } catch (error) {
-    await refundTask(taskId, userId, costPoints, `KIE 创建任务失败：${error.message}`);
+    await refundTask(taskId, userId, costPoints, `KIE 创建任务失败�?{error.message}`);
   }
 
   return getTask(taskId);
@@ -313,3 +313,4 @@ export async function toggleFavorite(id) {
   );
   return getTask(id);
 }
+

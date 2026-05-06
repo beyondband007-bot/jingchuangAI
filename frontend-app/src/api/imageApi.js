@@ -1,6 +1,8 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:3006";
+﻿const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:3006";
 const listeners = new Set();
 let pollTimer;
+let modelsPromise;
+let creditsPromise;
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -50,11 +52,13 @@ export const imageApi = {
   },
 
   async getCredits() {
-    return request("/api/me/credits");
+    creditsPromise ||= request("/api/me/credits");
+    return creditsPromise;
   },
 
   async getModels() {
-    return request("/api/image/models");
+    modelsPromise ||= request("/api/image/models");
+    return modelsPromise;
   },
 
   async getTasks({ filter = "all" } = {}) {
@@ -64,8 +68,8 @@ export const imageApi = {
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
     const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
-    if (!selectedModel || !selectedQuality) return "¥0.00";
-    return `¥${((selectedModel.basePoints * selectedQuality.multiplier * count) / 100).toFixed(2)}`;
+    if (!selectedModel || !selectedQuality) return "0 积分";
+    return `${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
   },
 
   getRandomPrompt() {

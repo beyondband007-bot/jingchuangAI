@@ -40,10 +40,16 @@ async function request(path, options = {}) {
 }
 
 export function mapModelToKie(modelKey) {
-  if (modelKey === "nano_banana2" || modelKey === "nano_banana_pro") {
-    return config.kie.imageModel;
-  }
-  return config.kie.imageModel;
+  const modelMap = {
+    gpt_image_2: "gpt-image-2",
+    four_o_image: "4o-image",
+    nano_banana_pro: "nano-banana-pro",
+    flux_2_pro: "flux-2-pro",
+    imagen_4_fast: "imagen-4-fast",
+    seedream_4_5: "seedream-4.5",
+    nano_banana2: "nano-banana-2"
+  };
+  return modelMap[modelKey] || config.kie.imageModel;
 }
 
 export async function createKieImageTask({ prompt, modelKey, ratio, quality }) {

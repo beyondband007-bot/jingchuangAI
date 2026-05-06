@@ -1,18 +1,20 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bot,
   Box,
+  CheckCircle2,
   Camera,
   Copy,
   Dice5,
   Download,
   Eraser,
   FileText,
-  Hash,
   Home,
   Image,
   Layers,
+  LogIn,
+  Loader2,
   Mic,
   Music,
   Paintbrush,
@@ -33,6 +35,19 @@ import {
 } from "lucide-react";
 import { imageApi } from "./api/imageApi";
 import "./styles.css";
+
+const exampleImages = [
+  { src: "/gallery-1.jpg", label: "电影质感人像", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
+  { src: "/gallery-2.jpg", label: "时尚产品摄影", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 积分" },
+  { src: "/gallery-4.jpg", label: "自然光影", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 积分" },
+  { src: "/gallery-6.jpg", label: "水下写实", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 积分" },
+  { src: "/hot-1-digital-human.jpg", label: "数字人形象", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
+  { src: "/hot-3-motion.jpg", label: "动态创意", model: "4o Image", ratio: "1:1", quality: "1K", price: "21 积分" },
+  { src: "/thumb-img-gen.jpg", label: "图片生成", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 积分" },
+  { src: "/thumb-splash-2.png", label: "灵感封面", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 积分" },
+  { src: "/gallery-8.jpg", label: "复古影像", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 积分" },
+  { src: "/gallery-10.jpg", label: "概念海报", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 积分" }
+];
 
 const navItems = [
   { id: "home", label: "首页", icon: Home },
@@ -58,19 +73,19 @@ const navItems = [
 ];
 
 function getInitialView() {
-  return window.location.pathname === "/image" ? "image" : "home";
+  return window.location.pathname === "/image" || window.location.hash === "#/image" ? "image" : "home";
 }
 
-function OriginalHome({ onOpenImage }) {
+const OriginalHome = memo(function OriginalHome({ onOpenImage }) {
   return (
     <div className="original-home-shell">
       <iframe className="original-home-frame" title="鲸创AI首页" src="/original/index.html" />
       <button className="image-nav-hotspot" type="button" onClick={onOpenImage} aria-label="进入图片生成" />
     </div>
   );
-}
+});
 
-function FeatureSidebar({ activeNav, onNavChange }) {
+const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange }) {
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
@@ -91,10 +106,13 @@ function FeatureSidebar({ activeNav, onNavChange }) {
           );
         })}
       </nav>
-      <div className="feature-login">登</div>
+      <button className="feature-login" type="button">
+        <LogIn size={16} />
+        <span>登录</span>
+      </button>
     </aside>
   );
-}
+});
 
 function ComingSoon({ activeNav }) {
   const current = useMemo(() => navItems.find((item) => item.id === activeNav), [activeNav]);
@@ -171,9 +189,7 @@ function ComposerBar({ options, onSubmit }) {
   const [model, setModel] = useState(options.models[0]?.value || "");
   const [ratio, setRatio] = useState(options.ratios[0] || "");
   const [quality, setQuality] = useState(options.qualities[0]?.value || "");
-  const [count, setCount] = useState(options.counts[0] || 1);
   const [notice, setNotice] = useState("");
-  const [simulateFail, setSimulateFail] = useState(false);
 
   useEffect(() => {
     if (!model && options.models[0]) setModel(options.models[0].value);
@@ -181,6 +197,7 @@ function ComposerBar({ options, onSubmit }) {
     if (!quality && options.qualities[0]) setQuality(options.qualities[0].value);
   }, [model, options, quality, ratio]);
 
+  const count = 1;
   const price = imageApi.calculatePrice({ model, quality, count, models: options.models, qualities: options.qualities });
   const canSubmit = prompt.trim().length > 0;
 
@@ -205,12 +222,10 @@ function ComposerBar({ options, onSubmit }) {
       model,
       ratio,
       quality,
-      count,
-      shouldFail: simulateFail
+      count
     });
-    setNotice(simulateFail ? "已创建失败态模拟任务" : "已创建 mock 生成任务");
+    setNotice("已创建生成任务");
     setPrompt("");
-    setSimulateFail(false);
   }
 
   return (
@@ -230,7 +245,7 @@ function ComposerBar({ options, onSubmit }) {
         />
       </div>
       <div className="composer-controls-row">
-        <label className="control-select">
+        <label className="control-select model-select">
           <Box size={16} />
           <select value={model} onChange={(event) => setModel(event.target.value)}>
             {options.models.map((item) => (
@@ -260,19 +275,6 @@ function ComposerBar({ options, onSubmit }) {
             ))}
           </select>
         </label>
-        <label className="control-select">
-          <Hash size={16} />
-          <select value={count} onChange={(event) => setCount(Number(event.target.value))}>
-            {options.counts.map((item) => (
-              <option key={item} value={item}>
-                {item} 张
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="composer-tool" type="button" aria-pressed={simulateFail} onClick={() => setSimulateFail((value) => !value)} aria-label="失败态模拟">
-          <Sparkles size={18} />
-        </button>
         <button className="composer-tool" type="button" onClick={fillRandomPrompt} aria-label="随机提示词">
           <Dice5 size={18} />
         </button>
@@ -285,20 +287,251 @@ function ComposerBar({ options, onSubmit }) {
         </button>
       </div>
       {notice && <div className="composer-notice">{notice}</div>}
-      {simulateFail && <div className="composer-notice warning">失败态模拟已开启，本次提交会生成失败卡片。</div>}
     </div>
   );
 }
 
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 
+function ExampleCanvas() {
+  return (
+    <div className="image-canvas example-canvas" aria-label="图片生成案例">
+      <div className="example-canvas-copy">
+        <span>图片生成</span>
+        <h1>选择一个方向，或直接输入你的图片描述</h1>
+      </div>
+      <div className="example-card-grid">
+        {exampleImages.map((item) => (
+          <button className="example-card" key={item.src} type="button">
+            <span className="example-card-preview">
+              <img src={item.src} alt={item.label} />
+            </span>
+            <span className="example-card-tags">
+              <span>{item.model}</span>
+              <span>{item.ratio}</span>
+              <span>{item.quality}</span>
+            </span>
+            <span className="example-card-meta">
+              <span>{item.label}</span>
+              <strong>{item.price}</strong>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GeneratingCanvas({ prompt }) {
+  return (
+    <div className="image-canvas chat-canvas" aria-live="polite">
+      <div className="chat-thread">
+        {prompt && (
+          <div className="chat-row user">
+            <div className="chat-bubble">{prompt}</div>
+          </div>
+        )}
+        <div className="chat-row assistant">
+          <div className="assistant-avatar">
+            <Sparkles size={17} />
+          </div>
+          <div className="chat-bubble waiting">
+            <div className="chat-waiting-title">
+              <Loader2 size={18} />
+              <span>已收到你的请求，正在为你生成图片</span>
+            </div>
+            <div className="chat-waiting-card">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompletedCanvas({ task, onPreview }) {
+  return (
+    <div className="image-canvas chat-canvas">
+      <div className="chat-thread">
+        <div className="chat-row user">
+          <div className="chat-bubble">{task.prompt}</div>
+        </div>
+        <div className="chat-row assistant">
+          <div className="assistant-avatar">
+            <CheckCircle2 size={17} />
+          </div>
+          <div className="chat-bubble result">
+            <span>已为你生成图片</span>
+            <button className="chat-result-image" type="button" onClick={() => onPreview(task)} aria-label="查看生成图片">
+              <img src={task.image} alt={task.prompt} />
+            </button>
+            <div className="chat-result-actions">
+              <a href={task.image} download>
+                <Download size={15} />
+                下载
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FailedCanvas({ task, prompt, error, onRetry }) {
+  const message = task?.error || error || "图片生成遇到问题，请稍后再试。";
+
+  return (
+    <div className="image-canvas chat-canvas" role="status">
+      <div className="chat-thread">
+        {(task?.prompt || prompt) && (
+          <div className="chat-row user">
+            <div className="chat-bubble">{task?.prompt || prompt}</div>
+          </div>
+        )}
+        <div className="chat-row assistant">
+          <div className="assistant-avatar error">
+            <Sparkles size={17} />
+          </div>
+          <div className="chat-bubble failed">
+            <strong>这次没有生成成功</strong>
+            <p>{message}</p>
+            {task && (
+              <button type="button" onClick={() => onRetry(task.id)}>
+                <RefreshCcw size={17} />
+                再次生成
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageWorkspaceCanvas({ status, selectedTask, activePrompt, submitError, onRetry, onPreview }) {
+  if (status === "generating") {
+    return <GeneratingCanvas prompt={selectedTask?.prompt || activePrompt} />;
+  }
+
+  if (status === "completed" && selectedTask?.image) {
+    return <CompletedCanvas task={selectedTask} onPreview={onPreview} />;
+  }
+
+  if (status === "failed") {
+    return <FailedCanvas task={selectedTask} prompt={activePrompt} error={submitError} onRetry={onRetry} />;
+  }
+
+  return <ExampleCanvas />;
+}
+
+function PreviewDrawer({ task, onClose }) {
+  if (!task?.image) return null;
+
+  return (
+    <aside className="preview-drawer" aria-label="生成图片预览画布">
+      <div className="preview-drawer-header">
+        <div>
+          <span>预览</span>
+          <strong>{task.prompt}</strong>
+        </div>
+        <button type="button" onClick={onClose} aria-label="关闭预览">
+          ×
+        </button>
+      </div>
+      <div className="preview-drawer-stage">
+        <img src={task.image} alt={task.prompt} />
+      </div>
+      <div className="preview-drawer-actions">
+        <a href={task.image} download>
+          <Download size={16} />
+          下载
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, onRegenerate }) {
+  if (!cards.length) return null;
+
+  return (
+    <aside className="history-rail" aria-label="图片生成历史">
+      <div className="history-rail-header">
+        <span>历史结果</span>
+        <strong>{cards.length}</strong>
+      </div>
+      <div className="history-list">
+        {cards.map((card) => {
+          const isSelected = selectedTaskId === card.id;
+          const isProcessing = card.status === "pending" || card.status === "processing";
+          const isFailed = card.status === "failed";
+
+          return (
+            <article className={`history-item ${isSelected ? "is-selected" : ""} status-${card.status}`} key={card.id}>
+              <button className="history-preview" type="button" onClick={() => onSelect(card.id)} aria-label={`查看 ${card.prompt}`}>
+                {card.image && !isFailed ? <img src={card.image} alt={card.prompt} /> : null}
+                {isProcessing && (
+                  <span className="history-processing">
+                    <Loader2 size={18} />
+                  </span>
+                )}
+                {isFailed && <span className="history-failed">失败</span>}
+                {!card.image && !isProcessing && !isFailed && <span className="broken-image-mark" aria-hidden="true" />}
+              </button>
+              <div className="history-meta">
+                <button className="history-title" type="button" onClick={() => onSelect(card.id)}>
+                  {card.prompt}
+                </button>
+                <div className="history-tags">
+                  <span>{card.ratio}</span>
+                  <span>{card.quality}</span>
+                  <span>{card.time}</span>
+                </div>
+                <div className="history-actions">
+                  <button type="button" onClick={() => onFavorite(card.id)} aria-label="收藏">
+                    <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
+                  </button>
+                  {card.image && (
+                    <a href={card.image} download aria-label="下载图片">
+                      <Download size={15} />
+                    </a>
+                  )}
+                  <button type="button" onClick={() => onRegenerate(card.id)} aria-label="再次生成">
+                    <RefreshCcw size={15} />
+                  </button>
+                  <button type="button" onClick={() => onDelete(card.id)} aria-label="删除">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 function ImageGenerationView({ activeNav }) {
   const [filter, setFilter] = useState("all");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [activePrompt, setActivePrompt] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [previewTask, setPreviewTask] = useState(null);
 
   useEffect(() => {
+    if (activeNav !== "image") return undefined;
+
     let mounted = true;
     imageApi.getModels().then((value) => mounted && setOptions(value));
     imageApi.getCredits().then((value) => mounted && setCredits(value));
@@ -312,18 +545,67 @@ function ImageGenerationView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [filter]);
+  }, [activeNav, filter]);
+
+  const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
+  const submittedTask = useMemo(() => cards.find((card) => card.id === submittedTaskId) || null, [cards, submittedTaskId]);
+
+  useEffect(() => {
+    if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
+      setSelectedTaskId(submittedTask.id);
+      setIsSubmitting(false);
+    }
+  }, [submittedTask]);
+
+  useEffect(() => {
+    if (!submittedTaskId || !submittedTask) return;
+    setSelectedTaskId(submittedTask.id);
+  }, [submittedTask, submittedTaskId]);
+
+  const canvasStatus = useMemo(() => {
+    if (submitError) return "failed";
+    if (isSubmitting) return "generating";
+    if (selectedTask?.status === "pending" || selectedTask?.status === "processing") return "generating";
+    if (selectedTask?.status === "failed") return "failed";
+    if (selectedTask?.status === "completed" && selectedTask.image) return "completed";
+    return "idle_examples";
+  }, [isSubmitting, selectedTask, submitError]);
+  const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
 
   if (activeNav !== "image") {
     return <ComingSoon activeNav={activeNav} />;
   }
 
   async function createTask(payload) {
-    await imageApi.createTask(payload);
+    setActivePrompt(payload.prompt);
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSelectedTaskId(null);
+    setIsHistoryOpen(false);
+    setPreviewTask(null);
+
+    try {
+      const task = await imageApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setSelectedTaskId(task.id);
+      if (task.status === "failed") {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      setSubmitError(error.message || "创建生成任务失败");
+      setIsSubmitting(false);
+    }
   }
 
   async function deleteTask(id) {
     await imageApi.deleteTask(id);
+    if (selectedTaskId === id) {
+      setSelectedTaskId(null);
+    }
+    if (submittedTaskId === id) {
+      setSubmittedTaskId(null);
+      setActivePrompt("");
+    }
   }
 
   async function toggleFavorite(id) {
@@ -331,7 +613,23 @@ function ImageGenerationView({ activeNav }) {
   }
 
   async function regenerateTask(id) {
-    await imageApi.regenerateTask(id);
+    const source = cards.find((card) => card.id === id);
+    if (source) {
+      setActivePrompt(source.prompt);
+    }
+    setSubmitError("");
+    setIsSubmitting(true);
+    setIsHistoryOpen(false);
+    setPreviewTask(null);
+
+    try {
+      const created = await imageApi.regenerateTask(id);
+      setSubmittedTaskId(created.id);
+      setSelectedTaskId(created.id);
+    } catch (error) {
+      setSubmitError(error.message || "创建生成任务失败");
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -345,7 +643,37 @@ function ImageGenerationView({ activeNav }) {
         </button>
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
-      <div className="results-feed">
+      {showHistory && cards.length > 0 && (
+        <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+          <Layers size={17} />
+          历史
+          <span>{cards.length}</span>
+        </button>
+      )}
+      <div className={`image-workspace ${isHistoryOpen && showHistory && cards.length ? "has-history" : "is-empty"}`}>
+        <ImageWorkspaceCanvas
+          status={canvasStatus}
+          selectedTask={selectedTask}
+          activePrompt={selectedTask?.prompt || activePrompt}
+          submitError={submitError}
+          onRetry={regenerateTask}
+          onPreview={(task) => {
+            setPreviewTask(task);
+            setIsHistoryOpen(false);
+          }}
+        />
+        <HistoryRail
+          cards={isHistoryOpen && showHistory ? cards : []}
+          selectedTaskId={selectedTaskId}
+          onSelect={(id) => {
+            setSubmitError("");
+            setSelectedTaskId(id);
+            setPreviewTask(null);
+          }}
+          onDelete={deleteTask}
+          onFavorite={toggleFavorite}
+          onRegenerate={regenerateTask}
+        />
         {cards.length ? (
           cards.map((card) => (
             <ResultCard
@@ -360,6 +688,7 @@ function ImageGenerationView({ activeNav }) {
           <div className="empty-results">暂无收藏内容</div>
         )}
       </div>
+      <PreviewDrawer task={previewTask} onClose={() => setPreviewTask(null)} />
       {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
     </section>
   );
@@ -368,13 +697,13 @@ function ImageGenerationView({ activeNav }) {
 function ImageFeaturePage({ onBackHome }) {
   const [activeNav, setActiveNav] = useState("image");
 
-  function handleNavChange(id) {
+  const handleNavChange = useCallback((id) => {
     if (id === "home") {
       onBackHome();
       return;
     }
-    setActiveNav(id);
-  }
+    setActiveNav((current) => (current === id ? current : id));
+  }, [onBackHome]);
 
   return (
     <div className="feature-page-shell">
@@ -395,15 +724,19 @@ function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  function openImage() {
-    window.history.pushState(null, "", "/image");
-    setView("image");
-  }
+  const openImage = useCallback(() => {
+    if (window.location.hash !== "#/image") {
+      window.history.pushState(null, "", "/#/image");
+    }
+    setView((current) => (current === "image" ? current : "image"));
+  }, []);
 
-  function backHome() {
-    window.history.pushState(null, "", "/");
-    setView("home");
-  }
+  const backHome = useCallback(() => {
+    if (window.location.pathname !== "/") {
+      window.history.pushState(null, "", "/");
+    }
+    setView((current) => (current === "home" ? current : "home"));
+  }, []);
 
   if (view === "image") {
     return <ImageFeaturePage onBackHome={backHome} />;
