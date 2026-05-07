@@ -1,4 +1,4 @@
-import { checkDatabase } from "./db.js";
+import { checkDatabase } from "../db/pool.js";
 
 checkDatabase()
   .then((result) => {

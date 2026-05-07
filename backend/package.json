@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "db:init": "node src/initDb.js",
-    "db:check": "node src/checkDb.js"
+    "db:init": "node src/scripts/initDb.js",
+    "db:check": "node src/scripts/checkDb.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
