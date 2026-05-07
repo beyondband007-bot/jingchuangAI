@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bot,
@@ -10,6 +10,7 @@ import {
   Download,
   Eraser,
   FileText,
+  Film,
   Home,
   Image,
   Layers,
@@ -18,6 +19,7 @@ import {
   Mic,
   Music,
   Paintbrush,
+  Play,
   Plus,
   RefreshCcw,
   Ruler,
@@ -28,12 +30,14 @@ import {
   Sparkles,
   Star,
   Target,
+  Timer,
   Trash2,
   UserRound,
   Video,
   Wand2
 } from "lucide-react";
 import { imageApi } from "./api/imageApi";
+import { videoApi } from "./api/videoApi";
 import "./styles.css";
 
 const exampleImages = [
@@ -73,13 +77,42 @@ const navItems = [
 ];
 
 function getInitialView() {
-  return window.location.pathname === "/image" || window.location.hash === "#/image" ? "image" : "home";
+  if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
+  if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
+  return "home";
 }
 
-const OriginalHome = memo(function OriginalHome({ onOpenImage }) {
+const OriginalHome = memo(function OriginalHome({ onOpenImage, skipSplash }) {
+  const frameRef = useRef(null);
+
+  const enterOriginalHome = useCallback(() => {
+    if (!skipSplash) return;
+
+    const frame = frameRef.current;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      try {
+        const doc = frame?.contentDocument;
+        const buttons = Array.from(doc?.querySelectorAll("button") || []);
+        const enterButton = buttons.find((button) => button.textContent?.includes("立即生成"));
+        if (enterButton) {
+          enterButton.click();
+          window.clearInterval(timer);
+        }
+      } catch {
+        window.clearInterval(timer);
+      }
+
+      if (tries > 30) {
+        window.clearInterval(timer);
+      }
+    }, 100);
+  }, [skipSplash]);
+
   return (
     <div className="original-home-shell">
-      <iframe className="original-home-frame" title="鲸创AI首页" src="/original/index.html" />
+      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI首页" src="/original/index.html" onLoad={enterOriginalHome} />
       <button className="image-nav-hotspot" type="button" onClick={onOpenImage} aria-label="进入图片生成" />
     </div>
   );
@@ -694,13 +727,415 @@ function ImageGenerationView({ activeNav }) {
   );
 }
 
-function ImageFeaturePage({ onBackHome }) {
-  const [activeNav, setActiveNav] = useState("image");
+const emptyVideoOptions = { models: [], ratios: [], durations: [], counts: [1], modes: [] };
+const videoExampleCards = [
+  {
+    id: "example-eagle",
+    status: "completed",
+    model: "Veo 3.1 Fast",
+    modelKey: "veo_3_1_fast",
+    ratio: "16:9",
+    duration: 8,
+    time: "10:51",
+    rmb: "约 ¥22.4",
+    price: "2240 积分",
+    prompt: "一只雄鹰展翅翱翔在峡谷之上，镜头跟随飞翔，下方是蜿蜒的河流和红色岩石，阳光穿透云层。",
+    favorite: false
+  },
+  {
+    id: "example-room",
+    status: "completed",
+    model: "Kling 3.0 Std",
+    modelKey: "kling_3_std",
+    ratio: "16:9",
+    duration: 6,
+    time: "10:45",
+    rmb: "约 ¥2.9",
+    price: "294 积分",
+    prompt: "年轻女性在清晨的卧室里伸懒腰，阳光透过白色窗帘洒进来，慢动作特写，画面温暖。",
+    favorite: false
+  },
+  {
+    id: "example-city",
+    status: "completed",
+    model: "Veo 3.1 Lite",
+    modelKey: "veo_3_1_lite",
+    ratio: "16:9",
+    duration: 8,
+    time: "10:45",
+    rmb: "约 ¥9.6",
+    price: "960 积分",
+    prompt: "一只机器人在未来城市的街道上奔跑，霓虹灯闪烁，全息广告投射在雨后的路面。",
+    favorite: false
+  },
+  {
+    id: "example-ai",
+    status: "completed",
+    model: "Kling 3.0 Pro",
+    modelKey: "kling_3_pro",
+    ratio: "9:16",
+    duration: 10,
+    time: "02:15",
+    rmb: "约 ¥6.3",
+    price: "630 积分",
+    prompt: "核心主题：美少女火火拿着手机，在参考图场景讲解 AI 短视频服务，镜头稳定，画面清晰。",
+    favorite: false
+  },
+  {
+    id: "example-product",
+    status: "completed",
+    model: "Kling 3.0 Std",
+    modelKey: "kling_3_std",
+    ratio: "1:1",
+    duration: 8,
+    time: "12:24",
+    rmb: "约 ¥3.9",
+    price: "392 积分",
+    prompt: "玻璃展台上的银色智能耳机缓慢旋转，背景是柔和蓝色光带，产品广告质感。",
+    favorite: false
+  },
+  {
+    id: "example-travel",
+    status: "completed",
+    model: "Veo 3.1 Fast",
+    modelKey: "veo_3_1_fast",
+    ratio: "9:16",
+    duration: 8,
+    time: "11:57",
+    rmb: "约 ¥22.4",
+    price: "2240 积分",
+    prompt: "航拍镜头穿过江边城市天际线，夕阳把楼体染成金色，画面适合旅行短视频开场。",
+    favorite: false
+  }
+];
+
+function getVideoModelOptions(options, modelKey) {
+  const selectedModel = options.models.find((item) => item.value === modelKey) || options.models[0];
+  return {
+    model: selectedModel,
+    ratios: selectedModel?.ratios?.length ? selectedModel.ratios : options.ratios,
+    durations: selectedModel?.durations?.length ? selectedModel.durations : options.durations
+  };
+}
+
+function VideoPreview({ task }) {
+  const isProcessing = task.status === "pending" || task.status === "processing";
+  const isFailed = task.status === "failed";
+
+  if (task.video && !isFailed) {
+    return (
+      <video src={task.video} controls playsInline preload="metadata" />
+    );
+  }
+
+  return (
+    <div className={`video-placeholder ${isFailed ? "is-failed" : ""}`}>
+      {isProcessing ? <Loader2 size={24} /> : <Play size={34} fill="currentColor" />}
+      {(isFailed || isProcessing) && <span>{isFailed ? "生成失败" : "生成中"}</span>}
+    </div>
+  );
+}
+
+function VideoResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = false }) {
+  return (
+    <article className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}>
+      <div className="result-preview video-result-preview">
+        <VideoPreview task={card} />
+        <span className="video-duration-badge">{card.duration}s</span>
+      </div>
+      <div className="result-meta">
+        <div className="tag-row">
+          <span className="model-tag">{card.model}</span>
+          <span className="ratio-tag">{card.ratio}</span>
+          <span className="quality-tag">{card.duration}秒</span>
+          <span className="count-tag">首帧</span>
+        </div>
+        <div className="time-row">
+          <span>{card.time}</span>
+          <strong>{card.rmb || card.price}</strong>
+        </div>
+        <p>{card.error || card.prompt}</p>
+        <div className="card-actions">
+          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="收藏" disabled={isExample}>
+            <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
+          </button>
+          {card.video ? (
+            <a className="card-action-link" href={card.video} download>
+              <Download size={15} />
+              下载
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              下载
+            </button>
+          )}
+          <button type="button" onClick={() => onRegenerate(card.id)} disabled={isExample}>
+            <RefreshCcw size={15} />
+            再次生成
+          </button>
+          <button type="button" onClick={() => onDelete(card.id)} disabled={isExample}>
+            <Trash2 size={15} />
+            删除
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function VideoComposerBar({ options, onSubmit }) {
+  const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState(options.models[0]?.value || "");
+  const modelOptions = getVideoModelOptions(options, model);
+  const [ratio, setRatio] = useState(modelOptions.model?.defaultRatio || modelOptions.ratios[0] || "");
+  const [duration, setDuration] = useState(modelOptions.model?.defaultDuration || modelOptions.durations[0] || "");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && options.models[0]) {
+      setModel(options.models[0].value);
+      return;
+    }
+
+    const nextOptions = getVideoModelOptions(options, model);
+    if (nextOptions.model) {
+      if (!nextOptions.ratios.includes(ratio)) setRatio(nextOptions.model.defaultRatio || nextOptions.ratios[0] || "");
+      if (!nextOptions.durations.includes(Number(duration))) setDuration(nextOptions.model.defaultDuration || nextOptions.durations[0] || "");
+    }
+  }, [duration, model, options, ratio]);
+
+  const count = 1;
+  const price = videoApi.calculatePrice({ model, duration, count, models: options.models });
+  const rmb = videoApi.calculateRmb({ model, duration, count, models: options.models });
+  const canSubmit = prompt.trim().length > 0 && model && ratio && duration;
+
+  function clearPrompt() {
+    setPrompt("");
+    setNotice("已清空提示词");
+  }
+
+  function fillRandomPrompt() {
+    setPrompt(videoApi.getRandomPrompt());
+    setNotice("已填入随机提示词");
+  }
+
+  function submitPrompt() {
+    if (!canSubmit) {
+      setNotice("请先输入视频描述");
+      return;
+    }
+
+    onSubmit({
+      prompt: prompt.trim(),
+      model,
+      ratio,
+      duration: Number(duration),
+      mode: "first-frame",
+      count
+    });
+    setNotice("已创建视频生成任务");
+    setPrompt("");
+  }
+
+  return (
+    <div className="sowa-composer video-composer" aria-label="视频生成输入框">
+      <div className="composer-input-row">
+        <button className="composer-add" type="button" aria-label="添加首帧占位">
+          <Plus size={22} />
+        </button>
+        <input
+          className="composer-text-input"
+          value={prompt}
+          onChange={(event) => {
+            setPrompt(event.target.value);
+            if (notice) setNotice("");
+          }}
+          placeholder="请描述你想生成的视频..."
+        />
+      </div>
+      <div className="composer-controls-row">
+        <label className="control-select model-select">
+          <Film size={16} />
+          <select value={model} onChange={(event) => setModel(event.target.value)}>
+            {options.models.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="control-select">
+          <Ruler size={16} />
+          <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
+            {modelOptions.ratios.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="control-select">
+          <Timer size={16} />
+          <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
+            {modelOptions.durations.map((item) => (
+              <option key={item} value={item}>
+                {item}s
+              </option>
+            ))}
+          </select>
+        </label>
+        <button className="composer-tool" type="button" onClick={fillRandomPrompt} aria-label="随机提示词">
+          <Dice5 size={18} />
+        </button>
+        <button className="composer-tool" type="button" onClick={clearPrompt} aria-label="清空">
+          <Trash2 size={18} />
+        </button>
+        <span className="price-pill video-price-pill">
+          <strong>{price}</strong>
+          {rmb && <small>{rmb}</small>}
+        </span>
+        <button className="send-button" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="生成">
+          <Send size={18} />
+        </button>
+      </div>
+      {notice && <div className="composer-notice">{notice}</div>}
+    </div>
+  );
+}
+
+function VideoGenerationView({ activeNav }) {
+  const [filter, setFilter] = useState("all");
+  const [cards, setCards] = useState([]);
+  const [options, setOptions] = useState(emptyVideoOptions);
+  const [credits, setCredits] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    if (activeNav !== "video") return undefined;
+
+    let mounted = true;
+    videoApi.getModels().then((value) => mounted && setOptions(value));
+    videoApi.getCredits().then((value) => mounted && setCredits(value));
+    videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+
+    const unsubscribe = videoApi.subscribe(() => {
+      videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [activeNav, filter]);
+
+  if (activeNav !== "video") {
+    return <ComingSoon activeNav={activeNav} />;
+  }
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await videoApi.createTask(payload);
+    } catch (error) {
+      setSubmitError(error.message || "创建视频生成任务失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await videoApi.deleteTask(id);
+  }
+
+  async function toggleFavorite(id) {
+    await videoApi.toggleFavorite(id);
+  }
+
+  async function regenerateTask(id) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await videoApi.regenerateTask(id);
+    } catch (error) {
+      setSubmitError(error.message || "创建视频生成任务失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="image-gen-view video-gen-view-root">
+      <div className="image-filter-tabs">
+        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
+        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">近24小时</button>
+        <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+      </div>
+      {submitError && <div className="video-submit-error">{submitError}</div>}
+      <div className="results-feed video-results-feed">
+        {cards.length || filter !== "all" ? (
+          cards.length ? cards.map((card) => (
+            <VideoResultCard
+              card={card}
+              key={card.id}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRegenerate={regenerateTask}
+            />
+          )) : <div className="empty-results video-empty-results">暂无视频结果</div>
+        ) : (
+          videoExampleCards.map((card) => (
+            <VideoResultCard
+              card={card}
+              key={card.id}
+              isExample
+              onDelete={() => {}}
+              onFavorite={() => {}}
+              onRegenerate={() => {}}
+            />
+          ))
+        )}
+        {isSubmitting && (
+          <VideoResultCard
+            card={{
+              id: "submitting",
+              status: "processing",
+              model: "创建中",
+              ratio: "16:9",
+              duration: 8,
+              time: "--:--",
+              rmb: null,
+              price: "计算中",
+              prompt: "正在提交视频生成任务",
+              favorite: false
+            }}
+            onDelete={() => {}}
+            onFavorite={() => {}}
+            onRegenerate={() => {}}
+          />
+        )}
+      </div>
+      {options.models.length > 0 && <VideoComposerBar options={options} onSubmit={createTask} />}
+    </section>
+  );
+}
+
+function ImageFeaturePage({ initialNav, onBackHome }) {
+  const [activeNav, setActiveNav] = useState(initialNav || "image");
 
   const handleNavChange = useCallback((id) => {
     if (id === "home") {
       onBackHome();
       return;
+    }
+    if (id === "image" || id === "video") {
+      window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
   }, [onBackHome]);
@@ -709,7 +1144,7 @@ function ImageFeaturePage({ onBackHome }) {
     <div className="feature-page-shell">
       <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} />
       <main className="feature-main">
-        <ImageGenerationView activeNav={activeNav} />
+        {activeNav === "image" ? <ImageGenerationView activeNav={activeNav} /> : <VideoGenerationView activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -717,6 +1152,7 @@ function ImageFeaturePage({ onBackHome }) {
 
 function App() {
   const [view, setView] = useState(getInitialView);
+  const [skipHomeSplash, setSkipHomeSplash] = useState(false);
 
   useEffect(() => {
     const onPopState = () => setView(getInitialView());
@@ -725,6 +1161,7 @@ function App() {
   }, []);
 
   const openImage = useCallback(() => {
+    setSkipHomeSplash(false);
     if (window.location.hash !== "#/image") {
       window.history.pushState(null, "", "/#/image");
     }
@@ -732,17 +1169,18 @@ function App() {
   }, []);
 
   const backHome = useCallback(() => {
-    if (window.location.pathname !== "/") {
+    if (window.location.pathname !== "/" || window.location.hash) {
       window.history.pushState(null, "", "/");
     }
+    setSkipHomeSplash(true);
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image") {
-    return <ImageFeaturePage onBackHome={backHome} />;
+  if (view === "image" || view === "video") {
+    return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 
-  return <OriginalHome onOpenImage={openImage} />;
+  return <OriginalHome onOpenImage={openImage} skipSplash={skipHomeSplash} />;
 }
 
 createRoot(document.getElementById("root")).render(

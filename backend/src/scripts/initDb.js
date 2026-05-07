@@ -96,6 +96,54 @@ async function createTables() {
   if (columns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN favorite BOOLEAN NOT NULL DEFAULT FALSE AFTER refunded");
   }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS video_model_prices (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      model_key VARCHAR(80) NOT NULL UNIQUE,
+      provider_type VARCHAR(30) NOT NULL,
+      provider_model VARCHAR(120) NOT NULL,
+      display_name VARCHAR(120) NOT NULL,
+      mode VARCHAR(40) NULL,
+      price_unit ENUM('per_second','per_task') NOT NULL DEFAULT 'per_second',
+      base_points INT NOT NULL,
+      rmb_per_second DECIMAL(8,3) NOT NULL DEFAULT 0,
+      supported_ratios JSON NOT NULL,
+      supported_durations JSON NOT NULL,
+      default_ratio VARCHAR(20) NOT NULL,
+      default_duration INT NOT NULL,
+      enabled BOOLEAN NOT NULL DEFAULT TRUE,
+      sort_order INT NOT NULL DEFAULT 100,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS video_generation_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      prompt TEXT NOT NULL,
+      ratio VARCHAR(20) NOT NULL,
+      duration INT NOT NULL,
+      mode VARCHAR(40) NOT NULL DEFAULT 'first-frame',
+      video_count INT NOT NULL DEFAULT 1,
+      cost_points INT NOT NULL,
+      rmb_cost DECIMAL(10,2) NULL,
+      status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+      provider_task_id VARCHAR(160) NULL,
+      result_urls JSON NULL,
+      error_message TEXT NULL,
+      refunded BOOLEAN NOT NULL DEFAULT FALSE,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_video_tasks_user_created (user_id, created_at),
+      INDEX idx_video_tasks_status (status),
+      CONSTRAINT fk_video_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 async function seedDemoData() {
@@ -142,6 +190,45 @@ async function seedDemoData() {
         display_name = VALUES(display_name),
         base_points = VALUES(base_points),
         enabled = VALUES(enabled)
+    `);
+
+    await connection.query(`
+      INSERT INTO video_model_prices
+        (model_key, provider_type, provider_model, display_name, mode, price_unit, base_points, rmb_per_second,
+         supported_ratios, supported_durations, default_ratio, default_duration, enabled, sort_order)
+      VALUES
+        ('veo_3_1_fast', 'veo', 'veo3_fast', 'Veo 3.1 Fast', 'first-frame', 'per_second', 280, 2.800,
+          JSON_ARRAY('16:9','9:16'), JSON_ARRAY(8), '16:9', 8, TRUE, 10),
+        ('veo_3_1_quality', 'veo', 'veo3_quality', 'Veo 3.1 Quality', 'first-frame', 'per_second', 1400, 14.000,
+          JSON_ARRAY('16:9','9:16'), JSON_ARRAY(8), '16:9', 8, FALSE, 20),
+        ('veo_3_1_lite', 'veo', 'veo3_lite', 'Veo 3.1 Lite', 'first-frame', 'per_second', 120, 1.200,
+          JSON_ARRAY('16:9','9:16'), JSON_ARRAY(8), '16:9', 8, TRUE, 30),
+        ('sora_2', 'jobs', 'sora-2/text-to-video', 'Sora 2', 'first-frame', 'per_second', 11, 0.105,
+          JSON_ARRAY('16:9','9:16'), JSON_ARRAY(10,15), '16:9', 10, FALSE, 40),
+        ('kling_3_std', 'jobs', 'kling-3.0/video', 'Kling 3.0 Std', 'std', 'per_second', 49, 0.490,
+          JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 50),
+        ('kling_3_pro', 'jobs', 'kling-3.0/video', 'Kling 3.0 Pro', 'pro', 'per_second', 63, 0.630,
+          JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 60),
+        ('kling_3_4k', 'jobs', 'kling-3.0/video', 'Kling 3.0 4K', '4K', 'per_second', 235, 2.345,
+          JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
+        ('seedance_2_0_720p', 'jobs', 'seedance/2.0-text-to-video', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
+          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
+        ('wan_2_7_720p', 'jobs', 'wan/2.7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
+          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, FALSE, 90)
+      ON DUPLICATE KEY UPDATE
+        provider_type = VALUES(provider_type),
+        provider_model = VALUES(provider_model),
+        display_name = VALUES(display_name),
+        mode = VALUES(mode),
+        price_unit = VALUES(price_unit),
+        base_points = VALUES(base_points),
+        rmb_per_second = VALUES(rmb_per_second),
+        supported_ratios = VALUES(supported_ratios),
+        supported_durations = VALUES(supported_durations),
+        default_ratio = VALUES(default_ratio),
+        default_duration = VALUES(default_duration),
+        enabled = VALUES(enabled),
+        sort_order = VALUES(sort_order)
     `);
 
     await connection.commit();

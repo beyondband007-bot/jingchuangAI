@@ -1386,6 +1386,27 @@ button {
   white-space: nowrap;
 }
 
+.card-actions .card-action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  color: #174a7c;
+  background: #fff;
+  border: 1px solid #dbe5ef;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.card-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .card-actions .icon-circle {
   color: #98a5b3;
   border-radius: 50%;
@@ -1562,6 +1583,121 @@ button {
 
 .composer-notice.warning {
   color: #b42318;
+}
+
+.video-gen-view-root {
+  padding-bottom: 156px;
+}
+
+.video-results-feed {
+  align-items: start;
+  max-width: 1080px;
+}
+
+.video-result-card {
+  background: #fff;
+  border-color: #b9dafb;
+  box-shadow: 0 10px 26px rgba(28, 87, 148, 0.12);
+}
+
+.video-result-preview {
+  position: relative;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: #9fb6cc;
+}
+
+.video-result-preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #8fa9c0;
+}
+
+.video-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #174a7c;
+  background: #9fb6cc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.video-placeholder svg {
+  color: #0f4f7d;
+  width: 64px;
+  height: 64px;
+  padding: 18px 16px 18px 20px;
+  background: #d9efff;
+  border-radius: 50%;
+  filter: drop-shadow(0 9px 13px rgba(20, 55, 90, 0.25));
+}
+
+.video-result-card.status-processing .video-placeholder svg {
+  animation: spin 1.1s linear infinite;
+}
+
+.video-placeholder.is-failed {
+  color: #c2410c;
+  background: #ffdcd2;
+}
+
+.video-duration-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  min-width: 32px;
+  padding: 4px 7px;
+  color: #fff;
+  background: #163b5d;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.video-submit-error {
+  max-width: 1080px;
+  margin: 8px auto 0;
+  padding: 10px 12px;
+  color: #b42318;
+  background: #fff1ed;
+  border: 1px solid #ffd8c7;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.video-empty-results {
+  display: grid;
+  min-height: 300px;
+}
+
+.video-composer {
+  min-height: 140px;
+}
+
+.video-price-pill {
+  display: grid;
+  min-width: 96px;
+  gap: 0;
+  padding: 4px 12px;
+  line-height: 1.2;
+}
+
+.video-price-pill strong {
+  font-size: 13px;
+}
+
+.video-price-pill small {
+  color: #6b7d93;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .image-skeleton {
