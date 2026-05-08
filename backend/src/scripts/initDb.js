@@ -144,6 +144,52 @@ async function createTables() {
       CONSTRAINT fk_video_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_model_prices (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      model_key VARCHAR(80) NOT NULL UNIQUE,
+      provider_model VARCHAR(120) NOT NULL,
+      display_name VARCHAR(120) NOT NULL,
+      points_per_kie_credit DECIMAL(8,3) NOT NULL DEFAULT 4.000,
+      reserve_points INT NOT NULL DEFAULT 1,
+      enabled BOOLEAN NOT NULL DEFAULT TRUE,
+      sort_order INT NOT NULL DEFAULT 100,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      title VARCHAR(160) NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_chat_conversations_user_updated (user_id, updated_at),
+      CONSTRAINT fk_chat_conversations_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      conversation_id BIGINT UNSIGNED NOT NULL,
+      role ENUM('system','user','assistant') NOT NULL,
+      content MEDIUMTEXT NOT NULL,
+      model_key VARCHAR(80) NULL,
+      cost_points INT NOT NULL DEFAULT 0,
+      kie_credits_consumed DECIMAL(12,4) NOT NULL DEFAULT 0,
+      usage_json JSON NULL,
+      status ENUM('completed','failed') NOT NULL DEFAULT 'completed',
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_chat_messages_conversation_created (conversation_id, created_at),
+      CONSTRAINT fk_chat_messages_conversation FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 async function seedDemoData() {
@@ -227,6 +273,24 @@ async function seedDemoData() {
         supported_durations = VALUES(supported_durations),
         default_ratio = VALUES(default_ratio),
         default_duration = VALUES(default_duration),
+        enabled = VALUES(enabled),
+        sort_order = VALUES(sort_order)
+    `);
+
+    await connection.query(`
+      INSERT INTO chat_model_prices
+        (model_key, provider_model, display_name, points_per_kie_credit, reserve_points, enabled, sort_order)
+      VALUES
+        ('gpt-5-4', 'gpt-5-4', 'GPT 5.4', 4.000, 1, TRUE, 10),
+        ('gpt-5-5', 'gpt-5-5', 'GPT 5.5', 4.000, 1, TRUE, 20),
+        ('gemini-3-pro-openai', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
+        ('claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, FALSE, 40),
+        ('gemini-2.5-flash', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, FALSE, 50)
+      ON DUPLICATE KEY UPDATE
+        provider_model = VALUES(provider_model),
+        display_name = VALUES(display_name),
+        points_per_kie_credit = VALUES(points_per_kie_credit),
+        reserve_points = VALUES(reserve_points),
         enabled = VALUES(enabled),
         sort_order = VALUES(sort_order)
     `);

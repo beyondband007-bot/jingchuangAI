@@ -19,5 +19,10 @@ export const config = {
     apiKey: process.env.KIE_API_KEY || "",
     baseUrl: process.env.KIE_API_BASE_URL || "https://api.kie.ai",
     imageModel: process.env.KIE_IMAGE_MODEL || "nano-banana-2"
+  },
+  minimax: {
+    apiKey: process.env.MINIMAX_API_KEY || "",
+    groupId: process.env.MINIMAX_GROUP_ID || "",
+    baseUrl: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com"
   }
 };

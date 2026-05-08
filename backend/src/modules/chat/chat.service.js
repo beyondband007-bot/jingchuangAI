@@ -1,0 +1,186 @@
+import { getPool } from "../../db/pool.js";
+import { createKieChatResponse } from "../../providers/kie/chat.js";
+import { debitCredits } from "../../shared/creditService.js";
+import { createHttpError } from "../../shared/http.js";
+import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
+import { mapChatConversation, mapChatMessage, mapChatModel } from "./chat.mapper.js";
+import { normalizeMessages, reasoningEffortOptions, validateChatPayload } from "./chat.options.js";
+import {
+  createChatConversation,
+  createChatMessage,
+  ensureUserHasReserveCredits,
+  findChatConversation,
+  findChatMessageRow,
+  findChatModel,
+  findEnabledChatModels,
+  listChatConversationRows,
+  listChatMessageRows,
+  touchChatConversation
+} from "./chat.repository.js";
+
+function buildTitle(messages) {
+  const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const title = lastUserMessage?.content || "新的对话";
+  return title.length > 32 ? `${title.slice(0, 32)}...` : title;
+}
+
+function calculatePoints(model, kieCreditsConsumed) {
+  const credits = Number(kieCreditsConsumed || 0);
+  const multiplier = Number(model.points_per_kie_credit || 4);
+  return Math.max(1, Math.ceil(credits * multiplier));
+}
+
+export async function getModels() {
+  const rows = await findEnabledChatModels();
+  return {
+    models: rows.map(mapChatModel),
+    reasoningEfforts: reasoningEffortOptions,
+    defaultModel: rows[0]?.model_key || ""
+  };
+}
+
+export async function listConversations() {
+  const rows = await listChatConversationRows();
+  return rows.map(mapChatConversation);
+}
+
+export async function getConversationMessages(conversationId) {
+  const rows = await listChatMessageRows(conversationId);
+  return rows.map(mapChatMessage);
+}
+
+export async function sendMessage(payload) {
+  const { conversationId = null, model, reasoningEffort = "none" } = payload;
+  const messages = normalizeMessages(payload.messages || []);
+  validateChatPayload({ model, messages, reasoningEffort });
+
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  if (!latestUserMessage) {
+    throw createHttpError("a user message is required", 400);
+  }
+
+  const pool = getPool();
+  const setupConnection = await pool.getConnection();
+  let userId;
+  let resolvedConversationId = conversationId;
+  let modelPrice;
+
+  try {
+    await setupConnection.beginTransaction();
+    const user = await getDemoUser(setupConnection);
+    userId = user.id;
+
+    modelPrice = await findChatModel(setupConnection, model);
+    if (!modelPrice) {
+      throw createHttpError("model not found", 400);
+    }
+
+    const hasReserve = await ensureUserHasReserveCredits(setupConnection, {
+      userId,
+      reservePoints: modelPrice.reserve_points
+    });
+    if (!hasReserve) {
+      throw createHttpError("insufficient credits", 402);
+    }
+
+    if (resolvedConversationId) {
+      const conversation = await findChatConversation(setupConnection, resolvedConversationId);
+      if (!conversation) {
+        throw createHttpError("conversation not found", 404);
+      }
+    } else {
+      resolvedConversationId = await createChatConversation(setupConnection, {
+        userId,
+        title: buildTitle(messages),
+        modelKey: model
+      });
+    }
+
+    await createChatMessage(setupConnection, {
+      conversationId: resolvedConversationId,
+      role: "user",
+      content: latestUserMessage.content,
+      modelKey: model
+    });
+    await touchChatConversation(setupConnection, resolvedConversationId);
+    await setupConnection.commit();
+  } catch (error) {
+    await setupConnection.rollback();
+    throw error;
+  } finally {
+    setupConnection.release();
+  }
+
+  let provider;
+  try {
+    provider = await createKieChatResponse({
+      model: modelPrice,
+      messages,
+      reasoningEffort
+    });
+  } catch (error) {
+    console.error("KIE chat response failed:", error.message, error.body || "");
+    const failConnection = await pool.getConnection();
+    try {
+      await failConnection.beginTransaction();
+      const failedMessageId = await createChatMessage(failConnection, {
+        conversationId: resolvedConversationId,
+        role: "assistant",
+        content: "",
+        modelKey: model,
+        status: "failed",
+        errorMessage: `KIE 对话失败：${error.message}`
+      });
+      await touchChatConversation(failConnection, resolvedConversationId);
+      await failConnection.commit();
+      const failedMessage = await findChatMessageRow(failedMessageId);
+      return {
+        conversationId: resolvedConversationId,
+        message: mapChatMessage(failedMessage),
+        credits: await getDemoUserCredits()
+      };
+    } catch (innerError) {
+      await failConnection.rollback();
+      throw innerError;
+    } finally {
+      failConnection.release();
+    }
+  }
+
+  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed);
+  const chargeConnection = await pool.getConnection();
+  let assistantMessageId;
+  try {
+    await chargeConnection.beginTransaction();
+    assistantMessageId = await createChatMessage(chargeConnection, {
+      conversationId: resolvedConversationId,
+      role: "assistant",
+      content: provider.text,
+      modelKey: model,
+      costPoints,
+      kieCreditsConsumed: provider.kieCreditsConsumed,
+      usage: provider.usage,
+      status: "completed"
+    });
+    await debitCredits(chargeConnection, {
+      userId,
+      taskId: assistantMessageId,
+      amount: costPoints,
+      memo: "chat completion debit"
+    });
+    await touchChatConversation(chargeConnection, resolvedConversationId);
+    await chargeConnection.commit();
+  } catch (error) {
+    await chargeConnection.rollback();
+    throw error;
+  } finally {
+    chargeConnection.release();
+  }
+
+  const assistantMessage = await findChatMessageRow(assistantMessageId);
+  return {
+    conversationId: resolvedConversationId,
+    message: mapChatMessage(assistantMessage),
+    credits: await getDemoUserCredits()
+  };
+}

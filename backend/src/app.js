@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import { config } from "./config/index.js";
 import { checkDatabase } from "./db/pool.js";
+import { chatRouter } from "./modules/chat/chat.routes.js";
+import { digitalHumanRouter } from "./modules/digital-human/digitalHuman.routes.js";
 import { imageRouter } from "./modules/image/image.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
 import { sendError } from "./shared/http.js";
@@ -36,6 +38,8 @@ export function createApp() {
 
   app.use("/api/image", imageRouter);
   app.use("/api/video", videoRouter);
+  app.use("/api/chat", chatRouter);
+  app.use("/api/digital-human", digitalHumanRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
