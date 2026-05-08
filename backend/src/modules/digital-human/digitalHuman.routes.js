@@ -10,6 +10,7 @@ import {
   getDigitalHumanTask,
   getDigitalHumanVoices,
   listDigitalHumanTasks,
+  previewDigitalHumanVoice,
   regenerateDigitalHumanTask,
   updateDigitalHumanAvatar
 } from "./digitalHuman.controller.js";
@@ -23,6 +24,7 @@ digitalHumanRouter.put("/avatars/:id", updateDigitalHumanAvatar);
 digitalHumanRouter.delete("/avatars/:id", deleteDigitalHumanAvatar);
 digitalHumanRouter.get("/voices", getDigitalHumanVoices);
 digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
+digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);
 digitalHumanRouter.post("/tasks", createDigitalHumanTask);
 digitalHumanRouter.get("/tasks/:id", getDigitalHumanTask);

@@ -34,13 +34,23 @@ export async function requestMinimax(path, options = {}) {
 
   const minimaxStatusCode = body?.base_resp?.status_code;
   if (!response.ok || (typeof minimaxStatusCode === "number" && minimaxStatusCode !== 0)) {
-    const error = new Error(
+    const rawMessage =
       body?.base_resp?.status_msg ||
-        body?.message ||
-        body?.error ||
-        `Minimax request failed with ${response.status}`
+      body?.message ||
+      body?.error ||
+      `Minimax request failed with ${response.status}`;
+    const isRateLimited = response.status === 429 || /rate limit|rpm|too many requests/i.test(String(rawMessage));
+    const isInsufficientBalance = /insufficient balance|balance insufficient|insufficient quota|quota/i.test(
+      String(rawMessage)
     );
-    error.status = response.ok ? 502 : response.status;
+    const error = new Error(
+      isRateLimited
+        ? "MiniMax 请求过于频繁，请等待 60 秒后重试"
+        : isInsufficientBalance
+          ? "MiniMax 账户余额不足，请充值或更换有额度的 API Key"
+          : rawMessage
+    );
+    error.status = isRateLimited ? 429 : isInsufficientBalance ? 402 : response.ok ? 502 : response.status;
     error.body = body;
     throw error;
   }

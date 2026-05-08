@@ -79,6 +79,13 @@ export const digitalHumanApi = {
     return result;
   },
 
+  async previewVoice(payload) {
+    return request("/api/digital-human/voices/preview", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
   async getTasks() {
     return request("/api/digital-human/tasks");
   },

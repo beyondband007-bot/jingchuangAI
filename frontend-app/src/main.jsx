@@ -1411,21 +1411,47 @@ function ChatGenerationView({ activeNav }) {
 }
 
 const emptyDigitalHumanOptions = { models: [], defaults: { model: "", driveMode: "text" } };
-
-const digitalHumanPublicPlaceholders = [
-  { id: "public-product", name: "产品讲解员", description: "适合新品发布、功能演示、卖点介绍", language: "中文 / 通用", status: "placeholder", cover: "" },
-  { id: "public-course", name: "课程讲师", description: "适合知识课程、培训课件、在线教育", language: "中文 / 普通话", status: "placeholder", cover: "" },
-  { id: "public-service", name: "客服接待员", description: "适合服务说明、售后答疑、流程引导", language: "中文 / 亲和", status: "placeholder", cover: "" },
-  { id: "public-finance", name: "财经主播", description: "适合行情解读、投教内容、财经播报", language: "中文 / 稳重", status: "placeholder", cover: "" },
-  { id: "public-medical", name: "健康科普员", description: "适合健康科普、诊疗介绍、公益宣传", language: "中文 / 温和", status: "placeholder", cover: "" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景区讲解、路线推荐、城市宣传", language: "中文 / 生动", status: "placeholder", cover: "" },
-  { id: "public-recruiting", name: "招聘宣讲官", description: "适合岗位介绍、校招宣讲、企业文化", language: "中文 / 商务", status: "placeholder", cover: "" },
-  { id: "public-event", name: "活动主持人", description: "适合会议开场、活动串词、展会介绍", language: "中文 / 热情", status: "placeholder", cover: "" }
+const digitalHumanMaxAudioMs = 15000;
+const ttsEmotionOptions = [
+  { value: "", label: "自动" },
+  { value: "calm", label: "平静" },
+  { value: "happy", label: "开心" },
+  { value: "sad", label: "悲伤" },
+  { value: "angry", label: "愤怒" },
+  { value: "fearful", label: "害怕" },
+  { value: "disgusted", label: "厌恶" },
+  { value: "surprised", label: "惊讶" }
 ];
 
-function withDigitalHumanPlaceholders(list = []) {
-  const seen = new Set(list.map((item) => item.id));
-  return [...list, ...digitalHumanPublicPlaceholders.filter((item) => !seen.has(item.id))];
+function formatDurationMs(durationMs = 0) {
+  return `${(Number(durationMs || 0) / 1000).toFixed(1)} 秒`;
+}
+
+function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion }) {
+  return JSON.stringify({
+    text: String(text || "").trim(),
+    voiceId,
+    speed: Number(speed),
+    volume: Number(volume),
+    pitch: Number(pitch),
+    emotion: emotion || ""
+  });
+}
+
+const digitalHumanPublicPlaceholders = [
+  { id: "public-product", name: "产品讲解员", description: "适合新品发布、功能演示、卖点介绍", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/产品讲解员.mp4" },
+  { id: "public-medical", name: "健康科普员", description: "适合健康科普、诊疗介绍、公益宣传", language: "中文 / 温和", status: "ready", cover: "/assets/digital-human/健康科普员.mp4" },
+  { id: "public-cartoon", name: "动漫卡通形象", description: "适合少儿内容、品牌 IP、趣味讲解", language: "中文 / 活泼", status: "ready", cover: "/assets/digital-human/动漫卡通形象.mp4" },
+  { id: "public-real-estate", name: "房地产经纪人", description: "适合房源讲解、楼盘介绍、置业咨询", language: "中文 / 专业", status: "ready", cover: "/assets/digital-human/房地产经纪人.mp4" },
+  { id: "public-travel", name: "文旅推荐官", description: "适合景区讲解、路线推荐、城市宣传", language: "中文 / 生动", status: "ready", cover: "/assets/digital-human/文旅推荐官.mp4" },
+  { id: "public-news", name: "新闻播报员", description: "适合资讯口播、短视频新闻、活动串词", language: "中文 / 普通话", status: "ready", cover: "/assets/digital-human/新闻播报员.mp4" },
+  { id: "public-life", name: "生活方式达人", description: "适合种草讲解、门店介绍、社媒内容", language: "中文 / 轻松自然", status: "ready", cover: "/assets/digital-human/生活方式达人.mp4" },
+  { id: "public-finance", name: "财经主播", description: "适合行情解读、投教内容、财经播报", language: "中文 / 稳重", status: "ready", cover: "/assets/digital-human/财经主播.mp4" },
+  { id: "public-operations", name: "运营达人", description: "适合活动运营、用户增长、社群内容", language: "中文 / 干练", status: "ready", cover: "/assets/digital-human/运营达人.mp4" }
+];
+
+function getDigitalHumanPublicAvatars(list = []) {
+  return list.some((item) => item.cover) ? list : digitalHumanPublicPlaceholders;
 }
 
 function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) {
@@ -1442,11 +1468,18 @@ function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) 
 
 function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRename, onDelete, mine = false }) {
   const isTraining = avatar.status === "training";
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar.cover || "");
   return (
     <article className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}>
       <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`选择 ${avatar.name}`}>
-        {avatar.cover ? <img src={avatar.cover} alt={avatar.name} /> : <DigitalHumanEmptyMedia title="形象素材位" description="等待补充数字人视频或封面" />}
-        <span className="dh-avatar-badge">{isTraining ? "训练中" : "占位"}</span>
+        {isVideoCover ? (
+          <video src={avatar.cover} muted loop playsInline preload="metadata" onMouseEnter={(event) => event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} />
+        ) : avatar.cover ? (
+          <img src={avatar.cover} alt={avatar.name} />
+        ) : (
+          <DigitalHumanEmptyMedia title="形象素材位" description="等待补充数字人视频或封面" />
+        )}
+        <span className="dh-avatar-badge">{selected ? "已选" : isTraining ? "训练中" : avatar.cover ? "模板" : "占位"}</span>
       </button>
       <div className="dh-avatar-info">
         <strong>{avatar.name}</strong>
@@ -1475,23 +1508,55 @@ function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRenam
   );
 }
 
+function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar?.cover || "");
+
+  if (!avatar) return null;
+
+  return (
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="dh-avatar-preview-modal">
+        <div className="dh-modal-header">
+          <div>
+            <span>形象预览</span>
+            <strong>{avatar.name}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭">×</button>
+        </div>
+        <div className="dh-avatar-preview-body">
+          {isVideoCover ? (
+            <video src={avatar.cover} controls autoPlay playsInline />
+          ) : avatar.cover ? (
+            <img src={avatar.cover} alt={avatar.name} />
+          ) : (
+            <DigitalHumanEmptyMedia title="暂无预览素材" description="等待补充数字人视频或封面" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DigitalHumanTaskCard({ task, selected, onSelect, onDelete, onRegenerate }) {
-  const isProcessing = task.status === "processing";
+  const isProcessing = task.status === "processing" || task.status === "pending";
   const isCompleted = task.status === "completed";
+  const isFailed = task.status === "failed";
   return (
     <article className={`dh-task-card ${selected ? "is-selected" : ""}`}>
       <button className="dh-task-preview" type="button" onClick={() => onSelect(task)}>
-        {task.thumbnailUrl ? <img src={task.thumbnailUrl} alt={task.avatarName} /> : (
+        {task.resultUrl ? (
+          <video src={task.resultUrl} muted playsInline preload="metadata" />
+        ) : task.thumbnailUrl ? <img src={task.thumbnailUrl} alt={task.avatarName} /> : (
           <DigitalHumanEmptyMedia
             icon={Video}
-            title={isCompleted ? "结果视频占位" : "生成中"}
-            description={isCompleted ? "真实 Minimax 结果接入后显示视频封面" : `${task.progress || 0}%`}
+            title={isFailed ? "生成失败" : isCompleted ? "结果待返回" : "生成中"}
+            description={isFailed ? task.error || "任务失败，积分已退回" : isCompleted ? "点击查看生成结果" : `${task.progress || 0}%`}
           />
         )}
       </button>
       <div className="dh-task-meta">
         <strong>{task.avatarName}</strong>
-        <span>{task.voiceName} · {task.driveMode === "audio" ? "音频驱动" : "文字驱动"}</span>
+        <span>{task.voiceName} · {task.driveMode === "audio" ? "音频驱动" : "文字驱动"} · {task.providerModel || "KIE Wan 2.7"}</span>
         <div className="dh-progress-track">
           <i style={{ width: `${task.progress || 0}%` }} />
         </div>
@@ -1506,6 +1571,20 @@ function DigitalHumanTaskCard({ task, selected, onSelect, onDelete, onRegenerate
         </button>
       </div>
     </article>
+  );
+}
+
+function DigitalHumanGeneratingState({ task }) {
+  return (
+    <div className="dh-generating-state">
+      <span className="dh-spinner" aria-hidden="true" />
+      <strong>正在生成口型视频</strong>
+      <p>MiniMax 已生成驱动音频，KIE 正在合成数字人口播成片。</p>
+      <div className="dh-generation-progress">
+        <i style={{ width: `${task?.progress || 0}%` }} />
+      </div>
+      <small>{task?.progress || 0}% · 完成后会自动回填到这里</small>
+    </div>
   );
 }
 
@@ -1562,18 +1641,20 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   );
 }
 
-function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, onVoiceDesigned, isSubmitting }) {
+function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, isSubmitting }) {
   const audioInputRef = useRef(null);
   const [driveMode, setDriveMode] = useState("text");
   const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我将为您介绍全新的数字人功能。");
   const [audioFile, setAudioFile] = useState(null);
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
-  const [voicePrompt, setVoicePrompt] = useState("");
-  const [customVoiceId, setCustomVoiceId] = useState("");
-  const [aigcWatermark, setAigcWatermark] = useState(false);
+  const [ttsSpeed, setTtsSpeed] = useState(1);
+  const [ttsVolume, setTtsVolume] = useState(1);
+  const [ttsPitch, setTtsPitch] = useState(0);
+  const [ttsEmotion, setTtsEmotion] = useState("");
   const [isDesigningVoice, setIsDesigningVoice] = useState(false);
   const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -1586,18 +1667,19 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
   const estimate = Math.max(1, Math.ceil(text.length / 180));
+  const selectedAvatarIsVideo = /\.(mp4|webm|mov)$/i.test(selectedAvatar?.cover || "");
+  const currentPreviewSignature = getDigitalHumanPreviewSignature({
+    text,
+    voiceId,
+    speed: ttsSpeed,
+    volume: ttsVolume,
+    pitch: ttsPitch,
+    emotion: ttsEmotion
+  });
+  const isPreviewCurrent = voicePreviewInfo?.signature === currentPreviewSignature;
+  const currentAudioTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
-  useEffect(() => {
-    if (selectedVoice?.description && !voicePrompt.trim()) {
-      setVoicePrompt(selectedVoice.description);
-    }
-  }, [selectedVoice, voicePrompt]);
-
-  async function designVoice() {
-    if (!voicePrompt.trim()) {
-      setNotice("请输入音色设计提示词");
-      return;
-    }
+  async function previewVoice() {
     if (!text.trim()) {
       setNotice("请输入用于试听的文本脚本");
       return;
@@ -1605,19 +1687,28 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
     setNotice("");
     setIsDesigningVoice(true);
     try {
-      const result = await digitalHumanApi.designVoice({
-        name: customVoiceId.trim() || "定制音色",
-        prompt: voicePrompt.trim(),
-        previewText: text.trim().slice(0, 500),
-        voiceId: customVoiceId.trim(),
-        aigcWatermark
+      const result = await digitalHumanApi.previewVoice({
+        previewText: text.trim(),
+        voiceId,
+        speed: ttsSpeed,
+        volume: ttsVolume,
+        pitch: ttsPitch,
+        emotion: ttsEmotion
       });
-      if (result.voice) onVoiceDesigned(result.voice);
-      if (result.voice?.id) setVoiceId(result.voice.id);
-      if (result.trialAudioDataUrl) setVoicePreviewUrl(result.trialAudioDataUrl);
-      setNotice("音色已生成，可在下拉框中使用");
+      if (result.audioDataUrl) setVoicePreviewUrl(result.audioDataUrl);
+      const durationMs = Number(result.durationMs || 0);
+      setVoicePreviewInfo({
+        signature: currentPreviewSignature,
+        durationMs,
+        videoDuration: result.videoDuration || Math.ceil(durationMs / 1000)
+      });
+      setNotice(
+        durationMs > digitalHumanMaxAudioMs
+          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`
+          : `已生成当前音色试听，视频时长将按音频反推为 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
+      );
     } catch (error) {
-      setNotice(error.message || "音色设计失败");
+      setNotice(error.message || "音色试听失败");
     } finally {
       setIsDesigningVoice(false);
     }
@@ -1636,6 +1727,14 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
       setNotice("请上传音频文件");
       return;
     }
+    if (!voicePreviewInfo || !isPreviewCurrent) {
+      setNotice("请先试听当前音色，系统会根据试听音频时长反推视频时长");
+      return;
+    }
+    if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
+      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`);
+      return;
+    }
     setNotice("");
     onSubmit({
       avatarId: selectedAvatar.id,
@@ -1645,20 +1744,35 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
       audioName: audioFile?.name || "",
       voiceId,
       model,
-      voicePrompt: voicePrompt.trim(),
-      customVoiceId: customVoiceId.trim(),
-      aigcWatermark
+      speed: ttsSpeed,
+      volume: ttsVolume,
+      pitch: ttsPitch,
+      emotion: ttsEmotion
     });
   }
 
   return (
     <aside className="dh-config-panel">
       <div className="dh-config-header">
-        <strong>MiniMax Voice Design</strong>
+        <strong>数字人口播成片</strong>
+      </div>
+      <div className="dh-selected-template">
+        <div className="dh-selected-template-media">
+          {selectedAvatar?.cover ? (
+            selectedAvatarIsVideo ? <video src={selectedAvatar.cover} muted loop playsInline preload="metadata" /> : <img src={selectedAvatar.cover} alt={selectedAvatar.name} />
+          ) : (
+            <UserRound size={22} />
+          )}
+        </div>
+        <div>
+          <span>当前数字人模板</span>
+          <strong>{selectedAvatar?.name || "请先选择左侧模板"}</strong>
+          <small>{selectedAvatar?.description || "模板会作为 KIE 口型视频的 reference_video"}</small>
+        </div>
       </div>
       <div className="dh-mode-tabs">
         <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>文字驱动</button>
-        <button className={driveMode === "audio" ? "is-active" : ""} type="button" onClick={() => setDriveMode("audio")}>音频驱动</button>
+        <button type="button" disabled title="音频驱动将在第二阶段接入">音频驱动</button>
       </div>
       {driveMode === "text" ? (
         <label className="dh-field dh-script-field">
@@ -1674,10 +1788,11 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
         </button>
       )}
       <label className="dh-field">
-        <span>模型</span>
+        <span>成片模型</span>
         <select value={model} onChange={(event) => setModel(event.target.value)}>
           {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
+        {selectedModel && <small>调用模型：{selectedModel.providerModel || selectedModel.value} · {selectedModel.resolution || "720p"}</small>}
       </label>
       <label className="dh-field">
         <span>音色</span>
@@ -1687,40 +1802,50 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, on
         {selectedVoice && <small>{selectedVoice.description}</small>}
       </label>
       <div className="dh-settings-group">
-        <label className="dh-field">
-          <span>音色设计提示词 <small>{voicePrompt.length} / 500</small></span>
-          <textarea
-            value={voicePrompt}
-            maxLength={500}
-            onChange={(event) => setVoicePrompt(event.target.value)}
-            placeholder="例如：清晰、稳定、适合正式讲解的中文女声"
-          />
-        </label>
-        <label className="dh-field">
-          <span>Voice ID <small>可选</small></span>
-          <input value={customVoiceId} onChange={(event) => setCustomVoiceId(event.target.value)} placeholder="不填则由 MiniMax 自动生成" />
-        </label>
-        <label className="dh-toggle-field">
-          <input type="checkbox" checked={aigcWatermark} onChange={(event) => setAigcWatermark(event.target.checked)} />
-          <span>添加 AIGC 水印</span>
-        </label>
-        <button className="dh-design-voice-button" type="button" onClick={designVoice} disabled={isDesigningVoice}>
+        <div className="dh-minimax-options">
+          <div className="dh-minimax-options-head">
+            <span>MiniMax TTS 参数</span>
+            <strong>音量、语速、音调与情绪</strong>
+          </div>
+          <label className="dh-field">
+            <span>音色情绪</span>
+            <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
+              {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="dh-range-field">
+            <span>语速 <small>{ttsSpeed.toFixed(2)}x</small></span>
+            <input type="range" min="0.5" max="2" step="0.05" value={ttsSpeed} onChange={(event) => setTtsSpeed(Number(event.target.value))} />
+          </label>
+          <label className="dh-range-field">
+            <span>音量 <small>{ttsVolume.toFixed(1)}</small></span>
+            <input type="range" min="0.1" max="10" step="0.1" value={ttsVolume} onChange={(event) => setTtsVolume(Number(event.target.value))} />
+          </label>
+          <label className="dh-range-field">
+            <span>音调 <small>{ttsPitch > 0 ? `+${ttsPitch}` : ttsPitch}</small></span>
+            <input type="range" min="-12" max="12" step="1" value={ttsPitch} onChange={(event) => setTtsPitch(Number(event.target.value))} />
+          </label>
+        </div>
+        <button className="dh-design-voice-button" type="button" onClick={previewVoice} disabled={isDesigningVoice}>
           {isDesigningVoice ? <Loader2 size={16} /> : <Mic size={16} />}
-          生成音色试听
+          试听当前音色
         </button>
         {voicePreviewUrl && <audio className="dh-voice-preview" src={voicePreviewUrl} controls />}
-      </div>
-      <div className="dh-command-library">
-        {["自然口播", "新闻播报", "温柔讲解", "商务正式"].map((item) => (
-          <button key={item} type="button" onClick={() => setVoicePrompt((current) => current ? `${current}，${item}` : item)}>
-            {item}
-          </button>
-        ))}
+        <div className={`dh-duration-check ${currentAudioTooLong ? "is-warning" : isPreviewCurrent ? "is-ready" : ""}`}>
+          {isPreviewCurrent ? (
+            <span>
+              当前音频 {formatDurationMs(voicePreviewInfo.durationMs)}
+              {currentAudioTooLong ? "，超过 15 秒，需要切片" : `，视频将生成 ${voicePreviewInfo.videoDuration} 秒`}
+            </span>
+          ) : (
+            <span>生成前请先试听当前音色，用真实音频时长反推视频时长</span>
+          )}
+        </div>
       </div>
       {notice && <div className="dh-form-notice">{notice}</div>}
-      <button className="dh-generate-button" type="button" onClick={submit} disabled={isSubmitting}>
+      <button className="dh-generate-button" type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || currentAudioTooLong}>
         {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
-        生成数字人
+        用当前模板生成口型视频
       </button>
     </aside>
   );
@@ -1735,6 +1860,7 @@ function DigitalHumanGenerationView({ activeNav }) {
   const [credits, setCredits] = useState(null);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [previewAvatar, setPreviewAvatar] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -1764,7 +1890,14 @@ function DigitalHumanGenerationView({ activeNav }) {
     }
     load();
     const unsubscribe = digitalHumanApi.subscribe(() => {
-      digitalHumanApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
+      digitalHumanApi.getTasks().then((value) => {
+        if (!mounted) return;
+        setTasks(value);
+        setSelectedTask((current) => {
+          if (!current) return current;
+          return value.find((task) => String(task.id) === String(current.id)) || current;
+        });
+      }).catch(() => {});
       digitalHumanApi.getAvatars().then((value) => mounted && setAvatars(value)).catch(() => {});
     });
     return () => {
@@ -1823,8 +1956,9 @@ function DigitalHumanGenerationView({ activeNav }) {
     setSelectedTask(task);
   }
 
-  const visibleAvatars = tab === "mine" ? avatars.mine : withDigitalHumanPlaceholders(avatars.public);
+  const visibleAvatars = tab === "mine" ? avatars.mine : getDigitalHumanPublicAvatars(avatars.public);
   const currentPreviewTask = selectedTask;
+  const isPreviewProcessing = currentPreviewTask && !["completed", "failed"].includes(currentPreviewTask.status);
 
   return (
     <section className="dh-view-root">
@@ -1839,6 +1973,13 @@ function DigitalHumanGenerationView({ activeNav }) {
       <div className={`dh-workspace ${currentPreviewTask ? "is-generating" : "is-browsing"}`}>
         {!currentPreviewTask ? (
         <section className="dh-library-panel">
+          <div className="dh-library-heading">
+            <div>
+              <span>第 1 步</span>
+              <strong>选择数字人模板</strong>
+            </div>
+            <small>{selectedAvatar ? `已选择：${selectedAvatar.name}` : "选择后右侧会显示当前模板和调用模型"}</small>
+          </div>
           <div className="dh-tabs">
             <button className={tab === "public" ? "is-active" : ""} type="button" onClick={() => setTab("public")}>公共形象</button>
             <button className={tab === "mine" ? "is-active" : ""} type="button" onClick={() => setTab("mine")}>我的形象</button>
@@ -1872,7 +2013,7 @@ function DigitalHumanGenerationView({ activeNav }) {
                   avatar={avatar}
                   selected={selectedAvatar?.id === avatar.id}
                   onSelect={setSelectedAvatar}
-                  onPreview={setSelectedAvatar}
+                  onPreview={setPreviewAvatar}
                   onRename={renameAvatar}
                   onDelete={deleteAvatar}
                   mine={tab === "mine"}
@@ -1888,20 +2029,30 @@ function DigitalHumanGenerationView({ activeNav }) {
               <span>{currentPreviewTask ? "生成预览" : "形象预览"}</span>
               <strong>{currentPreviewTask?.avatarName || selectedAvatar?.name || "请选择数字人形象"}</strong>
             </div>
-            <button className="dh-preview-back" type="button" onClick={() => setSelectedTask(null)}>
-              <Layers size={14} />
-              案例
-            </button>
-            {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "已完成" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>}
+            <div className="dh-preview-header-actions">
+              {currentPreviewTask?.resultUrl && (
+                <a className="dh-download-button" href={currentPreviewTask.resultUrl} download target="_blank" rel="noreferrer">
+                  <Download size={14} />
+                  下载视频
+                </a>
+              )}
+              <button className="dh-preview-back" type="button" onClick={() => setSelectedTask(null)}>
+                <Layers size={14} />
+                案例
+              </button>
+              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "已完成" : currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>}
+            </div>
           </div>
           <div className="dh-video-shell">
             {currentPreviewTask?.resultUrl ? (
               <video src={currentPreviewTask.resultUrl} controls />
+            ) : isPreviewProcessing ? (
+              <DigitalHumanGeneratingState task={currentPreviewTask} />
             ) : (
               <DigitalHumanEmptyMedia
                 icon={currentPreviewTask ? Film : UserRound}
-                title={currentPreviewTask?.status === "completed" ? "视频结果占位" : "正在生成数字人视频"}
-                description={currentPreviewTask ? `任务已提交，Minimax 返回结果后会在这里播放。当前进度 ${currentPreviewTask.progress || 0}%` : "这里会展示选中形象或生成后的视频"}
+                title={currentPreviewTask?.status === "failed" ? "生成失败" : currentPreviewTask?.status === "completed" ? "视频结果待返回" : "正在生成数字人视频"}
+                description={currentPreviewTask?.status === "failed" ? currentPreviewTask.error : currentPreviewTask ? `任务已提交，MiniMax 生成音频后由 KIE 生成口型视频。当前进度 ${currentPreviewTask.progress || 0}%` : "这里会展示选中形象或生成后的视频"}
               />
             )}
           </div>
@@ -1916,7 +2067,7 @@ function DigitalHumanGenerationView({ activeNav }) {
             </div>
             <div>
               <span>接口状态</span>
-              <strong>Minimax 预留</strong>
+              <strong>{currentPreviewTask?.providerModel || "MiniMax + KIE"}</strong>
             </div>
           </div>
         </main>
@@ -1926,7 +2077,6 @@ function DigitalHumanGenerationView({ activeNav }) {
           voices={voices}
           selectedAvatar={selectedAvatar}
           onSubmit={createTask}
-          onVoiceDesigned={(voice) => setVoices((current) => [voice, ...current.filter((item) => item.id !== voice.id)])}
           isSubmitting={isSubmitting}
         />
       </div>
@@ -1935,6 +2085,12 @@ function DigitalHumanGenerationView({ activeNav }) {
           onClose={() => setIsCreateOpen(false)}
           onCreate={createAvatar}
           isSubmitting={isSubmitting}
+        />
+      )}
+      {previewAvatar && (
+        <DigitalHumanAvatarPreviewModal
+          avatar={previewAvatar}
+          onClose={() => setPreviewAvatar(null)}
         />
       )}
     </section>

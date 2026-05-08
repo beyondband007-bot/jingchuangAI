@@ -146,6 +146,61 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS digital_human_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      avatar_id VARCHAR(80) NOT NULL,
+      avatar_name VARCHAR(120) NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      provider_model VARCHAR(120) NOT NULL,
+      drive_mode ENUM('text','audio') NOT NULL DEFAULT 'text',
+      text MEDIUMTEXT NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_name VARCHAR(120) NOT NULL,
+      speed DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+      volume DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+      pitch DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+      emotion VARCHAR(30) NULL,
+      audio_url VARCHAR(1000) NULL,
+      audio_provider_url VARCHAR(1000) NULL,
+      audio_duration_ms INT NULL,
+      avatar_provider_url VARCHAR(1000) NULL,
+      provider_task_id VARCHAR(160) NULL,
+      result_url VARCHAR(1000) NULL,
+      thumbnail_url VARCHAR(1000) NULL,
+      cost_points INT NOT NULL,
+      status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+      error_message TEXT NULL,
+      refunded BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_digital_human_user_created (user_id, created_at),
+      INDEX idx_digital_human_status (status),
+      CONSTRAINT fk_digital_human_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  const [dhColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'digital_human_tasks'`,
+    [config.db.database]
+  );
+  const digitalHumanColumns = new Set(dhColumns.map((column) => column.COLUMN_NAME));
+  if (digitalHumanColumns.has("volume")) {
+    await pool.query("ALTER TABLE digital_human_tasks MODIFY COLUMN volume DECIMAL(4,2) NOT NULL DEFAULT 1.00");
+  }
+  if (digitalHumanColumns.has("pitch")) {
+    await pool.query("ALTER TABLE digital_human_tasks MODIFY COLUMN pitch DECIMAL(5,2) NOT NULL DEFAULT 0.00");
+  }
+  if (!digitalHumanColumns.has("emotion")) {
+    await pool.query("ALTER TABLE digital_human_tasks ADD COLUMN emotion VARCHAR(30) NULL AFTER pitch");
+  }
+  if (!digitalHumanColumns.has("audio_duration_ms")) {
+    await pool.query("ALTER TABLE digital_human_tasks ADD COLUMN audio_duration_ms INT NULL AFTER audio_provider_url");
+  }
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,

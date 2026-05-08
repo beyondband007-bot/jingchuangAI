@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "path";
 import { config } from "./config/index.js";
 import { checkDatabase } from "./db/pool.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
@@ -14,6 +15,7 @@ export function createApp() {
 
   app.use(cors({ origin: true }));
   app.use(express.json({ limit: "1mb" }));
+  app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));
 
   app.get("/health", async (_req, res) => {
     try {
