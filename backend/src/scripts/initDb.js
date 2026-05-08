@@ -201,6 +201,41 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS image_digital_human_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      provider_model VARCHAR(160) NOT NULL,
+      fallback_provider_model VARCHAR(160) NULL,
+      used_provider_model VARCHAR(160) NULL,
+      text MEDIUMTEXT NOT NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_name VARCHAR(120) NOT NULL,
+      speed DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+      volume DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+      pitch DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+      emotion VARCHAR(30) NULL,
+      portrait_url VARCHAR(1000) NOT NULL,
+      portrait_provider_url VARCHAR(1000) NULL,
+      audio_url VARCHAR(1000) NULL,
+      audio_provider_url VARCHAR(1000) NULL,
+      audio_duration_ms INT NULL,
+      provider_task_id VARCHAR(160) NULL,
+      result_url VARCHAR(1000) NULL,
+      thumbnail_url VARCHAR(1000) NULL,
+      cost_points INT NOT NULL,
+      status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+      error_message TEXT NULL,
+      refunded BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_image_digital_human_user_created (user_id, created_at),
+      INDEX idx_image_digital_human_status (status),
+      CONSTRAINT fk_image_digital_human_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,

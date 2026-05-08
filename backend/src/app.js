@@ -5,6 +5,7 @@ import { config } from "./config/index.js";
 import { checkDatabase } from "./db/pool.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { digitalHumanRouter } from "./modules/digital-human/digitalHuman.routes.js";
+import { imageDigitalHumanRouter } from "./modules/image-digital-human/imageDigitalHuman.routes.js";
 import { imageRouter } from "./modules/image/image.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
 import { sendError } from "./shared/http.js";
@@ -42,6 +43,7 @@ export function createApp() {
   app.use("/api/video", videoRouter);
   app.use("/api/chat", chatRouter);
   app.use("/api/digital-human", digitalHumanRouter);
+  app.use("/api/image-digital-human", imageDigitalHumanRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });

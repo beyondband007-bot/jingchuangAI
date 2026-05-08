@@ -22,6 +22,10 @@ export const config = {
     digitalHumanModel: process.env.KIE_DIGITAL_HUMAN_MODEL || "wan/2-7-r2v",
     digitalHumanResolution: process.env.KIE_DIGITAL_HUMAN_RESOLUTION || "720p",
     digitalHumanDuration: Number(process.env.KIE_DIGITAL_HUMAN_DURATION || 5),
+    imageDigitalHumanPrimaryModel: process.env.KIE_IMAGE_DIGITAL_HUMAN_PRIMARY_MODEL || "wan/2-2-a14b-speech-to-video-turbo",
+    imageDigitalHumanFallbackModel: process.env.KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_MODEL || "wan/2-7-r2v",
+    imageDigitalHumanResolution: process.env.KIE_IMAGE_DIGITAL_HUMAN_RESOLUTION || "480p",
+    imageDigitalHumanFallbackResolution: process.env.KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_RESOLUTION || "720p",
     fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
   },
   minimax: {

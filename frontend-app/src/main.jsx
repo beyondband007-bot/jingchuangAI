@@ -16,6 +16,7 @@ import {
   Layers,
   LogIn,
   Loader2,
+  Maximize2,
   Mic,
   Music,
   Paintbrush,
@@ -40,6 +41,7 @@ import { imageApi } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
+import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import "./styles.css";
 
 const exampleImages = [
@@ -80,6 +82,7 @@ const navItems = [
 
 function getInitialView() {
   if (window.location.pathname === "/chat" || window.location.hash === "#/chat") return "chat";
+  if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
@@ -667,6 +670,7 @@ function ImageGenerationView({ activeNav }) {
       setSubmitError(error.message || "创建生成任务失败");
       setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   }
 
   return (
@@ -2097,6 +2101,497 @@ function DigitalHumanGenerationView({ activeNav }) {
   );
 }
 
+const emptyImageDigitalHumanOptions = {
+  models: [],
+  defaults: { model: "kie-s2v-r2v", driveMode: "text" },
+  limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 }
+};
+
+function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
+  const videoRef = useRef(null);
+  const isProcessing = task.status === "processing" || task.status === "pending";
+  const isFailed = task.status === "failed";
+  const hasVideo = Boolean(task.resultUrl && !isFailed);
+
+  function openFullscreen() {
+    const video = videoRef.current;
+    if (!video) return;
+    const requestFullscreen = video.requestFullscreen || video.webkitRequestFullscreen || video.msRequestFullscreen;
+    requestFullscreen?.call(video);
+  }
+
+  return (
+    <article className={`idh-result-card status-${task.status}`}>
+      <div className="idh-result-preview">
+        {hasVideo ? (
+          <>
+            <video ref={videoRef} src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.portraitUrl} />
+            <button className="idh-fullscreen-button" type="button" onClick={openFullscreen} aria-label="全屏播放">
+              <Maximize2 size={15} />
+            </button>
+          </>
+        ) : task.portraitUrl ? (
+          <img src={task.portraitUrl} alt="人物照片" />
+        ) : (
+          <Camera size={24} />
+        )}
+        {isProcessing && (
+          <div className="idh-processing-mask">
+            <Loader2 size={20} />
+            <span>{task.progress || 0}%</span>
+          </div>
+        )}
+        {isFailed && <div className="idh-failed-mask">生成失败</div>}
+      </div>
+      <div className="idh-result-meta">
+        <div className="idh-result-title">
+          <strong>{task.voiceName || "MiniMax 音色"}</strong>
+          <span>{task.usedProviderModel || task.providerModel || "KIE"}</span>
+        </div>
+        <p>{task.error || task.text}</p>
+        <div className="idh-progress-track">
+          <i style={{ width: `${task.progress || 0}%` }} />
+        </div>
+        <div className="idh-result-actions">
+          <small>{task.time} · {task.costPoints || 0} 积分</small>
+          <span>
+            {task.resultUrl && (
+              <a href={task.resultUrl} download target="_blank" rel="noreferrer" aria-label="下载视频">
+                <Download size={15} />
+              </a>
+            )}
+            <button type="button" onClick={() => onRegenerate(task.id)} disabled={isProcessing} aria-label="重新生成">
+              <RefreshCcw size={15} />
+            </button>
+            <button type="button" onClick={() => onDelete(task.id)} aria-label="删除">
+              <Trash2 size={15} />
+            </button>
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ImageDigitalHumanCenterState({ task, isSubmitting, error, onOpenRecent }) {
+  const isProcessing = isSubmitting || task?.status === "processing" || task?.status === "pending";
+  const isFailed = Boolean(error || task?.status === "failed");
+  const isCompleted = task?.status === "completed" && task?.resultUrl;
+
+  if (!isProcessing && !isFailed && !isCompleted) return null;
+
+  if (isCompleted) {
+    return (
+      <section className="idh-center-state is-completed" aria-live="polite">
+        <div className="idh-center-copy">
+          <CheckCircle2 size={22} />
+          <strong>视频已生成</strong>
+          <p>本次图片数字人视频已保存到最近生成。主页不会展示案例，方便继续创建下一条视频。</p>
+          <button type="button" onClick={onOpenRecent}>
+            <Layers size={15} />
+            查看最近生成
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <section className="idh-center-state is-completed" aria-live="polite">
+        <div className="idh-center-video">
+          <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.portraitUrl} />
+        </div>
+        <div className="idh-center-copy">
+          <CheckCircle2 size={22} />
+          <strong>视频已生成</strong>
+          <p>口型视频已经完成，可以直接预览或下载。</p>
+          <a href={task.resultUrl} download target="_blank" rel="noreferrer">
+            <Download size={15} />
+            下载视频
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <section className="idh-center-state is-failed" role="alert">
+        <span className="idh-center-icon">
+          <Sparkles size={24} />
+        </span>
+        <strong>这次没有生成成功</strong>
+        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="idh-center-state is-processing" aria-live="polite">
+      <span className="idh-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>正在生成图片数字人视频</strong>
+      <p>正在生成语音、上传人物照片，并合成口型视频。完成后会自动回填到这里。</p>
+      <div className="idh-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+    </section>
+  );
+}
+
+function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) {
+  const fileInputRef = useRef(null);
+  const [portrait, setPortrait] = useState(null);
+  const [portraitPreview, setPortraitPreview] = useState("");
+  const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
+  const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
+  const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
+  const [speed, setSpeed] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [pitch, setPitch] = useState(0);
+  const [emotion, setEmotion] = useState("");
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!voiceId && voices[0]?.id) setVoiceId(voices[0].id);
+  }, [model, options, voiceId, voices]);
+
+  useEffect(() => {
+    return () => {
+      if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    };
+  }, [portraitPreview]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
+  const previewSignature = getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion });
+  const isPreviewCurrent = voicePreviewInfo?.signature === previewSignature;
+  const isTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+  const price = `${selectedModel?.basePoints || 0} 积分/次`;
+
+  function selectPortrait(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("请上传图片文件");
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("图片大小不能超过 10MB");
+      return;
+    }
+    if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    setPortrait(file);
+    setPortraitPreview(window.URL.createObjectURL(file));
+    setNotice("");
+  }
+
+  async function previewVoice() {
+    if (!text.trim()) {
+      setNotice("请输入用于试听的台词");
+      return;
+    }
+    setNotice("");
+    setIsPreviewing(true);
+    try {
+      const result = await imageDigitalHumanApi.previewVoice({
+        previewText: text.trim(),
+        voiceId,
+        speed,
+        volume,
+        pitch,
+        emotion
+      });
+      if (result.audioDataUrl) setVoicePreviewUrl(result.audioDataUrl);
+      const durationMs = Number(result.durationMs || 0);
+      setVoicePreviewInfo({
+        signature: previewSignature,
+        durationMs,
+        videoDuration: result.videoDuration || Math.ceil(durationMs / 1000)
+      });
+      setNotice(
+        durationMs > digitalHumanMaxAudioMs
+          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短台词`
+          : `已生成试听音频，视频预计 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
+      );
+    } catch (error) {
+      setNotice(error.message || "音色试听失败");
+    } finally {
+      setIsPreviewing(false);
+    }
+  }
+
+  function submit() {
+    if (!portrait) {
+      setNotice("请先上传人物正面照");
+      return;
+    }
+    if (!text.trim()) {
+      setNotice("请输入台词");
+      return;
+    }
+    if (!voicePreviewInfo || !isPreviewCurrent) {
+      setNotice("请先试听当前台词和音色");
+      return;
+    }
+    if (isTooLong) {
+      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒`);
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      portrait,
+      text: text.trim(),
+      voiceId,
+      model,
+      speed,
+      volume,
+      pitch,
+      emotion
+    });
+  }
+
+  return (
+    <div className="idh-composer" aria-label="图片数字人生成器">
+      <div className="idh-mode-tabs">
+        <button className="is-active" type="button">
+          <FileText size={15} />
+          文本驱动
+        </button>
+        <button type="button" disabled title="音频驱动将在下一阶段开放">
+          <Mic size={15} />
+          音频驱动
+        </button>
+      </div>
+      <div className="idh-composer-body">
+        <button className={`idh-upload-card ${portraitPreview ? "has-image" : ""}`} type="button" onClick={() => fileInputRef.current?.click()}>
+          <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(event) => selectPortrait(event.target.files?.[0])} />
+          {portraitPreview ? (
+            <img src={portraitPreview} alt="已上传人物照" />
+          ) : (
+            <>
+              <Plus size={18} />
+              <strong>上传图片</strong>
+              <span>人物正面照</span>
+            </>
+          )}
+        </button>
+        <div className="idh-form-card">
+          <label className="idh-select">
+            <select value={model} onChange={(event) => setModel(event.target.value)}>
+              {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="idh-select">
+            <Mic size={15} />
+            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
+              {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <textarea
+            value={text}
+            maxLength={options.limits?.maxTextLength || 2000}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="请输入台词，生成语音..."
+          />
+          <details className="idh-advanced">
+            <summary>音色参数</summary>
+            <label>
+              <span>情绪</span>
+              <select value={emotion} onChange={(event) => setEmotion(event.target.value)}>
+                {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>语速 {speed.toFixed(2)}x</span>
+              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>音量 {volume.toFixed(1)}</span>
+              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
+              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
+            </label>
+          </details>
+          <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={isPreviewing}>
+            {isPreviewing ? <Loader2 size={15} /> : <Play size={15} />}
+            生成语音
+          </button>
+          {voicePreviewUrl && <audio className="idh-audio-preview" src={voicePreviewUrl} controls />}
+        </div>
+      </div>
+      <div className="idh-composer-footer">
+        <span>图片与音频大小均不超过 10MB</span>
+        <small>{selectedVoice?.description || selectedModel?.primaryModel}</small>
+        <strong>{price}</strong>
+        <button type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || isTooLong} aria-label="生成图片数字人视频">
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+      {notice && <div className={`idh-notice ${isTooLong ? "is-warning" : ""}`}>{notice}</div>}
+    </div>
+  );
+}
+
+function ImageDigitalHumanView({ activeNav }) {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
+  const [voices, setVoices] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [viewTab, setViewTab] = useState("home");
+
+  useEffect(() => {
+    if (activeNav !== "image-digital-human") return undefined;
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, voiceData, taskData, creditData] = await Promise.all([
+          imageDigitalHumanApi.getModels(),
+          imageDigitalHumanApi.getVoices(),
+          imageDigitalHumanApi.getTasks(),
+          imageDigitalHumanApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setVoices(voiceData.voices || []);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || "加载图片数字人失败");
+      }
+    }
+    load();
+    const unsubscribe = imageDigitalHumanApi.subscribe(() => {
+      imageDigitalHumanApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
+      imageDigitalHumanApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [activeNav]);
+
+  if (activeNav !== "image-digital-human") {
+    return <ComingSoon activeNav={activeNav} />;
+  }
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const showHero = viewTab === "home" && !showCenterState;
+  const visibleResultTasks = viewTab === "recent" && submittedTaskId
+    ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+    : viewTab === "recent" ? tasks : [];
+  const showRecentEmpty = viewTab === "recent" && !showCenterState && visibleResultTasks.length === 0;
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await imageDigitalHumanApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || "创建图片数字人任务失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await imageDigitalHumanApi.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function regenerateTask(id) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await imageDigitalHumanApi.regenerateTask(id);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current]);
+    } catch (error) {
+      setSubmitError(error.message || "重新生成失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="idh-view-root">
+      <div className="image-filter-tabs idh-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+      </div>
+      <div className={`idh-canvas ${showCenterState ? "has-active-task" : ""}`}>
+        {showHero && <div className="idh-hero-empty">
+          <span className="idh-hero-icon">
+            <Camera size={34} />
+          </span>
+          <h1>图片数字人</h1>
+          <p>上传人物照片和音频，生成数字人说话视频</p>
+        </div>}
+        {showCenterState && (
+          <ImageDigitalHumanCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="idh-recent-empty">
+            <Layers size={24} />
+            <strong>暂无最近生成</strong>
+            <p>生成完成的视频会保存在这里，主页只保留创作入口。</p>
+          </div>
+        )}
+        <div className={`idh-results-feed ${visibleResultTasks.length ? "has-results" : ""}`}>
+          {visibleResultTasks.map((task) => (
+            <ImageDigitalHumanTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onRegenerate={regenerateTask}
+            />
+          ))}
+        </div>
+      </div>
+      {options.models.length > 0 && voices.length > 0 && (
+        <ImageDigitalHumanComposer
+          options={options}
+          voices={voices}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </section>
+  );
+}
+
 function ImageFeaturePage({ initialNav, onBackHome }) {
   const [activeNav, setActiveNav] = useState(initialNav || "image");
 
@@ -2105,7 +2600,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human") {
+    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human") {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -2119,7 +2614,8 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "video" && <VideoGenerationView activeNav={activeNav} />}
         {activeNav === "chat" && <ChatGenerationView activeNav={activeNav} />}
         {activeNav === "digital-human" && <DigitalHumanGenerationView activeNav={activeNav} />}
-        {!["image", "video", "chat", "digital-human"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {activeNav === "image-digital-human" && <ImageDigitalHumanView activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -2151,7 +2647,7 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human") {
+  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human") {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 

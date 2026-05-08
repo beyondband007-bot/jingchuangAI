@@ -73,8 +73,8 @@ export async function synthesizeMinimaxSpeech({ text, voiceId, speed = 1, volume
   };
 }
 
-export async function saveMinimaxSpeechAudio({ taskId, audioBuffer }) {
-  const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio");
+export async function saveMinimaxSpeechAudio({ taskId, audioBuffer, featureDir = "digital-human" }) {
+  const audioDir = path.resolve(process.cwd(), config.media.storageDir, featureDir, "audio");
   await mkdir(audioDir, { recursive: true });
   const fileName = `${taskId}.mp3`;
   const filePath = path.join(audioDir, fileName);
@@ -83,7 +83,7 @@ export async function saveMinimaxSpeechAudio({ taskId, audioBuffer }) {
   return {
     fileName,
     filePath,
-    publicPath: `/media/digital-human/audio/${fileName}`,
+    publicPath: `/media/${featureDir}/audio/${fileName}`,
     mimeType: "audio/mpeg"
   };
 }
