@@ -25,6 +25,7 @@ Thumbs.db
 .vscode/
 
 # Runtime data
+backend/storage/
 backend/backend-*.out.log
 backend/backend-*.err.log
 server-*.out.log

@@ -14,12 +14,13 @@ function normalizeBaseUrl() {
 
 export async function requestMinimax(path, options = {}) {
   ensureKey();
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
 
   const response = await fetch(`${normalizeBaseUrl()}${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${config.minimax.apiKey}`,
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(options.headers || {})
     }
   });

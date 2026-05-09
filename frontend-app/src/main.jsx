@@ -43,6 +43,8 @@ import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
 import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import { motionTransferApi } from "./api/motionTransferApi";
+import { faceSwapApi } from "./api/faceSwapApi";
+import { voiceApi } from "./api/voiceApi";
 import "./styles.css";
 
 const exampleImages = [
@@ -86,6 +88,9 @@ function getInitialView() {
   if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
   if (window.location.pathname === "/motion-transfer" || window.location.hash === "#/motion") return "motion";
+  if (window.location.pathname === "/face-swap" || window.location.hash === "#/face-swap") return "face-swap";
+  if (window.location.pathname === "/voice-conversion" || window.location.hash === "#/voice-convert") return "voice-convert";
+  if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
   return "home";
@@ -2604,6 +2609,50 @@ const emptyMotionTransferOptions = {
   }
 };
 
+const motionTransferCopy = {
+  emptyTitle: "开启你的动作迁移",
+  emptyDescription: "上传图片和动作视频，让静态人物动起来",
+  completedTitle: "动作迁移已完成",
+  processingCreate: "正在创建动作迁移任务",
+  processingGenerate: "正在生成动作迁移视频",
+  processingDescription: "正在上传人物图片和动作参考视频，并提交给 KIE 合成。完成后会自动回填到这里。",
+  recentEmptyTitle: "暂无动作迁移结果",
+  recentEmptyDescription: "生成完成的视频会保存在这里。",
+  imageTitle: "上传单人图",
+  imageHint: "主体清晰，单人效果最好",
+  videoTitle: "上传动作视频",
+  submitLabel: "生成动作迁移视频",
+  panelLabel: "动作迁移上传面板",
+  imageRequired: "请先上传单人图片",
+  videoRequired: "请先上传动作视频",
+  imageFallback: "人物图片",
+  videoFallback: "动作视频",
+  loadError: "加载动作迁移失败",
+  createError: "创建动作迁移任务失败"
+};
+
+const faceSwapCopy = {
+  emptyTitle: "开启你的视频换脸",
+  emptyDescription: "上传人脸图和目标视频，让人物身份自然融合到视频中",
+  completedTitle: "视频换脸已完成",
+  processingCreate: "正在创建视频换脸任务",
+  processingGenerate: "正在生成换脸视频",
+  processingDescription: "正在上传人脸图片和目标视频，并提交给 KIE 合成。完成后会自动回填到这里。",
+  recentEmptyTitle: "暂无视频换脸结果",
+  recentEmptyDescription: "生成完成的换脸视频会保存在这里。",
+  imageTitle: "上传人脸图",
+  imageHint: "正脸清晰，光线自然效果最好",
+  videoTitle: "上传目标视频",
+  submitLabel: "生成换脸视频",
+  panelLabel: "视频换脸上传面板",
+  imageRequired: "请先上传人脸图片",
+  videoRequired: "请先上传目标视频",
+  imageFallback: "人脸图片",
+  videoFallback: "目标视频",
+  loadError: "加载视频换脸失败",
+  createError: "创建视频换脸任务失败"
+};
+
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
   if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
@@ -2611,7 +2660,7 @@ function formatBytes(bytes) {
   return `${value} B`;
 }
 
-function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent }) {
+function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent, copy = motionTransferCopy }) {
   if (task?.status === "completed") {
     return (
       <section className="motion-center-state is-completed">
@@ -2622,7 +2671,7 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent }) 
           <span className="motion-center-icon">
             <CheckCircle2 size={24} />
           </span>
-          <h2>动作迁移已完成</h2>
+          <h2>{copy.completedTitle}</h2>
           <p>{task.prompt}</p>
           <div className="motion-result-actions">
             <a href={task.resultUrl} download>
@@ -2655,8 +2704,8 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent }) 
       <span className="motion-center-spinner">
         <Loader2 size={30} />
       </span>
-      <strong>{isSubmitting ? "正在创建动作迁移任务" : "正在生成动作迁移视频"}</strong>
-      <p>正在上传人物图片和动作参考视频，并提交给 KIE 合成。完成后会自动回填到这里。</p>
+      <strong>{isSubmitting ? copy.processingCreate : copy.processingGenerate}</strong>
+      <p>{copy.processingDescription}</p>
       <div className="motion-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
@@ -2665,7 +2714,7 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent }) 
   );
 }
 
-function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = motionTransferCopy }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
   return (
@@ -2694,11 +2743,11 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         <div className="motion-source-row">
           <span>
             <Image size={14} />
-            {task.imageFileName || "人物图片"}
+            {task.imageFileName || copy.imageFallback}
           </span>
           <span>
             <Film size={14} />
-            {task.videoFileName || "动作视频"}
+            {task.videoFileName || copy.videoFallback}
           </span>
         </div>
         <div className="card-actions motion-card-actions">
@@ -2772,7 +2821,7 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
   );
 }
 
-function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
+function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionTransferApi, copy = motionTransferCopy }) {
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -2818,7 +2867,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
     setUploading("image");
     setNotice("");
     try {
-      setImageAsset(await motionTransferApi.uploadImage(file));
+      setImageAsset(await api.uploadImage(file));
     } catch (error) {
       setImagePreview("");
       setNotice(error.message || "图片上传失败");
@@ -2843,7 +2892,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
     setUploading("video");
     setNotice("");
     try {
-      setVideoAsset(await motionTransferApi.uploadVideo(file));
+      setVideoAsset(await api.uploadVideo(file));
     } catch (error) {
       setVideoPreview("");
       setNotice(error.message || "视频上传失败");
@@ -2854,11 +2903,11 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
 
   function submit() {
     if (!imageAsset) {
-      setNotice("请先上传单人图片");
+      setNotice(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice("请先上传动作视频");
+      setNotice(copy.videoRequired);
       return;
     }
     setNotice("");
@@ -2872,12 +2921,12 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="motion-composer" aria-label="动作迁移上传面板">
+    <div className="motion-composer" aria-label={copy.panelLabel}>
       <div className="motion-upload-grid">
         <MotionTransferUploadSlot
           kind="image"
-          title="上传单人图"
-          hint="主体清晰，单人效果最好"
+          title={copy.imageTitle}
+          hint={copy.imageHint}
           asset={imageAsset}
           previewUrl={imagePreview}
           isUploading={uploading === "image"}
@@ -2885,7 +2934,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
         />
         <MotionTransferUploadSlot
           kind="video"
-          title="上传动作视频"
+          title={copy.videoTitle}
           hint={`建议 ${options.limits?.recommendedVideoSeconds || 15} 秒内`}
           asset={videoAsset}
           previewUrl={videoPreview}
@@ -2913,7 +2962,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
           </select>
         </label>
         <span className="price-pill">{price}</span>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="生成动作迁移视频">
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label={copy.submitLabel}>
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
         </button>
       </div>
@@ -2922,78 +2971,91 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-function MotionTransferView({ activeNav }) {
+function MotionTransferView({ activeNav, navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
   const [credits, setCredits] = useState(null);
   const [filter, setFilter] = useState("all");
+  const [viewTab, setViewTab] = useState("home");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
 
   useEffect(() => {
-    if (activeNav !== "motion") return undefined;
+    if (activeNav !== navId) return undefined;
     let mounted = true;
     async function load() {
       try {
         const [modelData, taskData, creditData] = await Promise.all([
-          motionTransferApi.getModels(),
-          motionTransferApi.getTasks({ filter }),
-          motionTransferApi.getCredits().catch(() => null)
+          api.getModels(),
+          api.getTasks({ filter: splitResults ? "all" : filter }),
+          api.getCredits().catch(() => null)
         ]);
         if (!mounted) return;
         setOptions(modelData);
         setTasks(taskData);
         setCredits(creditData);
       } catch (error) {
-        if (mounted) setSubmitError(error.message || "加载动作迁移失败");
+        if (mounted) setSubmitError(error.message || copy.loadError);
       }
     }
     load();
-    const unsubscribe = motionTransferApi.subscribe(() => {
-      motionTransferApi.getTasks({ filter }).then((value) => mounted && setTasks(value)).catch(() => {});
-      motionTransferApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    const unsubscribe = api.subscribe(() => {
+      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && setTasks(value)).catch(() => {});
+      api.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
     });
     return () => {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav, filter]);
+  }, [activeNav, api, copy.loadError, filter, navId, splitResults]);
 
-  if (activeNav !== "motion") {
+  if (activeNav !== navId) {
     return <ComingSoon activeNav={activeNav} />;
   }
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
-  const showEmptyHero = !showCenterState && tasks.length === 0 && filter !== "favorite";
-  const visibleTasks = submittedTaskId
-    ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
-    : tasks;
+  const showEmptyHero = splitResults
+    ? viewTab === "home" && !showCenterState
+    : !showCenterState && tasks.length === 0 && filter !== "favorite";
+  const visibleTasks = splitResults
+    ? viewTab === "recent"
+      ? submittedTaskId
+        ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+        : tasks
+      : []
+    : submittedTaskId
+      ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+      : tasks;
+  const showRecentEmpty = splitResults
+    ? viewTab === "recent" && !showCenterState && visibleTasks.length === 0
+    : !showEmptyHero && !showCenterState && visibleTasks.length === 0;
 
   async function createTask(payload) {
     setSubmitError("");
     setIsSubmitting(true);
     setSubmittedTaskId(null);
     try {
-      const task = await motionTransferApi.createTask(payload);
+      const task = await api.createTask(payload);
       setSubmittedTaskId(task.id);
+      if (splitResults) setViewTab("home");
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
     } catch (error) {
-      setSubmitError(error.message || "创建动作迁移任务失败");
+      setSubmitError(error.message || copy.createError);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   async function deleteTask(id) {
-    await motionTransferApi.deleteTask(id);
+    await api.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
     setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
   }
 
   async function toggleFavorite(id) {
-    const updated = await motionTransferApi.toggleFavorite(id);
+    const updated = await api.toggleFavorite(id);
     setTasks((current) => current.map((task) => String(task.id) === String(id) ? updated : task));
   }
 
@@ -3009,13 +3071,29 @@ function MotionTransferView({ activeNav }) {
   }
 
   return (
-    <section className="motion-view-root">
+    <section className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""}`}>
       <div className="image-filter-tabs motion-filter-tabs">
-        <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>全部结果</button>
-        <button className={filter === "favorite" ? "selected" : ""} type="button" onClick={() => setFilter("favorite")}>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
+        {splitResults ? (
+          <>
+            <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+            <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}>最近生成</button>
+            <button type="button" disabled>
+              <Star size={17} fill="#f8d545" color="#161616" />
+              收藏
+            </button>
+          </>
+        ) : (
+          <>
+            <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>全部结果</button>
+            <button className={filter === "favorite" ? "selected" : ""} type="button" onClick={() => setFilter("favorite")}>
+              <Star size={17} fill="#f8d545" color="#161616" />
+              收藏
+            </button>
+          </>
+        )}
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       <div className={`motion-canvas ${showCenterState ? "has-active-task" : ""}`}>
@@ -3024,8 +3102,8 @@ function MotionTransferView({ activeNav }) {
             <span className="motion-hero-icon">
               <Sparkles size={34} />
             </span>
-            <h1>开启你的动作迁移</h1>
-            <p>上传图片和动作视频，让静态人物动起来</p>
+            <h1>{copy.emptyTitle}</h1>
+            <p>{copy.emptyDescription}</p>
           </div>
         )}
         {showCenterState && (
@@ -3033,14 +3111,18 @@ function MotionTransferView({ activeNav }) {
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
             error={submitError}
-            onOpenRecent={() => setSubmittedTaskId(null)}
+            onOpenRecent={() => {
+              if (splitResults) setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+            copy={copy}
           />
         )}
-        {!showEmptyHero && !showCenterState && visibleTasks.length === 0 && (
+        {showRecentEmpty && (
           <div className="motion-recent-empty">
             <Layers size={24} />
-            <strong>暂无动作迁移结果</strong>
-            <p>生成完成的视频会保存在这里。</p>
+            <strong>{copy.recentEmptyTitle}</strong>
+            <p>{copy.recentEmptyDescription}</p>
           </div>
         )}
         <div className={`motion-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
@@ -3051,6 +3133,7 @@ function MotionTransferView({ activeNav }) {
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={repeatTask}
+              copy={copy}
             />
           ))}
         </div>
@@ -3060,8 +3143,448 @@ function MotionTransferView({ activeNav }) {
           options={options}
           onSubmit={createTask}
           isSubmitting={isSubmitting}
+          api={api}
+          copy={copy}
         />
       )}
+    </section>
+  );
+}
+
+const voicePreviewText = "欢迎使用鲸创 AI 语音合成，现在开始试听目标音色的自然效果。";
+const voiceRecentStorageKey = "jingchuang.voice.recentResults";
+
+function formatVoiceDuration(ms) {
+  const seconds = Math.round(Number(ms || 0) / 1000);
+  if (!seconds) return "";
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return minutes ? `${minutes}:${String(rest).padStart(2, "0")}` : `${rest}s`;
+}
+
+function makeVoiceId() {
+  return `VoiceClone_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function readAudioDuration(file) {
+  return new Promise((resolve) => {
+    const audio = document.createElement("audio");
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      const durationMs = Number.isFinite(audio.duration) ? audio.duration * 1000 : 0;
+      cleanup();
+      resolve(durationMs);
+    };
+    audio.onerror = () => {
+      cleanup();
+      resolve(0);
+    };
+    audio.src = url;
+  });
+}
+
+function makeVoiceDownloadName(prefix = "voice") {
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  return `${prefix}-${stamp}.mp3`;
+}
+
+async function downloadVoiceFile({ audioDataUrl, audioUrl, fileName }) {
+  let href = audioDataUrl || "";
+  let shouldRevoke = false;
+
+  if (!href && audioUrl) {
+    const response = await fetch(audioUrl);
+    if (!response.ok) throw new Error("下载音频失败");
+    href = URL.createObjectURL(await response.blob());
+    shouldRevoke = true;
+  }
+
+  if (!href) throw new Error("暂无可下载音频");
+
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = fileName || makeVoiceDownloadName("voice-synthesis");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  if (shouldRevoke) URL.revokeObjectURL(href);
+}
+
+function loadVoiceRecentResults() {
+  try {
+    return JSON.parse(window.localStorage.getItem(voiceRecentStorageKey) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveVoiceRecentResults(items) {
+  try {
+    const safeItems = items.map(({ audioDataUrl, ...item }) => item);
+    window.localStorage.setItem(voiceRecentStorageKey, JSON.stringify(safeItems));
+  } catch {
+    // Ignore storage failures; the in-memory recent list still works.
+  }
+}
+
+function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick }) {
+  const inputRef = useRef(null);
+  const hasFile = Boolean(fileState?.fileName);
+
+  return (
+    <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) onPick(file);
+        }}
+      />
+      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
+      <strong>{hasFile ? fileState.fileName : title}</strong>
+      <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
+    </button>
+  );
+}
+
+function VoiceConversionView({ activeNav }) {
+  const [cloneAudio, setCloneAudio] = useState(null);
+  const [uploading, setUploading] = useState("");
+  const [notice, setNotice] = useState("");
+  const [text, setText] = useState("欢迎使用鲸创 AI 语音合成，现在开始生成属于你的专属声音。");
+  const [speed, setSpeed] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [pitch, setPitch] = useState(0);
+  const [isCloning, setIsCloning] = useState(false);
+  const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [currentVoice, setCurrentVoice] = useState(null);
+  const [voices, setVoices] = useState([]);
+  const [demoAudio, setDemoAudio] = useState("");
+  const [resultAudio, setResultAudio] = useState("");
+  const [resultUrl, setResultUrl] = useState("");
+  const [resultFileName, setResultFileName] = useState("voice-synthesis.mp3");
+  const [viewTab, setViewTab] = useState("home");
+  const [recentResults, setRecentResults] = useState(() => loadVoiceRecentResults());
+  const [playingRecentId, setPlayingRecentId] = useState("");
+  const recentAudioRefs = useRef({});
+
+  useEffect(() => {
+    if (activeNav !== "voice") return undefined;
+    let mounted = true;
+    voiceApi.getConfig().then((data) => {
+      if (mounted) setVoices(data.voices || []);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [activeNav]);
+
+  useEffect(() => {
+    saveVoiceRecentResults(recentResults);
+  }, [recentResults]);
+
+  if (activeNav !== "voice") {
+    return <ComingSoon activeNav={activeNav} />;
+  }
+
+  async function uploadFile(file) {
+    setNotice("");
+    setUploading("clone");
+    try {
+      const durationMs = await readAudioDuration(file);
+      if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
+        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav");
+      }
+
+      const result = await voiceApi.uploadCloneAudio(file, durationMs);
+      const fileState = {
+        ...result,
+        fileName: file.name,
+        size: file.size,
+        durationMs
+      };
+      setCloneAudio(fileState);
+      setCurrentVoice(null);
+      setDemoAudio("");
+      setResultAudio("");
+      setResultUrl("");
+      setNotice("目标音色上传完成");
+    } catch (error) {
+      setNotice(error.message);
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function ensureVoiceClone() {
+    if (!cloneAudio?.fileId) {
+      setNotice("请先上传目标音色");
+      return null;
+    }
+    if (currentVoice?.id) return currentVoice;
+
+    setNotice("");
+    setIsCloning(true);
+    try {
+      const result = await voiceApi.createClone({
+        cloneAudioFileId: cloneAudio.fileId,
+        previewText: voicePreviewText,
+        voiceId: makeVoiceId(),
+        name: cloneAudio.fileName ? cloneAudio.fileName.replace(/\.[^.]+$/, "") : "我的目标音色"
+      });
+      setCurrentVoice(result.voice);
+      setVoices((items) => [result.voice, ...items.filter((item) => item.id !== result.voice.id)]);
+      setDemoAudio(result.demoAudio || "");
+      return result.voice;
+    } catch (error) {
+      setNotice(error.message);
+      return null;
+    } finally {
+      setIsCloning(false);
+    }
+  }
+
+  async function generateSpeech() {
+    if (!cloneAudio?.fileId) {
+      setNotice("请先上传目标音色");
+      return;
+    }
+    if (!text.trim()) {
+      setNotice("请输入需要合成的文本");
+      return;
+    }
+    const voice = await ensureVoiceClone();
+    if (!voice?.id) return;
+
+    setNotice("");
+    setIsSynthesizing(true);
+    try {
+      const result = await voiceApi.synthesize({
+        voiceId: voice.id,
+        text,
+        speed,
+        volume,
+        pitch
+      });
+      const fileName = makeVoiceDownloadName("voice-synthesis");
+      setResultAudio(result.audioDataUrl);
+      setResultUrl(result.audioUrl || "");
+      setResultFileName(fileName);
+      setRecentResults((items) => [{
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title: text.trim().slice(0, 48) || "语音合成结果",
+        voiceName: voice.name || "目标音色",
+        audioUrl: result.audioUrl || "",
+        audioDataUrl: result.audioDataUrl || "",
+        fileName,
+        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+      }, ...items].slice(0, 20));
+      setViewTab("home");
+      setNotice("语音生成完成");
+    } catch (error) {
+      setNotice(error.message);
+    } finally {
+      setIsSynthesizing(false);
+    }
+  }
+
+  async function downloadResult(item) {
+    try {
+      await downloadVoiceFile(item);
+    } catch (error) {
+      setNotice(error.message || "下载音频失败");
+    }
+  }
+
+  async function toggleRecentPlayback(item) {
+    const currentAudio = recentAudioRefs.current[item.id];
+    if (!currentAudio) return;
+
+    Object.entries(recentAudioRefs.current).forEach(([id, audio]) => {
+      if (id !== item.id && audio) audio.pause();
+    });
+
+    if (!currentAudio.paused) {
+      currentAudio.pause();
+      setPlayingRecentId("");
+      return;
+    }
+
+    try {
+      await currentAudio.play();
+      setPlayingRecentId(item.id);
+    } catch (error) {
+      setNotice(error.message || "播放音频失败");
+    }
+  }
+
+  function toggleRecentFavorite(id) {
+    setRecentResults((items) => items.map((item) => (
+      item.id === id ? { ...item, favorite: !item.favorite } : item
+    )));
+  }
+
+  function deleteRecentResult(id) {
+    const audio = recentAudioRefs.current[id];
+    if (audio) audio.pause();
+    delete recentAudioRefs.current[id];
+    setPlayingRecentId((current) => (current === id ? "" : current));
+    setRecentResults((items) => items.filter((item) => item.id !== id));
+  }
+
+  return (
+    <section className="voice-conversion-view-root">
+      <div className="image-filter-tabs voice-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+      </div>
+      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+        {viewTab === "home" && <div className="voice-hero-empty">
+          <span className="voice-hero-icon">🎭</span>
+          <h1>语音合成</h1>
+          <p>上传目标音色并输入文本，一键生成专属语音</p>
+          {currentVoice && (
+            <div className="voice-current-chip">
+              <CheckCircle2 size={16} />
+              当前音色：{currentVoice.name}
+            </div>
+          )}
+        </div>}
+
+        {viewTab === "recent" && (
+          <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
+            {recentResults.length === 0 ? (
+              <div className="voice-recent-empty">
+                <Music size={28} />
+                <strong>暂无生成记录</strong>
+                <p>生成完成的 MP3 会显示在这里，可直接播放和下载。</p>
+              </div>
+            ) : (
+              recentResults.map((item) => (
+                <article className="voice-recent-card" key={item.id}>
+                  <div className="voice-recent-art">
+                    <Music size={34} />
+                  </div>
+                  <div className="voice-recent-info">
+                    <strong>{item.title}</strong>
+                    <span>{item.voiceName} · {item.createdAt}</span>
+                  </div>
+                  <audio
+                    ref={(node) => {
+                      if (node) recentAudioRefs.current[item.id] = node;
+                      else delete recentAudioRefs.current[item.id];
+                    }}
+                    src={item.audioUrl || item.audioDataUrl}
+                    onEnded={() => setPlayingRecentId("")}
+                  />
+                  <button className="voice-recent-play" type="button" onClick={() => toggleRecentPlayback(item)} aria-label="播放音频">
+                    {playingRecentId === item.id ? <Loader2 size={18} /> : <Play size={18} fill="currentColor" />}
+                  </button>
+                  <div className="voice-recent-actions">
+                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
+                      <Download size={15} />
+                    </button>
+                    <button className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`} type="button" onClick={() => toggleRecentFavorite(item.id)} title={item.favorite ? "取消收藏" : "收藏"} aria-label={item.favorite ? "取消收藏" : "收藏"}>
+                      <Star size={15} fill={item.favorite ? "currentColor" : "none"} />
+                    </button>
+                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        )}
+
+        {viewTab === "home" && voices.length > 0 && (
+          <div className="voice-cloned-list">
+            {voices.slice(0, 4).map((voice) => (
+              <button className={currentVoice?.id === voice.id ? "is-active" : ""} key={voice.id} type="button" onClick={() => setCurrentVoice(voice)}>
+                <Mic size={15} />
+                {voice.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {viewTab === "home" && <div className="voice-floating-composer">
+          <div className="voice-composer-title">
+            <span>🎭</span>
+            语音合成
+          </div>
+          <div className="voice-upload-grid">
+            <VoiceUploadSlot
+              title="+ 目标音色"
+              hint="参考音频 10s-5min"
+              fileState={cloneAudio}
+              isUploading={uploading === "clone"}
+              onPick={uploadFile}
+            />
+          </div>
+
+          <label className="voice-textarea-field">
+            <span>合成文本</span>
+            <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="输入要用目标音色朗读的内容" />
+          </label>
+
+          <div className="voice-slider-row">
+            <label>
+              <span>语速 {speed.toFixed(2)}x</span>
+              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>音量 {volume.toFixed(1)}</span>
+              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
+              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
+            </label>
+          </div>
+
+          {(demoAudio || resultAudio) && (
+            <div className="voice-audio-results">
+              {demoAudio && (
+            <div>
+                  <span>音色试听</span>
+                  <audio src={demoAudio} controls />
+                </div>
+              )}
+              {resultAudio && (
+                <div>
+                  <span>合成结果</span>
+                  <audio src={resultAudio} controls />
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="voice-composer-footer">
+            <span>{notice || "目标音色支持 mp3、m4a、wav，建议 10 秒到 5 分钟"}</span>
+            <div className="voice-actions">
+              {(resultAudio || resultUrl) && (
+                <button className="voice-download" type="button" onClick={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}>
+                  <Download size={15} />
+                </button>
+              )}
+              <button className="voice-generate-button" type="button" onClick={generateSpeech} disabled={isCloning || isSynthesizing || uploading || !cloneAudio || !text.trim()}>
+                {isCloning || isSynthesizing ? <Loader2 size={16} /> : <Play size={16} />}
+                生成语音
+              </button>
+            </div>
+          </div>
+        </div>}
+      </div>
     </section>
   );
 }
@@ -3074,7 +3597,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion") {
+    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "voice" || id === "voice-convert") {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -3090,7 +3613,17 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "digital-human" && <DigitalHumanGenerationView activeNav={activeNav} />}
         {activeNav === "image-digital-human" && <ImageDigitalHumanView activeNav={activeNav} />}
         {activeNav === "motion" && <MotionTransferView activeNav={activeNav} />}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {activeNav === "voice" && <VoiceConversionView activeNav={activeNav} />}
+        {activeNav === "face-swap" && (
+          <MotionTransferView
+            activeNav={activeNav}
+            navId="face-swap"
+            api={faceSwapApi}
+            copy={faceSwapCopy}
+            splitResults
+          />
+        )}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -3122,7 +3655,7 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion") {
+  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "voice" || view === "voice-convert") {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 

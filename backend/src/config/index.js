@@ -30,6 +30,10 @@ export const config = {
     motionTransferResolution: process.env.KIE_MOTION_TRANSFER_RESOLUTION || "720p",
     motionTransferDuration: Number(process.env.KIE_MOTION_TRANSFER_DURATION || 5),
     motionTransferPoints: Number(process.env.KIE_MOTION_TRANSFER_POINTS || 100),
+    faceSwapModel: process.env.KIE_FACE_SWAP_MODEL || "wan/2-7-r2v",
+    faceSwapResolution: process.env.KIE_FACE_SWAP_RESOLUTION || "720p",
+    faceSwapDuration: Number(process.env.KIE_FACE_SWAP_DURATION || 5),
+    faceSwapPoints: Number(process.env.KIE_FACE_SWAP_POINTS || 100),
     fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
   },
   minimax: {

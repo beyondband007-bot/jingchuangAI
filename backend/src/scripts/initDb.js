@@ -285,6 +285,55 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS face_swap_assets (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      kind ENUM('image','video') NOT NULL,
+      local_url VARCHAR(1000) NOT NULL,
+      file_path VARCHAR(1000) NOT NULL,
+      stored_name VARCHAR(255) NOT NULL,
+      original_name VARCHAR(255) NULL,
+      mime_type VARCHAR(160) NOT NULL,
+      size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      provider_url VARCHAR(1000) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_face_swap_assets_user_created (user_id, created_at),
+      INDEX idx_face_swap_assets_kind (kind),
+      CONSTRAINT fk_face_swap_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS face_swap_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      image_asset_id BIGINT UNSIGNED NOT NULL,
+      video_asset_id BIGINT UNSIGNED NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      provider_model VARCHAR(160) NOT NULL,
+      prompt TEXT NOT NULL,
+      resolution VARCHAR(40) NOT NULL,
+      duration INT NOT NULL,
+      cost_points INT NOT NULL,
+      status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+      provider_task_id VARCHAR(160) NULL,
+      result_url VARCHAR(1000) NULL,
+      thumbnail_url VARCHAR(1000) NULL,
+      error_message TEXT NULL,
+      refunded BOOLEAN NOT NULL DEFAULT FALSE,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_face_swap_tasks_user_created (user_id, created_at),
+      INDEX idx_face_swap_tasks_status (status),
+      CONSTRAINT fk_face_swap_tasks_user FOREIGN KEY (user_id) REFERENCES users(id),
+      CONSTRAINT fk_face_swap_tasks_image FOREIGN KEY (image_asset_id) REFERENCES face_swap_assets(id),
+      CONSTRAINT fk_face_swap_tasks_video FOREIGN KEY (video_asset_id) REFERENCES face_swap_assets(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,
