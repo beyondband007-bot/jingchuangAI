@@ -1,0 +1,49 @@
+function displayTime(dateValue) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(new Date(dateValue));
+}
+
+export function mapMotionTransferAsset(row) {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    kind: row.kind,
+    localUrl: row.local_url,
+    fileName: row.original_name || row.stored_name,
+    mimeType: row.mime_type,
+    sizeBytes: Number(row.size_bytes || 0),
+    providerUrl: row.provider_url || "",
+    createdAt: row.created_at
+  };
+}
+
+export function mapMotionTransferTask(row) {
+  const status = row.status === "pending" ? "processing" : row.status;
+  return {
+    id: String(row.id),
+    model: row.model_key,
+    providerModel: row.provider_model,
+    prompt: row.prompt,
+    resolution: row.resolution,
+    duration: Number(row.duration || 0),
+    imageAssetId: String(row.image_asset_id),
+    videoAssetId: String(row.video_asset_id),
+    imageUrl: row.image_local_url || "",
+    motionVideoUrl: row.video_local_url || "",
+    imageFileName: row.image_original_name || "",
+    videoFileName: row.video_original_name || "",
+    status,
+    progress: row.status === "completed" ? 100 : row.status === "failed" ? 0 : row.provider_task_id ? 68 : 24,
+    resultUrl: row.result_url || "",
+    thumbnailUrl: row.thumbnail_url || "",
+    providerTaskId: row.provider_task_id || "",
+    favorite: Boolean(row.favorite),
+    error: row.error_message || "",
+    points: Number(row.cost_points || 0),
+    price: `${row.cost_points || 0} 积分`,
+    time: displayTime(row.created_at)
+  };
+}

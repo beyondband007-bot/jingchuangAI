@@ -42,6 +42,7 @@ import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
 import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
+import { motionTransferApi } from "./api/motionTransferApi";
 import "./styles.css";
 
 const exampleImages = [
@@ -84,6 +85,7 @@ function getInitialView() {
   if (window.location.pathname === "/chat" || window.location.hash === "#/chat") return "chat";
   if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
+  if (window.location.pathname === "/motion-transfer" || window.location.hash === "#/motion") return "motion";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
   return "home";
@@ -2592,6 +2594,478 @@ function ImageDigitalHumanView({ activeNav }) {
   );
 }
 
+const emptyMotionTransferOptions = {
+  models: [],
+  defaults: { model: "kie-motion-transfer", resolution: "720p", duration: 5 },
+  limits: {
+    maxImageBytes: 10 * 1024 * 1024,
+    maxVideoBytes: 200 * 1024 * 1024,
+    recommendedVideoSeconds: 15
+  }
+};
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${value} B`;
+}
+
+function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent }) {
+  if (task?.status === "completed") {
+    return (
+      <section className="motion-center-state is-completed">
+        <div className="motion-result-player">
+          <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.imageUrl} />
+        </div>
+        <div className="motion-result-copy">
+          <span className="motion-center-icon">
+            <CheckCircle2 size={24} />
+          </span>
+          <h2>动作迁移已完成</h2>
+          <p>{task.prompt}</p>
+          <div className="motion-result-actions">
+            <a href={task.resultUrl} download>
+              <Download size={15} />
+              下载
+            </a>
+            <button type="button" onClick={onOpenRecent}>
+              查看历史
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || task?.status === "failed") {
+    return (
+      <section className="motion-center-state is-failed">
+        <span className="motion-center-icon">
+          <Sparkles size={24} />
+        </span>
+        <strong>这次没有生成成功</strong>
+        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="motion-center-state is-processing" aria-live="polite">
+      <span className="motion-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>{isSubmitting ? "正在创建动作迁移任务" : "正在生成动作迁移视频"}</strong>
+      <p>正在上传人物图片和动作参考视频，并提交给 KIE 合成。完成后会自动回填到这里。</p>
+      <div className="motion-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+    </section>
+  );
+}
+
+function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+  const isProcessing = task.status === "processing";
+  const isFailed = task.status === "failed";
+  return (
+    <article className={`motion-task-card status-${task.status}`}>
+      <div className="motion-task-preview">
+        {task.resultUrl && !isFailed ? (
+          <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.imageUrl} />
+        ) : (
+          <div className={`motion-task-placeholder ${isFailed ? "is-failed" : ""}`}>
+            {isProcessing ? <Loader2 size={26} /> : <Video size={26} />}
+            <strong>{isFailed ? "生成失败" : "生成中"}</strong>
+          </div>
+        )}
+      </div>
+      <div className="motion-task-meta">
+        <div className="tag-row">
+          <span className="model-tag">{task.providerModel || task.model}</span>
+          <span className="ratio-tag">{task.resolution}</span>
+          <span className="quality-tag">{task.duration}s</span>
+        </div>
+        <div className="time-row">
+          <span>{task.time}</span>
+          <strong>{task.price}</strong>
+        </div>
+        <p>{task.error || task.prompt}</p>
+        <div className="motion-source-row">
+          <span>
+            <Image size={14} />
+            {task.imageFileName || "人物图片"}
+          </span>
+          <span>
+            <Film size={14} />
+            {task.videoFileName || "动作视频"}
+          </span>
+        </div>
+        <div className="card-actions motion-card-actions">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
+          </button>
+          {task.resultUrl ? (
+            <a className="card-action-link" href={task.resultUrl} download>
+              <Download size={15} />
+              下载
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              下载
+            </button>
+          )}
+          <button type="button" onClick={() => onRepeat(task)}>
+            <RefreshCcw size={15} />
+            再次生成
+          </button>
+          <button type="button" onClick={() => onDelete(task.id)}>
+            <Trash2 size={15} />
+            删除
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUploading, onSelect }) {
+  const inputRef = useRef(null);
+  const Icon = kind === "image" ? Image : Film;
+  return (
+    <button className={`motion-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={kind === "image" ? "image/*" : "video/*"}
+        hidden
+        onChange={(event) => onSelect(event.target.files?.[0] || null)}
+      />
+      {previewUrl ? (
+        kind === "image" ? (
+          <img src={previewUrl} alt={title} />
+        ) : (
+          <video src={previewUrl} muted playsInline preload="metadata" />
+        )
+      ) : (
+        <>
+          <Plus size={16} />
+          <strong>{title}</strong>
+          <span>{hint}</span>
+        </>
+      )}
+      {asset && <small>{asset.fileName} · {formatBytes(asset.sizeBytes)}</small>}
+      {isUploading && (
+        <span className="motion-uploading">
+          <Loader2 size={16} />
+          上传中
+        </span>
+      )}
+      {!isUploading && previewUrl && (
+        <span className="motion-upload-kind">
+          <Icon size={14} />
+          更换素材
+        </span>
+      )}
+    </button>
+  );
+}
+
+function MotionTransferComposer({ options, onSubmit, isSubmitting }) {
+  const [imageAsset, setImageAsset] = useState(null);
+  const [videoAsset, setVideoAsset] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [videoPreview, setVideoPreview] = useState("");
+  const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
+  const [resolution, setResolution] = useState(options.defaults?.resolution || "720p");
+  const [duration, setDuration] = useState(options.defaults?.duration || 5);
+  const [notice, setNotice] = useState("");
+  const [uploading, setUploading] = useState("");
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!resolution && options.defaults?.resolution) setResolution(options.defaults.resolution);
+    if (!duration && options.defaults?.duration) setDuration(options.defaults.duration);
+  }, [duration, model, options, resolution]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+      if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    };
+  }, [imagePreview, videoPreview]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
+
+  async function selectImage(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("请上传图片文件");
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("图片大小不能超过 10MB");
+      return;
+    }
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview(window.URL.createObjectURL(file));
+    setImageAsset(null);
+    setUploading("image");
+    setNotice("");
+    try {
+      setImageAsset(await motionTransferApi.uploadImage(file));
+    } catch (error) {
+      setImagePreview("");
+      setNotice(error.message || "图片上传失败");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function selectVideo(file) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setNotice("请上传视频文件");
+      return;
+    }
+    if (file.size > (options.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
+      setNotice("视频大小不能超过 200MB");
+      return;
+    }
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview(window.URL.createObjectURL(file));
+    setVideoAsset(null);
+    setUploading("video");
+    setNotice("");
+    try {
+      setVideoAsset(await motionTransferApi.uploadVideo(file));
+    } catch (error) {
+      setVideoPreview("");
+      setNotice(error.message || "视频上传失败");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  function submit() {
+    if (!imageAsset) {
+      setNotice("请先上传单人图片");
+      return;
+    }
+    if (!videoAsset) {
+      setNotice("请先上传动作视频");
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      imageAssetId: imageAsset.id,
+      videoAssetId: videoAsset.id,
+      model,
+      resolution,
+      duration
+    });
+  }
+
+  return (
+    <div className="motion-composer" aria-label="动作迁移上传面板">
+      <div className="motion-upload-grid">
+        <MotionTransferUploadSlot
+          kind="image"
+          title="上传单人图"
+          hint="主体清晰，单人效果最好"
+          asset={imageAsset}
+          previewUrl={imagePreview}
+          isUploading={uploading === "image"}
+          onSelect={selectImage}
+        />
+        <MotionTransferUploadSlot
+          kind="video"
+          title="上传动作视频"
+          hint={`建议 ${options.limits?.recommendedVideoSeconds || 15} 秒内`}
+          asset={videoAsset}
+          previewUrl={videoPreview}
+          isUploading={uploading === "video"}
+          onSelect={selectVideo}
+        />
+      </div>
+      <div className="motion-composer-footer">
+        <label className="control-select model-select">
+          <Box size={15} />
+          <select value={model} onChange={(event) => setModel(event.target.value)}>
+            {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
+        </label>
+        <label className="control-select">
+          <Ruler size={15} />
+          <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
+            {["480p", "720p", "1080p"].map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </label>
+        <label className="control-select">
+          <Timer size={15} />
+          <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
+            {[5, 8, 10, 15].map((item) => <option key={item} value={item}>{item}s</option>)}
+          </select>
+        </label>
+        <span className="price-pill">{price}</span>
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="生成动作迁移视频">
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+      {notice && <div className="composer-notice warning">{notice}</div>}
+    </div>
+  );
+}
+
+function MotionTransferView({ activeNav }) {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyMotionTransferOptions);
+  const [credits, setCredits] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+
+  useEffect(() => {
+    if (activeNav !== "motion") return undefined;
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, taskData, creditData] = await Promise.all([
+          motionTransferApi.getModels(),
+          motionTransferApi.getTasks({ filter }),
+          motionTransferApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || "加载动作迁移失败");
+      }
+    }
+    load();
+    const unsubscribe = motionTransferApi.subscribe(() => {
+      motionTransferApi.getTasks({ filter }).then((value) => mounted && setTasks(value)).catch(() => {});
+      motionTransferApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [activeNav, filter]);
+
+  if (activeNav !== "motion") {
+    return <ComingSoon activeNav={activeNav} />;
+  }
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const showEmptyHero = !showCenterState && tasks.length === 0 && filter !== "favorite";
+  const visibleTasks = submittedTaskId
+    ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+    : tasks;
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await motionTransferApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || "创建动作迁移任务失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await motionTransferApi.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function toggleFavorite(id) {
+    const updated = await motionTransferApi.toggleFavorite(id);
+    setTasks((current) => current.map((task) => String(task.id) === String(id) ? updated : task));
+  }
+
+  function repeatTask(task) {
+    createTask({
+      imageAssetId: task.imageAssetId,
+      videoAssetId: task.videoAssetId,
+      model: task.model,
+      resolution: task.resolution,
+      duration: task.duration,
+      prompt: task.prompt
+    });
+  }
+
+  return (
+    <section className="motion-view-root">
+      <div className="image-filter-tabs motion-filter-tabs">
+        <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>全部结果</button>
+        <button className={filter === "favorite" ? "selected" : ""} type="button" onClick={() => setFilter("favorite")}>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+      </div>
+      <div className={`motion-canvas ${showCenterState ? "has-active-task" : ""}`}>
+        {showEmptyHero && (
+          <div className="motion-hero-empty">
+            <span className="motion-hero-icon">
+              <Sparkles size={34} />
+            </span>
+            <h1>开启你的动作迁移</h1>
+            <p>上传图片和动作视频，让静态人物动起来</p>
+          </div>
+        )}
+        {showCenterState && (
+          <MotionTransferCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => setSubmittedTaskId(null)}
+          />
+        )}
+        {!showEmptyHero && !showCenterState && visibleTasks.length === 0 && (
+          <div className="motion-recent-empty">
+            <Layers size={24} />
+            <strong>暂无动作迁移结果</strong>
+            <p>生成完成的视频会保存在这里。</p>
+          </div>
+        )}
+        <div className={`motion-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
+          {visibleTasks.map((task) => (
+            <MotionTransferTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRepeat={repeatTask}
+            />
+          ))}
+        </div>
+      </div>
+      {options.models.length > 0 && (
+        <MotionTransferComposer
+          options={options}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </section>
+  );
+}
+
 function ImageFeaturePage({ initialNav, onBackHome }) {
   const [activeNav, setActiveNav] = useState(initialNav || "image");
 
@@ -2600,7 +3074,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human") {
+    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion") {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -2615,7 +3089,8 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "chat" && <ChatGenerationView activeNav={activeNav} />}
         {activeNav === "digital-human" && <DigitalHumanGenerationView activeNav={activeNav} />}
         {activeNav === "image-digital-human" && <ImageDigitalHumanView activeNav={activeNav} />}
-        {!["image", "video", "chat", "digital-human", "image-digital-human"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {activeNav === "motion" && <MotionTransferView activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -2647,7 +3122,7 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human") {
+  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion") {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 

@@ -26,6 +26,10 @@ export const config = {
     imageDigitalHumanFallbackModel: process.env.KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_MODEL || "wan/2-7-r2v",
     imageDigitalHumanResolution: process.env.KIE_IMAGE_DIGITAL_HUMAN_RESOLUTION || "480p",
     imageDigitalHumanFallbackResolution: process.env.KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_RESOLUTION || "720p",
+    motionTransferModel: process.env.KIE_MOTION_TRANSFER_MODEL || "wan/2-7-r2v",
+    motionTransferResolution: process.env.KIE_MOTION_TRANSFER_RESOLUTION || "720p",
+    motionTransferDuration: Number(process.env.KIE_MOTION_TRANSFER_DURATION || 5),
+    motionTransferPoints: Number(process.env.KIE_MOTION_TRANSFER_POINTS || 100),
     fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
   },
   minimax: {
