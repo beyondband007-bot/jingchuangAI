@@ -1,9 +1,9 @@
 import { getKieTask, requestKie } from "./client.js";
 
-function extractTaskId(result) {
+function extractTaskId(result, label) {
   const taskId = result.data?.taskId || result.taskId || "";
   if (!taskId) {
-    const error = new Error("KIE motion transfer response missing taskId");
+    const error = new Error(`KIE ${label} response missing taskId`);
     error.status = 502;
     error.body = result;
     throw error;
@@ -11,37 +11,63 @@ function extractTaskId(result) {
   return { taskId, raw: result };
 }
 
-export async function createKieMotionTransferTask({ model, prompt, imageUrl, videoUrl, mode, characterOrientation }) {
+export async function createKieWatermarkImageTask({ model, prompt, sourceUrl, resolution }) {
+  const input = model === "gpt-image-2-image-to-image"
+    ? {
+      prompt,
+      input_urls: [sourceUrl],
+      aspect_ratio: "auto"
+    }
+    : {
+      prompt,
+      image_input: [sourceUrl],
+      aspect_ratio: "auto",
+      resolution,
+      output_format: "png",
+      google_search: false
+    };
+
+  const result = await requestKie("/api/v1/jobs/createTask", {
+    method: "POST",
+    body: JSON.stringify({
+      model,
+      input
+    })
+  });
+
+  return extractTaskId(result, "watermark image");
+}
+
+export async function createKieWatermarkVideoTask({ model, prompt, sourceUrl, resolution }) {
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
     body: JSON.stringify({
       model,
       input: {
+        video_url: sourceUrl,
         prompt,
-        input_urls: [imageUrl],
-        video_urls: [videoUrl],
-        character_orientation: characterOrientation,
-        mode,
-        background_source: "input_video"
+        resolution,
+        audio_setting: "origin",
+        watermark: false
       }
     })
   });
 
-  return extractTaskId(result);
+  return extractTaskId(result, "watermark video");
 }
 
-export async function getKieMotionTransferTask({ taskId }) {
+export async function getKieWatermarkTask({ taskId }) {
   return getKieTask(taskId);
 }
 
-export function mapKieMotionTransferState(record) {
+export function mapKieWatermarkState(record) {
   const state = record.data?.state || record.state || "";
   if (state === "success") return "completed";
   if (state === "fail") return "failed";
   return "processing";
 }
 
-export function extractMotionTransferResult(record) {
+export function extractWatermarkResult(record) {
   const json = record?.data?.resultJson;
   if (!json) return { resultUrl: "", thumbnailUrl: "" };
 
@@ -50,11 +76,14 @@ export function extractMotionTransferResult(record) {
     const outputMediaUrls = Array.isArray(parsed.outputMediaUrls) ? parsed.outputMediaUrls : [];
     const resultUrl =
       outputMediaUrls.map((item) => item.mediaUrl).find(Boolean) ||
+      parsed.imageUrl ||
+      parsed.image_url ||
       parsed.videoUrl ||
       parsed.video_url ||
       parsed.resultUrl ||
       parsed.result_url ||
       (Array.isArray(parsed.resultUrls) ? parsed.resultUrls[0] : "") ||
+      (Array.isArray(parsed.urls) ? parsed.urls[0] : "") ||
       "";
 
     return {

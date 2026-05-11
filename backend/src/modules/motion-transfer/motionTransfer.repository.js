@@ -34,12 +34,12 @@ export async function setMotionTransferAssetProviderUrl(id, providerUrl) {
   await getPool().query("UPDATE motion_transfer_assets SET provider_url = ? WHERE id = ?", [providerUrl, id]);
 }
 
-export async function createMotionTransferTask(connection, { userId, imageAssetId, videoAssetId, modelKey, providerModel, prompt, resolution, duration, costPoints }) {
+export async function createMotionTransferTask(connection, { userId, imageAssetId, videoAssetId, modelKey, providerModel, prompt, resolution, duration, characterOrientation, costPoints }) {
   const [result] = await connection.query(
     `INSERT INTO motion_transfer_tasks
-     (user_id, image_asset_id, video_asset_id, model_key, provider_model, prompt, resolution, duration, cost_points, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [userId, imageAssetId, videoAssetId, modelKey, providerModel, prompt, resolution, duration, costPoints]
+     (user_id, image_asset_id, video_asset_id, model_key, provider_model, prompt, resolution, duration, character_orientation, cost_points, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [userId, imageAssetId, videoAssetId, modelKey, providerModel, prompt, resolution, duration, characterOrientation, costPoints]
   );
   return result.insertId;
 }

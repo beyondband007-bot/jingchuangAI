@@ -9,8 +9,10 @@ import { faceSwapRouter } from "./modules/face-swap/faceSwap.routes.js";
 import { imageDigitalHumanRouter } from "./modules/image-digital-human/imageDigitalHuman.routes.js";
 import { imageRouter } from "./modules/image/image.routes.js";
 import { motionTransferRouter } from "./modules/motion-transfer/motionTransfer.routes.js";
+import { watermarkRouter } from "./modules/watermark/watermark.routes.js";
 import { voiceRouter } from "./modules/voice/voice.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
+import { voiceConvertRouter } from "./modules/voice-convert/voiceConvert.routes.js";
 import { sendError } from "./shared/http.js";
 import { getDemoUserCredits } from "./shared/userService.js";
 
@@ -49,7 +51,9 @@ export function createApp() {
   app.use("/api/image-digital-human", imageDigitalHumanRouter);
   app.use("/api/motion-transfer", motionTransferRouter);
   app.use("/api/face-swap", faceSwapRouter);
+  app.use("/api/watermark", watermarkRouter);
   app.use("/api/voice", voiceRouter);
+  app.use("/api/voice-convert", voiceConvertRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });

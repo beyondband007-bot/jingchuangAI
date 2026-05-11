@@ -266,6 +266,7 @@ async function createTables() {
       prompt TEXT NOT NULL,
       resolution VARCHAR(40) NOT NULL,
       duration INT NOT NULL,
+      character_orientation ENUM('image','video') NOT NULL DEFAULT 'image',
       cost_points INT NOT NULL,
       status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
       provider_task_id VARCHAR(160) NULL,
@@ -283,6 +284,17 @@ async function createTables() {
       CONSTRAINT fk_motion_transfer_tasks_video FOREIGN KEY (video_asset_id) REFERENCES motion_transfer_assets(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [motionTransferColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'motion_transfer_tasks'`,
+    [config.db.database]
+  );
+  const motionTransferColumnSet = new Set(motionTransferColumns.map((column) => column.COLUMN_NAME));
+  if (!motionTransferColumnSet.has("character_orientation")) {
+    await pool.query("ALTER TABLE motion_transfer_tasks ADD COLUMN character_orientation ENUM('image','video') NOT NULL DEFAULT 'image' AFTER duration");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS face_swap_assets (
@@ -330,6 +342,54 @@ async function createTables() {
       CONSTRAINT fk_face_swap_tasks_user FOREIGN KEY (user_id) REFERENCES users(id),
       CONSTRAINT fk_face_swap_tasks_image FOREIGN KEY (image_asset_id) REFERENCES face_swap_assets(id),
       CONSTRAINT fk_face_swap_tasks_video FOREIGN KEY (video_asset_id) REFERENCES face_swap_assets(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS watermark_assets (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      kind ENUM('image','video') NOT NULL,
+      local_url VARCHAR(1000) NOT NULL,
+      file_path VARCHAR(1000) NOT NULL,
+      stored_name VARCHAR(255) NOT NULL,
+      original_name VARCHAR(255) NULL,
+      mime_type VARCHAR(160) NOT NULL,
+      size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      provider_url VARCHAR(1000) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_watermark_assets_user_created (user_id, created_at),
+      INDEX idx_watermark_assets_kind (kind),
+      CONSTRAINT fk_watermark_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS watermark_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      source_asset_id BIGINT UNSIGNED NOT NULL,
+      media_type ENUM('image','video') NOT NULL,
+      model_key VARCHAR(80) NOT NULL,
+      provider_model VARCHAR(160) NOT NULL,
+      prompt TEXT NOT NULL,
+      resolution VARCHAR(40) NOT NULL,
+      cost_points INT NOT NULL,
+      status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+      provider_task_id VARCHAR(160) NULL,
+      result_url VARCHAR(1000) NULL,
+      thumbnail_url VARCHAR(1000) NULL,
+      error_message TEXT NULL,
+      refunded BOOLEAN NOT NULL DEFAULT FALSE,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_watermark_tasks_user_created (user_id, created_at),
+      INDEX idx_watermark_tasks_status (status),
+      INDEX idx_watermark_tasks_media_type (media_type),
+      CONSTRAINT fk_watermark_tasks_user FOREIGN KEY (user_id) REFERENCES users(id),
+      CONSTRAINT fk_watermark_tasks_source FOREIGN KEY (source_asset_id) REFERENCES watermark_assets(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 

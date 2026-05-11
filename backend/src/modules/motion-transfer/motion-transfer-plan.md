@@ -13,9 +13,9 @@ UI 参考当前浏览器页面：浅蓝主画布，中部空状态标题“开�
   - 仅允许 `image/*`，默认上限 `10MB`
 - `POST /api/motion-transfer/uploads/video`
   - `multipart/form-data` 字段：`video`
-  - 仅允许 `video/*`，默认上限 `200MB`
+  - 仅允许 `video/*`，默认上限 `100MB`
 - `POST /api/motion-transfer/tasks`
-  - JSON：`{ imageAssetId, videoAssetId, prompt?, model?, resolution?, duration? }`
+  - JSON：`{ imageAssetId, videoAssetId, prompt?, model?, resolution?, characterOrientation? }`
 - `GET /api/motion-transfer/tasks`
 - `GET /api/motion-transfer/tasks/:id`
 - `POST /api/motion-transfer/tasks/:id/favorite`
@@ -29,9 +29,11 @@ UI 参考当前浏览器页面：浅蓝主画布，中部空状态标题“开�
 - 新增 KIE provider 方法：
   - 复用现有 `uploadFileToKie`
   - 创建任务走 `/api/v1/jobs/createTask`
-  - 默认模型使用 `KIE_MOTION_TRANSFER_MODEL`，未配置时先用 `wan/2-7-r2v`
+  - 默认模型使用 `KIE_MOTION_TRANSFER_MODEL`，未配置时使用 `kling-3.0/motion-control`
+  - 入参使用可灵 3.0 Motion Control 的 `input_urls`、`video_urls`、`character_orientation`、`mode`、`background_source`
 - 前端新增 `motionTransferApi.js` 和 `MotionTransferView`：
   - 支持 `/#/motion`
+  - 顶部切换为“主页 / 最近生成 / 收藏”
   - 上传图片后显示图片预览
   - 上传视频后显示视频预览
   - 两个素材上传完成后才能生成

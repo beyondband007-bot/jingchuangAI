@@ -6,7 +6,7 @@ function displayTime(dateValue) {
   }).format(new Date(dateValue));
 }
 
-export function mapMotionTransferAsset(row) {
+export function mapWatermarkAsset(row) {
   if (!row) return null;
   return {
     id: String(row.id),
@@ -20,22 +20,19 @@ export function mapMotionTransferAsset(row) {
   };
 }
 
-export function mapMotionTransferTask(row) {
+export function mapWatermarkTask(row) {
   const status = row.status === "pending" ? "processing" : row.status;
   return {
     id: String(row.id),
     model: row.model_key,
     providerModel: row.provider_model,
+    mediaType: row.media_type,
     prompt: row.prompt,
     resolution: row.resolution,
-    duration: Number(row.duration || 0),
-    characterOrientation: row.character_orientation || "image",
-    imageAssetId: String(row.image_asset_id),
-    videoAssetId: String(row.video_asset_id),
-    imageUrl: row.image_local_url || "",
-    motionVideoUrl: row.video_local_url || "",
-    imageFileName: row.image_original_name || "",
-    videoFileName: row.video_original_name || "",
+    sourceAssetId: String(row.source_asset_id),
+    sourceUrl: row.source_local_url || "",
+    sourceFileName: row.source_original_name || "",
+    sourceMimeType: row.source_mime_type || "",
     status,
     progress: row.status === "completed" ? 100 : row.status === "failed" ? 0 : row.provider_task_id ? 68 : 24,
     resultUrl: row.result_url || "",

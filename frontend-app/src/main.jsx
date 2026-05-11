@@ -44,7 +44,9 @@ import { digitalHumanApi } from "./api/digitalHumanApi";
 import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
-import { voiceApi } from "./api/voiceApi";
+import { watermarkApi } from "./api/watermarkApi";
+import { VoiceSynthesisView } from "./features/voice/VoiceSynthesisView";
+import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import "./styles.css";
 
 const exampleImages = [
@@ -89,6 +91,7 @@ function getInitialView() {
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
   if (window.location.pathname === "/motion-transfer" || window.location.hash === "#/motion") return "motion";
   if (window.location.pathname === "/face-swap" || window.location.hash === "#/face-swap") return "face-swap";
+  if (window.location.pathname === "/watermark" || window.location.hash === "#/watermark") return "watermark";
   if (window.location.pathname === "/voice-conversion" || window.location.hash === "#/voice-convert") return "voice-convert";
   if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
@@ -2601,11 +2604,19 @@ function ImageDigitalHumanView({ activeNav }) {
 
 const emptyMotionTransferOptions = {
   models: [],
-  defaults: { model: "kie-motion-transfer", resolution: "720p", duration: 5 },
+  defaults: { model: "kie-motion-transfer", resolution: "720p", characterOrientation: "image" },
+  modes: [
+    { value: "720p", label: "720p" },
+    { value: "1080p", label: "1080p" }
+  ],
+  characterOrientations: [
+    { value: "image", label: "图片朝向", maxSeconds: 10 },
+    { value: "video", label: "视频朝向", maxSeconds: 30 }
+  ],
   limits: {
     maxImageBytes: 10 * 1024 * 1024,
-    maxVideoBytes: 200 * 1024 * 1024,
-    recommendedVideoSeconds: 15
+    maxVideoBytes: 100 * 1024 * 1024,
+    recommendedVideoSeconds: 30
   }
 };
 
@@ -2733,7 +2744,7 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = m
         <div className="tag-row">
           <span className="model-tag">{task.providerModel || task.model}</span>
           <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">{task.duration}s</span>
+          <span className="quality-tag">{task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}</span>
         </div>
         <div className="time-row">
           <span>{task.time}</span>
@@ -2828,7 +2839,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   const [videoPreview, setVideoPreview] = useState("");
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [resolution, setResolution] = useState(options.defaults?.resolution || "720p");
-  const [duration, setDuration] = useState(options.defaults?.duration || 5);
+  const [characterOrientation, setCharacterOrientation] = useState(options.defaults?.characterOrientation || "image");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
 
@@ -2837,8 +2848,8 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       setModel(options.defaults?.model || options.models[0].value);
     }
     if (!resolution && options.defaults?.resolution) setResolution(options.defaults.resolution);
-    if (!duration && options.defaults?.duration) setDuration(options.defaults.duration);
-  }, [duration, model, options, resolution]);
+    if (!characterOrientation && options.defaults?.characterOrientation) setCharacterOrientation(options.defaults.characterOrientation);
+  }, [characterOrientation, model, options, resolution]);
 
   useEffect(() => {
     return () => {
@@ -2882,7 +2893,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       setNotice("请上传视频文件");
       return;
     }
-    if (file.size > (options.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
+    if (file.size > (options.limits?.maxVideoBytes || 100 * 1024 * 1024)) {
       setNotice("视频大小不能超过 200MB");
       return;
     }
@@ -2916,7 +2927,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       videoAssetId: videoAsset.id,
       model,
       resolution,
-      duration
+      characterOrientation
     });
   }
 
@@ -2935,7 +2946,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
         <MotionTransferUploadSlot
           kind="video"
           title={copy.videoTitle}
-          hint={`建议 ${options.limits?.recommendedVideoSeconds || 15} 秒内`}
+          hint={`建议 ${options.limits?.recommendedVideoSeconds || 30} 秒内`}
           asset={videoAsset}
           previewUrl={videoPreview}
           isUploading={uploading === "video"}
@@ -2952,13 +2963,15 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
         <label className="control-select">
           <Ruler size={15} />
           <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
-            {["480p", "720p", "1080p"].map((item) => <option key={item} value={item}>{item}</option>)}
+            {(options.modes || emptyMotionTransferOptions.modes).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
         </label>
         <label className="control-select">
           <Timer size={15} />
-          <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
-            {[5, 8, 10, 15].map((item) => <option key={item} value={item}>{item}s</option>)}
+          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)}>
+            {(options.characterOrientations || emptyMotionTransferOptions.characterOrientations).map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
           </select>
         </label>
         <span className="price-pill">{price}</span>
@@ -3024,12 +3037,14 @@ function MotionTransferView({ activeNav, navId = "motion", api = motionTransferA
       ? submittedTaskId
         ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
         : tasks
+      : viewTab === "favorite"
+        ? tasks.filter((task) => task.favorite)
       : []
     : submittedTaskId
       ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
       : tasks;
   const showRecentEmpty = splitResults
-    ? viewTab === "recent" && !showCenterState && visibleTasks.length === 0
+    ? (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0
     : !showEmptyHero && !showCenterState && visibleTasks.length === 0;
 
   async function createTask(payload) {
@@ -3065,7 +3080,7 @@ function MotionTransferView({ activeNav, navId = "motion", api = motionTransferA
       videoAssetId: task.videoAssetId,
       model: task.model,
       resolution: task.resolution,
-      duration: task.duration,
+      characterOrientation: task.characterOrientation,
       prompt: task.prompt
     });
   }
@@ -3151,440 +3166,448 @@ function MotionTransferView({ activeNav, navId = "motion", api = motionTransferA
   );
 }
 
-const voicePreviewText = "欢迎使用鲸创 AI 语音合成，现在开始试听目标音色的自然效果。";
-const voiceRecentStorageKey = "jingchuang.voice.recentResults";
+const emptyWatermarkOptions = {
+  models: [],
+  defaults: {
+    imageModel: "kie-watermark-image",
+    videoModel: "kie-watermark-video",
+    imageResolution: "2K",
+    videoResolution: "720p"
+  },
+  limits: {
+    maxImageBytes: 10 * 1024 * 1024,
+    maxVideoBytes: 200 * 1024 * 1024,
+    recommendedVideoSeconds: 15
+  }
+};
 
-function formatVoiceDuration(ms) {
-  const seconds = Math.round(Number(ms || 0) / 1000);
-  if (!seconds) return "";
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
-  return minutes ? `${minutes}:${String(rest).padStart(2, "0")}` : `${rest}s`;
-}
-
-function makeVoiceId() {
-  return `VoiceClone_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function readAudioDuration(file) {
-  return new Promise((resolve) => {
-    const audio = document.createElement("audio");
-    const url = URL.createObjectURL(file);
-    const cleanup = () => URL.revokeObjectURL(url);
-    audio.preload = "metadata";
-    audio.onloadedmetadata = () => {
-      const durationMs = Number.isFinite(audio.duration) ? audio.duration * 1000 : 0;
-      cleanup();
-      resolve(durationMs);
-    };
-    audio.onerror = () => {
-      cleanup();
-      resolve(0);
-    };
-    audio.src = url;
-  });
-}
-
-function makeVoiceDownloadName(prefix = "voice") {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
-  return `${prefix}-${stamp}.mp3`;
-}
-
-async function downloadVoiceFile({ audioDataUrl, audioUrl, fileName }) {
-  let href = audioDataUrl || "";
-  let shouldRevoke = false;
-
-  if (!href && audioUrl) {
-    const response = await fetch(audioUrl);
-    if (!response.ok) throw new Error("下载音频失败");
-    href = URL.createObjectURL(await response.blob());
-    shouldRevoke = true;
+function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
+  if (task?.status === "completed") {
+    const isVideo = task.mediaType === "video";
+    return (
+      <section className="watermark-center-state is-completed">
+        <div className={`watermark-result-stage ${isVideo ? "is-video" : ""}`}>
+          {isVideo ? (
+            <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.sourceUrl} />
+          ) : (
+            <img src={task.resultUrl} alt={task.sourceFileName || "去水印结果"} />
+          )}
+        </div>
+        <div className="watermark-result-copy">
+          <span className="watermark-center-icon">
+            <CheckCircle2 size={24} />
+          </span>
+          <h2>去水印已完成</h2>
+          <p>{task.sourceFileName || "结果已保存到最近生成"}</p>
+          <div className="watermark-result-actions">
+            <a href={task.resultUrl} download>
+              <Download size={15} />
+              下载
+            </a>
+            <button type="button" onClick={onOpenRecent}>查看最近生成</button>
+          </div>
+        </div>
+      </section>
+    );
   }
 
-  if (!href) throw new Error("暂无可下载音频");
-
-  const link = document.createElement("a");
-  link.href = href;
-  link.download = fileName || makeVoiceDownloadName("voice-synthesis");
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  if (shouldRevoke) URL.revokeObjectURL(href);
-}
-
-function loadVoiceRecentResults() {
-  try {
-    return JSON.parse(window.localStorage.getItem(voiceRecentStorageKey) || "[]");
-  } catch {
-    return [];
+  if (error || task?.status === "failed") {
+    return (
+      <section className="watermark-center-state is-failed">
+        <span className="watermark-center-icon">
+          <Eraser size={24} />
+        </span>
+        <strong>这次没有生成成功</strong>
+        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+      </section>
+    );
   }
-}
-
-function saveVoiceRecentResults(items) {
-  try {
-    const safeItems = items.map(({ audioDataUrl, ...item }) => item);
-    window.localStorage.setItem(voiceRecentStorageKey, JSON.stringify(safeItems));
-  } catch {
-    // Ignore storage failures; the in-memory recent list still works.
-  }
-}
-
-function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick }) {
-  const inputRef = useRef(null);
-  const hasFile = Boolean(fileState?.fileName);
 
   return (
-    <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
+    <section className="watermark-center-state is-processing" aria-live="polite">
+      <span className="watermark-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>{isSubmitting ? "正在创建去水印任务" : "正在智能去除水印"}</strong>
+      <p>素材正在提交给 KIE 处理，完成后会自动回填到这里。</p>
+      <div className="watermark-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+    </section>
+  );
+}
+
+function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+  const isProcessing = task.status === "processing";
+  const isFailed = task.status === "failed";
+  const isVideo = task.mediaType === "video";
+
+  return (
+    <article className={`watermark-task-card status-${task.status}`}>
+      <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
+        {task.resultUrl && !isFailed ? (
+          isVideo ? (
+            <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+          ) : (
+            <img src={task.resultUrl} alt={task.sourceFileName || "去水印结果"} />
+          )
+        ) : (
+          <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
+            {isProcessing ? <Loader2 size={26} /> : isVideo ? <Video size={26} /> : <Image size={26} />}
+            <strong>{isFailed ? "生成失败" : "生成中"}</strong>
+          </div>
+        )}
+      </div>
+      <div className="watermark-task-meta">
+        <div className="tag-row">
+          <span className="model-tag">{task.mediaType === "video" ? "视频去水印" : "图片去水印"}</span>
+          <span className="ratio-tag">{task.resolution}</span>
+          <span className="quality-tag">{task.providerModel || task.model}</span>
+        </div>
+        <div className="time-row">
+          <span>{task.time}</span>
+          <strong>{task.price}</strong>
+        </div>
+        <p>{task.error || task.sourceFileName || "智能去水印结果"}</p>
+        <div className="watermark-source-row">
+          <span>
+            {isVideo ? <Film size={14} /> : <Image size={14} />}
+            {task.sourceFileName || "源素材"}
+          </span>
+        </div>
+        <div className="card-actions watermark-card-actions">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
+          </button>
+          {task.resultUrl ? (
+            <a className="card-action-link" href={task.resultUrl} download>
+              <Download size={15} />
+              下载
+            </a>
+          ) : (
+            <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
+              setViewTab("favorite");
+              setSubmittedTaskId(null);
+            }}>
+              <Download size={15} />
+              下载
+            </button>
+          )}
+          <button type="button" onClick={() => onRepeat(task)}>
+            <RefreshCcw size={15} />
+            再次生成
+          </button>
+          <button type="button" onClick={() => onDelete(task.id)}>
+            <Trash2 size={15} />
+            删除
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect }) {
+  const inputRef = useRef(null);
+  const isVideo = mode === "video";
+  return (
+    <button className={`watermark-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
         ref={inputRef}
         type="file"
-        accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
+        accept={isVideo ? "video/*" : "image/*"}
+        hidden
         onChange={(event) => {
-          const file = event.target.files?.[0];
+          const file = event.target.files?.[0] || null;
           event.target.value = "";
-          if (file) onPick(file);
+          onSelect(file);
         }}
       />
-      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
-      <strong>{hasFile ? fileState.fileName : title}</strong>
-      <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
+      {previewUrl ? (
+        isVideo ? (
+          <video src={previewUrl} muted playsInline preload="metadata" />
+        ) : (
+          <img src={previewUrl} alt="上传素材预览" />
+        )
+      ) : (
+        <>
+          <Plus size={18} />
+          <strong>{isVideo ? "+ 上传视频文件" : "+ 上传图片文件"}</strong>
+          <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG，最大 10MB"}</span>
+        </>
+      )}
+      {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
+      {isUploading && (
+        <span className="watermark-uploading">
+          <Loader2 size={16} />
+          上传中
+        </span>
+      )}
+      {!isUploading && previewUrl && (
+        <span className="watermark-upload-kind">
+          {isVideo ? <Film size={14} /> : <Image size={14} />}
+          更换素材
+        </span>
+      )}
     </button>
   );
 }
 
-function VoiceConversionView({ activeNav }) {
-  const [cloneAudio, setCloneAudio] = useState(null);
-  const [uploading, setUploading] = useState("");
+function WatermarkComposer({ options, onSubmit, isSubmitting }) {
+  const [mode, setMode] = useState("image");
+  const [sourceAsset, setSourceAsset] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [notice, setNotice] = useState("");
-  const [text, setText] = useState("欢迎使用鲸创 AI 语音合成，现在开始生成属于你的专属声音。");
-  const [speed, setSpeed] = useState(1);
-  const [volume, setVolume] = useState(1);
-  const [pitch, setPitch] = useState(0);
-  const [isCloning, setIsCloning] = useState(false);
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState(null);
-  const [voices, setVoices] = useState([]);
-  const [demoAudio, setDemoAudio] = useState("");
-  const [resultAudio, setResultAudio] = useState("");
-  const [resultUrl, setResultUrl] = useState("");
-  const [resultFileName, setResultFileName] = useState("voice-synthesis.mp3");
-  const [viewTab, setViewTab] = useState("home");
-  const [recentResults, setRecentResults] = useState(() => loadVoiceRecentResults());
-  const [playingRecentId, setPlayingRecentId] = useState("");
-  const recentAudioRefs = useRef({});
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    if (activeNav !== "voice") return undefined;
-    let mounted = true;
-    voiceApi.getConfig().then((data) => {
-      if (mounted) setVoices(data.voices || []);
-    }).catch(() => {});
     return () => {
-      mounted = false;
+      if (previewUrl) window.URL.revokeObjectURL(previewUrl);
     };
-  }, [activeNav]);
+  }, [previewUrl]);
 
-  useEffect(() => {
-    saveVoiceRecentResults(recentResults);
-  }, [recentResults]);
+  const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
+  const resolution = mode === "video" ? options.defaults?.videoResolution || "720p" : options.defaults?.imageResolution || "2K";
+  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
 
-  if (activeNav !== "voice") {
-    return <ComingSoon activeNav={activeNav} />;
-  }
-
-  async function uploadFile(file) {
+  function changeMode(nextMode) {
+    setMode(nextMode);
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
     setNotice("");
-    setUploading("clone");
-    try {
-      const durationMs = await readAudioDuration(file);
-      if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
-        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav");
-      }
-
-      const result = await voiceApi.uploadCloneAudio(file, durationMs);
-      const fileState = {
-        ...result,
-        fileName: file.name,
-        size: file.size,
-        durationMs
-      };
-      setCloneAudio(fileState);
-      setCurrentVoice(null);
-      setDemoAudio("");
-      setResultAudio("");
-      setResultUrl("");
-      setNotice("目标音色上传完成");
-    } catch (error) {
-      setNotice(error.message);
-    } finally {
-      setUploading("");
-    }
   }
 
-  async function ensureVoiceClone() {
-    if (!cloneAudio?.fileId) {
-      setNotice("请先上传目标音色");
-      return null;
-    }
-    if (currentVoice?.id) return currentVoice;
-
-    setNotice("");
-    setIsCloning(true);
-    try {
-      const result = await voiceApi.createClone({
-        cloneAudioFileId: cloneAudio.fileId,
-        previewText: voicePreviewText,
-        voiceId: makeVoiceId(),
-        name: cloneAudio.fileName ? cloneAudio.fileName.replace(/\.[^.]+$/, "") : "我的目标音色"
-      });
-      setCurrentVoice(result.voice);
-      setVoices((items) => [result.voice, ...items.filter((item) => item.id !== result.voice.id)]);
-      setDemoAudio(result.demoAudio || "");
-      return result.voice;
-    } catch (error) {
-      setNotice(error.message);
-      return null;
-    } finally {
-      setIsCloning(false);
-    }
-  }
-
-  async function generateSpeech() {
-    if (!cloneAudio?.fileId) {
-      setNotice("请先上传目标音色");
+  async function selectSource(file) {
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if ((mode === "image" && !isImage) || (mode === "video" && !isVideo)) {
+      setNotice(mode === "image" ? "请上传图片文件" : "请上传视频文件");
       return;
     }
-    if (!text.trim()) {
-      setNotice("请输入需要合成的文本");
+    if (isImage && file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("图片大小不能超过 10MB");
       return;
     }
-    const voice = await ensureVoiceClone();
-    if (!voice?.id) return;
+    if (isVideo && file.size > (options.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
+      setNotice("视频大小不能超过 100MB");
+      return;
+    }
 
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(window.URL.createObjectURL(file));
+    setSourceAsset(null);
+    setUploading(true);
     setNotice("");
-    setIsSynthesizing(true);
     try {
-      const result = await voiceApi.synthesize({
-        voiceId: voice.id,
-        text,
-        speed,
-        volume,
-        pitch
-      });
-      const fileName = makeVoiceDownloadName("voice-synthesis");
-      setResultAudio(result.audioDataUrl);
-      setResultUrl(result.audioUrl || "");
-      setResultFileName(fileName);
-      setRecentResults((items) => [{
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: text.trim().slice(0, 48) || "语音合成结果",
-        voiceName: voice.name || "目标音色",
-        audioUrl: result.audioUrl || "",
-        audioDataUrl: result.audioDataUrl || "",
-        fileName,
-        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
-      }, ...items].slice(0, 20));
-      setViewTab("home");
-      setNotice("语音生成完成");
+      setSourceAsset(await watermarkApi.uploadSource(file));
+      setNotice("素材上传完成");
     } catch (error) {
-      setNotice(error.message);
+      setPreviewUrl("");
+      setNotice(error.message || "素材上传失败");
     } finally {
-      setIsSynthesizing(false);
+      setUploading(false);
     }
   }
 
-  async function downloadResult(item) {
-    try {
-      await downloadVoiceFile(item);
-    } catch (error) {
-      setNotice(error.message || "下载音频失败");
+  function submit() {
+    if (!sourceAsset) {
+      setNotice(mode === "image" ? "请先上传图片文件" : "请先上传视频文件");
+      return;
     }
-  }
-
-  async function toggleRecentPlayback(item) {
-    const currentAudio = recentAudioRefs.current[item.id];
-    if (!currentAudio) return;
-
-    Object.entries(recentAudioRefs.current).forEach(([id, audio]) => {
-      if (id !== item.id && audio) audio.pause();
+    setNotice("");
+    onSubmit({
+      sourceAssetId: sourceAsset.id,
+      model: selectedModel?.value,
+      resolution
     });
-
-    if (!currentAudio.paused) {
-      currentAudio.pause();
-      setPlayingRecentId("");
-      return;
-    }
-
-    try {
-      await currentAudio.play();
-      setPlayingRecentId(item.id);
-    } catch (error) {
-      setNotice(error.message || "播放音频失败");
-    }
-  }
-
-  function toggleRecentFavorite(id) {
-    setRecentResults((items) => items.map((item) => (
-      item.id === id ? { ...item, favorite: !item.favorite } : item
-    )));
-  }
-
-  function deleteRecentResult(id) {
-    const audio = recentAudioRefs.current[id];
-    if (audio) audio.pause();
-    delete recentAudioRefs.current[id];
-    setPlayingRecentId((current) => (current === id ? "" : current));
-    setRecentResults((items) => items.filter((item) => item.id !== id));
   }
 
   return (
-    <section className="voice-conversion-view-root">
-      <div className="image-filter-tabs voice-filter-tabs">
+    <div className="watermark-composer" aria-label="去水印上传面板">
+      <div className="watermark-mode-tabs">
+        <button className={mode === "image" ? "is-active" : ""} type="button" onClick={() => changeMode("image")}>
+          <Image size={15} />
+          图片去水印
+        </button>
+        <button className={mode === "video" ? "is-active" : ""} type="button" onClick={() => changeMode("video")}>
+          <Film size={15} />
+          视频去水印
+        </button>
+      </div>
+      <WatermarkUploadSlot
+        mode={mode}
+        sourceAsset={sourceAsset}
+        previewUrl={previewUrl}
+        isUploading={uploading}
+        onSelect={selectSource}
+      />
+      <div className="watermark-composer-footer">
+        <span>{notice || (mode === "video" ? "视频会保留原音频并尝试自然修复水印区域" : "图片会自动修复水印区域并保持主体内容")}</span>
+        <strong>{price}</strong>
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始去水印">
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WatermarkRemovalView({ activeNav }) {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyWatermarkOptions);
+  const [credits, setCredits] = useState(null);
+  const [viewTab, setViewTab] = useState("home");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+
+  useEffect(() => {
+    if (activeNav !== "watermark") return undefined;
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, taskData, creditData] = await Promise.all([
+          watermarkApi.getModels(),
+          watermarkApi.getTasks(),
+          watermarkApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || "加载去水印失败");
+      }
+    }
+    load();
+    const unsubscribe = watermarkApi.subscribe(() => {
+      watermarkApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
+      watermarkApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [activeNav]);
+
+  if (activeNav !== "watermark") {
+    return <ComingSoon activeNav={activeNav} />;
+  }
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const visibleTasks = viewTab === "favorite"
+    ? tasks.filter((task) => task.favorite && String(task.id) !== String(submittedTaskId))
+    : viewTab === "recent"
+      ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+      : [];
+  const showEmptyHero = viewTab === "home" && !showCenterState;
+  const showRecentEmpty = (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0;
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    setViewTab("home");
+    try {
+      const task = await watermarkApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || "创建去水印任务失败");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await watermarkApi.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function toggleFavorite(id) {
+    const updated = await watermarkApi.toggleFavorite(id);
+    setTasks((current) => current.map((task) => String(task.id) === String(id) ? updated : task));
+  }
+
+  function repeatTask(task) {
+    createTask({
+      sourceAssetId: task.sourceAssetId,
+      model: task.model,
+      resolution: task.resolution,
+      prompt: task.prompt
+    });
+  }
+
+  return (
+    <section className="watermark-view-root">
+      <div className="image-filter-tabs watermark-filter-tabs">
         <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
-        <button type="button" disabled>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
+          setViewTab("recent");
+          setSubmittedTaskId(null);
+        }}>最近生成</button>
+        <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
+          setViewTab("favorite");
+          setSubmittedTaskId(null);
+        }}>
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
         </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
-      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
-        {viewTab === "home" && <div className="voice-hero-empty">
-          <span className="voice-hero-icon">🎭</span>
-          <h1>语音合成</h1>
-          <p>上传目标音色并输入文本，一键生成专属语音</p>
-          {currentVoice && (
-            <div className="voice-current-chip">
-              <CheckCircle2 size={16} />
-              当前音色：{currentVoice.name}
-            </div>
-          )}
-        </div>}
-
-        {viewTab === "recent" && (
-          <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
-            {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <Music size={28} />
-                <strong>暂无生成记录</strong>
-                <p>生成完成的 MP3 会显示在这里，可直接播放和下载。</p>
-              </div>
-            ) : (
-              recentResults.map((item) => (
-                <article className="voice-recent-card" key={item.id}>
-                  <div className="voice-recent-art">
-                    <Music size={34} />
-                  </div>
-                  <div className="voice-recent-info">
-                    <strong>{item.title}</strong>
-                    <span>{item.voiceName} · {item.createdAt}</span>
-                  </div>
-                  <audio
-                    ref={(node) => {
-                      if (node) recentAudioRefs.current[item.id] = node;
-                      else delete recentAudioRefs.current[item.id];
-                    }}
-                    src={item.audioUrl || item.audioDataUrl}
-                    onEnded={() => setPlayingRecentId("")}
-                  />
-                  <button className="voice-recent-play" type="button" onClick={() => toggleRecentPlayback(item)} aria-label="播放音频">
-                    {playingRecentId === item.id ? <Loader2 size={18} /> : <Play size={18} fill="currentColor" />}
-                  </button>
-                  <div className="voice-recent-actions">
-                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
-                      <Download size={15} />
-                    </button>
-                    <button className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`} type="button" onClick={() => toggleRecentFavorite(item.id)} title={item.favorite ? "取消收藏" : "收藏"} aria-label={item.favorite ? "取消收藏" : "收藏"}>
-                      <Star size={15} fill={item.favorite ? "currentColor" : "none"} />
-                    </button>
-                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </article>
-              ))
-            )}
+      <div className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
+        {showEmptyHero && (
+          <div className="watermark-hero-empty">
+            <span className="watermark-hero-icon">
+              <Eraser size={36} />
+            </span>
+            <h1>智能去水印</h1>
+            <p>上传图片或视频，AI 智能一键去除水印</p>
           </div>
         )}
-
-        {viewTab === "home" && voices.length > 0 && (
-          <div className="voice-cloned-list">
-            {voices.slice(0, 4).map((voice) => (
-              <button className={currentVoice?.id === voice.id ? "is-active" : ""} key={voice.id} type="button" onClick={() => setCurrentVoice(voice)}>
-                <Mic size={15} />
-                {voice.name}
-              </button>
-            ))}
+        {showCenterState && (
+          <WatermarkCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="watermark-recent-empty">
+            <Eraser size={24} />
+            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无最近生成"}</strong>
+            <p>{viewTab === "favorite" ? "收藏后的去水印结果会显示在这里。" : "生成完成的图片或视频会保存在这里。"}</p>
           </div>
         )}
-
-        {viewTab === "home" && <div className="voice-floating-composer">
-          <div className="voice-composer-title">
-            <span>🎭</span>
-            语音合成
-          </div>
-          <div className="voice-upload-grid">
-            <VoiceUploadSlot
-              title="+ 目标音色"
-              hint="参考音频 10s-5min"
-              fileState={cloneAudio}
-              isUploading={uploading === "clone"}
-              onPick={uploadFile}
+        <div className={`watermark-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
+          {visibleTasks.map((task) => (
+            <WatermarkTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRepeat={repeatTask}
             />
-          </div>
-
-          <label className="voice-textarea-field">
-            <span>合成文本</span>
-            <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="输入要用目标音色朗读的内容" />
-          </label>
-
-          <div className="voice-slider-row">
-            <label>
-              <span>语速 {speed.toFixed(2)}x</span>
-              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音量 {volume.toFixed(1)}</span>
-              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
-              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
-            </label>
-          </div>
-
-          {(demoAudio || resultAudio) && (
-            <div className="voice-audio-results">
-              {demoAudio && (
-            <div>
-                  <span>音色试听</span>
-                  <audio src={demoAudio} controls />
-                </div>
-              )}
-              {resultAudio && (
-                <div>
-                  <span>合成结果</span>
-                  <audio src={resultAudio} controls />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="voice-composer-footer">
-            <span>{notice || "目标音色支持 mp3、m4a、wav，建议 10 秒到 5 分钟"}</span>
-            <div className="voice-actions">
-              {(resultAudio || resultUrl) && (
-                <button className="voice-download" type="button" onClick={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}>
-                  <Download size={15} />
-                </button>
-              )}
-              <button className="voice-generate-button" type="button" onClick={generateSpeech} disabled={isCloning || isSynthesizing || uploading || !cloneAudio || !text.trim()}>
-                {isCloning || isSynthesizing ? <Loader2 size={16} /> : <Play size={16} />}
-                生成语音
-              </button>
-            </div>
-          </div>
-        </div>}
+          ))}
+        </div>
       </div>
+      {viewTab === "home" && options.models.length > 0 && (
+        <WatermarkComposer
+          options={options}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </section>
   );
 }
@@ -3597,7 +3620,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "voice" || id === "voice-convert") {
+    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "watermark" || id === "voice" || id === "voice-convert") {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -3612,8 +3635,10 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "chat" && <ChatGenerationView activeNav={activeNav} />}
         {activeNav === "digital-human" && <DigitalHumanGenerationView activeNav={activeNav} />}
         {activeNav === "image-digital-human" && <ImageDigitalHumanView activeNav={activeNav} />}
-        {activeNav === "motion" && <MotionTransferView activeNav={activeNav} />}
-        {activeNav === "voice" && <VoiceConversionView activeNav={activeNav} />}
+        {activeNav === "motion" && <MotionTransferView activeNav={activeNav} splitResults />}
+        {activeNav === "watermark" && <WatermarkRemovalView activeNav={activeNav} />}
+        {activeNav === "voice" && <VoiceSynthesisView activeNav={activeNav} />}
+        {activeNav === "voice-convert" && <VoiceConvertView activeNav={activeNav} />}
         {activeNav === "face-swap" && (
           <MotionTransferView
             activeNav={activeNav}
@@ -3623,7 +3648,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
             splitResults
           />
         )}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -3655,7 +3680,7 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "voice" || view === "voice-convert") {
+  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "watermark" || view === "voice" || view === "voice-convert") {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 

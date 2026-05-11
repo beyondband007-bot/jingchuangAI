@@ -62,6 +62,53 @@ function normalizeNumber(value, fallback) {
   return Number.isFinite(number) ? number : fallback;
 }
 
+function makeDefaultCloneName(name) {
+  return name || `复刻音色 ${clonedVoices.length + 1}`;
+}
+
+function registerClonedVoice({ voiceId, name, description, demoAudio }) {
+  const voice = {
+    id: voiceId,
+    name: makeDefaultCloneName(name),
+    description: description || "MiniMax 快速复刻音色",
+    provider: "minimax",
+    source: "voice-clone",
+    demoAudio: demoAudio || "",
+    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+  };
+
+  const existingIndex = clonedVoices.findIndex((item) => item.id === voice.id);
+  if (existingIndex >= 0) clonedVoices.splice(existingIndex, 1, voice);
+  clonedVoices.unshift(voice);
+  return voice;
+}
+
+async function createCloneFromUpload({ cloneAudioFileId, voiceId, promptAudioFileId, promptText, previewText, model, name }) {
+  const result = await cloneMinimaxVoice({
+    cloneAudioFileId,
+    voiceId,
+    promptAudioFileId,
+    promptText,
+    previewText,
+    model
+  });
+
+  const voice = registerClonedVoice({
+    voiceId,
+    name,
+    description: promptText || "MiniMax 快速复刻音色",
+    demoAudio: result.demoAudio
+  });
+
+  return {
+    voice,
+    demoAudio: result.demoAudio,
+    inputSensitive: result.inputSensitive,
+    inputSensitiveType: result.inputSensitiveType,
+    extraInfo: result.extraInfo
+  };
+}
+
 export function getConfig() {
   return {
     configured: Boolean(config.minimax.apiKey),
@@ -113,36 +160,17 @@ export async function createClone(payload) {
     throw createHttpError("promptAudioFileId and promptText must be provided together", 400);
   }
 
-  const result = await cloneMinimaxVoice({
+  const result = await createCloneFromUpload({
     cloneAudioFileId,
     voiceId,
     promptAudioFileId,
     promptText,
     previewText,
-    model
+    model,
+    name
   });
 
-  const voice = {
-    id: voiceId,
-    name: name || `复刻音色 ${clonedVoices.length + 1}`,
-    description: promptText || "MiniMax 快速复刻音色",
-    provider: "minimax",
-    source: "voice-clone",
-    demoAudio: result.demoAudio,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
-  };
-
-  const existingIndex = clonedVoices.findIndex((item) => item.id === voice.id);
-  if (existingIndex >= 0) clonedVoices.splice(existingIndex, 1, voice);
-  clonedVoices.unshift(voice);
-
-  return {
-    voice,
-    demoAudio: result.demoAudio,
-    inputSensitive: result.inputSensitive,
-    inputSensitiveType: result.inputSensitiveType,
-    extraInfo: result.extraInfo
-  };
+  return result;
 }
 
 export async function synthesize(payload) {
@@ -176,3 +204,4 @@ export async function synthesize(payload) {
     mimeType: speech.mimeType
   };
 }
+

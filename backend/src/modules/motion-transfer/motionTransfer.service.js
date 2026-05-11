@@ -43,7 +43,7 @@ function getModelDefinitions() {
       providerModel: config.kie.motionTransferModel,
       basePoints: config.kie.motionTransferPoints,
       resolution: config.kie.motionTransferResolution,
-      duration: config.kie.motionTransferDuration
+      characterOrientation: config.kie.motionTransferCharacterOrientation
     }
   ];
 }
@@ -53,15 +53,19 @@ function getModelByKey(modelKey) {
   return getModelDefinitions().find((model) => model.value === key) || getModelDefinitions()[0];
 }
 
-function normalizeDuration(value) {
-  const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) return config.kie.motionTransferDuration;
-  return Math.max(2, Math.min(15, Math.round(number)));
-}
-
 function normalizeResolution(value) {
   const resolution = String(value || "").trim();
-  return resolution || config.kie.motionTransferResolution;
+  if (resolution === "1080p") return "1080p";
+  return "720p";
+}
+
+function normalizeCharacterOrientation(value) {
+  const orientation = String(value || "").trim();
+  return orientation === "video" ? "video" : "image";
+}
+
+function getDisplayDuration(characterOrientation) {
+  return characterOrientation === "video" ? 30 : 10;
 }
 
 export async function getCredits() {
@@ -78,12 +82,20 @@ export function getModels() {
     defaults: {
       model: models[0].value,
       resolution: models[0].resolution,
-      duration: models[0].duration
+      characterOrientation: models[0].characterOrientation
     },
+    modes: [
+      { value: "720p", label: "720p" },
+      { value: "1080p", label: "1080p" }
+    ],
+    characterOrientations: [
+      { value: "image", label: "图片朝向", maxSeconds: 10 },
+      { value: "video", label: "视频朝向", maxSeconds: 30 }
+    ],
     limits: {
       maxImageBytes: 10 * 1024 * 1024,
-      maxVideoBytes: 200 * 1024 * 1024,
-      recommendedVideoSeconds: 15
+      maxVideoBytes: 100 * 1024 * 1024,
+      recommendedVideoSeconds: 30
     }
   };
 }
@@ -146,7 +158,8 @@ export async function createTask(payload) {
   const model = getModelByKey(payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution);
-  const duration = normalizeDuration(payload.duration || model.duration);
+  const characterOrientation = normalizeCharacterOrientation(payload.characterOrientation || model.characterOrientation);
+  const duration = getDisplayDuration(characterOrientation);
   const costPoints = Number(model.basePoints || 100);
 
   const connection = await getPool().getConnection();
@@ -165,6 +178,7 @@ export async function createTask(payload) {
       prompt,
       resolution,
       duration,
+      characterOrientation,
       costPoints
     });
     await debitCredits(connection, {
@@ -191,8 +205,8 @@ export async function createTask(payload) {
       prompt,
       imageUrl: imageUpload.url,
       videoUrl: videoUpload.url,
-      resolution,
-      duration
+      mode: resolution,
+      characterOrientation
     });
     await setMotionTransferTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
