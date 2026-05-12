@@ -13,6 +13,9 @@ import { watermarkRouter } from "./modules/watermark/watermark.routes.js";
 import { voiceRouter } from "./modules/voice/voice.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
 import { voiceConvertRouter } from "./modules/voice-convert/voiceConvert.routes.js";
+import { transcribeRouter } from "./modules/transcribe/transcribe.routes.js";
+import { musicRouter } from "./modules/music/music.routes.js";
+import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { sendError } from "./shared/http.js";
 import { getDemoUserCredits } from "./shared/userService.js";
 
@@ -54,6 +57,9 @@ export function createApp() {
   app.use("/api/watermark", watermarkRouter);
   app.use("/api/voice", voiceRouter);
   app.use("/api/voice-convert", voiceConvertRouter);
+  app.use("/api/transcribe", transcribeRouter);
+  app.use("/api/music", musicRouter);
+  app.use("/api/replicate", replicateRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });

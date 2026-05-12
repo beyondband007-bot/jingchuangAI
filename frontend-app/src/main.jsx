@@ -47,6 +47,9 @@ import { faceSwapApi } from "./api/faceSwapApi";
 import { watermarkApi } from "./api/watermarkApi";
 import { VoiceSynthesisView } from "./features/voice/VoiceSynthesisView";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
+import { TranscribeView } from "./features/transcribe/TranscribeView";
+import { MusicGenerationView } from "./features/music/MusicGenerationView";
+import { ReplicateView } from "./features/replicate/ReplicateView";
 import "./styles.css";
 
 const exampleImages = [
@@ -93,6 +96,9 @@ function getInitialView() {
   if (window.location.pathname === "/face-swap" || window.location.hash === "#/face-swap") return "face-swap";
   if (window.location.pathname === "/watermark" || window.location.hash === "#/watermark") return "watermark";
   if (window.location.pathname === "/voice-conversion" || window.location.hash === "#/voice-convert") return "voice-convert";
+  if (window.location.pathname === "/transcribe" || window.location.hash === "#/transcribe") return "transcribe";
+  if (window.location.pathname === "/music" || window.location.hash === "#/music") return "music";
+  if (window.location.pathname === "/replicate" || window.location.hash === "#/replicate") return "replicate";
   if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
@@ -3620,7 +3626,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "watermark" || id === "voice" || id === "voice-convert") {
+    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "watermark" || id === "voice" || id === "voice-convert" || id === "transcribe" || id === "music" || id === "replicate") {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -3639,6 +3645,9 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "watermark" && <WatermarkRemovalView activeNav={activeNav} />}
         {activeNav === "voice" && <VoiceSynthesisView activeNav={activeNav} />}
         {activeNav === "voice-convert" && <VoiceConvertView activeNav={activeNav} />}
+        {activeNav === "transcribe" && <TranscribeView activeNav={activeNav} />}
+        {activeNav === "music" && <MusicGenerationView activeNav={activeNav} />}
+        {activeNav === "replicate" && <ReplicateView activeNav={activeNav} />}
         {activeNav === "face-swap" && (
           <MotionTransferView
             activeNav={activeNav}
@@ -3648,7 +3657,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
             splitResults
           />
         )}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "music", "replicate"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -3680,7 +3689,7 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "watermark" || view === "voice" || view === "voice-convert") {
+  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "watermark" || view === "voice" || view === "voice-convert" || view === "transcribe" || view === "music" || view === "replicate") {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 
