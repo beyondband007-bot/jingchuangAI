@@ -3,6 +3,7 @@ import express from "express";
 import path from "path";
 import { config } from "./config/index.js";
 import { checkDatabase } from "./db/pool.js";
+import { articleRouter } from "./modules/article/article.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { digitalHumanRouter } from "./modules/digital-human/digitalHuman.routes.js";
 import { enhanceRouter } from "./modules/enhance/enhance.routes.js";
@@ -50,6 +51,7 @@ export function createApp() {
   });
 
   app.use("/api/image", imageRouter);
+  app.use("/api/article", articleRouter);
   app.use("/api/video", videoRouter);
   app.use("/api/chat", chatRouter);
   app.use("/api/digital-human", digitalHumanRouter);

@@ -22,6 +22,7 @@ export function mapImageTask(row) {
     id: row.id,
     model: row.display_name || row.model_key,
     modelKey: row.model_key,
+    source: row.source || "image",
     ratio: row.ratio,
     quality: row.quality,
     count: row.image_count,

@@ -48,6 +48,7 @@ import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
 import { MusicGenerationView } from "./features/music/MusicGenerationView";
 import { ReplicateView } from "./features/replicate/ReplicateView";
+import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import "./styles.css";
@@ -100,6 +101,7 @@ function getInitialView() {
   if (window.location.pathname === "/watermark" || window.location.hash === "#/watermark") return "watermark";
   if (window.location.pathname === "/voice-conversion" || window.location.hash === "#/voice-convert") return "voice-convert";
   if (window.location.pathname === "/transcribe" || window.location.hash === "#/transcribe") return "transcribe";
+  if (window.location.pathname === "/article" || window.location.hash === "#/article") return "article";
   if (window.location.pathname === "/music" || window.location.hash === "#/music") return "music";
   if (window.location.pathname === "/replicate" || window.location.hash === "#/replicate") return "replicate";
   if (window.location.pathname === "/enhance" || window.location.hash === "#/enhance") return "enhance";
@@ -3664,6 +3666,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "voice" && <VoiceSynthesisView activeNav={activeNav} />}
         {activeNav === "voice-convert" && <VoiceConvertView activeNav={activeNav} />}
         {activeNav === "transcribe" && <TranscribeView activeNav={activeNav} />}
+        {activeNav === "article" && <ArticleGenerationView activeNav={activeNav} />}
         {activeNav === "music" && <MusicGenerationView activeNav={activeNav} />}
         {activeNav === "replicate" && <ReplicateView activeNav={activeNav} />}
         {activeNav === "enhance" && <EnhanceView activeNav={activeNav} />}
@@ -3677,7 +3680,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
             splitResults
           />
         )}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "music", "replicate", "enhance", "remove-bg"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );

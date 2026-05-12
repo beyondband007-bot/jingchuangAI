@@ -67,6 +67,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS image_generation_tasks (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
+      source VARCHAR(40) NOT NULL DEFAULT 'image',
       model_key VARCHAR(80) NOT NULL,
       prompt TEXT NOT NULL,
       ratio VARCHAR(20) NOT NULL,
@@ -82,6 +83,7 @@ async function createTables() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_image_tasks_user_created (user_id, created_at),
+      INDEX idx_image_tasks_source_created (source, user_id, created_at),
       INDEX idx_image_tasks_status (status),
       CONSTRAINT fk_image_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -95,6 +97,16 @@ async function createTables() {
   );
   if (columns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN favorite BOOLEAN NOT NULL DEFAULT FALSE AFTER refunded");
+  }
+
+  const [sourceColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'source'`,
+    [config.db.database]
+  );
+  if (sourceColumns.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'image' AFTER user_id");
   }
 
   await pool.query(`

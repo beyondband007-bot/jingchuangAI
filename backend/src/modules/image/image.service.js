@@ -44,9 +44,9 @@ export async function getModels() {
   };
 }
 
-export async function listTasks({ filter = "all" } = {}) {
+export async function listTasks({ filter = "all", source } = {}) {
   await refreshProcessingTasks();
-  const rows = await listImageTaskRows({ filter });
+  const rows = await listImageTaskRows({ filter, source });
   return rows.map(mapImageTask);
 }
 
@@ -57,7 +57,7 @@ export async function getTask(id) {
 }
 
 export async function createTask(payload) {
-  const { prompt, model, ratio, quality, count = 1 } = payload;
+  const { prompt, model, ratio, quality, count = 1, source } = payload;
   validateImagePayload({ prompt, model, ratio, quality, count });
 
   const pool = getPool();
@@ -84,7 +84,8 @@ export async function createTask(payload) {
       ratio,
       quality,
       count: Number(count),
-      costPoints
+      costPoints,
+      source
     });
 
     await debitCredits(connection, {

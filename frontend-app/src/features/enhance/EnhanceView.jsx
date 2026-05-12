@@ -1,5 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Film, Image, Loader2, Plus, RefreshCcw, Send, Sparkles, Star, Trash2, Wand2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Download,
+  Film,
+  Image,
+  Loader2,
+  Plus,
+  RefreshCcw,
+  Send,
+  Star,
+  Trash2,
+  Wand2
+} from "lucide-react";
 import { enhanceApi } from "./enhanceApi";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
@@ -29,7 +41,7 @@ function EnhanceCenterState({ task, isSubmitting, error, onOpenRecent }) {
             <CheckCircle2 size={24} />
           </span>
           <h2>画质增强完成</h2>
-          <p>{isVideo ? "视频清晰度已提升，尽量保留原始画面节奏和声音。" : "图片细节已增强，主体内容和构图保持不变。"}</p>
+          <p>{isVideo ? "视频清晰度已提升，原始节奏和声音已保留。" : "图片细节已增强，主体内容和构图保持不变。"}</p>
           <div className="watermark-result-actions enhance-result-actions">
             <a href={task.resultUrl} download>
               <Download size={15} />
@@ -49,7 +61,7 @@ function EnhanceCenterState({ task, isSubmitting, error, onOpenRecent }) {
           <Wand2 size={24} />
         </span>
         <strong>这次没有增强成功</strong>
-        <p>{error || task?.error || "画质增强服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <p>{error || task?.error || "画质增强服务返回错误，积分会按任务状态自动处理。"}</p>
       </section>
     );
   }

@@ -1,4 +1,4 @@
-﻿const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:3006";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:3006";
 const listeners = new Set();
 let pollTimer;
 let modelsPromise;
@@ -29,9 +29,7 @@ function notify() {
 
 function startPolling() {
   if (pollTimer) return;
-  pollTimer = window.setInterval(() => {
-    notify();
-  }, 3000);
+  pollTimer = window.setInterval(notify, 3000);
 }
 
 function stopPollingIfIdle() {
@@ -41,7 +39,7 @@ function stopPollingIfIdle() {
   }
 }
 
-export const imageApi = {
+export const articleApi = {
   subscribe(listener) {
     listeners.add(listener);
     startPolling();
@@ -62,12 +60,12 @@ export const imageApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/image/models");
+    modelsPromise ||= request("/api/article/models");
     return modelsPromise;
   },
 
   async getTasks({ filter = "all" } = {}) {
-    return request(`/api/image/tasks?filter=${encodeURIComponent(filter)}`);
+    return request(`/api/article/tasks?filter=${encodeURIComponent(filter)}`);
   },
 
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {
@@ -77,18 +75,8 @@ export const imageApi = {
     return `${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
   },
 
-  getRandomPrompt() {
-    const prompts = [
-      "时尚斑马在水里吐泡泡，水下写实摄影，高级广告质感",
-      "25-30岁中国女性深夜居家写实摄影，柔和台灯，电影感构图",
-      "未来城市玻璃展厅里的蓝色鲸鱼装置，极简空间，真实摄影",
-      "一只柯基在浅水里奔跑，水花飞溅，明亮自然光"
-    ];
-    return prompts[Math.floor(Math.random() * prompts.length)];
-  },
-
   async createTask(payload) {
-    const task = await request("/api/image/tasks", {
+    const task = await request("/api/article/tasks", {
       method: "POST",
       body: JSON.stringify(payload)
     });
@@ -97,27 +85,14 @@ export const imageApi = {
   },
 
   async deleteTask(id) {
-    const result = await request(`/api/image/tasks/${id}`, { method: "DELETE" });
+    const result = await request(`/api/article/tasks/${id}`, { method: "DELETE" });
     notify();
     return result;
   },
 
   async toggleFavorite(id) {
-    const task = await request(`/api/image/tasks/${id}/favorite`, { method: "POST" });
+    const task = await request(`/api/article/tasks/${id}/favorite`, { method: "POST" });
     notify();
     return task;
-  },
-
-  async regenerateTask(id) {
-    const task = await request(`/api/image/tasks/${id}`);
-    const created = await this.createTask({
-      prompt: task.prompt,
-      model: task.modelKey,
-      ratio: task.ratio,
-      quality: task.quality,
-      count: task.count || 1
-    });
-    notify();
-    return created;
   }
 };
