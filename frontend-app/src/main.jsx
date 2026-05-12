@@ -19,7 +19,6 @@ import {
   Maximize2,
   Mic,
   Music,
-  Paintbrush,
   Play,
   Plus,
   RefreshCcw,
@@ -27,7 +26,6 @@ import {
   Send,
   PlaySquare,
   Scissors,
-  Share2,
   Sparkles,
   Star,
   Target,
@@ -50,6 +48,8 @@ import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
 import { MusicGenerationView } from "./features/music/MusicGenerationView";
 import { ReplicateView } from "./features/replicate/ReplicateView";
+import { EnhanceView } from "./features/enhance/EnhanceView";
+import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import "./styles.css";
 
 const exampleImages = [
@@ -83,12 +83,15 @@ const navItems = [
   { id: "music", label: "AI音乐", icon: Music },
   { id: "replicate", label: "复刻", icon: Copy },
   { id: "enhance", label: "增强", icon: Wand2 },
-  { id: "remove-bg", label: "去背景", icon: Layers },
-  { id: "canvas", label: "画布", icon: Paintbrush },
-  { id: "publish", label: "发布", icon: Share2 }
+  { id: "remove-bg", label: "去背景", icon: Layers }
 ];
 
+const featureNavIds = navItems.map((item) => item.id).filter((id) => id !== "home");
+const featureNavIdSet = new Set(featureNavIds);
+
 function getInitialView() {
+  const hashView = window.location.hash.replace(/^#\/?/, "");
+  if (featureNavIdSet.has(hashView)) return hashView;
   if (window.location.pathname === "/chat" || window.location.hash === "#/chat") return "chat";
   if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
@@ -99,13 +102,15 @@ function getInitialView() {
   if (window.location.pathname === "/transcribe" || window.location.hash === "#/transcribe") return "transcribe";
   if (window.location.pathname === "/music" || window.location.hash === "#/music") return "music";
   if (window.location.pathname === "/replicate" || window.location.hash === "#/replicate") return "replicate";
+  if (window.location.pathname === "/enhance" || window.location.hash === "#/enhance") return "enhance";
+  if (window.location.pathname === "/remove-bg" || window.location.hash === "#/remove-bg") return "remove-bg";
   if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
   return "home";
 }
 
-const OriginalHome = memo(function OriginalHome({ onOpenImage, skipSplash }) {
+const OriginalHome = memo(function OriginalHome({ onOpenFeature, skipSplash }) {
   const frameRef = useRef(null);
 
   const enterOriginalHome = useCallback(() => {
@@ -136,7 +141,20 @@ const OriginalHome = memo(function OriginalHome({ onOpenImage, skipSplash }) {
   return (
     <div className="original-home-shell">
       <iframe ref={frameRef} className="original-home-frame" title="鲸创AI首页" src="/original/index.html" onLoad={enterOriginalHome} />
-      <button className="image-nav-hotspot" type="button" onClick={onOpenImage} aria-label="进入图片生成" />
+      <div className="home-nav-hotspots" aria-label="首页功能入口">
+        {featureNavIds.map((id) => {
+          const item = navItems.find((navItem) => navItem.id === id);
+          return (
+            <button
+              className="home-nav-hotspot"
+              type="button"
+              key={id}
+              onClick={() => onOpenFeature(id)}
+              aria-label={`进入${item?.label || id}`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 });
@@ -3626,7 +3644,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
       onBackHome();
       return;
     }
-    if (id === "image" || id === "video" || id === "chat" || id === "digital-human" || id === "image-digital-human" || id === "motion" || id === "face-swap" || id === "watermark" || id === "voice" || id === "voice-convert" || id === "transcribe" || id === "music" || id === "replicate") {
+    if (featureNavIdSet.has(id)) {
       window.history.pushState(null, "", `#/${id}`);
     }
     setActiveNav((current) => (current === id ? current : id));
@@ -3648,6 +3666,8 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "transcribe" && <TranscribeView activeNav={activeNav} />}
         {activeNav === "music" && <MusicGenerationView activeNav={activeNav} />}
         {activeNav === "replicate" && <ReplicateView activeNav={activeNav} />}
+        {activeNav === "enhance" && <EnhanceView activeNav={activeNav} />}
+        {activeNav === "remove-bg" && <RemoveBgView activeNav={activeNav} />}
         {activeNav === "face-swap" && (
           <MotionTransferView
             activeNav={activeNav}
@@ -3657,7 +3677,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
             splitResults
           />
         )}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "music", "replicate"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "music", "replicate", "enhance", "remove-bg"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );
@@ -3673,12 +3693,13 @@ function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const openImage = useCallback(() => {
+  const openFeature = useCallback((id = "image") => {
     setSkipHomeSplash(false);
-    if (window.location.hash !== "#/image") {
-      window.history.pushState(null, "", "/#/image");
+    const nextId = featureNavIdSet.has(id) ? id : "image";
+    if (window.location.hash !== `#/${nextId}`) {
+      window.history.pushState(null, "", `/#/${nextId}`);
     }
-    setView((current) => (current === "image" ? current : "image"));
+    setView((current) => (current === nextId ? current : nextId));
   }, []);
 
   const backHome = useCallback(() => {
@@ -3689,11 +3710,11 @@ function App() {
     setView((current) => (current === "home" ? current : "home"));
   }, []);
 
-  if (view === "image" || view === "video" || view === "chat" || view === "digital-human" || view === "image-digital-human" || view === "motion" || view === "face-swap" || view === "watermark" || view === "voice" || view === "voice-convert" || view === "transcribe" || view === "music" || view === "replicate") {
+  if (featureNavIdSet.has(view)) {
     return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
   }
 
-  return <OriginalHome onOpenImage={openImage} skipSplash={skipHomeSplash} />;
+  return <OriginalHome onOpenFeature={openFeature} skipSplash={skipHomeSplash} />;
 }
 
 createRoot(document.getElementById("root")).render(

@@ -40,6 +40,13 @@ export const config = {
     watermarkVideoModel: process.env.KIE_WATERMARK_VIDEO_MODEL || process.env.KIE_MOTION_TRANSFER_MODEL || "wan/2-7-r2v",
     watermarkVideoResolution: process.env.KIE_WATERMARK_VIDEO_RESOLUTION || "720p",
     watermarkVideoPoints: Number(process.env.KIE_WATERMARK_VIDEO_POINTS || 100),
+    enhanceImageModel: process.env.KIE_ENHANCE_IMAGE_MODEL || "topaz/image-upscale",
+    enhanceVideoModel: process.env.KIE_ENHANCE_VIDEO_MODEL || "topaz/video-upscale",
+    enhanceUpscaleFactor: process.env.KIE_ENHANCE_UPSCALE_FACTOR || "2",
+    enhanceImagePoints: Number(process.env.KIE_ENHANCE_IMAGE_POINTS || 25),
+    enhanceVideoPoints: Number(process.env.KIE_ENHANCE_VIDEO_POINTS || 100),
+    removeBgImageModel: process.env.KIE_REMOVE_BG_IMAGE_MODEL || "recraft/remove-background",
+    removeBgImagePoints: Number(process.env.KIE_REMOVE_BG_IMAGE_POINTS || 25),
     fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
   },
   minimax: {

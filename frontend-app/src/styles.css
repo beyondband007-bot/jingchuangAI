@@ -1312,18 +1312,23 @@ button {
   border: 0;
 }
 
-/* Only captures the existing left-nav image item; it does not restyle the home page. */
-.image-nav-hotspot {
+/* Captures the existing left-nav items in the original home iframe. */
+.home-nav-hotspots {
   position: absolute;
   left: 0;
   top: 115px;
+  width: 220px;
+  z-index: 3;
+}
+
+.home-nav-hotspot {
+  display: block;
   width: 220px;
   height: 42px;
   padding: 0;
   background: transparent;
   border: 0;
   cursor: pointer;
-  z-index: 3;
 }
 
 .image-placeholder {
@@ -1402,8 +1407,11 @@ button {
 }
 
 @media (max-width: 760px) {
-  .image-nav-hotspot {
-    top: 115px;
+  .home-nav-hotspots {
+    width: 210px;
+  }
+
+  .home-nav-hotspot {
     width: 210px;
   }
 
@@ -5989,6 +5997,128 @@ button {
   border: 1px dashed #d8e3ef;
   border-radius: 8px;
   text-align: center;
+}
+
+.enhance-view-root {
+  background: #f6f7f9;
+}
+
+.enhance-hero-icon,
+.enhance-center-icon {
+  color: #155fbd;
+  background: linear-gradient(180deg, #f8fbff 0%, #eaf4ff 100%);
+}
+
+.enhance-hero-empty h1,
+.enhance-center-state strong,
+.enhance-result-copy h2,
+.enhance-recent-empty strong {
+  color: #0b376a;
+}
+
+.enhance-hero-empty p,
+.enhance-center-state p,
+.enhance-result-copy p,
+.enhance-recent-empty p {
+  color: #4d769f;
+}
+
+.enhance-mode-tabs .is-active {
+  color: #0f66d6;
+  background: #eef7ff;
+}
+
+.enhance-upload-slot:hover {
+  background: #f8fbff;
+  border-color: #75b5ee;
+}
+
+.enhance-center-progress i {
+  background: linear-gradient(90deg, #48a4ff, #6bd2c6);
+}
+
+.enhance-task-card.status-processing .watermark-task-placeholder svg {
+  color: #0f66d6;
+}
+
+.enhance-result-actions a,
+.enhance-result-actions button {
+  border-color: rgba(15, 102, 214, 0.16);
+}
+
+.remove-bg-view-root {
+  background: #f6f7f9;
+}
+
+.remove-bg-hero-icon,
+.remove-bg-center-icon {
+  color: #0f766e;
+  background: linear-gradient(180deg, #f7fffd 0%, #e7f8f4 100%);
+  border-color: #bfebe2;
+}
+
+.remove-bg-hero-empty h1,
+.remove-bg-center-state strong,
+.remove-bg-result-copy h2,
+.remove-bg-recent-empty strong {
+  color: #0f3f3b;
+}
+
+.remove-bg-hero-empty p,
+.remove-bg-center-state p,
+.remove-bg-result-copy p,
+.remove-bg-recent-empty p {
+  color: #527d78;
+}
+
+.remove-bg-composer-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  color: #0f766e;
+  background: #eefaf7;
+  border: 1px solid #d0eee7;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.remove-bg-upload-slot,
+.remove-bg-result-stage,
+.remove-bg-task-preview {
+  background-color: #f8fafc;
+  background-image:
+    linear-gradient(45deg, #dbe4ee 25%, transparent 25%),
+    linear-gradient(-45deg, #dbe4ee 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #dbe4ee 75%),
+    linear-gradient(-45deg, transparent 75%, #dbe4ee 75%);
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-size: 20px 20px;
+}
+
+.remove-bg-upload-slot:hover {
+  background-color: #f6fffc;
+  border-color: #73cfc0;
+}
+
+.remove-bg-result-stage img,
+.remove-bg-task-preview img {
+  object-fit: contain;
+}
+
+.remove-bg-center-progress i {
+  background: linear-gradient(90deg, #14b8a6, #4ade80);
+}
+
+.remove-bg-task-card.status-processing .watermark-task-placeholder svg {
+  color: #0f766e;
+}
+
+.remove-bg-result-actions a,
+.remove-bg-result-actions button {
+  border-color: rgba(15, 118, 110, 0.18);
 }
 
 @media (max-width: 900px) {
