@@ -51,6 +51,7 @@ import { ReplicateView } from "./features/replicate/ReplicateView";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
+import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import "./styles.css";
 
 const exampleImages = [
@@ -3671,6 +3672,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
         {activeNav === "replicate" && <ReplicateView activeNav={activeNav} />}
         {activeNav === "enhance" && <EnhanceView activeNav={activeNav} />}
         {activeNav === "remove-bg" && <RemoveBgView activeNav={activeNav} />}
+        {activeNav === "video-voice" && <VideoDubbingView activeNav={activeNav} />}
         {activeNav === "face-swap" && (
           <MotionTransferView
             activeNav={activeNav}
@@ -3680,7 +3682,7 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
             splitResults
           />
         )}
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg", "video-voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );

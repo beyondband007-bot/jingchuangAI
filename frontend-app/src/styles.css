@@ -7272,3 +7272,431 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   video-dubbing — 视频配音功能
+   ============================================ */
+
+.video-dub-view-root {
+  position: relative;
+  min-height: 100vh;
+  padding: 0 24px 24px;
+  background: #f6f7f9;
+}
+
+.video-dub-canvas {
+  position: relative;
+  display: grid;
+  min-height: calc(100vh - 88px);
+  overflow: hidden;
+  place-items: center;
+  padding: 92px 48px 300px;
+  background: #fff;
+  border: 1px solid #e5eaf2;
+}
+
+.video-dub-canvas.is-recent {
+  align-items: start;
+  justify-items: start;
+  padding: 24px;
+}
+
+.video-dub-hero-empty {
+  position: absolute;
+  top: 104px;
+  right: 24px;
+  left: 24px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  color: #0b376a;
+}
+
+.video-dub-hero-icon {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  place-items: center;
+  margin-bottom: 14px;
+  color: #2b83ef;
+}
+
+.video-dub-upload-slot {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+  width: min(560px, 100%);
+  height: 220px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #2b83ef;
+  background: #fff;
+  border: 1px solid #2b83ef;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(43, 131, 239, 0.28);
+  cursor: pointer;
+  font-family: inherit;
+  transition: box-shadow 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.video-dub-upload-slot:hover {
+  background: #fff;
+  border-color: #1a6fe8;
+  box-shadow: 0 14px 40px rgba(43, 131, 239, 0.38);
+}
+
+.video-dub-upload-slot.has-file {
+  background: #fff;
+  border-color: #1d5fd4;
+}
+
+.video-dub-upload-slot input[type="file"] {
+  display: none;
+}
+
+.video-dub-upload-icon {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  background: rgba(43, 131, 239, 0.12);
+  border-radius: 50%;
+}
+
+.video-dub-upload-slot strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0b376a;
+}
+
+.video-dub-upload-slot small {
+  font-size: 12px;
+  color: #5d83aa;
+  text-align: center;
+}
+
+.video-dub-upload-grid {
+  display: grid;
+  place-items: center;
+}
+
+.video-dub-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f2f7ff;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.video-dub-progress-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #9ab;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.video-dub-progress-step.done {
+  color: #2b83ef;
+}
+
+.video-dub-progress-step.active {
+  color: #2b83ef;
+  background: #dde8ff;
+  font-weight: 700;
+}
+
+.video-dub-recent-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  width: 100%;
+  padding: 8px;
+}
+
+.video-dub-recent-panel.has-items {
+  align-content: start;
+}
+
+.video-dub-recent-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 60px 24px;
+  color: #9ab;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.video-dub-recent-empty strong {
+  font-size: 15px;
+  color: #4a6080;
+}
+
+.video-dub-recent-empty p {
+  font-size: 13px;
+  max-width: 280px;
+}
+
+.video-dub-recent-item-wrapper {
+  position: relative;
+}
+
+.video-dub-recent-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-dub-recent-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 140px;
+  background: #f6f7f9;
+  color: #c5d5e8;
+  overflow: hidden;
+}
+
+.video-dub-recent-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-dub-recent-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.video-dub-recent-overlay.is-failed {
+  background: rgba(220, 50, 50, 0.45);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.video-dub-recent-info {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.video-dub-recent-info strong {
+  font-size: 13px;
+  color: #17375c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-dub-recent-info span {
+  font-size: 11px;
+  color: #9ab;
+}
+
+.video-dub-recent-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 4px;
+  font-size: 12px;
+  color: #2b83ef;
+}
+
+.video-dub-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #e5eaf2;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.video-dub-progress-fill {
+  height: 100%;
+  background: #2b83ef;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.video-dub-recent-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 0;
+  border-radius: 50%;
+  color: #2b83ef;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.video-dub-recent-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px 12px;
+}
+
+.video-dub-favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #5a7a9a;
+  background: #f2f7ff;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.video-dub-favorite-button:hover,
+.video-dub-favorite-button.is-favorite {
+  color: #9a6a00;
+  background: #fff6d8;
+}
+
+.video-dub-recent-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #5a7a9a;
+  background: #f2f7ff;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.video-dub-recent-icon-button:hover {
+  color: #2b83ef;
+  background: #dde8ff;
+}
+
+.video-dub-recent-icon-button.is-danger:hover {
+  color: #dc3232;
+  background: #fee;
+}
+
+.video-dub-player-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 20, 38, 0.58);
+}
+
+.video-dub-player-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(920px, 100%);
+  padding: 14px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 24px 72px rgba(6, 18, 34, 0.32);
+}
+
+.video-dub-player-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #17375c;
+}
+
+.video-dub-player-head strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-dub-player-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: #5a7a9a;
+  background: #f2f7ff;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.video-dub-player-dialog video {
+  width: 100%;
+  max-height: min(72vh, 640px);
+  background: #000;
+  border-radius: 8px;
+}
+
+.video-dub-floating-composer {
+  position: fixed;
+  right: 32px;
+  bottom: 0;
+  left: 340px;
+  z-index: 9;
+  background: #fff;
+  border: 1px solid #dce7f4;
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 32px rgba(23, 55, 92, 0.1);
+}
+
+.video-dub-floating-composer .voice-composer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: #17375c;
+}
+
+.video-dub-upload-grid {
+  display: grid;
+  justify-items: center;
+  padding: 14px 20px;
+}
+
+.video-dub-floating-composer .voice-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px 16px;
+}
+
+.video-dub-floating-composer .voice-composer-footer > span {
+  flex: 1;
+  font-size: 12px;
+  color: #7a9ab8;
+}

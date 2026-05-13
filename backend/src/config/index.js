@@ -55,6 +55,11 @@ export const config = {
     baseUrl: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com",
     ttsModel: process.env.MINIMAX_TTS_MODEL || "speech-2.8-turbo"
   },
+  qwen: {
+    apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || "",
+    baseUrl: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    model: process.env.QWEN_MODEL || "qwen-vl-plus"
+  },
   media: {
     storageDir: process.env.MEDIA_STORAGE_DIR || "storage",
     publicAssetsDir: process.env.PUBLIC_ASSETS_DIR || "../frontend-app/public"

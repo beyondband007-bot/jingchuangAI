@@ -19,6 +19,7 @@ import { voiceConvertRouter } from "./modules/voice-convert/voiceConvert.routes.
 import { transcribeRouter } from "./modules/transcribe/transcribe.routes.js";
 import { musicRouter } from "./modules/music/music.routes.js";
 import { replicateRouter } from "./modules/replicate/replicate.routes.js";
+import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
 import { sendError } from "./shared/http.js";
 import { getDemoUserCredits } from "./shared/userService.js";
 
@@ -66,6 +67,7 @@ export function createApp() {
   app.use("/api/transcribe", transcribeRouter);
   app.use("/api/music", musicRouter);
   app.use("/api/replicate", replicateRouter);
+  app.use("/api/video-dub", videoDubRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
