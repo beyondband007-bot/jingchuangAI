@@ -88,13 +88,16 @@ const navItems = [
   { id: "remove-bg", label: "去背景", icon: Layers }
 ];
 
+const appEntryStorageKey = "jingchuang:enter-app";
 const featureNavIds = navItems.map((item) => item.id).filter((id) => id !== "home");
 const featureNavIdSet = new Set(featureNavIds);
+const appNavIdSet = new Set(navItems.map((item) => item.id));
 
-function getInitialView() {
+function getRouteView() {
   const hashView = window.location.hash.replace(/^#\/?/, "");
-  if (featureNavIdSet.has(hashView)) return hashView;
+  if (appNavIdSet.has(hashView)) return hashView;
   if (window.location.pathname === "/chat" || window.location.hash === "#/chat") return "chat";
+  if (window.location.pathname === "/home" || window.location.hash === "#/home") return "home";
   if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
   if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
   if (window.location.pathname === "/motion-transfer" || window.location.hash === "#/motion") return "motion";
@@ -110,15 +113,35 @@ function getInitialView() {
   if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
   if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
   if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
-  return "home";
+  return "splash";
 }
 
-const OriginalHome = memo(function OriginalHome({ onOpenFeature, skipSplash }) {
+function getInitialView() {
+  const shouldEnterApp = window.sessionStorage.getItem(appEntryStorageKey) === "1";
+  if (shouldEnterApp) {
+    window.sessionStorage.removeItem(appEntryStorageKey);
+    return getRouteView();
+  }
+  if (window.location.pathname !== "/" || window.location.hash) {
+    window.history.replaceState(null, "", "/");
+  }
+  return "splash";
+}
+
+const SplashHome = memo(function SplashHome() {
+  return (
+    <div className="original-home-shell">
+      <iframe className="original-home-frame" title="鲸创AI首页" src="/new_page/page.html" />
+    </div>
+  );
+});
+
+const AppHome = memo(function AppHome({ onOpenFeature }) {
   const frameRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
 
-  const enterOriginalHome = useCallback(() => {
-    if (!skipSplash) return;
-
+  const enterAppHome = useCallback(() => {
+    setIsReady(false);
     const frame = frameRef.current;
     let tries = 0;
     const timer = window.setInterval(() => {
@@ -126,24 +149,32 @@ const OriginalHome = memo(function OriginalHome({ onOpenFeature, skipSplash }) {
       try {
         const doc = frame?.contentDocument;
         const buttons = Array.from(doc?.querySelectorAll("button") || []);
-        const enterButton = buttons.find((button) => button.textContent?.includes("立即生成"));
+        const enterButton = buttons.find((button) => {
+          const text = button.textContent || "";
+          return text.includes("立即生成") || text.includes("开启鲸创AI");
+        });
         if (enterButton) {
           enterButton.click();
           window.clearInterval(timer);
+          window.setTimeout(() => setIsReady(true), 320);
+          return;
         }
       } catch {
         window.clearInterval(timer);
+        setIsReady(true);
+        return;
       }
 
-      if (tries > 30) {
+      if (tries > 50) {
         window.clearInterval(timer);
+        setIsReady(true);
       }
     }, 100);
-  }, [skipSplash]);
+  }, []);
 
   return (
-    <div className="original-home-shell">
-      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI首页" src="/original/index.html" onLoad={enterOriginalHome} />
+    <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
+      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI主页" src="/original/index.html" onLoad={enterAppHome} />
       <div className="home-nav-hotspots" aria-label="首页功能入口">
         {featureNavIds.map((id) => {
           const item = navItems.find((navItem) => navItem.id === id);
@@ -3313,10 +3344,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </a>
           ) : (
-            <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
-              setViewTab("favorite");
-              setSubmittedTaskId(null);
-            }}>
+            <button type="button" disabled>
               <Download size={15} />
               下载
             </button>
@@ -3639,19 +3667,25 @@ function WatermarkRemovalView({ activeNav }) {
   );
 }
 
-function ImageFeaturePage({ initialNav, onBackHome }) {
+function ImageFeaturePage({ initialNav, onOpenHome }) {
   const [activeNav, setActiveNav] = useState(initialNav || "image");
+
+  useEffect(() => {
+    setActiveNav(initialNav || "image");
+  }, [initialNav]);
 
   const handleNavChange = useCallback((id) => {
     if (id === "home") {
-      onBackHome();
+      window.history.pushState(null, "", "#/home");
+      onOpenHome();
       return;
     }
-    if (featureNavIdSet.has(id)) {
-      window.history.pushState(null, "", `#/${id}`);
+    const nextId = id;
+    if (featureNavIdSet.has(nextId)) {
+      window.history.pushState(null, "", `#/${nextId}`);
     }
-    setActiveNav((current) => (current === id ? current : id));
-  }, [onBackHome]);
+    setActiveNav((current) => (current === nextId ? current : nextId));
+  }, [onOpenHome]);
 
   return (
     <div className="feature-page-shell">
@@ -3690,36 +3724,32 @@ function ImageFeaturePage({ initialNav, onBackHome }) {
 
 function App() {
   const [view, setView] = useState(getInitialView);
-  const [skipHomeSplash, setSkipHomeSplash] = useState(false);
 
   useEffect(() => {
-    const onPopState = () => setView(getInitialView());
+    const onPopState = () => setView(getRouteView());
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
+  const openHome = useCallback(() => {
+    setView("home");
+  }, []);
+
   const openFeature = useCallback((id = "image") => {
-    setSkipHomeSplash(false);
     const nextId = featureNavIdSet.has(id) ? id : "image";
-    if (window.location.hash !== `#/${nextId}`) {
-      window.history.pushState(null, "", `/#/${nextId}`);
-    }
-    setView((current) => (current === nextId ? current : nextId));
+    window.history.pushState(null, "", `#/${nextId}`);
+    setView(nextId);
   }, []);
 
-  const backHome = useCallback(() => {
-    if (window.location.pathname !== "/" || window.location.hash) {
-      window.history.pushState(null, "", "/");
-    }
-    setSkipHomeSplash(true);
-    setView((current) => (current === "home" ? current : "home"));
-  }, []);
-
-  if (featureNavIdSet.has(view)) {
-    return <ImageFeaturePage initialNav={view} onBackHome={backHome} />;
+  if (view === "home") {
+    return <AppHome onOpenFeature={openFeature} />;
   }
 
-  return <OriginalHome onOpenFeature={openFeature} skipSplash={skipHomeSplash} />;
+  if (featureNavIdSet.has(view)) {
+    return <ImageFeaturePage initialNav={view} onOpenHome={openHome} />;
+  }
+
+  return <SplashHome />;
 }
 
 createRoot(document.getElementById("root")).render(

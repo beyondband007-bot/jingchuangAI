@@ -1312,7 +1312,22 @@ button {
   border: 0;
 }
 
-/* Captures the existing left-nav items in the original home iframe. */
+.app-home-shell.is-loading {
+  background: #eef3f8;
+}
+
+.app-home-shell.is-loading .original-home-frame,
+.app-home-shell.is-loading .home-nav-hotspots {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-home-shell .original-home-frame,
+.app-home-shell .home-nav-hotspots {
+  transition: opacity 180ms ease;
+}
+
+/* Captures the left-nav items in the app home iframe. */
 .home-nav-hotspots {
   position: absolute;
   left: 0;
@@ -1993,6 +2008,13 @@ button {
   }
 }
 
+.image-placeholder {
+  min-height: 100vh;
+  padding: 24px;
+  color: #172033;
+  background: #f4f7fb;
+}
+
 .home-nav-hotspot {
   display: block;
   width: 220px;
@@ -2001,13 +2023,6 @@ button {
   background: transparent;
   border: 0;
   cursor: pointer;
-}
-
-.image-placeholder {
-  min-height: 100vh;
-  padding: 24px;
-  color: #172033;
-  background: #f4f7fb;
 }
 
 .placeholder-topbar {
