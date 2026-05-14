@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { transcribeMinimaxAudio } from "../../providers/minimax/transcribe.js";
 import { createHttpError } from "../../shared/http.js";
+import { createTranscribeTaskRow, listTranscribeTaskRows } from "./transcribe.repository.js";
 
 const maxAudioBytes = 50 * 1024 * 1024;
 const allowedMimeTypes = new Set([
@@ -24,11 +25,40 @@ const allowedExtensions = new Set([
   ".webm"
 ]);
 
-const recentTranscriptions = [];
-
 function getExt(fileName = "") {
   const match = String(fileName).toLowerCase().match(/\.[a-z0-9]+$/);
   return match ? match[0] : "";
+}
+
+function displayTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function mapTranscribeTask(row) {
+  return {
+    id: row.id,
+    fileName: row.file_name,
+    mimeType: row.mime_type || "",
+    size: Number(row.size_bytes || 0),
+    durationMs: row.duration_ms || 0,
+    text: row.text,
+    formattedText: row.formatted_text || "",
+    segments: parseJson(row.segments, []),
+    traceId: row.trace_id || "",
+    favorite: Boolean(row.favorite),
+    createdAt: displayTime(row.created_at)
+  };
 }
 
 function assertAudioFile(file) {
@@ -71,11 +101,12 @@ export function getConfig() {
   };
 }
 
-export function getRecentTranscriptions() {
-  return recentTranscriptions.slice();
+export async function getRecentTranscriptions(userId) {
+  const rows = await listTranscribeTaskRows({ userId });
+  return rows.map(mapTranscribeTask);
 }
 
-export async function transcribeAudio({ file, durationMs }) {
+export async function transcribeAudio({ file, durationMs, userId }) {
   assertAudioFile(file);
   assertDuration(durationMs);
 
@@ -94,10 +125,10 @@ export async function transcribeAudio({ file, durationMs }) {
     createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
 
-  recentTranscriptions.unshift(transcription);
-  if (recentTranscriptions.length > 50) {
-    recentTranscriptions.pop();
-  }
+  await createTranscribeTaskRow({
+    ...transcription,
+    userId
+  });
 
   return transcription;
 }

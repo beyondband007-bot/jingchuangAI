@@ -11,7 +11,7 @@ export async function getConfig(req, res) {
 
 export async function getRecent(req, res) {
   try {
-    res.json(service.getRecentReplicates());
+    res.json(await service.getRecentReplicates(req.user.id));
   } catch (error) {
     sendError(res, error);
   }
@@ -19,7 +19,7 @@ export async function getRecent(req, res) {
 
 export async function analyzeImage(req, res) {
   try {
-    const result = await service.analyzeImage({ file: req.file });
+    const result = await service.analyzeImage({ file: req.file, userId: req.user.id });
     res.status(201).json(result);
   } catch (error) {
     sendError(res, error);
@@ -28,7 +28,7 @@ export async function analyzeImage(req, res) {
 
 export async function analyzeVideo(req, res) {
   try {
-    const result = await service.analyzeVideo({ file: req.file });
+    const result = await service.analyzeVideo({ file: req.file, userId: req.user.id });
     res.status(201).json(result);
   } catch (error) {
     sendError(res, error);

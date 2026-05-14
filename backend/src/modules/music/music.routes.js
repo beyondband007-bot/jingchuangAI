@@ -5,4 +5,5 @@ export const musicRouter = Router();
 
 musicRouter.get("/config", getConfig);
 musicRouter.get("/recent", getRecent);
+musicRouter.get("/tasks", getRecent);
 musicRouter.post("/generate", generate);

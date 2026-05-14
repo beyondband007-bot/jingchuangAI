@@ -3,6 +3,7 @@ import { config } from "../../config/index.js";
 import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minimax/voiceClone.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { createHttpError } from "../../shared/http.js";
+import { createVoiceSynthesisTaskRow, listVoiceSynthesisTaskRows } from "./voice.repository.js";
 
 const maxAudioBytes = 20 * 1024 * 1024;
 const allowedMimeTypes = new Set(["audio/mpeg", "audio/mp3", "audio/mp4", "audio/mp4a-latm", "audio/x-m4a", "audio/wav", "audio/x-wav"]);
@@ -66,6 +67,26 @@ function makeDefaultCloneName(name) {
   return name || `复刻音色 ${clonedVoices.length + 1}`;
 }
 
+function displayTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function mapVoiceTask(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    voiceId: row.voice_id,
+    voiceName: row.voice_name || row.voice_id,
+    text: row.text,
+    audioUrl: row.audio_url,
+    durationMs: row.duration_ms || 0,
+    mimeType: row.mime_type || "",
+    favorite: Boolean(row.favorite),
+    createdAt: displayTime(row.created_at)
+  };
+}
+
 function registerClonedVoice({ voiceId, name, description, demoAudio }) {
   const voice = {
     id: voiceId,
@@ -124,6 +145,11 @@ export function getConfig() {
   };
 }
 
+export async function listTasks(userId) {
+  const rows = await listVoiceSynthesisTaskRows({ userId });
+  return rows.map(mapVoiceTask);
+}
+
 export async function uploadAudio({ file, purpose, durationMs }) {
   assertAudioFile(file);
   assertDuration(purpose, durationMs);
@@ -173,7 +199,7 @@ export async function createClone(payload) {
   return result;
 }
 
-export async function synthesize(payload) {
+export async function synthesize(payload, userId) {
   const text = String(payload.text || "").trim();
   const voiceId = String(payload.voiceId || payload.voice_id || "").trim();
   if (!text) throw createHttpError("text is required", 400);
@@ -189,19 +215,37 @@ export async function synthesize(payload) {
     emotion: normalizeEmotion(payload.emotion)
   });
 
+  const taskId = `voice-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const savedAudio = await saveMinimaxSpeechAudio({
-    taskId: `voice-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    taskId,
     audioBuffer: speech.audioBuffer,
     featureDir: "voice"
   });
 
-  return {
+  const result = {
+    id: taskId,
+    title: text.slice(0, 48) || "语音合成结果",
     voiceId,
+    voiceName: payload.voiceName || "",
     audioBase64: speech.audioBase64,
     audioDataUrl: `data:${speech.mimeType};base64,${speech.audioBase64}`,
     audioUrl: savedAudio.publicPath,
     durationMs: speech.durationMs,
-    mimeType: speech.mimeType
+    mimeType: speech.mimeType,
+    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
-}
 
+  await createVoiceSynthesisTaskRow({
+    id: taskId,
+    userId,
+    title: result.title,
+    voiceId,
+    voiceName: result.voiceName,
+    text,
+    audioUrl: savedAudio.publicPath,
+    durationMs: speech.durationMs,
+    mimeType: speech.mimeType
+  });
+
+  return result;
+}

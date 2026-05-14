@@ -1,5 +1,5 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
+import { getCurrentExternalId } from "../../shared/userService.js";
 
 export async function findEnabledChatModels(connection = getPool()) {
   const [models] = await connection.query(
@@ -44,7 +44,7 @@ export async function findChatConversation(connection, id) {
      INNER JOIN users u ON u.id = c.user_id
      WHERE u.external_id = ? AND c.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -58,7 +58,7 @@ export async function listChatConversationRows() {
      WHERE u.external_id = ?
      ORDER BY c.updated_at DESC, c.id DESC
      LIMIT 100`,
-    [DEMO_USER]
+    [getCurrentExternalId()]
   );
   return rows;
 }
@@ -101,7 +101,7 @@ export async function listChatMessageRows(conversationId) {
      INNER JOIN users u ON u.id = c.user_id
      WHERE u.external_id = ? AND c.id = ?
      ORDER BY m.created_at ASC, m.id ASC`,
-    [DEMO_USER, conversationId]
+    [getCurrentExternalId(), conversationId]
   );
   return rows;
 }

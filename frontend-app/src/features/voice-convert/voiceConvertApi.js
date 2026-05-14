@@ -27,6 +27,14 @@ async function request(path, options = {}) {
 }
 
 export const voiceConvertApi = {
+  async getTasks() {
+    const items = await request("/api/voice-convert/tasks");
+    return items.map((item) => ({
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl)
+    }));
+  },
+
   async uploadTargetAudio(file, durationMs) {
     const formData = new FormData();
     formData.append("audio", file);

@@ -1,5 +1,5 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
+import { getCurrentExternalId } from "../../shared/userService.js";
 
 export async function createDigitalHumanTaskRow(
   connection,
@@ -23,7 +23,7 @@ export async function listDigitalHumanTaskRows() {
      WHERE u.external_id = ?
      ORDER BY t.created_at DESC, t.id DESC
      LIMIT 100`,
-    [DEMO_USER]
+    [getCurrentExternalId()]
   );
   return rows;
 }
@@ -35,7 +35,7 @@ export async function findDigitalHumanTaskRow(id) {
      INNER JOIN users u ON u.id = t.user_id
      WHERE u.external_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -96,7 +96,7 @@ export async function deleteDigitalHumanTaskRow(id) {
     `DELETE t FROM digital_human_tasks t
      INNER JOIN users u ON u.id = t.user_id
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return { ok: result.affectedRows > 0 };
 }

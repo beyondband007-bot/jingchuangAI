@@ -21,7 +21,7 @@ import { musicRouter } from "./modules/music/music.routes.js";
 import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
 import { sendError } from "./shared/http.js";
-import { getDemoUserCredits } from "./shared/userService.js";
+import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
 
 export function createApp() {
   const app = express();
@@ -43,9 +43,11 @@ export function createApp() {
     }
   });
 
-  app.get("/api/me/credits", async (_req, res) => {
+  app.use("/api", attachCurrentUser);
+
+  app.get("/api/me/credits", async (req, res) => {
     try {
-      res.json(await getDemoUserCredits());
+      res.json(await getUserCredits(req.user.id));
     } catch (error) {
       sendError(res, error);
     }

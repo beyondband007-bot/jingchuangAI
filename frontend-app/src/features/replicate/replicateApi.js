@@ -21,6 +21,10 @@ async function request(path, options = {}) {
 }
 
 export const replicateApi = {
+  async getTasks() {
+    return request("/api/replicate/tasks");
+  },
+
   async analyzeImage(file, fileName) {
     const formData = new FormData();
     formData.append("image", file, fileName);

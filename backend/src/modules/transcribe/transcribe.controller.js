@@ -11,7 +11,7 @@ export async function getConfig(req, res) {
 
 export async function getRecent(req, res) {
   try {
-    res.json(service.getRecentTranscriptions());
+    res.json(await service.getRecentTranscriptions(req.user.id));
   } catch (error) {
     sendError(res, error);
   }
@@ -21,7 +21,8 @@ export async function transcribe(req, res) {
   try {
     const result = await service.transcribeAudio({
       file: req.file,
-      durationMs: req.body?.durationMs
+      durationMs: req.body?.durationMs,
+      userId: req.user.id
     });
     res.status(201).json(result);
   } catch (error) {

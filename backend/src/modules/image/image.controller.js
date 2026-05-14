@@ -11,7 +11,7 @@ export async function getImageModels(_req, res) {
 
 export async function listImageTasks(req, res) {
   try {
-    res.json(await listTasks({ filter: req.query.filter || "all" }));
+    res.json(await listTasks({ userId: req.user.id, filter: req.query.filter || "all" }));
   } catch (error) {
     sendError(res, error);
   }
@@ -19,7 +19,7 @@ export async function listImageTasks(req, res) {
 
 export async function createImageTask(req, res) {
   try {
-    const task = await createTask(req.body);
+    const task = await createTask(req.body, req.user.id);
     res.status(201).json(task);
   } catch (error) {
     sendError(res, error);
@@ -28,7 +28,7 @@ export async function createImageTask(req, res) {
 
 export async function getImageTask(req, res) {
   try {
-    const task = await getTask(req.params.id);
+    const task = await getTask(req.params.id, req.user.id);
     if (!task) {
       res.status(404).json({ error: "task not found" });
       return;
@@ -41,7 +41,7 @@ export async function getImageTask(req, res) {
 
 export async function toggleImageFavorite(req, res) {
   try {
-    const task = await toggleFavorite(req.params.id);
+    const task = await toggleFavorite(req.params.id, req.user.id);
     if (!task) {
       res.status(404).json({ error: "task not found" });
       return;
@@ -54,7 +54,7 @@ export async function toggleImageFavorite(req, res) {
 
 export async function deleteImageTask(req, res) {
   try {
-    res.json(await deleteTask(req.params.id));
+    res.json(await deleteTask(req.params.id, req.user.id));
   } catch (error) {
     sendError(res, error);
   }

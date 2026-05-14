@@ -136,6 +136,16 @@ export function ReplicateView() {
     window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(recentResults));
   }, [recentResults]);
 
+  useEffect(() => {
+    let mounted = true;
+    replicateApi.getTasks().then((items) => {
+      if (mounted) setRecentResults(items);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   async function handleFile(file) {
     setNotice("");
     setIsAnalyzing(true);

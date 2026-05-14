@@ -22,32 +22,32 @@ export async function getModels() {
   return getImageModels();
 }
 
-export async function listTasks({ filter = "all" } = {}) {
-  const tasks = await listImageTasks({ filter });
+export async function listTasks({ userId, filter = "all" } = {}) {
+  const tasks = await listImageTasks({ userId, filter });
   return tasks.filter(isArticleTask).map(ensureArticleSource);
 }
 
-export async function getTask(id) {
-  const task = await getImageTask(id);
+export async function getTask(id, userId) {
+  const task = await getImageTask(id, userId);
   return isArticleTask(task) ? ensureArticleSource(task) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, userId) {
   const task = await createImageTask({
     ...payload,
     source: ARTICLE_SOURCE
-  });
+  }, userId);
   return ensureArticleSource(task);
 }
 
-export async function toggleFavorite(id) {
-  const task = await getTask(id);
+export async function toggleFavorite(id, userId) {
+  const task = await getTask(id, userId);
   if (!task) return null;
-  return ensureArticleSource(await toggleImageFavorite(id));
+  return ensureArticleSource(await toggleImageFavorite(id, userId));
 }
 
-export async function deleteTask(id) {
-  const task = await getTask(id);
+export async function deleteTask(id, userId) {
+  const task = await getTask(id, userId);
   if (!task) return { ok: false };
-  return deleteImageTask(id);
+  return deleteImageTask(id, userId);
 }

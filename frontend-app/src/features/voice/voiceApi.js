@@ -41,6 +41,14 @@ export const voiceApi = {
     return request("/api/voice/config");
   },
 
+  async getTasks() {
+    const items = await request("/api/voice/tasks");
+    return items.map((item) => ({
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl)
+    }));
+  },
+
   async uploadPromptAudio(file, durationMs) {
     return uploadAudio("/api/voice/uploads/prompt-audio", file, durationMs);
   },

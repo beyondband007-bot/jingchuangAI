@@ -2,7 +2,7 @@ import { getPool } from "../../db/pool.js";
 import { createKieVideoTask, extractVideoResultUrls, getKieVideoTask, mapKieVideoState } from "../../providers/kie/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
-import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
+import { getUserCredits } from "../../shared/userService.js";
 import { mapVideoModel, mapVideoTask } from "./video.mapper.js";
 import { calculateVideoPoints, validateVideoPayload, videoCountOptions } from "./video.options.js";
 import {
@@ -24,8 +24,8 @@ import {
   toggleVideoTaskFavorite
 } from "./video.repository.js";
 
-export async function getCredits() {
-  return getDemoUserCredits();
+export async function getCredits(userId) {
+  return getUserCredits(userId);
 }
 
 export async function getModels() {
@@ -43,33 +43,29 @@ export async function getModels() {
   };
 }
 
-export async function listTasks({ filter = "all" } = {}) {
+export async function listTasks({ userId, filter = "all" } = {}) {
   await refreshProcessingTasks();
-  const rows = await listVideoTaskRows({ filter });
+  const rows = await listVideoTaskRows({ userId, filter });
   return rows.map(mapVideoTask);
 }
 
-export async function getTask(id) {
+export async function getTask(id, userId) {
   await refreshTask(id);
-  const row = await findVideoTaskRow(id);
+  const row = await findVideoTaskRow(id, userId);
   return row ? mapVideoTask(row) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, userId) {
   const { prompt, model, ratio, duration, mode = "first-frame", count = 1 } = payload;
 
   const pool = getPool();
   const connection = await pool.getConnection();
-  let userId;
   let taskId;
   let costPoints;
   let modelPrice;
 
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
-    userId = user.id;
-
     modelPrice = await findVideoModelPrice(connection, model);
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
@@ -119,7 +115,7 @@ export async function createTask(payload) {
     await refundTask(taskId, userId, costPoints, `KIE 创建视频任务失败：${error.message}`);
   }
 
-  return getTask(taskId);
+  return getTask(taskId, userId);
 }
 
 async function refreshProcessingTasks() {
@@ -180,11 +176,11 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
   }
 }
 
-export async function deleteTask(id) {
-  return deleteVideoTask(id);
+export async function deleteTask(id, userId) {
+  return deleteVideoTask(id, userId);
 }
 
-export async function toggleFavorite(id) {
-  await toggleVideoTaskFavorite(id);
-  return getTask(id);
+export async function toggleFavorite(id, userId) {
+  await toggleVideoTaskFavorite(id, userId);
+  return getTask(id, userId);
 }

@@ -11,7 +11,7 @@ export async function getConfig(req, res) {
 
 export async function getRecent(req, res) {
   try {
-    res.json(service.getRecentMusic());
+    res.json(await service.getRecentMusic(req.user.id));
   } catch (error) {
     sendError(res, error);
   }
@@ -19,7 +19,7 @@ export async function getRecent(req, res) {
 
 export async function generate(req, res) {
   try {
-    const result = await service.generateMusic(req.body || {});
+    const result = await service.generateMusic(req.body || {}, req.user.id);
     res.status(201).json(result);
   } catch (error) {
     sendError(res, error);

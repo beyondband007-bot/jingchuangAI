@@ -1,5 +1,5 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
+import { getCurrentExternalId } from "../../shared/userService.js";
 
 export async function createRemoveBgAsset(connection, { userId, localUrl, filePath, storedName, originalName, mimeType, sizeBytes }) {
   const [result] = await connection.query(
@@ -18,7 +18,7 @@ export async function findRemoveBgAsset(id) {
      INNER JOIN users u ON u.id = a.user_id
      WHERE u.external_id = ? AND a.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -38,7 +38,7 @@ export async function createRemoveBgTask(connection, { userId, sourceAssetId, mo
 }
 
 export async function listRemoveBgTaskRows({ filter = "all" } = {}) {
-  const params = [DEMO_USER];
+  const params = [getCurrentExternalId()];
   let where = "u.external_id = ?";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
@@ -71,7 +71,7 @@ export async function findRemoveBgTaskRow(id) {
      LEFT JOIN remove_bg_assets source ON source.id = t.source_asset_id
      WHERE u.external_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -138,7 +138,7 @@ export async function deleteRemoveBgTask(id) {
     `DELETE t FROM remove_bg_tasks t
      INNER JOIN users u ON u.id = t.user_id
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return { ok: result.affectedRows > 0 };
 }
@@ -149,6 +149,6 @@ export async function toggleRemoveBgTaskFavorite(id) {
      INNER JOIN users u ON u.id = t.user_id
      SET t.favorite = NOT t.favorite
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
 }

@@ -4,6 +4,7 @@ import { preprocessMinimaxMusicCover } from "../../providers/minimax/musicCover.
 import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minimax/voiceClone.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { createHttpError } from "../../shared/http.js";
+import { createVoiceConvertTaskRow, listVoiceConvertTaskRows } from "./voiceConvert.repository.js";
 
 const maxTargetAudioBytes = 20 * 1024 * 1024;
 const maxSourceAudioBytes = 50 * 1024 * 1024;
@@ -193,6 +194,43 @@ function registerConvertedVoice({ voiceId, name, demoAudio }) {
   return voice;
 }
 
+function displayTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function mapVoiceConvertTask(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    voiceId: row.voice_id || "",
+    voiceName: row.voice_name || "目标音色",
+    sourceFileName: row.source_file_name || "",
+    audioUrl: row.audio_url,
+    durationMs: row.duration_ms || 0,
+    sourceDurationMs: row.source_duration_ms || 0,
+    mimeType: row.mime_type || "",
+    rhythmMeta: parseJson(row.rhythm_meta, null),
+    favorite: Boolean(row.favorite),
+    createdAt: displayTime(row.created_at)
+  };
+}
+
+export async function listTasks(userId) {
+  const rows = await listVoiceConvertTaskRows({ userId });
+  return rows.map(mapVoiceConvertTask);
+}
+
 async function createTargetVoiceClone({ cloneAudioFileId, voiceId, previewText, model, name }) {
   const result = await cloneMinimaxVoice({
     cloneAudioFileId,
@@ -227,7 +265,7 @@ export async function uploadTargetAudio({ file, durationMs }) {
   };
 }
 
-export async function convert(payload, file) {
+export async function convert(payload, file, userId) {
   assertSourceAudioFile(file);
 
   const sourceDurationMs = normalizeDurationMs(payload.sourceDurationMs);
@@ -290,14 +328,27 @@ export async function convert(payload, file) {
     }
   }
 
+  const taskId = `voice-convert-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const savedAudio = await saveMinimaxSpeechAudio({
-    taskId: `voice-convert-${Date.now()}-${randomUUID().slice(0, 8)}`,
+    taskId,
     audioBuffer: speech.audioBuffer,
     featureDir: "voice-convert"
   });
 
-  return {
-    voice: voice || { id: voiceId, name: "目标音色", provider: "minimax", source: "voice-convert" },
+  const resultVoice = voice || { id: voiceId, name: "目标音色", provider: "minimax", source: "voice-convert" };
+  const rhythmMeta = {
+    lineCount: lines.length,
+    segmentCount: rhythm.segmentCount,
+    pauseCount: rhythm.pauseCount,
+    requestedSpeed,
+    finalSpeed,
+    adjusted: Math.abs(finalSpeed - requestedSpeed) > 0.03,
+    coverFeatureId: preprocess.coverFeatureId,
+    traceId: preprocess.traceId
+  };
+  const result = {
+    id: taskId,
+    voice: resultVoice,
     demoAudio,
     audioBase64: speech.audioBase64,
     audioDataUrl: `data:${speech.mimeType};base64,${speech.audioBase64}`,
@@ -305,15 +356,23 @@ export async function convert(payload, file) {
     durationMs: speech.durationMs,
     sourceDurationMs: targetDurationMs || sourceDurationMs,
     mimeType: speech.mimeType,
-    rhythmMeta: {
-      lineCount: lines.length,
-      segmentCount: rhythm.segmentCount,
-      pauseCount: rhythm.pauseCount,
-      requestedSpeed,
-      finalSpeed,
-      adjusted: Math.abs(finalSpeed - requestedSpeed) > 0.03,
-      coverFeatureId: preprocess.coverFeatureId,
-      traceId: preprocess.traceId
-    }
+    rhythmMeta,
+    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
+
+  await createVoiceConvertTaskRow({
+    id: taskId,
+    userId,
+    title: file.originalname ? file.originalname.replace(/\.[^.]+$/, "") : "音色转换结果",
+    voiceId: resultVoice.id,
+    voiceName: resultVoice.name,
+    sourceFileName: file.originalname || "",
+    audioUrl: savedAudio.publicPath,
+    durationMs: speech.durationMs,
+    sourceDurationMs: result.sourceDurationMs,
+    mimeType: speech.mimeType,
+    rhythmMeta
+  });
+
+  return result;
 }

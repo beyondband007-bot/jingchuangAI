@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { convertVoice, uploadTargetAudio } from "./voiceConvert.controller.js";
+import { convertVoice, listVoiceConvertTasks, uploadTargetAudio } from "./voiceConvert.controller.js";
 
 export const voiceConvertRouter = Router();
 
@@ -37,4 +37,5 @@ function uploadSourceSingle(req, res, next) {
 }
 
 voiceConvertRouter.post("/uploads/target-audio", uploadTargetSingle, uploadTargetAudio);
+voiceConvertRouter.get("/tasks", listVoiceConvertTasks);
 voiceConvertRouter.post("/convert", uploadSourceSingle, convertVoice);

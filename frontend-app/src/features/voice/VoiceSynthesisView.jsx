@@ -135,6 +135,16 @@ export function VoiceSynthesisView() {
     }
   }, [recentResults]);
 
+  useEffect(() => {
+    let mounted = true;
+    voiceApi.getTasks().then((items) => {
+      if (mounted) setRecentResults(items);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   async function uploadFile(file) {
     setNotice("");
     setUploading("clone");
@@ -208,6 +218,7 @@ export function VoiceSynthesisView() {
     try {
       const result = await voiceApi.synthesize({
         voiceId: voice.id,
+        voiceName: voice.name || "",
         text,
         speed,
         volume,

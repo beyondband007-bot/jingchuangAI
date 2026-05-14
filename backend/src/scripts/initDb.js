@@ -541,6 +541,110 @@ async function createTables() {
       CONSTRAINT fk_chat_messages_conversation FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS music_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      prompt TEXT NOT NULL,
+      lyrics MEDIUMTEXT NULL,
+      model VARCHAR(80) NOT NULL,
+      is_instrumental BOOLEAN NOT NULL DEFAULT FALSE,
+      audio_url VARCHAR(1000) NOT NULL,
+      duration_ms INT NOT NULL DEFAULT 0,
+      sample_rate INT NULL,
+      channel INT NULL,
+      bitrate INT NULL,
+      music_size INT NULL,
+      trace_id VARCHAR(160) NULL,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_music_tasks_user_created (user_id, created_at),
+      CONSTRAINT fk_music_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS voice_synthesis_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_name VARCHAR(160) NULL,
+      text MEDIUMTEXT NOT NULL,
+      audio_url VARCHAR(1000) NOT NULL,
+      duration_ms INT NOT NULL DEFAULT 0,
+      mime_type VARCHAR(120) NULL,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_voice_synthesis_user_created (user_id, created_at),
+      CONSTRAINT fk_voice_synthesis_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS voice_convert_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      voice_id VARCHAR(160) NULL,
+      voice_name VARCHAR(160) NULL,
+      source_file_name VARCHAR(255) NULL,
+      audio_url VARCHAR(1000) NOT NULL,
+      duration_ms INT NOT NULL DEFAULT 0,
+      source_duration_ms INT NOT NULL DEFAULT 0,
+      mime_type VARCHAR(120) NULL,
+      rhythm_meta JSON NULL,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_voice_convert_user_created (user_id, created_at),
+      CONSTRAINT fk_voice_convert_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS transcribe_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      file_name VARCHAR(255) NOT NULL,
+      mime_type VARCHAR(160) NULL,
+      size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      duration_ms INT NOT NULL DEFAULT 0,
+      text MEDIUMTEXT NOT NULL,
+      formatted_text MEDIUMTEXT NULL,
+      segments JSON NULL,
+      trace_id VARCHAR(160) NULL,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_transcribe_user_created (user_id, created_at),
+      CONSTRAINT fk_transcribe_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS replicate_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      source VARCHAR(20) NOT NULL,
+      file_name VARCHAR(255) NOT NULL,
+      prompt MEDIUMTEXT NULL,
+      description MEDIUMTEXT NULL,
+      style VARCHAR(160) NULL,
+      mood VARCHAR(160) NULL,
+      tags JSON NULL,
+      model VARCHAR(160) NULL,
+      frame_count INT NULL,
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_replicate_user_created (user_id, created_at),
+      CONSTRAINT fk_replicate_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 async function seedDemoData() {

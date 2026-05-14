@@ -1,5 +1,5 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
+import { getCurrentExternalId } from "../../shared/userService.js";
 
 export async function createWatermarkAsset(connection, { userId, kind, localUrl, filePath, storedName, originalName, mimeType, sizeBytes }) {
   const [result] = await connection.query(
@@ -12,7 +12,7 @@ export async function createWatermarkAsset(connection, { userId, kind, localUrl,
 }
 
 export async function findWatermarkAsset(id, kind) {
-  const params = [DEMO_USER, id];
+  const params = [getCurrentExternalId(), id];
   let kindClause = "";
   if (kind) {
     kindClause = " AND a.kind = ?";
@@ -45,7 +45,7 @@ export async function createWatermarkTask(connection, { userId, sourceAssetId, m
 }
 
 export async function listWatermarkTaskRows({ filter = "all" } = {}) {
-  const params = [DEMO_USER];
+  const params = [getCurrentExternalId()];
   let where = "u.external_id = ?";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
@@ -78,7 +78,7 @@ export async function findWatermarkTaskRow(id) {
      LEFT JOIN watermark_assets source ON source.id = t.source_asset_id
      WHERE u.external_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -145,7 +145,7 @@ export async function deleteWatermarkTask(id) {
     `DELETE t FROM watermark_tasks t
      INNER JOIN users u ON u.id = t.user_id
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return { ok: result.affectedRows > 0 };
 }
@@ -156,6 +156,6 @@ export async function toggleWatermarkTaskFavorite(id) {
      INNER JOIN users u ON u.id = t.user_id
      SET t.favorite = NOT t.favorite
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
 }

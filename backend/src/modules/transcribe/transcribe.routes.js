@@ -25,4 +25,5 @@ function uploadAudioSingle(req, res, next) {
 
 transcribeRouter.get("/config", getConfig);
 transcribeRouter.get("/recent", getRecent);
+transcribeRouter.get("/tasks", getRecent);
 transcribeRouter.post("/", uploadAudioSingle, transcribe);

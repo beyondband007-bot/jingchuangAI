@@ -1,5 +1,5 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
+import { getCurrentExternalId } from "../../shared/userService.js";
 
 export async function createFaceSwapAsset(connection, { userId, kind, localUrl, filePath, storedName, originalName, mimeType, sizeBytes }) {
   const [result] = await connection.query(
@@ -12,7 +12,7 @@ export async function createFaceSwapAsset(connection, { userId, kind, localUrl, 
 }
 
 export async function findFaceSwapAsset(id, kind) {
-  const params = [DEMO_USER, id];
+  const params = [getCurrentExternalId(), id];
   let kindClause = "";
   if (kind) {
     kindClause = " AND a.kind = ?";
@@ -45,7 +45,7 @@ export async function createFaceSwapTask(connection, { userId, imageAssetId, vid
 }
 
 export async function listFaceSwapTaskRows({ filter = "all" } = {}) {
-  const params = [DEMO_USER];
+  const params = [getCurrentExternalId()];
   let where = "u.external_id = ?";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
@@ -84,7 +84,7 @@ export async function findFaceSwapTaskRow(id) {
      LEFT JOIN face_swap_assets video ON video.id = t.video_asset_id
      WHERE u.external_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return rows[0] || null;
 }
@@ -151,7 +151,7 @@ export async function deleteFaceSwapTask(id) {
     `DELETE t FROM face_swap_tasks t
      INNER JOIN users u ON u.id = t.user_id
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
   return { ok: result.affectedRows > 0 };
 }
@@ -162,6 +162,6 @@ export async function toggleFaceSwapTaskFavorite(id) {
      INNER JOIN users u ON u.id = t.user_id
      SET t.favorite = NOT t.favorite
      WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    [getCurrentExternalId(), id]
   );
 }

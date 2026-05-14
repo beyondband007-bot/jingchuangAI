@@ -9,9 +9,17 @@ export async function uploadTargetAudio(req, res) {
   }
 }
 
+export async function listVoiceConvertTasks(req, res) {
+  try {
+    res.json(await service.listTasks(req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 export async function convertVoice(req, res) {
   try {
-    res.status(201).json(await service.convert(req.body || {}, req.file));
+    res.status(201).json(await service.convert(req.body || {}, req.file, req.user.id));
   } catch (error) {
     sendError(res, error);
   }

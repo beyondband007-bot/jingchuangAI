@@ -21,6 +21,10 @@ async function request(path, options = {}) {
 }
 
 export const transcribeApi = {
+  async getTasks() {
+    return request("/api/transcribe/tasks");
+  },
+
   async transcribe(file, durationMs) {
     const formData = new FormData();
     formData.append("audio", file);

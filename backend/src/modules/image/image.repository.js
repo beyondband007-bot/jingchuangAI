@@ -1,6 +1,5 @@
 import { getPool } from "../../db/pool.js";
 import { config } from "../../config/index.js";
-import { DEMO_USER } from "../../shared/userService.js";
 
 let sourceColumnPromise;
 
@@ -55,9 +54,9 @@ export async function createImageTask(connection, { userId, modelKey, prompt, ra
   return result.insertId;
 }
 
-export async function listImageTaskRows({ filter = "all", source } = {}) {
-  const params = [DEMO_USER];
-  let where = "u.external_id = ?";
+export async function listImageTaskRows({ userId, filter = "all", source } = {}) {
+  const params = [userId];
+  let where = "t.user_id = ?";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
   }
@@ -69,7 +68,6 @@ export async function listImageTaskRows({ filter = "all", source } = {}) {
   const [rows] = await getPool().query(
     `SELECT t.*, mp.display_name
      FROM image_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
      LEFT JOIN image_model_prices mp ON mp.model_key = t.model_key
      WHERE ${where}
      ORDER BY t.created_at DESC, t.id DESC
@@ -79,15 +77,14 @@ export async function listImageTaskRows({ filter = "all", source } = {}) {
   return rows;
 }
 
-export async function findImageTaskRow(id) {
+export async function findImageTaskRow(id, userId) {
   const [rows] = await getPool().query(
     `SELECT t.*, mp.display_name
      FROM image_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
      LEFT JOIN image_model_prices mp ON mp.model_key = t.model_key
-     WHERE u.external_id = ? AND t.id = ?
+     WHERE t.user_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [userId, id]
   );
   return rows[0] || null;
 }
@@ -148,22 +145,20 @@ export async function markImageTaskRefunded(connection, id) {
   await connection.query("UPDATE image_generation_tasks SET refunded = TRUE WHERE id = ?", [id]);
 }
 
-export async function deleteImageTask(id) {
+export async function deleteImageTask(id, userId) {
   const [result] = await getPool().query(
-    `DELETE t FROM image_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
-     WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    `DELETE FROM image_generation_tasks
+     WHERE user_id = ? AND id = ?`,
+    [userId, id]
   );
   return { ok: result.affectedRows > 0 };
 }
 
-export async function toggleImageTaskFavorite(id) {
+export async function toggleImageTaskFavorite(id, userId) {
   await getPool().query(
-    `UPDATE image_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
-     SET t.favorite = NOT t.favorite
-     WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    `UPDATE image_generation_tasks
+     SET favorite = NOT favorite
+     WHERE user_id = ? AND id = ?`,
+    [userId, id]
   );
 }

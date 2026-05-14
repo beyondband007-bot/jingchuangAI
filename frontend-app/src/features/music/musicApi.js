@@ -27,6 +27,14 @@ async function request(path, options = {}) {
 }
 
 export const musicApi = {
+  async getTasks() {
+    const items = await request("/api/music/tasks");
+    return items.map((item) => ({
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl)
+    }));
+  },
+
   async generate({ prompt, lyrics, model = "music-2.6-free", isInstrumental, lyricsOptimizer }) {
     const result = await request("/api/music/generate", {
       method: "POST",

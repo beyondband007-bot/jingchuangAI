@@ -43,5 +43,6 @@ function uploadVideoSingle(req, res, next) {
 
 replicateRouter.get("/config", getConfig);
 replicateRouter.get("/recent", getRecent);
+replicateRouter.get("/tasks", getRecent);
 replicateRouter.post("/analyze-image", uploadImageSingle, analyzeImage);
 replicateRouter.post("/analyze-video", uploadVideoSingle, analyzeVideo);

@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax, analyzeVideoFramesWithMinimax } from "../../providers/minimax/vision.js";
 import { createHttpError } from "../../shared/http.js";
+import { createReplicateTaskRow, listReplicateTaskRows } from "./replicate.repository.js";
 
 const maxImageBytes = 20 * 1024 * 1024;
 const maxVideoBytes = 100 * 1024 * 1024;
@@ -17,11 +18,41 @@ const allowedVideoTypes = new Set([
 ]);
 const allowedVideoExts = new Set([".mp4", ".webm", ".mov", ".avi"]);
 
-const recentReplicates = [];
-
 function getExt(fileName = "") {
   const match = String(fileName).toLowerCase().match(/\.[a-z0-9]+$/);
   return match ? match[0] : "";
+}
+
+function displayTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function parseJson(value, fallback) {
+  if (!value) return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function mapReplicateTask(row) {
+  return {
+    id: row.id,
+    source: row.source,
+    fileName: row.file_name,
+    prompt: row.prompt || "",
+    description: row.description || "",
+    style: row.style || "",
+    mood: row.mood || "",
+    tags: parseJson(row.tags, []),
+    model: row.model || "",
+    frameCount: row.frame_count || undefined,
+    favorite: Boolean(row.favorite),
+    createdAt: displayTime(row.created_at)
+  };
 }
 
 function assertImageFile(file) {
@@ -177,11 +208,12 @@ export function getConfig() {
   };
 }
 
-export function getRecentReplicates() {
-  return recentReplicates.slice();
+export async function getRecentReplicates(userId) {
+  const rows = await listReplicateTaskRows({ userId });
+  return rows.map(mapReplicateTask);
 }
 
-export async function analyzeImage({ file }) {
+export async function analyzeImage({ file, userId }) {
   assertImageFile(file);
 
   const imageBase64 = Buffer.from(file.buffer).toString("base64");
@@ -203,15 +235,12 @@ export async function analyzeImage({ file }) {
     createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
 
-  recentReplicates.unshift(replicate);
-  if (recentReplicates.length > 50) {
-    recentReplicates.pop();
-  }
+  await createReplicateTaskRow({ ...replicate, userId });
 
   return replicate;
 }
 
-export async function analyzeVideo({ file }) {
+export async function analyzeVideo({ file, userId }) {
   assertVideoFile(file);
 
   const { framesBase64 } = await extractVideoFrames(file.buffer, file.originalname);
@@ -231,10 +260,7 @@ export async function analyzeVideo({ file }) {
     createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
 
-  recentReplicates.unshift(replicate);
-  if (recentReplicates.length > 50) {
-    recentReplicates.pop();
-  }
+  await createReplicateTaskRow({ ...replicate, userId });
 
   return replicate;
 }

@@ -180,6 +180,16 @@ export function MusicGenerationView() {
   const recentAudioRefs = useRef({});
 
   useEffect(() => {
+    let mounted = true;
+    musicApi.getTasks().then((items) => {
+      if (mounted) setRecentResults(items);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     try {
       window.localStorage.setItem(musicRecentStorageKey, JSON.stringify(recentResults));
     } catch {

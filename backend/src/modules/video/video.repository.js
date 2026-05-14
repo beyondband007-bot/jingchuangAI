@@ -1,5 +1,4 @@
 import { getPool } from "../../db/pool.js";
-import { DEMO_USER } from "../../shared/userService.js";
 
 export async function findEnabledVideoModels(connection = getPool()) {
   const [models] = await connection.query(
@@ -29,9 +28,9 @@ export async function createVideoTask(connection, { userId, modelKey, prompt, ra
   return result.insertId;
 }
 
-export async function listVideoTaskRows({ filter = "all" } = {}) {
-  const params = [DEMO_USER];
-  let where = "u.external_id = ?";
+export async function listVideoTaskRows({ userId, filter = "all" } = {}) {
+  const params = [userId];
+  let where = "t.user_id = ?";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
   } else if (filter === "recent") {
@@ -41,7 +40,6 @@ export async function listVideoTaskRows({ filter = "all" } = {}) {
   const [rows] = await getPool().query(
     `SELECT t.*, mp.display_name, mp.provider_type
      FROM video_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
      LEFT JOIN video_model_prices mp ON mp.model_key = t.model_key
      WHERE ${where}
      ORDER BY t.created_at DESC, t.id DESC
@@ -51,15 +49,14 @@ export async function listVideoTaskRows({ filter = "all" } = {}) {
   return rows;
 }
 
-export async function findVideoTaskRow(id) {
+export async function findVideoTaskRow(id, userId) {
   const [rows] = await getPool().query(
     `SELECT t.*, mp.display_name, mp.provider_type
      FROM video_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
      LEFT JOIN video_model_prices mp ON mp.model_key = t.model_key
-     WHERE u.external_id = ? AND t.id = ?
+     WHERE t.user_id = ? AND t.id = ?
      LIMIT 1`,
-    [DEMO_USER, id]
+    [userId, id]
   );
   return rows[0] || null;
 }
@@ -125,22 +122,20 @@ export async function markVideoTaskRefunded(connection, id) {
   await connection.query("UPDATE video_generation_tasks SET refunded = TRUE WHERE id = ?", [id]);
 }
 
-export async function deleteVideoTask(id) {
+export async function deleteVideoTask(id, userId) {
   const [result] = await getPool().query(
-    `DELETE t FROM video_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
-     WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    `DELETE FROM video_generation_tasks
+     WHERE user_id = ? AND id = ?`,
+    [userId, id]
   );
   return { ok: result.affectedRows > 0 };
 }
 
-export async function toggleVideoTaskFavorite(id) {
+export async function toggleVideoTaskFavorite(id, userId) {
   await getPool().query(
-    `UPDATE video_generation_tasks t
-     INNER JOIN users u ON u.id = t.user_id
-     SET t.favorite = NOT t.favorite
-     WHERE u.external_id = ? AND t.id = ?`,
-    [DEMO_USER, id]
+    `UPDATE video_generation_tasks
+     SET favorite = NOT favorite
+     WHERE user_id = ? AND id = ?`,
+    [userId, id]
   );
 }

@@ -133,6 +133,16 @@ export function TranscribeView() {
     }
   }, [recentResults]);
 
+  useEffect(() => {
+    let mounted = true;
+    transcribeApi.getTasks().then((items) => {
+      if (mounted) setRecentResults(items);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   async function pickAudioFile(file) {
     setNotice("");
     setResult(null);

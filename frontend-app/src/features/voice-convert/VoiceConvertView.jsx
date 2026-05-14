@@ -121,6 +121,16 @@ export function VoiceConvertView() {
     }
   }, [recentResults]);
 
+  useEffect(() => {
+    let mounted = true;
+    voiceConvertApi.getTasks().then((items) => {
+      if (mounted) setRecentResults(items);
+    }).catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   async function uploadTargetFile(file) {
     setNotice("");
     setUploading("target");

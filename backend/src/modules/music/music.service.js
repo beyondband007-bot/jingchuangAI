@@ -4,11 +4,34 @@ import { createHttpError } from "../../shared/http.js";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
-
-const recentMusic = [];
+import { createMusicTaskRow, listMusicTaskRows } from "./music.repository.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function displayTime(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+function mapMusicTask(row) {
+  return {
+    id: row.id,
+    prompt: row.prompt,
+    lyrics: row.lyrics || "",
+    model: row.model,
+    isInstrumental: Boolean(row.is_instrumental),
+    audioUrl: row.audio_url,
+    durationMs: row.duration_ms || 0,
+    sampleRate: row.sample_rate || 0,
+    channel: row.channel || 0,
+    bitrate: row.bitrate || 0,
+    musicSize: row.music_size || 0,
+    traceId: row.trace_id || "",
+    favorite: Boolean(row.favorite),
+    createdAt: displayTime(row.created_at)
+  };
 }
 
 function assertPrompt(prompt) {
@@ -59,11 +82,12 @@ export function getConfig() {
   };
 }
 
-export function getRecentMusic() {
-  return recentMusic.slice();
+export async function getRecentMusic(userId) {
+  const rows = await listMusicTaskRows({ userId });
+  return rows.map(mapMusicTask);
 }
 
-export async function generateMusic(payload) {
+export async function generateMusic(payload, userId) {
   const prompt = assertPrompt(payload.prompt);
   const isInstrumental = Boolean(payload.isInstrumental);
   const lyrics = assertLyrics(payload.lyrics, isInstrumental);
@@ -97,10 +121,21 @@ export async function generateMusic(payload) {
     createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
   };
 
-  recentMusic.unshift(music);
-  if (recentMusic.length > 50) {
-    recentMusic.pop();
-  }
+  await createMusicTaskRow({
+    id: music.id,
+    userId,
+    prompt,
+    lyrics,
+    model,
+    isInstrumental,
+    audioUrl: savedAudio.publicPath,
+    durationMs: result.durationMs,
+    sampleRate: result.sampleRate,
+    channel: result.channel,
+    bitrate: result.bitrate,
+    musicSize: result.musicSize,
+    traceId: result.traceId
+  });
 
   return music;
 }
