@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Copy, Download, FileImage, FileVideo, Loader2, Sparkles, Star, Upload } from "lucide-react";
+import { Copy, Download, FileImage, FileVideo, Loader2, Sparkles, Star, Upload, X } from "lucide-react";
 import { replicateApi } from "./replicateApi";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
@@ -22,13 +22,26 @@ function downloadText(fileName, text) {
   URL.revokeObjectURL(url);
 }
 
-function ReplicateUpload({ mode, onFile, isAnalyzing }) {
+function formatBytes(bytes) {
+  const size = Number(bytes || 0);
+  if (!size) return "";
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(0)}KB`;
+  return `${(size / 1024 / 1024).toFixed(1)}MB`;
+}
+
+function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
 
   const isImage = mode === "image";
+  const hasFile = Boolean(fileState?.name);
   const accept = isImage ? ".jpg,.jpeg,.png,.gif,.webp,image/*" : ".mp4,.mov,.avi,.webm,video/*";
   const hint = isImage ? "支持 jpg / png / gif / webp，最大 20MB" : "支持 mp4 / mov / webm / avi，最大 100MB";
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   function handleDrop(event) {
     event.preventDefault();
@@ -41,7 +54,7 @@ function ReplicateUpload({ mode, onFile, isAnalyzing }) {
   return (
     <button
       type="button"
-      className={`replicate-upload-slot ${dragOver ? "drag-over" : ""}`}
+      className={`replicate-upload-slot ${dragOver ? "drag-over" : ""} ${hasFile ? "has-file" : ""}`}
       onClick={() => !isAnalyzing && inputRef.current?.click()}
       onDragOver={(event) => {
         event.preventDefault();
@@ -65,8 +78,23 @@ function ReplicateUpload({ mode, onFile, isAnalyzing }) {
       <span className="replicate-upload-icon">
         {isAnalyzing ? <Loader2 size={22} /> : isImage ? <FileImage size={22} /> : <FileVideo size={22} />}
       </span>
-      <strong>{isAnalyzing ? "正在反推提示词..." : isImage ? "+ 上传图片素材" : "+ 上传视频素材"}</strong>
-      <small>{hint}</small>
+      {hasFile && !isAnalyzing && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
+      <strong>{isAnalyzing ? "正在反推提示词..." : hasFile ? fileState.name : isImage ? "+ 上传图片素材" : "+ 上传视频素材"}</strong>
+      <small>{hasFile ? `${isImage ? "图片" : "视频"} · ${formatBytes(fileState.size)}` : hint}</small>
     </button>
   );
 }
@@ -127,6 +155,7 @@ function ReplicateResult({ result, onCopy }) {
 export function ReplicateView() {
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [currentResult, setCurrentResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
@@ -148,6 +177,7 @@ export function ReplicateView() {
 
   async function handleFile(file) {
     setNotice("");
+    setSelectedFile({ name: file.name, size: file.size, type: file.type });
     setIsAnalyzing(true);
     try {
       const data = mode === "image"
@@ -172,6 +202,12 @@ export function ReplicateView() {
     } finally {
       setIsAnalyzing(false);
     }
+  }
+
+  function clearSelectedFile() {
+    setSelectedFile(null);
+    setCurrentResult(null);
+    setNotice("");
   }
 
   function copyPrompt(result = currentResult) {
@@ -235,7 +271,11 @@ export function ReplicateView() {
                 <button
                   type="button"
                   className={mode === "image" ? "active" : ""}
-                  onClick={() => !isAnalyzing && setMode("image")}
+                  onClick={() => {
+                    if (isAnalyzing) return;
+                    setMode("image");
+                    setSelectedFile(null);
+                  }}
                   disabled={isAnalyzing}
                 >
                   <FileImage size={16} />
@@ -244,7 +284,11 @@ export function ReplicateView() {
                 <button
                   type="button"
                   className={mode === "video" ? "active" : ""}
-                  onClick={() => !isAnalyzing && setMode("video")}
+                  onClick={() => {
+                    if (isAnalyzing) return;
+                    setMode("video");
+                    setSelectedFile(null);
+                  }}
                   disabled={isAnalyzing}
                 >
                   <FileVideo size={16} />
@@ -253,7 +297,7 @@ export function ReplicateView() {
               </div>
 
               <div className="replicate-upload-area">
-                <ReplicateUpload mode={mode} onFile={handleFile} isAnalyzing={isAnalyzing} />
+                <ReplicateUpload mode={mode} fileState={selectedFile} onFile={handleFile} onClear={clearSelectedFile} isAnalyzing={isAnalyzing} />
               </div>
 
               <div className="replicate-composer-footer">

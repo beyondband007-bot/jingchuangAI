@@ -169,6 +169,7 @@
 }
 
 .voice-upload-slot {
+  position: relative;
   display: grid;
   min-height: 112px;
   place-items: center;
@@ -749,6 +750,7 @@
 }
 
 .replicate-upload-slot {
+  position: relative;
   display: grid;
   width: 100%;
   min-height: 118px;
@@ -779,6 +781,10 @@
 .replicate-upload-slot:disabled {
   cursor: wait;
   opacity: 0.82;
+}
+
+.replicate-upload-slot.has-file {
+  border-style: solid;
 }
 
 .replicate-upload-icon {
@@ -1344,6 +1350,33 @@ a:hover {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+.upload-clear-button {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 4;
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #365b7f;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(164, 192, 220, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(30, 83, 141, 0.16);
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.upload-clear-button:hover,
+.upload-clear-button:focus-visible {
+  color: #b42318;
+  background: #fff;
+  border-color: rgba(244, 119, 106, 0.78);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .auth-drawer-layer {
@@ -5043,6 +5076,7 @@ a:hover {
 
 .dh-audio-upload,
 .dh-upload-zone {
+  position: relative;
   display: grid;
   gap: 7px;
   width: 100%;
@@ -5910,6 +5944,7 @@ a:hover {
 }
 
 .idh-upload-card {
+  position: relative;
   display: grid;
   min-height: 108px;
   place-items: center;
@@ -5924,7 +5959,8 @@ a:hover {
 }
 
 .idh-upload-card.has-image {
-  min-height: 108px;
+  min-height: 136px;
+  aspect-ratio: 4 / 3;
   padding: 0;
   border-style: solid;
 }
@@ -5933,7 +5969,8 @@ a:hover {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #eef5fc;
 }
 
 .idh-upload-card strong {
@@ -6211,7 +6248,7 @@ a:hover {
 }
 
 .motion-upload-slot.has-preview {
-  min-height: 116px;
+  min-height: 140px;
   padding: 0;
   border-style: solid;
 }
@@ -6220,9 +6257,9 @@ a:hover {
 .motion-upload-slot video {
   display: block;
   width: 100%;
-  height: 116px;
-  object-fit: cover;
-  background: #b7d1e9;
+  height: 140px;
+  object-fit: contain;
+  background: #edf5fd;
 }
 
 .motion-upload-slot strong {
@@ -6272,6 +6309,11 @@ a:hover {
 
 .motion-uploading svg {
   animation: spin 1s linear infinite;
+}
+
+.motion-upload-kind,
+.watermark-upload-kind {
+  left: 36px;
 }
 
 .motion-composer-footer {
@@ -6718,7 +6760,7 @@ a:hover {
   display: block;
   width: 100%;
   height: 170px;
-  object-fit: cover;
+  object-fit: contain;
   background: #e8eef5;
 }
 
@@ -6765,6 +6807,10 @@ a:hover {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 900;
+}
+
+.watermark-upload-kind {
+  left: 36px;
 }
 
 .watermark-uploading svg,
@@ -7687,6 +7733,7 @@ a:hover {
 }
 
 .video-dub-upload-slot {
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 6px;

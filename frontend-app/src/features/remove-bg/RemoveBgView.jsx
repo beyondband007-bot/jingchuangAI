@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Send, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Send, Star, Trash2, X } from "lucide-react";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -125,8 +125,13 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect }) {
+function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
   const inputRef = useRef(null);
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button className={`watermark-upload-slot remove-bg-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
@@ -149,6 +154,21 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect }) 
           <strong>+ 上传图片文件</strong>
           <span>支持 JPG/PNG/WebP，最大 10MB</span>
         </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
       )}
       {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
       {isUploading && (
@@ -210,6 +230,13 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
     }
   }
 
+  function clearSource() {
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+  }
+
   function submit() {
     if (!sourceAsset) {
       setNotice("请先上传图片文件");
@@ -233,6 +260,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
         previewUrl={previewUrl}
         isUploading={uploading}
         onSelect={selectSource}
+        onClear={clearSource}
       />
       <div className="watermark-composer-footer remove-bg-composer-footer">
         <span>{notice || "AI 将自动识别主体并输出透明背景图片"}</span>

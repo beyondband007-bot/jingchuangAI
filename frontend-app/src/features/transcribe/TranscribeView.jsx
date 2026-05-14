@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Plus, Sparkles, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
@@ -62,9 +62,14 @@ function downloadBlob({ content, fileName, type }) {
   URL.revokeObjectURL(href);
 }
 
-function TranscribeUploadSlot({ fileState, isUploading, onPick }) {
+function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button className={`voice-upload-slot transcribe-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
@@ -78,6 +83,21 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick }) {
           if (file) onPick(file);
         }}
       />
+      {hasFile && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
       <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
       <strong>{hasFile ? fileState.fileName : "+ 上传音频文件"}</strong>
       <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6秒到6分钟"}</small>
@@ -162,6 +182,11 @@ export function TranscribeView() {
     } catch (error) {
       setNotice(error.message || "音频选择失败");
     }
+  }
+
+  function clearAudioFile() {
+    setAudioFile(null);
+    setNotice("");
   }
 
   async function submitTranscribe() {
@@ -298,7 +323,7 @@ export function TranscribeView() {
               转录工作台
             </div>
             <div className="voice-upload-grid">
-              <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} />
+              <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
             </div>
             <div className="voice-composer-footer">
               <span>{notice || "MVP 使用 MiniMax 音频预处理能力，建议上传 6 秒到 6 分钟的清晰音频。"}</span>

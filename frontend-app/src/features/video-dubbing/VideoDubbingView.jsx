@@ -61,9 +61,14 @@ function makeDownloadName(prefix = "video-dub", ext = "mp4") {
   return `${prefix}-${stamp}.${ext}`;
 }
 
-function VideoUploadSlot({ fileState, isUploading, onPick }) {
+function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button
@@ -82,6 +87,21 @@ function VideoUploadSlot({ fileState, isUploading, onPick }) {
           if (file) onPick(file);
         }}
       />
+      {hasFile && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
       <span className="video-dub-upload-icon">
         {isUploading ? <Loader2 size={20} /> : <Video size={20} />}
       </span>
@@ -297,6 +317,11 @@ export function VideoDubbingView() {
     }
   }
 
+  function clearVideoFile() {
+    setVideoFile(null);
+    setNotice("");
+  }
+
   async function submitDub() {
     if (!videoFile?.file) {
       setNotice("请先上传视频文件");
@@ -440,7 +465,7 @@ export function VideoDubbingView() {
               视频配音工作台
             </div>
             <div className="video-dub-upload-grid">
-              <VideoUploadSlot fileState={videoFile} isUploading={isUploading} onPick={pickVideoFile} />
+              <VideoUploadSlot fileState={videoFile} isUploading={isUploading} onPick={pickVideoFile} onClear={clearVideoFile} />
             </div>
 
             <div className="voice-composer-footer">

@@ -10,7 +10,8 @@ import {
   Send,
   Star,
   Trash2,
-  Wand2
+  Wand2,
+  X
 } from "lucide-react";
 import { enhanceApi } from "./enhanceApi";
 
@@ -148,9 +149,14 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect }) {
+function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
   const inputRef = useRef(null);
   const isVideo = mode === "video";
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button className={`watermark-upload-slot enhance-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
@@ -177,6 +183,21 @@ function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelec
           <strong>{isVideo ? "+ 上传视频文件" : "+ 上传图片文件"}</strong>
           <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG/WebP，最大 10MB"}</span>
         </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
       )}
       {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
       {isUploading && (
@@ -215,6 +236,13 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
 
   function changeMode(nextMode) {
     setMode(nextMode);
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+  }
+
+  function clearSource() {
     setSourceAsset(null);
     if (previewUrl) window.URL.revokeObjectURL(previewUrl);
     setPreviewUrl("");
@@ -285,6 +313,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
         previewUrl={previewUrl}
         isUploading={uploading}
         onSelect={selectSource}
+        onClear={clearSource}
       />
       <div className="watermark-composer-footer enhance-composer-footer">
         <span>{notice || (mode === "video" ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音` : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}</span>

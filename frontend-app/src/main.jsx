@@ -1850,7 +1850,33 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
             <input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：产品讲解员" />
           </label>
           <button className="dh-upload-zone" type="button" onClick={() => fileInputRef.current?.click()}>
-            <input ref={fileInputRef} type="file" accept="video/*" hidden onChange={(event) => setFile(event.target.files?.[0] || null)} />
+            <input ref={fileInputRef} type="file" accept="video/*" hidden onChange={(event) => {
+              setFile(event.target.files?.[0] || null);
+              event.target.value = "";
+            }} />
+            {file && (
+              <span
+                className="upload-clear-button"
+                role="button"
+                tabIndex={0}
+                title="取消上传"
+                aria-label="取消上传"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setFile(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setFile(null);
+                  }
+                }}
+              >
+                <X size={13} />
+              </span>
+            )}
             <Video size={24} />
             <strong>{file ? file.name : "选择数字人训练视频"}</strong>
             <span>{file ? "素材会在真实接口接入后上传" : "当前不上传文件，只保留 UI 和 API 结构"}</span>
@@ -2009,7 +2035,33 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
         </label>
       ) : (
         <button className="dh-audio-upload" type="button" onClick={() => audioInputRef.current?.click()}>
-          <input ref={audioInputRef} type="file" accept="audio/*" hidden onChange={(event) => setAudioFile(event.target.files?.[0] || null)} />
+          <input ref={audioInputRef} type="file" accept="audio/*" hidden onChange={(event) => {
+            setAudioFile(event.target.files?.[0] || null);
+            event.target.value = "";
+          }} />
+          {audioFile && (
+            <span
+              className="upload-clear-button"
+              role="button"
+              tabIndex={0}
+              title="取消上传"
+              aria-label="取消上传"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setAudioFile(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setAudioFile(null);
+                }
+              }}
+            >
+              <X size={13} />
+            </span>
+          )}
           <Mic size={22} />
           <strong>{audioFile ? audioFile.name : "上传驱动音频"}</strong>
           <span>{audioFile ? "已选择，真实接口接入后上传" : "限制 3 分钟以内，当前为占位"}</span>
@@ -2518,6 +2570,15 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
     setNotice("");
   }
 
+  function clearPortrait(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPortrait(null);
+    if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    setPortraitPreview("");
+    setNotice("");
+  }
+
   async function previewVoice() {
     if (!text.trim()) {
       setNotice("请输入用于试听的台词");
@@ -2597,7 +2658,10 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
       </div>
       <div className="idh-composer-body">
         <button className={`idh-upload-card ${portraitPreview ? "has-image" : ""}`} type="button" onClick={() => fileInputRef.current?.click()}>
-          <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(event) => selectPortrait(event.target.files?.[0])} />
+          <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(event) => {
+            selectPortrait(event.target.files?.[0]);
+            event.target.value = "";
+          }} />
           {portraitPreview ? (
             <img src={portraitPreview} alt="已上传人物照" />
           ) : (
@@ -2606,6 +2670,21 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
               <strong>上传图片</strong>
               <span>人物正面照</span>
             </>
+          )}
+          {portraitPreview && (
+            <span
+              className="upload-clear-button"
+              role="button"
+              tabIndex={0}
+              title="取消上传"
+              aria-label="取消上传"
+              onClick={clearPortrait}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") clearPortrait(event);
+              }}
+            >
+              <X size={13} />
+            </span>
           )}
         </button>
         <div className="idh-form-card">
@@ -2999,9 +3078,14 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = m
   );
 }
 
-function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUploading, onSelect }) {
+function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUploading, onSelect, onClear }) {
   const inputRef = useRef(null);
   const Icon = kind === "image" ? Image : Film;
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
   return (
     <button className={`motion-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
@@ -3009,7 +3093,10 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
         type="file"
         accept={kind === "image" ? "image/*" : "video/*"}
         hidden
-        onChange={(event) => onSelect(event.target.files?.[0] || null)}
+        onChange={(event) => {
+          onSelect(event.target.files?.[0] || null);
+          event.target.value = "";
+        }}
       />
       {previewUrl ? (
         kind === "image" ? (
@@ -3023,6 +3110,21 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
           <strong>{title}</strong>
           <span>{hint}</span>
         </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
       )}
       {asset && <small>{asset.fileName} · {formatBytes(asset.sizeBytes)}</small>}
       {isUploading && (
@@ -3121,6 +3223,20 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
     }
   }
 
+  function clearImage() {
+    setImageAsset(null);
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview("");
+    setNotice("");
+  }
+
+  function clearVideo() {
+    setVideoAsset(null);
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview("");
+    setNotice("");
+  }
+
   function submit() {
     if (!imageAsset) {
       setNotice(copy.imageRequired);
@@ -3151,6 +3267,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
           previewUrl={imagePreview}
           isUploading={uploading === "image"}
           onSelect={selectImage}
+          onClear={clearImage}
         />
         <MotionTransferUploadSlot
           kind="video"
@@ -3160,6 +3277,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
           previewUrl={videoPreview}
           isUploading={uploading === "video"}
           onSelect={selectVideo}
+          onClear={clearVideo}
         />
       </div>
       <div className="motion-composer-footer">
@@ -3509,9 +3627,14 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect }) {
+function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
   const inputRef = useRef(null);
   const isVideo = mode === "video";
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
   return (
     <button className={`watermark-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
@@ -3537,6 +3660,21 @@ function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSel
           <strong>{isVideo ? "+ 上传视频文件" : "+ 上传图片文件"}</strong>
           <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG，最大 10MB"}</span>
         </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
       )}
       {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
       {isUploading && (
@@ -3575,6 +3713,13 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
 
   function changeMode(nextMode) {
     setMode(nextMode);
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+  }
+
+  function clearSource() {
     setSourceAsset(null);
     if (previewUrl) window.URL.revokeObjectURL(previewUrl);
     setPreviewUrl("");
@@ -3645,6 +3790,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
         previewUrl={previewUrl}
         isUploading={uploading}
         onSelect={selectSource}
+        onClear={clearSource}
       />
       <div className="watermark-composer-footer">
         <span>{notice || (mode === "video" ? "视频会保留原音频并尝试自然修复水印区域" : "图片会自动修复水印区域并保持主体内容")}</span>

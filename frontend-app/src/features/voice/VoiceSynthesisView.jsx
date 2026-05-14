@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
 import { voiceApi } from "./voiceApi";
 
 const voicePreviewText = "欢迎使用鲸创 AI 语音合成，现在开始试听目标音色的自然效果。";
@@ -71,9 +71,14 @@ function loadRecentResults() {
   }
 }
 
-function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick }) {
+function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
@@ -87,6 +92,21 @@ function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick }) {
           if (file) onPick(file);
         }}
       />
+      {hasFile && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
       <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
       <strong>{hasFile ? fileState.fileName : title}</strong>
       <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
@@ -171,6 +191,15 @@ export function VoiceSynthesisView() {
     } finally {
       setUploading("");
     }
+  }
+
+  function clearCloneAudio() {
+    setCloneAudio(null);
+    setCurrentVoice(null);
+    setDemoAudio("");
+    setResultAudio("");
+    setResultUrl("");
+    setNotice("");
   }
 
   async function ensureVoiceClone() {
@@ -382,6 +411,7 @@ export function VoiceSynthesisView() {
               fileState={cloneAudio}
               isUploading={uploading === "clone"}
               onPick={uploadFile}
+              onClear={clearCloneAudio}
             />
           </div>
 

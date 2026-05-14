@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
 import { voiceConvertApi } from "./voiceConvertApi";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
@@ -70,9 +70,14 @@ function loadRecentResults() {
   }
 }
 
-function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, accept = ".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" }) {
+function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, onClear, accept = ".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
 
   return (
     <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
@@ -86,6 +91,21 @@ function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, accept =
           if (file) onPick(file);
         }}
       />
+      {hasFile && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="取消上传"
+          aria-label="取消上传"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
       <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
       <strong>{hasFile ? fileState.fileName : title}</strong>
       <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
@@ -157,6 +177,22 @@ export function VoiceConvertView() {
     } finally {
       setUploading("");
     }
+  }
+
+  function clearTargetAudio() {
+    setTargetAudio(null);
+    setCurrentVoice(null);
+    setDemoAudio("");
+    setResultAudio("");
+    setResultUrl("");
+    setNotice("");
+  }
+
+  function clearSourceAudio() {
+    setSourceAudio(null);
+    setResultAudio("");
+    setResultUrl("");
+    setNotice("");
   }
 
   async function pickSourceFile(file) {
@@ -353,6 +389,7 @@ export function VoiceConvertView() {
               fileState={targetAudio}
               isUploading={uploading === "target"}
               onPick={uploadTargetFile}
+              onClear={clearTargetAudio}
             />
             <VoiceUploadSlot
               title="+ 源音频"
@@ -360,6 +397,7 @@ export function VoiceConvertView() {
               fileState={sourceAudio}
               isUploading={false}
               onPick={pickSourceFile}
+              onClear={clearSourceAudio}
               accept=".mp3,.m4a,.wav,.flac,.webm,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/webm,video/webm"
             />
           </div>
