@@ -3,7 +3,7 @@ import { createHttpError } from "./http.js";
 export async function debitCredits(connection, { userId, taskId, amount, memo }) {
   const [accounts] = await connection.query("SELECT balance FROM credit_accounts WHERE user_id = ? FOR UPDATE", [userId]);
   if (accounts.length === 0 || accounts[0].balance < amount) {
-    throw createHttpError("insufficient credits", 402);
+    throw createHttpError("积分不够，请充值", 402);
   }
 
   const balanceAfter = accounts[0].balance - amount;

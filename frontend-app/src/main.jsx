@@ -16,6 +16,7 @@ import {
   Layers,
   LogIn,
   Loader2,
+  LogOut,
   Maximize2,
   Mic,
   Music,
@@ -33,8 +34,10 @@ import {
   Trash2,
   UserRound,
   Video,
-  Wand2
+  Wand2,
+  X
 } from "lucide-react";
+import { authApi } from "./api/authApi";
 import { imageApi } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
@@ -89,6 +92,8 @@ const navItems = [
 ];
 
 const appEntryStorageKey = "jingchuang:enter-app";
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => originalFetch(input, { credentials: "include", ...init });
 const featureNavIds = navItems.map((item) => item.id).filter((id) => id !== "home");
 const featureNavIdSet = new Set(featureNavIds);
 const appNavIdSet = new Set(navItems.map((item) => item.id));
@@ -128,10 +133,145 @@ function getInitialView() {
   return "splash";
 }
 
-const SplashHome = memo(function SplashHome() {
+function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isRegister = mode === "register";
+
+  useEffect(() => {
+    if (!mode) return;
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setIsSubmitting(false);
+  }, [mode]);
+
+  if (!mode) return null;
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (isRegister && password !== confirmPassword) {
+      setError("两次输入的密码不一致");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = { username: username.trim(), password };
+      const result = isRegister ? await authApi.register(payload) : await authApi.login(payload);
+      onSuccess(result.user);
+    } catch (submitError) {
+      setError(submitError.message || "操作失败，请稍后重试");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="auth-drawer-layer" role="presentation">
+      <button className="auth-drawer-backdrop" type="button" aria-label="关闭登录面板" onClick={onClose} />
+      <aside className="auth-drawer" role="dialog" aria-modal="true" aria-labelledby="auth-drawer-title">
+        <button className="auth-drawer-close" type="button" aria-label="关闭" onClick={onClose}>
+          <X size={18} />
+        </button>
+        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <h2 id="auth-drawer-title">{isRegister ? "创建账号" : "欢迎回来"}</h2>
+        <p>{isRegister ? "注册后立即获得 1000 积分，开始保存你的生成记录。" : "登录后将切换到你的积分与生成记录。"}</p>
+        <form className="auth-form" onSubmit={submit}>
+          <label>
+            <span>用户名</span>
+            <input
+              autoFocus
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="请输入用户名"
+              autoComplete="username"
+            />
+          </label>
+          <label>
+            <span>密码</span>
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="至少 6 个字符"
+              type="password"
+              autoComplete={isRegister ? "new-password" : "current-password"}
+            />
+          </label>
+          {isRegister && (
+            <label>
+              <span>确认密码</span>
+              <input
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="请再次输入密码"
+                type="password"
+                autoComplete="new-password"
+              />
+            </label>
+          )}
+          {error && <div className="auth-error">{error}</div>}
+          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
+            <span>{isRegister ? "注册并领取积分" : "登录"}</span>
+          </button>
+        </form>
+        <button className="auth-mode-switch" type="button" onClick={() => onModeChange(isRegister ? "login" : "register")}>
+          {isRegister ? "已有账号，去登录" : "还没有账号，立即注册"}
+        </button>
+      </aside>
+    </div>
+  );
+}
+
+const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
+  const frameRef = useRef(null);
+
+  const bindAuthLinks = useCallback(() => {
+    const frame = frameRef.current;
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const bindLink = (selector, handler) => {
+        const links = Array.from(doc.querySelectorAll(selector));
+        links.forEach((link) => {
+          if (link.dataset.jcAuthBound === "1") return;
+          link.dataset.jcAuthBound = "1";
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            handler();
+          }, true);
+        });
+      };
+      bindLink('a[href="#signin"], a[href*="#signin"]', () => onOpenAuth("login"));
+      bindLink('a[href="#signup"], a[href*="#signup"]', () => onOpenAuth("register"));
+      bindLink('a[href="/#/home"], a.hero-pill', onGuestEnter);
+    } catch {
+      // The exported landing page is same-origin locally; ignore if a browser blocks access.
+    }
+  }, [onGuestEnter, onOpenAuth]);
+
+  const handleFrameLoad = useCallback(() => {
+    bindAuthLinks();
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      bindAuthLinks();
+      if (tries >= 20) {
+        window.clearInterval(timer);
+      }
+    }, 200);
+  }, [bindAuthLinks]);
+
   return (
     <div className="original-home-shell">
-      <iframe className="original-home-frame" title="鲸创AI首页" src="/new_page/page.html" />
+      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
 });
@@ -193,7 +333,9 @@ const AppHome = memo(function AppHome({ onOpenFeature }) {
   );
 });
 
-const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange }) {
+const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, authUser, onOpenAuth, onLogout }) {
+  const isLoadingUser = !authUser;
+  const isGuest = Boolean(authUser?.isGuest);
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
@@ -214,10 +356,27 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange }) 
           );
         })}
       </nav>
-      <button className="feature-login" type="button">
-        <LogIn size={16} />
-        <span>登录</span>
-      </button>
+      {isLoadingUser ? (
+        <button className="feature-login" type="button" onClick={() => onOpenAuth("login")}>
+          <LogIn size={16} />
+          <span>登录</span>
+        </button>
+      ) : (
+        <div className={`feature-user-panel ${isGuest ? "is-guest" : ""}`}>
+          <div className="feature-user-avatar">
+            <UserRound size={17} />
+          </div>
+          <div className="feature-user-copy">
+            <strong>{isGuest ? "游客" : authUser.displayName || authUser.username}</strong>
+            {!isGuest && <span>积分 {authUser.credits ?? "-"}</span>}
+          </div>
+          {!isGuest && (
+            <button type="button" onClick={onLogout} aria-label="退出登录">
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
+      )}
     </aside>
   );
 });
@@ -3656,8 +3815,9 @@ function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   );
 }
 
-function ImageFeaturePage({ initialNav, onOpenHome }) {
+function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogout }) {
   const firstNav = initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
+  const isGuest = Boolean(authUser?.isGuest);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
 
@@ -3687,8 +3847,14 @@ function ImageFeaturePage({ initialNav, onOpenHome }) {
   }, [onOpenHome]);
 
   return (
-    <div className="feature-page-shell">
-      <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} />
+    <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>
+      <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
+      {isGuest && (
+        <div className="feature-guest-auth-actions" aria-label="游客账号入口">
+          <button type="button" onClick={() => onOpenAuth("login")}>登录</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>注册</button>
+        </div>
+      )}
       <main className="feature-main">
         <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
           <ImageGenerationView />
@@ -3749,11 +3915,27 @@ function ImageFeaturePage({ initialNav, onOpenHome }) {
 
 function App() {
   const [view, setView] = useState(getInitialView);
+  const [authUser, setAuthUser] = useState(null);
+  const [authDrawerMode, setAuthDrawerMode] = useState(null);
 
   useEffect(() => {
     const onPopState = () => setView(getRouteView());
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    authApi.me()
+      .then((state) => {
+        if (mounted) setAuthUser(state.user);
+      })
+      .catch(() => {
+        if (mounted) setAuthUser({ isGuest: true, displayName: "游客", username: "guest" });
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const openHome = useCallback(() => {
@@ -3766,15 +3948,57 @@ function App() {
     setView(nextId);
   }, []);
 
-  if (view === "home") {
-    return <AppHome onOpenFeature={openFeature} />;
-  }
+  const finishAuth = useCallback((user) => {
+    setAuthUser(user);
+    setAuthDrawerMode(null);
+    window.sessionStorage.setItem(appEntryStorageKey, "1");
+    window.history.pushState(null, "", "#/home");
+    window.location.reload();
+  }, []);
 
-  if (featureNavIdSet.has(view)) {
-    return <ImageFeaturePage initialNav={view} onOpenHome={openHome} />;
-  }
+  const enterAsGuest = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Guest entry should still work when there is no active session to clear.
+    } finally {
+      window.sessionStorage.setItem(appEntryStorageKey, "1");
+      window.history.pushState(null, "", "#/home");
+      window.location.reload();
+    }
+  }, []);
 
-  return <SplashHome />;
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      window.location.reload();
+    }
+  }, []);
+
+  const page = (() => {
+    if (view === "home") {
+      return <AppHome onOpenFeature={openFeature} />;
+    }
+
+    if (featureNavIdSet.has(view)) {
+      return <ImageFeaturePage initialNav={view} onOpenHome={openHome} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
+    }
+
+    return <SplashHome onOpenAuth={setAuthDrawerMode} onGuestEnter={enterAsGuest} />;
+  })();
+
+  return (
+    <>
+      {page}
+      <AuthDrawer
+        mode={authDrawerMode}
+        onClose={() => setAuthDrawerMode(null)}
+        onModeChange={setAuthDrawerMode}
+        onSuccess={finishAuth}
+      />
+    </>
+  );
 }
 
 createRoot(document.getElementById("root")).render(

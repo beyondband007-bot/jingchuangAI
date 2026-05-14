@@ -4,6 +4,7 @@ import path from "path";
 import { config } from "./config/index.js";
 import { checkDatabase } from "./db/pool.js";
 import { articleRouter } from "./modules/article/article.routes.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 import { chatRouter } from "./modules/chat/chat.routes.js";
 import { digitalHumanRouter } from "./modules/digital-human/digitalHuman.routes.js";
 import { enhanceRouter } from "./modules/enhance/enhance.routes.js";
@@ -26,7 +27,7 @@ import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
 export function createApp() {
   const app = express();
 
-  app.use(cors({ origin: true }));
+  app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
   app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));
 
@@ -43,6 +44,7 @@ export function createApp() {
     }
   });
 
+  app.use("/api/auth", authRouter);
   app.use("/api", attachCurrentUser);
 
   app.get("/api/me/credits", async (req, res) => {

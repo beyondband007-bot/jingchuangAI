@@ -19,11 +19,37 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       external_id VARCHAR(64) NOT NULL UNIQUE,
+      username VARCHAR(64) NULL UNIQUE,
+      password_hash VARCHAR(255) NULL,
       display_name VARCHAR(120) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [userColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'`,
+    [config.db.database]
+  );
+  const userColumnNames = new Set(userColumns.map((column) => column.COLUMN_NAME));
+  if (!userColumnNames.has("username")) {
+    await pool.query("ALTER TABLE users ADD COLUMN username VARCHAR(64) NULL AFTER external_id");
+  }
+  if (!userColumnNames.has("password_hash")) {
+    await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER username");
+  }
+
+  const [usernameIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'username' AND NON_UNIQUE = 0`,
+    [config.db.database]
+  );
+  if (usernameIndexes.length === 0) {
+    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_username (username)");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS credit_accounts (
@@ -48,6 +74,20 @@ async function createTables() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_credit_transactions_user_created (user_id, created_at),
       CONSTRAINT fk_credit_transactions_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      token_hash CHAR(64) NOT NULL UNIQUE,
+      expires_at DATETIME NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      last_seen_at TIMESTAMP NULL,
+      INDEX idx_auth_sessions_user (user_id),
+      INDEX idx_auth_sessions_expires (expires_at),
+      CONSTRAINT fk_auth_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
@@ -657,11 +697,20 @@ async function seedDemoData() {
     await connection.query(
       `INSERT INTO users (external_id, display_name)
        VALUES ('demo-user', '匿名用户')
+       ON DUPLICATE KEY UPDATE external_id = external_id`
+    );
+
+    await connection.query(
+      `INSERT INTO users (external_id, display_name)
+       VALUES ('guest-user', '游客')
        ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)`
     );
 
     const [users] = await connection.query("SELECT id FROM users WHERE external_id = 'demo-user' LIMIT 1");
     const userId = users[0].id;
+
+    const [guestUsers] = await connection.query("SELECT id FROM users WHERE external_id = 'guest-user' LIMIT 1");
+    const guestUserId = guestUsers[0].id;
 
     const [accounts] = await connection.query("SELECT id FROM credit_accounts WHERE user_id = ? LIMIT 1", [userId]);
     if (accounts.length === 0) {
@@ -674,6 +723,13 @@ async function seedDemoData() {
          VALUES (?, 'grant', ?, ?, 'demo-user initial credits')`,
         [userId, config.defaultDemoCredits, config.defaultDemoCredits]
       );
+    }
+
+    const [guestAccounts] = await connection.query("SELECT id FROM credit_accounts WHERE user_id = ? LIMIT 1", [guestUserId]);
+    if (guestAccounts.length === 0) {
+      await connection.query("INSERT INTO credit_accounts (user_id, balance) VALUES (?, 0)", [guestUserId]);
+    } else {
+      await connection.query("UPDATE credit_accounts SET balance = 0 WHERE user_id = ?", [guestUserId]);
     }
 
     await connection.query(`

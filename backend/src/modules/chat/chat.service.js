@@ -80,7 +80,7 @@ export async function sendMessage(payload) {
       reservePoints: modelPrice.reserve_points
     });
     if (!hasReserve) {
-      throw createHttpError("insufficient credits", 402);
+      throw createHttpError("积分不够，请充值", 402);
     }
 
     if (resolvedConversationId) {
