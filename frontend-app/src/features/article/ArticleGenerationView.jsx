@@ -15,44 +15,45 @@ import {
 import { articleApi } from "./articleApi";
 
 const articlePromptMarker = "爆款图文设计";
+const templateThumbBase = "/assets/article/template-thumbs";
 
 const contentTypes = [
-  { value: "xiaohongshu-cover", label: "小红书封面", prompt: "适合小红书封面的竖版视觉，标题醒目，信息有层次，适合社交媒体浏览。" },
-  { value: "knowledge-card", label: "知识卡片", prompt: "知识卡片设计，重点清晰，结构化排版，适合收藏和转发。" },
-  { value: "quote-poster", label: "金句海报", prompt: "金句海报设计，文字有情绪张力，画面留白充足，适合传播。" },
-  { value: "tutorial", label: "步骤教程图", prompt: "步骤教程信息图，步骤编号清楚，阅读路径明确，便于照着执行。" },
-  { value: "product-card", label: "产品卖点图", prompt: "产品卖点图，突出核心价值和使用场景，视觉干净专业。" },
-  { value: "comparison", label: "对比分析图", prompt: "对比分析信息图，左右或上下分区，对比关系一眼可读。" }
+  { value: "xiaohongshu-cover", label: "小红书封面", thumbnailUrl: `${templateThumbBase}/小红书封面.png`, prompt: "适合小红书封面的竖版视觉，标题醒目，信息有层次，适合社交媒体浏览。" },
+  { value: "knowledge-card", label: "知识卡片", thumbnailUrl: `${templateThumbBase}/知识卡片.png`, prompt: "知识卡片设计，重点清晰，结构化排版，适合收藏和转发。" },
+  { value: "quote-poster", label: "金句海报", thumbnailUrl: `${templateThumbBase}/金句海报.png`, prompt: "金句海报设计，文字有情绪张力，画面留白充足，适合传播。" },
+  { value: "tutorial", label: "步骤教程图", thumbnailUrl: `${templateThumbBase}/步骤教程.png`, prompt: "步骤教程信息图，步骤编号清楚，阅读路径明确，便于照着执行。" },
+  { value: "product-card", label: "产品卖点图", thumbnailUrl: `${templateThumbBase}/产品卖点.png`, prompt: "产品卖点图，突出核心价值和使用场景，视觉干净专业。" },
+  { value: "comparison", label: "对比分析图", thumbnailUrl: `${templateThumbBase}/对比分析.png`, prompt: "对比分析信息图，左右或上下分区，对比关系一眼可读。" }
 ];
 
 const styleOptions = [
-  { value: "fresh", label: "清新", prompt: "清新明亮，轻盈自然，低噪点，高级感。" },
-  { value: "cute", label: "可爱", prompt: "可爱亲和，圆润图形，轻松活泼但不过度幼稚。" },
-  { value: "minimal", label: "极简", prompt: "极简设计，克制留白，少量元素，高级排版。" },
-  { value: "bold", label: "大胆", prompt: "高对比，大标题，强视觉冲击，适合快速吸引注意。" },
-  { value: "handdrawn", label: "手绘笔记", prompt: "手绘笔记风格，轻微纸张质感，标注、箭头和小插画自然融合。" },
-  { value: "retro", label: "复古", prompt: "复古平面设计，怀旧质感，字体和构图有年代感。" },
-  { value: "notion", label: "Notion 风", prompt: "Notion 风格，模块化信息块，干净理性，轻量图标点缀。" },
-  { value: "blackboard", label: "黑板风", prompt: "黑板板书风格，粉笔质感，像课堂重点总结。" }
+  { value: "fresh", label: "清新", thumbnailUrl: `${templateThumbBase}/清新.png`, prompt: "清新明亮，轻盈自然，低噪点，高级感。" },
+  { value: "cute", label: "可爱", thumbnailUrl: `${templateThumbBase}/可爱.png`, prompt: "可爱亲和，圆润图形，轻松活泼但不过度幼稚。" },
+  { value: "minimal", label: "极简", thumbnailUrl: `${templateThumbBase}/极简.png`, prompt: "极简设计，克制留白，少量元素，高级排版。" },
+  { value: "bold", label: "大胆", thumbnailUrl: `${templateThumbBase}/大胆.png`, prompt: "高对比，大标题，强视觉冲击，适合快速吸引注意。" },
+  { value: "handdrawn", label: "手绘笔记", thumbnailUrl: `${templateThumbBase}/手绘.png`, prompt: "手绘笔记风格，轻微纸张质感，标注、箭头和小插画自然融合。" },
+  { value: "retro", label: "复古", thumbnailUrl: `${templateThumbBase}/复古.png`, prompt: "复古平面设计，怀旧质感，字体和构图有年代感。" },
+  { value: "notion", label: "Notion 风", thumbnailUrl: `${templateThumbBase}/Notion.png`, prompt: "Notion 风格，模块化信息块，干净理性，轻量图标点缀。" },
+  { value: "blackboard", label: "黑板风", thumbnailUrl: `${templateThumbBase}/黑板.png`, prompt: "黑板板书风格，粉笔质感，像课堂重点总结。" }
 ];
 
 const layoutOptions = [
-  { value: "balanced", label: "均衡", prompt: "主视觉、标题和说明文字比例协调。" },
-  { value: "sparse", label: "留白", prompt: "大量留白，中心信息突出，画面有呼吸感。" },
-  { value: "dense", label: "密集", prompt: "信息密度较高但不拥挤，分组清晰，适合知识总结。" },
-  { value: "list", label: "列表", prompt: "列表式布局，条目对齐，重点用编号或图标区分。" },
-  { value: "contrast", label: "对比", prompt: "对比式布局，左右或上下分区，差异关系明确。" },
-  { value: "flow", label: "流程", prompt: "流程式布局，用箭头、步骤和路径引导阅读顺序。" }
+  { value: "balanced", label: "均衡", thumbnailUrl: `${templateThumbBase}/均衡.png`, prompt: "主视觉、标题和说明文字比例协调。" },
+  { value: "sparse", label: "留白", thumbnailUrl: `${templateThumbBase}/留白.png`, prompt: "大量留白，中心信息突出，画面有呼吸感。" },
+  { value: "dense", label: "密集", thumbnailUrl: `${templateThumbBase}/密集.png`, prompt: "信息密度较高但不拥挤，分组清晰，适合知识总结。" },
+  { value: "list", label: "列表", thumbnailUrl: `${templateThumbBase}/列表.png`, prompt: "列表式布局，条目对齐，重点用编号或图标区分。" },
+  { value: "contrast", label: "对比", thumbnailUrl: `${templateThumbBase}/对比.png`, prompt: "对比式布局，左右或上下分区，差异关系明确。" },
+  { value: "flow", label: "流程", thumbnailUrl: `${templateThumbBase}/流程.png`, prompt: "流程式布局，用箭头、步骤和路径引导阅读顺序。" }
 ];
 
 const paletteOptions = [
-  { value: "auto", label: "自动配色", prompt: "根据主题自动选择协调配色，避免杂乱。" },
-  { value: "pastel", label: "马卡龙", prompt: "柔和马卡龙配色，亲和、轻快、干净。" },
-  { value: "warm", label: "暖色", prompt: "温暖明亮配色，友好、有生活感。" },
-  { value: "mono", label: "黑白极简", prompt: "黑白极简配色，少量强调色，克制专注。" },
-  { value: "bluegreen", label: "蓝绿色", prompt: "蓝绿色系，清爽、可靠、科技感适中。" },
-  { value: "neon", label: "霓虹", prompt: "霓虹强调色，高能量，高识别度，保持文字可读。" },
-  { value: "custom", label: "自定义主色", prompt: "围绕自定义主色建立统一配色，层次分明。" }
+  { value: "auto", label: "自动配色", color: "linear-gradient(135deg,#667eea,#764ba2)", prompt: "根据主题自动选择协调配色，避免杂乱。" },
+  { value: "pastel", label: "马卡龙", color: "linear-gradient(135deg,#ffd1dc,#a8e6cf)", prompt: "柔和马卡龙配色，亲和、轻快、干净。" },
+  { value: "warm", label: "暖色", color: "linear-gradient(135deg,#ff9a56,#ff6b6b)", prompt: "温暖明亮配色，友好、有生活感。" },
+  { value: "mono", label: "黑白极简", color: "linear-gradient(135deg,#333,#999)", prompt: "黑白极简配色，少量强调色，克制专注。" },
+  { value: "bluegreen", label: "蓝绿色", color: "linear-gradient(135deg,#4facfe,#00f2fe)", prompt: "蓝绿色系，清爽、可靠、科技感适中。" },
+  { value: "neon", label: "霓虹", color: "linear-gradient(135deg,#f093fb,#f5576c)", prompt: "霓虹强调色，高能量，高识别度，保持文字可读。" },
+  { value: "custom", label: "自定义主色", color: "linear-gradient(135deg,#14b8a6,#0f766e)", prompt: "围绕自定义主色建立统一配色，层次分明。" }
 ];
 
 const audienceOptions = ["新手创作者", "职场人", "学生", "家长", "设计师", "知识博主", "小红书用户", "产品用户"];
@@ -489,16 +490,22 @@ function buildGuidedPrompt(form) {
   return parts.filter(Boolean).join("\n");
 }
 
-function OptionButtons({ items, value, onChange }) {
+function VisualOptionGrid({ items, value, onChange, variant = "image" }) {
   return (
-    <div className="article-option-row">
+    <div className={`article-visual-option-grid is-${variant}`}>
       {items.map((item) => (
         <button
           className={value === item.value ? "is-selected" : ""}
           key={item.value}
           type="button"
+          aria-pressed={value === item.value}
           onClick={() => onChange(item.value)}
         >
+          {variant === "palette" ? (
+            <span className="article-visual-color" style={{ background: item.color }} aria-hidden="true" />
+          ) : (
+            <img src={item.thumbnailUrl} alt="" loading="lazy" aria-hidden="true" />
+          )}
           {item.label}
         </button>
       ))}
@@ -740,31 +747,27 @@ export function ArticleGenerationView() {
 
           <div className="article-field">
             <span>内容类型</span>
-            <OptionButtons items={contentTypes} value={form.contentType} onChange={(value) => updateForm({ contentType: value })} />
+            <VisualOptionGrid items={contentTypes} value={form.contentType} onChange={(value) => updateForm({ contentType: value })} />
           </div>
 
           <div className="article-field">
             <span>视觉风格</span>
-            <OptionButtons items={styleOptions} value={form.visualStyle} onChange={(value) => updateForm({ visualStyle: value })} />
+            <VisualOptionGrid items={styleOptions} value={form.visualStyle} onChange={(value) => updateForm({ visualStyle: value })} />
           </div>
 
-          <div className="article-two-col">
-            <label className="article-field">
-              <span>布局</span>
-              <select value={form.layout} onChange={(event) => updateForm({ layout: event.target.value })}>
-                {layoutOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="article-field">
-              <span>配色</span>
-              <select value={form.palette} onChange={(event) => updateForm({ palette: event.target.value })}>
-                {paletteOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </label>
+          <div className="article-field">
+            <span>布局方式</span>
+            <VisualOptionGrid items={layoutOptions} value={form.layout} onChange={(value) => updateForm({ layout: value })} />
+          </div>
+
+          <div className="article-field">
+            <span>配色方案</span>
+            <VisualOptionGrid
+              items={paletteOptions}
+              value={form.palette}
+              variant="palette"
+              onChange={(value) => updateForm({ palette: value })}
+            />
           </div>
 
           {form.palette === "custom" && (
@@ -848,7 +851,7 @@ export function ArticleGenerationView() {
               <div className="article-empty-state">
                 <Sparkles size={28} />
                 <h2>选择一个案例，或直接填写主题</h2>
-                <p>右侧会展示生成结果，历史图文会保留在下方。</p>
+                <p>这里会展示生成结果，右侧可以继续挑选案例灵感。</p>
               </div>
             )}
             {isGenerating && (
