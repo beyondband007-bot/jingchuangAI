@@ -8619,3 +8619,1182 @@ body {
     border-radius: 999px;
   }
 }
+
+/* Dark product palette aligned with the splash page. */
+:root {
+  --brand-primary: #8d63ff;
+  --brand-primary-strong: #b0c7e2;
+  --brand-secondary: #a56aff;
+  --brand-primary-soft: rgba(141, 99, 255, 0.18);
+  --brand-primary-soft-alt: rgba(176, 199, 226, 0.1);
+  --brand-primary-border: rgba(176, 199, 226, 0.28);
+  --brand-gradient: linear-gradient(180deg, #a56aff 0%, #7a2cff 52%, #6217ea 100%);
+  --app-bg: #050505;
+  --app-surface: #131415;
+  --app-surface-muted: #0b0d10;
+  --app-surface-raised: #1c1c1c;
+  --app-surface-subtle: rgba(255, 255, 255, 0.06);
+  --app-border: rgba(255, 255, 255, 0.12);
+  --app-border-strong: rgba(176, 199, 226, 0.34);
+  --text-primary: #f9f8f6;
+  --text-secondary: #b0c7e2;
+  --text-muted: rgba(249, 248, 246, 0.62);
+  --text-faint: rgba(249, 248, 246, 0.42);
+  --shadow-dark: 0 22px 70px rgba(0, 0, 0, 0.34);
+  --brand-focus-ring: rgba(141, 99, 255, 0.42);
+  --overlay-backdrop: rgba(5, 5, 5, 0.66);
+  --success: #6ee7a8;
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --success-border: rgba(110, 231, 168, 0.28);
+  --warning: #ffd166;
+  --warning-soft: rgba(255, 209, 102, 0.14);
+  --warning-border: rgba(255, 209, 102, 0.28);
+  --danger: #ff8aa2;
+  --danger-soft: rgba(255, 75, 113, 0.14);
+  --danger-border: rgba(255, 120, 148, 0.28);
+}
+
+body {
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(122, 44, 255, 0.2), transparent 30%),
+    linear-gradient(180deg, #101113 0%, var(--app-bg) 42%, #030303 100%);
+}
+
+a {
+  color: var(--text-secondary);
+}
+
+a:hover {
+  color: #fff;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+}
+
+::placeholder {
+  color: var(--text-faint);
+}
+
+.original-home-shell,
+.feature-page-shell,
+.feature-main,
+.image-gen-view,
+.video-gen-view-root,
+.chat-view-root,
+.dh-view-root,
+.idh-view-root,
+.motion-view-root,
+.voice-conversion-view-root,
+.article-view-root,
+.music-canvas,
+.replicate-canvas,
+.watermark-view-root,
+.enhance-view-root,
+.remove-bg-view-root,
+.video-dub-view-root {
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(122, 44, 255, 0.16), transparent 28%),
+    var(--app-bg);
+}
+
+.app-home-shell.is-loading {
+  background: var(--app-bg);
+}
+
+.feature-sidebar {
+  color: var(--text-muted);
+  background:
+    linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(5, 5, 5, 0.98));
+  border-right: 1px solid var(--app-border);
+}
+
+.feature-brand {
+  color: var(--text-primary);
+  border-bottom-color: var(--app-border);
+}
+
+.feature-brand-mark {
+  box-shadow: 0 12px 28px rgba(93, 30, 224, 0.24);
+}
+
+.feature-nav-item {
+  color: var(--text-muted);
+}
+
+.feature-nav-item:hover {
+  color: var(--text-primary);
+  background: var(--app-surface-subtle);
+}
+
+.feature-nav-item.is-active {
+  color: #fff;
+  background: rgba(141, 99, 255, 0.18);
+}
+
+.feature-user-panel,
+.feature-guest-auth-actions {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+  box-shadow: var(--shadow-dark);
+}
+
+.feature-user-copy strong {
+  color: var(--text-primary);
+}
+
+.feature-user-copy span,
+.feature-user-panel button {
+  color: var(--text-muted);
+}
+
+.feature-user-panel button,
+.upload-clear-button {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--app-border);
+}
+
+.feature-user-panel button:hover,
+.upload-clear-button:hover,
+.upload-clear-button:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--app-border-strong);
+}
+
+.feature-guest-auth-actions button {
+  color: var(--text-secondary);
+}
+
+.image-filter-tabs,
+.article-topbar,
+.chat-topbar,
+.voice-filter-tabs,
+.idh-filter-tabs,
+.watermark-filter-tabs,
+.skeleton-top-tabs {
+  color: var(--text-muted);
+  background: rgba(5, 5, 5, 0.76);
+  border-color: var(--app-border);
+  backdrop-filter: blur(16px);
+}
+
+.image-filter-tabs button,
+.article-view-tabs button,
+.replicate-mode-toggle button,
+.music-mode-toggle button,
+.watermark-mode-tabs button,
+.idh-mode-tabs button,
+.skeleton-top-tabs button {
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.image-filter-tabs .selected,
+.article-view-tabs button.is-selected,
+.replicate-mode-toggle button.active,
+.music-mode-toggle button.active,
+.watermark-mode-tabs .is-active,
+.idh-mode-tabs .is-active,
+.skeleton-top-tabs .selected {
+  color: #fff;
+  background: var(--brand-gradient);
+  border-color: var(--brand-primary);
+  box-shadow: 0 12px 26px rgba(93, 30, 224, 0.28);
+}
+
+.credits-chip,
+.price-pill,
+.model-tag,
+.ratio-tag,
+.quality-tag,
+.count-tag,
+.replicate-tag,
+.article-result-meta > span,
+.article-credit,
+.voice-current-chip,
+.watermark-composer-footer strong,
+.idh-composer-footer strong,
+.example-card-meta strong {
+  color: var(--text-secondary);
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+}
+
+.image-canvas,
+.example-canvas,
+.generation-canvas,
+.failed-canvas,
+.empty-results,
+.result-card,
+.example-card,
+.preview-drawer,
+.chat-main-canvas,
+.chat-empty-state,
+.chat-history-rail,
+.chat-history-item,
+.chat-message-bubble,
+.chat-bubble,
+.chat-waiting-card,
+.article-form-panel,
+.article-result-surface,
+.article-cases-section,
+.article-history-section,
+.article-case-card,
+.article-history-card,
+.article-preview-dialog,
+.voice-conversion-canvas,
+.voice-floating-composer,
+.sowa-composer,
+.voice-upload-slot,
+.voice-recent-panel,
+.voice-recent-card,
+.transcribe-result-panel,
+.replicate-floating-composer,
+.replicate-upload-slot,
+.replicate-result-panel,
+.replicate-recent-card,
+.music-composer,
+.music-result-panel,
+.music-recent-card,
+.watermark-canvas,
+.watermark-composer,
+.watermark-upload-slot,
+.watermark-center-state,
+.watermark-result-stage,
+.watermark-task-card,
+.idh-canvas,
+.idh-center-state,
+.idh-result-card,
+.idh-composer,
+.idh-upload-card,
+.idh-form-card,
+.idh-advanced,
+.dh-config-panel,
+.dh-preview-stage,
+.dh-selected-template,
+.dh-pipeline-card,
+.dh-minimax-options,
+.dh-voice-note,
+.video-result-card,
+.skeleton-card,
+.skeleton-composer,
+.video-dub-floating-composer,
+.video-dub-recent-card {
+  color: var(--text-primary);
+  background: rgba(19, 20, 21, 0.94);
+  border-color: var(--app-border);
+  box-shadow: var(--shadow-dark);
+}
+
+.example-canvas,
+.image-canvas,
+.voice-conversion-canvas,
+.article-result-surface,
+.chat-main-canvas,
+.watermark-canvas,
+.idh-canvas {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(176, 199, 226, 0.08), transparent 34%),
+    var(--app-surface-muted);
+}
+
+.example-mosaic,
+.example-card-preview,
+.example-tile,
+.result-preview,
+.generation-visual,
+.preview-drawer-stage,
+.article-result-image,
+.article-preview-stage,
+.voice-recent-art,
+.replicate-card-icon,
+.music-recent-art,
+.watermark-task-preview,
+.watermark-task-placeholder,
+.idh-result-preview,
+.dh-empty-media-icon,
+.skeleton-content,
+.remove-bg-upload-slot,
+.remove-bg-result-stage,
+.remove-bg-task-preview {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--app-border);
+}
+
+.example-card:hover,
+.article-case-card:hover,
+.article-history-card:hover,
+.replicate-recent-card:hover,
+.idh-result-card:hover,
+.watermark-task-card:hover,
+.result-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--app-border-strong);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.example-canvas-copy,
+.generation-copy,
+.failed-canvas,
+.article-topbar,
+.article-section-head,
+.voice-hero-empty,
+.replicate-hero-empty,
+.watermark-hero-empty,
+.idh-hero-empty,
+.chat-empty-state,
+.dh-topbar,
+.dh-config-header,
+.dh-preview-header,
+.watermark-center-state,
+.idh-center-state {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.example-canvas-copy h1,
+.generation-copy h1,
+.failed-canvas h1,
+.article-topbar h1,
+.article-section-head h2,
+.article-topbar > div:first-child > span,
+.article-empty-state h2,
+.article-generating-state h2,
+.article-failed-state h2,
+.voice-hero-empty h1,
+.replicate-hero-empty h1,
+.watermark-hero-empty h1,
+.idh-hero-empty h1,
+.chat-empty-state h1,
+.watermark-center-state strong,
+.watermark-result-copy h2,
+.watermark-recent-empty strong,
+.idh-center-state strong,
+.idh-recent-empty strong,
+.replicate-card-info strong,
+.music-recent-card strong,
+.voice-recent-card strong,
+.article-recommendation strong,
+.article-result-meta strong,
+.article-case-card strong,
+.article-history-card strong {
+  color: var(--text-primary);
+}
+
+.example-canvas-copy p,
+.generation-copy p,
+.article-topbar span,
+.article-section-head span,
+.article-recommendation p,
+.article-empty-state p,
+.article-generating-state p,
+.article-failed-state p,
+.article-result-meta p,
+.article-case-card p,
+.article-history-card p,
+.voice-hero-empty p,
+.replicate-hero-empty p,
+.replicate-card-info span,
+.music-recent-time,
+.watermark-hero-empty p,
+.watermark-center-state p,
+.watermark-result-copy p,
+.watermark-recent-empty p,
+.idh-hero-empty p,
+.idh-center-state p,
+.idh-recent-empty p,
+.chat-empty-state p,
+.voice-recent-card span {
+  color: var(--text-muted);
+}
+
+.example-canvas-copy span,
+.generation-copy span,
+.canvas-toolbar span,
+.article-topbar > div:first-child > span,
+.article-section-head span,
+.chat-empty-icon,
+.assistant-avatar,
+.chat-message-avatar,
+.replicate-hero-icon,
+.voice-hero-icon,
+.watermark-hero-icon,
+.watermark-center-icon,
+.idh-hero-icon,
+.idh-center-icon,
+.dh-topbar span,
+.dh-config-header span,
+.dh-preview-header span {
+  color: var(--text-secondary);
+}
+
+.composer-input-row,
+.composer-controls-row,
+.sowa-composer,
+.chat-composer,
+.article-field textarea,
+.article-field input,
+.article-field select,
+.article-option-row button,
+.article-pill-row button,
+.article-visual-option-grid button,
+.article-add-field,
+.article-recommendation,
+.replicate-prompt-box textarea,
+.replicate-description,
+.control-select,
+.composer-tool,
+.composer-add,
+.composer-plus,
+.composer-chip,
+.composer-placeholder,
+.send-button,
+.voice-form-grid input,
+.voice-textarea-field textarea,
+.transcribe-result-panel textarea,
+.idh-select,
+.idh-select select,
+.idh-advanced select,
+.idh-form-card textarea,
+.watermark-mode-tabs,
+.replicate-mode-toggle,
+.music-mode-toggle,
+.video-dub-floating-composer input,
+.video-dub-floating-composer textarea,
+.video-dub-floating-composer select {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+}
+
+.composer-text-input,
+.model-select,
+.control-select select,
+.chat-composer .model-select,
+.chat-composer .control-select,
+.chat-composer .price-pill {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--app-border);
+}
+
+.article-field textarea:focus,
+.article-field input:focus,
+.article-field select:focus,
+.replicate-prompt-box textarea:focus,
+.voice-form-grid input:focus,
+.voice-textarea-field textarea:focus,
+.control-select:hover,
+.control-select:focus-within,
+.composer-text-input:focus,
+.idh-select:focus-within,
+.idh-form-card textarea:focus {
+  border-color: var(--app-border-strong);
+  box-shadow: 0 0 0 4px rgba(141, 99, 255, 0.16);
+}
+
+.composer-text-input::placeholder,
+.article-field textarea::placeholder,
+.article-field input::placeholder,
+.voice-form-grid input::placeholder,
+.voice-textarea-field textarea::placeholder,
+.idh-form-card textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.sowa-composer {
+  color: var(--text-primary);
+  background: rgba(19, 20, 21, 0.92);
+  border-color: var(--app-border-strong);
+  box-shadow: 0 28px 74px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(18px);
+}
+
+.sowa-composer .composer-input-row {
+  min-height: 48px;
+  padding: 0 6px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+}
+
+.sowa-composer .composer-controls-row {
+  color: var(--text-muted);
+}
+
+.sowa-composer .model-select {
+  color: var(--text-secondary);
+  background: rgba(176, 199, 226, 0.1);
+}
+
+.article-view-tabs,
+.article-cases-section .article-section-head,
+.article-case-card > div,
+.article-history-card > div {
+  color: var(--text-primary);
+  background: rgba(19, 20, 21, 0.96);
+  border-color: var(--app-border);
+}
+
+.article-view-tabs {
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+.article-view-tabs button:not(.is-selected) {
+  color: var(--text-muted);
+}
+
+.article-case-card > button,
+.article-history-card > button,
+.article-history-card img,
+.article-visual-option-grid img {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.article-case-card div button,
+.article-history-card div button,
+.article-history-card div a {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+}
+
+.article-case-card div button:hover,
+.article-history-card div button:hover,
+.article-history-card div a:hover {
+  color: #fff;
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
+}
+
+.article-visual-option-grid button.is-selected,
+.article-option-row button.is-selected,
+.article-pill-row button.is-selected,
+.voice-cloned-list button.is-active,
+.chat-history-item:hover,
+.chat-history-item.is-selected,
+.history-item.is-selected,
+.history-toggle:hover,
+.history-toggle.is-open,
+.watermark-upload-slot:hover,
+.replicate-upload-slot:hover,
+.replicate-upload-slot.drag-over,
+.idh-upload-card:hover,
+.idh-upload-card.has-image {
+  color: #fff;
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
+  box-shadow: 0 12px 28px rgba(93, 30, 224, 0.2);
+}
+
+.feature-login,
+.article-primary-link,
+.article-submit-row button,
+.article-top-actions button,
+.article-recommendation button,
+.article-result-meta button,
+.article-result-meta a,
+.article-failed-state button,
+.image-compose-submit,
+.chat-compose-submit,
+.dh-generate-button,
+.dh-modal-footer button:last-child,
+.send-button:not(:disabled),
+.voice-actions .voice-generate-button,
+.voice-submit-button,
+.voice-conversion-submit,
+.transcribe-result-actions button,
+.music-generate-button,
+.watermark-result-actions a,
+.watermark-result-actions button,
+.watermark-submit-button,
+.motion-submit-button,
+.idh-composer-footer button,
+.idh-center-copy a,
+.idh-center-copy button,
+.video-dub-submit-button {
+  color: #fff;
+  background: var(--brand-gradient);
+  border-color: var(--brand-primary);
+  box-shadow: 0 14px 32px rgba(93, 30, 224, 0.28);
+}
+
+.send-button:disabled,
+.article-submit-row button:disabled,
+.voice-actions button:disabled,
+.replicate-mode-toggle button:disabled,
+.idh-mode-tabs button:disabled,
+.idh-composer-footer button:disabled {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--app-border);
+  box-shadow: none;
+}
+
+.card-actions button,
+.replicate-result-actions button,
+.replicate-card-actions button,
+.voice-recent-icon-button,
+.voice-recent-play,
+.music-recent-control-btn,
+.watermark-card-actions button,
+.idh-result-actions button,
+.idh-result-actions a,
+.preview-drawer-header button {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+}
+
+.card-actions button:hover,
+.replicate-result-actions button:hover,
+.replicate-card-actions button:hover,
+.voice-recent-icon-button:hover,
+.music-recent-control-btn:hover,
+.watermark-card-actions button:hover,
+.idh-result-actions button:hover,
+.idh-result-actions a:hover,
+.preview-drawer-header button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--app-border-strong);
+}
+
+.tag-row span,
+.example-card-tags span,
+.replicate-result-meta span,
+.watermark-source-row span,
+.idh-result-title span,
+.idh-result-actions small,
+.dh-voice-note,
+.processing-state {
+  color: var(--text-secondary);
+  background: rgba(176, 199, 226, 0.1);
+  border-color: rgba(176, 199, 226, 0.24);
+}
+
+.time-row,
+.result-meta p,
+.example-card-meta span,
+.replicate-prompt-box label,
+.replicate-description label,
+.replicate-description p,
+.replicate-result-meta,
+.watermark-task-meta p,
+.idh-result-meta p,
+.idh-composer-footer span,
+.idh-composer-footer small,
+.watermark-composer-footer span,
+.voice-composer-footer,
+.composer-notice {
+  color: var(--text-muted);
+}
+
+.failed-state,
+.article-error,
+.replicate-notice,
+.idh-submit-error,
+.idh-notice.is-warning,
+.watermark-center-state.is-failed,
+.result-card.status-failed,
+.watermark-task-card.status-failed,
+.chat-message-bubble.is-error,
+.chat-inline-error,
+.chat-bubble.failed {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.composer-notice.warning,
+.example-card-meta strong,
+.article-history-card.status-failed {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+}
+
+.result-card.status-processing,
+.watermark-task-card.status-processing,
+.idh-center-state.is-completed,
+.watermark-center-state.is-completed {
+  border-color: var(--brand-primary-border);
+}
+
+.watermark-center-progress,
+.idh-center-progress,
+.idh-progress-track,
+.music-recent-progress-track,
+.dh-progress-track,
+.dh-generation-progress {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.watermark-center-progress i,
+.idh-center-progress i,
+.idh-progress-track i,
+.music-recent-progress-fill,
+.dh-progress-track i,
+.dh-generation-progress i {
+  background: var(--brand-gradient);
+}
+
+.article-preview-overlay,
+.dh-modal-backdrop,
+.preview-drawer-backdrop {
+  background: var(--overlay-backdrop);
+}
+
+.skeleton-card,
+.skeleton-composer {
+  background:
+    linear-gradient(#202124 0 0) 16px 16px / calc(100% - 32px) 155px no-repeat,
+    linear-gradient(#252a30 0 0) 16px 190px / 128px 22px no-repeat,
+    linear-gradient(#252a30 0 0) 154px 190px / 52px 22px no-repeat,
+    linear-gradient(#1a1c20 0 0) 16px 234px / calc(100% - 32px) 62px no-repeat,
+    var(--app-surface);
+  border-color: var(--app-border);
+}
+
+@media (max-width: 680px) {
+  .feature-sidebar {
+    background: rgba(19, 20, 21, 0.96);
+    border-bottom-color: var(--app-border);
+  }
+}
+
+/* Deep cleanup for legacy light blocks in feature modules. */
+.feature-page-shell :is(
+  .video-result-card,
+  .video-empty-results,
+  .video-composer,
+  .chat-main-canvas,
+  .chat-empty-state,
+  .chat-message-bubble,
+  .chat-message-bubble.is-loading,
+  .chat-history-rail,
+  .chat-history-item,
+  .chat-composer,
+  .dh-config-panel,
+  .dh-preview-stage,
+  .dh-library-panel,
+  .dh-tabs,
+  .dh-mode-tabs,
+  .dh-selected-template,
+  .dh-pipeline-card,
+  .dh-voice-note,
+  .dh-minimax-options,
+  .dh-duration-check,
+  .dh-avatar-card,
+  .dh-task-card,
+  .dh-create-card,
+  .dh-avatar-cover,
+  .dh-task-preview,
+  .dh-empty-media,
+  .dh-empty-media-icon,
+  .dh-avatar-badge,
+  .dh-preview-details div,
+  .dh-generating-state,
+  .dh-settings-group,
+  .dh-audio-upload,
+  .dh-upload-zone,
+  .dh-command-library button,
+  .dh-modal,
+  .dh-avatar-preview-modal,
+  .dh-avatar-preview-body,
+  .dh-modal-header,
+  .dh-modal-footer,
+  .motion-canvas,
+  .motion-composer,
+  .motion-upload-slot,
+  .motion-center-state,
+  .motion-result-player,
+  .motion-task-card,
+  .motion-task-preview,
+  .motion-task-placeholder,
+  .motion-recent-empty,
+  .face-swap-view-root .motion-canvas,
+  .face-swap-view-root .motion-task-card,
+  .video-dub-canvas,
+  .video-dub-upload-slot,
+  .video-dub-recent-card,
+  .video-dub-recent-empty,
+  .video-dub-recent-stage,
+  .video-dub-player-dialog,
+  .video-dub-player-head,
+  .video-dub-floating-composer,
+  .skeleton-composer,
+  .coming-soon-panel,
+  .coming-soon-icon
+) {
+  color: var(--text-primary);
+  background: rgba(19, 20, 21, 0.94);
+  border-color: var(--app-border);
+  box-shadow: var(--shadow-dark);
+}
+
+.feature-page-shell :is(
+  .video-result-preview,
+  .video-placeholder,
+  .chat-empty-icon,
+  .chat-message-avatar,
+  .dh-selected-template-media,
+  .dh-video-shell,
+  .dh-video-shell > .dh-empty-media,
+  .dh-avatar-preview-body video,
+  .dh-avatar-preview-body img,
+  .motion-hero-icon,
+  .motion-center-icon,
+  .motion-upload-slot.has-preview,
+  .motion-result-player,
+  .motion-task-preview,
+  .motion-task-placeholder,
+  .video-dub-hero-icon,
+  .video-dub-upload-icon,
+  .video-dub-recent-art,
+  .video-dub-recent-stage,
+  .video-dub-progress,
+  .video-dub-progress-bar
+) {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--app-border);
+}
+
+.feature-page-shell :is(
+  .dh-tabs button,
+  .dh-mode-tabs button,
+  .dh-avatar-actions button,
+  .dh-task-actions button,
+  .dh-modal-footer button,
+  .dh-preview-back,
+  .dh-design-voice-button,
+  .motion-result-actions a,
+  .motion-result-actions button,
+  .motion-card-actions button,
+  .video-dub-recent-play,
+  .video-dub-favorite-button,
+  .video-dub-recent-icon-button,
+  .video-dub-player-head button,
+  .video-dub-upload-slot,
+  .video-dub-floating-composer .voice-composer-title
+) {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+  box-shadow: none;
+}
+
+.feature-page-shell :is(
+  .dh-field input,
+  .dh-field select,
+  .dh-field textarea,
+  .dh-settings-group .dh-field textarea,
+  .video-dub-floating-composer input,
+  .video-dub-floating-composer textarea,
+  .video-dub-floating-composer select
+) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--app-border);
+}
+
+.feature-page-shell :is(
+  .dh-topbar,
+  .dh-config-header,
+  .dh-preview-header,
+  .dh-library-heading,
+  .motion-filter-tabs,
+  .video-dub-canvas,
+  .video-dub-view-root
+) {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--app-border);
+}
+
+.feature-page-shell :is(
+  .video-placeholder,
+  .video-result-card,
+  .chat-topbar h1,
+  .chat-empty-state h1,
+  .chat-message-bubble,
+  .chat-history-item,
+  .dh-topbar h1,
+  .dh-library-heading strong,
+  .dh-selected-template strong,
+  .dh-pipeline-card strong,
+  .dh-voice-note strong,
+  .dh-minimax-options-head strong,
+  .dh-range-field span,
+  .dh-avatar-info strong,
+  .dh-task-meta strong,
+  .dh-empty-media strong,
+  .dh-create-card strong,
+  .dh-preview-header strong,
+  .dh-config-header strong,
+  .dh-preview-details strong,
+  .dh-generating-state strong,
+  .dh-field > span,
+  .dh-settings-group label span,
+  .dh-toggle-field,
+  .dh-modal-header strong,
+  .motion-hero-empty h1,
+  .motion-center-state strong,
+  .motion-result-copy h2,
+  .motion-recent-empty strong,
+  .video-dub-hero-empty h1,
+  .video-dub-recent-empty strong,
+  .video-dub-recent-info strong,
+  .video-dub-player-head strong
+) {
+  color: var(--text-primary);
+}
+
+.feature-page-shell :is(
+  .video-price-pill small,
+  .chat-empty-state p,
+  .chat-history-item small,
+  .dh-library-heading span,
+  .dh-library-heading small,
+  .dh-selected-template span,
+  .dh-selected-template small,
+  .dh-pipeline-card span,
+  .dh-pipeline-card small,
+  .dh-minimax-options-head span,
+  .dh-range-field small,
+  .dh-avatar-info span,
+  .dh-avatar-info p,
+  .dh-task-meta span,
+  .dh-task-meta small,
+  .dh-empty-media p,
+  .dh-create-card span,
+  .dh-preview-header small,
+  .dh-config-header small,
+  .dh-preview-details span,
+  .dh-generating-state p,
+  .dh-generating-state small,
+  .dh-field small,
+  .dh-audio-upload span,
+  .dh-upload-zone span,
+  .dh-form-notice,
+  .motion-hero-empty p,
+  .motion-center-state p,
+  .motion-result-copy p,
+  .motion-recent-empty p,
+  .motion-source-row,
+  .video-dub-hero-empty p,
+  .video-dub-recent-empty p,
+  .video-dub-recent-info span,
+  .video-dub-floating-composer .voice-composer-footer > span
+) {
+  color: var(--text-muted);
+}
+
+.feature-page-shell :is(
+  .video-submit-error,
+  .chat-message-avatar.is-error,
+  .chat-message-bubble.is-error,
+  .chat-inline-error,
+  .dh-duration-check.is-warning,
+  .dh-form-notice,
+  .motion-center-state.is-failed,
+  .motion-task-placeholder.is-failed,
+  .motion-task-card.status-failed,
+  .video-dub-recent-overlay.is-failed
+) {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.feature-page-shell :is(
+  .dh-duration-check.is-ready,
+  .video-dub-progress-step.done
+) {
+  color: var(--success);
+  background: var(--success-soft);
+  border-color: var(--success-border);
+}
+
+.feature-page-shell :is(
+  .dh-tabs .is-active,
+  .dh-mode-tabs .is-active,
+  .dh-avatar-card.is-selected,
+  .dh-task-card.is-selected,
+  .dh-avatar-card:hover,
+  .dh-task-card:hover,
+  .dh-create-card:hover,
+  .motion-upload-slot:hover,
+  .video-dub-upload-slot:hover,
+  .video-dub-progress-step.active
+) {
+  color: #fff;
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
+  box-shadow: 0 12px 28px rgba(93, 30, 224, 0.2);
+}
+
+.feature-page-shell :is(
+  .dh-generate-button,
+  .dh-download-button,
+  .dh-modal-footer button:last-child,
+  .motion-result-actions a,
+  .motion-result-actions button,
+  .video-dub-recent-play,
+  .video-dub-submit-button
+):not(:disabled) {
+  color: #fff;
+  background: var(--brand-gradient);
+  border-color: var(--brand-primary);
+  box-shadow: 0 14px 32px rgba(93, 30, 224, 0.28);
+}
+
+.feature-page-shell :is(
+  .dh-progress-track,
+  .dh-generation-progress,
+  .motion-center-progress,
+  .video-dub-progress-bar
+) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.feature-page-shell :is(
+  .dh-progress-track i,
+  .dh-generation-progress i,
+  .motion-center-progress i,
+  .video-dub-progress-fill
+) {
+  background: var(--brand-gradient);
+}
+
+.feature-page-shell .feature-main:has(.chat-view-root),
+.feature-page-shell .chat-composer .composer-add,
+.feature-page-shell .chat-composer .send-button,
+.feature-page-shell .result-meta p,
+.feature-page-shell .card-actions .card-action-link {
+  color: var(--text-primary);
+  background: rgba(19, 20, 21, 0.94);
+  border-color: var(--app-border);
+}
+
+.feature-page-shell .chat-composer .composer-add,
+.feature-page-shell .chat-composer .send-button,
+.feature-page-shell .card-actions .card-action-link {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.feature-page-shell .card-actions .card-action-link:hover,
+.feature-page-shell .chat-composer .composer-add:hover {
+  color: #fff;
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
+}
+
+.feature-page-shell .dh-view-root input,
+.feature-page-shell .dh-view-root select,
+.feature-page-shell .dh-view-root textarea {
+  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: var(--app-border) !important;
+}
+
+.feature-page-shell .dh-view-root input[type="range"] {
+  accent-color: var(--brand-primary);
+  background-color: transparent !important;
+}
+
+/* Comment follow-up: remove remaining pale controls called out in browser review. */
+.feature-page-shell .history-toggle,
+.chat-view-root .history-toggle {
+  color: var(--text-secondary) !important;
+  background: rgba(19, 20, 21, 0.96) !important;
+  border-color: var(--app-border-strong) !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34) !important;
+}
+
+.feature-page-shell .history-toggle span,
+.feature-page-shell .history-toggle small,
+.feature-page-shell .history-toggle b,
+.chat-view-root .history-toggle span,
+.chat-view-root .history-toggle small,
+.chat-view-root .history-toggle b {
+  color: var(--text-secondary) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--app-border) !important;
+}
+
+.feature-page-shell .history-toggle:hover,
+.feature-page-shell .history-toggle.is-open,
+.chat-view-root .history-toggle:hover,
+.chat-view-root .history-toggle.is-open {
+  color: #fff !important;
+  background: var(--brand-primary-soft) !important;
+  border-color: var(--brand-primary-border) !important;
+}
+
+.chat-view-root .history-toggle svg {
+  color: inherit !important;
+}
+
+.feature-page-shell :is(
+  .voice-composer-title,
+  .video-dub-floating-composer .voice-composer-title,
+  .music-composer .voice-composer-title,
+  .transcribe-floating-composer .voice-composer-title
+) {
+  color: var(--text-secondary) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid var(--app-border) !important;
+  box-shadow: none !important;
+}
+
+.feature-page-shell :is(
+  .voice-composer-title svg,
+  .video-dub-floating-composer .voice-composer-title svg,
+  .music-composer .voice-composer-title svg,
+  .transcribe-floating-composer .voice-composer-title svg
+) {
+  color: var(--text-secondary) !important;
+}
+
+.feature-page-shell :is(
+  #music-prompt,
+  #music-lyrics,
+  .music-composer textarea,
+  .music-composer input,
+  .music-composer select
+) {
+  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  border-color: var(--app-border) !important;
+}
+
+.feature-page-shell :is(
+  #music-prompt,
+  #music-lyrics,
+  .music-composer textarea
+):focus {
+  color: var(--text-primary) !important;
+  background-color: rgba(255, 255, 255, 0.09) !important;
+  border-color: var(--app-border-strong) !important;
+  box-shadow: 0 0 0 4px rgba(141, 99, 255, 0.16) !important;
+}
+
+.feature-page-shell :is(
+  #music-prompt,
+  #music-lyrics,
+  .music-composer textarea
+)::placeholder {
+  color: var(--text-faint) !important;
+}
