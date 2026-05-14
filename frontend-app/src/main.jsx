@@ -970,7 +970,7 @@ const videoExampleCards = [
     rmb: "约 ¥22.4",
     price: "2240 积分",
     prompt: "未来都市中，巨型怪兽与身穿外骨骼装甲的战士在高架桥下展开激烈战斗，建筑崩塌、火焰四起，画面具有电影级质感，灰暗色调，高速动态镜头。",
-    video: "/assets/video/视频1.mp4",
+    video: "/assets/video/视频1.mp4?v=h264",
     favorite: false
   },
   {
@@ -1659,19 +1659,27 @@ function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, 
 }
 
 const digitalHumanPublicPlaceholders = [
-  { id: "public-product", name: "产品讲解员", description: "适合新品发布、功能演示、卖点介绍", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/产品讲解员.mp4" },
-  { id: "public-medical", name: "健康科普员", description: "适合健康科普、诊疗介绍、公益宣传", language: "中文 / 温和", status: "ready", cover: "/assets/digital-human/健康科普员.mp4" },
-  { id: "public-cartoon", name: "动漫卡通形象", description: "适合少儿内容、品牌 IP、趣味讲解", language: "中文 / 活泼", status: "ready", cover: "/assets/digital-human/动漫卡通形象.mp4" },
-  { id: "public-real-estate", name: "房地产经纪人", description: "适合房源讲解、楼盘介绍、置业咨询", language: "中文 / 专业", status: "ready", cover: "/assets/digital-human/房地产经纪人.mp4" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景区讲解、路线推荐、城市宣传", language: "中文 / 生动", status: "ready", cover: "/assets/digital-human/文旅推荐官.mp4" },
-  { id: "public-news", name: "新闻播报员", description: "适合资讯口播、短视频新闻、活动串词", language: "中文 / 普通话", status: "ready", cover: "/assets/digital-human/新闻播报员.mp4" },
-  { id: "public-life", name: "生活方式达人", description: "适合种草讲解、门店介绍、社媒内容", language: "中文 / 轻松自然", status: "ready", cover: "/assets/digital-human/生活方式达人.mp4" },
-  { id: "public-finance", name: "财经主播", description: "适合行情解读、投教内容、财经播报", language: "中文 / 稳重", status: "ready", cover: "/assets/digital-human/财经主播.mp4" },
-  { id: "public-operations", name: "运营达人", description: "适合活动运营、用户增长、社群内容", language: "中文 / 干练", status: "ready", cover: "/assets/digital-human/运营达人.mp4" }
+  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/主播对话.mp4" },
+  { id: "public-product", name: "产品讲解员", description: "适合产品讲解员类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/产品讲解员.mp4" },
+  { id: "public-medical", name: "健康科普员", description: "适合健康科普员类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/健康科普员.mp4" },
+  { id: "public-home-lady", name: "居家知性女性", description: "适合居家知性女性类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/居家知性女性.mp4" },
+  { id: "public-real-estate", name: "房地产经纪人", description: "适合房地产经纪人类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/房地产经纪人.mp4" },
+  { id: "public-travel", name: "文旅推荐官", description: "适合文旅推荐官类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/文旅推荐官.mp4" },
+  { id: "public-fashion-host", name: "时尚类女主播", description: "适合时尚类女主播类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/时尚类女主播.mp4" },
+  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识科普类女主播类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/知识科普类女主播.mp4" },
+  { id: "public-executive-lady", name: "职场女高管", description: "适合职场女高管类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场女高管.mp4" },
+  { id: "public-business-host", name: "职场轻商务女主播", description: "适合职场轻商务女主播类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场轻商务女主播.mp4" },
+  { id: "public-finance", name: "财经主播", description: "适合财经主播类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/财经主播.mp4" },
+  { id: "public-operations", name: "运营达人", description: "适合运营达人类数字人口播、讲解与短视频内容", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/运营达人.mp4" }
 ];
 
 function getDigitalHumanPublicAvatars(list = []) {
-  return list.some((item) => item.cover) ? list : digitalHumanPublicPlaceholders;
+  const merged = new Map();
+  digitalHumanPublicPlaceholders.forEach((item) => merged.set(item.id, item));
+  list.forEach((item) => {
+    if (!merged.has(item.id)) merged.set(item.id, item);
+  });
+  return [...merged.values()];
 }
 
 function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) {

@@ -10,9 +10,18 @@ export const digitalHumanModels = [
 
 export const publicAvatars = [
   {
+    id: "public-anchor-dialogue",
+    name: "主播对话",
+    description: "适合主播对话类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
+    status: "ready",
+    cover: "/assets/digital-human/主播对话.mp4",
+    assetPath: "/assets/digital-human/主播对话.mp4"
+  },
+  {
     id: "public-product",
     name: "产品讲解员",
-    description: "适合新品发布、功能演示、卖点介绍",
+    description: "适合产品讲解员类数字人口播、讲解与短视频内容",
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/产品讲解员.mp4",
@@ -21,26 +30,26 @@ export const publicAvatars = [
   {
     id: "public-medical",
     name: "健康科普员",
-    description: "适合健康科普、诊疗介绍、公益宣传",
-    language: "中文 / 温和",
+    description: "适合健康科普员类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/健康科普员.mp4",
     assetPath: "/assets/digital-human/健康科普员.mp4"
   },
   {
-    id: "public-cartoon",
-    name: "动漫卡通形象",
-    description: "适合少儿内容、品牌 IP、趣味讲解",
-    language: "中文 / 活泼",
+    id: "public-home-lady",
+    name: "居家知性女性",
+    description: "适合居家知性女性类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
-    cover: "/assets/digital-human/动漫卡通形象.mp4",
-    assetPath: "/assets/digital-human/动漫卡通形象.mp4"
+    cover: "/assets/digital-human/居家知性女性.mp4",
+    assetPath: "/assets/digital-human/居家知性女性.mp4"
   },
   {
     id: "public-real-estate",
     name: "房地产经纪人",
-    description: "适合房源讲解、楼盘介绍、置业咨询",
-    language: "中文 / 专业",
+    description: "适合房地产经纪人类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/房地产经纪人.mp4",
     assetPath: "/assets/digital-human/房地产经纪人.mp4"
@@ -48,35 +57,53 @@ export const publicAvatars = [
   {
     id: "public-travel",
     name: "文旅推荐官",
-    description: "适合景区讲解、路线推荐、城市宣传",
-    language: "中文 / 生动",
+    description: "适合文旅推荐官类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/文旅推荐官.mp4",
     assetPath: "/assets/digital-human/文旅推荐官.mp4"
   },
   {
-    id: "public-news",
-    name: "新闻播报员",
-    description: "适合资讯口播、短视频新闻、活动串词",
-    language: "中文 / 普通话",
+    id: "public-fashion-host",
+    name: "时尚类女主播",
+    description: "适合时尚类女主播类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
-    cover: "/assets/digital-human/新闻播报员.mp4",
-    assetPath: "/assets/digital-human/新闻播报员.mp4"
+    cover: "/assets/digital-human/时尚类女主播.mp4",
+    assetPath: "/assets/digital-human/时尚类女主播.mp4"
   },
   {
-    id: "public-life",
-    name: "生活方式达人",
-    description: "适合种草讲解、门店介绍、社媒内容",
-    language: "中文 / 轻松自然",
+    id: "public-knowledge-host",
+    name: "知识科普类女主播",
+    description: "适合知识科普类女主播类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
-    cover: "/assets/digital-human/生活方式达人.mp4",
-    assetPath: "/assets/digital-human/生活方式达人.mp4"
+    cover: "/assets/digital-human/知识科普类女主播.mp4",
+    assetPath: "/assets/digital-human/知识科普类女主播.mp4"
+  },
+  {
+    id: "public-executive-lady",
+    name: "职场女高管",
+    description: "适合职场女高管类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
+    status: "ready",
+    cover: "/assets/digital-human/职场女高管.mp4",
+    assetPath: "/assets/digital-human/职场女高管.mp4"
+  },
+  {
+    id: "public-business-host",
+    name: "职场轻商务女主播",
+    description: "适合职场轻商务女主播类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
+    status: "ready",
+    cover: "/assets/digital-human/职场轻商务女主播.mp4",
+    assetPath: "/assets/digital-human/职场轻商务女主播.mp4"
   },
   {
     id: "public-finance",
     name: "财经主播",
-    description: "适合行情解读、投教内容、财经播报",
-    language: "中文 / 稳重",
+    description: "适合财经主播类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/财经主播.mp4",
     assetPath: "/assets/digital-human/财经主播.mp4"
@@ -84,8 +111,8 @@ export const publicAvatars = [
   {
     id: "public-operations",
     name: "运营达人",
-    description: "适合活动运营、用户增长、社群内容",
-    language: "中文 / 干练",
+    description: "适合运营达人类数字人口播、讲解与短视频内容",
+    language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/运营达人.mp4",
     assetPath: "/assets/digital-human/运营达人.mp4"

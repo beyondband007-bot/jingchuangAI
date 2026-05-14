@@ -4525,7 +4525,13 @@ a:hover {
   opacity: 0.48;
 }
 
-.dh-avatar-list,
+.dh-avatar-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 18px;
+  padding: 18px 0 0;
+}
+
 .dh-task-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -4557,6 +4563,11 @@ a:hover {
   transform: translateY(-2px);
 }
 
+.dh-avatar-card:hover .dh-avatar-cover,
+.dh-avatar-card.is-selected .dh-avatar-cover {
+  border-color: #9ecbff;
+}
+
 .dh-avatar-cover,
 .dh-task-preview {
   position: relative;
@@ -4570,7 +4581,12 @@ a:hover {
 }
 
 .dh-avatar-cover {
-  aspect-ratio: 16 / 11;
+  width: calc(100% - 20px);
+  margin: 10px auto 0;
+  aspect-ratio: 9 / 16;
+  background: #dfeaf6;
+  border: 1px solid #d6e3f1;
+  border-radius: 8px;
 }
 
 .dh-task-preview {
@@ -4578,6 +4594,7 @@ a:hover {
 }
 
 .dh-avatar-cover img,
+.dh-avatar-cover video,
 .dh-task-preview img,
 .dh-task-preview video {
   display: block;
@@ -4598,10 +4615,7 @@ a:hover {
 }
 
 .dh-avatar-cover video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   background: #eaf2fb;
 }
 
