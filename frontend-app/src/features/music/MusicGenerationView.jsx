@@ -164,7 +164,7 @@ function MusicResult({ result, onDownloadMp3, onDownloadLrc }) {
   );
 }
 
-export function MusicGenerationView({ activeNav }) {
+export function MusicGenerationView() {
   const [prompt, setPrompt] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
@@ -186,8 +186,6 @@ export function MusicGenerationView({ activeNav }) {
       // Recent music history is optional.
     }
   }, [recentResults]);
-
-  if (activeNav !== "music") return null;
 
   async function generate() {
     if (!prompt.trim()) {

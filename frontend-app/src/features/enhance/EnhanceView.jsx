@@ -297,7 +297,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function EnhanceView({ activeNav }) {
+export function EnhanceView() {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [credits, setCredits] = useState(null);
@@ -307,7 +307,6 @@ export function EnhanceView({ activeNav }) {
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
 
   useEffect(() => {
-    if (activeNav !== "enhance") return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -333,9 +332,7 @@ export function EnhanceView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
-
-  if (activeNav !== "enhance") return null;
+  }, []);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;

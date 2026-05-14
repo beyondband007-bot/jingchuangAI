@@ -245,7 +245,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function RemoveBgView({ activeNav }) {
+export function RemoveBgView() {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [credits, setCredits] = useState(null);
@@ -255,7 +255,6 @@ export function RemoveBgView({ activeNav }) {
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
 
   useEffect(() => {
-    if (activeNav !== "remove-bg") return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -281,9 +280,7 @@ export function RemoveBgView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
-
-  if (activeNav !== "remove-bg") return null;
+  }, []);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;

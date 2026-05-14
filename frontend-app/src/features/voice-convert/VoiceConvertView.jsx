@@ -93,7 +93,7 @@ function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, accept =
   );
 }
 
-export function VoiceConvertView({ activeNav }) {
+export function VoiceConvertView() {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
   const [uploading, setUploading] = useState("");
@@ -120,8 +120,6 @@ export function VoiceConvertView({ activeNav }) {
       // Recent conversion history is optional.
     }
   }, [recentResults]);
-
-  if (activeNav !== "voice-convert") return null;
 
   async function uploadTargetFile(file) {
     setNotice("");

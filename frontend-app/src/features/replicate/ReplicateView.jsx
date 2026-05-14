@@ -124,7 +124,7 @@ function ReplicateResult({ result, onCopy }) {
   );
 }
 
-export function ReplicateView({ activeNav }) {
+export function ReplicateView() {
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -135,8 +135,6 @@ export function ReplicateView({ activeNav }) {
   useEffect(() => {
     window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(recentResults));
   }, [recentResults]);
-
-  if (activeNav !== "replicate") return null;
 
   async function handleFile(file) {
     setNotice("");

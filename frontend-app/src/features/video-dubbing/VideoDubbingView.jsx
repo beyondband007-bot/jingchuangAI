@@ -233,7 +233,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
   );
 }
 
-export function VideoDubbingView({ activeNav }) {
+export function VideoDubbingView() {
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -247,14 +247,13 @@ export function VideoDubbingView({ activeNav }) {
   const [currentStage, setCurrentStage] = useState("");
 
   useEffect(() => {
-    if (activeNav !== "video-voice") return undefined;
     let mounted = true;
     videoDubbingApi.getConfig().then((data) => {
       if (mounted) setConfig(data);
     }).catch(() => {});
     loadTasks();
     return () => { mounted = false; };
-  }, [activeNav]);
+  }, []);
 
   // Poll current task stage/progress
   useEffect(() => {
@@ -283,8 +282,6 @@ export function VideoDubbingView({ activeNav }) {
       // ignore
     }
   }
-
-  if (activeNav !== "video-voice") return null;
 
   async function pickVideoFile(file) {
     setNotice("");

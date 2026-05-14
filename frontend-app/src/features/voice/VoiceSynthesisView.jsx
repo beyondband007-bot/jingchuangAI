@@ -94,7 +94,7 @@ function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick }) {
   );
 }
 
-export function VoiceSynthesisView({ activeNav }) {
+export function VoiceSynthesisView() {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
@@ -115,8 +115,8 @@ export function VoiceSynthesisView({ activeNav }) {
   const [playingRecentId, setPlayingRecentId] = useState("");
   const recentAudioRefs = useRef({});
 
+  // 由外层保活挂载，首次挂载即拉取音色配置；隐藏时仍保留状态
   useEffect(() => {
-    if (activeNav !== "voice") return undefined;
     let mounted = true;
     voiceApi.getConfig().then((data) => {
       if (mounted) setVoices(data.voices || []);
@@ -124,7 +124,7 @@ export function VoiceSynthesisView({ activeNav }) {
     return () => {
       mounted = false;
     };
-  }, [activeNav]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -134,8 +134,6 @@ export function VoiceSynthesisView({ activeNav }) {
       // Recent synthesis history is optional.
     }
   }, [recentResults]);
-
-  if (activeNav !== "voice") return null;
 
   async function uploadFile(file) {
     setNotice("");

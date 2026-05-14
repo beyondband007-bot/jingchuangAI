@@ -2,6 +2,23 @@
   box-sizing: border-box;
 }
 
+:root {
+  --brand-primary: #5a2cfc;
+  --brand-primary-strong: #4a24d6;
+  --brand-secondary: #ad6cfc;
+  --brand-primary-soft: #ece8ff;
+  --brand-primary-soft-alt: #f3f0ff;
+  --brand-primary-border: #cbc2ff;
+  --brand-gradient: linear-gradient(90deg, #5a2cfc 0%, #d8deff 100%);
+  --app-bg: #f3f4fb;
+  --app-surface: #ffffff;
+  --app-surface-muted: #f7f8fd;
+  --brand-focus-ring: rgba(90, 44, 252, 0.35);
+  --overlay-backdrop: rgba(12, 14, 34, 0.45);
+  --radius-md: 10px;
+  --radius-lg: 12px;
+}
+
 .voice-conversion-view-root {
   position: relative;
   min-height: 100vh;
@@ -1295,6 +1312,23 @@ body {
 
 button {
   font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--brand-focus-ring);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--brand-primary);
+}
+
+a:hover {
+  color: var(--brand-primary-strong);
 }
 
 .original-home-shell {
@@ -7714,4 +7748,291 @@ button {
   flex: 1;
   font-size: 12px;
   color: #7a9ab8;
+}
+
+/* Splash palette unification overrides */
+body {
+  background: var(--app-bg);
+}
+
+.original-home-shell {
+  background: radial-gradient(circle at center, #0c0e22 0%, #090b19 34%, #030511 68%, #00000b 100%);
+}
+
+.app-home-shell.is-loading {
+  background: #edf0ff;
+}
+
+.feature-page-shell {
+  background: var(--app-bg);
+}
+
+.feature-sidebar {
+  background: var(--app-surface);
+}
+
+.feature-brand-mark {
+  background: var(--brand-gradient);
+  border-radius: var(--radius-md);
+}
+
+.feature-nav-item:hover {
+  background: var(--brand-primary-soft-alt);
+}
+
+.feature-nav-item.is-active {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+}
+
+.feature-nav-item.is-active::before {
+  background: var(--brand-primary);
+}
+
+.feature-login,
+.article-primary-link,
+.image-compose-submit,
+.chat-compose-submit,
+.dh-generate-button,
+.dh-modal-footer button:last-child,
+.send-button:not(:disabled),
+.voice-submit-button,
+.voice-conversion-submit,
+.watermark-submit-button,
+.motion-submit-button,
+.video-dub-submit-button {
+  color: #fff;
+  background: var(--brand-gradient);
+  border-color: var(--brand-primary);
+}
+
+.feature-main,
+.image-gen-view,
+.dh-view-root,
+.chat-view-root,
+.voice-conversion-view-root,
+.video-gen-view-root,
+.video-dub-view-root {
+  background: var(--app-surface-muted);
+}
+
+.image-filter-tabs .selected,
+.skeleton-top-tabs .selected {
+  color: #fff;
+  background: var(--brand-gradient);
+}
+
+.credits-chip,
+.placeholder-brand,
+.placeholder-icon,
+.chat-result-actions a,
+.chat-bubble.failed button,
+.preview-drawer-actions a {
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+}
+
+.placeholder-brand,
+.placeholder-icon,
+.example-canvas-copy span,
+.generation-copy span,
+.canvas-toolbar span,
+.chat-empty-icon,
+.assistant-avatar,
+.chat-message-avatar,
+.chat-waiting-title svg,
+.history-rail-header strong,
+.history-preview,
+.processing-state,
+.dh-topbar span,
+.dh-config-header span,
+.dh-preview-header span,
+.dh-modal-header span {
+  color: var(--brand-primary);
+}
+
+.assistant-avatar,
+.chat-message-avatar,
+.chat-empty-icon,
+.history-toggle span {
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+}
+
+.chat-row.user .chat-bubble,
+.chat-message-row.user .chat-message-bubble,
+.history-toggle:hover,
+.history-toggle.is-open {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.history-toggle.is-open span,
+.history-toggle:hover span {
+  color: var(--brand-primary);
+}
+
+.history-item.is-selected,
+.chat-history-item:hover,
+.chat-history-item.is-selected {
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+  box-shadow: 0 8px 20px rgba(90, 44, 252, 0.14);
+}
+
+.article-preview-overlay,
+.dh-modal-backdrop {
+  background: var(--overlay-backdrop);
+}
+
+.article-preview-dialog,
+.dh-modal,
+.dh-avatar-preview-modal {
+  border-radius: var(--radius-lg);
+}
+
+.chat-message-bubble,
+.chat-bubble,
+.chat-history-item,
+.dh-config-panel,
+.dh-preview-stage,
+.dh-selected-template,
+.dh-pipeline-card,
+.dh-minimax-options,
+.dh-voice-note,
+.video-result-card,
+.video-dub-player-head button,
+.video-dub-player-dialog video {
+  border-radius: var(--radius-md);
+}
+
+.voice-current-chip,
+.voice-cloned-list button.is-active,
+.price-pill {
+  color: var(--brand-primary-strong);
+  border-color: var(--brand-primary-border);
+}
+
+.voice-composer-title,
+.voice-upload-slot:hover {
+  color: var(--brand-primary-strong);
+}
+
+.generation-orbit,
+.preview-drawer-header span,
+.dh-empty-media-icon,
+.dh-create-card svg,
+.dh-progress-track i,
+.dh-download-button,
+.dh-spinner,
+.dh-generation-progress i,
+.coming-soon-icon,
+.idh-center-spinner,
+.idh-center-icon,
+.idh-center-progress i,
+.idh-center-copy a,
+.idh-center-copy button,
+.idh-recent-empty svg,
+.idh-progress-track i,
+.idh-composer-footer button,
+.motion-center-spinner,
+.motion-center-progress i,
+.face-swap-view-root .motion-recent-empty svg,
+.watermark-center-spinner,
+.watermark-center-progress i {
+  color: var(--brand-primary);
+}
+
+.voice-slider-row input,
+.dh-settings-group input[type="range"],
+.dh-toggle-field input,
+.idh-advanced input[type="range"] {
+  accent-color: var(--brand-primary);
+}
+
+.voice-recent-empty svg,
+.voice-recent-art,
+.voice-recent-play,
+.voice-recent-icon-button,
+.voice-recent-icon-button:hover,
+.voice-recent-icon-button.is-favorite,
+.voice-actions .voice-generate-button,
+.transcribe-hero-empty .voice-hero-icon,
+.transcribe-result-head svg,
+.transcribe-result-actions button,
+.replicate-hero-icon,
+.replicate-upload-slot:hover,
+.replicate-upload-slot.drag-over,
+.replicate-upload-icon,
+.replicate-reset-btn,
+.replicate-card-icon,
+.music-hero-empty .voice-hero-icon,
+.music-mode-toggle button.active,
+.music-generate-button,
+.music-recent-art,
+.music-recent-control-btn,
+.music-recent-progress-fill,
+.video-dub-hero-icon,
+.video-dub-upload-slot,
+.video-dub-progress-step.done,
+.video-dub-progress-step.active,
+.video-dub-recent-stage,
+.video-dub-progress-fill,
+.video-dub-recent-play,
+.video-dub-recent-icon-button:hover {
+  color: var(--brand-primary-strong);
+  border-color: var(--brand-primary-border);
+}
+
+.voice-actions .voice-generate-button,
+.transcribe-result-actions button,
+.music-generate-button,
+.idh-composer-footer button {
+  background: var(--brand-gradient);
+  color: #fff;
+}
+
+.voice-recent-art,
+.music-recent-art,
+.video-dub-recent-stage {
+  background: var(--brand-primary-soft-alt);
+}
+
+.control-select:hover,
+.control-select:focus-within {
+  border-color: var(--brand-primary-border);
+  box-shadow: 0 6px 16px rgba(90, 44, 252, 0.16);
+}
+
+.result-card.status-processing,
+.video-result-card {
+  border-color: var(--brand-primary-border);
+}
+
+.result-card.status-processing .processing-state {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0)),
+    var(--brand-primary-soft-alt);
+}
+
+.dh-range-field input,
+.chat-compose-row input[type="checkbox"],
+.chat-compose-row input[type="radio"],
+.voice-composer input[type="checkbox"],
+.voice-composer input[type="radio"],
+.video-dub-floating-composer input[type="checkbox"],
+.video-dub-floating-composer input[type="radio"] {
+  accent-color: var(--brand-primary);
+}
+
+@media (max-width: 680px) {
+  .feature-sidebar {
+    background: var(--app-surface);
+    border-right: 0;
+    border-bottom: 1px solid #dcdff0;
+  }
+
+  .feature-nav-item {
+    border-radius: 999px;
+  }
 }

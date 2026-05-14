@@ -545,7 +545,7 @@ function ArticlePreview({ task, onClose }) {
   );
 }
 
-export function ArticleGenerationView({ activeNav }) {
+export function ArticleGenerationView() {
   const [form, setForm] = useState(defaultForm);
   const [options, setOptions] = useState(emptyOptions);
   const [model, setModel] = useState("");
@@ -559,8 +559,6 @@ export function ArticleGenerationView({ activeNav }) {
   const [showAudience, setShowAudience] = useState(false);
 
   useEffect(() => {
-    if (activeNav !== "article") return undefined;
-
     let mounted = true;
     function refreshTasks() {
       articleApi.getTasks({ filter: "all" }).then((value) => {
@@ -588,7 +586,7 @@ export function ArticleGenerationView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
+  }, []);
 
   const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
   const generatedPrompt = useMemo(() => buildGuidedPrompt(form), [form]);
@@ -605,8 +603,6 @@ export function ArticleGenerationView({ activeNav }) {
       articleApi.refreshCredits().then(setCredits).catch(() => {});
     }
   }, [selectedTask]);
-
-  if (activeNav !== "article") return null;
 
   function updateForm(patch) {
     setForm((current) => ({ ...current, ...patch }));

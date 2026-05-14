@@ -624,7 +624,7 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
   );
 }
 
-function ImageGenerationView({ activeNav }) {
+function ImageGenerationView() {
   const [filter, setFilter] = useState("all");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyOptions);
@@ -637,9 +637,8 @@ function ImageGenerationView({ activeNav }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
 
+  // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
   useEffect(() => {
-    if (activeNav !== "image") return undefined;
-
     let mounted = true;
     imageApi.getModels().then((value) => mounted && setOptions(value));
     imageApi.getCredits().then((value) => mounted && setCredits(value));
@@ -653,7 +652,7 @@ function ImageGenerationView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav, filter]);
+  }, [filter]);
 
   const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
   const submittedTask = useMemo(() => cards.find((card) => card.id === submittedTaskId) || null, [cards, submittedTaskId]);
@@ -679,10 +678,6 @@ function ImageGenerationView({ activeNav }) {
     return "idle_examples";
   }, [isSubmitting, selectedTask, submitError]);
   const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
-
-  if (activeNav !== "image") {
-    return <ComingSoon activeNav={activeNav} />;
-  }
 
   async function createTask(payload) {
     setActivePrompt(payload.prompt);
@@ -1086,7 +1081,7 @@ function VideoComposerBar({ options, onSubmit }) {
   );
 }
 
-function VideoGenerationView({ activeNav }) {
+function VideoGenerationView() {
   const [filter, setFilter] = useState("all");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyVideoOptions);
@@ -1094,9 +1089,8 @@ function VideoGenerationView({ activeNav }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  // 模块由外层保活挂载，此处始终订阅任务列表
   useEffect(() => {
-    if (activeNav !== "video") return undefined;
-
     let mounted = true;
     videoApi.getModels().then((value) => mounted && setOptions(value));
     videoApi.getCredits().then((value) => mounted && setCredits(value));
@@ -1110,11 +1104,7 @@ function VideoGenerationView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav, filter]);
-
-  if (activeNav !== "video") {
-    return <ComingSoon activeNav={activeNav} />;
-  }
+  }, [filter]);
 
   async function createTask(payload) {
     setSubmitError("");
@@ -1392,7 +1382,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   );
 }
 
-function ChatGenerationView({ activeNav }) {
+function ChatGenerationView() {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [options, setOptions] = useState(emptyChatOptions);
@@ -1402,9 +1392,8 @@ function ChatGenerationView({ activeNav }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
+  // 模块由外层保活挂载，此处始终拉取对话配置与历史列表
   useEffect(() => {
-    if (activeNav !== "chat") return undefined;
-
     let mounted = true;
     chatApi.getModels().then((value) => mounted && setOptions(value)).catch((error) => mounted && setSubmitError(error.message));
     chatApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
@@ -1413,7 +1402,7 @@ function ChatGenerationView({ activeNav }) {
     return () => {
       mounted = false;
     };
-  }, [activeNav]);
+  }, []);
 
   async function sendChatMessage({ content, model, reasoningEffort }) {
     const userMessage = {
@@ -1923,7 +1912,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   );
 }
 
-function DigitalHumanGenerationView({ activeNav }) {
+function DigitalHumanGenerationView() {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -1937,8 +1926,8 @@ function DigitalHumanGenerationView({ activeNav }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // 模块由外层保活挂载，此处始终订阅数字人任务与形象
   useEffect(() => {
-    if (activeNav !== "digital-human") return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -1976,7 +1965,7 @@ function DigitalHumanGenerationView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
+  }, []);
 
   async function createTask(payload) {
     setError("");
@@ -2511,7 +2500,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
   );
 }
 
-function ImageDigitalHumanView({ activeNav }) {
+function ImageDigitalHumanView() {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
   const [voices, setVoices] = useState([]);
@@ -2522,7 +2511,6 @@ function ImageDigitalHumanView({ activeNav }) {
   const [viewTab, setViewTab] = useState("home");
 
   useEffect(() => {
-    if (activeNav !== "image-digital-human") return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -2550,11 +2538,7 @@ function ImageDigitalHumanView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
-
-  if (activeNav !== "image-digital-human") {
-    return <ComingSoon activeNav={activeNav} />;
-  }
+  }, []);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
@@ -3042,7 +3026,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   );
 }
 
-function MotionTransferView({ activeNav, navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
+function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
   const [credits, setCredits] = useState(null);
@@ -3053,7 +3037,6 @@ function MotionTransferView({ activeNav, navId = "motion", api = motionTransferA
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
 
   useEffect(() => {
-    if (activeNav !== navId) return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -3079,11 +3062,7 @@ function MotionTransferView({ activeNav, navId = "motion", api = motionTransferA
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav, api, copy.loadError, filter, navId, splitResults]);
-
-  if (activeNav !== navId) {
-    return <ComingSoon activeNav={activeNav} />;
-  }
+  }, [api, copy.loadError, filter, navId, splitResults]);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
@@ -3511,7 +3490,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-function WatermarkRemovalView({ activeNav }) {
+function WatermarkRemovalView() {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -3521,7 +3500,6 @@ function WatermarkRemovalView({ activeNav }) {
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
 
   useEffect(() => {
-    if (activeNav !== "watermark") return undefined;
     let mounted = true;
     async function load() {
       try {
@@ -3547,11 +3525,7 @@ function WatermarkRemovalView({ activeNav }) {
       mounted = false;
       unsubscribe();
     };
-  }, [activeNav]);
-
-  if (activeNav !== "watermark") {
-    return <ComingSoon activeNav={activeNav} />;
-  }
+  }, []);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
@@ -3667,12 +3641,37 @@ function WatermarkRemovalView({ activeNav }) {
   );
 }
 
+/** 各功能模块首次进入后常驻 DOM，仅切换 display，避免侧栏切换时卸载导致状态丢失 */
+function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
+  if (!visitedIds.has(id)) return null;
+  return (
+    <div
+      className="feature-module-keepalive"
+      style={{ display: activeNav === id ? "contents" : "none" }}
+      aria-hidden={activeNav !== id}
+      data-feature-module={id}
+    >
+      {children}
+    </div>
+  );
+}
+
 function ImageFeaturePage({ initialNav, onOpenHome }) {
-  const [activeNav, setActiveNav] = useState(initialNav || "image");
+  const firstNav = initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
+  const [activeNav, setActiveNav] = useState(firstNav);
+  const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
 
   useEffect(() => {
-    setActiveNav(initialNav || "image");
+    const next = initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
+    setActiveNav(next);
+    setVisitedIds((prev) => new Set(prev).add(next));
   }, [initialNav]);
+
+  useEffect(() => {
+    if (featureNavIdSet.has(activeNav)) {
+      setVisitedIds((prev) => new Set(prev).add(activeNav));
+    }
+  }, [activeNav]);
 
   const handleNavChange = useCallback((id) => {
     if (id === "home") {
@@ -3691,31 +3690,57 @@ function ImageFeaturePage({ initialNav, onOpenHome }) {
     <div className="feature-page-shell">
       <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} />
       <main className="feature-main">
-        {activeNav === "image" && <ImageGenerationView activeNav={activeNav} />}
-        {activeNav === "video" && <VideoGenerationView activeNav={activeNav} />}
-        {activeNav === "chat" && <ChatGenerationView activeNav={activeNav} />}
-        {activeNav === "digital-human" && <DigitalHumanGenerationView activeNav={activeNav} />}
-        {activeNav === "image-digital-human" && <ImageDigitalHumanView activeNav={activeNav} />}
-        {activeNav === "motion" && <MotionTransferView activeNav={activeNav} splitResults />}
-        {activeNav === "watermark" && <WatermarkRemovalView activeNav={activeNav} />}
-        {activeNav === "voice" && <VoiceSynthesisView activeNav={activeNav} />}
-        {activeNav === "voice-convert" && <VoiceConvertView activeNav={activeNav} />}
-        {activeNav === "transcribe" && <TranscribeView activeNav={activeNav} />}
-        {activeNav === "article" && <ArticleGenerationView activeNav={activeNav} />}
-        {activeNav === "music" && <MusicGenerationView activeNav={activeNav} />}
-        {activeNav === "replicate" && <ReplicateView activeNav={activeNav} />}
-        {activeNav === "enhance" && <EnhanceView activeNav={activeNav} />}
-        {activeNav === "remove-bg" && <RemoveBgView activeNav={activeNav} />}
-        {activeNav === "video-voice" && <VideoDubbingView activeNav={activeNav} />}
-        {activeNav === "face-swap" && (
-          <MotionTransferView
-            activeNav={activeNav}
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={faceSwapCopy}
-            splitResults
-          />
-        )}
+        <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
+          <ImageGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="video" activeNav={activeNav} visitedIds={visitedIds}>
+          <VideoGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="chat" activeNav={activeNav} visitedIds={visitedIds}>
+          <ChatGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="digital-human" activeNav={activeNav} visitedIds={visitedIds}>
+          <DigitalHumanGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="image-digital-human" activeNav={activeNav} visitedIds={visitedIds}>
+          <ImageDigitalHumanView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="motion" activeNav={activeNav} visitedIds={visitedIds}>
+          <MotionTransferView splitResults />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="watermark" activeNav={activeNav} visitedIds={visitedIds}>
+          <WatermarkRemovalView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="voice" activeNav={activeNav} visitedIds={visitedIds}>
+          <VoiceSynthesisView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="voice-convert" activeNav={activeNav} visitedIds={visitedIds}>
+          <VoiceConvertView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="transcribe" activeNav={activeNav} visitedIds={visitedIds}>
+          <TranscribeView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="article" activeNav={activeNav} visitedIds={visitedIds}>
+          <ArticleGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="music" activeNav={activeNav} visitedIds={visitedIds}>
+          <MusicGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="replicate" activeNav={activeNav} visitedIds={visitedIds}>
+          <ReplicateView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="enhance" activeNav={activeNav} visitedIds={visitedIds}>
+          <EnhanceView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="remove-bg" activeNav={activeNav} visitedIds={visitedIds}>
+          <RemoveBgView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="video-voice" activeNav={activeNav} visitedIds={visitedIds}>
+          <VideoDubbingView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="face-swap" activeNav={activeNav} visitedIds={visitedIds}>
+          <MotionTransferView navId="face-swap" api={faceSwapApi} copy={faceSwapCopy} splitResults />
+        </FeatureModuleKeepAlive>
         {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg", "video-voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>

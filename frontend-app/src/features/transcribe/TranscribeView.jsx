@@ -117,7 +117,7 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   );
 }
 
-export function TranscribeView({ activeNav }) {
+export function TranscribeView() {
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -132,8 +132,6 @@ export function TranscribeView({ activeNav }) {
       // Recent transcription history is optional.
     }
   }, [recentResults]);
-
-  if (activeNav !== "transcribe") return null;
 
   async function pickAudioFile(file) {
     setNotice("");
