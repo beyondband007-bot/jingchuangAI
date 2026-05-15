@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Bot,
   Box,
+  ChevronDown,
   CheckCircle2,
   Camera,
   Copy,
@@ -24,6 +25,7 @@ import {
   Plus,
   RefreshCcw,
   Ruler,
+  Search,
   Send,
   PlaySquare,
   Scissors,
@@ -34,6 +36,7 @@ import {
   Trash2,
   UserRound,
   Video,
+  Wallet,
   Wand2,
   X
 } from "lucide-react";
@@ -74,7 +77,7 @@ const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
-  { id: "chat", label: "AI对话", icon: Bot },
+  { id: "chat", label: "大模型", icon: Bot },
   { id: "digital-human", label: "数字人", icon: UserRound },
   { id: "image-digital-human", label: "图片数字人", icon: Camera },
   { id: "motion", label: "动作迁移", icon: Sparkles },
@@ -83,12 +86,42 @@ const navItems = [
   { id: "article", label: "爆款图文", icon: FileText },
   { id: "watermark", label: "去水印", icon: Eraser },
   { id: "voice-convert", label: "音色转换", icon: Mic },
-  { id: "transcribe", label: "转录", icon: Mic },
+  { id: "transcribe", label: "语音转文字", icon: Mic },
   { id: "video-voice", label: "视频配音", icon: PlaySquare },
   { id: "music", label: "AI音乐", icon: Music },
-  { id: "replicate", label: "复刻", icon: Copy },
-  { id: "enhance", label: "增强", icon: Wand2 },
-  { id: "remove-bg", label: "去背景", icon: Layers }
+  { id: "replicate", label: "反推提示词", icon: Copy },
+  { id: "enhance", label: "画质提升", icon: Wand2 },
+  { id: "remove-bg", label: "智能抠图", icon: Layers }
+];
+
+const navSections = [
+  { type: "item", id: "home" },
+  { type: "item", id: "chat" },
+  { type: "group", id: "vision", label: "视觉生成", icon: Box, children: ["image", "video", "face-swap", "motion"] },
+  { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
+  { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
+  { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
+  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+];
+
+const homeFeatureRoutes = [
+  "image",
+  "video",
+  "chat",
+  "digital-human",
+  "image-digital-human",
+  "motion",
+  "face-swap",
+  "voice",
+  "article",
+  "watermark",
+  "enhance",
+  "remove-bg",
+  "voice-convert",
+  "transcribe",
+  "music",
+  "replicate",
+  "video-voice"
 ];
 
 const appEntryStorageKey = "jingchuang:enter-app";
@@ -276,59 +309,65 @@ const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
   );
 });
 
-const AppHome = memo(function AppHome({ onOpenFeature }) {
+const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onLogout }) {
   const frameRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const isGuest = Boolean(authUser?.isGuest);
 
-  const enterAppHome = useCallback(() => {
-    setIsReady(false);
+  const bindHomeFeatureCards = useCallback(() => {
     const frame = frameRef.current;
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const cards = Array.from(doc.querySelectorAll(".feature-card"));
+      cards.forEach((card, index) => {
+        const route = homeFeatureRoutes[index];
+        if (!route || card.dataset.jcRouteBound === route) return;
+        card.dataset.jcRouteBound = route;
+        card.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOpenFeature(route);
+        });
+      });
+    } catch {
+      // The home iframe is same-origin in Vite; ignore if a browser blocks access.
+    }
+  }, [onOpenFeature]);
+
+  const handleFrameLoad = useCallback(() => {
+    setIsReady(true);
+    bindHomeFeatureCards();
     let tries = 0;
     const timer = window.setInterval(() => {
       tries += 1;
-      try {
-        const doc = frame?.contentDocument;
-        const buttons = Array.from(doc?.querySelectorAll("button") || []);
-        const enterButton = buttons.find((button) => {
-          const text = button.textContent || "";
-          return text.includes("立即生成") || text.includes("开启鲸创AI");
-        });
-        if (enterButton) {
-          enterButton.click();
-          window.clearInterval(timer);
-          window.setTimeout(() => setIsReady(true), 320);
-          return;
-        }
-      } catch {
-        window.clearInterval(timer);
-        setIsReady(true);
-        return;
-      }
-
-      if (tries > 50) {
-        window.clearInterval(timer);
-        setIsReady(true);
-      }
+      bindHomeFeatureCards();
+      if (tries >= 20) window.clearInterval(timer);
     }, 100);
-  }, []);
+  }, [bindHomeFeatureCards]);
+
+  const handleNavChange = useCallback((id) => {
+    if (id === "home") {
+      window.history.pushState(null, "", "#/home");
+      return;
+    }
+    onOpenFeature(id);
+  }, [onOpenFeature]);
 
   return (
-    <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
-      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI主页" src="/original/index.html" onLoad={enterAppHome} />
-      <div className="home-nav-hotspots" aria-label="首页功能入口">
-        {featureNavIds.map((id) => {
-          const item = navItems.find((navItem) => navItem.id === id);
-          return (
-            <button
-              className="home-nav-hotspot"
-              type="button"
-              key={id}
-              onClick={() => onOpenFeature(id)}
-              aria-label={`进入${item?.label || id}`}
-            />
-          );
-        })}
-      </div>
+    <div className={`feature-page-shell home-page-shell ${isGuest ? "is-guest" : ""}`}>
+      <FeatureSidebar activeNav="home" onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
+      {isGuest && (
+        <div className="feature-guest-auth-actions" aria-label="游客账号入口">
+          <button type="button" onClick={() => onOpenAuth("login")}>登录</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>注册</button>
+        </div>
+      )}
+      <main className="feature-main home-feature-main">
+        <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
+          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
+        </div>
+      </main>
     </div>
   );
 });
@@ -336,23 +375,91 @@ const AppHome = memo(function AppHome({ onOpenFeature }) {
 const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, authUser, onOpenAuth, onLogout }) {
   const isLoadingUser = !authUser;
   const isGuest = Boolean(authUser?.isGuest);
+  const [query, setQuery] = useState("");
+  const [openGroups, setOpenGroups] = useState(() => ({
+    vision: true,
+    avatar: true,
+    audio: true,
+    marketing: true
+  }));
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const getNavItem = useCallback((id) => navItems.find((item) => item.id === id), []);
+  const isVisible = useCallback((item) => {
+    if (!normalizedQuery) return true;
+    return item?.label?.toLowerCase().includes(normalizedQuery) || item?.id?.toLowerCase().includes(normalizedQuery);
+  }, [normalizedQuery]);
+
+  const toggleGroup = useCallback((id) => {
+    setOpenGroups((current) => ({ ...current, [id]: !current[id] }));
+  }, []);
+
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-mark">
-          <Sparkles size={17} />
-        </span>
-        <span>鲸创AI</span>
+        <span className="feature-brand-text">Getrue.ai</span>
       </div>
+      <label className="feature-nav-search">
+        <Search size={16} />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="搜索..." />
+      </label>
       <nav className="feature-nav" aria-label="功能导航">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = activeNav === item.id;
+        {navSections.map((section) => {
+          if (section.type === "item") {
+            const item = getNavItem(section.id);
+            if (!item || !isVisible(item)) return null;
+            const Icon = item.icon;
+            const active = activeNav === item.id;
+            return (
+              <div className="feature-nav-section" key={section.id}>
+                <button className={`feature-nav-item ${active ? "is-active" : ""}`} onClick={() => onNavChange(item.id)} type="button">
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{item.label}</span>
+                </button>
+              </div>
+            );
+          }
+
+          if (section.type === "external") {
+            if (normalizedQuery && !section.label.toLowerCase().includes(normalizedQuery) && !section.id.toLowerCase().includes(normalizedQuery)) return null;
+            const Icon = section.icon;
+            return (
+              <div className="feature-nav-section" key={section.id}>
+                <button className="feature-nav-item" onClick={() => window.open(section.href, "_blank", "noopener,noreferrer")} type="button">
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{section.label}</span>
+                </button>
+              </div>
+            );
+          }
+
+          const children = section.children.map(getNavItem).filter(Boolean).filter(isVisible);
+          const hasActiveChild = section.children.includes(activeNav);
+          if (!children.length && normalizedQuery) return null;
+          const GroupIcon = section.icon;
+          const isOpen = Boolean(openGroups[section.id] || hasActiveChild || normalizedQuery);
           return (
-            <button className={`feature-nav-item ${active ? "is-active" : ""}`} key={item.id} onClick={() => onNavChange(item.id)} type="button">
-              <Icon size={18} strokeWidth={1.9} />
-              <span>{item.label}</span>
-            </button>
+            <div className="feature-nav-section feature-nav-section--group" key={section.id}>
+              <button className={`feature-nav-group ${hasActiveChild ? "is-active" : ""} ${isOpen ? "is-open" : ""}`} type="button" onClick={() => toggleGroup(section.id)}>
+                <GroupIcon size={18} strokeWidth={1.9} />
+                <span>{section.label}</span>
+                <ChevronDown className="feature-nav-chevron" size={16} />
+              </button>
+              <div className={`feature-nav-children ${isOpen ? "is-open" : ""}`}>
+                {children.map((item) => {
+                  const Icon = item.icon;
+                  const active = activeNav === item.id;
+                  return (
+                    <button className={`feature-nav-child ${active ? "is-active" : ""}`} key={item.id} onClick={() => onNavChange(item.id)} type="button">
+                      <span className="feature-nav-child-icon">
+                        <Icon size={15} strokeWidth={1.9} />
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </nav>
@@ -508,7 +615,7 @@ function ComposerBar({ options, onSubmit }) {
             setPrompt(event.target.value);
             if (notice) setNotice("");
           }}
-          placeholder="请描述你想生成的图片..."
+          placeholder="选择模型后，释放你的创作灵感"
         />
       </div>
       <div className="composer-controls-row">
@@ -1374,12 +1481,8 @@ function ChatCanvas({ messages, isSubmitting, error }) {
   if (!messages.length && !isSubmitting && !error) {
     return (
       <div className="chat-main-canvas">
-        <div className="chat-empty-state">
-          <span className="chat-empty-icon">
-            <Sparkles size={22} />
-          </span>
-          <h1>开始新对话</h1>
-          <p>我是您的 AI 创作助手，有什么可以帮您的吗？</p>
+        <div className="chat-empty-state llm-empty-state">
+          <h1>释放你的创作灵感</h1>
         </div>
       </div>
     );
@@ -1433,6 +1536,14 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
   const [model, setModel] = useState(options.defaultModel || options.models[0]?.value || "");
   const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
   const [notice, setNotice] = useState("");
+  const [openMenu, setOpenMenu] = useState(null);
+  const inspirationOptions = [
+    "Floating crystal island",
+    "Cyberpunk cityscape",
+    "Ancient temple ruins",
+    "Underwater coral reef",
+    "Alien desert landscape"
+  ];
 
   useEffect(() => {
     if (!model && (options.defaultModel || options.models[0]?.value)) {
@@ -1445,11 +1556,11 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
 
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const canSubmit = prompt.trim().length > 0 && model && !isSubmitting;
-  const reservePoints = selectedModel?.reservePoints || 1;
+  const modelLabel = selectedModel?.label || "Deepseek V4";
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请先输入消息");
+      setNotice("请输入内容后再发送。");
       return;
     }
 
@@ -1463,52 +1574,89 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="sowa-composer chat-composer" aria-label="AI 对话输入框">
-      <div className="composer-input-row">
-        <button className="composer-add" type="button" aria-label="新建对话占位">
-          <Plus size={22} />
-        </button>
-        <input
-          className="composer-text-input"
-          value={prompt}
-          onChange={(event) => {
-            setPrompt(event.target.value);
-            if (notice) setNotice("");
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              submitPrompt();
-            }
-          }}
-          placeholder="发送消息..."
-        />
-      </div>
-      <div className="composer-controls-row">
-        <label className="control-select model-select">
-          <Bot size={16} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
-            {options.models.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="control-select">
-          <Sparkles size={16} />
-          <select value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value)}>
-            {options.reasoningEfforts.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="price-pill">约 {reservePoints} 积分起</span>
-        <button className="send-button" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
-          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
-        </button>
+    <div className="llm-composer chat-composer" aria-label="大模型输入框">
+      <textarea
+        className="llm-input"
+        value={prompt}
+        onChange={(event) => {
+          setPrompt(event.target.value);
+          if (notice) setNotice("");
+        }}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            event.preventDefault();
+            submitPrompt();
+          }
+        }}
+        placeholder="请告诉我您的想法......"
+      />
+      <div className="llm-toolbar">
+        <div className="llm-left">
+          <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
+            +
+          </button>
+          <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
+            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "inspiration" ? null : "inspiration"))}>
+              <Sparkles className="bolt" size={16} />
+              <span>Inspiration</span>
+              <ChevronDown size={16} />
+            </button>
+            <div className="llm-menu">
+              {inspirationOptions.map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => {
+                    setPrompt(item);
+                    setNotice("");
+                    setOpenMenu(null);
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
+            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+              <span>{modelLabel}</span>
+              <ChevronDown size={16} />
+            </button>
+            <div className="llm-menu">
+              {options.models.map((item) => (
+                <button
+                  type="button"
+                  key={item.value}
+                  onClick={() => {
+                    setModel(item.value);
+                    setOpenMenu(null);
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="llm-right">
+          {options.reasoningEfforts.length > 0 && (
+            <label className="llm-reasoning-select">
+              <select value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value)}>
+                {options.reasoningEfforts.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button className="llm-round" type="button" onClick={() => setNotice("录音按钮暂未接入麦克风权限。")} aria-label="录音">
+            <Mic size={18} />
+          </button>
+          <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
+            {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+          </button>
+        </div>
       </div>
       {notice && <div className="composer-notice warning">{notice}</div>}
     </div>
@@ -1603,15 +1751,20 @@ function ChatGenerationView() {
     try {
       const historyMessages = await chatApi.getMessages(id);
       setMessages(historyMessages);
-    } catch (error) {
+  } catch (error) {
       setSubmitError(error.message || "加载历史对话失败");
     }
   }
 
+  const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
+  const composer = options.models.length > 0 && (
+    <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
+  );
+
   return (
-    <section className="chat-view-root">
+    <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
       <div className="chat-topbar">
-        <h1>AI 对话</h1>
+        <h1>大模型</h1>
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       {conversations.length > 0 && (
@@ -1624,8 +1777,17 @@ function ChatGenerationView() {
       {isHistoryOpen && (
         <ChatHistoryRail conversations={conversations} activeConversationId={conversationId} onSelect={selectConversation} />
       )}
-      <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
-      {options.models.length > 0 && <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />}
+      {isIntroState ? (
+        <div className="llm-intro-layout">
+          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+          {composer}
+        </div>
+      ) : (
+        <>
+          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+          {composer}
+        </>
+      )}
     </section>
   );
 }
@@ -4132,7 +4294,7 @@ function App() {
 
   const page = (() => {
     if (view === "home") {
-      return <AppHome onOpenFeature={openFeature} />;
+      return <AppHome onOpenFeature={openFeature} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
     }
 
     if (featureNavIdSet.has(view)) {

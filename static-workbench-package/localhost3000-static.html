@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getrue.ai - localhost:3000 静态复刻</title>
+  <style>
+    @font-face {
+      font-family: "Zona Pro";
+      src: url("public/重构/fonts/ZonaPro-SemiBold.ttf") format("truetype");
+      font-weight: 400 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      --background: 0 0% 2.2%;
+      --foreground: 0 0% 98%;
+      --muted: 0 0% 15%;
+      --muted-foreground: 218 11% 65%;
+      --border: 0 0% 15%;
+      --sidebar-background: 0 0% 3.5%;
+      --sidebar-foreground: 220 9% 88%;
+      --sidebar-accent: 0 0% 12%;
+      --brand: #a855f7;
+      --brand-blue: #5a2cfc;
+      --panel: #101114;
+      --panel-2: #17181c;
+      --text-soft: #ccd3e2;
+      --radius: 16px;
+      --sidebar-width: 256px;
+      font-family: "Zona Pro", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background: hsl(var(--background));
+      color: hsl(var(--foreground));
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { border: 0; cursor: pointer; }
+    svg { display: block; }
+
+    .app-shell {
+      min-height: 100vh;
+      background: hsl(var(--background));
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: 0.2;
+      background: radial-gradient(circle at 48% 42%, rgba(120, 41, 190, 0.5) 0%, rgba(53, 71, 125, 0.5) 45%, transparent 70%);
+      animation: ambientShift 30s linear infinite;
+    }
+
+    @keyframes ambientShift {
+      0%, 100% { background: radial-gradient(circle at 48% 42%, rgba(120, 41, 190, 0.5) 0%, rgba(53, 71, 125, 0.5) 45%, transparent 70%); }
+      33% { background: radial-gradient(circle at 30% 70%, rgba(233, 30, 99, 0.5) 0%, rgba(81, 45, 168, 0.5) 45%, transparent 70%); }
+      66% { background: radial-gradient(circle at 70% 30%, rgba(76, 175, 80, 0.45) 0%, rgba(32, 119, 188, 0.5) 45%, transparent 70%); }
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 30;
+      width: var(--sidebar-width);
+      border-right: 1px solid hsl(var(--border));
+      background: hsl(var(--sidebar-background));
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.is-collapsed { transform: translateX(-100%); }
+    .sidebar-inner { display: flex; flex-direction: column; height: 100%; }
+
+    .brand {
+      padding: 16px;
+    }
+
+    .brand-text {
+      display: inline-block;
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1.15;
+      background-image: linear-gradient(to right, #5a2cfc, #ad6cfc, #d8deff, #162089, #5a2cfc);
+      background-size: 300% 100%;
+      background-position: 0 50%;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: logoShift 4.5s ease-in-out infinite;
+    }
+
+    @keyframes logoShift {
+      0%, 100% { background-position: 0 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .search-area {
+      padding: 8px 12px 10px;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translateY(-50%);
+      color: hsl(var(--muted-foreground));
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 40px;
+      padding: 0 14px 0 36px;
+      border: 1px solid hsl(var(--border));
+      border-radius: 999px;
+      outline: 0;
+      background: hsl(var(--muted));
+      color: var(--text-soft);
+      font-size: 14px;
+    }
+
+    .nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      scrollbar-width: none;
+    }
+
+    .nav::-webkit-scrollbar { display: none; }
+    .nav-section { margin-bottom: 4px; }
+
+    .nav-button, .nav-child {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 40px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-soft);
+      text-align: left;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+    }
+
+    .nav-button:hover, .nav-child:hover {
+      background: hsl(var(--sidebar-accent));
+      color: white;
+    }
+
+    .nav-button.is-active, .nav-child.is-active {
+      background: hsl(var(--muted));
+      color: white;
+    }
+
+    .nav-button svg, .nav-child svg {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .nav-button .chevron {
+      margin-left: auto;
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+    }
+
+    .nav-button.is-open .chevron { transform: rotate(180deg); }
+
+    .nav-children {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.24s ease;
+    }
+
+    .nav-children.is-open { grid-template-rows: 1fr; }
+    .nav-children > div {
+      min-height: 0;
+      overflow: hidden;
+      padding: 4px 0 4px 22px;
+    }
+
+    .nav-child {
+      min-height: 34px;
+      padding: 7px 10px;
+      color: #888;
+      font-size: 13px;
+    }
+
+    .nav-child:hover, .nav-child.is-active {
+      transform: translateX(10px);
+    }
+
+    .sidebar-bottom {
+      padding: 12px;
+      border-top: 1px solid hsl(var(--border));
+    }
+
+    .profile-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-soft);
+      text-align: left;
+    }
+
+    .profile-button:hover { background: hsl(var(--sidebar-accent)); }
+    .profile-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 2px solid var(--brand);
+      background: linear-gradient(135deg, #5a2cfc, #ad6cfc);
+      color: white;
+      font-size: 12px;
+      flex: 0 0 auto;
+    }
+
+    .pro-badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: linear-gradient(to top, #ad6cfc, #5a2cfc);
+      color: white;
+      font-size: 12px;
+    }
+
+    .main-wrap {
+      height: 100vh;
+      padding-left: var(--sidebar-width);
+      transition: padding-left 0.3s ease;
+    }
+
+    .main-wrap.is-expanded { padding-left: 0; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 64px;
+      padding: 0 16px;
+      border-bottom: 1px solid hsl(var(--border));
+      background: hsl(var(--background) / 0.95);
+      backdrop-filter: blur(12px);
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text-soft);
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+
+    .icon-button:hover {
+      background: hsl(var(--muted));
+      color: white;
+    }
+
+    .icon-button svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .top-title {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .top-title h1 {
+      margin: 0;
+      overflow: hidden;
+      color: hsl(var(--foreground));
+      font-size: 20px;
+      line-height: 1.2;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notification { position: relative; }
+    .notification::after {
+      content: "5";
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+    }
+
+    .content-frame {
+      position: relative;
+      height: calc(100vh - 64px);
+      overflow: hidden;
+    }
+
+    .page-view {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+      background: hsl(var(--background));
+    }
+
+    .page-view.is-active { display: block; }
+    .home-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: hsl(var(--background));
+    }
+
+    .mock-module {
+      height: 100%;
+      overflow: auto;
+      padding: 40px 24px;
+      background: linear-gradient(180deg, #0a0a0a 0%, #111 50%, #0d0d0d 100%);
+    }
+
+    .chat-stage {
+      position: relative;
+      width: min(780px, 100%);
+      min-height: 560px;
+      margin: 42px auto 0;
+      transform: translateY(-48px);
+    }
+
+    .ambient-soft {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 300px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(ellipse, rgba(50, 205, 50, 0.04) 0%, transparent 70%);
+    }
+
+    .composer-card {
+      position: relative;
+      z-index: 2;
+      margin: 0 auto;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 28px;
+      background: rgba(18, 18, 18, 0.92);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .module-heading {
+      margin: 0 0 24px;
+      text-align: center;
+    }
+
+    .module-heading h2 {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .module-heading p {
+      margin: 12px auto 0;
+      max-width: 560px;
+      color: #8f98aa;
+      line-height: 1.7;
+    }
+
+    .composer-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 64px;
+    }
+
+    .composer-row textarea {
+      flex: 1;
+      min-height: 56px;
+      max-height: 160px;
+      resize: vertical;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #f5f5f5;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .round-action {
+      width: 42px;
+      height: 42px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #202124;
+      color: #d3d7df;
+    }
+
+    .round-action.primary {
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .tool-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: #18191c;
+      color: #cbd1dc;
+      font-size: 13px;
+    }
+
+    .mock-results {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .result-card {
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      background: #15161a;
+    }
+
+    .result-card img, .result-card video {
+      width: 100%;
+      height: 145px;
+      display: block;
+      object-fit: cover;
+      background: #0d0e12;
+    }
+
+    .result-card div {
+      padding: 11px 12px 13px;
+      color: #cbd1dc;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .llm-module {
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.035) 0%, transparent 42%),
+        linear-gradient(180deg, #0a0a0a 0%, #111 47%, #0b0b0c 100%);
+    }
+
+    .llm-stage {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 62px;
+      padding: 24px;
+      transform: translateY(-58px);
+    }
+
+    .llm-title {
+      margin: 0;
+      color: #cfd6e6;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      font-size: clamp(30px, 2.15vw, 42px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: 0;
+      text-align: center;
+    }
+
+    .llm-composer {
+      width: min(780px, calc(100vw - 48px));
+      min-height: 136px;
+      padding: 22px 24px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(30, 30, 31, 0.96), rgba(26, 26, 27, 0.96));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 18px 48px rgba(0, 0, 0, 0.36);
+    }
+
+    .llm-input {
+      width: 100%;
+      min-height: 42px;
+      margin: 0 0 18px;
+      resize: none;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #eef1f7;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .llm-input::placeholder {
+      color: #9aa1ad;
+    }
+
+    .llm-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .llm-left,
+    .llm-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .llm-square,
+    .llm-round {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.09);
+      color: #cfd4de;
+      transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+    }
+
+    .llm-square {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .llm-round {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+    }
+
+    .llm-round.primary {
+      background: rgba(255, 255, 255, 0.13);
+      color: #9fa5b2;
+    }
+
+    .llm-square:hover,
+    .llm-round:hover,
+    .llm-select:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: white;
+    }
+
+    .llm-select-wrap {
+      position: relative;
+    }
+
+    .llm-select {
+      min-width: 142px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 14px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.09);
+      color: #eef1f7;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .llm-select svg,
+    .llm-round svg {
+      width: 17px;
+      height: 17px;
+    }
+
+    .llm-select .bolt {
+      width: 16px;
+      height: 16px;
+      color: #8b6cff;
+      fill: currentColor;
+      stroke: none;
+    }
+
+    .llm-menu {
+      position: absolute;
+      left: 0;
+      bottom: calc(100% + 8px);
+      z-index: 5;
+      min-width: 190px;
+      display: none;
+      padding: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      background: rgba(28, 28, 30, 0.98);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+    }
+
+    .llm-select-wrap.is-open .llm-menu {
+      display: grid;
+      gap: 3px;
+    }
+
+    .llm-menu button {
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: transparent;
+      color: #d5dae4;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .llm-menu button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+    }
+
+    .empty-module {
+      height: 100%;
+      background: #0b0b0c;
+    }
+
+    .toast-wrap {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 90;
+      display: grid;
+      gap: 8px;
+      width: min(360px, calc(100vw - 36px));
+    }
+
+    .toast {
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      background: rgba(20, 20, 22, 0.94);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+      color: #eef0f6;
+      font-size: 13px;
+      animation: toastIn 0.18s ease both;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-menu { display: none; }
+
+    @media (max-width: 860px) {
+      body { overflow: auto; }
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.is-mobile-open { transform: translateX(0); }
+      .sidebar.is-collapsed { transform: translateX(-100%); }
+      .main-wrap, .main-wrap.is-expanded { padding-left: 0; }
+      .mobile-menu { display: inline-grid; }
+      .content-frame { height: calc(100vh - 64px); }
+      .top-actions .optional { display: none; }
+      .mock-results { grid-template-columns: 1fr; }
+      .chat-stage { margin-top: 20px; transform: none; }
+      .llm-stage { gap: 40px; transform: translateY(-34px); }
+      .llm-composer { width: min(780px, calc(100vw - 28px)); padding: 18px; }
+      .llm-toolbar { align-items: flex-end; }
+      .llm-left { flex-wrap: wrap; }
+      .llm-select { min-width: 132px; }
+    }
+
+    @media (max-width: 560px) {
+      .llm-stage { justify-content: flex-start; padding-top: 130px; transform: none; }
+      .llm-title { font-size: 28px; }
+      .llm-toolbar { flex-direction: column; align-items: stretch; }
+      .llm-left, .llm-right { width: 100%; }
+      .llm-right { justify-content: flex-end; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="brand"><span class="brand-text">Getrue.ai</span></div>
+        <div class="search-area">
+          <label class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="navSearch" type="search" placeholder="搜索...">
+          </label>
+        </div>
+        <nav class="nav" id="nav">
+          <div class="nav-section"><button class="nav-button is-active" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg><span>首页</span></button></div>
+          <div class="nav-section"><button class="nav-button" data-view="large-model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg><span>大模型</span></button></div>
+
+          <div class="nav-section nav-section--collapsible">
+            <button class="nav-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span>视觉生成</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-children"><div>
+              <button class="nav-child" data-view="image">图片生成</button>
+              <button class="nav-child" data-view="video">视频生成</button>
+              <button class="nav-child" data-view="face-swap">视频换脸</button>
+              <button class="nav-child" data-view="motion">动作迁移</button>
+            </div></div>
+          </div>
+
+          <div class="nav-section nav-section--collapsible">
+            <button class="nav-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg><span>数字人</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-children"><div>
+              <button class="nav-child" data-view="digital-human">数字人制作</button>
+              <button class="nav-child" data-view="image-digital-human">图片数字人</button>
+            </div></div>
+          </div>
+
+          <div class="nav-section nav-section--collapsible">
+            <button class="nav-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span>音频处理</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-children"><div>
+              <button class="nav-child" data-view="voice">语音合成</button>
+              <button class="nav-child" data-view="music">AI音乐</button>
+              <button class="nav-child" data-view="voice-convert">音色转换</button>
+            </div></div>
+          </div>
+
+          <div class="nav-section nav-section--collapsible">
+            <button class="nav-button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg><span>营销工具</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+            <div class="nav-children"><div>
+              <button class="nav-child" data-view="article">爆款模板</button>
+              <button class="nav-child" data-view="dub">视频配音</button>
+              <button class="nav-child" data-view="watermark">去水印</button>
+              <button class="nav-child" data-view="cutout">智能抠图</button>
+              <button class="nav-child" data-view="enhance">画质提升</button>
+              <button class="nav-child" data-view="replicate">反推提示词</button>
+              <button class="nav-child" data-view="transcribe">语音转文字</button>
+            </div></div>
+          </div>
+        </nav>
+        <div class="sidebar-bottom">
+          <button class="profile-button" id="loginButton"><span class="profile-left"><span class="avatar">用</span><span>鲍小刁</span></span><span class="pro-badge">Pro</span></button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-wrap" id="mainWrap">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobileMenu" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <button class="icon-button" id="sidebarToggle" aria-label="切换侧边栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
+        <div class="top-title">
+          <h1>生成式AI聚合平台</h1>
+          <div class="top-actions">
+            <button class="icon-button optional" data-toast="云端同步为静态演示，不会连接服务器。"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.7-9H17a5 5 0 0 1 .5 10Z"/></svg></button>
+            <button class="icon-button optional" data-toast="消息中心为静态演示。"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></button>
+            <button class="icon-button notification" data-toast="通知列表为静态演示。"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></button>
+            <span class="avatar">用</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-frame">
+        <section class="page-view is-active" id="view-home">
+          <iframe class="home-frame" src="public/重构/index.html?sidebar=open" title="Getrue.ai 首页"></iframe>
+        </section>
+        <section class="page-view" id="view-mock"></section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+    const sidebar = document.getElementById("sidebar");
+    const mainWrap = document.getElementById("mainWrap");
+    const toastWrap = document.getElementById("toastWrap");
+    const homeView = document.getElementById("view-home");
+    const mockView = document.getElementById("view-mock");
+    const inspirationOptions = [
+      "Floating crystal island",
+      "Cyberpunk cityscape",
+      "Ancient temple ruins",
+      "Underwater coral reef",
+      "Alien desert landscape"
+    ];
+    const modelOptions = ["Deepseek V4", "Kimi K2.6", "MiniMax M2.7", "GPT 5.5"];
+
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = message;
+      toastWrap.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(8px)";
+        setTimeout(() => toast.remove(), 180);
+      }, 2400);
+    }
+
+    function setActive(button) {
+      document.querySelectorAll("[data-view]").forEach((item) => item.classList.remove("is-active"));
+      button.classList.add("is-active");
+      const parent = button.closest(".nav-section--collapsible");
+      if (parent) parent.querySelector(".nav-button").classList.add("is-active");
+    }
+
+    function renderLargeModel() {
+      mockView.innerHTML = `
+        <div class="llm-module">
+          <div class="llm-stage">
+            <h2 class="llm-title">释放你的创作灵感</h2>
+            <div class="llm-composer">
+              <textarea class="llm-input" id="llmInput" placeholder="请告诉我您的想法......"></textarea>
+              <div class="llm-toolbar">
+                <div class="llm-left">
+                  <button class="llm-square" type="button" data-toast="上传按钮为静态演示，不会打开文件选择器。">+</button>
+                  <div class="llm-select-wrap" data-dropdown="inspiration">
+                    <button class="llm-select" type="button">
+                      <svg class="bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 10-13h-7l0-7Z"/></svg>
+                      <span id="inspirationLabel">Inspiration</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="llm-menu">
+                      ${inspirationOptions.map((item) => `<button type="button" data-inspiration="${item}">${item}</button>`).join("")}
+                    </div>
+                  </div>
+                  <div class="llm-select-wrap" data-dropdown="model">
+                    <button class="llm-select" type="button">
+                      <span id="modelLabel">Deepseek V4</span>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="llm-menu">
+                      ${modelOptions.map((item) => `<button type="button" data-model="${item}">${item}</button>`).join("")}
+                    </div>
+                  </div>
+                </div>
+                <div class="llm-right">
+                  <button class="llm-round" type="button" data-toast="录音按钮为静态演示，不会请求麦克风权限。">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+                  </button>
+                  <button class="llm-round primary" type="button" id="llmSend">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      mockView.querySelectorAll(".llm-select").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const wrap = button.closest(".llm-select-wrap");
+          mockView.querySelectorAll(".llm-select-wrap").forEach((item) => {
+            if (item !== wrap) item.classList.remove("is-open");
+          });
+          wrap.classList.toggle("is-open");
+        });
+      });
+
+      mockView.querySelectorAll("[data-inspiration]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const value = button.dataset.inspiration;
+          document.getElementById("inspirationLabel").textContent = value;
+          document.getElementById("llmInput").value = value;
+          button.closest(".llm-select-wrap").classList.remove("is-open");
+        });
+      });
+
+      mockView.querySelectorAll("[data-model]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.getElementById("modelLabel").textContent = button.dataset.model;
+          button.closest(".llm-select-wrap").classList.remove("is-open");
+        });
+      });
+
+      document.getElementById("llmSend").addEventListener("click", () => {
+        const input = document.getElementById("llmInput");
+        if (!input.value.trim()) {
+          showToast("请输入内容后再发送。");
+          return;
+        }
+        showToast("发送按钮为本地演示，不会接入 LLM 或后端。");
+      });
+    }
+
+    function renderEmpty() {
+      mockView.innerHTML = `<div class="empty-module"></div>`;
+    }
+
+    document.getElementById("sidebarToggle").addEventListener("click", () => {
+      sidebar.classList.toggle("is-collapsed");
+      mainWrap.classList.toggle("is-expanded");
+    });
+
+    document.getElementById("mobileMenu").addEventListener("click", () => {
+      sidebar.classList.toggle("is-mobile-open");
+    });
+
+    document.querySelectorAll(".nav-section--collapsible > .nav-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.classList.toggle("is-open");
+        button.nextElementSibling.classList.toggle("is-open");
+      });
+    });
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const view = button.dataset.view;
+        setActive(button);
+        sidebar.classList.remove("is-mobile-open");
+        if (view === "home") {
+          homeView.classList.add("is-active");
+          mockView.classList.remove("is-active");
+        } else if (view === "large-model") {
+          renderLargeModel();
+          homeView.classList.remove("is-active");
+          mockView.classList.add("is-active");
+        } else {
+          renderEmpty();
+          homeView.classList.remove("is-active");
+          mockView.classList.add("is-active");
+        }
+      });
+    });
+
+    document.getElementById("navSearch").addEventListener("input", (event) => {
+      const query = event.target.value.trim().toLowerCase();
+      document.querySelectorAll(".nav-child, .nav-section > .nav-button[data-view]").forEach((item) => {
+        item.style.display = !query || item.textContent.toLowerCase().includes(query) ? "" : "none";
+      });
+    });
+
+    document.addEventListener("click", (event) => {
+      const toastTarget = event.target.closest("[data-toast]");
+      if (toastTarget) showToast(toastTarget.dataset.toast);
+      if (!event.target.closest(".llm-select-wrap")) {
+        document.querySelectorAll(".llm-select-wrap").forEach((item) => item.classList.remove("is-open"));
+      }
+    });
+
+    document.getElementById("loginButton").addEventListener("click", () => {
+      showToast("登录/注册为静态演示，不会连接后端。");
+    });
+  </script>
+</body>
+</html>
