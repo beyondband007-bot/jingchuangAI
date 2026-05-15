@@ -1,5 +1,7 @@
 import { requestKie } from "./client.js";
 
+const chatTimeoutMs = Number(process.env.KIE_CHAT_TIMEOUT_MS || 5000);
+
 function mapMessage(message) {
   return {
     role: message.role,
@@ -10,6 +12,25 @@ function mapMessage(message) {
       }
     ]
   };
+}
+
+function flattenMessagesForKie(messages) {
+  if (messages.length <= 1) return messages;
+
+  const transcript = messages
+    .map((message) => {
+      if (message.role === "system") return `System: ${message.content}`;
+      if (message.role === "assistant") return `Assistant: ${message.content}`;
+      return `User: ${message.content}`;
+    })
+    .join("\n\n");
+
+  return [
+    {
+      role: "user",
+      content: `Continue the conversation using the transcript below. Answer the latest user message.\n\n${transcript}`
+    }
+  ];
 }
 
 export function extractChatText(record) {
@@ -37,7 +58,7 @@ export function extractKieCredits(record) {
 export async function createKieChatResponse({ model, messages, reasoningEffort }) {
   const body = {
     model: model.provider_model,
-    input: messages.map(mapMessage),
+    input: flattenMessagesForKie(messages).map(mapMessage),
     stream: false
   };
 
@@ -47,6 +68,7 @@ export async function createKieChatResponse({ model, messages, reasoningEffort }
 
   const result = await requestKie("/codex/v1/responses", {
     method: "POST",
+    signal: AbortSignal.timeout(chatTimeoutMs),
     body: JSON.stringify(body)
   });
 

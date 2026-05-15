@@ -57,9 +57,9 @@ export async function getDemoUser(connection) {
     };
   }
 
-  const user = await findUserByExternalId(GUEST_USER, connection);
+  const user = await findUserByExternalId(DEMO_USER, connection);
   if (!user) {
-    throw new Error("guest-user not initialized. Run npm run db:init first.");
+    throw new Error("demo-user not initialized. Run npm run db:init first.");
   }
   return {
     id: user.id,

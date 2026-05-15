@@ -42,8 +42,10 @@ export function validateChatPayload({ model, messages, reasoningEffort = "none" 
 
 export function normalizeMessages(messages) {
   if (!Array.isArray(messages)) return [];
-  return messages.map((message) => ({
-    role: message.role,
-    content: typeof message.content === "string" ? message.content.trim() : ""
-  }));
+  return messages
+    .map((message) => ({
+      role: message.role,
+      content: typeof message.content === "string" ? message.content.trim() : ""
+    }))
+    .filter((message) => allowedRoles.has(message.role) && message.content);
 }

@@ -1477,6 +1477,16 @@ function VideoGenerationView() {
 }
 
 const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
+const chatContextRoles = new Set(["system", "user", "assistant"]);
+
+function toChatContext(messages) {
+  return messages
+    .filter((message) => message.status !== "failed" && chatContextRoles.has(message.role) && message.content?.trim())
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim()
+    }));
+}
 
 function ChatCanvas({ messages, isSubmitting, error }) {
   if (!messages.length && !isSubmitting && !error) {
@@ -1729,10 +1739,7 @@ function ChatGenerationView() {
         conversationId,
         model,
         reasoningEffort,
-        messages: nextMessages.map((message) => ({
-          role: message.role,
-          content: message.content
-        }))
+        messages: toChatContext(nextMessages)
       });
       setConversationId(result.conversationId);
       setMessages((current) => [...current, result.message]);

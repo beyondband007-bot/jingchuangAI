@@ -1,5 +1,6 @@
 import { getPool } from "../../db/pool.js";
 import { createKieChatResponse } from "../../providers/kie/chat.js";
+import { createQwenChatResponse } from "../../providers/qwen/chat.js";
 import { debitCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
@@ -28,6 +29,23 @@ function calculatePoints(model, kieCreditsConsumed) {
   const credits = Number(kieCreditsConsumed || 0);
   const multiplier = Number(model.points_per_kie_credit || 4);
   return Math.max(1, Math.ceil(credits * multiplier));
+}
+
+async function createProviderChatResponse({ model, messages, reasoningEffort }) {
+  try {
+    return await createKieChatResponse({ model, messages, reasoningEffort });
+  } catch (kieError) {
+    console.error("KIE chat response failed:", kieError.message, kieError.body || "");
+    try {
+      return await createQwenChatResponse({ messages, reasoningEffort });
+    } catch (qwenError) {
+      console.error("Qwen chat fallback failed:", qwenError.message, qwenError.body || "");
+      const error = new Error(`KIE failed: ${kieError.message}; Qwen fallback failed: ${qwenError.message}`);
+      error.status = qwenError.status || kieError.status || 502;
+      error.body = { kie: kieError.body || null, qwen: qwenError.body || null };
+      throw error;
+    }
+  }
 }
 
 export async function getModels() {
@@ -113,13 +131,12 @@ export async function sendMessage(payload) {
 
   let provider;
   try {
-    provider = await createKieChatResponse({
+    provider = await createProviderChatResponse({
       model: modelPrice,
       messages,
       reasoningEffort
     });
   } catch (error) {
-    console.error("KIE chat response failed:", error.message, error.body || "");
     const failConnection = await pool.getConnection();
     try {
       await failConnection.beginTransaction();
