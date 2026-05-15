@@ -9844,6 +9844,8 @@ select {
 
 .feature-brand {
   min-height: 66px !important;
+  align-items: baseline !important;
+  gap: 4px !important;
   padding: 0 16px !important;
   color: #fff !important;
   border-bottom-color: #262626 !important;
@@ -9864,6 +9866,18 @@ select {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: brand-gradient-shift 5s ease-in-out infinite;
+  transform: translateY(30px);
+}
+
+.feature-brand-beta {
+  display: inline-block;
+  color: #a855f7;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transform: translateY(30px);
 }
 
 @keyframes brand-gradient-shift {

@@ -398,6 +398,7 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
     <aside className="feature-sidebar">
       <div className="feature-brand">
         <span className="feature-brand-text">Getrue.ai</span>
+        <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
         <Search size={16} />

@@ -468,6 +468,66 @@
       pointer-events: none;
       background: linear-gradient(145deg, rgba(244, 114, 182, 0.14), transparent 50%);
     }
+    .case-preview {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .case-preview.is-open { display: flex; }
+    .case-preview-dialog {
+      position: relative;
+      display: grid;
+      gap: 12px;
+      width: min(1120px, 100%);
+      max-height: calc(100vh - 56px);
+    }
+    .case-preview-image {
+      display: block;
+      width: 100%;
+      max-height: calc(100vh - 132px);
+      object-fit: contain;
+      background: #0b0b0c;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
+    }
+    .case-preview-caption {
+      justify-self: center;
+      max-width: min(760px, 100%);
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: center;
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+    }
+    .case-preview-close {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(20, 20, 22, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.38);
+    }
+    .case-preview-close:hover {
+      color: #fff;
+      background: rgba(45, 45, 48, 0.96);
+    }
     @media (prefers-reduced-motion: reduce) {
       .arc-card-shell { transition-duration: 0.06s; }
     }
@@ -660,10 +720,18 @@
     </div>
   </main>
 </div>
+<div class="case-preview" id="casePreview" aria-hidden="true">
+  <div class="case-preview-dialog" role="dialog" aria-modal="true" aria-label="案例图片预览">
+    <button class="case-preview-close" id="casePreviewClose" type="button" aria-label="关闭预览">×</button>
+    <img class="case-preview-image" id="casePreviewImage" src="" alt="">
+    <div class="case-preview-caption" id="casePreviewCaption"></div>
+  </div>
+</div>
 <script>
 function toggleNav(btn){document.querySelectorAll(".nav-section--collapsible .nav-item").forEach(function(b){if(b!==btn){b.classList.remove("is-open");var ch=b.nextElementSibling;if(ch&&ch.classList.contains("nav-children"))ch.classList.remove("is-open")}});btn.classList.toggle("is-open");var ch=btn.nextElementSibling;if(ch&&ch.classList.contains("nav-children"))ch.classList.toggle("is-open")}
 document.querySelectorAll(".nav-item").forEach(item=>{item.addEventListener("click",e=>{if(e.target.closest(".nav-children"))return;const ch=item.nextElementSibling;if(!ch||!ch.classList.contains("nav-children")){document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("is-active"));document.querySelectorAll(".nav-child-item").forEach(i=>i.classList.remove("is-active"));item.classList.add("is-active")}}) });
 document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListener("click",e=>{e.preventDefault();document.querySelectorAll(".nav-child-item").forEach(i=>i.classList.remove("is-active"));document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("is-active"));item.classList.add("is-active");var sec=item.closest(".nav-section");if(!sec)return;var p=sec.querySelector(".nav-item");if(p)p.classList.add("is-active")}) });
+(function(){var preview=document.getElementById("casePreview");var previewImg=document.getElementById("casePreviewImage");var previewCaption=document.getElementById("casePreviewCaption");var closeBtn=document.getElementById("casePreviewClose");function closePreview(){preview.classList.remove("is-open");preview.setAttribute("aria-hidden","true");previewImg.removeAttribute("src");previewImg.alt=""}document.querySelectorAll(".case-wall-item").forEach(function(item){item.addEventListener("click",function(event){event.preventDefault();var img=item.querySelector("img");if(!img)return;var caption=item.querySelector(".case-wall-caption");previewImg.src=img.currentSrc||img.src;previewImg.alt=img.alt||item.title||"案例图片预览";previewCaption.textContent=(caption&&caption.textContent)||item.title||"";preview.classList.add("is-open");preview.setAttribute("aria-hidden","false")})});closeBtn.addEventListener("click",closePreview);preview.addEventListener("click",function(event){if(event.target===preview)closePreview()});document.addEventListener("keydown",function(event){if(event.key==="Escape"&&preview.classList.contains("is-open"))closePreview()})})();
 (function(){var tabs=document.querySelectorAll(".case-wall-tabs button");var items=document.querySelectorAll(".case-wall-item");tabs.forEach(function(tab){tab.addEventListener("click",function(){tabs.forEach(function(t){t.classList.remove("is-active")});tab.classList.add("is-active");var key=tab.getAttribute("data-filter")||"all";items.forEach(function(el){var cats=(el.getAttribute("data-cats")||"").split(/\s+/).filter(Boolean);el.style.display=(key==="all"||cats.indexOf(key)>=0)?"":"none"})})})})();
 
 // 功能模块：弧形扇面（单面 7 张对称）+ 整块区域响应滚轮
