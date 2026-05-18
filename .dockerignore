@@ -1,0 +1,11 @@
+.git
+.claude
+.cursor
+**/node_modules
+**/dist
+**/build
+**/.vite
+**/*.log
+**/.env
+**/.env.*
+backend/storage
