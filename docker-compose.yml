@@ -1,7 +1,6 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: jingchuang-ai-mysql
     restart: unless-stopped
     ports:
       - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_HOST_PORT:-3308}:3306"
@@ -20,7 +19,6 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    container_name: jingchuang-ai-backend
     restart: unless-stopped
     depends_on:
       mysql:
@@ -89,7 +87,6 @@ services:
       context: ./frontend-app
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL-}
-    container_name: jingchuang-ai-frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -97,6 +94,21 @@ services:
     ports:
       - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8088}:80"
 
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_started
+    ports:
+      - "${CADDY_BIND_ADDRESS:-127.0.0.1}:${CADDY_HTTP_PORT:-9080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - jingchuang_ai_caddy_data:/data
+      - jingchuang_ai_caddy_config:/config
+
 volumes:
   jingchuang_ai_mysql_data:
   jingchuang_ai_media:
+  jingchuang_ai_caddy_data:
+  jingchuang_ai_caddy_config:

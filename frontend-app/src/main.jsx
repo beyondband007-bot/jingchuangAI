@@ -101,7 +101,7 @@ const navSections = [
   { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
   { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
   { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
-  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getrueai.com/portal/index.html" }
 ];
 
 const homeFeatureRoutes = [
@@ -125,8 +125,6 @@ const homeFeatureRoutes = [
 ];
 
 const appEntryStorageKey = "jingchuang:enter-app";
-const originalFetch = window.fetch.bind(window);
-window.fetch = (input, init = {}) => originalFetch(input, { credentials: "include", ...init });
 const featureNavIds = navItems.map((item) => item.id).filter((id) => id !== "home");
 const featureNavIdSet = new Set(featureNavIds);
 const appNavIdSet = new Set(navItems.map((item) => item.id));
