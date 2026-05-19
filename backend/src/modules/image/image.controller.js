@@ -1,5 +1,5 @@
 import { sendError } from "../../shared/http.js";
-import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite } from "./image.service.js";
+import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite, uploadReferenceImage } from "./image.service.js";
 
 export async function getImageModels(_req, res) {
   try {
@@ -21,6 +21,14 @@ export async function createImageTask(req, res) {
   try {
     const task = await createTask(req.body, req.user.id);
     res.status(201).json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadImageReference(req, res) {
+  try {
+    res.status(201).json(await uploadReferenceImage({ file: req.file }));
   } catch (error) {
     sendError(res, error);
   }

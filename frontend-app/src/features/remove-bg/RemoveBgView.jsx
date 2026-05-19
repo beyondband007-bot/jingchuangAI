@@ -329,8 +329,10 @@ export function RemoveBgView() {
       const task = await removeBgApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+      removeBgApi.getCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建去背景任务失败");
+      removeBgApi.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }

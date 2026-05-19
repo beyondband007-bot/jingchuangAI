@@ -116,6 +116,7 @@ async function createTables() {
       cost_points INT NOT NULL,
       status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
       provider_task_id VARCHAR(160) NULL,
+      reference_image_url TEXT NULL,
       result_urls JSON NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
@@ -147,6 +148,16 @@ async function createTables() {
   );
   if (sourceColumns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'image' AFTER user_id");
+  }
+
+  const [referenceImageUrlColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'reference_image_url'`,
+    [config.db.database]
+  );
+  if (referenceImageUrlColumns.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN reference_image_url TEXT NULL AFTER provider_task_id");
   }
 
   await pool.query(`
@@ -735,6 +746,7 @@ async function seedDemoData() {
     await connection.query(`
       INSERT INTO image_model_prices (model_key, display_name, base_points, enabled)
       VALUES
+        ('gpt_image_1_5_i2i', 'GPT Image 1.5 图生图', 35, TRUE),
         ('gpt_image_2', 'GPT Image 2', 35, TRUE),
         ('four_o_image', '4o Image', 21, FALSE),
         ('nano_banana_pro', 'Nano Banana Pro', 63, TRUE),

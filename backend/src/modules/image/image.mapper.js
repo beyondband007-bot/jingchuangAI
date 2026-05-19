@@ -30,6 +30,7 @@ export function mapImageTask(row) {
     price: `${row.cost_points} 积分`,
     points: row.cost_points,
     prompt: row.prompt,
+    referenceImageUrl: row.reference_image_url || null,
     image: urls[0] || null,
     grid: row.image_count > 1,
     status: row.status,

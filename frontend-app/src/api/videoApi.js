@@ -37,6 +37,11 @@ export const videoApi = {
     return creditsPromise;
   },
 
+  async refreshCredits() {
+    creditsPromise = request("/api/me/credits");
+    return creditsPromise;
+  },
+
   async getModels() {
     modelsPromise ||= request("/api/video/models");
     return modelsPromise;

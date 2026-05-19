@@ -382,8 +382,10 @@ export function EnhanceView() {
       const task = await enhanceApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+      enhanceApi.getCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建增强任务失败");
+      enhanceApi.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }

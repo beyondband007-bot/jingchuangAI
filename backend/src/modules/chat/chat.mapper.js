@@ -37,6 +37,8 @@ export function mapChatConversation(row) {
 }
 
 export function mapChatMessage(row) {
+  const points = Number(row.cost_points || 0);
+  const kieCreditsConsumed = Number(row.kie_credits_consumed || 0);
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -44,8 +46,9 @@ export function mapChatMessage(row) {
     content: row.content,
     modelKey: row.model_key || null,
     status: row.status,
-    points: Number(row.cost_points || 0),
-    kieCreditsConsumed: Number(row.kie_credits_consumed || 0),
+    points,
+    price: points ? `${points} 积分` : null,
+    kieCreditsConsumed,
     usage: parseJson(row.usage_json, null),
     error: row.error_message || null,
     time: displayTime(row.created_at)
