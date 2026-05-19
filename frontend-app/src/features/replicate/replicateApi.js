@@ -5,6 +5,10 @@ export const replicateApi = {
     return request("/api/replicate/tasks");
   },
 
+  async getTask(id) {
+    return request(`/api/replicate/tasks/${encodeURIComponent(id)}`);
+  },
+
   async analyzeImage(file, fileName) {
     const formData = new FormData();
     formData.append("image", file, fileName);

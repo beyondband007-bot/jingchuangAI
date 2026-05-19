@@ -5,7 +5,14 @@ import { spawn } from "child_process";
 import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax, analyzeVideoFramesWithMinimax } from "../../providers/minimax/vision.js";
 import { createHttpError } from "../../shared/http.js";
-import { createReplicateTaskRow, listReplicateTaskRows } from "./replicate.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
+import {
+  completeReplicateTaskRow,
+  createReplicateTaskRow,
+  failReplicateTaskRow,
+  findReplicateTaskRow,
+  listReplicateTaskRows
+} from "./replicate.repository.js";
 
 const maxImageBytes = 20 * 1024 * 1024;
 const maxVideoBytes = 100 * 1024 * 1024;
@@ -46,6 +53,8 @@ function mapReplicateTask(row) {
     model: row.model || "",
     frameCount: row.frame_count || undefined,
     favorite: Boolean(row.favorite),
+    status: row.status || (row.prompt ? "completed" : "processing"),
+    error: row.error_message || "",
     createdAt: formatBeijingDateTime(row.created_at)
   };
 }
@@ -88,7 +97,6 @@ import sys
 import cv2
 import os
 import base64
-import { formatBeijingDateTime } from "../../shared/time.js";
 
 video_path = sys.argv[1]
 output_dir = sys.argv[2]
@@ -209,54 +217,106 @@ export async function getRecentReplicates(userId) {
   return rows.map(mapReplicateTask);
 }
 
-export async function analyzeImage({ file, userId }) {
-  assertImageFile(file);
+export async function getReplicateTask(id, userId) {
+  const row = await findReplicateTaskRow({ id, userId });
+  return row ? mapReplicateTask(row) : null;
+}
 
-  const imageBase64 = Buffer.from(file.buffer).toString("base64");
-  const result = await analyzeImageWithMinimax({
-    imageBase64,
-    mimeType: file.mimetype || "image/jpeg"
-  });
+function cleanAnalysisError(error) {
+  const message = String(error?.message || "Analysis failed. Please try again later.");
+  if (/<html|<\/html>|nginx|Gateway Time-out|Bad Gateway|502|504/i.test(message)) {
+    return "Upstream vision analysis service is temporarily unavailable. Please try again later.";
+  }
+  return message;
+}
 
-  const replicate = {
-    id: `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`,
-    source: "image",
-    fileName: file.originalname,
-    prompt: result.prompt,
-    description: result.description,
+async function finishReplicateTask(taskId, result) {
+  const prompt = String(result.prompt || "").trim();
+  const description = String(result.description || "").trim();
+  if (!prompt && !description) {
+    await failReplicateTaskRow(taskId, "Vision analysis finished without a prompt. Please try again.");
+    return;
+  }
+
+  await completeReplicateTaskRow({
+    id: taskId,
+    prompt,
+    description,
     style: result.style,
     mood: result.mood,
     tags: result.tags,
-    model: result.model,
-    createdAt: formatBeijingDateTime()
-  };
+    frameCount: result.frameCount,
+    model: result.model
+  });
+}
 
-  await createReplicateTaskRow({ ...replicate, userId });
+async function runImageAnalysis(taskId, file) {
+  try {
+    const imageBase64 = Buffer.from(file.buffer).toString("base64");
+    const result = await analyzeImageWithMinimax({
+      imageBase64,
+      mimeType: file.mimetype || "image/jpeg"
+    });
+    await finishReplicateTask(taskId, result);
+  } catch (error) {
+    await failReplicateTaskRow(taskId, cleanAnalysisError(error));
+  }
+}
 
-  return replicate;
+async function runVideoAnalysis(taskId, file) {
+  try {
+    const { framesBase64 } = await extractVideoFrames(file.buffer, file.originalname);
+    const result = await analyzeVideoFramesWithMinimax({ framesBase64 });
+    await finishReplicateTask(taskId, result);
+  } catch (error) {
+    await failReplicateTaskRow(taskId, cleanAnalysisError(error));
+  }
+}
+
+export async function analyzeImage({ file, userId }) {
+  assertImageFile(file);
+
+  const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  await createReplicateTaskRow({
+    id: taskId,
+    userId,
+    source: "image",
+    fileName: file.originalname
+  });
+
+  runImageAnalysis(taskId, file).catch((error) => {
+    console.error("background image replicate analysis failed:", error);
+  });
+
+  return mapReplicateTask({
+    id: taskId,
+    source: "image",
+    file_name: file.originalname,
+    status: "processing",
+    created_at: new Date()
+  });
 }
 
 export async function analyzeVideo({ file, userId }) {
   assertVideoFile(file);
 
-  const { framesBase64 } = await extractVideoFrames(file.buffer, file.originalname);
-  const result = await analyzeVideoFramesWithMinimax({ framesBase64 });
-
-  const replicate = {
-    id: `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`,
+  const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  await createReplicateTaskRow({
+    id: taskId,
+    userId,
     source: "video",
-    fileName: file.originalname,
-    prompt: result.prompt,
-    description: result.description,
-    style: result.style,
-    mood: result.mood,
-    tags: result.tags,
-    frameCount: result.frameCount,
-    model: result.model,
-    createdAt: formatBeijingDateTime()
-  };
+    fileName: file.originalname
+  });
 
-  await createReplicateTaskRow({ ...replicate, userId });
+  runVideoAnalysis(taskId, file).catch((error) => {
+    console.error("background video replicate analysis failed:", error);
+  });
 
-  return replicate;
+  return mapReplicateTask({
+    id: taskId,
+    source: "video",
+    file_name: file.originalname,
+    status: "processing",
+    created_at: new Date()
+  });
 }

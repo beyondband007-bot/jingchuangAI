@@ -16,6 +16,14 @@ export const musicApi = {
     }));
   },
 
+  async getTask(id) {
+    const item = await request(`/api/music/tasks/${encodeURIComponent(id)}`);
+    return {
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl)
+    };
+  },
+
   async generate({ prompt, lyrics, model = "music-2.6-free", isInstrumental, lyricsOptimizer }) {
     const result = await request("/api/music/generate", {
       method: "POST",

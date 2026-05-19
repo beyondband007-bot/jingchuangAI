@@ -4,7 +4,8 @@ import {
   analyzeImage,
   analyzeVideo,
   getConfig,
-  getRecent
+  getRecent,
+  getTask
 } from "./replicate.controller.js";
 
 export const replicateRouter = Router();
@@ -44,5 +45,6 @@ function uploadVideoSingle(req, res, next) {
 replicateRouter.get("/config", getConfig);
 replicateRouter.get("/recent", getRecent);
 replicateRouter.get("/tasks", getRecent);
+replicateRouter.get("/tasks/:id", getTask);
 replicateRouter.post("/analyze-image", uploadImageSingle, analyzeImage);
 replicateRouter.post("/analyze-video", uploadVideoSingle, analyzeVideo);

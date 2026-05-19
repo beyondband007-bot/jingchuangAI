@@ -2,24 +2,24 @@ import { requestMinimax } from "./client.js";
 
 const visionModel = "MiniMax-Text-01";
 
-const imagePrompt = `Analyze the uploaded image and reverse-engineer a reusable AI generation prompt.
-Return ONLY valid JSON with this exact shape:
+const imagePrompt = `请直接观察上传的图片，反推出可复用的中文 AI 生成提示词。
+只返回合法 JSON，不要输出 Markdown，不要解释。格式如下：
 {
-  "description": "Chinese description of the visible subject, scene, composition, color, lighting, and details.",
-  "style": "Chinese summary of the visual style.",
-  "mood": "Chinese summary of the mood or atmosphere.",
-  "prompt": "English generation prompt, comma-separated, directly usable in image/video generation tools.",
-  "tags": ["tag1", "tag2", "tag3"]
+  "description": "用中文客观描述图片中真实可见的主体、场景、构图、色彩、光线和细节。不要编造图片里没有的内容。",
+  "style": "用中文概括视觉风格。",
+  "mood": "用中文概括情绪和氛围。",
+  "prompt": "中文 AI 生成提示词，逗号分隔，可直接用于图像或视频生成，必须忠实于图片真实内容。",
+  "tags": ["中文标签1", "中文标签2", "中文标签3"]
 }`;
 
-const videoFramePrompt = `Analyze this video frame and reverse-engineer generation prompt details.
-Return ONLY valid JSON with this exact shape:
+const videoFramePrompt = `请直接观察这个视频帧，反推出可复用的中文 AI 生成提示词片段。
+只返回合法 JSON，不要输出 Markdown，不要解释。格式如下：
 {
-  "description": "Chinese description of this frame.",
-  "style": "Chinese summary of the visual style.",
-  "mood": "Chinese summary of the mood or atmosphere.",
-  "prompt": "English prompt fragment for recreating this frame.",
-  "tags": ["tag1", "tag2", "tag3"]
+  "description": "用中文客观描述当前帧真实可见的主体、场景、构图、色彩、光线和细节。不要编造画面里没有的内容。",
+  "style": "用中文概括当前帧的视觉风格。",
+  "mood": "用中文概括当前帧的情绪和氛围。",
+  "prompt": "中文 AI 生成提示词片段，必须忠实于当前帧真实内容。",
+  "tags": ["中文标签1", "中文标签2", "中文标签3"]
 }`;
 
 function buildVisionMessage({ imageBase64, mimeType = "image/jpeg", isVideoFrame = false }) {
@@ -29,11 +29,22 @@ function buildVisionMessage({ imageBase64, mimeType = "image/jpeg", isVideoFrame
       {
         role: "system",
         content:
-          "You are a professional visual prompt engineer. Extract concrete visual details and produce concise, reusable generation prompts."
+          "你是专业的视觉提示词工程师。必须基于用户上传的真实图像内容分析，不要凭空想象，不要使用英文输出。"
       },
       {
         role: "user",
-        content: `${isVideoFrame ? videoFramePrompt : imagePrompt}\n\n[image_base64:${mimeType};base64,${imageBase64}]`
+        content: [
+          {
+            type: "text",
+            text: isVideoFrame ? videoFramePrompt : imagePrompt
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${imageBase64}`
+            }
+          }
+        ]
       }
     ]
   };
@@ -175,8 +186,8 @@ export async function analyzeVideoFramesWithMinimax({ framesBase64 }) {
   const uniqueTags = Array.from(new Set(frameAnalyses.flatMap((analysis) => analysis.tags))).slice(0, 10);
 
   return {
-    fullText: frameAnalyses.map((analysis, index) => `Frame ${index + 1}:\n${analysis.fullText}`).join("\n\n"),
-    prompt: allPrompts.length > 1 ? `Video sequence, ${allPrompts.join("; ")}` : allPrompts[0] || "",
+    fullText: frameAnalyses.map((analysis, index) => `第 ${index + 1} 帧：\n${analysis.fullText}`).join("\n\n"),
+    prompt: allPrompts.length > 1 ? `视频序列，${allPrompts.join("；")}` : allPrompts[0] || "",
     description: allDescriptions.join("；"),
     style: frameAnalyses[0]?.style || "",
     mood: frameAnalyses[0]?.mood || "",

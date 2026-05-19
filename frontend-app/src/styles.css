@@ -892,9 +892,9 @@ input, textarea, button {
   min-height: 170px;
   resize: vertical;
   padding: 12px;
-  color: #16395c;
-  background: #fff;
-  border: 1px solid #dbe7f3;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -902,9 +902,9 @@ input, textarea, button {
 .replicate-description p {
   margin: 0;
   padding: 12px;
-  color: #35516e;
-  background: #fff;
-  border: 1px solid #dbe7f3;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   line-height: 1.6;
 }
@@ -9208,6 +9208,12 @@ select option:disabled {
 .chat-composer .price-pill {
   color: var(--text-primary);
   background: transparent;
+  border-color: var(--app-border);
+}
+
+.feature-page-shell .replicate-description p {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
   border-color: var(--app-border);
 }
 
