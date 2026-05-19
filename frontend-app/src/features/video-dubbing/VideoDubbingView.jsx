@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { videoDubbingApi } from "./videoDubbingApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
 
@@ -57,7 +58,7 @@ function readVideoDuration(file) {
 }
 
 function makeDownloadName(prefix = "video-dub", ext = "mp4") {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.${ext}`;
 }
 
@@ -189,7 +190,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
         <strong>{item.sourceFileName || "视频配音"}</strong>
         <span>
           {item.createdAt
-            ? new Date(item.createdAt).toLocaleString("zh-CN", { hour12: false })
+            ? formatBeijingDateTime(item.createdAt)
             : ""}
           {item.error ? ` · ${item.error}` : ""}
         </span>

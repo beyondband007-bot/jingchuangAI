@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
 import { voiceConvertApi } from "./voiceConvertApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 
@@ -36,7 +37,7 @@ function readAudioDuration(file) {
 }
 
 function makeVoiceDownloadName(prefix = "voice-convert") {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.mp3`;
 }
 
@@ -253,7 +254,7 @@ export function VoiceConvertView() {
         audioUrl: result.audioUrl || "",
         audioDataUrl: result.audioDataUrl || "",
         fileName,
-        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+        createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
       setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速" : "转换完成");

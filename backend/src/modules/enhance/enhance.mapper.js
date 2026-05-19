@@ -1,11 +1,4 @@
-function displayTime(dateValue) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(dateValue));
-}
-
+import { formatBeijingClock } from "../../shared/time.js";
 export function mapEnhanceAsset(row) {
   if (!row) return null;
   return {
@@ -42,6 +35,6 @@ export function mapEnhanceTask(row) {
     error: row.error_message || "",
     points,
     price: `${points} \u79ef\u5206`,
-    time: displayTime(row.created_at)
+    time: formatBeijingClock(row.created_at)
   };
 }

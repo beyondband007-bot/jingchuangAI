@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, Download, FileImage, FileVideo, Loader2, Sparkles, Star, Upload, X } from "lucide-react";
 import { replicateApi } from "./replicateApi";
+import { formatBeijingDateTime } from "../../utils/time";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
 
@@ -191,7 +192,7 @@ export function ReplicateView() {
         tags: data.tags || [],
         source: data.source || mode,
         fileName: data.fileName || file.name,
-        createdAt: data.createdAt || new Date().toLocaleString("zh-CN", { hour12: false })
+        createdAt: data.createdAt || formatBeijingDateTime()
       };
 
       setCurrentResult(result);

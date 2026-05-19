@@ -23,11 +23,6 @@ function getExt(fileName = "") {
   return match ? match[0] : "";
 }
 
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
-}
-
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -51,7 +46,7 @@ function mapReplicateTask(row) {
     model: row.model || "",
     frameCount: row.frame_count || undefined,
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -93,6 +88,7 @@ import sys
 import cv2
 import os
 import base64
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 video_path = sys.argv[1]
 output_dir = sys.argv[2]
@@ -232,7 +228,7 @@ export async function analyzeImage({ file, userId }) {
     mood: result.mood,
     tags: result.tags,
     model: result.model,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createReplicateTaskRow({ ...replicate, userId });
@@ -257,7 +253,7 @@ export async function analyzeVideo({ file, userId }) {
     tags: result.tags,
     frameCount: result.frameCount,
     model: result.model,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createReplicateTaskRow({ ...replicate, userId });

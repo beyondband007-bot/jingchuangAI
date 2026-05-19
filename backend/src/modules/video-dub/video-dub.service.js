@@ -3,6 +3,7 @@ import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
 import { createHttpError } from "../../shared/http.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 import { analyzeFramesWithQwen } from "../../providers/qwen/video.js";
 import { extractKeyFrames, composeFinalVideo, getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
@@ -123,7 +124,7 @@ export async function uploadVideo({ file }) {
     bgm: null,
     result: null,
     error: null,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   tasks.set(taskId, task);

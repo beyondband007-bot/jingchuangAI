@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
 import { voiceApi } from "./voiceApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voicePreviewText = "欢迎使用鲸创 AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
@@ -37,7 +38,7 @@ function readAudioDuration(file) {
 }
 
 function makeVoiceDownloadName(prefix = "voice-synthesis") {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.mp3`;
 }
 
@@ -264,7 +265,7 @@ export function VoiceSynthesisView() {
         audioUrl: result.audioUrl || "",
         audioDataUrl: result.audioDataUrl || "",
         fileName,
-        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+        createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
       setNotice("语音生成完成");
@@ -417,7 +418,17 @@ export function VoiceSynthesisView() {
 
           <label className="voice-textarea-field">
             <span>合成文本</span>
-            <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="输入要用目标音色朗读的内容" />
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  generateSpeech();
+                }
+              }}
+              placeholder="输入要用目标音色朗读的内容"
+            />
           </label>
 
           <div className="voice-slider-row">

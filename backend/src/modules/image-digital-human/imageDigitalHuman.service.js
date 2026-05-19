@@ -11,6 +11,7 @@ import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { voices } from "../digital-human/digitalHuman.data.js";
 import {
@@ -35,15 +36,11 @@ const maxTextLength = 2000;
 const ttsEmotionOptions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
 
 function nowLabel(date = new Date()) {
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatBeijingDateTime(date);
 }
 
 function displayTime(value) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(value));
+  return formatBeijingClock(value);
 }
 
 function estimateSeconds(text = "") {

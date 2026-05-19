@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Download, FileAudio, FileText, Loader2, Music, Pause, Play, Sparkles, Star } from "lucide-react";
 import { musicApi } from "./musicApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -21,7 +22,7 @@ function loadRecentResults() {
 }
 
 function makeFileName(prefix, ext) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.${ext}`;
 }
 
@@ -86,6 +87,12 @@ function MusicComposer({
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           disabled={isGenerating}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onGenerate();
+            }
+          }}
         />
       </div>
 
@@ -226,7 +233,7 @@ export function MusicGenerationView() {
         audioUrl: data.audioUrl || "",
         durationMs: data.durationMs || 0,
         traceId: data.traceId || "",
-        createdAt: data.createdAt || new Date().toLocaleString("zh-CN", { hour12: false })
+        createdAt: data.createdAt || formatBeijingDateTime()
       };
 
       setCurrentResult(result);

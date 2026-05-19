@@ -6490,14 +6490,15 @@ a:hover {
 
 .motion-upload-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .motion-upload-slot {
   position: relative;
   display: grid;
-  min-height: 88px;
+  min-width: 0;
+  min-height: 96px;
   place-items: center;
   align-content: center;
   gap: 6px;
@@ -6510,18 +6511,23 @@ a:hover {
 }
 
 .motion-upload-slot.has-preview {
-  min-height: 140px;
+  min-height: clamp(150px, 18vw, 220px);
   padding: 0;
   border-style: solid;
+}
+
+.motion-upload-slot.is-video.has-preview {
+  min-height: clamp(180px, 24vw, 280px);
 }
 
 .motion-upload-slot img,
 .motion-upload-slot video {
   display: block;
   width: 100%;
-  height: 140px;
+  height: 100%;
+  min-height: inherit;
   object-fit: contain;
-  background: #edf5fd;
+  background: #05070c;
 }
 
 .motion-upload-slot strong {
@@ -6664,7 +6670,7 @@ a:hover {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #97b6d1;
+  background: #05070c;
   border: 1px solid rgba(132, 178, 224, 0.8);
   border-radius: 8px;
   box-shadow: 0 16px 42px rgba(30, 83, 141, 0.18);
@@ -6673,7 +6679,8 @@ a:hover {
 .motion-result-player video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #05070c;
 }
 
 .motion-result-copy {
@@ -6733,14 +6740,15 @@ a:hover {
   aspect-ratio: 16 / 9;
   margin: 12px 12px 0;
   overflow: hidden;
-  background: #9fb6cc;
+  background: #05070c;
   border-radius: 7px;
 }
 
 .motion-task-preview video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: #05070c;
 }
 
 .motion-task-placeholder {
@@ -9627,6 +9635,24 @@ select option:disabled {
   background: rgba(255, 255, 255, 0.07);
   border-color: var(--app-border);
   box-shadow: none;
+}
+
+.feature-page-shell :is(
+  .motion-upload-slot.has-preview,
+  .motion-result-player,
+  .motion-task-preview
+) {
+  background: #05070c;
+}
+
+.feature-page-shell :is(
+  .motion-upload-slot img,
+  .motion-upload-slot video,
+  .motion-result-player video,
+  .motion-task-preview video
+) {
+  object-fit: contain;
+  background: #05070c;
 }
 
 .feature-page-shell :is(

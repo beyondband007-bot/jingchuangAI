@@ -5,14 +5,10 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
 import { createMusicTaskRow, listMusicTaskRows } from "./music.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
-}
-
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
 
 function mapMusicTask(row) {
@@ -30,7 +26,7 @@ function mapMusicTask(row) {
     musicSize: row.music_size || 0,
     traceId: row.trace_id || "",
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -118,7 +114,7 @@ export async function generateMusic(payload, userId) {
     bitrate: result.bitrate,
     musicSize: result.musicSize,
     traceId: result.traceId,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createMusicTaskRow({

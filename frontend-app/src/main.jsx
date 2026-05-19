@@ -1383,6 +1383,12 @@ function VideoComposerBar({ options, onSubmit }) {
             setPrompt(event.target.value);
             if (notice) setNotice("");
           }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submitPrompt();
+            }
+          }}
           placeholder="请描述你想生成的视频..."
         />
       </div>
@@ -2319,7 +2325,18 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       {driveMode === "text" ? (
         <label className="dh-field dh-script-field">
           <span>文本脚本 <small>{text.length} / 2000 · 预计 {estimate} 分钟</small></span>
-          <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} placeholder="请输入数字人要说的话..." />
+          <textarea
+            value={text}
+            maxLength={2000}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="请输入数字人要说的话..."
+          />
         </label>
       ) : (
         <button className="dh-audio-upload" type="button" onClick={() => audioInputRef.current?.click()}>
@@ -2993,6 +3010,12 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             value={text}
             maxLength={options.limits?.maxTextLength || 2000}
             onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submit();
+              }
+            }}
             placeholder="请输入台词，生成语音..."
           />
           <details className="idh-advanced">
@@ -3379,7 +3402,7 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
     onClear?.();
   }
   return (
-    <button className={`motion-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+    <button className={`motion-upload-slot is-${kind} ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
         ref={inputRef}
         type="file"
