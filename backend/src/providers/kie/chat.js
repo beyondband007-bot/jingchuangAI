@@ -59,13 +59,9 @@ export function extractKieCredits(record) {
 function extractStreamDelta(record) {
   const candidates = [
     record?.delta,
-    record?.text,
     record?.output_text_delta,
-    record?.content,
     record?.data?.delta,
-    record?.data?.text,
-    record?.data?.output_text_delta,
-    record?.data?.content
+    record?.data?.output_text_delta
   ];
 
   for (const value of candidates) {
@@ -75,8 +71,7 @@ function extractStreamDelta(record) {
   for (const item of record?.output || []) {
     for (const content of item.content || []) {
       if (typeof content.delta === "string") return content.delta;
-      if (typeof content.text === "string") return content.text;
-      if (typeof content.output_text === "string") return content.output_text;
+      if (typeof content.output_text_delta === "string") return content.output_text_delta;
     }
   }
 
@@ -84,7 +79,32 @@ function extractStreamDelta(record) {
 }
 
 function extractStreamText(record) {
-  return extractChatText(record) || extractStreamDelta(record);
+  if (typeof record?.output_text === "string" && record.output_text) return record.output_text;
+  if (typeof record?.text === "string" && record.text) return record.text;
+  if (typeof record?.content === "string" && record.content) return record.content;
+  if (typeof record?.data?.output_text === "string" && record.data.output_text) return record.data.output_text;
+  if (typeof record?.data?.text === "string" && record.data.text) return record.data.text;
+  if (typeof record?.data?.content === "string" && record.data.content) return record.data.content;
+  return extractChatText(record);
+}
+
+function appendFromSnapshot(current, snapshot) {
+  if (!snapshot) return { text: current, delta: "" };
+  if (!current) return { text: snapshot, delta: snapshot };
+  if (snapshot === current) return { text: current, delta: "" };
+  if (snapshot.startsWith(current)) {
+    return { text: snapshot, delta: snapshot.slice(current.length) };
+  }
+
+  const maxOverlap = Math.min(current.length, snapshot.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    if (current.endsWith(snapshot.slice(0, size))) {
+      const delta = snapshot.slice(size);
+      return { text: current + delta, delta };
+    }
+  }
+
+  return { text: snapshot, delta: snapshot };
 }
 
 function ensureKieKey() {
@@ -186,10 +206,10 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     }
 
     const fullText = extractStreamText(record);
-    if (fullText && fullText !== text) {
-      const nextDelta = fullText.startsWith(text) ? fullText.slice(text.length) : fullText;
-      text = fullText;
-      if (nextDelta) await onDelta(nextDelta);
+    if (fullText) {
+      const next = appendFromSnapshot(text, fullText);
+      text = next.text;
+      if (next.delta) await onDelta(next.delta);
     }
   }
 

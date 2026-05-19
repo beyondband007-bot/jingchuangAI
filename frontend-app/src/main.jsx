@@ -1585,6 +1585,22 @@ function toChatContext(messages) {
     }));
 }
 
+function appendChatStreamChunk(current = "", chunk = "") {
+  if (!chunk) return current;
+  if (!current) return chunk;
+  if (chunk === current) return current;
+  if (chunk.startsWith(current)) return chunk;
+
+  const maxOverlap = Math.min(current.length, chunk.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    if (current.endsWith(chunk.slice(0, size))) {
+      return `${current}${chunk.slice(size)}`;
+    }
+  }
+
+  return `${current}${chunk}`;
+}
+
 function ChatCanvas({ messages, isSubmitting, error }) {
   const hasStreamingMessage = messages.some((message) => message.status === "streaming");
   if (!messages.length && !isSubmitting && !error) {
@@ -1853,7 +1869,7 @@ function ChatGenerationView() {
         onDelta: (delta) => {
           setMessages((current) => current.map((message) => (
             message.id === streamingMessage.id
-              ? { ...message, content: `${message.content}${delta}` }
+              ? { ...message, content: appendChatStreamChunk(message.content, delta) }
               : message
           )));
         }
