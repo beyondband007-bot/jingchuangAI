@@ -148,7 +148,7 @@
       .hero-section { min-height: min(24vh, 240px); }
       .hero-content { padding: 18px 18px 22px; max-width: 100%; }
     }
-    .arc-wheel-zone { width: 75%; max-width: 100%; margin-left: auto; margin-right: auto; margin-bottom: 36px; position: relative; }
+    .arc-wheel-zone { width: min(100%, 1680px); max-width: calc(100vw - 32px); margin-left: auto; margin-right: auto; margin-bottom: 36px; position: relative; }
     .feature-carousel-wrap.module-arc { position: relative; }
     .module-arc { position: relative; margin-bottom: 8px; }
     .module-arc-stage { position: relative; height: min(600px, 90vw); max-height: 700px; margin: 0 auto; overflow: hidden; border-radius: 20px; touch-action: pan-y; background: hsl(var(--background)); isolation: isolate; }
@@ -159,9 +159,9 @@
     .module-arc-pivot { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
     .module-arc-pivot .arc-card-shell { pointer-events: auto; }
     /* 仅由 JS 内 translate(-50%,0) 做水平居中，勿再写 margin-left:-半宽，否则与底部 ::after 光斑中心错位 */
-    .arc-card-shell { position: absolute; left: 50%; bottom: 117px; width: 251px; height: 397px; margin-left: 0; transform-origin: 50% 100%; transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease; }
+    .arc-card-shell { position: absolute; left: 50%; bottom: 117px; width: 251px; height: 397px; margin-left: 0; opacity: 0; pointer-events: none; transform-origin: 50% 100%; transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease; }
     @media (max-width: 540px) {
-      .arc-wheel-zone { width: 92%; }
+      .arc-wheel-zone { width: min(100%, calc(100vw - 20px)); max-width: calc(100vw - 20px); }
       .arc-card-shell { bottom: 104px; width: 227px; height: 359px; }
       .module-arc-stage { height: min(540px, 92vw); max-height: 600px; }
     }
@@ -699,9 +699,24 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
     var n = shells.length;
     if (!n) return;
     var w = stage.clientWidth || 400;
-    var spacing = w < 480 ? 123 : (w < 720 ? 143 : 160);
-    var rotPer = w < 480 ? 6.6 : 8.5;
-    var yPer = 9;
+    var cardW = shells[0].offsetWidth || 251;
+    var cardH = shells[0].offsetHeight || 397;
+    var maxVisibleDistance = Math.min(3, Math.floor((n - 1) / 2));
+    var baseSpacing = w < 480 ? 106 : (w < 720 ? 124 : (w < 1080 ? 108 : (w < 1400 ? 128 : (w < 1560 ? 124 : (w < 1680 ? 138 : 160)))));
+    var minSpacing = w < 480 ? 72 : (w < 720 ? 86 : (w < 1080 ? 104 : 124));
+    var sidePadding = w < 540 ? 8 : (w < 900 ? 18 : 30);
+    var rotPer = w < 480 ? 5.2 : (w < 900 ? 6.4 : (w < 1080 ? 6.2 : (w < 1400 ? 6.8 : (w < 1560 ? 6.7 : (w < 1680 ? 7.4 : 8.5)))));
+    var yPer = w < 480 ? 7 : 9;
+    var outerScale = Math.max(0.74, 1 - maxVisibleDistance * 0.072);
+    var outerRotation = maxVisibleDistance * rotPer * Math.PI / 180;
+    var outerBounds = (cardW * Math.abs(Math.cos(outerRotation)) + cardH * Math.abs(Math.sin(outerRotation))) * outerScale;
+    var safeSpacing = maxVisibleDistance
+      ? (w - sidePadding * 2 - outerBounds) / (maxVisibleDistance * 2)
+      : baseSpacing;
+    var spacing = Math.max(64, Math.min(baseSpacing, safeSpacing));
+    var layoutScale = safeSpacing < minSpacing ? Math.max(0.82, safeSpacing / minSpacing) : 1;
+    if (w < 1080) layoutScale = Math.min(layoutScale, 0.88);
+    else if (w < 1560) layoutScale = Math.min(layoutScale, 0.93);
 
     shells.forEach(function (shell, i) {
       var d = signedDist(i, active, n);
@@ -714,6 +729,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       else if (ad === 2) y += 10;
       var sc = Math.max(0.74, 1 - ad * 0.072);
       if (d === 0) sc *= 1.1;
+      sc *= layoutScale;
       sc = Math.min(sc, 1.14);
 
       if (!visible) {
@@ -750,10 +766,20 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
     }, 4200);
   }
 
+  var wheelCarry = 0;
+  var lastWheelSwitch = 0;
   wheelRoot.addEventListener('wheel', function (e) {
-    if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-    e.preventDefault();
-    go(e.deltaY > 0 ? 1 : -1);
+    var horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+    var delta = horizontal ? e.deltaX : e.deltaY;
+    var now = Date.now();
+
+    if (horizontal) e.preventDefault();
+    wheelCarry += delta;
+    if (Math.abs(wheelCarry) < 72 || now - lastWheelSwitch < 360) return;
+
+    go(wheelCarry > 0 ? 1 : -1);
+    wheelCarry = 0;
+    lastWheelSwitch = now;
   }, { passive: false });
 
   var touchX0 = 0;
@@ -767,7 +793,11 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
 
   window.addEventListener('resize', function () { layout(); });
 
+  shells.forEach(function (shell) { shell.style.transition = 'none'; });
   layout();
+  requestAnimationFrame(function () {
+    shells.forEach(function (shell) { shell.style.transition = ''; });
+  });
 })();
 </script>
 </body>

@@ -306,7 +306,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
 
   return (
     <div className="original-home-shell">
-      <iframe ref={frameRef} className="original-home-frame" title="鲸创AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
+      <iframe ref={frameRef} className="original-home-frame" title="Facemini AI 首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
 });

@@ -9997,7 +9997,7 @@ select option:disabled {
 }
 
 .feature-brand {
-  min-height: 66px !important;
+  min-height: 68px !important;
   align-items: baseline !important;
   gap: 4px !important;
   padding: 0 16px !important;
@@ -10020,7 +10020,7 @@ select option:disabled {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: brand-gradient-shift 5s ease-in-out infinite;
-  transform: translateY(30px);
+  transform: translateY(20px);
 }
 
 .feature-brand-beta {
@@ -10031,7 +10031,7 @@ select option:disabled {
   line-height: 1.15;
   letter-spacing: 0;
   white-space: nowrap;
-  transform: translateY(30px);
+  transform: translateY(17px);
 }
 
 @keyframes brand-gradient-shift {

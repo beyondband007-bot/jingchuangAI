@@ -3,7 +3,7 @@ import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, 
 import { voiceApi } from "./voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
-const voicePreviewText = "欢迎使用鲸创 AI 语音合成，现在开始试听目标音色的自然效果。";
+const voicePreviewText = "欢迎使用Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
 
 function formatVoiceDuration(ms) {
@@ -119,7 +119,7 @@ export function VoiceSynthesisView() {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
-  const [text, setText] = useState("欢迎使用鲸创 AI 语音合成，现在开始生成属于你的专属声音。");
+  const [text, setText] = useState("欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。");
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
