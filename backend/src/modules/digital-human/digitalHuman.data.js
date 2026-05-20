@@ -1,7 +1,7 @@
 export const digitalHumanModels = [
   {
-    value: "kie-wan-r2v",
-    label: "KIE Wan 2.7 R2V 数字人",
+    value: "kling-ai-avatar-pro",
+    label: "Kling AI Avatar Pro",
     provider: "kie",
     basePoints: 30,
     configured: false

@@ -1671,13 +1671,6 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
   const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
-  const inspirationOptions = [
-    "Floating crystal island",
-    "Cyberpunk cityscape",
-    "Ancient temple ruins",
-    "Underwater coral reef",
-    "Alien desert landscape"
-  ];
 
   useEffect(() => {
     if (!model && (options.defaultModel || options.models[0]?.value)) {
@@ -1730,28 +1723,6 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
           <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
             +
           </button>
-          <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "inspiration" ? null : "inspiration"))}>
-              <Sparkles className="bolt" size={16} />
-              <span>Inspiration</span>
-              <ChevronDown size={16} />
-            </button>
-            <div className="llm-menu">
-              {inspirationOptions.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  onClick={() => {
-                    setPrompt(item);
-                    setNotice("");
-                    setOpenMenu(null);
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
             <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
@@ -1948,7 +1919,7 @@ function ChatGenerationView() {
 }
 
 const emptyDigitalHumanOptions = { models: [], defaults: { model: "", driveMode: "text" } };
-const digitalHumanMaxAudioMs = 15000;
+const digitalHumanMaxAudioMs = 5 * 60 * 1000;
 const ttsEmotionOptions = [
   { value: "", label: "自动" },
   { value: "calm", label: "平静" },
@@ -2235,7 +2206,6 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
     if (!voiceId && voices[0]?.id) setVoiceId(voices[0].id);
   }, [model, options, voiceId, voices]);
 
-  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
   const estimate = Math.max(1, Math.ceil(text.length / 180));
   const selectedAvatarIsVideo = /\.(mp4|webm|mov)$/i.test(selectedAvatar?.cover || "");
@@ -2275,7 +2245,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       });
       setNotice(
         durationMs > digitalHumanMaxAudioMs
-          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`
+          ? `当前音频 ${formatDurationMs(durationMs)}，超过 5 分钟，请缩短文本或切片后分段生成`
           : `已生成当前音色试听，视频时长将按音频反推为 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
       );
     } catch (error) {
@@ -2303,7 +2273,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       return;
     }
     if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
-      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`);
+      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 5 分钟，请缩短文本或切片后分段生成`);
       return;
     }
     setNotice("");
@@ -2338,7 +2308,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
         <div>
           <span>当前数字人模板</span>
           <strong>{selectedAvatar?.name || "请先选择左侧模板"}</strong>
-          <small>{selectedAvatar?.description || "模板会作为 KIE 口型视频的 reference_video"}</small>
+          <small>{selectedAvatar?.description || "模板会自动提取形象图并作为 Kling Avatar 的 image_url"}</small>
         </div>
       </div>
       <div className="dh-mode-tabs">
@@ -2396,13 +2366,6 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
         </button>
       )}
       <label className="dh-field">
-        <span>成片模型</span>
-        <select value={model} onChange={(event) => setModel(event.target.value)}>
-          {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
-        {selectedModel && <small>调用模型：{selectedModel.providerModel || selectedModel.value} · {selectedModel.resolution || "720p"}</small>}
-      </label>
-      <label className="dh-field">
         <span>音色</span>
         <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
           {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -2443,7 +2406,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
           {isPreviewCurrent ? (
             <span>
               当前音频 {formatDurationMs(voicePreviewInfo.durationMs)}
-              {currentAudioTooLong ? "，超过 15 秒，需要切片" : `，视频将生成 ${voicePreviewInfo.videoDuration} 秒`}
+              {currentAudioTooLong ? "，超过 5 分钟，需要切片" : `，视频将生成 ${voicePreviewInfo.videoDuration} 秒`}
             </span>
           ) : (
             <span>生成前请先试听当前音色，用真实音频时长反推视频时长</span>
@@ -2710,7 +2673,7 @@ function DigitalHumanGenerationView() {
 const emptyImageDigitalHumanOptions = {
   models: [],
   defaults: { model: "kie-s2v-r2v", driveMode: "text" },
-  limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 }
+  limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 5 * 60 * 1000, maxTextLength: 2000 }
 };
 
 function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
@@ -2935,7 +2898,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
       });
       setNotice(
         durationMs > digitalHumanMaxAudioMs
-          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短台词`
+          ? `当前音频 ${formatDurationMs(durationMs)}，超过 5 分钟，请缩短台词`
           : `已生成试听音频，视频预计 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
       );
     } catch (error) {
@@ -2959,7 +2922,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
       return;
     }
     if (isTooLong) {
-      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒`);
+      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 5 分钟`);
       return;
     }
     setNotice("");

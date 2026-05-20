@@ -1,5 +1,8 @@
-import { access } from "fs/promises";
+import { access, mkdir } from "fs/promises";
+import { execFile } from "child_process";
 import path from "path";
+import { promisify } from "util";
+import ffmpeg from "@ffmpeg-installer/ffmpeg";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
@@ -33,7 +36,9 @@ import {
 
 const myAvatars = [];
 const designedVoices = [];
-const maxDigitalHumanAudioMs = 15000;
+const execFileAsync = promisify(execFile);
+const maxDigitalHumanAudioMs = 5 * 60 * 1000;
+const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 
 function nowLabel(date = new Date()) {
   return formatBeijingDateTime(date);
@@ -54,7 +59,15 @@ function getAudioDurationMs(speech, text = "") {
 }
 
 function getKieDurationSeconds(audioDurationMs) {
-  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+  return Math.max(2, Math.min(300, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+}
+
+function isImagePath(filePath = "") {
+  return /\.(jpe?g|png|webp)$/i.test(filePath);
+}
+
+function isVideoPath(filePath = "") {
+  return /\.(mp4|webm|mov)$/i.test(filePath);
 }
 
 const ttsEmotionOptions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
@@ -132,20 +145,51 @@ async function assertFileExists(filePath, message) {
   }
 }
 
-async function getAvatarProviderUrl(avatar) {
-  if (avatar.providerAssetUrl) return avatar.providerAssetUrl;
-  const assetPath = avatar.assetPath || avatar.cover;
+async function getVideoPosterPath(filePath) {
+  const outputDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatar-frames");
+  await mkdir(outputDir, { recursive: true });
+  const safeName = Buffer.from(filePath).toString("base64url").slice(0, 80);
+  const outputPath = path.join(outputDir, `${safeName}.jpg`);
+
+  try {
+    await access(outputPath);
+    return outputPath;
+  } catch {}
+
+  await execFileAsync(ffmpeg.path, [
+    "-y",
+    "-ss",
+    "0.1",
+    "-i",
+    filePath,
+    "-frames:v",
+    "1",
+    "-q:v",
+    "2",
+    outputPath
+  ]);
+  return outputPath;
+}
+
+async function getAvatarImageProviderUrl(avatar) {
+  if (avatar.providerImageUrl) return avatar.providerImageUrl;
+  const assetPath = avatar.imagePath || avatar.posterPath || avatar.assetPath || avatar.cover;
   if (!assetPath) {
-    throw createHttpError("selected avatar does not have a provider video asset", 400);
+    throw createHttpError("selected avatar does not have an image asset", 400);
   }
 
   const filePath = resolvePublicAssetPath(assetPath);
   await assertFileExists(filePath, `avatar asset not found: ${assetPath}`);
+  const imagePath = isImagePath(filePath) ? filePath : isVideoPath(filePath) ? await getVideoPosterPath(filePath) : "";
+  if (!imagePath) {
+    throw createHttpError("selected avatar asset must be an image or video", 400);
+  }
+
   const upload = await uploadFileToKie({
-    filePath,
-    fileName: path.basename(filePath),
-    mimeType: "video/mp4",
-    uploadPath: "digital-human/avatar"
+    filePath: imagePath,
+    fileName: path.basename(imagePath),
+    mimeType: "image/jpeg",
+    uploadPath: "digital-human/avatar-image"
   });
   return upload.url;
 }
@@ -156,37 +200,34 @@ async function createProviderTask(taskId, payload) {
   const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
   const audioDurationMs = getAudioDurationMs(speech, text);
   if (audioDurationMs > maxDigitalHumanAudioMs) {
-    throw createHttpError("音频时长超过 15 秒，请缩短文本或切片后分段生成", 400);
+    throw createHttpError("音频时长超过 5 分钟，请缩短文本或切片后分段生成", 400);
   }
   const savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
 
   console.log(`[digital-human] task ${taskId}: uploading audio and avatar assets to KIE`);
-  const [audioUpload, avatarProviderUrl] = await Promise.all([
+  const [audioUpload, avatarImageProviderUrl] = await Promise.all([
     uploadFileToKie({
       filePath: savedAudio.filePath,
       fileName: savedAudio.fileName,
       mimeType: savedAudio.mimeType,
       uploadPath: "digital-human/audio"
     }),
-    getAvatarProviderUrl(avatar)
+    getAvatarImageProviderUrl(avatar)
   ]);
 
   console.log(`[digital-human] task ${taskId}: creating KIE ${config.kie.digitalHumanModel} task`);
   const provider = await createKieDigitalHumanTask({
     model: config.kie.digitalHumanModel,
-    prompt: text,
-    referenceVideoUrl: avatarProviderUrl,
-    referenceVoiceUrl: audioUpload.url,
-    ratio: "9:16",
-    resolution: config.kie.digitalHumanResolution,
-    duration: getKieDurationSeconds(audioDurationMs)
+    imageUrl: avatarImageProviderUrl,
+    audioUrl: audioUpload.url,
+    prompt: klingAvatarPrompt
   });
 
   await setDigitalHumanTaskProviderStarted(taskId, {
     providerTaskId: provider.taskId,
     audioUrl: savedAudio.publicPath,
     audioProviderUrl: audioUpload.url,
-    avatarProviderUrl,
+    avatarProviderUrl: avatarImageProviderUrl,
     audioDurationMs
   });
   console.log(`[digital-human] task ${taskId}: KIE task ${provider.taskId} created`);

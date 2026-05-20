@@ -10448,10 +10448,6 @@ select option:disabled {
   white-space: nowrap;
 }
 
-.llm-select .bolt {
-  color: #8b6cff;
-}
-
 .llm-menu {
   position: absolute;
   left: 0;

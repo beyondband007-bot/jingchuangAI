@@ -1,7 +1,6 @@
 import path from "path";
 import { config } from "../../config/index.js";
 import {
-  createKieImageR2VTask,
   createKieSpeechToVideoTask,
   extractKieImageDigitalHumanResult,
   getKieImageDigitalHumanTask,
@@ -30,9 +29,10 @@ import {
 } from "./imageDigitalHuman.repository.js";
 import { getPool } from "../../db/pool.js";
 
-const maxImageDigitalHumanAudioMs = 15000;
+const maxImageDigitalHumanAudioMs = 5 * 60 * 1000;
 const basePoints = 30;
 const maxTextLength = 2000;
+const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 const ttsEmotionOptions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
 
 function nowLabel(date = new Date()) {
@@ -54,7 +54,7 @@ function getAudioDurationMs(speech, text = "") {
 }
 
 function getVideoDurationSeconds(audioDurationMs, text = "") {
-  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000) || estimateSeconds(text)));
+  return Math.max(2, Math.min(300, Math.ceil(Number(audioDurationMs || 0) / 1000) || estimateSeconds(text)));
 }
 
 function normalizeVolume(volume) {
@@ -86,12 +86,12 @@ function getModelDefinitions() {
   return [
     {
       value: "kie-s2v-r2v",
-      label: "KIE Speech to Video",
+      label: "Kling AI Avatar Pro",
       provider: "kie",
       primaryModel: config.kie.imageDigitalHumanPrimaryModel,
-      fallbackModel: config.kie.imageDigitalHumanFallbackModel,
+      fallbackModel: config.kie.imageDigitalHumanPrimaryModel,
       resolution: config.kie.imageDigitalHumanResolution,
-      fallbackResolution: config.kie.imageDigitalHumanFallbackResolution,
+      fallbackResolution: config.kie.imageDigitalHumanResolution,
       basePoints
     }
   ];
@@ -141,7 +141,7 @@ async function createProviderTask(taskId, payload) {
   const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
   const audioDurationMs = getAudioDurationMs(speech, text);
   if (audioDurationMs > maxImageDigitalHumanAudioMs) {
-    throw createHttpError("audio duration exceeds 15 seconds; shorten the text and try again", 400);
+    throw createHttpError("audio duration exceeds 5 minutes; shorten the text and try again", 400);
   }
   const savedAudio = await saveMinimaxSpeechAudio({
     taskId,
@@ -165,35 +165,14 @@ async function createProviderTask(taskId, payload) {
     })
   ]);
 
-  const duration = getVideoDurationSeconds(audioDurationMs, text);
-  let provider;
-  let usedProviderModel = model.primaryModel;
-  try {
-    console.log(`[image-digital-human] task ${taskId}: creating KIE S2V task`);
-    provider = await createKieSpeechToVideoTask({
-      model: model.primaryModel,
-      prompt: text,
-      imageUrl: portraitUpload.url,
-      audioUrl: audioUpload.url,
-      resolution: model.resolution
-    });
-  } catch (primaryError) {
-    console.error("KIE S2V create task failed, falling back to R2V:", primaryError.message, primaryError.body || "");
-    usedProviderModel = model.fallbackModel;
-    try {
-      provider = await createKieImageR2VTask({
-        model: model.fallbackModel,
-        prompt: text,
-        imageUrl: portraitUpload.url,
-        audioUrl: audioUpload.url,
-        resolution: model.fallbackResolution || "720p",
-        duration
-      });
-    } catch (fallbackError) {
-      fallbackError.message = `S2V failed: ${primaryError.message}; R2V fallback failed: ${fallbackError.message}`;
-      throw fallbackError;
-    }
-  }
+  console.log(`[image-digital-human] task ${taskId}: creating Kling AI Avatar Pro task`);
+  const usedProviderModel = model.primaryModel;
+  const provider = await createKieSpeechToVideoTask({
+    model: usedProviderModel,
+    prompt: klingAvatarPrompt,
+    imageUrl: portraitUpload.url,
+    audioUrl: audioUpload.url
+  });
 
   await setImageDigitalHumanTaskProviderStarted(taskId, {
     providerTaskId: provider.taskId,

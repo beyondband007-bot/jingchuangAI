@@ -15,55 +15,21 @@ export async function createKieSpeechToVideoTask({
   model,
   prompt,
   imageUrl,
-  audioUrl,
-  resolution = "480p"
+  audioUrl
 }) {
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
     body: JSON.stringify({
       model,
       input: {
-        prompt,
         image_url: imageUrl,
         audio_url: audioUrl,
-        resolution,
-        num_frames: 80,
-        frames_per_second: 16,
-        enable_safety_checker: true
+        prompt
       }
     })
   });
 
-  return extractTaskId(result, "speech-to-video");
-}
-
-export async function createKieImageR2VTask({
-  model,
-  prompt,
-  imageUrl,
-  audioUrl,
-  resolution = "480p",
-  duration = 5
-}) {
-  const result = await requestKie("/api/v1/jobs/createTask", {
-    method: "POST",
-    body: JSON.stringify({
-      model,
-      input: {
-        prompt,
-        reference_image: [imageUrl],
-        reference_voice: audioUrl,
-        aspect_ratio: "9:16",
-        resolution,
-        duration: Number(duration),
-        prompt_extend: true,
-        watermark: false,
-        seed: 0
-      }
-    })
-  });
-
-  return extractTaskId(result, "image-r2v");
+  return extractTaskId(result, "kling-ai-avatar");
 }
 
 export async function getKieImageDigitalHumanTask({ taskId }) {

@@ -2,27 +2,18 @@ import { requestKie } from "./client.js";
 
 export async function createKieDigitalHumanTask({
   model,
-  prompt,
-  referenceVideoUrl,
-  referenceVoiceUrl,
-  ratio = "9:16",
-  resolution = "720p",
-  duration = 5
+  imageUrl,
+  audioUrl,
+  prompt = ""
 }) {
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
     body: JSON.stringify({
       model,
       input: {
-        prompt,
-        reference_video: [referenceVideoUrl],
-        reference_voice: referenceVoiceUrl,
-        aspect_ratio: ratio,
-        resolution,
-        duration: Number(duration),
-        prompt_extend: true,
-        watermark: false,
-        seed: 0
+        image_url: imageUrl,
+        audio_url: audioUrl,
+        prompt
       }
     })
   });

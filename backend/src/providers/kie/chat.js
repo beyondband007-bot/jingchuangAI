@@ -15,6 +15,33 @@ function mapMessage(message) {
   };
 }
 
+function mapOpenAiMessage(message) {
+  return {
+    role: message.role,
+    content: message.content
+  };
+}
+
+function splitClaudeMessages(messages) {
+  const system = messages
+    .filter((message) => message.role === "system")
+    .map((message) => message.content)
+    .join("\n\n");
+  const chatMessages = messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: message.content
+    }));
+
+  if (!chatMessages.length) {
+    chatMessages.push({ role: "user", content: system || "Hello" });
+    return { system: "", messages: chatMessages };
+  }
+
+  return { system, messages: chatMessages };
+}
+
 function flattenMessagesForKie(messages) {
   if (messages.length <= 1) return messages;
 
@@ -32,6 +59,13 @@ function flattenMessagesForKie(messages) {
       content: `Continue the conversation using the transcript below. Answer the latest user message.\n\n${transcript}`
     }
   ];
+}
+
+function getChatProvider(model) {
+  const providerModel = String(model.provider_model || model.model_key || "");
+  if (providerModel.startsWith("gemini-")) return "gemini";
+  if (providerModel.startsWith("claude-")) return "claude";
+  return "codex";
 }
 
 export function extractChatText(record) {
@@ -88,6 +122,26 @@ function extractStreamText(record) {
   return extractChatText(record);
 }
 
+function extractOpenAiChatText(record) {
+  if (typeof record?.choices?.[0]?.message?.content === "string") {
+    return record.choices[0].message.content.trim();
+  }
+  if (typeof record?.data?.choices?.[0]?.message?.content === "string") {
+    return record.data.choices[0].message.content.trim();
+  }
+  return extractStreamText(record).trim();
+}
+
+function extractClaudeText(record) {
+  if (typeof record?.content === "string") return record.content.trim();
+
+  const chunks = [];
+  for (const item of record?.content || record?.data?.content || []) {
+    if (typeof item?.text === "string") chunks.push(item.text);
+  }
+  return chunks.join("").trim() || extractStreamText(record).trim();
+}
+
 function appendFromSnapshot(current, snapshot) {
   if (!snapshot) return { text: current, delta: "" };
   if (!current) return { text: snapshot, delta: snapshot };
@@ -129,16 +183,71 @@ function buildChatBody({ model, messages, reasoningEffort, stream }) {
   return body;
 }
 
-export async function createKieChatResponse({ model, messages, reasoningEffort }) {
-  const body = buildChatBody({ model, messages, reasoningEffort, stream: false });
+function buildOpenAiChatBody({ model, messages, reasoningEffort, stream }) {
+  const body = {
+    model: model.provider_model,
+    messages: messages.map(mapOpenAiMessage),
+    stream
+  };
 
-  const result = await requestKie("/codex/v1/responses", {
+  if (reasoningEffort && reasoningEffort !== "none") {
+    body.reasoning_effort = reasoningEffort;
+  }
+
+  return body;
+}
+
+function buildClaudeBody({ model, messages, reasoningEffort, stream }) {
+  const { system, messages: claudeMessages } = splitClaudeMessages(messages);
+  const body = {
+    model: model.provider_model,
+    max_tokens: 4096,
+    messages: claudeMessages,
+    stream
+  };
+
+  if (system) body.system = system;
+  if (reasoningEffort && reasoningEffort !== "none") body.thinkingFlag = true;
+
+  return body;
+}
+
+function getEndpointAndBody({ model, messages, reasoningEffort, stream }) {
+  const provider = getChatProvider(model);
+  if (provider === "gemini") {
+    return {
+      provider,
+      path: "/gemini-3-pro/v1/chat/completions",
+      body: buildOpenAiChatBody({ model, messages, reasoningEffort, stream })
+    };
+  }
+  if (provider === "claude") {
+    return {
+      provider,
+      path: "/claude/v1/messages",
+      body: buildClaudeBody({ model, messages, reasoningEffort, stream })
+    };
+  }
+  return {
+    provider,
+    path: "/codex/v1/responses",
+    body: buildChatBody({ model, messages, reasoningEffort, stream })
+  };
+}
+
+export async function createKieChatResponse({ model, messages, reasoningEffort }) {
+  const request = getEndpointAndBody({ model, messages, reasoningEffort, stream: false });
+
+  const result = await requestKie(request.path, {
     method: "POST",
     signal: AbortSignal.timeout(chatTimeoutMs),
-    body: JSON.stringify(body)
+    body: JSON.stringify(request.body)
   });
 
-  const text = extractChatText(result);
+  const text =
+    request.provider === "gemini" ? extractOpenAiChatText(result) :
+    request.provider === "claude" ? extractClaudeText(result) :
+    extractChatText(result);
   if (!text) {
     const error = new Error("KIE chat response missing text");
     error.status = 502;
@@ -156,15 +265,16 @@ export async function createKieChatResponse({ model, messages, reasoningEffort }
 
 export async function createKieChatStream({ model, messages, reasoningEffort, onDelta }) {
   ensureKieKey();
+  const request = getEndpointAndBody({ model, messages, reasoningEffort, stream: true });
 
-  const response = await fetch(`${config.kie.baseUrl}/codex/v1/responses`, {
+  const response = await fetch(`${config.kie.baseUrl}${request.path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.kie.apiKey}`,
       "Content-Type": "application/json"
     },
     signal: AbortSignal.timeout(chatTimeoutMs),
-    body: JSON.stringify(buildChatBody({ model, messages, reasoningEffort, stream: true }))
+    body: JSON.stringify(request.body)
   });
 
   if (!response.ok) {
@@ -198,14 +308,20 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     }
 
     finalRecord = record;
-    const delta = extractStreamDelta(record);
+    const delta =
+      request.provider === "gemini" ? record?.choices?.[0]?.delta?.content || record?.data?.choices?.[0]?.delta?.content || "" :
+      request.provider === "claude" ? record?.delta?.text || record?.content_block?.text || "" :
+      extractStreamDelta(record);
     if (delta) {
       text += delta;
       await onDelta(delta);
       return;
     }
 
-    const fullText = extractStreamText(record);
+    const fullText =
+      request.provider === "gemini" ? extractOpenAiChatText(record) :
+      request.provider === "claude" ? extractClaudeText(record) :
+      extractStreamText(record);
     if (fullText) {
       const next = appendFromSnapshot(text, fullText);
       text = next.text;
