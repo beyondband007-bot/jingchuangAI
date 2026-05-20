@@ -363,7 +363,7 @@ const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onL
       )}
       <main className="feature-main home-feature-main">
         <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
-          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
+          <iframe ref={frameRef} className="original-home-frame" title="FaceMini.com 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
         </div>
       </main>
     </div>
@@ -395,7 +395,7 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-text">Getrue.ai</span>
+        <span className="feature-brand-text">FaceMini.com</span>
         <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
