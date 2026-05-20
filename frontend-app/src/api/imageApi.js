@@ -3,6 +3,7 @@ const listeners = new Set();
 let pollTimer;
 let modelsPromise;
 let creditsPromise;
+export const imageToImageModelKey = "gpt_image_1_5_i2i";
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -58,6 +59,13 @@ export const imageApi = {
     return `${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
   },
 
+  calculatePriceDetail({ model, quality, count, models = [], qualities = [] }) {
+    const selectedModel = models.find((item) => item.value === model) || models[0];
+    const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
+    if (!selectedModel || !selectedQuality) return "扣费标准：模型基础积分 × 清晰度倍率 × 张数";
+    return `扣费标准：${selectedModel.basePoints} × ${selectedQuality.multiplier} × ${count} = ${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
+  },
+
   getRandomPrompt() {
     const prompts = [
       "时尚斑马在水里吐泡泡，水下写实摄影，高级广告质感",
@@ -75,6 +83,15 @@ export const imageApi = {
     });
     notify();
     return task;
+  },
+
+  async uploadReference(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/image/uploads/reference", {
+      method: "POST",
+      body: formData
+    });
   },
 
   async deleteTask(id) {
@@ -96,7 +113,8 @@ export const imageApi = {
       model: task.modelKey,
       ratio: task.ratio,
       quality: task.quality,
-      count: task.count || 1
+      count: task.count || 1,
+      referenceImageUrl: task.referenceImageUrl || null
     });
     notify();
     return created;

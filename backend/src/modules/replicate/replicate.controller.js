@@ -17,10 +17,23 @@ export async function getRecent(req, res) {
   }
 }
 
+export async function getTask(req, res) {
+  try {
+    const task = await service.getReplicateTask(req.params.id, req.user.id);
+    if (!task) {
+      res.status(404).json({ error: "replicate task not found" });
+      return;
+    }
+    res.json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 export async function analyzeImage(req, res) {
   try {
     const result = await service.analyzeImage({ file: req.file, userId: req.user.id });
-    res.status(201).json(result);
+    res.status(202).json(result);
   } catch (error) {
     sendError(res, error);
   }
@@ -29,7 +42,7 @@ export async function analyzeImage(req, res) {
 export async function analyzeVideo(req, res) {
   try {
     const result = await service.analyzeVideo({ file: req.file, userId: req.user.id });
-    res.status(201).json(result);
+    res.status(202).json(result);
   } catch (error) {
     sendError(res, error);
   }

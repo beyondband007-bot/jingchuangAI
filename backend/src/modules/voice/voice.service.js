@@ -4,6 +4,7 @@ import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minim
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { createHttpError } from "../../shared/http.js";
 import { createVoiceSynthesisTaskRow, listVoiceSynthesisTaskRows } from "./voice.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 const maxAudioBytes = 20 * 1024 * 1024;
 const allowedMimeTypes = new Set(["audio/mpeg", "audio/mp3", "audio/mp4", "audio/mp4a-latm", "audio/x-m4a", "audio/wav", "audio/x-wav"]);
@@ -67,11 +68,6 @@ function makeDefaultCloneName(name) {
   return name || `复刻音色 ${clonedVoices.length + 1}`;
 }
 
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
-}
-
 function mapVoiceTask(row) {
   return {
     id: row.id,
@@ -83,7 +79,7 @@ function mapVoiceTask(row) {
     durationMs: row.duration_ms || 0,
     mimeType: row.mime_type || "",
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -95,7 +91,7 @@ function registerClonedVoice({ voiceId, name, description, demoAudio }) {
     provider: "minimax",
     source: "voice-clone",
     demoAudio: demoAudio || "",
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   const existingIndex = clonedVoices.findIndex((item) => item.id === voice.id);
@@ -232,7 +228,7 @@ export async function synthesize(payload, userId) {
     audioUrl: savedAudio.publicPath,
     durationMs: speech.durationMs,
     mimeType: speech.mimeType,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createVoiceSynthesisTaskRow({

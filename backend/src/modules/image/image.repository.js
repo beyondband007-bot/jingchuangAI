@@ -2,6 +2,7 @@ import { getPool } from "../../db/pool.js";
 import { config } from "../../config/index.js";
 
 let sourceColumnPromise;
+let referenceImageUrlColumnPromise;
 
 async function hasSourceColumn(connection = getPool()) {
   sourceColumnPromise ||= connection
@@ -14,6 +15,19 @@ async function hasSourceColumn(connection = getPool()) {
     .then(([rows]) => rows.length > 0)
     .catch(() => false);
   return sourceColumnPromise;
+}
+
+async function hasReferenceImageUrlColumn(connection = getPool()) {
+  referenceImageUrlColumnPromise ||= connection
+    .query(
+      `SELECT COLUMN_NAME
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'reference_image_url'`,
+      [config.db.database]
+    )
+    .then(([rows]) => rows.length > 0)
+    .catch(() => false);
+  return referenceImageUrlColumnPromise;
 }
 
 export async function findEnabledImageModels(connection = getPool()) {
@@ -34,13 +48,36 @@ export async function findImageModelPrice(connection, modelKey) {
   return models[0] || null;
 }
 
-export async function createImageTask(connection, { userId, modelKey, prompt, ratio, quality, count, costPoints, source }) {
-  if (source && await hasSourceColumn(connection)) {
+export async function createImageTask(connection, { userId, modelKey, prompt, ratio, quality, count, costPoints, source, referenceImageUrl }) {
+  const supportsSource = source && await hasSourceColumn(connection);
+  const supportsReferenceImageUrl = referenceImageUrl && await hasReferenceImageUrlColumn(connection);
+
+  if (supportsSource && supportsReferenceImageUrl) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, source, reference_image_url, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, source, referenceImageUrl, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
+
+  if (supportsSource) {
     const [result] = await connection.query(
       `INSERT INTO image_generation_tasks
        (user_id, source, model_key, prompt, ratio, quality, image_count, cost_points, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [userId, source, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
+
+  if (supportsReferenceImageUrl) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, reference_image_url, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, referenceImageUrl, modelKey, prompt, ratio, quality, count, costPoints]
     );
     return result.insertId;
   }

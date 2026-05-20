@@ -1,11 +1,4 @@
-function displayTime(dateValue) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(dateValue));
-}
-
+import { formatBeijingClock } from "../../shared/time.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -32,11 +25,13 @@ export function mapChatConversation(row) {
     title: row.title,
     model: row.display_name || row.model_key,
     modelKey: row.model_key,
-    time: displayTime(row.updated_at || row.created_at)
+    time: formatBeijingClock(row.updated_at || row.created_at)
   };
 }
 
 export function mapChatMessage(row) {
+  const points = Number(row.cost_points || 0);
+  const kieCreditsConsumed = Number(row.kie_credits_consumed || 0);
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -44,10 +39,11 @@ export function mapChatMessage(row) {
     content: row.content,
     modelKey: row.model_key || null,
     status: row.status,
-    points: Number(row.cost_points || 0),
-    kieCreditsConsumed: Number(row.kie_credits_consumed || 0),
+    points,
+    price: points ? `${points} 积分` : null,
+    kieCreditsConsumed,
     usage: parseJson(row.usage_json, null),
     error: row.error_message || null,
-    time: displayTime(row.created_at)
+    time: formatBeijingClock(row.created_at)
   };
 }

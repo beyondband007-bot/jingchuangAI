@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, Download, FileImage, FileVideo, Loader2, Sparkles, Star, Upload, X } from "lucide-react";
 import { replicateApi } from "./replicateApi";
+import { formatBeijingDateTime } from "../../utils/time";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
 
@@ -27,6 +28,28 @@ function formatBytes(bytes) {
   if (!size) return "";
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(0)}KB`;
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
+}
+
+function hasReplicateContent(task) {
+  return Boolean(String(task?.prompt || "").trim() || String(task?.description || "").trim());
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
+  let task = await replicateApi.getTask(taskId);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (task.status === "completed" && hasReplicateContent(task)) return task;
+    if (task.status === "completed" && !hasReplicateContent(task)) {
+      throw new Error("Analysis finished without a prompt. Please try again.");
+    }
+    if (task.status === "failed") return task;
+    await sleep(intervalMs);
+    task = await replicateApi.getTask(taskId);
+  }
+  throw new Error("Analysis is still processing. Please check recent analyses later.");
 }
 
 function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
@@ -183,15 +206,23 @@ export function ReplicateView() {
       const data = mode === "image"
         ? await replicateApi.analyzeImage(file, file.name)
         : await replicateApi.analyzeVideo(file, file.name);
+      setNotice("Analysis task submitted. Processing...");
+      const completed = data.status === "completed" ? data : await waitForReplicateTask(data.id);
+      if (completed.status === "failed") {
+        throw new Error(completed.error || "Analysis failed. Please try again later.");
+      }
+      if (!hasReplicateContent(completed)) {
+        throw new Error("Analysis finished without a prompt. Please try again.");
+      }
 
       const result = {
-        id: data.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        prompt: data.prompt || "",
-        description: data.description || "",
-        tags: data.tags || [],
-        source: data.source || mode,
-        fileName: data.fileName || file.name,
-        createdAt: data.createdAt || new Date().toLocaleString("zh-CN", { hour12: false })
+        id: completed.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        prompt: completed.prompt || "",
+        description: completed.description || "",
+        tags: completed.tags || [],
+        source: completed.source || mode,
+        fileName: completed.fileName || file.name,
+        createdAt: completed.createdAt || formatBeijingDateTime()
       };
 
       setCurrentResult(result);

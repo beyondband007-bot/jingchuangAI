@@ -1,9 +1,8 @@
 import { getPool } from "../../db/pool.js";
-import { createKieChatResponse } from "../../providers/kie/chat.js";
-import { createQwenChatResponse } from "../../providers/qwen/chat.js";
+import { createKieChatResponse, createKieChatStream } from "../../providers/kie/chat.js";
 import { debitCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
-import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
+import { getUserCredits } from "../../shared/userService.js";
 import { mapChatConversation, mapChatMessage, mapChatModel } from "./chat.mapper.js";
 import { normalizeMessages, reasoningEffortOptions, validateChatPayload } from "./chat.options.js";
 import {
@@ -32,20 +31,7 @@ function calculatePoints(model, kieCreditsConsumed) {
 }
 
 async function createProviderChatResponse({ model, messages, reasoningEffort }) {
-  try {
-    return await createKieChatResponse({ model, messages, reasoningEffort });
-  } catch (kieError) {
-    console.error("KIE chat response failed:", kieError.message, kieError.body || "");
-    try {
-      return await createQwenChatResponse({ messages, reasoningEffort });
-    } catch (qwenError) {
-      console.error("Qwen chat fallback failed:", qwenError.message, qwenError.body || "");
-      const error = new Error(`KIE failed: ${kieError.message}; Qwen fallback failed: ${qwenError.message}`);
-      error.status = qwenError.status || kieError.status || 502;
-      error.body = { kie: kieError.body || null, qwen: qwenError.body || null };
-      throw error;
-    }
-  }
+  return createKieChatResponse({ model, messages, reasoningEffort });
 }
 
 export async function getModels() {
@@ -67,7 +53,7 @@ export async function getConversationMessages(conversationId) {
   return rows.map(mapChatMessage);
 }
 
-export async function sendMessage(payload) {
+export async function sendMessage(payload, userId) {
   const { conversationId = null, model, reasoningEffort = "none" } = payload;
   const messages = normalizeMessages(payload.messages || []);
   validateChatPayload({ model, messages, reasoningEffort });
@@ -79,15 +65,11 @@ export async function sendMessage(payload) {
 
   const pool = getPool();
   const setupConnection = await pool.getConnection();
-  let userId;
   let resolvedConversationId = conversationId;
   let modelPrice;
 
   try {
     await setupConnection.beginTransaction();
-    const user = await getDemoUser(setupConnection);
-    userId = user.id;
-
     modelPrice = await findChatModel(setupConnection, model);
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
@@ -154,7 +136,7 @@ export async function sendMessage(payload) {
       return {
         conversationId: resolvedConversationId,
         message: mapChatMessage(failedMessage),
-        credits: await getDemoUserCredits()
+        credits: await getUserCredits(userId)
       };
     } catch (innerError) {
       await failConnection.rollback();
@@ -198,6 +180,125 @@ export async function sendMessage(payload) {
   return {
     conversationId: resolvedConversationId,
     message: mapChatMessage(assistantMessage),
-    credits: await getDemoUserCredits()
+    credits: await getUserCredits(userId)
+  };
+}
+
+async function prepareChatMessage(payload, userId) {
+  const { conversationId = null, model, reasoningEffort = "none" } = payload;
+  const messages = normalizeMessages(payload.messages || []);
+  validateChatPayload({ model, messages, reasoningEffort });
+
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  if (!latestUserMessage) {
+    throw createHttpError("a user message is required", 400);
+  }
+
+  const pool = getPool();
+  const setupConnection = await pool.getConnection();
+  let resolvedConversationId = conversationId;
+  let modelPrice;
+
+  try {
+    await setupConnection.beginTransaction();
+    modelPrice = await findChatModel(setupConnection, model);
+    if (!modelPrice) {
+      throw createHttpError("model not found", 400);
+    }
+
+    const hasReserve = await ensureUserHasReserveCredits(setupConnection, {
+      userId,
+      reservePoints: modelPrice.reserve_points
+    });
+    if (!hasReserve) {
+      throw createHttpError("积分不够，请充值", 402);
+    }
+
+    if (resolvedConversationId) {
+      const conversation = await findChatConversation(setupConnection, resolvedConversationId);
+      if (!conversation) {
+        throw createHttpError("conversation not found", 404);
+      }
+    } else {
+      resolvedConversationId = await createChatConversation(setupConnection, {
+        userId,
+        title: buildTitle(messages),
+        modelKey: model
+      });
+    }
+
+    await createChatMessage(setupConnection, {
+      conversationId: resolvedConversationId,
+      role: "user",
+      content: latestUserMessage.content,
+      modelKey: model
+    });
+    await touchChatConversation(setupConnection, resolvedConversationId);
+    await setupConnection.commit();
+  } catch (error) {
+    await setupConnection.rollback();
+    throw error;
+  } finally {
+    setupConnection.release();
+  }
+
+  return { conversationId: resolvedConversationId, modelPrice, messages, model, reasoningEffort };
+}
+
+async function persistAssistantMessage({ conversationId, model, modelPrice, provider, userId }) {
+  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed);
+  const chargeConnection = await getPool().getConnection();
+  let assistantMessageId;
+  try {
+    await chargeConnection.beginTransaction();
+    assistantMessageId = await createChatMessage(chargeConnection, {
+      conversationId,
+      role: "assistant",
+      content: provider.text,
+      modelKey: model,
+      costPoints,
+      kieCreditsConsumed: provider.kieCreditsConsumed,
+      usage: provider.usage,
+      status: "completed"
+    });
+    await debitCredits(chargeConnection, {
+      userId,
+      taskId: assistantMessageId,
+      amount: costPoints,
+      memo: "chat completion debit"
+    });
+    await touchChatConversation(chargeConnection, conversationId);
+    await chargeConnection.commit();
+  } catch (error) {
+    await chargeConnection.rollback();
+    throw error;
+  } finally {
+    chargeConnection.release();
+  }
+
+  const assistantMessage = await findChatMessageRow(assistantMessageId);
+  return mapChatMessage(assistantMessage);
+}
+
+export async function streamMessage(payload, userId, { onDelta }) {
+  const prepared = await prepareChatMessage(payload, userId);
+  const provider = await createKieChatStream({
+    model: prepared.modelPrice,
+    messages: prepared.messages,
+    reasoningEffort: prepared.reasoningEffort,
+    onDelta
+  });
+  const message = await persistAssistantMessage({
+    conversationId: prepared.conversationId,
+    model: prepared.model,
+    modelPrice: prepared.modelPrice,
+    provider,
+    userId
+  });
+
+  return {
+    conversationId: prepared.conversationId,
+    message,
+    credits: await getUserCredits(userId)
   };
 }

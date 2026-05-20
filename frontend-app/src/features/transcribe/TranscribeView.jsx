@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
 
@@ -46,7 +47,7 @@ function loadRecentResults() {
 }
 
 function makeFileName(prefix, ext) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.${ext}`;
 }
 
@@ -208,7 +209,7 @@ export function TranscribeView() {
         segments: data.segments || [],
         durationMs: data.durationMs || audioFile.durationMs || 0,
         traceId: data.traceId || "",
-        createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+        createdAt: formatBeijingDateTime()
       };
       setResult(nextResult);
       setRecentResults((items) => [nextResult, ...items].slice(0, 20));

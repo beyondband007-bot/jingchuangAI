@@ -3,6 +3,7 @@ import { requestKie } from "./client.js";
 
 export function mapImageModelToKie(modelKey) {
   const modelMap = {
+    gpt_image_1_5_i2i: "gpt-image/1.5-image-to-image",
     gpt_image_2: "gpt-image-2-text-to-image",
     four_o_image: "4o-image",
     nano_banana_pro: "nano-banana-pro",
@@ -14,17 +15,36 @@ export function mapImageModelToKie(modelKey) {
   return modelMap[modelKey] || config.kie.imageModel;
 }
 
-export async function createKieImageTask({ prompt, modelKey, ratio, quality }) {
+function mapGptImageQuality(quality) {
+  const qualityMap = {
+    "1K": "low",
+    "2K": "medium",
+    "4K": "high"
+  };
+  return qualityMap[quality] || "medium";
+}
+
+export async function createKieImageTask({ prompt, modelKey, ratio, quality, referenceImageUrls = [] }) {
+  const isImageToImage = modelKey === "gpt_image_1_5_i2i";
+  const input = isImageToImage
+    ? {
+        prompt,
+        input_urls: referenceImageUrls,
+        aspect_ratio: ratio || "auto",
+        quality: mapGptImageQuality(quality)
+      }
+    : {
+        prompt,
+        aspect_ratio: ratio || "auto",
+        resolution: quality || "2K",
+        output_format: "jpg",
+        google_search: false,
+        image_input: referenceImageUrls
+      };
+
   const body = {
     model: mapImageModelToKie(modelKey),
-    input: {
-      prompt,
-      aspect_ratio: ratio || "auto",
-      resolution: quality || "2K",
-      output_format: "jpg",
-      google_search: false,
-      image_input: []
-    }
+    input
   };
 
   const result = await requestKie("/api/v1/jobs/createTask", {

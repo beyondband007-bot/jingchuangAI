@@ -1,6 +1,7 @@
 import { getPool } from "../../db/pool.js";
 import { extractResultUrls, getKieTask, mapKieState } from "../../providers/kie/client.js";
 import { createKieImageTask } from "../../providers/kie/image.js";
+import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { getUserCredits } from "../../shared/userService.js";
@@ -27,6 +28,7 @@ import {
   imageCountOptions,
   imageQualityOptions,
   imageRatioOptions,
+  imageToImageModelKey,
   qualityMultiplier,
   validateImagePayload
 } from "./image.options.js";
@@ -36,11 +38,35 @@ export async function getCredits(userId) {
 }
 
 export async function getModels() {
+  const models = await findEnabledImageModels();
+  if (!models.some((model) => model.value === imageToImageModelKey)) {
+    models.push({ value: imageToImageModelKey, label: "GPT Image 1.5 图生图", basePoints: 35 });
+  }
   return {
-    models: await findEnabledImageModels(),
+    models,
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
     counts: imageCountOptions
+  };
+}
+
+export async function uploadReferenceImage({ file }) {
+  if (!file) {
+    throw createHttpError("file is required", 400);
+  }
+  const upload = await uploadFileToKie({
+    filePath: file.path,
+    fileName: file.filename || file.originalname || "reference-image",
+    mimeType: file.mimetype || "application/octet-stream",
+    uploadPath: "image-generation"
+  });
+
+  return {
+    url: upload.url,
+    referenceImageUrl: upload.url,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size
   };
 }
 
@@ -57,8 +83,10 @@ export async function getTask(id, userId) {
 }
 
 export async function createTask(payload, userId) {
-  const { prompt, model, ratio, quality, count = 1, source } = payload;
-  validateImagePayload({ prompt, model, ratio, quality, count });
+  const { prompt, ratio, quality, count = 1, source } = payload;
+  const referenceImageUrl = typeof payload.referenceImageUrl === "string" ? payload.referenceImageUrl.trim() : "";
+  const model = referenceImageUrl ? imageToImageModelKey : payload.model;
+  validateImagePayload({ prompt, model, ratio, quality, count, referenceImageUrl });
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -67,7 +95,10 @@ export async function createTask(payload, userId) {
 
   try {
     await connection.beginTransaction();
-    const modelPrice = await findImageModelPrice(connection, model);
+    let modelPrice = await findImageModelPrice(connection, model);
+    if (!modelPrice && model === imageToImageModelKey) {
+      modelPrice = await findImageModelPrice(connection, "gpt_image_2");
+    }
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
     }
@@ -81,7 +112,8 @@ export async function createTask(payload, userId) {
       quality,
       count: Number(count),
       costPoints,
-      source
+      source,
+      referenceImageUrl: referenceImageUrl || null
     });
 
     await debitCredits(connection, {
@@ -101,7 +133,13 @@ export async function createTask(payload, userId) {
   connection.release();
 
   try {
-    const provider = await createKieImageTask({ prompt: prompt.trim(), modelKey: model, ratio, quality });
+    const provider = await createKieImageTask({
+      prompt: prompt.trim(),
+      modelKey: model,
+      ratio,
+      quality,
+      referenceImageUrls: referenceImageUrl ? [referenceImageUrl] : []
+    });
     await setImageTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("KIE create image task failed:", error.message, error.body || "");

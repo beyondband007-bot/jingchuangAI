@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { transcribeMinimaxAudio } from "../../providers/minimax/transcribe.js";
 import { createHttpError } from "../../shared/http.js";
 import { createTranscribeTaskRow, listTranscribeTaskRows } from "./transcribe.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 const maxAudioBytes = 50 * 1024 * 1024;
 const allowedMimeTypes = new Set([
@@ -30,11 +31,6 @@ function getExt(fileName = "") {
   return match ? match[0] : "";
 }
 
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
-}
-
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -57,7 +53,7 @@ function mapTranscribeTask(row) {
     segments: parseJson(row.segments, []),
     traceId: row.trace_id || "",
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -122,7 +118,7 @@ export async function transcribeAudio({ file, durationMs, userId }) {
     formattedText: result.formattedText,
     segments: result.segments,
     traceId: result.traceId,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createTranscribeTaskRow({

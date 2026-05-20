@@ -5,6 +5,7 @@ import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minim
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { createHttpError } from "../../shared/http.js";
 import { createVoiceConvertTaskRow, listVoiceConvertTaskRows } from "./voiceConvert.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 const maxTargetAudioBytes = 20 * 1024 * 1024;
 const maxSourceAudioBytes = 50 * 1024 * 1024;
@@ -185,18 +186,13 @@ function registerConvertedVoice({ voiceId, name, demoAudio }) {
     provider: "minimax",
     source: "voice-convert",
     demoAudio: demoAudio || "",
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   const existingIndex = convertedVoices.findIndex((item) => item.id === voice.id);
   if (existingIndex >= 0) convertedVoices.splice(existingIndex, 1, voice);
   convertedVoices.unshift(voice);
   return voice;
-}
-
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
 
 function parseJson(value, fallback) {
@@ -222,7 +218,7 @@ function mapVoiceConvertTask(row) {
     mimeType: row.mime_type || "",
     rhythmMeta: parseJson(row.rhythm_meta, null),
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -357,7 +353,7 @@ export async function convert(payload, file, userId) {
     sourceDurationMs: targetDurationMs || sourceDurationMs,
     mimeType: speech.mimeType,
     rhythmMeta,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    createdAt: formatBeijingDateTime()
   };
 
   await createVoiceConvertTaskRow({

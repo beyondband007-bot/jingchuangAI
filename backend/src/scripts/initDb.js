@@ -116,6 +116,7 @@ async function createTables() {
       cost_points INT NOT NULL,
       status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
       provider_task_id VARCHAR(160) NULL,
+      reference_image_url TEXT NULL,
       result_urls JSON NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
@@ -147,6 +148,16 @@ async function createTables() {
   );
   if (sourceColumns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'image' AFTER user_id");
+  }
+
+  const [referenceImageUrlColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'reference_image_url'`,
+    [config.db.database]
+  );
+  if (referenceImageUrlColumns.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN reference_image_url TEXT NULL AFTER provider_task_id");
   }
 
   await pool.query(`
@@ -591,6 +602,8 @@ async function createTables() {
       model VARCHAR(80) NOT NULL,
       is_instrumental BOOLEAN NOT NULL DEFAULT FALSE,
       audio_url VARCHAR(1000) NOT NULL,
+      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      error_message TEXT NULL,
       duration_ms INT NOT NULL DEFAULT 0,
       sample_rate INT NULL,
       channel INT NULL,
@@ -604,6 +617,20 @@ async function createTables() {
       CONSTRAINT fk_music_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [musicColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'music_tasks'`,
+    [config.db.database]
+  );
+  const musicColumnNames = new Set(musicColumns.map((column) => column.COLUMN_NAME));
+  if (!musicColumnNames.has("status")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed' AFTER audio_url");
+  }
+  if (!musicColumnNames.has("error_message")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN error_message TEXT NULL AFTER status");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_synthesis_tasks (
@@ -679,12 +706,28 @@ async function createTables() {
       model VARCHAR(160) NULL,
       frame_count INT NULL,
       favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      error_message TEXT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_replicate_user_created (user_id, created_at),
       CONSTRAINT fk_replicate_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [replicateColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'replicate_tasks'`,
+    [config.db.database]
+  );
+  const replicateColumnNames = new Set(replicateColumns.map((column) => column.COLUMN_NAME));
+  if (!replicateColumnNames.has("status")) {
+    await pool.query("ALTER TABLE replicate_tasks ADD COLUMN status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed' AFTER favorite");
+  }
+  if (!replicateColumnNames.has("error_message")) {
+    await pool.query("ALTER TABLE replicate_tasks ADD COLUMN error_message TEXT NULL AFTER status");
+  }
 }
 
 async function seedDemoData() {
@@ -735,6 +778,7 @@ async function seedDemoData() {
     await connection.query(`
       INSERT INTO image_model_prices (model_key, display_name, base_points, enabled)
       VALUES
+        ('gpt_image_1_5_i2i', 'GPT Image 1.5 图生图', 35, TRUE),
         ('gpt_image_2', 'GPT Image 2', 35, TRUE),
         ('four_o_image', '4o Image', 21, FALSE),
         ('nano_banana_pro', 'Nano Banana Pro', 63, TRUE),

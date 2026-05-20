@@ -741,6 +741,12 @@ export function ArticleGenerationView() {
             <textarea
               value={form.topic}
               onChange={(event) => updateForm({ topic: event.target.value })}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  submitGeneration();
+                }
+              }}
               placeholder="例如：给职场新人做一张时间管理封面，画面文字：每天多出 1 小时"
             />
           </label>

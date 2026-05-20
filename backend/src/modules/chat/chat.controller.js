@@ -1,5 +1,5 @@
 import { sendError } from "../../shared/http.js";
-import { getConversationMessages, getModels, listConversations, sendMessage } from "./chat.service.js";
+import { getConversationMessages, getModels, listConversations, sendMessage, streamMessage } from "./chat.service.js";
 
 export async function getChatModels(_req, res) {
   try {
@@ -27,9 +27,36 @@ export async function listChatMessages(req, res) {
 
 export async function createChatMessage(req, res) {
   try {
-    const result = await sendMessage(req.body);
+    const result = await sendMessage(req.body, req.user.id);
     res.status(201).json(result);
   } catch (error) {
     sendError(res, error);
+  }
+}
+
+function writeStreamEvent(res, event, data) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+export async function streamChatMessage(req, res) {
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  try {
+    const result = await streamMessage(req.body, req.user.id, {
+      onDelta: async (delta) => {
+        writeStreamEvent(res, "delta", { delta });
+      }
+    });
+    writeStreamEvent(res, "done", result);
+  } catch (error) {
+    writeStreamEvent(res, "error", {
+      error: error.message || "stream failed"
+    });
+  } finally {
+    res.end();
   }
 }

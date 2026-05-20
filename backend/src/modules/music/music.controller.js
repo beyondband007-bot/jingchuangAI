@@ -17,10 +17,23 @@ export async function getRecent(req, res) {
   }
 }
 
+export async function getTask(req, res) {
+  try {
+    const task = await service.getMusicTask(req.params.id, req.user.id);
+    if (!task) {
+      res.status(404).json({ error: "music task not found" });
+      return;
+    }
+    res.json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 export async function generate(req, res) {
   try {
     const result = await service.generateMusic(req.body || {}, req.user.id);
-    res.status(201).json(result);
+    res.status(202).json(result);
   } catch (error) {
     sendError(res, error);
   }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Download, FileAudio, FileText, Loader2, Music, Pause, Play, Sparkles, Star } from "lucide-react";
 import { musicApi } from "./musicApi";
+import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -21,7 +22,7 @@ function loadRecentResults() {
 }
 
 function makeFileName(prefix, ext) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..+/, "").replace("T", "-");
+  const stamp = formatBeijingStamp();
   return `${prefix}-${stamp}.${ext}`;
 }
 
@@ -45,6 +46,20 @@ async function downloadAudioUrl(audioUrl, fileName) {
     fileName,
     type: response.headers.get("Content-Type") || "audio/mpeg"
   });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
+  let task = await musicApi.getTask(taskId);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (task.status === "completed" || task.status === "failed") return task;
+    await sleep(intervalMs);
+    task = await musicApi.getTask(taskId);
+  }
+  throw new Error("音乐生成仍在处理中，请稍后到最近生成里查看");
 }
 
 function MusicComposer({
@@ -86,6 +101,12 @@ function MusicComposer({
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           disabled={isGenerating}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onGenerate();
+            }
+          }}
         />
       </div>
 
@@ -217,16 +238,24 @@ export function MusicGenerationView() {
         isInstrumental,
         lyricsOptimizer: isInstrumental ? false : lyricsOptimizer
       });
+      setNotice("音乐任务已提交，正在生成中...");
+      const completed = data.status === "completed" ? data : await waitForMusicTask(data.id);
+      if (completed.status === "failed") {
+        throw new Error(completed.error || "音乐生成失败，请稍后重试");
+      }
+      if (!completed.audioUrl) {
+        throw new Error("Music generation finished without audio. Please try again later.");
+      }
 
       const result = {
-        id: data.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        prompt: data.prompt || prompt.trim(),
-        lyrics: data.lyrics || lyrics.trim(),
-        model: data.model || "music-2.6-free",
-        audioUrl: data.audioUrl || "",
-        durationMs: data.durationMs || 0,
-        traceId: data.traceId || "",
-        createdAt: data.createdAt || new Date().toLocaleString("zh-CN", { hour12: false })
+        id: completed.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        prompt: completed.prompt || prompt.trim(),
+        lyrics: completed.lyrics || lyrics.trim(),
+        model: completed.model || "music-2.6-free",
+        audioUrl: completed.audioUrl || "",
+        durationMs: completed.durationMs || 0,
+        traceId: completed.traceId || "",
+        createdAt: completed.createdAt || formatBeijingDateTime()
       };
 
       setCurrentResult(result);
@@ -336,6 +365,7 @@ export function MusicGenerationView() {
                           setPlayingRecentId("");
                         }
                       }}
+                      disabled={!item.audioUrl || item.status !== "completed"}
                       aria-label="播放"
                     >
                       {playingRecentId === item.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
@@ -353,6 +383,7 @@ export function MusicGenerationView() {
                       className="music-recent-control-btn"
                       type="button"
                       onClick={() => downloadAudioUrl(item.audioUrl, makeFileName("ai-music", "mp3"))}
+                      disabled={!item.audioUrl || item.status !== "completed"}
                       aria-label="下载"
                     >
                       <Download size={14} />

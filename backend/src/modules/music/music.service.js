@@ -4,15 +4,17 @@ import { createHttpError } from "../../shared/http.js";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
-import { createMusicTaskRow, listMusicTaskRows } from "./music.repository.js";
+import {
+  completeMusicTaskRow,
+  createMusicTaskRow,
+  failMusicTaskRow,
+  findMusicTaskRow,
+  listMusicTaskRows
+} from "./music.repository.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
-}
-
-function displayTime(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleString("zh-CN", { hour12: false });
 }
 
 function mapMusicTask(row) {
@@ -30,7 +32,9 @@ function mapMusicTask(row) {
     musicSize: row.music_size || 0,
     traceId: row.trace_id || "",
     favorite: Boolean(row.favorite),
-    createdAt: displayTime(row.created_at)
+    status: row.status || (row.audio_url ? "completed" : "processing"),
+    error: row.error_message || "",
+    createdAt: formatBeijingDateTime(row.created_at)
   };
 }
 
@@ -87,55 +91,77 @@ export async function getRecentMusic(userId) {
   return rows.map(mapMusicTask);
 }
 
+export async function getMusicTask(id, userId) {
+  const row = await findMusicTaskRow({ id, userId });
+  return row ? mapMusicTask(row) : null;
+}
+
+function cleanGenerationError(error) {
+  const message = String(error?.message || "音乐生成失败，请稍后重试");
+  if (/<html|504 Gateway Time-out|Gateway Time-out|nginx/i.test(message)) {
+    return "MiniMax 音乐生成服务暂时超时，请稍后重试";
+  }
+  return message;
+}
+
+async function runMusicGeneration(taskId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }) {
+  try {
+    const result = await generateMinimaxMusic({
+      prompt,
+      lyrics,
+      model,
+      isInstrumental,
+      lyricsOptimizer
+    });
+
+    const savedAudio = await saveMusicAudio({ taskId, audioBuffer: result.audioBuffer });
+    await completeMusicTaskRow({
+      id: taskId,
+      audioUrl: savedAudio.publicPath,
+      durationMs: result.durationMs,
+      sampleRate: result.sampleRate,
+      channel: result.channel,
+      bitrate: result.bitrate,
+      musicSize: result.musicSize,
+      traceId: result.traceId
+    });
+  } catch (error) {
+    await failMusicTaskRow(taskId, cleanGenerationError(error));
+  }
+}
+
 export async function generateMusic(payload, userId) {
   const prompt = assertPrompt(payload.prompt);
   const isInstrumental = Boolean(payload.isInstrumental);
   const lyrics = assertLyrics(payload.lyrics, isInstrumental);
   const model = normalizeString(payload.model) || "music-2.6-free";
   const lyricsOptimizer = Boolean(payload.lyricsOptimizer);
+  const taskId = `music-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
-  const result = await generateMinimaxMusic({
+  await createMusicTaskRow({
+    id: taskId,
+    userId,
     prompt,
     lyrics,
     model,
-    isInstrumental,
-    lyricsOptimizer
+    isInstrumental
   });
 
-  const taskId = `music-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const savedAudio = await saveMusicAudio({ taskId, audioBuffer: result.audioBuffer });
+  runMusicGeneration(taskId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }).catch((error) => {
+    console.error("background music generation failed:", error);
+  });
 
-  const music = {
+  return {
     id: taskId,
     prompt,
     lyrics,
     model,
     isInstrumental,
-    audioUrl: savedAudio.publicPath,
-    durationMs: result.durationMs,
-    sampleRate: result.sampleRate,
-    channel: result.channel,
-    bitrate: result.bitrate,
-    musicSize: result.musicSize,
-    traceId: result.traceId,
-    createdAt: new Date().toLocaleString("zh-CN", { hour12: false })
+    audioUrl: "",
+    durationMs: 0,
+    traceId: "",
+    status: "processing",
+    error: "",
+    createdAt: formatBeijingDateTime()
   };
-
-  await createMusicTaskRow({
-    id: music.id,
-    userId,
-    prompt,
-    lyrics,
-    model,
-    isInstrumental,
-    audioUrl: savedAudio.publicPath,
-    durationMs: result.durationMs,
-    sampleRate: result.sampleRate,
-    channel: result.channel,
-    bitrate: result.bitrate,
-    musicSize: result.musicSize,
-    traceId: result.traceId
-  });
-
-  return music;
 }

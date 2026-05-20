@@ -13,6 +13,7 @@ import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers
 import { designMinimaxVoice } from "../../providers/minimax/voiceDesign.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
@@ -35,15 +36,11 @@ const designedVoices = [];
 const maxDigitalHumanAudioMs = 15000;
 
 function nowLabel(date = new Date()) {
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return formatBeijingDateTime(date);
 }
 
 function displayTime(value) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(value));
+  return formatBeijingClock(value);
 }
 
 function estimateSeconds(text = "") {

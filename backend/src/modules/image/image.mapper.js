@@ -1,11 +1,4 @@
-function displayTime(dateValue) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(new Date(dateValue));
-}
-
+import { formatBeijingClock } from "../../shared/time.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -26,10 +19,11 @@ export function mapImageTask(row) {
     ratio: row.ratio,
     quality: row.quality,
     count: row.image_count,
-    time: displayTime(row.created_at),
+    time: formatBeijingClock(row.created_at),
     price: `${row.cost_points} 积分`,
     points: row.cost_points,
     prompt: row.prompt,
+    referenceImageUrl: row.reference_image_url || null,
     image: urls[0] || null,
     grid: row.image_count > 1,
     status: row.status,

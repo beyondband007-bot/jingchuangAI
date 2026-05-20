@@ -41,7 +41,7 @@ import {
   X
 } from "lucide-react";
 import { authApi } from "./api/authApi";
-import { imageApi } from "./api/imageApi";
+import { imageApi, imageToImageModelKey } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
@@ -153,10 +153,14 @@ function getRouteView() {
 }
 
 function getInitialView() {
+  const routeView = getRouteView();
+  if (routeView !== "splash") {
+    return routeView;
+  }
   const shouldEnterApp = window.sessionStorage.getItem(appEntryStorageKey) === "1";
   if (shouldEnterApp) {
     window.sessionStorage.removeItem(appEntryStorageKey);
-    return getRouteView();
+    return "home";
   }
   if (window.location.pathname !== "/" || window.location.hash) {
     window.history.replaceState(null, "", "/");
@@ -559,20 +563,30 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate }) {
 
 function ComposerBar({ options, onSubmit }) {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(options.models[0]?.value || "");
+  const [model, setModel] = useState(options.models.find((item) => item.value !== imageToImageModelKey)?.value || options.models[0]?.value || "");
   const [ratio, setRatio] = useState(options.ratios[0] || "");
   const [quality, setQuality] = useState(options.qualities[0]?.value || "");
   const [notice, setNotice] = useState("");
+  const [referenceImage, setReferenceImage] = useState(null);
+  const [isUploadingReference, setIsUploadingReference] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const textToImageModels = useMemo(() => options.models.filter((item) => item.value !== imageToImageModelKey), [options.models]);
 
   useEffect(() => {
-    if (!model && options.models[0]) setModel(options.models[0].value);
+    if (!model && (textToImageModels[0] || options.models[0])) setModel((textToImageModels[0] || options.models[0]).value);
     if (!ratio && options.ratios[0]) setRatio(options.ratios[0]);
     if (!quality && options.qualities[0]) setQuality(options.qualities[0].value);
-  }, [model, options, quality, ratio]);
+  }, [model, options, quality, ratio, textToImageModels]);
+
+  useEffect(() => () => {
+    if (referenceImage?.previewUrl) URL.revokeObjectURL(referenceImage.previewUrl);
+  }, [referenceImage]);
 
   const count = 1;
-  const price = imageApi.calculatePrice({ model, quality, count, models: options.models, qualities: options.qualities });
-  const canSubmit = prompt.trim().length > 0;
+  const effectiveModel = referenceImage?.referenceImageUrl ? imageToImageModelKey : model;
+  const price = imageApi.calculatePrice({ model: effectiveModel, quality, count, models: options.models, qualities: options.qualities });
+  const canSubmit = prompt.trim().length > 0 && !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
@@ -584,6 +598,42 @@ function ComposerBar({ options, onSubmit }) {
     setNotice("已填入随机提示词");
   }
 
+  async function uploadReferenceImage(file) {
+    if (!file) return;
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (!allowedTypes.has(file.type)) {
+      setNotice("请上传 JPEG、PNG 或 WebP 图片");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setNotice("参考图片不能超过 10MB");
+      return;
+    }
+
+    setIsUploadingReference(true);
+    setNotice("正在上传参考图...");
+    try {
+      const uploaded = await imageApi.uploadReference(file);
+      if (referenceImage?.previewUrl) URL.revokeObjectURL(referenceImage.previewUrl);
+      setReferenceImage({
+        ...uploaded,
+        name: file.name,
+        previewUrl: URL.createObjectURL(file)
+      });
+      setNotice("已上传参考图，将自动使用 GPT Image 1.5 图生图");
+    } catch (error) {
+      setNotice(error.message || "参考图上传失败");
+    } finally {
+      setIsUploadingReference(false);
+    }
+  }
+
+  function clearReferenceImage() {
+    if (referenceImage?.previewUrl) URL.revokeObjectURL(referenceImage.previewUrl);
+    setReferenceImage(null);
+    setNotice("已移除参考图");
+  }
+
   function submitPrompt() {
     if (!canSubmit) {
       setNotice("请先输入图片描述");
@@ -592,21 +642,34 @@ function ComposerBar({ options, onSubmit }) {
 
     onSubmit({
       prompt: prompt.trim(),
-      model,
+      model: effectiveModel,
       ratio,
       quality,
-      count
+      count,
+      referenceImageUrl: referenceImage?.referenceImageUrl || null
     });
     setNotice("已创建生成任务");
     setPrompt("");
+    if (referenceImage?.previewUrl) URL.revokeObjectURL(referenceImage.previewUrl);
+    setReferenceImage(null);
   }
 
   return (
     <div className="sowa-composer" aria-label="图片生成输入框">
       <div className="composer-input-row">
-        <button className="composer-add" type="button" aria-label="添加参考">
+        <button className="composer-add" type="button" onClick={() => fileInputRef.current?.click()} aria-label="上传参考图">
           <Plus size={22} />
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          hidden
+          onChange={(event) => {
+            uploadReferenceImage(event.target.files?.[0]);
+            event.target.value = "";
+          }}
+        />
         <input
           className="composer-text-input"
           value={prompt}
@@ -614,14 +677,20 @@ function ComposerBar({ options, onSubmit }) {
             setPrompt(event.target.value);
             if (notice) setNotice("");
           }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submitPrompt();
+            }
+          }}
           placeholder="选择模型后，释放你的创作灵感"
         />
       </div>
       <div className="composer-controls-row">
         <label className="control-select model-select">
           <Box size={16} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
-            {options.models.map((item) => (
+          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={Boolean(referenceImage)}>
+            {(textToImageModels.length ? textToImageModels : options.models).map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
@@ -656,9 +725,18 @@ function ComposerBar({ options, onSubmit }) {
         </button>
         <span className="price-pill">{price}</span>
         <button className="send-button" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="生成">
-          <Send size={18} />
+          {isUploadingReference ? <Loader2 size={18} /> : <Send size={18} />}
         </button>
       </div>
+      {referenceImage && (
+        <div className="composer-reference-row">
+          <img src={referenceImage.previewUrl || referenceImage.referenceImageUrl} alt="参考图" />
+          <span>图生图：GPT Image 1.5</span>
+          <button type="button" onClick={clearReferenceImage} aria-label="移除参考图">
+            <X size={14} />
+          </button>
+        </div>
+      )}
       {notice && <div className="composer-notice">{notice}</div>}
     </div>
   );
@@ -730,7 +808,10 @@ function CompletedCanvas({ task, onPreview }) {
     <div className="image-canvas chat-canvas">
       <div className="chat-thread">
         <div className="chat-row user">
-          <div className="chat-bubble">{task.prompt}</div>
+          <div className="chat-bubble">
+            {task.referenceImageUrl && <img className="chat-reference-thumb" src={task.referenceImageUrl} alt="参考图" />}
+            {task.prompt}
+          </div>
         </div>
         <div className="chat-row assistant">
           <div className="assistant-avatar">
@@ -926,6 +1007,7 @@ function ImageGenerationView() {
     if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
       setSelectedTaskId(submittedTask.id);
       setIsSubmitting(false);
+      imageApi.refreshCredits().then(setCredits).catch(() => {});
     }
   }, [submittedTask]);
 
@@ -956,12 +1038,14 @@ function ImageGenerationView() {
       const task = await imageApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
+      imageApi.refreshCredits().then(setCredits).catch(() => {});
       if (task.status === "failed") {
         setIsSubmitting(false);
       }
     } catch (error) {
       setSubmitError(error.message || "创建生成任务失败");
       setIsSubmitting(false);
+      imageApi.refreshCredits().then(setCredits).catch(() => {});
     }
   }
 
@@ -994,9 +1078,11 @@ function ImageGenerationView() {
       const created = await imageApi.regenerateTask(id);
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
+      imageApi.refreshCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建生成任务失败");
       setIsSubmitting(false);
+      imageApi.refreshCredits().then(setCredits).catch(() => {});
     }
     setIsSubmitting(false);
   }
@@ -1250,6 +1336,10 @@ function VideoComposerBar({ options, onSubmit }) {
   const count = 1;
   const price = videoApi.calculatePrice({ model, duration, count, models: options.models });
   const rmb = videoApi.calculateRmb({ model, duration, count, models: options.models });
+  const selectedVideoModel = options.models.find((item) => item.value === model) || options.models[0];
+  const videoPriceDetail = selectedVideoModel?.priceUnit === "per_task"
+    ? `扣费标准：${selectedVideoModel.basePoints || 0} 积分/次 × ${count}`
+    : `扣费标准：${selectedVideoModel?.basePoints || 0} 积分/秒 × ${duration || 0} 秒 × ${count}`;
   const canSubmit = prompt.trim().length > 0 && model && ratio && duration;
 
   function clearPrompt() {
@@ -1292,6 +1382,12 @@ function VideoComposerBar({ options, onSubmit }) {
           onChange={(event) => {
             setPrompt(event.target.value);
             if (notice) setNotice("");
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              submitPrompt();
+            }
           }}
           placeholder="请描述你想生成的视频..."
         />
@@ -1341,6 +1437,7 @@ function VideoComposerBar({ options, onSubmit }) {
           <Send size={18} />
         </button>
       </div>
+      <div className="composer-price-detail">{videoPriceDetail}</div>
       {notice && <div className="composer-notice">{notice}</div>}
     </div>
   );
@@ -1376,8 +1473,10 @@ function VideoGenerationView() {
     setIsSubmitting(true);
     try {
       await videoApi.createTask(payload);
+      videoApi.refreshCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建视频生成任务失败");
+      videoApi.refreshCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }
@@ -1486,7 +1585,24 @@ function toChatContext(messages) {
     }));
 }
 
+function appendChatStreamChunk(current = "", chunk = "") {
+  if (!chunk) return current;
+  if (!current) return chunk;
+  if (chunk === current) return current;
+  if (chunk.startsWith(current)) return chunk;
+
+  const maxOverlap = Math.min(current.length, chunk.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    if (current.endsWith(chunk.slice(0, size))) {
+      return `${current}${chunk.slice(size)}`;
+    }
+  }
+
+  return `${current}${chunk}`;
+}
+
 function ChatCanvas({ messages, isSubmitting, error }) {
+  const hasStreamingMessage = messages.some((message) => message.status === "streaming");
   if (!messages.length && !isSubmitting && !error) {
     return (
       <div className="chat-main-canvas">
@@ -1507,19 +1623,22 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 <Bot size={17} />
               </span>
             )}
-            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""}`}>
+            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
               {message.status === "failed" ? (
                 <>
                   <strong>这次没有回复成功</strong>
                   <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
                 </>
               ) : (
-                message.content
+                <>
+                  {message.content || (message.status === "streaming" ? "正在思考..." : "")}
+                  {message.points > 0 && <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>}
+                </>
               )}
             </div>
           </div>
         ))}
-        {isSubmitting && (
+        {isSubmitting && !hasStreamingMessage && (
           <div className="chat-message-row assistant">
             <span className="chat-message-avatar">
               <Bot size={17} />
@@ -1592,7 +1711,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
           if (notice) setNotice("");
         }}
         onKeyDown={(event) => {
-          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             submitPrompt();
           }
@@ -1721,11 +1840,18 @@ function ChatGenerationView() {
   }, []);
 
   async function sendChatMessage({ content, model, reasoningEffort }) {
+    const localId = Date.now();
     const userMessage = {
-      id: `local-${Date.now()}`,
+      id: `local-${localId}`,
       role: "user",
       content,
       status: "completed"
+    };
+    const streamingMessage = {
+      id: `stream-${localId}`,
+      role: "assistant",
+      content: "",
+      status: "streaming"
     };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
@@ -1733,17 +1859,33 @@ function ChatGenerationView() {
     setIsSubmitting(true);
 
     try {
-      const result = await chatApi.sendMessage({
+      setMessages([...nextMessages, streamingMessage]);
+      const result = await chatApi.streamMessage({
         conversationId,
         model,
         reasoningEffort,
         messages: toChatContext(nextMessages)
+      }, {
+        onDelta: (delta) => {
+          setMessages((current) => current.map((message) => (
+            message.id === streamingMessage.id
+              ? { ...message, content: appendChatStreamChunk(message.content, delta) }
+              : message
+          )));
+        }
       });
       setConversationId(result.conversationId);
-      setMessages((current) => [...current, result.message]);
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id ? result.message : message
+      )));
       if (result.credits) setCredits(result.credits);
       chatApi.getConversations().then(setConversations).catch(() => {});
     } catch (error) {
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id
+          ? { ...message, status: "failed", error: error.message || "发送失败" }
+          : message
+      )));
       setSubmitError(error.message || "发送失败");
     } finally {
       setIsSubmitting(false);
@@ -2199,7 +2341,18 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       {driveMode === "text" ? (
         <label className="dh-field dh-script-field">
           <span>文本脚本 <small>{text.length} / 2000 · 预计 {estimate} 分钟</small></span>
-          <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} placeholder="请输入数字人要说的话..." />
+          <textarea
+            value={text}
+            maxLength={2000}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="请输入数字人要说的话..."
+          />
         </label>
       ) : (
         <button className="dh-audio-upload" type="button" onClick={() => audioInputRef.current?.click()}>
@@ -2361,8 +2514,10 @@ function DigitalHumanGenerationView() {
       const task = await digitalHumanApi.createTask(payload);
       setSelectedTask(task);
       setTab("history");
+      digitalHumanApi.getCredits().then(setCredits).catch(() => {});
     } catch (submitError) {
       setError(submitError.message || "创建数字人任务失败");
+      digitalHumanApi.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }
@@ -2871,6 +3026,12 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             value={text}
             maxLength={options.limits?.maxTextLength || 2000}
             onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                submit();
+              }
+            }}
             placeholder="请输入台词，生成语音..."
           />
           <details className="idh-advanced">
@@ -2970,8 +3131,10 @@ function ImageDigitalHumanView() {
       const task = await imageDigitalHumanApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+      imageDigitalHumanApi.getCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建图片数字人任务失败");
+      imageDigitalHumanApi.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }
@@ -3255,7 +3418,7 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
     onClear?.();
   }
   return (
-    <button className={`motion-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+    <button className={`motion-upload-slot is-${kind} ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
         ref={inputRef}
         type="file"
@@ -3546,8 +3709,10 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
       setSubmittedTaskId(task.id);
       if (splitResults) setViewTab("home");
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+      api.getCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || copy.createError);
+      api.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }
@@ -4027,8 +4192,10 @@ function WatermarkRemovalView() {
       const task = await watermarkApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+      watermarkApi.getCredits().then(setCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建去水印任务失败");
+      watermarkApi.getCredits().then(setCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }
