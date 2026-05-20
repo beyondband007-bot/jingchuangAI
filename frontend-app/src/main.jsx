@@ -584,9 +584,12 @@ function ComposerBar({ options, onSubmit }) {
   }, [referenceImage]);
 
   const count = 1;
+  const isReady = options.models.length > 0 && options.ratios.length > 0 && options.qualities.length > 0;
   const effectiveModel = referenceImage?.referenceImageUrl ? imageToImageModelKey : model;
-  const price = imageApi.calculatePrice({ model: effectiveModel, quality, count, models: options.models, qualities: options.qualities });
-  const canSubmit = prompt.trim().length > 0 && !isUploadingReference;
+  const price = isReady
+    ? imageApi.calculatePrice({ model: effectiveModel, quality, count, models: options.models, qualities: options.qualities })
+    : "计算中";
+  const canSubmit = isReady && prompt.trim().length > 0 && !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
@@ -683,13 +686,13 @@ function ComposerBar({ options, onSubmit }) {
               submitPrompt();
             }
           }}
-          placeholder="选择模型后，释放你的创作灵感"
+          placeholder={isReady ? "选择模型后，释放你的创作灵感" : "正在加载创作配置..."}
         />
       </div>
       <div className="composer-controls-row">
         <label className="control-select model-select">
           <Box size={16} />
-          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={Boolean(referenceImage)}>
+          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={!isReady || Boolean(referenceImage)}>
             {(textToImageModels.length ? textToImageModels : options.models).map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -699,7 +702,7 @@ function ComposerBar({ options, onSubmit }) {
         </label>
         <label className="control-select">
           <Ruler size={16} />
-          <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
+          <select value={ratio} onChange={(event) => setRatio(event.target.value)} disabled={!isReady}>
             {options.ratios.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -709,7 +712,7 @@ function ComposerBar({ options, onSubmit }) {
         </label>
         <label className="control-select">
           <Target size={16} />
-          <select value={quality} onChange={(event) => setQuality(event.target.value)}>
+          <select value={quality} onChange={(event) => setQuality(event.target.value)} disabled={!isReady}>
             {options.qualities.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.value}
@@ -717,7 +720,7 @@ function ComposerBar({ options, onSubmit }) {
             ))}
           </select>
         </label>
-        <button className="composer-tool" type="button" onClick={fillRandomPrompt} aria-label="随机提示词">
+        <button className="composer-tool" type="button" onClick={fillRandomPrompt} disabled={!isReady} aria-label="随机提示词">
           <Dice5 size={18} />
         </button>
         <button className="composer-tool" type="button" onClick={clearPrompt} aria-label="清空">
@@ -1144,7 +1147,7 @@ function ImageGenerationView() {
         )}
       </div>
       <PreviewDrawer task={previewTask} onClose={() => setPreviewTask(null)} />
-      {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
+      <ComposerBar options={options} onSubmit={createTask} />
     </section>
   );
 }
@@ -1334,13 +1337,16 @@ function VideoComposerBar({ options, onSubmit }) {
   }, [duration, model, options, ratio]);
 
   const count = 1;
-  const price = videoApi.calculatePrice({ model, duration, count, models: options.models });
-  const rmb = videoApi.calculateRmb({ model, duration, count, models: options.models });
+  const isReady = options.models.length > 0;
+  const price = isReady ? videoApi.calculatePrice({ model, duration, count, models: options.models }) : "计算中";
+  const rmb = isReady ? videoApi.calculateRmb({ model, duration, count, models: options.models }) : null;
   const selectedVideoModel = options.models.find((item) => item.value === model) || options.models[0];
-  const videoPriceDetail = selectedVideoModel?.priceUnit === "per_task"
-    ? `扣费标准：${selectedVideoModel.basePoints || 0} 积分/次 × ${count}`
-    : `扣费标准：${selectedVideoModel?.basePoints || 0} 积分/秒 × ${duration || 0} 秒 × ${count}`;
-  const canSubmit = prompt.trim().length > 0 && model && ratio && duration;
+  const videoPriceDetail = isReady
+    ? selectedVideoModel?.priceUnit === "per_task"
+      ? `扣费标准：${selectedVideoModel.basePoints || 0} 积分/次 × ${count}`
+      : `扣费标准：${selectedVideoModel?.basePoints || 0} 积分/秒 × ${duration || 0} 秒 × ${count}`
+    : "正在加载扣费标准";
+  const canSubmit = isReady && prompt.trim().length > 0 && model && ratio && duration;
 
   function clearPrompt() {
     setPrompt("");
@@ -1389,13 +1395,13 @@ function VideoComposerBar({ options, onSubmit }) {
               submitPrompt();
             }
           }}
-          placeholder="请描述你想生成的视频..."
+          placeholder={isReady ? "请描述你想生成的视频..." : "正在加载视频创作配置..."}
         />
       </div>
       <div className="composer-controls-row">
         <label className="control-select model-select">
           <Film size={16} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
+          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={!isReady}>
             {options.models.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
@@ -1405,7 +1411,7 @@ function VideoComposerBar({ options, onSubmit }) {
         </label>
         <label className="control-select">
           <Ruler size={16} />
-          <select value={ratio} onChange={(event) => setRatio(event.target.value)}>
+          <select value={ratio} onChange={(event) => setRatio(event.target.value)} disabled={!isReady}>
             {modelOptions.ratios.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -1415,7 +1421,7 @@ function VideoComposerBar({ options, onSubmit }) {
         </label>
         <label className="control-select">
           <Timer size={16} />
-          <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
+          <select value={duration} onChange={(event) => setDuration(Number(event.target.value))} disabled={!isReady}>
             {modelOptions.durations.map((item) => (
               <option key={item} value={item}>
                 {item}s
@@ -1423,7 +1429,7 @@ function VideoComposerBar({ options, onSubmit }) {
             ))}
           </select>
         </label>
-        <button className="composer-tool" type="button" onClick={fillRandomPrompt} aria-label="随机提示词">
+        <button className="composer-tool" type="button" onClick={fillRandomPrompt} disabled={!isReady} aria-label="随机提示词">
           <Dice5 size={18} />
         </button>
         <button className="composer-tool" type="button" onClick={clearPrompt} aria-label="清空">
@@ -1568,7 +1574,7 @@ function VideoGenerationView() {
           />
         )}
       </div>
-      {options.models.length > 0 && <VideoComposerBar options={options} onSubmit={createTask} />}
+      <VideoComposerBar options={options} onSubmit={createTask} />
     </section>
   );
 }
@@ -1682,9 +1688,10 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
     }
   }, [model, options, reasoningEffort]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const canSubmit = prompt.trim().length > 0 && model && !isSubmitting;
-  const modelLabel = selectedModel?.label || "Deepseek V4";
+  const canSubmit = isReady && prompt.trim().length > 0 && model && !isSubmitting;
+  const modelLabel = isReady ? selectedModel?.label || "Deepseek V4" : "模型加载中";
 
   function submitPrompt() {
     if (!canSubmit) {
@@ -1716,7 +1723,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
             submitPrompt();
           }
         }}
-        placeholder="请告诉我您的想法......"
+        placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
       <div className="llm-toolbar">
         <div className="llm-left">
@@ -1746,7 +1753,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
             </div>
           </div>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+            <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
               <ChevronDown size={16} />
             </button>
@@ -1905,7 +1912,7 @@ function ChatGenerationView() {
   }
 
   const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
-  const composer = options.models.length > 0 && (
+  const composer = (
     <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
   );
 
@@ -2870,12 +2877,13 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
     };
   }, [portraitPreview]);
 
+  const isReady = options.models.length > 0 && voices.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
   const previewSignature = getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion });
   const isPreviewCurrent = voicePreviewInfo?.signature === previewSignature;
   const isTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
-  const price = `${selectedModel?.basePoints || 0} 积分/次`;
+  const price = isReady ? `${selectedModel?.basePoints || 0} 积分/次` : "计算中";
 
   function selectPortrait(file) {
     if (!file) return;
@@ -3012,13 +3020,13 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
         </button>
         <div className="idh-form-card">
           <label className="idh-select">
-            <select value={model} onChange={(event) => setModel(event.target.value)}>
+            <select value={model} onChange={(event) => setModel(event.target.value)} disabled={!isReady}>
               {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </label>
           <label className="idh-select">
             <Mic size={15} />
-            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
+            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)} disabled={!isReady}>
               {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
             </select>
           </label>
@@ -3055,7 +3063,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
               <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
             </label>
           </details>
-          <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={isPreviewing}>
+          <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={!isReady || isPreviewing}>
             {isPreviewing ? <Loader2 size={15} /> : <Play size={15} />}
             生成语音
           </button>
@@ -3066,7 +3074,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
         <span>图片与音频大小均不超过 10MB</span>
         <small>{selectedVoice?.description || selectedModel?.primaryModel}</small>
         <strong>{price}</strong>
-        <button type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || isTooLong} aria-label="生成图片数字人视频">
+        <button type="button" onClick={submit} disabled={!isReady || isSubmitting || !isPreviewCurrent || isTooLong} aria-label="生成图片数字人视频">
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
         </button>
       </div>
@@ -3209,14 +3217,12 @@ function ImageDigitalHumanView() {
           ))}
         </div>
       </div>
-      {options.models.length > 0 && voices.length > 0 && (
-        <ImageDigitalHumanComposer
-          options={options}
-          voices={voices}
-          onSubmit={createTask}
-          isSubmitting={isSubmitting}
-        />
-      )}
+      <ImageDigitalHumanComposer
+        options={options}
+        voices={voices}
+        onSubmit={createTask}
+        isSubmitting={isSubmitting}
+      />
     </section>
   );
 }
@@ -3500,9 +3506,10 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
     };
   }, [imagePreview, videoPreview]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
+  const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
+  const canSubmit = isReady && imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {
     if (!file) return;
@@ -3614,19 +3621,19 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       <div className="motion-composer-footer">
         <label className="control-select model-select">
           <Box size={15} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
+          <select value={model} onChange={(event) => setModel(event.target.value)} disabled={!isReady}>
             {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
         </label>
         <label className="control-select">
           <Ruler size={15} />
-          <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
+          <select value={resolution} onChange={(event) => setResolution(event.target.value)} disabled={!isReady}>
             {(options.modes || emptyMotionTransferOptions.modes).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
         </label>
         <label className="control-select">
           <Timer size={15} />
-          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)}>
+          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)} disabled={!isReady}>
             {(options.characterOrientations || emptyMotionTransferOptions.characterOrientations).map((item) => (
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
@@ -3808,15 +3815,13 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
           ))}
         </div>
       </div>
-      {options.models.length > 0 && (
-        <MotionTransferComposer
-          options={options}
-          onSubmit={createTask}
-          isSubmitting={isSubmitting}
-          api={api}
-          copy={copy}
-        />
-      )}
+      <MotionTransferComposer
+        options={options}
+        onSubmit={createTask}
+        isSubmitting={isSubmitting}
+        api={api}
+        copy={copy}
+      />
     </section>
   );
 }
@@ -4039,10 +4044,11 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
     };
   }, [previewUrl]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
   const resolution = mode === "video" ? options.defaults?.videoResolution || "720p" : options.defaults?.imageResolution || "2K";
-  const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
+  const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
+  const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
   function changeMode(nextMode) {
     setMode(nextMode);
@@ -4278,7 +4284,7 @@ function WatermarkRemovalView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && options.models.length > 0 && (
+      {viewTab === "home" && (
         <WatermarkComposer
           options={options}
           onSubmit={createTask}

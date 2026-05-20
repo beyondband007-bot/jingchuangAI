@@ -124,7 +124,7 @@
     .topbar-btn.primary { background: hsl(var(--sidebar-primary)); border-color: hsl(var(--sidebar-primary)); color: hsl(var(--sidebar-primary-foreground)); }
     .topbar-btn.primary:hover { opacity: 0.9; }
     .page-scroll { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
-    .hero-section { position: relative; border-radius: 20px; margin-bottom: 32px; overflow: hidden; min-height: min(29vh, 280px); color: #fff; background: #0b0b10; }
+    .hero-section { position: relative; border-radius: 20px; margin-bottom: 32px; overflow: hidden; min-height: min(29vh, 280px); color: #fff; background: radial-gradient(circle at 72% 30%, rgba(90, 44, 252, 0.26), transparent 34%), linear-gradient(135deg, #0b0b10 0%, #151326 52%, #070711 100%); }
     .hero-bg-video {
       position: absolute;
       left: 0;
@@ -139,6 +139,8 @@
       transform-origin: center top;
       display: block;
     }
+    .hero-bg-video { opacity: 0; transition: opacity 260ms ease; }
+    .hero-section.is-video-ready .hero-bg-video { opacity: 1; }
     .hero-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(105deg, rgba(8,8,12,0.92) 0%, rgba(8,8,12,0.45) 42%, rgba(8,8,12,0.2) 100%); }
     .hero-content { position: absolute; left: 0; bottom: 0; z-index: 2; padding: 24px 28px 26px; max-width: 560px; box-sizing: border-box; }
     .hero-badge { display: inline-flex; align-items: center; padding: 2px 10px; border: 1px solid rgba(255,255,255,0.35); border-radius: 9999px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.12); margin-bottom: 8px; width: fit-content; }
@@ -538,9 +540,7 @@
   <main class="main-content">
     <div class="page-scroll">
       <section class="hero-section" aria-label="主视觉">
-        <video class="hero-bg-video" id="heroBgVideo" autoplay muted loop playsinline preload="auto">
-          <source src="./内部hero区.mp4" type="video/mp4">
-        </video>
+        <video class="hero-bg-video" id="heroBgVideo" muted loop playsinline preload="none" data-src="./内部hero区.optimized.mp4"></video>
         <div class="hero-overlay" aria-hidden="true"></div>
         <div class="hero-content">
           <div class="hero-badge">Premium</div>
@@ -556,23 +556,23 @@
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <div class="module-arc-pivot" id="arcPivot">
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#a78bfa" href="#"><div class="arc-card-art"><img src="arc-cards/01_图片生成.png" data-art="mockup" alt="图片生成" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">图片生成</div><div class="feature-card-desc">AI驱动的图片创作与编辑</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#818cf8" href="#"><div class="arc-card-art"><img src="arc-cards/02_视频生成.png" data-art="mockup" alt="视频生成" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频生成</div><div class="feature-card-desc">一句话生成动态视频画面</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#38bdf8" href="#"><div class="arc-card-art"><img src="arc-cards/03_AI对话.png" data-art="mockup" alt="大模型" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">大模型</div><div class="feature-card-desc">多模型对话与创作辅助</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#c084fc" href="#"><div class="arc-card-art"><img src="arc-cards/04_数字人.png" data-art="mockup" alt="数字人" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">数字人</div><div class="feature-card-desc">打造专属虚拟形象与讲解</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#d946ef" href="#"><div class="arc-card-art"><img src="arc-cards/05_图片数字人.png" data-art="mockup" alt="图片数字人" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">图片数字人</div><div class="feature-card-desc">静态照片驱动成数字人</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#a855f7" href="#"><div class="arc-card-art"><img src="arc-cards/06_动作迁移.png" data-art="mockup" alt="动作迁移" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">动作迁移</div><div class="feature-card-desc">捕捉动作并精准迁移到角色</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#0ea5e9" href="#"><div class="arc-card-art"><img src="arc-cards/07_视频换脸.png" data-art="mockup" alt="视频换脸" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频换脸</div><div class="feature-card-desc">AI驱动的视频角色替换</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#fb923c" href="#"><div class="arc-card-art"><img src="arc-cards/08_语音合成.png" data-art="mockup" alt="语音合成" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">语音合成</div><div class="feature-card-desc">文本秒变自然流畅人声</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f472b6" href="#"><div class="arc-card-art"><img src="arc-cards/09_爆款图文.png" data-art="mockup" alt="爆款图文" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">爆款图文</div><div class="feature-card-desc">AI辅助内容创作</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#8b5cf6" href="#"><div class="arc-card-art"><img src="arc-cards/10_去水印.png" data-art="mockup" alt="去水印" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">去水印</div><div class="feature-card-desc">智能去除水印与 Logo</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#34d399" href="#"><div class="arc-card-art"><img src="arc-cards/11_增强.png" data-art="mockup" alt="画质提升" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">画质提升</div><div class="feature-card-desc">高清放大，细节更清晰</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#2dd4bf" href="#"><div class="arc-card-art"><img src="arc-cards/12_去背景.png" data-art="mockup" alt="智能抠图" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">智能抠图</div><div class="feature-card-desc">精准分离主体与背景</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f472b6" href="#"><div class="arc-card-art"><img src="arc-cards/13_音色转换.png" data-art="mockup" alt="音色转换" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">音色转换</div><div class="feature-card-desc">声音风格自然转换</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#94a3b8" href="#"><div class="arc-card-art"><img src="arc-cards/14_转录.png" data-art="mockup" alt="语音转文字" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">语音转文字</div><div class="feature-card-desc">音视频内容一键转成文稿</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f43f5e" href="#"><div class="arc-card-art"><img src="arc-cards/15_AI音乐.png" data-art="mockup" alt="AI音乐" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">AI音乐</div><div class="feature-card-desc">智能作曲与编曲</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#60a5fa" href="#"><div class="arc-card-art"><img src="arc-cards/16_复刻.png" data-art="mockup" alt="反推提示词" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">反推提示词</div><div class="feature-card-desc">从参考图提炼可用的创作提示词</div></a>
-          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#22d3ee" href="#"><div class="arc-card-art"><img src="arc-cards/17_视频配音.png" data-art="mockup" alt="视频配音" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频配音</div><div class="feature-card-desc">自动配音与翻译</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#a78bfa" href="#"><div class="arc-card-art"><img src="arc-cards/01_图片生成.webp" data-art="mockup" alt="图片生成" loading="eager" fetchpriority="high" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">图片生成</div><div class="feature-card-desc">AI驱动的图片创作与编辑</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#818cf8" href="#"><div class="arc-card-art"><img src="arc-cards/02_视频生成.webp" data-art="mockup" alt="视频生成" loading="eager" fetchpriority="high" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频生成</div><div class="feature-card-desc">一句话生成动态视频画面</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#38bdf8" href="#"><div class="arc-card-art"><img src="arc-cards/03_AI对话.webp" data-art="mockup" alt="大模型" loading="eager" fetchpriority="high" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">大模型</div><div class="feature-card-desc">多模型对话与创作辅助</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#c084fc" href="#"><div class="arc-card-art"><img src="arc-cards/04_数字人.webp" data-art="mockup" alt="数字人" loading="eager" fetchpriority="high" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">数字人</div><div class="feature-card-desc">打造专属虚拟形象与讲解</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#d946ef" href="#"><div class="arc-card-art"><img src="arc-cards/05_图片数字人.webp" data-art="mockup" alt="图片数字人" loading="eager" fetchpriority="high" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">图片数字人</div><div class="feature-card-desc">静态照片驱动成数字人</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#a855f7" href="#"><div class="arc-card-art"><img src="arc-cards/06_动作迁移.webp" data-art="mockup" alt="动作迁移" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">动作迁移</div><div class="feature-card-desc">捕捉动作并精准迁移到角色</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#0ea5e9" href="#"><div class="arc-card-art"><img src="arc-cards/07_视频换脸.webp" data-art="mockup" alt="视频换脸" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频换脸</div><div class="feature-card-desc">AI驱动的视频角色替换</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#fb923c" href="#"><div class="arc-card-art"><img src="arc-cards/08_语音合成.webp" data-art="mockup" alt="语音合成" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">语音合成</div><div class="feature-card-desc">文本秒变自然流畅人声</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f472b6" href="#"><div class="arc-card-art"><img src="arc-cards/09_爆款图文.webp" data-art="mockup" alt="爆款图文" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">爆款图文</div><div class="feature-card-desc">AI辅助内容创作</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#8b5cf6" href="#"><div class="arc-card-art"><img src="arc-cards/10_去水印.webp" data-art="mockup" alt="去水印" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">去水印</div><div class="feature-card-desc">智能去除水印与 Logo</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#34d399" href="#"><div class="arc-card-art"><img src="arc-cards/11_增强.webp" data-art="mockup" alt="画质提升" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">画质提升</div><div class="feature-card-desc">高清放大，细节更清晰</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#2dd4bf" href="#"><div class="arc-card-art"><img src="arc-cards/12_去背景.webp" data-art="mockup" alt="智能抠图" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">智能抠图</div><div class="feature-card-desc">精准分离主体与背景</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f472b6" href="#"><div class="arc-card-art"><img src="arc-cards/13_音色转换.webp" data-art="mockup" alt="音色转换" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">音色转换</div><div class="feature-card-desc">声音风格自然转换</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#94a3b8" href="#"><div class="arc-card-art"><img src="arc-cards/14_转录.webp" data-art="mockup" alt="语音转文字" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">语音转文字</div><div class="feature-card-desc">音视频内容一键转成文稿</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#f43f5e" href="#"><div class="arc-card-art"><img src="arc-cards/15_AI音乐.webp" data-art="mockup" alt="AI音乐" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">AI音乐</div><div class="feature-card-desc">智能作曲与编曲</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#60a5fa" href="#"><div class="arc-card-art"><img src="arc-cards/16_复刻.webp" data-art="mockup" alt="反推提示词" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">反推提示词</div><div class="feature-card-desc">从参考图提炼可用的创作提示词</div></a>
+          <a class="feature-card arc-card arc-card--visual" style="--arc-tint:#22d3ee" href="#"><div class="arc-card-art"><img src="arc-cards/17_视频配音.webp" data-art="mockup" alt="视频配音" loading="lazy" decoding="async" onerror="this.remove()"/></div><div class="feature-card-name">视频配音</div><div class="feature-card-desc">自动配音与翻译</div></a>
           </div>
           <button type="button" class="module-arc-nav next" id="arcNext" aria-label="下一项">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -733,6 +733,26 @@ document.querySelectorAll(".nav-item").forEach(item=>{item.addEventListener("cli
 document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListener("click",e=>{e.preventDefault();document.querySelectorAll(".nav-child-item").forEach(i=>i.classList.remove("is-active"));document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("is-active"));item.classList.add("is-active");var sec=item.closest(".nav-section");if(!sec)return;var p=sec.querySelector(".nav-item");if(p)p.classList.add("is-active")}) });
 (function(){var preview=document.getElementById("casePreview");var previewImg=document.getElementById("casePreviewImage");var previewCaption=document.getElementById("casePreviewCaption");var closeBtn=document.getElementById("casePreviewClose");function closePreview(){preview.classList.remove("is-open");preview.setAttribute("aria-hidden","true");previewImg.removeAttribute("src");previewImg.alt=""}document.querySelectorAll(".case-wall-item").forEach(function(item){item.addEventListener("click",function(event){event.preventDefault();var img=item.querySelector("img");if(!img)return;var caption=item.querySelector(".case-wall-caption");previewImg.src=img.currentSrc||img.src;previewImg.alt=img.alt||item.title||"案例图片预览";previewCaption.textContent=(caption&&caption.textContent)||item.title||"";preview.classList.add("is-open");preview.setAttribute("aria-hidden","false")})});closeBtn.addEventListener("click",closePreview);preview.addEventListener("click",function(event){if(event.target===preview)closePreview()});document.addEventListener("keydown",function(event){if(event.key==="Escape"&&preview.classList.contains("is-open"))closePreview()})})();
 (function(){var tabs=document.querySelectorAll(".case-wall-tabs button");var items=document.querySelectorAll(".case-wall-item");tabs.forEach(function(tab){tab.addEventListener("click",function(){tabs.forEach(function(t){t.classList.remove("is-active")});tab.classList.add("is-active");var key=tab.getAttribute("data-filter")||"all";items.forEach(function(el){var cats=(el.getAttribute("data-cats")||"").split(/\s+/).filter(Boolean);el.style.display=(key==="all"||cats.indexOf(key)>=0)?"":"none"})})})})();
+
+(function () {
+  function loadHeroVideo() {
+    var video = document.getElementById("heroBgVideo");
+    if (!video || !video.dataset || !video.dataset.src) return;
+    video.src = video.dataset.src;
+    video.removeAttribute("data-src");
+    video.load();
+    video.addEventListener("canplay", function () {
+      var hero = video.closest ? video.closest(".hero-section") : document.querySelector(".hero-section");
+      if (hero) hero.classList.add("is-video-ready");
+      var playPromise = video.play();
+      if (playPromise && playPromise.catch) playPromise.catch(function () {});
+    }, { once: true });
+  }
+
+  requestAnimationFrame(function () {
+    window.setTimeout(loadHeroVideo, 500);
+  });
+})();
 
 // 功能模块：弧形扇面（单面 7 张对称）+ 整块区域响应滚轮
 (function () {

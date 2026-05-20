@@ -229,10 +229,11 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
     };
   }, [previewUrl]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
   const upscaleFactor = options.defaults?.upscaleFactor || selectedModel?.upscaleFactor || "2";
-  const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
+  const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
+  const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
   function changeMode(nextMode) {
     setMode(nextMode);
@@ -298,11 +299,11 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   return (
     <div className="watermark-composer enhance-composer" aria-label="画质增强上传面板">
       <div className="watermark-mode-tabs enhance-mode-tabs">
-        <button className={mode === "image" ? "is-active" : ""} type="button" onClick={() => changeMode("image")}>
+        <button className={mode === "image" ? "is-active" : ""} type="button" disabled={!isReady} onClick={() => changeMode("image")}>
           <Image size={15} />
           图片增强
         </button>
-        <button className={mode === "video" ? "is-active" : ""} type="button" onClick={() => changeMode("video")}>
+        <button className={mode === "video" ? "is-active" : ""} type="button" disabled={!isReady} onClick={() => changeMode("video")}>
           <Film size={15} />
           视频增强
         </button>
@@ -467,7 +468,7 @@ export function EnhanceView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && options.models.length > 0 && (
+      {viewTab === "home" && (
         <EnhanceComposer
           options={options}
           onSubmit={createTask}

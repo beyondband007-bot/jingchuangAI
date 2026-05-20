@@ -199,9 +199,10 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
     };
   }, [previewUrl]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models[0];
-  const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
+  const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
+  const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
   async function selectSource(file) {
     if (!file) return;
@@ -413,7 +414,7 @@ export function RemoveBgView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && options.models.length > 0 && (
+      {viewTab === "home" && (
         <RemoveBgComposer
           options={options}
           onSubmit={createTask}
