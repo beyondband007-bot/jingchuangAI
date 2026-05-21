@@ -67,14 +67,88 @@ import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import "./styles.css";
 
 const caseImageFiles = ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];
+const wideInspirationFiles = new Set(["7.jpg","8.jpg","9.jpg","10.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","26.jpg","27.jpg","28.jpg","30.jpg","31.jpg","32.jpg","33.jpg","35.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","55.jpg","70.jpg","71.jpg","72.jpg","73.jpg","89.jpg","90.jpg","91.jpg","94.jpg","108.jpg","thumb-ai-chat.jpg","thumb-img-gen.jpg"]);
+const squareInspirationFiles = new Set(["gallery-1.jpg","gallery-4.jpg","gallery-5.jpg","gallery-8.jpg"]);
+
+function getInspirationAspect(file) {
+  if (wideInspirationFiles.has(file)) return "wide";
+  if (squareInspirationFiles.has(file)) return "square";
+  return "portrait";
+}
+
+function takeFirstAvailable(buckets, preferredTypes) {
+  for (const type of preferredTypes) {
+    if (buckets[type].length) return buckets[type].shift();
+  }
+  return null;
+}
+
+function arrangeInspirationCards(cards, columnCount = 6) {
+  const buckets = cards.reduce((next, card) => {
+    next[card.aspect || "portrait"].push(card);
+    return next;
+  }, { portrait: [], square: [], wide: [] });
+  const nonWideCards = [];
+  while (buckets.portrait.length || buckets.square.length) {
+    nonWideCards.push(takeFirstAvailable(buckets, nonWideCards.length % 5 === 1 ? ["square", "portrait"] : ["portrait", "square"]));
+  }
+  const total = cards.length;
+  const baseLength = Math.floor(total / columnCount);
+  const extraColumns = total % columnCount;
+  const columnLengths = Array.from({ length: columnCount }, (_, index) => baseLength + (index < extraColumns ? 1 : 0));
+  const wideTargets = columnLengths.map((length) => Math.floor(length / 2));
+  let remainingWide = buckets.wide.length - wideTargets.reduce((sum, count) => sum + count, 0);
+  columnLengths.forEach((length, index) => {
+    if (remainingWide > 0 && wideTargets[index] < Math.ceil(length / 2)) {
+      wideTargets[index] += 1;
+      remainingWide -= 1;
+    }
+  });
+
+  const columns = columnLengths.map((length, columnIndex) => {
+    const wideCount = wideTargets[columnIndex];
+    const nonWideCount = length - wideCount;
+    const wideCards = buckets.wide.splice(0, wideCount);
+    const nonWide = nonWideCards.splice(0, nonWideCount);
+    const column = [];
+    let preferWide = wideCount > nonWideCount;
+
+    while (column.length < length && (wideCards.length || nonWide.length)) {
+      if (preferWide && wideCards.length) {
+        column.push(wideCards.shift());
+      } else if (!preferWide && nonWide.length) {
+        column.push(nonWide.shift());
+      } else if (wideCards.length) {
+        column.push(wideCards.shift());
+      } else if (nonWide.length) {
+        column.push(nonWide.shift());
+      }
+      preferWide = !preferWide;
+    }
+
+    return column;
+  });
+
+  const arranged = [];
+  const maxRows = Math.max(...columns.map((column) => column.length));
+  for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
+    columns.forEach((column) => {
+      if (column[rowIndex]) arranged.push(column[rowIndex]);
+    });
+  }
+
+  return arranged;
+}
 
 const exampleImages = caseImageFiles.map((file, index) => ({
+  file,
   src: `/重构/案例/${encodeURIComponent(file)}`,
   label: `案例 ${String(index + 1).padStart(2, "0")}`,
   model: "图片生成",
   ratio: "案例图",
   quality: "精选",
-  price: "参考"
+  price: "参考",
+  aspect: getInspirationAspect(file)
 }));
 
 const navItems = [
@@ -1081,23 +1155,25 @@ function ImageGenerationView() {
       price: item.price,
       prompt: item.label,
       image: item.src,
+      aspect: item.aspect,
       favorite: false
     })),
     []
   );
+  const arrangedImageExampleCards = useMemo(() => arrangeInspirationCards(imageExampleCards, 6), [imageExampleCards]);
   const galleryItems = useMemo(() => {
     if (filter === "inspiration") {
-      return imageExampleCards.map((card) => ({ card, isExample: true }));
+      return arrangedImageExampleCards.map((card) => ({ card, isExample: true }));
     }
 
     const shouldShowExamples = filter === "all" && cards.length === 0 && !submittedTaskId && !selectedTaskId && !isSubmitting;
     if (shouldShowExamples) {
       return [
-        ...imageExampleCards.map((card) => ({ card, isExample: true }))
+        ...arrangedImageExampleCards.map((card) => ({ card, isExample: true }))
       ];
     }
     return cards.map((card) => ({ card, isExample: false }));
-  }, [cards, imageExampleCards, filter, isSubmitting, selectedTaskId, submittedTaskId]);
+  }, [arrangedImageExampleCards, cards, filter, isSubmitting, selectedTaskId, submittedTaskId]);
 
   useEffect(() => {
     if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
@@ -1255,6 +1331,7 @@ function ImageGenerationView() {
         <WaterfallGrid
           className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""}`}
           gap={6}
+          maxColumns={6}
           items={galleryItems}
           renderItem={({ card, isExample }) => (
             <ResultCard
