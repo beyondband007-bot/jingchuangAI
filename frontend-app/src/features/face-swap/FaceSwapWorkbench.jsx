@@ -11,6 +11,7 @@ import {
   Video,
   X
 } from "lucide-react";
+import { CustomSelect } from "../../components/CustomSelect";
 import "./FaceSwapWorkbench.css";
 
 const faceSamples = [
@@ -355,35 +356,17 @@ export function FaceSwapWorkbench({
 
             <label className="face-swap-workbench__setting face-swap-workbench__setting--model">
               <span>模型</span>
-              <select value={model} onChange={(event) => setModel(event.target.value)}>
-                {options.models.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
             </label>
 
             <label className="face-swap-workbench__setting face-swap-workbench__setting--compact">
               <span>分辨率</span>
-              <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
-                {resolutionOptions.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect ariaLabel="分辨率" value={resolution} onChange={setResolution} options={resolutionOptions} />
             </label>
 
             <label className="face-swap-workbench__setting face-swap-workbench__setting--duration">
               <span>时长</span>
-              <select value={duration} onChange={(event) => setDuration(event.target.value)}>
-                {durationOptions.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect ariaLabel="时长" value={duration} onChange={setDuration} options={durationOptions} />
             </label>
 
             <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top">

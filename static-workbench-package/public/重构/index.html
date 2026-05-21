@@ -159,7 +159,7 @@
     .module-arc-pivot { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
     .module-arc-pivot .arc-card-shell { pointer-events: auto; }
     /* 仅由 JS 内 translate(-50%,0) 做水平居中，勿再写 margin-left:-半宽，否则与底部 ::after 光斑中心错位 */
-    .arc-card-shell { position: absolute; left: 50%; bottom: 117px; width: 251px; height: 397px; margin-left: 0; opacity: 0; pointer-events: none; transform-origin: 50% 100%; transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.38s ease; }
+    .arc-card-shell { position: absolute; left: 50%; bottom: 117px; width: 251px; height: 397px; margin-left: 0; opacity: 0; pointer-events: none; transform-origin: 50% 100%; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease; }
     @media (max-width: 540px) {
       .arc-wheel-zone { width: min(100%, calc(100vw - 20px)); max-width: calc(100vw - 20px); }
       .arc-card-shell { bottom: 104px; width: 227px; height: 359px; }
@@ -768,14 +768,18 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
 
   var wheelCarry = 0;
   var lastWheelSwitch = 0;
+  var wheelThreshold = 28;
+  var wheelCooldown = 110;
   wheelRoot.addEventListener('wheel', function (e) {
     var horizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY);
     var delta = horizontal ? e.deltaX : e.deltaY;
     var now = Date.now();
 
-    if (horizontal) e.preventDefault();
+    if (!delta) return;
+    e.preventDefault();
+    e.stopPropagation();
     wheelCarry += delta;
-    if (Math.abs(wheelCarry) < 72 || now - lastWheelSwitch < 360) return;
+    if (Math.abs(wheelCarry) < wheelThreshold || now - lastWheelSwitch < wheelCooldown) return;
 
     go(wheelCarry > 0 ? 1 : -1);
     wheelCarry = 0;

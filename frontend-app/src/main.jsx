@@ -58,6 +58,7 @@ import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
 import { PromptSelectField } from "./features/chat/components/PromptSelectField";
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
+import { CustomSelect } from "./components/CustomSelect";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
@@ -1878,6 +1879,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
                 <button
                   type="button"
                   key={item.value}
+                  className={item.value === model ? "is-selected" : ""}
                   onClick={() => {
                     onModelChange(item.value);
                     setOpenMenu(null);
@@ -1891,15 +1893,13 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
         </div>
         <div className="llm-right">
           {options.reasoningEfforts.length > 0 && (
-            <label className="llm-reasoning-select">
-              <select value={reasoningEffort} onChange={(event) => onReasoningEffortChange(event.target.value)}>
-                {options.reasoningEfforts.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              ariaLabel="推理强度"
+              className="llm-reasoning-select"
+              value={reasoningEffort}
+              onChange={onReasoningEffortChange}
+              options={options.reasoningEfforts}
+            />
           )}
           <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
             {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
@@ -2538,16 +2538,17 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       )}
       <label className="dh-field">
         <span>成片模型</span>
-        <select value={model} onChange={(event) => setModel(event.target.value)}>
-          {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
+        <CustomSelect ariaLabel="成片模型" value={model} onChange={setModel} options={options.models} />
         {selectedModel && <small>调用模型：{selectedModel.providerModel || selectedModel.value} 路 {selectedModel.resolution || "720p"}</small>}
       </label>
       <label className="dh-field">
         <span>音色</span>
-        <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
-          {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
+        <CustomSelect
+          ariaLabel="音色"
+          value={voiceId}
+          onChange={setVoiceId}
+          options={voices.map((item) => ({ value: item.id, label: item.name }))}
+        />
         {selectedVoice && <small>{selectedVoice.description}</small>}
       </label>
       <div className="dh-settings-group">
@@ -2558,9 +2559,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
           </div>
           <label className="dh-field">
             <span>音色情绪</span>
-            <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
-              {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
-            </select>
+            <CustomSelect ariaLabel="音色情绪" value={ttsEmotion} onChange={setTtsEmotion} options={ttsEmotionOptions} />
           </label>
           <label className="dh-range-field">
             <span>语速 <small>{ttsSpeed.toFixed(2)}x</small></span>
@@ -3164,17 +3163,15 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
           )}
         </button>
         <div className="idh-form-card">
-          <label className="idh-select">
-            <select value={model} onChange={(event) => setModel(event.target.value)}>
-              {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
-          <label className="idh-select">
-            <Mic size={15} />
-            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
-              {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-          </label>
+          <CustomSelect className="idh-select" ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
+          <CustomSelect
+            className="idh-select"
+            ariaLabel="音色"
+            icon={Mic}
+            value={voiceId}
+            onChange={setVoiceId}
+            options={voices.map((item) => ({ value: item.id, label: item.name }))}
+          />
           <textarea
             value={text}
             maxLength={options.limits?.maxTextLength || 2000}
@@ -3185,9 +3182,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             <summary>音色参数</summary>
             <label>
               <span>情绪</span>
-              <select value={emotion} onChange={(event) => setEmotion(event.target.value)}>
-                {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
-              </select>
+              <CustomSelect className="idh-advanced-select" ariaLabel="情绪" value={emotion} onChange={setEmotion} options={ttsEmotionOptions} />
             </label>
             <label>
               <span>语速 {speed.toFixed(2)}x</span>
@@ -3757,26 +3752,23 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
         />
       </div>
       <div className="motion-composer-footer">
-        <label className="control-select model-select">
-          <Box size={15} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
-            {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </label>
-        <label className="control-select">
-          <Ruler size={15} />
-          <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
-            {(options.modes || emptyMotionTransferOptions.modes).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </label>
-        <label className="control-select">
-          <Timer size={15} />
-          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)}>
-            {(options.characterOrientations || emptyMotionTransferOptions.characterOrientations).map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-        </label>
+        <CustomSelect className="control-select model-select" ariaLabel="模型" icon={Box} value={model} onChange={setModel} options={options.models} />
+        <CustomSelect
+          className="control-select"
+          ariaLabel="分辨率"
+          icon={Ruler}
+          value={resolution}
+          onChange={setResolution}
+          options={options.modes || emptyMotionTransferOptions.modes}
+        />
+        <CustomSelect
+          className="control-select"
+          ariaLabel="角色方向"
+          icon={Timer}
+          value={characterOrientation}
+          onChange={setCharacterOrientation}
+          options={options.characterOrientations || emptyMotionTransferOptions.characterOrientations}
+        />
         <span className="price-pill">{price}</span>
         <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label={copy.submitLabel}>
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
