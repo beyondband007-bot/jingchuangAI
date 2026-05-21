@@ -3506,7 +3506,7 @@ a:hover {
 .history-toggle {
   position: fixed;
   right: 22px;
-  top: 88px;
+  top: 142px;
   z-index: 12;
   display: inline-flex;
   align-items: center;
@@ -10314,6 +10314,51 @@ select {
 .chat-topbar h1 {
   color: #eef1f7 !important;
   font-size: 20px;
+}
+
+.chat-history-rail {
+  top: 192px;
+  max-height: calc(100vh - 236px);
+  background: rgba(20, 20, 22, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.chat-new-conversation-button {
+  position: fixed;
+  right: 22px;
+  top: 90px;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  color: #eef1f7;
+  background: rgba(44, 35, 69, 0.92);
+  border: 1px solid rgba(145, 118, 255, 0.42);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.chat-new-conversation-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.chat-new-conversation-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.chat-history-rail .history-rail-header {
+  color: #eef1f7;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .chat-main-canvas {

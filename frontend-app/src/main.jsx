@@ -1824,21 +1824,10 @@ function ChatCanvas({ messages, isSubmitting, error }) {
   );
 }
 
-function ChatComposerBar({ options, onSubmit, isSubmitting }) {
+function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange, reasoningEffort, onReasoningEffortChange }) {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(options.defaultModel || options.models[0]?.value || "");
-  const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
-
-  useEffect(() => {
-    if (!model && (options.defaultModel || options.models[0]?.value)) {
-      setModel(options.defaultModel || options.models[0].value);
-    }
-    if (!reasoningEffort && options.reasoningEfforts[0]) {
-      setReasoningEffort(options.reasoningEfforts[0].value);
-    }
-  }, [model, options, reasoningEffort]);
 
   const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
@@ -1879,9 +1868,6 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
       />
       <div className="llm-toolbar">
         <div className="llm-left">
-          <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
-            +
-          </button>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
             <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
@@ -1893,7 +1879,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
                   type="button"
                   key={item.value}
                   onClick={() => {
-                    setModel(item.value);
+                    onModelChange(item.value);
                     setOpenMenu(null);
                   }}
                 >
@@ -1906,7 +1892,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
         <div className="llm-right">
           {options.reasoningEfforts.length > 0 && (
             <label className="llm-reasoning-select">
-              <select value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value)}>
+              <select value={reasoningEffort} onChange={(event) => onReasoningEffortChange(event.target.value)}>
                 {options.reasoningEfforts.map((item) => (
                   <option key={item.value} value={item.value}>
                     {item.label}
@@ -1915,9 +1901,6 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
               </select>
             </label>
           )}
-          <button className="llm-round" type="button" onClick={() => setNotice("录音按钮暂未接入麦克风权限。")} aria-label="录音">
-            <Mic size={18} />
-          </button>
           <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
             {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
           </button>
@@ -1960,6 +1943,8 @@ function ChatGenerationView() {
   const [options, setOptions] = useState(emptyChatOptions);
   const [credits, setCredits] = useState(null);
   const [conversationId, setConversationId] = useState(null);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState("none");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -1975,6 +1960,18 @@ function ChatGenerationView() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const defaultModel = options.defaultModel || options.models[0]?.value || "";
+    const hasSelectedModel = options.models.some((item) => item.value === selectedModel);
+    if (defaultModel && (!selectedModel || !hasSelectedModel)) {
+      setSelectedModel(defaultModel);
+    }
+    const hasSelectedReasoningEffort = options.reasoningEfforts.some((item) => item.value === selectedReasoningEffort);
+    if (options.reasoningEfforts[0]?.value && (!selectedReasoningEffort || !hasSelectedReasoningEffort)) {
+      setSelectedReasoningEffort(options.reasoningEfforts[0].value);
+    }
+  }, [options, selectedModel, selectedReasoningEffort]);
 
   async function sendChatMessage({ content, model, reasoningEffort }) {
     const localId = Date.now();
@@ -2029,6 +2026,13 @@ function ChatGenerationView() {
     }
   }
 
+  function startNewConversation() {
+    setMessages([]);
+    setConversationId(null);
+    setSubmitError("");
+    setIsHistoryOpen(false);
+  }
+
   async function selectConversation(id) {
     setSubmitError("");
     setConversationId(id);
@@ -2041,9 +2045,17 @@ function ChatGenerationView() {
     }
   }
 
-  const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
+  const isIntroState = !messages.length && !isSubmitting && !submitError;
   const composer = (
-    <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
+    <ChatComposerBar
+      options={options}
+      onSubmit={sendChatMessage}
+      isSubmitting={isSubmitting}
+      model={selectedModel}
+      onModelChange={setSelectedModel}
+      reasoningEffort={selectedReasoningEffort}
+      onReasoningEffortChange={setSelectedReasoningEffort}
+    />
   );
 
   return (
@@ -2053,14 +2065,24 @@ function ChatGenerationView() {
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       {conversations.length > 0 && (
-        <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
-          <Layers size={17} />
-          历史
-          <span>{conversations.length}</span>
-        </button>
+        <>
+          <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
+            <Plus size={16} />
+            新建对话
+          </button>
+          <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+            <Layers size={17} />
+            历史
+            <span>{conversations.length}</span>
+          </button>
+        </>
       )}
       {isHistoryOpen && (
-        <ChatHistoryRail conversations={conversations} activeConversationId={conversationId} onSelect={selectConversation} />
+        <ChatHistoryRail
+          conversations={conversations}
+          activeConversationId={conversationId}
+          onSelect={selectConversation}
+        />
       )}
       {isIntroState ? (
         <div className="llm-intro-layout">
