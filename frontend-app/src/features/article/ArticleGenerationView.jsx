@@ -708,28 +708,21 @@ export function ArticleGenerationView() {
 
   return (
     <section className="article-view-root">
-      <div className="article-topbar">
-        <div>
-          <span>爆款图文</span>
-        </div>
-        <div className="article-top-actions">
-          {credits && <span className="article-credit">积分 {credits.balance}</span>}
-          <button type="button" onClick={applyRandomInspiration}>
-            <Sparkles size={17} />
-            灵感换一换
-          </button>
-        </div>
-      </div>
-
-      <div className="article-view-tabs" aria-label="爆款图文页面切换">
-        <button className={viewMode === "home" ? "is-selected" : ""} type="button" onClick={() => setViewMode("home")}>
+      <div className="image-filter-tabs article-filter-tabs" aria-label="爆款图文页面切换">
+        <button className={viewMode === "home" ? "selected" : ""} type="button" onClick={() => setViewMode("home")}>
           主页
         </button>
-        <button className={viewMode === "recent" ? "is-selected" : ""} type="button" onClick={() => setViewMode("recent")}>
+        <button className={viewMode === "recent" ? "selected" : ""} type="button" onClick={() => setViewMode("recent")}>
           最近生成
         </button>
-        <button className={viewMode === "favorite" ? "is-selected" : ""} type="button" onClick={() => setViewMode("favorite")}>
+        <button className={viewMode === "favorite" ? "selected" : ""} type="button" onClick={() => setViewMode("favorite")}>
+          <Star size={17} fill="#f8d545" color="#161616" />
           收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        <button className="article-filter-action" type="button" onClick={applyRandomInspiration}>
+          <Sparkles size={17} />
+          灵感换一换
         </button>
       </div>
 
