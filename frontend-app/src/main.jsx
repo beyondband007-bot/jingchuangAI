@@ -105,7 +105,7 @@ const navSections = [
   { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
   { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
   { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
-  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://token.facemini.com/portal/index.html" }
 ];
 
 const homeFeatureRoutes = [
@@ -546,12 +546,16 @@ function ComingSoon({ activeNav }) {
   );
 }
 
-function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = false, isImageGallery = false }) {
-  const isProcessing = card.status === "processing";
+function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExample = false, isImageGallery = false, isSelected = false }) {
+  const isProcessing = card.status === "pending" || card.status === "processing";
   const isFailed = card.status === "failed";
+  const canPreview = Boolean(card.image && onPreview && !isProcessing && !isFailed);
 
   return (
-    <article className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""}`}>
+    <article
+      className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""} ${isSelected ? "is-selected-result" : ""}`}
+      data-image-card-id={card.id}
+    >
       {isImageGallery && (
         <div className="result-card-model-tag">
           <span className="model-tag">{card.model}</span>
@@ -572,6 +576,11 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = fals
             <img src={card.image} alt={card.prompt} />
           )
         ) : null}
+        {canPreview && isImageGallery && (
+          <button className="result-preview-hitarea" type="button" onClick={() => onPreview(card)} aria-label="放大查看图片">
+            <Maximize2 size={18} />
+          </button>
+        )}
         {!isProcessing && !isFailed && !card.image && <span className="broken-image-mark" aria-hidden="true" />}
       </div>
       <div className="result-meta">
@@ -706,6 +715,32 @@ function ComposerBar({ options, onSubmit }) {
 }
 
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
+const imageGenerationSessionKey = "jingchuang:image-generation-session";
+
+function readImageGenerationSession() {
+  try {
+    const cached = window.sessionStorage.getItem(imageGenerationSessionKey);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeImageGenerationSession(next) {
+  try {
+    window.sessionStorage.setItem(imageGenerationSessionKey, JSON.stringify(next));
+  } catch {
+    // Session storage can be unavailable in strict privacy contexts.
+  }
+}
+
+function clearImageGenerationSession() {
+  try {
+    window.sessionStorage.removeItem(imageGenerationSessionKey);
+  } catch {
+    // Ignore storage errors; the in-memory state still drives the current view.
+  }
+}
 
 function ExampleCanvas() {
   return (
@@ -763,6 +798,37 @@ function GeneratingCanvas({ prompt }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ImageGeneratingFeedState({ prompt }) {
+  return (
+    <div className="image-generating-feed-state" role="status" aria-live="polite">
+      <div className="image-generating-orbit" aria-hidden="true">
+        <span />
+        <Loader2 size={30} />
+      </div>
+      <div>
+        <strong>图片正在生成中</strong>
+        <p>{prompt ? `正在处理：“${prompt}”` : "已收到你的请求，正在为你生成图片。"}</p>
+      </div>
+    </div>
+  );
+}
+
+function ImageCompletedNotice({ task, onReveal }) {
+  if (!task?.image) return null;
+
+  return (
+    <button className="image-completed-notice" type="button" onClick={() => onReveal(task)} aria-label="查看生成结果">
+      <div className="image-completed-mark" aria-hidden="true">
+        <CheckCircle2 size={32} />
+      </div>
+      <div>
+        <strong>生图已完成，点击查看结果</strong>
+        <p>{task.prompt}</p>
+      </div>
+    </button>
   );
 }
 
@@ -869,6 +935,36 @@ function PreviewDrawer({ task, onClose }) {
   );
 }
 
+function ImagePreviewLightbox({ task, onClose }) {
+  if (!task?.image) return null;
+
+  return (
+    <div className="image-preview-lightbox" role="dialog" aria-modal="true" aria-label="图片放大预览">
+      <button className="image-preview-backdrop" type="button" onClick={onClose} aria-label="关闭图片预览" />
+      <div className="image-preview-panel">
+        <div className="image-preview-toolbar">
+          <div>
+            <span>预览</span>
+            <strong>{task.prompt}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭图片预览">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="image-preview-stage">
+          <img src={task.image} alt={task.prompt} />
+        </div>
+        <div className="image-preview-actions">
+          <a href={task.image} download>
+            <Download size={16} />
+            下载
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, onRegenerate }) {
   if (!cards.length) return null;
 
@@ -931,14 +1027,19 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
 }
 
 function ImageGenerationView() {
-  const [filter, setFilter] = useState("all");
+  const cachedSessionRef = useRef(null);
+  if (!cachedSessionRef.current) {
+    cachedSessionRef.current = readImageGenerationSession();
+  }
+  const cachedSession = cachedSessionRef.current;
+  const [filter, setFilter] = useState("inspiration");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [submittedTaskId, setSubmittedTaskId] = useState(null);
-  const [activePrompt, setActivePrompt] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(cachedSession.selectedTaskId || null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(cachedSession.submittedTaskId || null);
+  const [activePrompt, setActivePrompt] = useState(cachedSession.activePrompt || "");
+  const [isSubmitting, setIsSubmitting] = useState(Boolean(cachedSession.isSubmitting));
   const [submitError, setSubmitError] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
@@ -962,6 +1063,12 @@ function ImageGenerationView() {
 
   const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
   const submittedTask = useMemo(() => cards.find((card) => card.id === submittedTaskId) || null, [cards, submittedTaskId]);
+  const activeGenerationTask = submittedTask || selectedTask;
+  const hasActiveGeneration = Boolean(
+    isSubmitting ||
+    activeGenerationTask?.status === "pending" ||
+    activeGenerationTask?.status === "processing"
+  );
   const imageExampleCards = useMemo(
     () => exampleImages.map((item, index) => ({
       id: `example-image-${index}`,
@@ -979,14 +1086,18 @@ function ImageGenerationView() {
     []
   );
   const galleryItems = useMemo(() => {
-    if (filter === "all") {
+    if (filter === "inspiration") {
+      return imageExampleCards.map((card) => ({ card, isExample: true }));
+    }
+
+    const shouldShowExamples = filter === "all" && cards.length === 0 && !submittedTaskId && !selectedTaskId && !isSubmitting;
+    if (shouldShowExamples) {
       return [
-        ...imageExampleCards.map((card) => ({ card, isExample: true })),
-        ...cards.map((card) => ({ card, isExample: false }))
+        ...imageExampleCards.map((card) => ({ card, isExample: true }))
       ];
     }
     return cards.map((card) => ({ card, isExample: false }));
-  }, [cards, imageExampleCards, filter]);
+  }, [cards, imageExampleCards, filter, isSubmitting, selectedTaskId, submittedTaskId]);
 
   useEffect(() => {
     if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
@@ -999,6 +1110,21 @@ function ImageGenerationView() {
     if (!submittedTaskId || !submittedTask) return;
     setSelectedTaskId(submittedTask.id);
   }, [submittedTask, submittedTaskId]);
+
+  useEffect(() => {
+    if (!submittedTaskId && !selectedTaskId && !activePrompt && !isSubmitting) {
+      clearImageGenerationSession();
+      return;
+    }
+
+    writeImageGenerationSession({
+      submittedTaskId,
+      selectedTaskId,
+      activePrompt,
+      isSubmitting,
+      updatedAt: Date.now()
+    });
+  }, [activePrompt, isSubmitting, selectedTaskId, submittedTaskId]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -1017,11 +1143,25 @@ function ImageGenerationView() {
     setSelectedTaskId(null);
     setIsHistoryOpen(false);
     setPreviewTask(null);
+    writeImageGenerationSession({
+      submittedTaskId: null,
+      selectedTaskId: null,
+      activePrompt: payload.prompt,
+      isSubmitting: true,
+      updatedAt: Date.now()
+    });
 
     try {
       const task = await imageApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
+      writeImageGenerationSession({
+        submittedTaskId: task.id,
+        selectedTaskId: task.id,
+        activePrompt: task.prompt || payload.prompt,
+        isSubmitting: task.status === "pending" || task.status === "processing",
+        updatedAt: Date.now()
+      });
       if (task.status === "failed") {
         setIsSubmitting(false);
       }
@@ -1039,6 +1179,7 @@ function ImageGenerationView() {
     if (submittedTaskId === id) {
       setSubmittedTaskId(null);
       setActivePrompt("");
+      clearImageGenerationSession();
     }
   }
 
@@ -1055,21 +1196,48 @@ function ImageGenerationView() {
     setIsSubmitting(true);
     setIsHistoryOpen(false);
     setPreviewTask(null);
+    writeImageGenerationSession({
+      submittedTaskId: null,
+      selectedTaskId: id,
+      activePrompt: source?.prompt || activePrompt,
+      isSubmitting: true,
+      updatedAt: Date.now()
+    });
 
     try {
       const created = await imageApi.regenerateTask(id);
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
+      writeImageGenerationSession({
+        submittedTaskId: created.id,
+        selectedTaskId: created.id,
+        activePrompt: created.prompt || source?.prompt || activePrompt,
+        isSubmitting: created.status === "pending" || created.status === "processing",
+        updatedAt: Date.now()
+      });
     } catch (error) {
       setSubmitError(error.message || "创建生成任务失败");
       setIsSubmitting(false);
     }
-    setIsSubmitting(false);
+  }
+
+  function revealGeneratedTask(task) {
+    if (!task?.image) return;
+    setFilter("all");
+    setSelectedTaskId(task.id);
+    setPreviewTask(task);
+    setSubmittedTaskId(null);
+    setActivePrompt("");
+    clearImageGenerationSession();
   }
 
   return (
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
+        <button className={filter === "inspiration" ? "selected" : ""} onClick={() => setFilter("inspiration")} type="button">
+          <Sparkles size={17} />
+          灵感
+        </button>
         <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
         <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">近24小时</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
@@ -1079,9 +1247,13 @@ function ImageGenerationView() {
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
+      {hasActiveGeneration && <ImageGeneratingFeedState prompt={activeGenerationTask?.prompt || activePrompt} />}
+      {!hasActiveGeneration && submittedTask?.status === "completed" && (
+        <ImageCompletedNotice task={submittedTask} onReveal={revealGeneratedTask} />
+      )}
       {galleryItems.length ? (
         <WaterfallGrid
-          className="image-results-feed"
+          className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""}`}
           gap={6}
           items={galleryItems}
           renderItem={({ card, isExample }) => (
@@ -1089,18 +1261,21 @@ function ImageGenerationView() {
               card={card}
               isExample={isExample}
               isImageGallery
+              isSelected={!isExample && selectedTaskId === card.id}
+              onPreview={(task) => setPreviewTask(task)}
               onDelete={isExample ? () => {} : deleteTask}
               onFavorite={isExample ? () => {} : toggleFavorite}
               onRegenerate={isExample ? () => {} : regenerateTask}
             />
           )}
         />
-      ) : (
+      ) : !hasActiveGeneration ? (
         <div className="results-feed video-results-feed image-results-feed-empty">
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
-      )}
+      ) : null}
       {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
+      <ImagePreviewLightbox task={previewTask} onClose={() => setPreviewTask(null)} />
     </section>
   );
 }
