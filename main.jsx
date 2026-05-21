@@ -447,11 +447,11 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
     <aside className="feature-sidebar">
       <div className="feature-brand">
         <span className="feature-brand-text">Getrue.ai</span>
-        <span className="feature-brand-beta">（内测）</span>
+        <span className="feature-brand-beta">锛堝唴娴嬶級</span>
       </div>
       <label className="feature-nav-search">
         <Search size={16} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="搜索..." />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="鎼滅储..." />
       </label>
       <nav className="feature-nav" aria-label="功能导航">
         {navSections.map((section) => {

@@ -1,0 +1,281 @@
+.voice-synthesis-workspace {
+  width: min(100%, 1120px);
+  padding: 20px;
+  background:
+    radial-gradient(circle at top left, rgba(117, 92, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #171b27 0%, #0f121a 100%);
+  border: 1px solid rgba(180, 194, 255, 0.14);
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+}
+
+.voice-synthesis-workspace__panel h2 {
+  margin: 0;
+}
+
+.voice-synthesis-workspace__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.voice-synthesis-workspace__main {
+  display: grid;
+  gap: 12px;
+}
+
+.voice-synthesis-workspace__panel,
+.voice-synthesis-workspace__footer {
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(28, 32, 46, 0.94), rgba(18, 21, 31, 0.94));
+  border: 1px solid rgba(183, 194, 235, 0.12);
+  border-radius: 16px;
+}
+
+.voice-synthesis-workspace__step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #f5f7ff;
+}
+
+.voice-synthesis-workspace__step span:first-child {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  background: linear-gradient(135deg, #5f64ff, #9340ff);
+  border-radius: 50%;
+  box-shadow: 0 6px 16px rgba(105, 92, 255, 0.24);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.voice-synthesis-workspace__upload-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 12px;
+}
+
+.voice-synthesis-workspace__dropzone {
+  display: flex;
+  min-height: 188px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  color: #eff3ff;
+  text-align: center;
+  background: radial-gradient(circle at center, rgba(118, 82, 255, 0.18), transparent 34%), rgba(6, 8, 14, 0.2);
+  border: 1px dashed rgba(165, 142, 255, 0.6);
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.voice-synthesis-workspace__dropzone.has-file {
+  border-style: solid;
+  background: linear-gradient(180deg, rgba(89, 99, 255, 0.12), rgba(6, 8, 14, 0.18));
+}
+
+.voice-synthesis-workspace__dropzone input {
+  display: none;
+}
+
+.voice-synthesis-workspace__dropzone-icon {
+  color: #b99cff;
+}
+
+.voice-synthesis-workspace__dropzone h3,
+.voice-synthesis-workspace__requirements h3,
+.voice-synthesis-workspace__footer strong {
+  margin: 0;
+}
+
+.voice-synthesis-workspace__dropzone h3 {
+  font-size: 18px;
+}
+
+.voice-synthesis-workspace__dropzone p,
+.voice-synthesis-workspace__footer p {
+  margin: 0;
+  color: #a9b3cf;
+  font-size: 13px;
+}
+
+.voice-synthesis-workspace__dropzone-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.voice-synthesis-workspace__dropzone-actions span,
+.voice-synthesis-workspace__dropzone-actions button,
+.voice-synthesis-workspace__text-tools button,
+.voice-synthesis-workspace__footer-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  color: #f5f7ff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(196, 207, 249, 0.14);
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.voice-synthesis-workspace__requirements {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(196, 207, 249, 0.1);
+  border-radius: 16px;
+}
+
+.voice-synthesis-workspace__requirements h3 {
+  color: #cbadff;
+}
+
+.voice-synthesis-workspace__requirements ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #a9b3cf;
+  font-size: 13px;
+}
+
+.voice-synthesis-workspace__requirements li + li {
+  margin-top: 6px;
+}
+
+.voice-synthesis-workspace__textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: 14px;
+  color: #f5f7ff;
+  background: rgba(10, 12, 18, 0.58);
+  border: 1px solid rgba(196, 207, 249, 0.14);
+  border-radius: 12px;
+  resize: vertical;
+  font: inherit;
+}
+
+.voice-synthesis-workspace__text-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.voice-synthesis-workspace__text-tools span {
+  margin-left: auto;
+  color: #8995b8;
+  font-size: 13px;
+}
+
+.voice-synthesis-workspace__sliders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.voice-synthesis-workspace__slider {
+  display: grid;
+  gap: 10px;
+}
+
+.voice-synthesis-workspace__slider-header,
+.voice-synthesis-workspace__slider-range,
+.voice-synthesis-workspace__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-synthesis-workspace__slider-header {
+  color: #eaf0ff;
+}
+
+.voice-synthesis-workspace__slider input {
+  width: 100%;
+  accent-color: #8d54ff;
+}
+
+.voice-synthesis-workspace__slider-range {
+  color: #8995b8;
+  font-size: 12px;
+}
+
+.voice-synthesis-workspace__audio-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.voice-synthesis-workspace__audio-panel div {
+  display: grid;
+  gap: 8px;
+}
+
+.voice-synthesis-workspace__audio-panel span {
+  color: #d8e0ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.voice-synthesis-workspace__audio-panel audio {
+  width: 100%;
+}
+
+.voice-synthesis-workspace__footer p {
+  margin-top: 4px;
+}
+
+.voice-synthesis-workspace__footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.voice-synthesis-workspace__footer-actions .is-primary {
+  background: linear-gradient(135deg, #5e5bff, #8d3df4);
+  border: 0;
+  box-shadow: 0 10px 26px rgba(126, 76, 255, 0.28);
+}
+
+.voice-synthesis-workspace__footer-actions .is-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1280px) {
+  .voice-synthesis-workspace__upload-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .voice-synthesis-workspace {
+    padding: 18px;
+  }
+
+  .voice-synthesis-workspace__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .voice-synthesis-workspace__sliders,
+  .voice-synthesis-workspace__audio-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-synthesis-workspace__text-tools {
+    flex-wrap: wrap;
+  }
+
+  .voice-synthesis-workspace__text-tools span {
+    width: 100%;
+    margin-left: 0;
+  }
+}

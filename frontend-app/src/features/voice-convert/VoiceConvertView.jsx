@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
+import { CheckCircle2, Download, Loader2, Mic, Music, Play, Star, Trash2 } from "lucide-react";
+import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
@@ -71,49 +72,6 @@ function loadRecentResults() {
   }
 }
 
-function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, onClear, accept = ".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" }) {
-  const inputRef = useRef(null);
-  const hasFile = Boolean(fileState?.fileName);
-  function clearFile(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClear?.();
-  }
-
-  return (
-    <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (file) onPick(file);
-        }}
-      />
-      {hasFile && !isUploading && (
-        <span
-          className="upload-clear-button"
-          role="button"
-          tabIndex={0}
-          title="取消上传"
-          aria-label="取消上传"
-          onClick={clearFile}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") clearFile(event);
-          }}
-        >
-          <X size={13} />
-        </span>
-      )}
-      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
-      <strong>{hasFile ? fileState.fileName : title}</strong>
-      <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
-    </button>
-  );
-}
-
 export function VoiceConvertView() {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
@@ -138,7 +96,7 @@ export function VoiceConvertView() {
       const safeItems = recentResults.map(({ audioDataUrl, ...item }) => item);
       window.localStorage.setItem(voiceConvertRecentStorageKey, JSON.stringify(safeItems));
     } catch {
-      // Recent conversion history is optional.
+      // Recent history is optional.
     }
   }, [recentResults]);
 
@@ -158,7 +116,7 @@ export function VoiceConvertView() {
     try {
       const durationMs = await readAudioDuration(file);
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
-        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav");
+        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav。");
       }
 
       const result = await voiceConvertApi.uploadTargetAudio(file, durationMs);
@@ -172,9 +130,9 @@ export function VoiceConvertView() {
       setDemoAudio("");
       setResultAudio("");
       setResultUrl("");
-      setNotice("目标音色上传完成");
+      setNotice("目标音色上传完成。");
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "目标音色上传失败");
     } finally {
       setUploading("");
     }
@@ -199,10 +157,10 @@ export function VoiceConvertView() {
   async function pickSourceFile(file) {
     setNotice("");
     try {
-      if (file.size > 50 * 1024 * 1024) throw new Error("源音频需小于 50MB");
+      if (file.size > 50 * 1024 * 1024) throw new Error("源音频需小于 50MB。");
       const durationMs = await readAudioDuration(file);
       if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
-        throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm");
+        throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm。");
       }
       setSourceAudio({
         file,
@@ -212,19 +170,19 @@ export function VoiceConvertView() {
       });
       setResultAudio("");
       setResultUrl("");
-      setNotice("源音频已选择");
+      setNotice("源音频已选择。");
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "源音频选择失败");
     }
   }
 
   async function convertVoice() {
     if (!targetAudio?.fileId) {
-      setNotice("请先上传目标音色");
+      setNotice("请先上传目标音色。");
       return;
     }
     if (!sourceAudio?.file) {
-      setNotice("请先上传源音频");
+      setNotice("请先上传源音频。");
       return;
     }
 
@@ -257,9 +215,9 @@ export function VoiceConvertView() {
         createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
-      setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速" : "转换完成");
+      setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速。" : "转换完成。");
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "音色转换失败");
     } finally {
       setIsConverting(false);
     }
@@ -319,18 +277,43 @@ export function VoiceConvertView() {
           收藏
         </button>
       </div>
+
       <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
-        {viewTab === "home" && <div className="voice-hero-empty">
-          <span className="voice-hero-icon">🎙️</span>
-          <h1>音色转换</h1>
-          <p>上传目标音色和源音频，自动提取源内容并转换成目标声音</p>
-          {currentVoice && (
-            <div className="voice-current-chip">
-              <CheckCircle2 size={16} />
-              当前音色：{currentVoice.name}
+        {viewTab === "home" && (
+          <>
+            <div className="voice-hero-empty">
+              <h1>音色转换</h1>
+              <p>上传目标音色和源音频，自动提取内容并转换成目标声音。</p>
+              {currentVoice && (
+                <div className="voice-current-chip">
+                  <CheckCircle2 size={16} />
+                  当前音色：{currentVoice.name}
+                </div>
+              )}
             </div>
-          )}
-        </div>}
+
+            <VoiceConversionWorkbenchCard
+              targetAudio={targetAudio}
+              sourceAudio={sourceAudio}
+              speed={speed}
+              volume={volume}
+              pitch={pitch}
+              notice={notice}
+              isConverting={isConverting}
+              demoAudio={demoAudio}
+              resultAudio={resultAudio}
+              onPickTarget={uploadTargetFile}
+              onClearTarget={clearTargetAudio}
+              onPickSource={pickSourceFile}
+              onClearSource={clearSourceAudio}
+              onSpeedChange={setSpeed}
+              onVolumeChange={setVolume}
+              onPitchChange={setPitch}
+              onConvert={convertVoice}
+              onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
+            />
+          </>
+        )}
 
         {viewTab === "recent" && (
           <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
@@ -338,7 +321,7 @@ export function VoiceConvertView() {
               <div className="voice-recent-empty">
                 <Music size={28} />
                 <strong>暂无转换记录</strong>
-                <p>转换完成的 MP3 会显示在这里，可直接播放和下载。</p>
+                <p>转换完成后的 MP3 会显示在这里，可直接播放和下载。</p>
               </div>
             ) : (
               recentResults.map((item) => (
@@ -377,79 +360,6 @@ export function VoiceConvertView() {
             )}
           </div>
         )}
-
-        {viewTab === "home" && <div className="voice-floating-composer">
-          <div className="voice-composer-title">
-            <Mic size={16} />
-            音色转换
-          </div>
-          <div className="voice-upload-grid is-two">
-            <VoiceUploadSlot
-              title="+ 目标音色"
-              hint="参考音频 10s-5min"
-              fileState={targetAudio}
-              isUploading={uploading === "target"}
-              onPick={uploadTargetFile}
-              onClear={clearTargetAudio}
-            />
-            <VoiceUploadSlot
-              title="+ 源音频"
-              hint="待转换音频 6s-6min"
-              fileState={sourceAudio}
-              isUploading={false}
-              onPick={pickSourceFile}
-              onClear={clearSourceAudio}
-              accept=".mp3,.m4a,.wav,.flac,.webm,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/webm,video/webm"
-            />
-          </div>
-
-          <div className="voice-slider-row">
-            <label>
-              <span>语速 {speed.toFixed(2)}x</span>
-              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音量 {volume.toFixed(1)}</span>
-              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
-              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
-            </label>
-          </div>
-
-          {(demoAudio || resultAudio) && (
-            <div className="voice-audio-results">
-              {demoAudio && (
-                <div>
-                  <span>音色试听</span>
-                  <audio src={demoAudio} controls />
-                </div>
-              )}
-              {resultAudio && (
-                <div>
-                  <span>转换结果</span>
-                  <audio src={resultAudio} controls />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="voice-composer-footer">
-            <span>{notice || "目标音色支持 mp3、m4a、wav；源音频支持 mp3、wav、flac、m4a、webm"}</span>
-            <div className="voice-actions">
-              {(resultAudio || resultUrl) && (
-                <button className="voice-download" type="button" onClick={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}>
-                  <Download size={15} />
-                </button>
-              )}
-              <button className="voice-generate-button" type="button" onClick={convertVoice} disabled={isConverting || uploading || !targetAudio || !sourceAudio}>
-                {isConverting ? <Loader2 size={16} /> : <Play size={16} />}
-                开始转换
-              </button>
-            </div>
-          </div>
-        </div>}
       </div>
     </section>
   );

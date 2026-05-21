@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Loader2, Mic, Music, Play, Plus, Star, Trash2, X } from "lucide-react";
+import { CheckCircle2, Download, Loader2, LockKeyhole, Mic, Music, Play, Star, Trash2 } from "lucide-react";
+import { VoiceSynthesisWorkbenchCard } from "../voice-synthesis-ui/VoiceSynthesisWorkbenchCard";
 import { voiceApi } from "./voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
-const voicePreviewText = "欢迎使用Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
+const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
+const defaultSynthesisText = "欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
 
 function formatVoiceDuration(ms) {
@@ -72,54 +74,11 @@ function loadRecentResults() {
   }
 }
 
-function VoiceUploadSlot({ title, hint, fileState, isUploading, onPick, onClear }) {
-  const inputRef = useRef(null);
-  const hasFile = Boolean(fileState?.fileName);
-  function clearFile(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClear?.();
-  }
-
-  return (
-    <button className={`voice-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (file) onPick(file);
-        }}
-      />
-      {hasFile && !isUploading && (
-        <span
-          className="upload-clear-button"
-          role="button"
-          tabIndex={0}
-          title="取消上传"
-          aria-label="取消上传"
-          onClick={clearFile}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") clearFile(event);
-          }}
-        >
-          <X size={13} />
-        </span>
-      )}
-      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
-      <strong>{hasFile ? fileState.fileName : title}</strong>
-      <small>{hasFile ? `${formatVoiceDuration(fileState.durationMs) || "已上传"} · ${(fileState.size / 1024 / 1024).toFixed(1)}MB` : hint}</small>
-    </button>
-  );
-}
-
 export function VoiceSynthesisView() {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
-  const [text, setText] = useState("欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。");
+  const [text, setText] = useState(defaultSynthesisText);
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
@@ -136,7 +95,6 @@ export function VoiceSynthesisView() {
   const [playingRecentId, setPlayingRecentId] = useState("");
   const recentAudioRefs = useRef({});
 
-  // 由外层保活挂载，首次挂载即拉取音色配置；隐藏时仍保留状态
   useEffect(() => {
     let mounted = true;
     voiceApi.getConfig().then((data) => {
@@ -152,14 +110,14 @@ export function VoiceSynthesisView() {
       const safeItems = recentResults.map(({ audioDataUrl, ...item }) => item);
       window.localStorage.setItem(voiceRecentStorageKey, JSON.stringify(safeItems));
     } catch {
-      // Recent synthesis history is optional.
+      // Synthesis history is optional.
     }
   }, [recentResults]);
 
   useEffect(() => {
     let mounted = true;
     voiceApi.getTasks().then((items) => {
-      if (mounted) setRecentResults(items);
+      if (mounted && Array.isArray(items) && items.length) setRecentResults(items);
     }).catch(() => {});
     return () => {
       mounted = false;
@@ -172,7 +130,7 @@ export function VoiceSynthesisView() {
     try {
       const durationMs = await readAudioDuration(file);
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
-        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav");
+        throw new Error("目标音色音频需在 10 秒到 5 分钟之间，支持 mp3、m4a、wav。");
       }
 
       const result = await voiceApi.uploadCloneAudio(file, durationMs);
@@ -186,9 +144,9 @@ export function VoiceSynthesisView() {
       setDemoAudio("");
       setResultAudio("");
       setResultUrl("");
-      setNotice("目标音色上传完成");
+      setNotice("目标音色上传完成。");
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "上传音色失败");
     } finally {
       setUploading("");
     }
@@ -205,7 +163,7 @@ export function VoiceSynthesisView() {
 
   async function ensureVoiceClone() {
     if (!cloneAudio?.fileId) {
-      setNotice("请先上传目标音色");
+      setNotice("请先上传目标音色。");
       return null;
     }
     if (currentVoice?.id) return currentVoice;
@@ -224,7 +182,7 @@ export function VoiceSynthesisView() {
       setDemoAudio(result.demoAudio || "");
       return result.voice;
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "克隆音色失败");
       return null;
     } finally {
       setIsCloning(false);
@@ -233,13 +191,14 @@ export function VoiceSynthesisView() {
 
   async function generateSpeech() {
     if (!cloneAudio?.fileId) {
-      setNotice("请先上传目标音色");
+      setNotice("请先上传目标音色。");
       return;
     }
     if (!text.trim()) {
-      setNotice("请输入需要合成的文本");
+      setNotice("请输入需要合成的文本。");
       return;
     }
+
     const voice = await ensureVoiceClone();
     if (!voice?.id) return;
 
@@ -268,9 +227,9 @@ export function VoiceSynthesisView() {
         createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
-      setNotice("语音生成完成");
+      setNotice("语音生成完成。");
     } catch (error) {
-      setNotice(error.message);
+      setNotice(error.message || "语音生成失败");
     } finally {
       setIsSynthesizing(false);
     }
@@ -282,6 +241,25 @@ export function VoiceSynthesisView() {
     } catch (error) {
       setNotice(error.message || "下载音频失败");
     }
+  }
+
+  async function pasteText() {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      if (!clipboardText) {
+        setNotice("剪贴板内容为空。");
+        return;
+      }
+      setText((current) => `${current}${current ? "\n" : ""}${clipboardText}`.slice(0, 2000));
+      setNotice("已从剪贴板粘贴文本。");
+    } catch {
+      setNotice("浏览器未授权读取剪贴板，请手动粘贴。");
+    }
+  }
+
+  function insertPause() {
+    setText((current) => `${current}${current.endsWith(" ") || !current ? "" : " "}……`);
+    setNotice("已插入停顿标记。");
   }
 
   async function toggleRecentPlayback(item) {
@@ -323,25 +301,76 @@ export function VoiceSynthesisView() {
   return (
     <section className="voice-conversion-view-root">
       <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>首页</button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
         </button>
       </div>
+
       <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
-        {viewTab === "home" && <div className="voice-hero-empty">
-          <span className="voice-hero-icon">🎭</span>
-          <h1>语音合成</h1>
-          <p>上传目标音色并输入文本，一键生成专属语音</p>
-          {currentVoice && (
-            <div className="voice-current-chip">
-              <CheckCircle2 size={16} />
-              当前音色：{currentVoice.name}
+        {viewTab === "home" && (
+          <>
+            <div className="voice-hero-empty">
+              <h1>语音合成</h1>
+              <p>上传目标音色并输入文本，一键生成专属语音</p>
+              {currentVoice && (
+                <div className="voice-current-chip">
+                  <CheckCircle2 size={16} />
+                  当前音色：{currentVoice.name}
+                </div>
+              )}
             </div>
-          )}
-        </div>}
+
+            {voices.length > 0 && (
+              <div className="voice-cloned-list">
+                {voices.slice(0, 4).map((voice) => (
+                  <button
+                    className={currentVoice?.id === voice.id ? "is-active" : ""}
+                    key={voice.id}
+                    type="button"
+                    onClick={() => setCurrentVoice(voice)}
+                  >
+                    <Mic size={15} />
+                    {voice.name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <VoiceSynthesisWorkbenchCard
+              cloneAudio={cloneAudio}
+              currentVoice={currentVoice}
+              voices={voices}
+              text={text}
+              speed={speed}
+              volume={volume}
+              pitch={pitch}
+              uploading={uploading === "clone"}
+              isGenerating={isCloning || isSynthesizing}
+              notice={notice}
+              demoAudio={demoAudio}
+              resultAudio={resultAudio}
+              onPickCloneAudio={uploadFile}
+              onClearCloneAudio={clearCloneAudio}
+              onTextChange={setText}
+              onClearText={() => setText("")}
+              onPasteText={pasteText}
+              onInsertPause={insertPause}
+              onSpeedChange={setSpeed}
+              onVolumeChange={setVolume}
+              onPitchChange={setPitch}
+              onSelectVoice={setCurrentVoice}
+              onGenerate={generateSpeech}
+              onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
+            />
+            <div className="voice-privacy-note">
+              <LockKeyhole size={15} />
+              <span>音色数据仅用于当前语音生成流程，不在组件内额外持久化原始上传文件。</span>
+            </div>
+          </>
+        )}
 
         {viewTab === "recent" && (
           <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
@@ -349,7 +378,7 @@ export function VoiceSynthesisView() {
               <div className="voice-recent-empty">
                 <Music size={28} />
                 <strong>暂无生成记录</strong>
-                <p>生成完成的 MP3 会显示在这里，可直接播放和下载。</p>
+                <p>生成完成后的 MP3 会显示在这里，可直接播放、收藏和下载。</p>
               </div>
             ) : (
               recentResults.map((item) => (
@@ -360,6 +389,7 @@ export function VoiceSynthesisView() {
                   <div className="voice-recent-info">
                     <strong>{item.title}</strong>
                     <span>{item.voiceName} · {item.createdAt}</span>
+                    <small>{item.durationMs ? formatVoiceDuration(item.durationMs) : "已生成"}</small>
                   </div>
                   <audio
                     ref={(node) => {
@@ -376,7 +406,13 @@ export function VoiceSynthesisView() {
                     <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
                       <Download size={15} />
                     </button>
-                    <button className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`} type="button" onClick={() => toggleRecentFavorite(item.id)} title={item.favorite ? "取消收藏" : "收藏"} aria-label={item.favorite ? "取消收藏" : "收藏"}>
+                    <button
+                      className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`}
+                      type="button"
+                      onClick={() => toggleRecentFavorite(item.id)}
+                      title={item.favorite ? "取消收藏" : "收藏"}
+                      aria-label={item.favorite ? "取消收藏" : "收藏"}
+                    >
                       <Star size={15} fill={item.favorite ? "currentColor" : "none"} />
                     </button>
                     <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
@@ -388,96 +424,6 @@ export function VoiceSynthesisView() {
             )}
           </div>
         )}
-
-        {viewTab === "home" && voices.length > 0 && (
-          <div className="voice-cloned-list">
-            {voices.slice(0, 4).map((voice) => (
-              <button className={currentVoice?.id === voice.id ? "is-active" : ""} key={voice.id} type="button" onClick={() => setCurrentVoice(voice)}>
-                <Mic size={15} />
-                {voice.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {viewTab === "home" && <div className="voice-floating-composer">
-          <div className="voice-composer-title">
-            <span>🎭</span>
-            语音合成
-          </div>
-          <div className="voice-upload-grid">
-            <VoiceUploadSlot
-              title="+ 目标音色"
-              hint="参考音频 10s-5min"
-              fileState={cloneAudio}
-              isUploading={uploading === "clone"}
-              onPick={uploadFile}
-              onClear={clearCloneAudio}
-            />
-          </div>
-
-          <label className="voice-textarea-field">
-            <span>合成文本</span>
-            <textarea
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  generateSpeech();
-                }
-              }}
-              placeholder="输入要用目标音色朗读的内容"
-            />
-          </label>
-
-          <div className="voice-slider-row">
-            <label>
-              <span>语速 {speed.toFixed(2)}x</span>
-              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音量 {volume.toFixed(1)}</span>
-              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
-              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
-            </label>
-          </div>
-
-          {(demoAudio || resultAudio) && (
-            <div className="voice-audio-results">
-              {demoAudio && (
-                <div>
-                  <span>音色试听</span>
-                  <audio src={demoAudio} controls />
-                </div>
-              )}
-              {resultAudio && (
-                <div>
-                  <span>合成结果</span>
-                  <audio src={resultAudio} controls />
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="voice-composer-footer">
-            <span>{notice || "目标音色支持 mp3、m4a、wav，建议 10 秒到 5 分钟"}</span>
-            <div className="voice-actions">
-              {(resultAudio || resultUrl) && (
-                <button className="voice-download" type="button" onClick={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}>
-                  <Download size={15} />
-                </button>
-              )}
-              <button className="voice-generate-button" type="button" onClick={generateSpeech} disabled={isCloning || isSynthesizing || uploading || !cloneAudio || !text.trim()}>
-                {isCloning || isSynthesizing ? <Loader2 size={16} /> : <Play size={16} />}
-                生成语音
-              </button>
-            </div>
-          </div>
-        </div>}
       </div>
     </section>
   );

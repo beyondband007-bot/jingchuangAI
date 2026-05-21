@@ -70,47 +70,47 @@ import { ImageDigitalHumanShowcaseCard } from "./features/image-digital-human/Im
 import "./styles.css";
 
 const exampleImages = [
-  { src: "/assets/image/gallery-1.jpg", label: "电影质感人像", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
-  { src: "/assets/image/gallery-2.jpg", label: "时尚产品摄影", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-4.jpg", label: "自然光影", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 积分" },
-  { src: "/assets/image/gallery-6.jpg", label: "水下写实", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 积分" },
+  { src: "/assets/image/gallery-1.jpg", label: "鐢靛奖璐ㄦ劅浜哄儚", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 绉垎" },
+  { src: "/assets/image/gallery-2.jpg", label: "鏃跺皻浜у搧鎽勫奖", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 绉垎" },
+  { src: "/assets/image/gallery-4.jpg", label: "鑷劧鍏夊奖", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 绉垎" },
+  { src: "/assets/image/gallery-6.jpg", label: "姘翠笅鍐欏疄", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 绉垎" },
   { src: "/assets/image/gallery-7.jpg", label: "数字人形象", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
   { src: "/assets/image/gallery-5.jpg", label: "动态创意", model: "4o Image", ratio: "1:1", quality: "1K", price: "21 积分" },
-  { src: "/assets/image/thumb-img-gen.jpg", label: "图片生成", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 积分" },
-  { src: "/assets/image/gallery-9.jpg", label: "灵感封面", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 积分" },
-  { src: "/assets/image/gallery-8.jpg", label: "复古影像", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-10.jpg", label: "概念海报", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 积分" }
+  { src: "/assets/image/thumb-img-gen.jpg", label: "鍥剧墖鐢熸垚", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 绉垎" },
+  { src: "/assets/image/gallery-9.jpg", label: "鐏垫劅灏侀潰", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 绉垎" },
+  { src: "/assets/image/gallery-8.jpg", label: "澶嶅彜褰卞儚", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 绉垎" },
+  { src: "/assets/image/gallery-10.jpg", label: "姒傚康娴锋姤", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 绉垎" }
 ];
 
 const navItems = [
-  { id: "home", label: "首页", icon: Home },
-  { id: "image", label: "图片生成", icon: Image },
-  { id: "video", label: "视频生成", icon: Video },
+  { id: "home", label: "棣栭〉", icon: Home },
+  { id: "image", label: "鍥剧墖鐢熸垚", icon: Image },
+  { id: "video", label: "瑙嗛鐢熸垚", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
   { id: "digital-human", label: "数字人", icon: UserRound },
   { id: "image-digital-human", label: "图片数字人", icon: Camera },
-  { id: "motion", label: "动作迁移", icon: Sparkles },
-  { id: "face-swap", label: "视频换脸", icon: Scissors },
-  { id: "voice", label: "语音合成", icon: Mic },
-  { id: "article", label: "爆款图文", icon: FileText },
+  { id: "motion", label: "鍔ㄤ綔杩佺Щ", icon: Sparkles },
+  { id: "face-swap", label: "瑙嗛鎹㈣劯", icon: Scissors },
+  { id: "voice", label: "璇煶鍚堟垚", icon: Mic },
+  { id: "article", label: "鐖嗘鍥炬枃", icon: FileText },
   { id: "watermark", label: "去水印", icon: Eraser },
-  { id: "voice-convert", label: "音色转换", icon: Mic },
-  { id: "transcribe", label: "语音转文字", icon: Mic },
-  { id: "video-voice", label: "视频配音", icon: PlaySquare },
-  { id: "music", label: "AI音乐", icon: Music },
-  { id: "replicate", label: "反推提示词", icon: Copy },
-  { id: "enhance", label: "画质提升", icon: Wand2 },
-  { id: "remove-bg", label: "智能抠图", icon: Layers }
+  { id: "voice-convert", label: "闊宠壊杞崲", icon: Mic },
+  { id: "transcribe", label: "璇煶杞枃瀛?, icon: Mic },
+  { id: "video-voice", label: "瑙嗛閰嶉煶", icon: PlaySquare },
+  { id: "music", label: "AI闊充箰", icon: Music },
+  { id: "replicate", label: "鍙嶆帹鎻愮ず璇?, icon: Copy },
+  { id: "enhance", label: "鐢昏川鎻愬崌", icon: Wand2 },
+  { id: "remove-bg", label: "鏅鸿兘鎶犲浘", icon: Layers }
 ];
 
 const navSections = [
   { type: "item", id: "home" },
   { type: "item", id: "chat" },
-  { type: "group", id: "vision", label: "视觉生成", icon: Box, children: ["image", "video", "face-swap", "motion"] },
-  { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
-  { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
-  { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
-  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+  { type: "group", id: "vision", label: "瑙嗚鐢熸垚", icon: Box, children: ["image", "video", "face-swap", "motion"] },
+  { type: "group", id: "avatar", label: "鏁板瓧浜?, icon: UserRound, children: ["digital-human", "image-digital-human"] },
+  { type: "group", id: "audio", label: "闊抽澶勭悊", icon: Music, children: ["voice", "music", "voice-convert"] },
+  { type: "group", id: "marketing", label: "钀ラ攢宸ュ叿", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
+  { type: "external", id: "assets", label: "鎴戠殑璧勪骇", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
 ];
 
 const homeFeatureRoutes = [
@@ -217,7 +217,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     event.preventDefault();
     setError("");
     if (isRegister && password !== confirmPassword) {
-      setError("两次输入的密码不一致");
+      setError("涓ゆ杈撳叆鐨勫瘑鐮佷笉涓€鑷?);
       return;
     }
     setIsSubmitting(true);
@@ -226,7 +226,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
       const result = isRegister ? await authApi.register(payload) : await authApi.login(payload);
       onSuccess(result.user);
     } catch (submitError) {
-      setError(submitError.message || "操作失败，请稍后重试");
+      setError(submitError.message || "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯");
     } finally {
       setIsSubmitting(false);
     }
@@ -234,31 +234,31 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
 
   return (
     <div className={`auth-drawer-layer ${isClosing ? "is-closing" : ""}`} role="presentation">
-      <button className="auth-drawer-backdrop" type="button" aria-label="关闭登录面板" onClick={requestClose} />
+      <button className="auth-drawer-backdrop" type="button" aria-label="鍏抽棴鐧诲綍闈㈡澘" onClick={requestClose} />
       <aside className="auth-drawer" role="dialog" aria-modal="true" aria-labelledby="auth-drawer-title">
-        <button className="auth-drawer-close" type="button" aria-label="关闭" onClick={requestClose}>
+        <button className="auth-drawer-close" type="button" aria-label="鍏抽棴" onClick={requestClose}>
           <X size={18} />
         </button>
         <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
-        <h2 id="auth-drawer-title">{renderMode === "register" ? "创建账号" : "欢迎回来"}</h2>
-        <p>{renderMode === "register" ? "注册后立即获得 1000 积分，开始保存你的生成记录。" : "登录后即可查看你的积分与生成记录。"}</p>
+        <h2 id="auth-drawer-title">{renderMode === "register" ? "鍒涘缓璐﹀彿" : "娆㈣繋鍥炴潵"}</h2>
+        <p>{renderMode === "register" ? "娉ㄥ唽鍚庣珛鍗宠幏寰?1000 绉垎锛屽紑濮嬩繚瀛樹綘鐨勭敓鎴愯褰曘€? : "鐧诲綍鍚庡皢鍒囨崲鍒颁綘鐨勭Н鍒嗕笌鐢熸垚璁板綍銆?}</p>
         <form className="auth-form" onSubmit={submit}>
           <label>
-            <span>用户名</span>
+            <span>鐢ㄦ埛鍚?/span>
             <input
               autoFocus
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="请输入用户名"
+              placeholder="璇疯緭鍏ョ敤鎴峰悕"
               autoComplete="username"
             />
           </label>
           <label>
-            <span>密码</span>
+            <span>瀵嗙爜</span>
             <input
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="至少 6 个字符"
+              placeholder="鑷冲皯 6 涓瓧绗?
               type="password"
               autoComplete={renderMode === "register" ? "new-password" : "current-password"}
             />
@@ -269,16 +269,16 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
               type="button"
               onClick={(event) => event.preventDefault()}
             >
-              忘记密码
+              蹇樿瀵嗙爜
             </button>
           )}
           {renderMode === "register" && (
             <label>
-              <span>确认密码</span>
+              <span>纭瀵嗙爜</span>
               <input
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="请再次输入密码"
+                placeholder="璇峰啀娆¤緭鍏ュ瘑鐮?
                 type="password"
                 autoComplete="new-password"
               />
@@ -287,21 +287,21 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
           {error && <div className="auth-error">{error}</div>}
           <button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
-            <span>{renderMode === "register" ? "注册并领取积分" : "登录"}</span>
+            <span>{renderMode === "register" ? "娉ㄥ唽骞堕鍙栫Н鍒? : "鐧诲綍"}</span>
           </button>
         </form>
         {renderMode === "register" ? (
           <div className="auth-mode-switch-row">
-            <span className="auth-mode-switch-label">已有账号？</span>
+            <span className="auth-mode-switch-label">宸叉湁璐﹀彿</span>
             <button className="auth-mode-switch auth-mode-switch-link auth-mode-switch-login-link" type="button" onClick={() => onModeChange("login")}>
-              去登录
+              鍘荤櫥褰?
             </button>
           </div>
         ) : (
           <div className="auth-mode-switch-row">
-            <span className="auth-mode-switch-label">还没有账号？</span>
+            <span className="auth-mode-switch-label">杩樻病鏈夎处鍙凤紵</span>
             <button className="auth-mode-switch auth-mode-switch-link" type="button" onClick={() => onModeChange("register")}>
-              立即注册
+              绔嬪嵆娉ㄥ唽
             </button>
           </div>
         )}
@@ -353,7 +353,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
 
   return (
     <div className="original-home-shell">
-      <iframe ref={frameRef} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
+      <iframe ref={frameRef} className="original-home-frame" title="椴稿垱AI棣栭〉" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
 });
@@ -407,14 +407,14 @@ const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onL
     <div className={`feature-page-shell home-page-shell ${isGuest ? "is-guest" : ""}`}>
       <FeatureSidebar activeNav="home" onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
       {isGuest && (
-        <div className="feature-guest-auth-actions" aria-label="游客璐﹀彿鍏ュ彛">
-          <button type="button" onClick={() => onOpenAuth("login")}>登录</button>
-          <button type="button" onClick={() => onOpenAuth("register")}>注册</button>
+        <div className="feature-guest-auth-actions" aria-label="娓稿璐﹀彿鍏ュ彛">
+          <button type="button" onClick={() => onOpenAuth("login")}>鐧诲綍</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>娉ㄥ唽</button>
         </div>
       )}
       <main className="feature-main home-feature-main">
         <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
-          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
+          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 棣栭〉" src="/閲嶆瀯/index.html" onLoad={handleFrameLoad} />
         </div>
       </main>
     </div>
@@ -447,13 +447,13 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
     <aside className="feature-sidebar">
       <div className="feature-brand">
         <span className="feature-brand-text">Getrue.ai</span>
-        <span className="feature-brand-beta">（内测）</span>
+        <span className="feature-brand-beta">锛堝唴娴嬶級</span>
       </div>
       <label className="feature-nav-search">
         <Search size={16} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="搜索..." />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="鎼滅储..." />
       </label>
-      <nav className="feature-nav" aria-label="功能导航">
+      <nav className="feature-nav" aria-label="鍔熻兘瀵艰埅">
         {navSections.map((section) => {
           if (section.type === "item") {
             const item = getNavItem(section.id);
@@ -516,7 +516,7 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
       {isLoadingUser ? (
         <button className="feature-login" type="button" onClick={() => onOpenAuth("login")}>
           <LogIn size={16} />
-          <span>登录</span>
+          <span>鐧诲綍</span>
         </button>
       ) : (
         <div className={`feature-user-panel ${isGuest ? "is-guest" : ""}`}>
@@ -524,11 +524,11 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
             <UserRound size={17} />
           </div>
           <div className="feature-user-copy">
-            <strong>{isGuest ? "游客" : authUser.displayName || authUser.username}</strong>
-            {!isGuest && <span>积分 {authUser.credits ?? "-"}</span>}
+            <strong>{isGuest ? "娓稿" : authUser.displayName || authUser.username}</strong>
+            {!isGuest && <span>绉垎 {authUser.credits ?? "-"}</span>}
           </div>
           {!isGuest && (
-            <button type="button" onClick={onLogout} aria-label="退出登录">
+            <button type="button" onClick={onLogout} aria-label="閫€鍑虹櫥褰?>
               <LogOut size={16} />
             </button>
           )}
@@ -545,8 +545,8 @@ function ComingSoon({ activeNav }) {
       <div className="coming-soon-icon">
         <Sparkles size={28} />
       </div>
-      <h1>{current?.label || "功能"}暂未开放</h1>
-      <p>当前阶段仅接入了图片生成功能，其他能力会在后续迭代中逐步补齐。</p>
+      <h1>{current?.label || "鍔熻兘"}鏆傛湭寮€鏀?/h1>
+      <p>褰撳墠闃舵浠呮帴鍏ュ浘鐗囩敓鎴愬姛鑳斤紝鍏跺畠鑳藉姏浼氬湪鍚庣画杩唬涓€愭琛ラ綈銆?/p>
     </section>
   );
 }
@@ -563,8 +563,8 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = fals
         </div>
       )}
       <div className={`result-preview ${card.grid ? "preview-grid" : ""}`}>
-        {isProcessing && <div className="processing-state">生成涓?..</div>}
-        {isFailed && <div className="failed-state">生成失败</div>}
+        {isProcessing && <div className="processing-state">鐢熸垚涓?..</div>}
+        {isFailed && <div className="failed-state">鐢熸垚澶辫触</div>}
         {!isProcessing && !isFailed && card.image ? (
           card.grid ? (
             <>
@@ -584,11 +584,11 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = fals
           {!isImageGallery && <span className="model-tag">{card.model}</span>}
           {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
           {!isImageGallery && <span className="quality-tag">{card.quality}</span>}
-          {card.count > 1 && <span className="count-tag">{card.count}张</span>}
+          {card.count > 1 && <span className="count-tag">{card.count}寮?/span>}
         </div>
         {!isImageGallery && (
           <div className="time-row">
-            <span>{card.time || "示例"}</span>
+            <span>{card.time || "绀轰緥"}</span>
             <strong>{card.price}</strong>
           </div>
         )}
@@ -601,27 +601,27 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = fals
         <>
         <p>{card.error || card.prompt}</p>
         <div className="card-actions">
-          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="收藏" disabled={isExample}>
+          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌" disabled={isExample}>
             <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
           </button>
           {card.image ? (
             <a className="card-action-link" href={card.image} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
           ) : (
             <button type="button" disabled>
               <Download size={15} />
-              下载
+              涓嬭浇
             </button>
           )}
           <button type="button" onClick={() => onRegenerate(card.id)} disabled={isExample}>
             <RefreshCcw size={15} />
-            再次生成
+            鍐嶆鐢熸垚
           </button>
           <button type="button" onClick={() => onDelete(card.id)} disabled={isExample}>
             <Trash2 size={15} />
-            删除
+            鍒犻櫎
           </button>
         </div>
         </>
@@ -650,21 +650,21 @@ function ComposerBar({ options, onSubmit }) {
 
   function clearPrompt() {
     setPrompt("");
-    setNotice("已清空提示词");
+    setNotice("宸叉竻绌烘彁绀鸿瘝");
   }
 
   function fillRandomPrompt() {
     setPrompt(imageApi.getRandomPrompt());
-    setNotice("已填入随机提示词");
+    setNotice("宸插～鍏ラ殢鏈烘彁绀鸿瘝");
   }
 
   function handleAddPrompt() {
-    setNotice("当前图片生成暂不支持添加参考素材");
+    setNotice("褰撳墠鍥剧墖鐢熸垚鏆備笉鏀寔娣诲姞鍙傝€冪礌鏉?);
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请先输入图片描述");
+      setNotice("璇峰厛杈撳叆鍥剧墖鎻忚堪");
       return;
     }
 
@@ -675,15 +675,15 @@ function ComposerBar({ options, onSubmit }) {
       quality,
       count
     });
-    setNotice("已创建生成任务");
+    setNotice("宸插垱寤虹敓鎴愪换鍔?);
     setPrompt("");
   }
 
   return (
-    <div className="sowa-composer" aria-label="图片生成输入框">
+    <div className="sowa-composer" aria-label="鍥剧墖鐢熸垚杈撳叆妗?>
       <ImagePromptDialog
-        ariaLabel="图片生成输入框"
-        placeholder="选择模型后，释放你的创作灵感"
+        ariaLabel="鍥剧墖鐢熸垚杈撳叆妗?
+        placeholder="閫夋嫨妯″瀷鍚庯紝閲婃斁浣犵殑鍒涗綔鐏垫劅"
         value={prompt}
         onChange={(value) => {
           setPrompt(value);
@@ -714,10 +714,10 @@ const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 
 function ExampleCanvas() {
   return (
-    <div className="image-canvas example-canvas" aria-label="图片生成案例">
+    <div className="image-canvas example-canvas" aria-label="鍥剧墖鐢熸垚妗堜緥">
       <div className="example-canvas-copy">
-        <span>图片生成</span>
-        <h1>选择一个方向，或直接输入你的图片描述</h1>
+        <span>鍥剧墖鐢熸垚</span>
+        <h1>閫夋嫨涓€涓柟鍚戯紝鎴栫洿鎺ヨ緭鍏ヤ綘鐨勫浘鐗囨弿杩?/h1>
       </div>
       <div className="example-card-grid">
         {exampleImages.map((item) => (
@@ -757,7 +757,7 @@ function GeneratingCanvas({ prompt }) {
           <div className="chat-bubble waiting">
             <div className="chat-waiting-title">
               <Loader2 size={18} />
-              <span>已收到你的请求，正在为你生成图片</span>
+              <span>宸叉敹鍒颁綘鐨勮姹傦紝姝ｅ湪涓轰綘鐢熸垚鍥剧墖</span>
             </div>
             <div className="chat-waiting-card">
               <span />
@@ -783,14 +783,14 @@ function CompletedCanvas({ task, onPreview }) {
             <CheckCircle2 size={17} />
           </div>
           <div className="chat-bubble result">
-            <span>已为你生成图片</span>
-            <button className="chat-result-image" type="button" onClick={() => onPreview(task)} aria-label="查看生成图片">
+            <span>宸蹭负浣犵敓鎴愬浘鐗?/span>
+            <button className="chat-result-image" type="button" onClick={() => onPreview(task)} aria-label="鏌ョ湅鐢熸垚鍥剧墖">
               <img src={task.image} alt={task.prompt} />
             </button>
             <div className="chat-result-actions">
               <a href={task.image} download>
                 <Download size={15} />
-                下载
+                涓嬭浇
               </a>
             </div>
           </div>
@@ -801,7 +801,7 @@ function CompletedCanvas({ task, onPreview }) {
 }
 
 function FailedCanvas({ task, prompt, error, onRetry }) {
-  const message = task?.error || error || "图片生成遇到问题，请稍后重试。";
+  const message = task?.error || error || "鍥剧墖鐢熸垚閬囧埌闂锛岃绋嶅悗閲嶈瘯銆?;
 
   return (
     <div className="image-canvas chat-canvas" role="status">
@@ -816,12 +816,12 @@ function FailedCanvas({ task, prompt, error, onRetry }) {
             <Sparkles size={17} />
           </div>
           <div className="chat-bubble failed">
-            <strong>这次没有生成成功</strong>
+            <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
             <p>{message}</p>
             {task && (
               <button type="button" onClick={() => onRetry(task.id)}>
                 <RefreshCcw size={17} />
-                再次生成
+                鍐嶆鐢熸垚
               </button>
             )}
           </div>
@@ -851,14 +851,14 @@ function PreviewDrawer({ task, onClose }) {
   if (!task?.image) return null;
 
   return (
-    <aside className="preview-drawer" aria-label="生成图片预览画布">
+    <aside className="preview-drawer" aria-label="鐢熸垚鍥剧墖棰勮鐢诲竷">
       <div className="preview-drawer-header">
         <div>
-          <span>预览</span>
+          <span>棰勮</span>
           <strong>{task.prompt}</strong>
         </div>
-        <button type="button" onClick={onClose} aria-label="关闭预览">
-          关闭
+        <button type="button" onClick={onClose} aria-label="鍏抽棴棰勮">
+          鑴?
         </button>
       </div>
       <div className="preview-drawer-stage">
@@ -867,7 +867,7 @@ function PreviewDrawer({ task, onClose }) {
       <div className="preview-drawer-actions">
         <a href={task.image} download>
           <Download size={16} />
-          下载
+          涓嬭浇
         </a>
       </div>
     </aside>
@@ -878,9 +878,9 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
   if (!cards.length) return null;
 
   return (
-    <aside className="history-rail" aria-label="图片生成历史">
+    <aside className="history-rail" aria-label="鍥剧墖鐢熸垚鍘嗗彶">
       <div className="history-rail-header">
-        <span>历史结果</span>
+        <span>鍘嗗彶缁撴灉</span>
         <strong>{cards.length}</strong>
       </div>
       <div className="history-list">
@@ -891,14 +891,14 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
 
           return (
             <article className={`history-item ${isSelected ? "is-selected" : ""} status-${card.status}`} key={card.id}>
-              <button className="history-preview" type="button" onClick={() => onSelect(card.id)} aria-label={`查看 ${card.prompt}`}>
+              <button className="history-preview" type="button" onClick={() => onSelect(card.id)} aria-label={`鏌ョ湅 ${card.prompt}`}>
                 {card.image && !isFailed ? <img src={card.image} alt={card.prompt} /> : null}
                 {isProcessing && (
                   <span className="history-processing">
                     <Loader2 size={18} />
                   </span>
                 )}
-                {isFailed && <span className="history-failed">失败</span>}
+                {isFailed && <span className="history-failed">澶辫触</span>}
                 {!card.image && !isProcessing && !isFailed && <span className="broken-image-mark" aria-hidden="true" />}
               </button>
               <div className="history-meta">
@@ -911,18 +911,18 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
                   <span>{card.time}</span>
                 </div>
                 <div className="history-actions">
-                  <button type="button" onClick={() => onFavorite(card.id)} aria-label="收藏">
+                  <button type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌">
                     <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
                   </button>
                   {card.image && (
-                    <a href={card.image} download aria-label="下载图片">
+                    <a href={card.image} download aria-label="涓嬭浇鍥剧墖">
                       <Download size={15} />
                     </a>
                   )}
-                  <button type="button" onClick={() => onRegenerate(card.id)} aria-label="再次生成">
+                  <button type="button" onClick={() => onRegenerate(card.id)} aria-label="鍐嶆鐢熸垚">
                     <RefreshCcw size={15} />
                   </button>
-                  <button type="button" onClick={() => onDelete(card.id)} aria-label="删除">
+                  <button type="button" onClick={() => onDelete(card.id)} aria-label="鍒犻櫎">
                     <Trash2 size={15} />
                   </button>
                 </div>
@@ -948,7 +948,7 @@ function ImageGenerationView() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
 
-  // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
+  // 甯搁┗鎸傝浇锛氬垏鎹晶鏍忓叾瀹冩ā鍧楁椂涓嶅嵏杞斤紝閬垮厤鐢熸垚涓姸鎬佷笌鍒楄〃缂撳瓨涓㈠け
   useEffect(() => {
     let mounted = true;
     imageApi.getModels().then((value) => mounted && setOptions(value));
@@ -1041,7 +1041,7 @@ function ImageGenerationView() {
         setIsSubmitting(false);
       }
     } catch (error) {
-      setSubmitError(error.message || "创建生成任务失败");
+      setSubmitError(error.message || "鍒涘缓鐢熸垚浠诲姟澶辫触");
       setIsSubmitting(false);
     }
   }
@@ -1076,7 +1076,7 @@ function ImageGenerationView() {
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
     } catch (error) {
-      setSubmitError(error.message || "创建生成任务失败");
+      setSubmitError(error.message || "鍒涘缓鐢熸垚浠诲姟澶辫触");
       setIsSubmitting(false);
     }
     setIsSubmitting(false);
@@ -1085,13 +1085,13 @@ function ImageGenerationView() {
   return (
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
-        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
+        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">鍏ㄩ儴缁撴灉</button>
         <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
           <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
+          鏀惰棌
         </button>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
       {galleryItems.length ? (
@@ -1112,7 +1112,7 @@ function ImageGenerationView() {
         />
       ) : (
         <div className="results-feed video-results-feed image-results-feed-empty">
-          <div className="empty-results video-empty-results">暂无图片结果</div>
+          <div className="empty-results video-empty-results">鏆傛棤鍥剧墖缁撴灉</div>
         </div>
       )}
       {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
@@ -1130,10 +1130,10 @@ const videoExampleCards = [
     ratio: "16:9",
     duration: 8,
     time: "10:51",
-    rmb: "约￥22.4",
-    price: "2240 积分",
-    prompt: "未来都市中，巨型怪兽与外骨骼机甲战士在高架桥下展开激烈战斗，建筑崩塌、火焰四起，画面具有电影级质感，冷暗色调，高速动态镜头。",
-    video: "/assets/video/视频1.mp4?v=h264",
+    rmb: "绾︼骏22.4",
+    price: "2240 绉垎",
+    prompt: "鏈潵閮藉競涓紝宸ㄥ瀷鎬吔涓庤韩绌垮楠ㄩ瑁呯敳鐨勬垬澹湪楂樻灦妗ヤ笅灞曞紑婵€鐑堟垬鏂楋紝寤虹瓚宕╁銆佺伀鐒板洓璧凤紝鐢婚潰鍏锋湁鐢靛奖绾ц川鎰燂紝鐏版殫鑹茶皟锛岄珮閫熷姩鎬侀暅澶淬€?,
+    video: "/assets/video/瑙嗛1.mp4?v=h264",
     favorite: false
   },
   {
@@ -1144,10 +1144,10 @@ const videoExampleCards = [
     ratio: "16:9",
     duration: 6,
     time: "10:45",
-    rmb: "约￥2.9",
-    price: "294 积分",
-    prompt: "古风仙侠男子，额间有精致花纹，一只黑蝶停在鼻尖后化作流光溢彩的金属面具覆于面部，随后在雾气弥漫的竹林中高速战斗，黑红配色，动作凌厉飘逸。",
-    video: "/assets/video/视频2.mp4",
+    rmb: "绾︼骏2.9",
+    price: "294 绉垎",
+    prompt: "鍙ら浠欎緺鐢峰瓙锛岄闂存湁绮捐嚧鑺辩汗锛屼竴鍙粦铦跺仠椹婚蓟灏栧悗鍖栦綔娴佸厜婧㈠僵鐨勯噾灞為潰鍏疯浜庨潰閮紝闅忓悗鍦ㄩ浘姘斿讥婕殑绔规灄涓珮閫熸垬鏂楋紝榛戠孩閰嶈壊锛屽姩浣滃噷鍘夐閫搞€?,
+    video: "/assets/video/瑙嗛2.mp4",
     favorite: false
   },
   {
@@ -1158,10 +1158,10 @@ const videoExampleCards = [
     ratio: "16:9",
     duration: 8,
     time: "10:45",
-    rmb: "约￥9.6",
-    price: "960 积分",
-    prompt: "唯美古风浪漫画面，女子眼眸中飞出一只发光的粉色蝴蝶，拖着长长的白色绸带，飞过盛开的樱花与飞檐翘角的古建筑，空中漂浮书法文字，色调柔和梦幻，粉白交织。",
-    video: "/assets/video/视频3.mp4",
+    rmb: "绾︼骏9.6",
+    price: "960 绉垎",
+    prompt: "鍞編鍙ら娴极鍦烘櫙锛屽コ瀛愮溂鐪镐腑椋炲嚭涓€鍙彂鍏夌殑绮夎壊铦磋澏锛屾嫋鐫€闀块暱鐨勭櫧鑹茬罕甯︼紝椋炶繃鐩涘紑鐨勬ū鑺变笌椋炴獝缈樿鐨勫彜寤虹瓚锛岀┖涓娴潃涔︽硶鏂囧瓧锛岃壊璋冩煍鍜屾ⅵ骞伙紝绮夌櫧浜ょ粐銆?,
+    video: "/assets/video/瑙嗛3.mp4",
     favorite: false
   },
   {
@@ -1172,10 +1172,10 @@ const videoExampleCards = [
     ratio: "9:16",
     duration: 10,
     time: "02:15",
-    rmb: "约￥6.3",
-    price: "630 积分",
-    prompt: "沙漠废土风格的动漫战斗，绿发女子戴着巨型头骨面具，与手持散发紫色光芒长刀的黑发男子在沙尘中激烈交锋，动作充满张力，紫黑配色，烟尘飞扬。",
-    video: "/assets/video/视频4.mp4",
+    rmb: "绾︼骏6.3",
+    price: "630 绉垎",
+    prompt: "娌欐紶搴熷湡椋庢牸鐨勫姩婕垬鏂楋紝缁垮彂濂冲瓙鎴寸潃宸ㄥ瀷鍏介闈㈠叿锛屼笌鎵嬫寔鏁ｅ彂绱壊鍏夎姃闀垮垁鐨勯粦鍙戠敺瀛愬湪娌欏皹涓縺鐑堜氦閿嬶紝鍔ㄤ綔鍏呮弧寮犲姏锛岀传榛戦厤鑹诧紝鐑熷皹椋炴壃銆?,
+    video: "/assets/video/瑙嗛4.mp4",
     favorite: false
   },
   {
@@ -1186,10 +1186,10 @@ const videoExampleCards = [
     ratio: "1:1",
     duration: 8,
     time: "12:24",
-    rmb: "约￥3.9",
-    price: "392 积分",
-    prompt: "日系动画风格，身穿白衬衫校服的少年沉入深蓝色海底，阳光透过水面洒下光束，周围气泡升腾，少年伸手触碰发光水母，随后被巨大的漩涡卷入，画面静谧而神秘。",
-    video: "/assets/video/视频5.mp4",
+    rmb: "绾︼骏3.9",
+    price: "392 绉垎",
+    prompt: "鏃ョ郴鍔ㄦ极椋庢牸锛岃韩绌跨櫧琛～鏍℃湇鐨勫皯骞存矇鍏ユ繁钃濊壊鐨勬捣搴曪紝闃冲厜閫忚繃姘撮潰娲掍笅鍏夋潫锛屽懆鍥存皵娉″崌鑵撅紝灏戝勾浼告墜瑙︾鍙戝厜姘旀场锛岄殢鍚庤宸ㄥぇ婕╂丁鍗峰叆锛岀敾闈㈤潤璋ц€岀绉樸€?,
+    video: "/assets/video/瑙嗛5.mp4",
     favorite: false
   },
   {
@@ -1200,10 +1200,10 @@ const videoExampleCards = [
     ratio: "9:16",
     duration: 8,
     time: "11:57",
-    rmb: "约￥22.4",
-    price: "2240 积分",
-    prompt: "东方奇幻仙侠意境，两只通体透明发光的灵鹿在瀑布溪流与雾气缭绕的山林间奔跑跳跃，足下生辉，身上带有流光拖尾，穿梭于古建筑与密林之间，氛围空灵神秘，青绿色调。",
-    video: "/assets/video/视频6.mp4",
+    rmb: "绾︼骏22.4",
+    price: "2240 绉垎",
+    prompt: "涓滄柟濂囧够浠欎緺鎰忓锛屼袱鍙€氫綋閫忔槑鍙戝厜鐨勭伒楣垮湪鐎戝竷婧祦涓庨浘姘旂辑缁曠殑灞辨灄闂村璺戣烦璺冿紝韫勪笅鐢熻緣锛岃韩涓婂甫鏈夋祦鍏夋嫋灏撅紝绌挎浜庡彜寤轰笌瀵嗘灄涔嬮棿锛屾皼鍥寸┖鐏电绉橈紝闈掔豢鑹茶皟銆?,
+    video: "/assets/video/瑙嗛6.mp4",
     favorite: false
   }
 ];
@@ -1230,7 +1230,7 @@ function VideoPreview({ task }) {
   return (
     <div className={`video-placeholder ${isFailed ? "is-failed" : ""}`}>
       {isProcessing ? <Loader2 size={24} /> : <Play size={34} fill="currentColor" />}
-      {(isFailed || isProcessing) && <span>{isFailed ? "生成失败" : "生成中"}</span>}
+      {(isFailed || isProcessing) && <span>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</span>}
     </div>
   );
 }
@@ -1246,8 +1246,8 @@ function VideoResultCard({ card, onDelete, onFavorite, onRegenerate, isExample =
         <div className="tag-row">
           <span className="model-tag">{card.model}</span>
           <span className="ratio-tag">{card.ratio}</span>
-          <span className="quality-tag">{card.duration}秒</span>
-          <span className="count-tag">首帧</span>
+          <span className="quality-tag">{card.duration}绉?/span>
+          <span className="count-tag">棣栧抚</span>
         </div>
         <div className="time-row">
           <span>{card.time}</span>
@@ -1255,27 +1255,27 @@ function VideoResultCard({ card, onDelete, onFavorite, onRegenerate, isExample =
         </div>
         <p>{card.error || card.prompt}</p>
         <div className="card-actions">
-          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="收藏" disabled={isExample}>
+          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌" disabled={isExample}>
             <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
           </button>
           {card.video ? (
             <a className="card-action-link" href={card.video} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
           ) : (
             <button type="button" disabled>
               <Download size={15} />
-              下载
+              涓嬭浇
             </button>
           )}
           <button type="button" onClick={() => onRegenerate(card.id)} disabled={isExample}>
             <RefreshCcw size={15} />
-            再次生成
+            鍐嶆鐢熸垚
           </button>
           <button type="button" onClick={() => onDelete(card.id)} disabled={isExample}>
             <Trash2 size={15} />
-            删除
+            鍒犻櫎
           </button>
         </div>
       </div>
@@ -1311,21 +1311,21 @@ function VideoComposerBar({ options, onSubmit }) {
 
   function clearPrompt() {
     setPrompt("");
-    setNotice("已清空提示词");
+    setNotice("宸叉竻绌烘彁绀鸿瘝");
   }
 
   function fillRandomPrompt() {
     setPrompt(videoApi.getRandomPrompt());
-    setNotice("已填入随机提示词");
+    setNotice("宸插～鍏ラ殢鏈烘彁绀鸿瘝");
   }
 
   function handleAddPrompt() {
-    setNotice("当前视频生成暂不支持添加参考素材");
+    setNotice("褰撳墠瑙嗛鐢熸垚鏆備笉鏀寔娣诲姞鍙傝€冪礌鏉?);
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请先输入视频描述");
+      setNotice("璇峰厛杈撳叆瑙嗛鎻忚堪");
       return;
     }
 
@@ -1337,15 +1337,15 @@ function VideoComposerBar({ options, onSubmit }) {
       mode: "first-frame",
       count
     });
-    setNotice("已创建视频生成任务");
+    setNotice("宸插垱寤鸿棰戠敓鎴愪换鍔?);
     setPrompt("");
   }
 
   return (
-    <div className="sowa-composer video-composer" aria-label="视频生成输入框">
+    <div className="sowa-composer video-composer" aria-label="瑙嗛鐢熸垚杈撳叆妗?>
       <VideoPromptDialog
-        ariaLabel="视频生成输入框"
-        placeholder="请描述你想生成的视频..."
+        ariaLabel="瑙嗛鐢熸垚杈撳叆妗?
+        placeholder="璇锋弿杩颁綘鎯崇敓鎴愮殑瑙嗛..."
         value={prompt}
         onChange={(value) => {
           setPrompt(value);
@@ -1381,7 +1381,7 @@ function VideoGenerationView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // 模块由外层保活挂载，此处始终订阅任务列表
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓璁㈤槄浠诲姟鍒楄〃
   useEffect(() => {
     let mounted = true;
     videoApi.getModels().then((value) => mounted && setOptions(value));
@@ -1404,7 +1404,7 @@ function VideoGenerationView() {
     try {
       await videoApi.createTask(payload);
     } catch (error) {
-      setSubmitError(error.message || "创建视频生成任务失败");
+      setSubmitError(error.message || "鍒涘缓瑙嗛鐢熸垚浠诲姟澶辫触");
     } finally {
       setIsSubmitting(false);
     }
@@ -1424,7 +1424,7 @@ function VideoGenerationView() {
     try {
       await videoApi.regenerateTask(id);
     } catch (error) {
-      setSubmitError(error.message || "创建视频生成任务失败");
+      setSubmitError(error.message || "鍒涘缓瑙嗛鐢熸垚浠诲姟澶辫触");
     } finally {
       setIsSubmitting(false);
     }
@@ -1433,13 +1433,13 @@ function VideoGenerationView() {
   return (
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
-        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
+        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">鍏ㄩ儴缁撴灉</button>
         <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
           <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
+          鏀惰棌
         </button>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
       <div className="results-feed video-results-feed">
@@ -1474,20 +1474,20 @@ function VideoGenerationView() {
               onFavorite={toggleFavorite}
               onRegenerate={regenerateTask}
             />
-          )) : <div className="empty-results video-empty-results">暂无视频结果</div>
+          )) : <div className="empty-results video-empty-results">鏆傛棤瑙嗛缁撴灉</div>
         )}
         {isSubmitting && (
           <VideoResultCard
             card={{
               id: "submitting",
               status: "processing",
-              model: "创建中",
+              model: "鍒涘缓涓?,
               ratio: "16:9",
               duration: 8,
               time: "--:--",
               rmb: null,
-              price: "计算中",
-              prompt: "正在提交视频生成任务",
+              price: "璁＄畻涓?,
+              prompt: "姝ｅ湪鎻愪氦瑙嗛鐢熸垚浠诲姟",
               favorite: false
             }}
             onDelete={() => {}}
@@ -1518,7 +1518,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
     return (
       <div className="chat-main-canvas">
         <div className="chat-empty-state llm-empty-state">
-          <h1>释放你的创作灵感</h1>
+          <h1>閲婃斁浣犵殑鍒涗綔鐏垫劅</h1>
         </div>
       </div>
     );
@@ -1537,8 +1537,8 @@ function ChatCanvas({ messages, isSubmitting, error }) {
             <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""}`}>
               {message.status === "failed" ? (
                 <>
-                  <strong>这次没有回复成功</strong>
-                  <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
+                  <strong>杩欐娌℃湁鍥炲鎴愬姛</strong>
+                  <p>{message.error || "瀵硅瘽鏈嶅姟鏆傛椂涓嶅彲鐢紝璇风◢鍚庨噸璇曘€?}</p>
                 </>
               ) : (
                 message.content
@@ -1553,7 +1553,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
             </span>
             <div className="chat-message-bubble is-loading">
               <Loader2 size={17} />
-              <span>正在鎬濊€?..</span>
+              <span>姝ｅ湪鎬濊€?..</span>
             </div>
           </div>
         )}
@@ -1596,7 +1596,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请输入内容后再发送。");
+      setNotice("璇疯緭鍏ュ唴瀹瑰悗鍐嶅彂閫併€?);
       return;
     }
 
@@ -1610,7 +1610,7 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="llm-composer chat-composer" aria-label="大模型输入框">
+    <div className="llm-composer chat-composer" aria-label="澶фā鍨嬭緭鍏ユ">
       <textarea
         className="llm-input"
         value={prompt}
@@ -1624,11 +1624,11 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
             submitPrompt();
           }
         }}
-        placeholder="请告诉我您的想法......"
+        placeholder="璇峰憡璇夋垜鎮ㄧ殑鎯虫硶......"
       />
       <div className="llm-toolbar">
         <div className="llm-left">
-          <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
+          <button className="llm-square" type="button" onClick={() => setNotice("涓婁紶鎸夐挳鏆傛湭鎺ュ叆鏂囦欢閫夋嫨鍣ㄣ€?)} aria-label="涓婁紶">
             +
           </button>
           <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
@@ -1686,10 +1686,10 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
               </select>
             </label>
           )}
-          <button className="llm-round" type="button" onClick={() => setNotice("录音按钮暂未接入麦克风权限。")} aria-label="录音">
+          <button className="llm-round" type="button" onClick={() => setNotice("褰曢煶鎸夐挳鏆傛湭鎺ュ叆楹﹀厠椋庢潈闄愩€?)} aria-label="褰曢煶">
             <Mic size={18} />
           </button>
-          <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
+          <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="鍙戦€?>
             {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
           </button>
         </div>
@@ -1703,9 +1703,9 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   if (!conversations.length) return null;
 
   return (
-    <aside className="history-rail chat-history-rail" aria-label="AI 瀵硅瘽历史">
+    <aside className="history-rail chat-history-rail" aria-label="AI 瀵硅瘽鍘嗗彶">
       <div className="history-rail-header">
-        <span>历史瀵硅瘽</span>
+        <span>鍘嗗彶瀵硅瘽</span>
         <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
@@ -1735,7 +1735,7 @@ function LegacyChatGenerationView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓鎷夊彇瀵硅瘽閰嶇疆涓庡巻鍙插垪琛?
   useEffect(() => {
     let mounted = true;
     chatApi.getModels().then((value) => mounted && setOptions(value)).catch((error) => mounted && setSubmitError(error.message));
@@ -1771,7 +1771,7 @@ function LegacyChatGenerationView() {
       if (result.credits) setCredits(result.credits);
       chatApi.getConversations().then(setConversations).catch(() => {});
     } catch (error) {
-      setSubmitError(error.message || "发送失败");
+      setSubmitError(error.message || "鍙戦€佸け璐?);
     } finally {
       setIsSubmitting(false);
     }
@@ -1785,7 +1785,7 @@ function LegacyChatGenerationView() {
       const historyMessages = await chatApi.getMessages(id);
       setMessages(historyMessages);
     } catch (error) {
-      setSubmitError(error.message || "加载历史对话失败");
+      setSubmitError(error.message || "鍔犺浇鍘嗗彶瀵硅瘽澶辫触");
     }
   }
 
@@ -1797,13 +1797,13 @@ function LegacyChatGenerationView() {
   return (
     <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
       <div className="chat-topbar">
-        <h1>大模型</h1>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        <h1>澶фā鍨?/h1>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       {conversations.length > 0 && (
         <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
           <Layers size={17} />
-          历史
+          鍘嗗彶
           <span>{conversations.length}</span>
         </button>
       )}
@@ -1828,18 +1828,18 @@ function LegacyChatGenerationView() {
 const emptyDigitalHumanOptions = { models: [], defaults: { model: "", driveMode: "text" } };
 const digitalHumanMaxAudioMs = 15000;
 const ttsEmotionOptions = [
-  { value: "", label: "自动" },
-  { value: "calm", label: "平静" },
-  { value: "happy", label: "开心" },
-  { value: "sad", label: "悲伤" },
-  { value: "angry", label: "愤怒" },
-  { value: "fearful", label: "害怕" },
-  { value: "disgusted", label: "厌恶" },
-  { value: "surprised", label: "惊讶" }
+  { value: "", label: "鑷姩" },
+  { value: "calm", label: "骞抽潤" },
+  { value: "happy", label: "寮€蹇? },
+  { value: "sad", label: "鎮蹭激" },
+  { value: "angry", label: "鎰ゆ€? },
+  { value: "fearful", label: "瀹虫€? },
+  { value: "disgusted", label: "鍘屾伓" },
+  { value: "surprised", label: "鎯婅" }
 ];
 
 function formatDurationMs(durationMs = 0) {
-  return `${(Number(durationMs || 0) / 1000).toFixed(1)} 秒`;
+  return `${(Number(durationMs || 0) / 1000).toFixed(1)} 绉抈;
 }
 
 function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion }) {
@@ -1854,18 +1854,18 @@ function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, 
 }
 
 const digitalHumanPublicPlaceholders = [
-  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" },
-  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" }
+  { id: "public-anchor-dialogue", name: "涓绘挱瀵硅瘽", description: "閫傚悎涓绘挱瀵硅瘽銆佽瑙ｄ笌鐭棰戝彛鎾唴瀹广€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/涓绘挱瀵硅瘽.mp4" },
+  { id: "public-product", name: "浜у搧璁茶В鍛?, description: "閫傚悎浜у搧浠嬬粛銆佸崠鐐硅鏄庝笌鍔熻兘婕旂ず銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/浜у搧璁茶В鍛?mp4" },
+  { id: "public-medical", name: "鍋ュ悍绉戞櫘鍛?, description: "閫傚悎鍋ュ悍绉戞櫘銆佺煡璇嗘櫘鍙婁笌涓撲笟瑙ｈ銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鍋ュ悍绉戞櫘鍛?mp4" },
+  { id: "public-home-lady", name: "灞呭鐭ユ€уコ鎬?, description: "閫傚悎鐢熸椿鏂瑰紡鍒嗕韩銆佹棩甯告帹鑽愪笌杞诲唴瀹硅〃杈俱€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/灞呭鐭ユ€уコ鎬?mp4" },
+  { id: "public-real-estate", name: "鎴垮湴浜х粡绾汉", description: "閫傚悎妤肩洏浠嬬粛銆佹埧浜ц瑙ｄ笌閿€鍞挩璇€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鎴垮湴浜х粡绾汉.mp4" },
+  { id: "public-travel", name: "鏂囨梾鎺ㄨ崘瀹?, description: "閫傚悎鏅偣鎺ㄨ崘銆佽矾绾夸粙缁嶄笌鏂囨梾瀹ｄ紶銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鏂囨梾鎺ㄨ崘瀹?mp4" },
+  { id: "public-fashion-host", name: "鏃跺皻绫诲コ涓绘挱", description: "閫傚悎绌挎惌鍒嗕韩銆佹椂灏氭帹鑽愪笌缇庡鍐呭銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鏃跺皻绫诲コ涓绘挱.mp4" },
+  { id: "public-knowledge-host", name: "鐭ヨ瘑绉戞櫘绫诲コ涓绘挱", description: "閫傚悎鐭ヨ瘑璁茶В銆佽绋嬭妭閫変笌淇℃伅姊崇悊銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鐭ヨ瘑绉戞櫘绫诲コ涓绘挱.mp4" },
+  { id: "public-executive-lady", name: "鑱屽満濂抽珮绠?, description: "閫傚悎鍟嗗姟姹囨姤銆佺鐞嗚鐐逛笌鑱屼笟琛ㄨ揪銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鑱屽満濂抽珮绠?mp4" },
+  { id: "public-business-host", name: "鑱屽満杞诲晢鍔″コ涓绘挱", description: "閫傚悎浼佷笟瀹ｄ紶銆佽亴鍦哄垎浜笌鍝佺墝鍐呭銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鑱屽満杞诲晢鍔″コ涓绘挱.mp4" },
+  { id: "public-finance", name: "璐㈢粡涓绘挱", description: "閫傚悎璐㈢粡瑙ｈ銆佸競鍦鸿瀵熶笌璧勮鎾姤銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/璐㈢粡涓绘挱.mp4" },
+  { id: "public-operations", name: "杩愯惀杈句汉", description: "閫傚悎娲诲姩杩愯惀銆佸闀挎渚嬩笌鏂规硶鍒嗕韩銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/杩愯惀杈句汉.mp4" }
 ];
 
 function getDigitalHumanPublicAvatars(list = []) {
@@ -1894,15 +1894,15 @@ function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRenam
   const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar.cover || "");
   return (
     <article className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}>
-      <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`选择 ${avatar.name}`}>
+      <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`閫夋嫨 ${avatar.name}`}>
         {isVideoCover ? (
           <video src={avatar.cover} muted loop playsInline preload="metadata" onMouseEnter={(event) => event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} />
         ) : avatar.cover ? (
           <img src={avatar.cover} alt={avatar.name} />
         ) : (
-          <DigitalHumanEmptyMedia title="形象素材位" description="等待补充数字人视频或封面" />
+          <DigitalHumanEmptyMedia title="褰㈣薄绱犳潗浣? description="绛夊緟琛ュ厖鏁板瓧浜鸿棰戞垨灏侀潰" />
         )}
-        <span className="dh-avatar-badge">{selected ? "已选中" : isTraining ? "训练中" : avatar.cover ? "模板" : "占位"}</span>
+        <span className="dh-avatar-badge">{selected ? "宸查€変腑" : isTraining ? "璁粌涓? : avatar.cover ? "妯℃澘" : "鍗犱綅"}</span>
       </button>
       <div className="dh-avatar-info">
         <strong>{avatar.name}</strong>
@@ -1912,17 +1912,17 @@ function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRenam
       <div className="dh-avatar-actions">
         <button type="button" onClick={() => onPreview(avatar)}>
           <Play size={14} />
-          预览
+          棰勮
         </button>
         {mine && (
           <>
             <button type="button" onClick={() => onRename(avatar)}>
               <FileText size={14} />
-              改名
+              鏀瑰悕
             </button>
             <button type="button" onClick={() => onDelete(avatar.id)}>
               <Trash2 size={14} />
-              删除
+              鍒犻櫎
             </button>
           </>
         )}
@@ -1941,10 +1941,10 @@ function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
       <div className="dh-avatar-preview-modal">
         <div className="dh-modal-header">
           <div>
-            <span>形象预览</span>
+            <span>褰㈣薄棰勮</span>
             <strong>{avatar.name}</strong>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭">关闭</button>
+          <button type="button" onClick={onClose} aria-label="鍏抽棴">鑴?/button>
         </div>
         <div className="dh-avatar-preview-body">
           {isVideoCover ? (
@@ -1952,7 +1952,7 @@ function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
           ) : avatar.cover ? (
             <img src={avatar.cover} alt={avatar.name} />
           ) : (
-            <DigitalHumanEmptyMedia title="暂无预览素材" description="等待补充数字人视频或封面" />
+            <DigitalHumanEmptyMedia title="鏆傛棤棰勮绱犳潗" description="绛夊緟琛ュ厖鏁板瓧浜鸿棰戞垨灏侀潰" />
           )}
         </div>
       </div>
@@ -1972,14 +1972,14 @@ function DigitalHumanTaskCard({ task, selected, onSelect, onDelete, onRegenerate
         ) : task.thumbnailUrl ? <img src={task.thumbnailUrl} alt={task.avatarName} /> : (
           <DigitalHumanEmptyMedia
             icon={Video}
-            title={isFailed ? "生成失败" : isCompleted ? "结果待返回" : "生成中"}
-            description={isFailed ? task.error || "任务失败，积分已退回" : isCompleted ? "点击查看生成结果" : `${task.progress || 0}%`}
+            title={isFailed ? "鐢熸垚澶辫触" : isCompleted ? "缁撴灉寰呰繑鍥? : "鐢熸垚涓?}
+            description={isFailed ? task.error || "浠诲姟澶辫触锛岀Н鍒嗗凡閫€鍥? : isCompleted ? "鐐瑰嚮鏌ョ湅鐢熸垚缁撴灉" : `${task.progress || 0}%`}
           />
         )}
       </button>
       <div className="dh-task-meta">
         <strong>{task.avatarName}</strong>
-        <span>{task.voiceName} 路 {task.driveMode === "audio" ? "音频驱动" : "文本驱动"} 路 {task.providerModel || "KIE Wan 2.7"}</span>
+        <span>{task.voiceName} 路 {task.driveMode === "audio" ? "闊抽椹卞姩" : "鏂囧瓧椹卞姩"} 路 {task.providerModel || "KIE Wan 2.7"}</span>
         <div className="dh-progress-track">
           <i style={{ width: `${task.progress || 0}%` }} />
         </div>
@@ -2001,12 +2001,12 @@ function DigitalHumanGeneratingState({ task }) {
   return (
     <div className="dh-generating-state">
       <span className="dh-spinner" aria-hidden="true" />
-      <strong>正在生成口型视频</strong>
-      <p>MiniMax 已生成驱动音频，KIE 正在合成数字人口播成片。</p>
+      <strong>姝ｅ湪鐢熸垚鍙ｅ瀷瑙嗛</strong>
+      <p>MiniMax 宸茬敓鎴愰┍鍔ㄩ煶棰戯紝KIE 姝ｅ湪鍚堟垚鏁板瓧浜哄彛鎾垚鐗囥€?/p>
       <div className="dh-generation-progress">
         <i style={{ width: `${task?.progress || 0}%` }} />
       </div>
-      <small>{task?.progress || 0}% · 完成后会自动回填到这里</small>
+      <small>{task?.progress || 0}% 路 瀹屾垚鍚庝細鑷姩鍥炲～鍒拌繖閲?/small>
     </div>
   );
 }
@@ -2019,11 +2019,11 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
 
   function submit() {
     if (!name.trim()) {
-      setNotice("请输入形象名称");
+      setNotice("璇疯緭鍏ュ舰璞″悕绉?);
       return;
     }
     if (!file) {
-      setNotice("请选择视频素材，当前只记录文件名作为占位。");
+      setNotice("璇烽€夋嫨瑙嗛绱犳潗锛屽綋鍓嶅彧璁板綍鏂囦欢鍚嶄綔涓哄崰浣嶃€?);
       return;
     }
     onCreate({ name: name.trim(), fileName: file.name });
@@ -2034,15 +2034,15 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
       <div className="dh-modal">
         <div className="dh-modal-header">
           <div>
-            <span>创建形象</span>
-            <strong>预留训练素材入口</strong>
+            <span>鍒涘缓褰㈣薄</span>
+            <strong>棰勭暀璁粌绱犳潗鍏ュ彛</strong>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭">关闭</button>
+          <button type="button" onClick={onClose} aria-label="鍏抽棴">脳</button>
         </div>
         <div className="dh-modal-body">
           <label className="dh-field">
-            <span>形象名称</span>
-            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="例如：产品讲解员" />
+            <span>褰㈣薄鍚嶇О</span>
+            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="渚嬪锛氫骇鍝佽瑙ｅ憳" />
           </label>
           <button className="dh-upload-zone" type="button" onClick={() => fileInputRef.current?.click()}>
             <input ref={fileInputRef} type="file" accept="video/*" hidden onChange={(event) => {
@@ -2054,8 +2054,8 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
                 className="upload-clear-button"
                 role="button"
                 tabIndex={0}
-                title="取消上传"
-                aria-label="取消上传"
+                title="鍙栨秷涓婁紶"
+                aria-label="鍙栨秷涓婁紶"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -2073,16 +2073,16 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
               </span>
             )}
             <Video size={24} />
-            <strong>{file ? file.name : "选择数字人训练视频"}</strong>
-            <span>{file ? "素材会在真实接口接入后上传" : "当前不上载文件，只保留 UI 和 API 结构"}</span>
+            <strong>{file ? file.name : "閫夋嫨鏁板瓧浜鸿缁冭棰?}</strong>
+            <span>{file ? "绱犳潗浼氬湪鐪熷疄鎺ュ彛鎺ュ叆鍚庝笂浼? : "褰撳墠涓嶄笂浼犳枃浠讹紝鍙繚鐣?UI 鍜?API 缁撴瀯"}</span>
           </button>
           {notice && <div className="dh-form-notice">{notice}</div>}
         </div>
         <div className="dh-modal-footer">
-          <button type="button" onClick={onClose}>取消</button>
+          <button type="button" onClick={onClose}>鍙栨秷</button>
           <button type="button" onClick={submit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
-            创建形象
+            鍒涘缓褰㈣薄
           </button>
         </div>
       </div>
@@ -2093,7 +2093,7 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
 function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, isSubmitting }) {
   const audioInputRef = useRef(null);
   const [driveMode, setDriveMode] = useState("text");
-  const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我将为您介绍全新的数字人功能。");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜灏嗕负鎮ㄤ粙缁嶅叏鏂扮殑鏁板瓧浜哄姛鑳姐€?);
   const [audioFile, setAudioFile] = useState(null);
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
@@ -2130,7 +2130,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
 
   async function previewVoice() {
     if (!text.trim()) {
-      setNotice("请输入用于试听的文本脚本");
+      setNotice("璇疯緭鍏ョ敤浜庤瘯鍚殑鏂囨湰鑴氭湰");
       return;
     }
     setNotice("");
@@ -2153,11 +2153,11 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       });
       setNotice(
         durationMs > digitalHumanMaxAudioMs
-          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`
-          : `已生成当前音色试听，视频时长将按音频反推为 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
+          ? `褰撳墠闊抽 ${formatDurationMs(durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭枃鏈垨鍒囩墖鍚庡垎娈电敓鎴恅
+          : `宸茬敓鎴愬綋鍓嶉煶鑹茶瘯鍚紝瑙嗛鏃堕暱灏嗘寜闊抽鍙嶆帹涓?${result.videoDuration || Math.ceil(durationMs / 1000)} 绉抈
       );
     } catch (error) {
-      setNotice(error.message || "音色试听失败");
+      setNotice(error.message || "闊宠壊璇曞惉澶辫触");
     } finally {
       setIsDesigningVoice(false);
     }
@@ -2165,23 +2165,23 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
 
   function submit() {
     if (!selectedAvatar) {
-      setNotice("请先选择数字人形象");
+      setNotice("璇峰厛閫夋嫨鏁板瓧浜哄舰璞?);
       return;
     }
     if (driveMode === "text" && !text.trim()) {
-      setNotice("请输入文本脚本");
+      setNotice("璇疯緭鍏ユ枃鏈剼鏈?);
       return;
     }
     if (driveMode === "audio" && !audioFile) {
-      setNotice("请上传音频文件");
+      setNotice("璇蜂笂浼犻煶棰戞枃浠?);
       return;
     }
     if (!voicePreviewInfo || !isPreviewCurrent) {
-      setNotice("请先试听当前音色，系统会根据试听音频时长反推视频时长");
+      setNotice("璇峰厛璇曞惉褰撳墠闊宠壊锛岀郴缁熶細鏍规嵁璇曞惉闊抽鏃堕暱鍙嶆帹瑙嗛鏃堕暱");
       return;
     }
     if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
-      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒，请缩短文本或切片后分段生成`);
+      setNotice(`褰撳墠闊抽 ${formatDurationMs(voicePreviewInfo.durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭枃鏈垨鍒囩墖鍚庡垎娈电敓鎴恅);
       return;
     }
     setNotice("");
@@ -2203,7 +2203,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   return (
     <aside className="dh-config-panel">
       <div className="dh-config-header">
-        <strong>数字人口播成片</strong>
+        <strong>鏁板瓧浜哄彛鎾垚鐗?/strong>
       </div>
       <DigitalHumanShowcaseCard
         selectedAvatar={selectedAvatar}
@@ -2224,19 +2224,19 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
           )}
         </div>
         <div>
-          <span>当前数字人模板</span>
-          <strong>{selectedAvatar?.name || "请先选择左侧模板"}</strong>
-          <small>{selectedAvatar?.description || "模板会作为 KIE 口型视频的 reference_video"}</small>
+          <span>褰撳墠鏁板瓧浜烘ā鏉?/span>
+          <strong>{selectedAvatar?.name || "璇峰厛閫夋嫨宸︿晶妯℃澘"}</strong>
+          <small>{selectedAvatar?.description || "妯℃澘浼氫綔涓?KIE 鍙ｅ瀷瑙嗛鐨?reference_video"}</small>
         </div>
       </div>
       <div className="dh-mode-tabs">
-        <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>文本驱动</button>
-        <button type="button" disabled title="音频驱动将在第二阶段接入">音频驱动</button>
+        <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>鏂囧瓧椹卞姩</button>
+        <button type="button" disabled title="闊抽椹卞姩灏嗗湪绗簩闃舵鎺ュ叆">闊抽椹卞姩</button>
       </div>
       {driveMode === "text" ? (
         <label className="dh-field dh-script-field">
-          <span>文本脚本 <small>{text.length} / 2000 字 · 预计 {estimate} 分钟</small></span>
-          <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} placeholder="请输入数字人要说的话..." />
+          <span>鏂囨湰鑴氭湰 <small>{text.length} / 2000 璺?棰勮 {estimate} 鍒嗛挓</small></span>
+          <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} placeholder="璇疯緭鍏ユ暟瀛椾汉瑕佽鐨勮瘽..." />
         </label>
       ) : (
         <button className="dh-audio-upload" type="button" onClick={() => audioInputRef.current?.click()}>
@@ -2249,8 +2249,8 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
               className="upload-clear-button"
               role="button"
               tabIndex={0}
-              title="取消上传"
-              aria-label="取消上传"
+              title="鍙栨秷涓婁紶"
+              aria-label="鍙栨秷涓婁紶"
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -2268,19 +2268,19 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
             </span>
           )}
           <Mic size={22} />
-          <strong>{audioFile ? audioFile.name : "上传驱动音频"}</strong>
-          <span>{audioFile ? "已选择，真实接口接入后上传" : "限制 3 分钟以内，当前为占位"}</span>
+          <strong>{audioFile ? audioFile.name : "涓婁紶椹卞姩闊抽"}</strong>
+          <span>{audioFile ? "宸查€夋嫨锛岀湡瀹炴帴鍙ｆ帴鍏ュ悗涓婁紶" : "闄愬埗 3 鍒嗛挓浠ュ唴锛屽綋鍓嶄负鍗犱綅"}</span>
         </button>
       )}
       <label className="dh-field">
-        <span>成片模型</span>
+        <span>鎴愮墖妯″瀷</span>
         <select value={model} onChange={(event) => setModel(event.target.value)}>
           {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
-        {selectedModel && <small>调用模型：{selectedModel.providerModel || selectedModel.value} · {selectedModel.resolution || "720p"}</small>}
+        {selectedModel && <small>璋冪敤妯″瀷锛歿selectedModel.providerModel || selectedModel.value} 璺?{selectedModel.resolution || "720p"}</small>}
       </label>
       <label className="dh-field">
-        <span>音色</span>
+        <span>闊宠壊</span>
         <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
           {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
@@ -2289,48 +2289,48 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       <div className="dh-settings-group">
         <div className="dh-minimax-options">
           <div className="dh-minimax-options-head">
-            <span>MiniMax TTS 参数</span>
-            <strong>音量、语速、音调与情绪</strong>
+            <span>MiniMax TTS 鍙傛暟</span>
+            <strong>闊抽噺銆佽閫熴€侀煶璋冧笌鎯呯华</strong>
           </div>
           <label className="dh-field">
-            <span>音色情绪</span>
+            <span>闊宠壊鎯呯华</span>
             <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
               {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
             </select>
           </label>
           <label className="dh-range-field">
-            <span>语速 <small>{ttsSpeed.toFixed(2)}x</small></span>
+            <span>璇€?<small>{ttsSpeed.toFixed(2)}x</small></span>
             <input type="range" min="0.5" max="2" step="0.05" value={ttsSpeed} onChange={(event) => setTtsSpeed(Number(event.target.value))} />
           </label>
           <label className="dh-range-field">
-            <span>音量 <small>{ttsVolume.toFixed(1)}</small></span>
+            <span>闊抽噺 <small>{ttsVolume.toFixed(1)}</small></span>
             <input type="range" min="0.1" max="10" step="0.1" value={ttsVolume} onChange={(event) => setTtsVolume(Number(event.target.value))} />
           </label>
           <label className="dh-range-field">
-            <span>音调 <small>{ttsPitch > 0 ? `+${ttsPitch}` : ttsPitch}</small></span>
+            <span>闊宠皟 <small>{ttsPitch > 0 ? `+${ttsPitch}` : ttsPitch}</small></span>
             <input type="range" min="-12" max="12" step="1" value={ttsPitch} onChange={(event) => setTtsPitch(Number(event.target.value))} />
           </label>
         </div>
         <button className="dh-design-voice-button" type="button" onClick={previewVoice} disabled={isDesigningVoice}>
           {isDesigningVoice ? <Loader2 size={16} /> : <Mic size={16} />}
-          试听当前音色
+          璇曞惉褰撳墠闊宠壊
         </button>
         {voicePreviewUrl && <audio className="dh-voice-preview" src={voicePreviewUrl} controls />}
         <div className={`dh-duration-check ${currentAudioTooLong ? "is-warning" : isPreviewCurrent ? "is-ready" : ""}`}>
           {isPreviewCurrent ? (
             <span>
-              当前音频 {formatDurationMs(voicePreviewInfo.durationMs)}
-              {currentAudioTooLong ? "，超过 15 秒，需要切片" : `，视频将生成 ${voicePreviewInfo.videoDuration} 秒`}
+              褰撳墠闊抽 {formatDurationMs(voicePreviewInfo.durationMs)}
+              {currentAudioTooLong ? "锛岃秴杩?15 绉掞紝闇€瑕佸垏鐗? : `锛岃棰戝皢鐢熸垚 ${voicePreviewInfo.videoDuration} 绉抈}
             </span>
           ) : (
-            <span>生成前请先试听当前音色，用真实音频时长反推视频时长</span>
+            <span>鐢熸垚鍓嶈鍏堣瘯鍚綋鍓嶉煶鑹诧紝鐢ㄧ湡瀹為煶棰戞椂闀垮弽鎺ㄨ棰戞椂闀?/span>
           )}
         </div>
       </div>
       {notice && <div className="dh-form-notice">{notice}</div>}
       <button className="dh-generate-button" type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || currentAudioTooLong}>
         {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
-        用当前模板生成口型视频
+        鐢ㄥ綋鍓嶆ā鏉跨敓鎴愬彛鍨嬭棰?
       </button>
     </aside>
   );
@@ -2350,7 +2350,7 @@ function DigitalHumanGenerationView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // 模块由外层保活挂载，此处始终订阅数字人任务与形象
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓璁㈤槄鏁板瓧浜轰换鍔′笌褰㈣薄
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -2370,7 +2370,7 @@ function DigitalHumanGenerationView() {
         setCredits(creditData);
         setSelectedAvatar((current) => current || avatarData.public?.[0] || avatarData.mine?.[0] || null);
       } catch (loadError) {
-        if (mounted) setError(loadError.message || "加载数字人功能失败");
+        if (mounted) setError(loadError.message || "鍔犺浇鏁板瓧浜哄姛鑳藉け璐?);
       }
     }
     load();
@@ -2399,7 +2399,7 @@ function DigitalHumanGenerationView() {
       setSelectedTask(task);
       setTab("history");
     } catch (submitError) {
-      setError(submitError.message || "创建数字人任务失败");
+      setError(submitError.message || "鍒涘缓鏁板瓧浜轰换鍔″け璐?);
     } finally {
       setIsSubmitting(false);
     }
@@ -2413,7 +2413,7 @@ function DigitalHumanGenerationView() {
       setTab("mine");
       setIsCreateOpen(false);
     } catch (submitError) {
-      setError(submitError.message || "创建形象失败");
+      setError(submitError.message || "鍒涘缓褰㈣薄澶辫触");
     } finally {
       setIsSubmitting(false);
     }
@@ -2425,7 +2425,7 @@ function DigitalHumanGenerationView() {
   }
 
   async function renameAvatar(avatar) {
-    const nextName = window.prompt("输入新的形象名称", avatar.name);
+    const nextName = window.prompt("杈撳叆鏂扮殑褰㈣薄鍚嶇О", avatar.name);
     if (!nextName?.trim()) return;
     const updated = await digitalHumanApi.updateAvatar(avatar.id, { name: nextName.trim() });
     setSelectedAvatar(updated);
@@ -2449,10 +2449,10 @@ function DigitalHumanGenerationView() {
     <section className="dh-view-root">
       <div className="dh-topbar">
         <div>
-          <span>数字人</span>
-          <h1>创建会说话的数字人视频</h1>
+          <span>鏁板瓧浜?/span>
+          <h1>鍒涘缓浼氳璇濈殑鏁板瓧浜鸿棰?/h1>
         </div>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       {error && <div className="video-submit-error">{error}</div>}
       <div className={`dh-workspace ${currentPreviewTask ? "is-generating" : "is-browsing"}`}>
@@ -2460,21 +2460,21 @@ function DigitalHumanGenerationView() {
         <section className="dh-library-panel">
           <div className="dh-library-heading">
             <div>
-              <span>第 1 步</span>
-              <strong>选择数字人模板</strong>
+              <span>绗?1 姝?/span>
+              <strong>閫夋嫨鏁板瓧浜烘ā鏉?/strong>
             </div>
-            <small>{selectedAvatar ? `已选择：${selectedAvatar.name}` : "选择后右侧会显示当前模板和调用模型"}</small>
+            <small>{selectedAvatar ? `宸查€夋嫨锛?{selectedAvatar.name}` : "閫夋嫨鍚庡彸渚т細鏄剧ず褰撳墠妯℃澘鍜岃皟鐢ㄦā鍨?}</small>
           </div>
           <div className="dh-tabs">
-            <button className={tab === "public" ? "is-active" : ""} type="button" onClick={() => setTab("public")}>公共形象</button>
-            <button className={tab === "mine" ? "is-active" : ""} type="button" onClick={() => setTab("mine")}>我的形象</button>
-            <button className={tab === "history" ? "is-active" : ""} type="button" onClick={() => setTab("history")}>生成记录</button>
+            <button className={tab === "public" ? "is-active" : ""} type="button" onClick={() => setTab("public")}>鍏叡褰㈣薄</button>
+            <button className={tab === "mine" ? "is-active" : ""} type="button" onClick={() => setTab("mine")}>鎴戠殑褰㈣薄</button>
+            <button className={tab === "history" ? "is-active" : ""} type="button" onClick={() => setTab("history")}>鐢熸垚璁板綍</button>
           </div>
           {tab === "mine" && (
             <button className="dh-create-card" type="button" onClick={() => setIsCreateOpen(true)}>
               <Plus size={20} />
-              <strong>创建形象</strong>
-              <span>预留视频训练入口</span>
+              <strong>鍒涘缓褰㈣薄</strong>
+              <span>棰勭暀瑙嗛璁粌鍏ュ彛</span>
             </button>
           )}
           {tab === "history" ? (
@@ -2488,7 +2488,7 @@ function DigitalHumanGenerationView() {
                   onDelete={deleteTask}
                   onRegenerate={regenerateTask}
                 />
-              )) : <DigitalHumanEmptyMedia icon={Video} title="暂无生成记录" description="提交任务后会在这里显示进度" />}
+              )) : <DigitalHumanEmptyMedia icon={Video} title="鏆傛棤鐢熸垚璁板綍" description="鎻愪氦浠诲姟鍚庝細鍦ㄨ繖閲屾樉绀鸿繘搴? />}
             </div>
           ) : (
             <div className="dh-avatar-list">
@@ -2503,7 +2503,7 @@ function DigitalHumanGenerationView() {
                   onDelete={deleteAvatar}
                   mine={tab === "mine"}
                 />
-              )) : <DigitalHumanEmptyMedia title="还没有自定义形象" description="点击创建形象，后续接入 MiniMax 训练接口" />}
+              )) : <DigitalHumanEmptyMedia title="杩樻病鏈夎嚜瀹氫箟褰㈣薄" description="鐐瑰嚮鍒涘缓褰㈣薄锛屽悗缁帴鍏?Minimax 璁粌鎺ュ彛" />}
             </div>
           )}
         </section>
@@ -2511,21 +2511,21 @@ function DigitalHumanGenerationView() {
         <main className="dh-preview-stage">
           <div className="dh-preview-header">
             <div>
-              <span>{currentPreviewTask ? "生成预览" : "形象预览"}</span>
-              <strong>{currentPreviewTask?.avatarName || selectedAvatar?.name || "请选择数字人形象"}</strong>
+              <span>{currentPreviewTask ? "鐢熸垚棰勮" : "褰㈣薄棰勮"}</span>
+              <strong>{currentPreviewTask?.avatarName || selectedAvatar?.name || "璇烽€夋嫨鏁板瓧浜哄舰璞?}</strong>
             </div>
             <div className="dh-preview-header-actions">
               {currentPreviewTask?.resultUrl && (
                 <a className="dh-download-button" href={currentPreviewTask.resultUrl} download target="_blank" rel="noreferrer">
                   <Download size={14} />
-                  下载视频
+                  涓嬭浇瑙嗛
                 </a>
               )}
               <button className="dh-preview-back" type="button" onClick={() => setSelectedTask(null)}>
                 <Layers size={14} />
-                返回
+                妗堜緥
               </button>
-              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "已完成" : currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>}
+              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "宸插畬鎴? : currentPreviewTask.status === "failed" ? "澶辫触" : `鐢熸垚涓?${currentPreviewTask.progress || 0}%`}</small>}
             </div>
           </div>
           <div className="dh-video-shell">
@@ -2536,22 +2536,22 @@ function DigitalHumanGenerationView() {
             ) : (
               <DigitalHumanEmptyMedia
                 icon={currentPreviewTask ? Film : UserRound}
-                title={currentPreviewTask?.status === "failed" ? "生成失败" : currentPreviewTask?.status === "completed" ? "视频结果待返回" : "正在生成数字人视频"}
-                description={currentPreviewTask?.status === "failed" ? currentPreviewTask.error : currentPreviewTask ? `任务已提交，MiniMax 生成音频后由 KIE 生成口型视频。当前进度 ${currentPreviewTask.progress || 0}%` : "这里会展示选中形象或生成后的视频"}
+                title={currentPreviewTask?.status === "failed" ? "鐢熸垚澶辫触" : currentPreviewTask?.status === "completed" ? "瑙嗛缁撴灉寰呰繑鍥? : "姝ｅ湪鐢熸垚鏁板瓧浜鸿棰?}
+                description={currentPreviewTask?.status === "failed" ? currentPreviewTask.error : currentPreviewTask ? `浠诲姟宸叉彁浜わ紝MiniMax 鐢熸垚闊抽鍚庣敱 KIE 鐢熸垚鍙ｅ瀷瑙嗛銆傚綋鍓嶈繘搴?${currentPreviewTask.progress || 0}%` : "杩欓噷浼氬睍绀洪€変腑褰㈣薄鎴栫敓鎴愬悗鐨勮棰?}
               />
             )}
           </div>
           <div className="dh-preview-details">
             <div>
-              <span>当前形象</span>
-              <strong>{selectedAvatar?.name || "未选择"}</strong>
+              <span>褰撳墠褰㈣薄</span>
+              <strong>{selectedAvatar?.name || "鏈€夋嫨"}</strong>
             </div>
             <div>
-              <span>驱动方式</span>
-              <strong>{currentPreviewTask?.driveMode === "audio" ? "音频驱动" : "文本驱动"}</strong>
+              <span>椹卞姩鏂瑰紡</span>
+              <strong>{currentPreviewTask?.driveMode === "audio" ? "闊抽椹卞姩" : "鏂囧瓧椹卞姩"}</strong>
             </div>
             <div>
-              <span>接口状态</span>
+              <span>鎺ュ彛鐘舵€?/span>
               <strong>{currentPreviewTask?.providerModel || "MiniMax + KIE"}</strong>
             </div>
           </div>
@@ -2607,12 +2607,12 @@ function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
         {hasVideo ? (
           <>
             <video ref={videoRef} src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.portraitUrl} />
-            <button className="idh-fullscreen-button" type="button" onClick={openFullscreen} aria-label="全屏播放">
+            <button className="idh-fullscreen-button" type="button" onClick={openFullscreen} aria-label="鍏ㄥ睆鎾斁">
               <Maximize2 size={15} />
             </button>
           </>
         ) : task.portraitUrl ? (
-          <img src={task.portraitUrl} alt="人物照片" />
+          <img src={task.portraitUrl} alt="浜虹墿鐓х墖" />
         ) : (
           <Camera size={24} />
         )}
@@ -2622,11 +2622,11 @@ function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
             <span>{task.progress || 0}%</span>
           </div>
         )}
-        {isFailed && <div className="idh-failed-mask">生成失败</div>}
+        {isFailed && <div className="idh-failed-mask">鐢熸垚澶辫触</div>}
       </div>
       <div className="idh-result-meta">
         <div className="idh-result-title">
-          <strong>{task.voiceName || "MiniMax 音色"}</strong>
+          <strong>{task.voiceName || "MiniMax 闊宠壊"}</strong>
           <span>{task.usedProviderModel || task.providerModel || "KIE"}</span>
         </div>
         <p>{task.error || task.text}</p>
@@ -2634,17 +2634,17 @@ function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
           <i style={{ width: `${task.progress || 0}%` }} />
         </div>
         <div className="idh-result-actions">
-          <small>{task.time} · {task.costPoints || 0} 积分</small>
+          <small>{task.time} 璺?{task.costPoints || 0} 绉垎</small>
           <span>
             {task.resultUrl && (
-              <a href={task.resultUrl} download target="_blank" rel="noreferrer" aria-label="下载视频">
+              <a href={task.resultUrl} download target="_blank" rel="noreferrer" aria-label="涓嬭浇瑙嗛">
                 <Download size={15} />
               </a>
             )}
-            <button type="button" onClick={() => onRegenerate(task.id)} disabled={isProcessing} aria-label="重新生成">
+            <button type="button" onClick={() => onRegenerate(task.id)} disabled={isProcessing} aria-label="閲嶆柊鐢熸垚">
               <RefreshCcw size={15} />
             </button>
-            <button type="button" onClick={() => onDelete(task.id)} aria-label="删除">
+            <button type="button" onClick={() => onDelete(task.id)} aria-label="鍒犻櫎">
               <Trash2 size={15} />
             </button>
           </span>
@@ -2666,12 +2666,31 @@ function ImageDigitalHumanCenterState({ task, isSubmitting, error, onOpenRecent 
       <section className="idh-center-state is-completed" aria-live="polite">
         <div className="idh-center-copy">
           <CheckCircle2 size={22} />
-          <strong>视频已生成</strong>
-          <p>本次图片数字人视频已保存到最近生成。首页不再展示案例，方便继续创建下一条视频。</p>
+          <strong>瑙嗛宸茬敓鎴?/strong>
+          <p>鏈鍥剧墖鏁板瓧浜鸿棰戝凡淇濆瓨鍒版渶杩戠敓鎴愩€備富椤典笉浼氬睍绀烘渚嬶紝鏂逛究缁х画鍒涘缓涓嬩竴鏉¤棰戙€?/p>
           <button type="button" onClick={onOpenRecent}>
             <Layers size={15} />
-            查看最近生成
+            鏌ョ湅鏈€杩戠敓鎴?
           </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <section className="idh-center-state is-completed" aria-live="polite">
+        <div className="idh-center-video">
+          <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.portraitUrl} />
+        </div>
+        <div className="idh-center-copy">
+          <CheckCircle2 size={22} />
+          <strong>瑙嗛宸茬敓鎴?/strong>
+          <p>鍙ｅ瀷瑙嗛宸茬粡瀹屾垚锛屽彲浠ョ洿鎺ラ瑙堟垨涓嬭浇銆?/p>
+          <a href={task.resultUrl} download target="_blank" rel="noreferrer">
+            <Download size={15} />
+            涓嬭浇瑙嗛
+          </a>
         </div>
       </section>
     );
@@ -2683,8 +2702,8 @@ function ImageDigitalHumanCenterState({ task, isSubmitting, error, onOpenRecent 
         <span className="idh-center-icon">
           <Sparkles size={24} />
         </span>
-        <strong>这次没有生成成功</strong>
-        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
       </section>
     );
   }
@@ -2694,12 +2713,12 @@ function ImageDigitalHumanCenterState({ task, isSubmitting, error, onOpenRecent 
       <span className="idh-center-spinner">
         <Loader2 size={30} />
       </span>
-      <strong>正在生成图片数字人视频</strong>
-      <p>正在生成语音、上传人物照片，并合成口型视频。完成后会自动回填到这里。</p>
+      <strong>姝ｅ湪鐢熸垚鍥剧墖鏁板瓧浜鸿棰?/strong>
+      <p>姝ｅ湪鐢熸垚璇煶銆佷笂浼犱汉鐗╃収鐗囷紝骞跺悎鎴愬彛鍨嬭棰戙€傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?/p>
       <div className="idh-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
-      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
     </section>
   );
 }
@@ -2708,7 +2727,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
   const fileInputRef = useRef(null);
   const [portrait, setPortrait] = useState(null);
   const [portraitPreview, setPortraitPreview] = useState("");
-  const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜浼氱敤涓€寮犵収鐗囷紝涓轰綘鐢熸垚鑷劧鍙ｅ瀷鐨勬暟瀛椾汉瑙嗛銆?);
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
   const [speed, setSpeed] = useState(1);
@@ -2738,16 +2757,16 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
   const previewSignature = getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion });
   const isPreviewCurrent = voicePreviewInfo?.signature === previewSignature;
   const isTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
-  const price = `${selectedModel?.basePoints || 0} 积分/次`;
+  const price = `${selectedModel?.basePoints || 0} 绉垎/娆;
 
   function selectPortrait(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setNotice("请上传图片文件");
+      setNotice("璇蜂笂浼犲浘鐗囨枃浠?);
       return;
     }
     if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
-      setNotice("图片大小不能超过 10MB");
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
       return;
     }
     if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
@@ -2767,7 +2786,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
 
   async function previewVoice() {
     if (!text.trim()) {
-      setNotice("请输入用于试听的台词");
+      setNotice("璇疯緭鍏ョ敤浜庤瘯鍚殑鍙拌瘝");
       return;
     }
     setNotice("");
@@ -2790,11 +2809,11 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
       });
       setNotice(
         durationMs > digitalHumanMaxAudioMs
-          ? `当前音频 ${formatDurationMs(durationMs)}，超过 15 秒，请缩短台词`
-          : `已生成试听音频，视频预计 ${result.videoDuration || Math.ceil(durationMs / 1000)} 秒`
+          ? `褰撳墠闊抽 ${formatDurationMs(durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭彴璇峘
+          : `宸茬敓鎴愯瘯鍚煶棰戯紝瑙嗛棰勮 ${result.videoDuration || Math.ceil(durationMs / 1000)} 绉抈
       );
     } catch (error) {
-      setNotice(error.message || "音色试听失败");
+      setNotice(error.message || "闊宠壊璇曞惉澶辫触");
     } finally {
       setIsPreviewing(false);
     }
@@ -2802,19 +2821,19 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
 
   function submit() {
     if (!portrait) {
-      setNotice("请先上传人物正面照");
+      setNotice("璇峰厛涓婁紶浜虹墿姝ｉ潰鐓?);
       return;
     }
     if (!text.trim()) {
-      setNotice("请输入台词");
+      setNotice("璇疯緭鍏ュ彴璇?);
       return;
     }
     if (!voicePreviewInfo || !isPreviewCurrent) {
-      setNotice("请先试听当前台词和音色");
+      setNotice("璇峰厛璇曞惉褰撳墠鍙拌瘝鍜岄煶鑹?);
       return;
     }
     if (isTooLong) {
-      setNotice(`当前音频 ${formatDurationMs(voicePreviewInfo.durationMs)}，超过 15 秒`);
+      setNotice(`褰撳墠闊抽 ${formatDurationMs(voicePreviewInfo.durationMs)}锛岃秴杩?15 绉抈);
       return;
     }
     setNotice("");
@@ -2831,7 +2850,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
   }
 
   return (
-    <div className="idh-composer" aria-label="图片数字人生成器">
+    <div className="idh-composer" aria-label="鍥剧墖鏁板瓧浜虹敓鎴愬櫒">
       <ImageDigitalHumanShowcaseCard
         portraitPreview={portraitPreview}
         selectedModelLabel={selectedModel?.label || selectedModel?.value}
@@ -2842,11 +2861,11 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
       <div className="idh-mode-tabs">
         <button className="is-active" type="button">
           <FileText size={15} />
-          文本驱动
+          鏂囨湰椹卞姩
         </button>
-        <button type="button" disabled title="音频驱动将在下一阶段开放">
+        <button type="button" disabled title="闊抽椹卞姩灏嗗湪涓嬩竴闃舵寮€鏀?>
           <Mic size={15} />
-          音频驱动
+          闊抽椹卞姩
         </button>
       </div>
       <div className="idh-composer-body">
@@ -2856,12 +2875,12 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             event.target.value = "";
           }} />
           {portraitPreview ? (
-            <img src={portraitPreview} alt="已上传人物照" />
+            <img src={portraitPreview} alt="宸蹭笂浼犱汉鐗╃収" />
           ) : (
             <>
               <Plus size={18} />
-              <strong>上传图片</strong>
-              <span>人物正面照</span>
+              <strong>涓婁紶鍥剧墖</strong>
+              <span>浜虹墿姝ｉ潰鐓?/span>
             </>
           )}
           {portraitPreview && (
@@ -2869,8 +2888,8 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
               className="upload-clear-button"
               role="button"
               tabIndex={0}
-              title="取消上传"
-              aria-label="取消上传"
+              title="鍙栨秷涓婁紶"
+              aria-label="鍙栨秷涓婁紶"
               onClick={clearPortrait}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") clearPortrait(event);
@@ -2896,41 +2915,41 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             value={text}
             maxLength={options.limits?.maxTextLength || 2000}
             onChange={(event) => setText(event.target.value)}
-            placeholder="请输入台词，生成语音..."
+            placeholder="璇疯緭鍏ュ彴璇嶏紝鐢熸垚璇煶..."
           />
           <details className="idh-advanced">
-            <summary>音色参数</summary>
+            <summary>闊宠壊鍙傛暟</summary>
             <label>
-              <span>情绪</span>
+              <span>鎯呯华</span>
               <select value={emotion} onChange={(event) => setEmotion(event.target.value)}>
                 {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
               </select>
             </label>
             <label>
-              <span>语速 {speed.toFixed(2)}x</span>
+              <span>璇€?{speed.toFixed(2)}x</span>
               <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
             </label>
             <label>
-              <span>音量 {volume.toFixed(1)}</span>
+              <span>闊抽噺 {volume.toFixed(1)}</span>
               <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
             </label>
             <label>
-              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
+              <span>闊宠皟 {pitch > 0 ? `+${pitch}` : pitch}</span>
               <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
             </label>
           </details>
           <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={isPreviewing}>
             {isPreviewing ? <Loader2 size={15} /> : <Play size={15} />}
-            生成语音
+            鐢熸垚璇煶
           </button>
           {voicePreviewUrl && <audio className="idh-audio-preview" src={voicePreviewUrl} controls />}
         </div>
       </div>
       <div className="idh-composer-footer">
-        <span>图片与音频大小均不超过 10MB</span>
+        <span>鍥剧墖涓庨煶棰戝ぇ灏忓潎涓嶈秴杩?10MB</span>
         <small>{selectedVoice?.description || selectedModel?.primaryModel}</small>
         <strong>{price}</strong>
-        <button type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || isTooLong} aria-label="生成图片数字人视频">
+        <button type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || isTooLong} aria-label="鐢熸垚鍥剧墖鏁板瓧浜鸿棰?>
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
         </button>
       </div>
@@ -2951,7 +2970,7 @@ function ImageDigitalHumanView() {
   const [portraitPreview, setPortraitPreview] = useState("");
   const [model, setModel] = useState("");
   const [voiceId, setVoiceId] = useState("");
-  const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜浼氱敤涓€寮犵収鐗囷紝涓轰綘鐢熸垚鑷劧鍙ｅ瀷鐨勬暟瀛椾汉瑙嗛銆?);
   const [showcaseNotice, setShowcaseNotice] = useState("");
 
   useEffect(() => {
@@ -2970,7 +2989,7 @@ function ImageDigitalHumanView() {
         setTasks(taskData);
         setCredits(creditData);
       } catch (error) {
-        if (mounted) setSubmitError(error.message || "加载图片数字人失败");
+        if (mounted) setSubmitError(error.message || "鍔犺浇鍥剧墖鏁板瓧浜哄け璐?);
       }
     }
     load();
@@ -3014,11 +3033,11 @@ function ImageDigitalHumanView() {
   function selectShowcasePortrait(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setShowcaseNotice("请上传图片文件");
+      setShowcaseNotice("璇蜂笂浼犲浘鐗囨枃浠?);
       return;
     }
     if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
-      setShowcaseNotice("图片大小不能超过 10MB");
+      setShowcaseNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
       return;
     }
     if (portraitPreview.startsWith("blob:")) {
@@ -3045,7 +3064,7 @@ function ImageDigitalHumanView() {
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
     } catch (error) {
-      setSubmitError(error.message || "创建图片数字人任务失败");
+      setSubmitError(error.message || "鍒涘缓鍥剧墖鏁板瓧浜轰换鍔″け璐?);
     } finally {
       setIsSubmitting(false);
     }
@@ -3066,7 +3085,7 @@ function ImageDigitalHumanView() {
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current]);
     } catch (error) {
-      setSubmitError(error.message || "重新生成失败");
+      setSubmitError(error.message || "閲嶆柊鐢熸垚澶辫触");
     } finally {
       setIsSubmitting(false);
     }
@@ -3104,6 +3123,68 @@ function ImageDigitalHumanView() {
     </section>
   );
 
+  /* return (
+    <section className="idh-view-root">
+      <div className="image-filter-tabs idh-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>鏈€杩戠敓鎴?/button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          鏀惰棌
+        </button>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      <div className="idh-workspace">
+        <div className={`idh-canvas ${showCenterState ? "has-active-task" : ""}`}>
+        {showHero && <div className="idh-hero-empty">
+          <span className="idh-hero-icon">
+            <Camera size={34} />
+          </span>
+          <h1>鍥剧墖鏁板瓧浜?/h1>
+          <p>涓婁紶浜虹墿鐓х墖鍜岄煶棰戯紝鐢熸垚鏁板瓧浜鸿璇濊棰?/p>
+        </div>}
+        {showCenterState && (
+          <ImageDigitalHumanCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="idh-recent-empty">
+            <Layers size={24} />
+            <strong>鏆傛棤鏈€杩戠敓鎴?/strong>
+            <p>鐢熸垚瀹屾垚鐨勮棰戜細淇濆瓨鍦ㄨ繖閲岋紝涓婚〉鍙繚鐣欏垱浣滃叆鍙ｃ€?/p>
+          </div>
+        )}
+        <div className={`idh-results-feed ${visibleResultTasks.length ? "has-results" : ""}`}>
+          {visibleResultTasks.map((task) => (
+            <ImageDigitalHumanTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onRegenerate={regenerateTask}
+            />
+          ))}
+        </div>
+        </div>
+      {options.models.length > 0 && voices.length > 0 && (
+          <div className="idh-side-panel">
+            <ImageDigitalHumanComposer
+              options={options}
+              voices={voices}
+              onSubmit={createTask}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+      )}
+      </div>
+    </section>
+  ); */
 }
 
 const emptyMotionTransferOptions = {
@@ -3114,8 +3195,8 @@ const emptyMotionTransferOptions = {
     { value: "1080p", label: "1080p" }
   ],
   characterOrientations: [
-    { value: "image", label: "图片朝向", maxSeconds: 10 },
-    { value: "video", label: "视频朝向", maxSeconds: 30 }
+    { value: "image", label: "鍥剧墖鏈濆悜", maxSeconds: 10 },
+    { value: "video", label: "瑙嗛鏈濆悜", maxSeconds: 30 }
   ],
   limits: {
     maxImageBytes: 10 * 1024 * 1024,
@@ -3125,47 +3206,47 @@ const emptyMotionTransferOptions = {
 };
 
 const motionTransferCopy = {
-  emptyTitle: "开启你的动作迁移",
-  emptyDescription: "上传图片和动作视频，让静态人物动起来",
-  completedTitle: "动作迁移已完成",
-  processingCreate: "正在创建动作迁移任务",
-  processingGenerate: "正在生成动作迁移视频",
-  processingDescription: "正在上传人物图片和动作参考视频，并提交给 KIE 合成。完成后会自动回填到这里。",
-  recentEmptyTitle: "暂无动作迁移结果",
-  recentEmptyDescription: "生成完成的视频会保存在这里。",
-  imageTitle: "上传单人图",
-  imageHint: "主体清晰，单人效果最佳",
-  videoTitle: "上传动作视频",
-  submitLabel: "生成动作迁移视频",
-  panelLabel: "动作迁移上传面板",
-  imageRequired: "请先上传单人图片",
-  videoRequired: "请先上传动作视频",
-  imageFallback: "人物图片",
-  videoFallback: "动作视频",
-  loadError: "加载动作迁移失败",
-  createError: "创建动作迁移任务失败"
+  emptyTitle: "寮€鍚綘鐨勫姩浣滆縼绉?,
+  emptyDescription: "涓婁紶鍥剧墖鍜屽姩浣滆棰戯紝璁╅潤鎬佷汉鐗╁姩璧锋潵",
+  completedTitle: "鍔ㄤ綔杩佺Щ宸插畬鎴?,
+  processingCreate: "姝ｅ湪鍒涘缓鍔ㄤ綔杩佺Щ浠诲姟",
+  processingGenerate: "姝ｅ湪鐢熸垚鍔ㄤ綔杩佺Щ瑙嗛",
+  processingDescription: "姝ｅ湪涓婁紶浜虹墿鍥剧墖鍜屽姩浣滃弬鑰冭棰戯紝骞舵彁浜ょ粰 KIE 鍚堟垚銆傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?,
+  recentEmptyTitle: "鏆傛棤鍔ㄤ綔杩佺Щ缁撴灉",
+  recentEmptyDescription: "鐢熸垚瀹屾垚鐨勮棰戜細淇濆瓨鍦ㄨ繖閲屻€?,
+  imageTitle: "涓婁紶鍗曚汉鍥?,
+  imageHint: "涓讳綋娓呮櫚锛屽崟浜烘晥鏋滄渶濂?,
+  videoTitle: "涓婁紶鍔ㄤ綔瑙嗛",
+  submitLabel: "鐢熸垚鍔ㄤ綔杩佺Щ瑙嗛",
+  panelLabel: "鍔ㄤ綔杩佺Щ涓婁紶闈㈡澘",
+  imageRequired: "璇峰厛涓婁紶鍗曚汉鍥剧墖",
+  videoRequired: "璇峰厛涓婁紶鍔ㄤ綔瑙嗛",
+  imageFallback: "浜虹墿鍥剧墖",
+  videoFallback: "鍔ㄤ綔瑙嗛",
+  loadError: "鍔犺浇鍔ㄤ綔杩佺Щ澶辫触",
+  createError: "鍒涘缓鍔ㄤ綔杩佺Щ浠诲姟澶辫触"
 };
 
 const faceSwapCopy = {
-  emptyTitle: "开启你的视频换脸",
-  emptyDescription: "上传人脸图和目标视频，让人物身份自然融合到视频中",
-  completedTitle: "视频换脸已完成",
-  processingCreate: "正在创建视频换脸任务",
-  processingGenerate: "正在生成换脸视频",
-  processingDescription: "正在上传人脸图片和目标视频，并提交给 KIE 合成。完成后会自动回填到这里。",
-  recentEmptyTitle: "暂无视频换脸结果",
-  recentEmptyDescription: "生成完成的换脸视频会保存在这里。",
-  imageTitle: "上传人脸图",
-  imageHint: "正脸清晰，光线自然效果最佳",
-  videoTitle: "上传目标视频",
-  submitLabel: "生成换脸视频",
-  panelLabel: "视频换脸上传面板",
-  imageRequired: "请先上传人脸图片",
-  videoRequired: "请先上传目标视频",
-  imageFallback: "人脸图片",
-  videoFallback: "目标视频",
-  loadError: "加载视频换脸失败",
-  createError: "创建视频换脸任务失败"
+  emptyTitle: "寮€鍚綘鐨勮棰戞崲鑴?,
+  emptyDescription: "涓婁紶浜鸿劯鍥惧拰鐩爣瑙嗛锛岃浜虹墿韬唤鑷劧铻嶅悎鍒拌棰戜腑",
+  completedTitle: "瑙嗛鎹㈣劯宸插畬鎴?,
+  processingCreate: "姝ｅ湪鍒涘缓瑙嗛鎹㈣劯浠诲姟",
+  processingGenerate: "姝ｅ湪鐢熸垚鎹㈣劯瑙嗛",
+  processingDescription: "姝ｅ湪涓婁紶浜鸿劯鍥剧墖鍜岀洰鏍囪棰戯紝骞舵彁浜ょ粰 KIE 鍚堟垚銆傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?,
+  recentEmptyTitle: "鏆傛棤瑙嗛鎹㈣劯缁撴灉",
+  recentEmptyDescription: "鐢熸垚瀹屾垚鐨勬崲鑴歌棰戜細淇濆瓨鍦ㄨ繖閲屻€?,
+  imageTitle: "涓婁紶浜鸿劯鍥?,
+  imageHint: "姝ｈ劯娓呮櫚锛屽厜绾胯嚜鐒舵晥鏋滄渶濂?,
+  videoTitle: "涓婁紶鐩爣瑙嗛",
+  submitLabel: "鐢熸垚鎹㈣劯瑙嗛",
+  panelLabel: "瑙嗛鎹㈣劯涓婁紶闈㈡澘",
+  imageRequired: "璇峰厛涓婁紶浜鸿劯鍥剧墖",
+  videoRequired: "璇峰厛涓婁紶鐩爣瑙嗛",
+  imageFallback: "浜鸿劯鍥剧墖",
+  videoFallback: "鐩爣瑙嗛",
+  loadError: "鍔犺浇瑙嗛鎹㈣劯澶辫触",
+  createError: "鍒涘缓瑙嗛鎹㈣劯浠诲姟澶辫触"
 };
 
 function formatBytes(bytes) {
@@ -3191,10 +3272,10 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent, co
           <div className="motion-result-actions">
             <a href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
             <button type="button" onClick={onOpenRecent}>
-              查看历史
+              鏌ョ湅鍘嗗彶
             </button>
           </div>
         </div>
@@ -3208,8 +3289,8 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent, co
         <span className="motion-center-icon">
           <Sparkles size={24} />
         </span>
-        <strong>这次没有生成成功</strong>
-        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
       </section>
     );
   }
@@ -3224,7 +3305,7 @@ function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent, co
       <div className="motion-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
-      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
     </section>
   );
 }
@@ -3240,7 +3321,7 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = m
         ) : (
           <div className={`motion-task-placeholder ${isFailed ? "is-failed" : ""}`}>
             {isProcessing ? <Loader2 size={26} /> : <Video size={26} />}
-            <strong>{isFailed ? "生成失败" : "生成中"}</strong>
+            <strong>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</strong>
           </div>
         )}
       </div>
@@ -3248,7 +3329,7 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = m
         <div className="tag-row">
           <span className="model-tag">{task.providerModel || task.model}</span>
           <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">{task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}</span>
+          <span className="quality-tag">{task.characterOrientation === "video" ? "瑙嗛鏈濆悜" : "鍥剧墖鏈濆悜"}</span>
         </div>
         <div className="time-row">
           <span>{task.time}</span>
@@ -3266,27 +3347,27 @@ function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = m
           </span>
         </div>
         <div className="card-actions motion-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="鏀惰棌">
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
           {task.resultUrl ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
           ) : (
             <button type="button" disabled>
               <Download size={15} />
-              下载
+              涓嬭浇
             </button>
           )}
           <button type="button" onClick={() => onRepeat(task)}>
             <RefreshCcw size={15} />
-            再次生成
+            鍐嶆鐢熸垚
           </button>
           <button type="button" onClick={() => onDelete(task.id)}>
             <Trash2 size={15} />
-            删除
+            鍒犻櫎
           </button>
         </div>
       </div>
@@ -3332,8 +3413,8 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
           className="upload-clear-button"
           role="button"
           tabIndex={0}
-          title="取消上传"
-          aria-label="取消上传"
+          title="鍙栨秷涓婁紶"
+          aria-label="鍙栨秷涓婁紶"
           onClick={clearFile}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") clearFile(event);
@@ -3342,17 +3423,17 @@ function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUplo
           <X size={13} />
         </span>
       )}
-      {asset && <small>{asset.fileName} · {formatBytes(asset.sizeBytes)}</small>}
+      {asset && <small>{asset.fileName} 璺?{formatBytes(asset.sizeBytes)}</small>}
       {isUploading && (
         <span className="motion-uploading">
           <Loader2 size={16} />
-          上传中
+          涓婁紶涓?
         </span>
       )}
       {!isUploading && previewUrl && (
         <span className="motion-upload-kind">
           <Icon size={14} />
-          更换素材
+          鏇存崲绱犳潗
         </span>
       )}
     </button>
@@ -3386,17 +3467,17 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   }, [imagePreview, videoPreview]);
 
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = `${selectedModel?.basePoints || 0} 绉垎`;
   const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-       setNotice("请上传图片文件");
+      setNotice("璇蜂笂浼犲浘鐗囨枃浠?);
       return;
     }
     if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
-      setNotice("图片大小不能超过 10MB");
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
       return;
     }
     if (imagePreview) window.URL.revokeObjectURL(imagePreview);
@@ -3408,7 +3489,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       setImageAsset(await api.uploadImage(file));
     } catch (error) {
       setImagePreview("");
-      setNotice(error.message || "图片上传失败");
+      setNotice(error.message || "鍥剧墖涓婁紶澶辫触");
     } finally {
       setUploading("");
     }
@@ -3417,11 +3498,11 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   async function selectVideo(file) {
     if (!file) return;
     if (!file.type.startsWith("video/")) {
-      setNotice("请上传视频文件");
+      setNotice("璇蜂笂浼犺棰戞枃浠?);
       return;
     }
     if (file.size > (options.limits?.maxVideoBytes || 100 * 1024 * 1024)) {
-      setNotice("视频大小不能超过 200MB");
+      setNotice("瑙嗛澶у皬涓嶈兘瓒呰繃 200MB");
       return;
     }
     if (videoPreview) window.URL.revokeObjectURL(videoPreview);
@@ -3433,7 +3514,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
       setVideoAsset(await api.uploadVideo(file));
     } catch (error) {
       setVideoPreview("");
-      setNotice(error.message || "视频上传失败");
+      setNotice(error.message || "瑙嗛涓婁紶澶辫触");
     } finally {
       setUploading("");
     }
@@ -3488,7 +3569,7 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
         <MotionTransferUploadSlot
           kind="video"
           title={copy.videoTitle}
-          hint={`建议 ${options.limits?.recommendedVideoSeconds || 30} 秒内`}
+          hint={`寤鸿 ${options.limits?.recommendedVideoSeconds || 30} 绉掑唴`}
           asset={videoAsset}
           previewUrl={videoPreview}
           isUploading={uploading === "video"}
@@ -3630,26 +3711,26 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
       <div className="image-filter-tabs motion-filter-tabs">
         {splitResults ? (
           <>
-            <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+            <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
             <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
               setViewTab("recent");
               setSubmittedTaskId(null);
-            }}>最近生成</button>
+            }}>鏈€杩戠敓鎴?/button>
             <button type="button" disabled>
               <Star size={17} fill="#f8d545" color="#161616" />
-              收藏
+              鏀惰棌
             </button>
           </>
         ) : (
           <>
-            <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>全部结果</button>
+            <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>鍏ㄩ儴缁撴灉</button>
             <button className={filter === "favorite" ? "selected" : ""} type="button" onClick={() => setFilter("favorite")}>
               <Star size={17} fill="#f8d545" color="#161616" />
-              收藏
+              鏀惰棌
             </button>
           </>
         )}
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       <div className={`motion-canvas ${showCenterState ? "has-active-task" : ""}`}>
         {useWorkbenchView && (isFaceSwapView ? viewTab === "home" : showEmptyHero) && !showCenterState && (
@@ -3659,8 +3740,8 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             isSubmitting={isSubmitting}
             api={api}
             copy={copy}
-            heading={navId === "motion" ? "AI 动作迁移" : "AI 换脸工具"}
-            privacyText={navId === "motion" ? "您上传的内容仅用于动作迁移处理，不会被用于其他用途。" : "您上传的内容仅用于换脸处理，不会被用于其他用途。"}
+            heading={navId === "motion" ? "AI 鍔ㄤ綔杩佺Щ" : "AI 鎹㈣劯宸ュ叿"}
+            privacyText={navId === "motion" ? "鎮ㄤ笂浼犵殑鍐呭浠呯敤浜庡姩浣滆縼绉诲鐞嗭紝涓嶄細琚敤浜庡叾浠栫敤閫斻€? : "鎮ㄤ笂浼犵殑鍐呭浠呯敤浜庢崲鑴稿鐞嗭紝涓嶄細琚敤浜庡叾浠栫敤閫斻€?}
           />
         )}
         {!useWorkbenchView && showEmptyHero && (
@@ -3743,21 +3824,21 @@ function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
           {isVideo ? (
             <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.sourceUrl} />
           ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "去水印结果"} />
+            <img src={task.resultUrl} alt={task.sourceFileName || "鍘绘按鍗扮粨鏋?} />
           )}
         </div>
         <div className="watermark-result-copy">
           <span className="watermark-center-icon">
             <CheckCircle2 size={24} />
           </span>
-          <h2>去水印已完成</h2>
-          <p>{task.sourceFileName || "结果已保存到最近生成"}</p>
+          <h2>鍘绘按鍗板凡瀹屾垚</h2>
+          <p>{task.sourceFileName || "缁撴灉宸蹭繚瀛樺埌鏈€杩戠敓鎴?}</p>
           <div className="watermark-result-actions">
             <a href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
-            <button type="button" onClick={onOpenRecent}>查看最近生成</button>
+            <button type="button" onClick={onOpenRecent}>鏌ョ湅鏈€杩戠敓鎴?/button>
           </div>
         </div>
       </section>
@@ -3770,8 +3851,8 @@ function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
         <span className="watermark-center-icon">
           <Eraser size={24} />
         </span>
-        <strong>这次没有生成成功</strong>
-        <p>{error || task?.error || "生成服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
       </section>
     );
   }
@@ -3781,12 +3862,12 @@ function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
       <span className="watermark-center-spinner">
         <Loader2 size={30} />
       </span>
-      <strong>{isSubmitting ? "正在创建去水印任务" : "正在智能去除水印"}</strong>
-      <p>素材正在提交给 KIE 处理，完成后会自动回填到这里。</p>
+      <strong>{isSubmitting ? "姝ｅ湪鍒涘缓鍘绘按鍗颁换鍔? : "姝ｅ湪鏅鸿兘鍘婚櫎姘村嵃"}</strong>
+      <p>绱犳潗姝ｅ湪鎻愪氦缁?KIE 澶勭悊锛屽畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?/p>
       <div className="watermark-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
-      <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
     </section>
   );
 }
@@ -3803,18 +3884,18 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           isVideo ? (
             <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
           ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "去水印结果"} />
+            <img src={task.resultUrl} alt={task.sourceFileName || "鍘绘按鍗扮粨鏋?} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
             {isProcessing ? <Loader2 size={26} /> : isVideo ? <Video size={26} /> : <Image size={26} />}
-            <strong>{isFailed ? "生成失败" : "生成中"}</strong>
+            <strong>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</strong>
           </div>
         )}
       </div>
       <div className="watermark-task-meta">
         <div className="tag-row">
-          <span className="model-tag">{task.mediaType === "video" ? "视频去水印" : "图片去水印"}</span>
+          <span className="model-tag">{task.mediaType === "video" ? "瑙嗛鍘绘按鍗? : "鍥剧墖鍘绘按鍗?}</span>
           <span className="ratio-tag">{task.resolution}</span>
           <span className="quality-tag">{task.providerModel || task.model}</span>
         </div>
@@ -3822,35 +3903,35 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <p>{task.error || task.sourceFileName || "智能去水印结果"}</p>
+        <p>{task.error || task.sourceFileName || "鏅鸿兘鍘绘按鍗扮粨鏋?}</p>
         <div className="watermark-source-row">
           <span>
             {isVideo ? <Film size={14} /> : <Image size={14} />}
-            {task.sourceFileName || "源素材"}
+            {task.sourceFileName || "婧愮礌鏉?}
           </span>
         </div>
         <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="鏀惰棌">
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
           {task.resultUrl ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              涓嬭浇
             </a>
           ) : (
             <button type="button" disabled>
               <Download size={15} />
-              下载
+              涓嬭浇
             </button>
           )}
           <button type="button" onClick={() => onRepeat(task)}>
             <RefreshCcw size={15} />
-            再次生成
+            鍐嶆鐢熸垚
           </button>
           <button type="button" onClick={() => onDelete(task.id)}>
             <Trash2 size={15} />
-            删除
+            鍒犻櫎
           </button>
         </div>
       </div>
@@ -3883,13 +3964,13 @@ function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSel
         isVideo ? (
           <video src={previewUrl} muted playsInline preload="metadata" />
         ) : (
-          <img src={previewUrl} alt="上传素材预览" />
+          <img src={previewUrl} alt="涓婁紶绱犳潗棰勮" />
         )
       ) : (
         <>
           <Plus size={18} />
-          <strong>{isVideo ? "+ 上传视频文件" : "+ 上传图片文件"}</strong>
-          <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG，最大 10MB"}</span>
+          <strong>{isVideo ? "+ 涓婁紶瑙嗛鏂囦欢" : "+ 涓婁紶鍥剧墖鏂囦欢"}</strong>
+          <span>{isVideo ? "寤鸿 15 绉掑唴锛屾渶澶?200MB" : "鏀寔 JPG/PNG锛屾渶澶?10MB"}</span>
         </>
       )}
       {previewUrl && !isUploading && (
@@ -3897,8 +3978,8 @@ function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSel
           className="upload-clear-button"
           role="button"
           tabIndex={0}
-          title="取消上传"
-          aria-label="取消上传"
+          title="鍙栨秷涓婁紶"
+          aria-label="鍙栨秷涓婁紶"
           onClick={clearFile}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") clearFile(event);
@@ -3911,13 +3992,13 @@ function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSel
       {isUploading && (
         <span className="watermark-uploading">
           <Loader2 size={16} />
-          上传中
+          涓婁紶涓?
         </span>
       )}
       {!isUploading && previewUrl && (
         <span className="watermark-upload-kind">
           {isVideo ? <Film size={14} /> : <Image size={14} />}
-          更换素材
+          鏇存崲绱犳潗
         </span>
       )}
     </button>
@@ -3939,7 +4020,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
 
   const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
   const resolution = mode === "video" ? options.defaults?.videoResolution || "720p" : options.defaults?.imageResolution || "2K";
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = `${selectedModel?.basePoints || 0} 绉垎`;
   const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
 
   function changeMode(nextMode) {
@@ -3962,15 +4043,15 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
     if ((mode === "image" && !isImage) || (mode === "video" && !isVideo)) {
-      setNotice(mode === "image" ? "请上传图片文件" : "请上传视频文件");
+      setNotice(mode === "image" ? "璇蜂笂浼犲浘鐗囨枃浠? : "璇蜂笂浼犺棰戞枃浠?);
       return;
     }
     if (isImage && file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
-      setNotice("图片大小不能超过 10MB");
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
       return;
     }
     if (isVideo && file.size > (options.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
-      setNotice("视频大小不能超过 100MB");
+      setNotice("瑙嗛澶у皬涓嶈兘瓒呰繃 100MB");
       return;
     }
 
@@ -3981,10 +4062,10 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
     setNotice("");
     try {
       setSourceAsset(await watermarkApi.uploadSource(file));
-      setNotice("素材上传完成");
+      setNotice("绱犳潗涓婁紶瀹屾垚");
     } catch (error) {
       setPreviewUrl("");
-      setNotice(error.message || "素材上传失败");
+      setNotice(error.message || "绱犳潗涓婁紶澶辫触");
     } finally {
       setUploading(false);
     }
@@ -3992,7 +4073,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
 
   function submit() {
     if (!sourceAsset) {
-      setNotice(mode === "image" ? "请先上传图片文件" : "请先上传视频文件");
+      setNotice(mode === "image" ? "璇峰厛涓婁紶鍥剧墖鏂囦欢" : "璇峰厛涓婁紶瑙嗛鏂囦欢");
       return;
     }
     setNotice("");
@@ -4004,15 +4085,15 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="watermark-composer" aria-label="去水印上传面板">
+    <div className="watermark-composer" aria-label="鍘绘按鍗颁笂浼犻潰鏉?>
       <div className="watermark-mode-tabs">
         <button className={mode === "image" ? "is-active" : ""} type="button" onClick={() => changeMode("image")}>
           <Image size={15} />
-          图片去水印
+          鍥剧墖鍘绘按鍗?
         </button>
         <button className={mode === "video" ? "is-active" : ""} type="button" onClick={() => changeMode("video")}>
           <Film size={15} />
-          视频去水印
+          瑙嗛鍘绘按鍗?
         </button>
       </div>
       <WatermarkUploadSlot
@@ -4024,9 +4105,9 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
         onClear={clearSource}
       />
       <div className="watermark-composer-footer">
-        <span>{notice || (mode === "video" ? "视频会保留原音频并尝试自然修复水印区域" : "图片会自动修复水印区域并保持主体内容")}</span>
+        <span>{notice || (mode === "video" ? "瑙嗛浼氫繚鐣欏師闊抽骞跺皾璇曡嚜鐒朵慨澶嶆按鍗板尯鍩? : "鍥剧墖浼氳嚜鍔ㄤ慨澶嶆按鍗板尯鍩熷苟淇濇寔涓讳綋鍐呭")}</span>
         <strong>{price}</strong>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始去水印">
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="寮€濮嬪幓姘村嵃">
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
         </button>
       </div>
@@ -4057,7 +4138,7 @@ function WatermarkRemovalView() {
         setTasks(taskData);
         setCredits(creditData);
       } catch (error) {
-        if (mounted) setSubmitError(error.message || "加载去水印失败");
+        if (mounted) setSubmitError(error.message || "鍔犺浇鍘绘按鍗板け璐?);
       }
     }
     load();
@@ -4091,7 +4172,7 @@ function WatermarkRemovalView() {
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
     } catch (error) {
-      setSubmitError(error.message || "创建去水印任务失败");
+      setSubmitError(error.message || "鍒涘缓鍘绘按鍗颁换鍔″け璐?);
     } finally {
       setIsSubmitting(false);
     }
@@ -4120,19 +4201,19 @@ function WatermarkRemovalView() {
   return (
     <section className="watermark-view-root">
       <div className="image-filter-tabs watermark-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("recent");
           setSubmittedTaskId(null);
-        }}>最近生成</button>
+        }}>鏈€杩戠敓鎴?/button>
         <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("favorite");
           setSubmittedTaskId(null);
         }}>
           <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
+          鏀惰棌
         </button>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
       </div>
       <div className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
         {showEmptyHero && (
@@ -4140,8 +4221,8 @@ function WatermarkRemovalView() {
             <span className="watermark-hero-icon">
               <Eraser size={36} />
             </span>
-            <h1>智能去水印</h1>
-            <p>上传图片或视频，AI 智能一键去除水印</p>
+            <h1>鏅鸿兘鍘绘按鍗?/h1>
+            <p>涓婁紶鍥剧墖鎴栬棰戯紝AI 鏅鸿兘涓€閿幓闄ゆ按鍗?/p>
           </div>
         )}
         {showCenterState && (
@@ -4158,8 +4239,8 @@ function WatermarkRemovalView() {
         {showRecentEmpty && (
           <div className="watermark-recent-empty">
             <Eraser size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无最近生成"}</strong>
-            <p>{viewTab === "favorite" ? "收藏后的去水印结果会显示在这里。" : "生成完成的图片或视频会保存在这里。"}</p>
+            <strong>{viewTab === "favorite" ? "鏆傛棤鏀惰棌缁撴灉" : "鏆傛棤鏈€杩戠敓鎴?}</strong>
+            <p>{viewTab === "favorite" ? "鏀惰棌鍚庣殑鍘绘按鍗扮粨鏋滀細鏄剧ず鍦ㄨ繖閲屻€? : "鐢熸垚瀹屾垚鐨勫浘鐗囨垨瑙嗛浼氫繚瀛樺湪杩欓噷銆?}</p>
           </div>
         )}
         <div className={`watermark-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
@@ -4185,7 +4266,7 @@ function WatermarkRemovalView() {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
+/** 鍚勫姛鑳芥ā鍧楅娆¤繘鍏ュ悗甯搁┗ DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   if (!visitedIds.has(id)) return null;
   return (
@@ -4235,9 +4316,9 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
     <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>
       <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
       {isGuest && (
-        <div className="feature-guest-auth-actions" aria-label="游客璐﹀彿鍏ュ彛">
-          <button type="button" onClick={() => onOpenAuth("login")}>登录</button>
-          <button type="button" onClick={() => onOpenAuth("register")}>注册</button>
+        <div className="feature-guest-auth-actions" aria-label="娓稿璐﹀彿鍏ュ彛">
+          <button type="button" onClick={() => onOpenAuth("login")}>鐧诲綍</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>娉ㄥ唽</button>
         </div>
       )}
       <main className="feature-main">
@@ -4316,7 +4397,7 @@ function App() {
         if (mounted) setAuthUser(state.user);
       })
       .catch(() => {
-        if (mounted) setAuthUser({ isGuest: true, displayName: "游客", username: "guest" });
+        if (mounted) setAuthUser({ isGuest: true, displayName: "娓稿", username: "guest" });
       });
     return () => {
       mounted = false;
