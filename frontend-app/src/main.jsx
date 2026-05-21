@@ -54,7 +54,6 @@ import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
 import { MusicGenerationView } from "./features/music/MusicGenerationView";
 import { ReplicateView } from "./features/replicate/ReplicateView";
-import { ChatGenerationView } from "./features/chat/ChatGenerationView";
 import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
 import { PromptSelectField } from "./features/chat/components/PromptSelectField";
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
@@ -67,18 +66,16 @@ import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import "./styles.css";
 
-const exampleImages = [
-  { src: "/assets/image/gallery-1.jpg", label: "电影质感人像", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
-  { src: "/assets/image/gallery-2.jpg", label: "时尚产品摄影", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-4.jpg", label: "自然光影", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 积分" },
-  { src: "/assets/image/gallery-6.jpg", label: "水下写实", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 积分" },
-  { src: "/assets/image/gallery-7.jpg", label: "数字人形象", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
-  { src: "/assets/image/gallery-5.jpg", label: "动态创意", model: "4o Image", ratio: "1:1", quality: "1K", price: "21 积分" },
-  { src: "/assets/image/thumb-img-gen.jpg", label: "图片生成", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 积分" },
-  { src: "/assets/image/gallery-9.jpg", label: "灵感封面", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 积分" },
-  { src: "/assets/image/gallery-8.jpg", label: "复古影像", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-10.jpg", label: "概念海报", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 积分" }
-];
+const caseImageFiles = ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];
+
+const exampleImages = caseImageFiles.map((file, index) => ({
+  src: `/重构/案例/${encodeURIComponent(file)}`,
+  label: `案例 ${String(index + 1).padStart(2, "0")}`,
+  model: "图片生成",
+  ratio: "案例图",
+  quality: "精选",
+  price: "参考"
+}));
 
 const navItems = [
   { id: "home", label: "首页", icon: Home },
@@ -412,7 +409,7 @@ const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onL
       )}
       <main className="feature-main home-feature-main">
         <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
-          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
+          <iframe ref={frameRef} className="original-home-frame" title="Facemini.com ??" src="/重构/index.html" onLoad={handleFrameLoad} />
         </div>
       </main>
     </div>
@@ -444,7 +441,7 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-text">Getrue.ai</span>
+        <span className="feature-brand-text">Facemini.com</span>
         <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
@@ -981,25 +978,15 @@ function ImageGenerationView() {
     })),
     []
   );
-  const expandedImageExampleCards = useMemo(
-    () =>
-      Array.from({ length: 3 }, (_, groupIndex) =>
-        imageExampleCards.map((card, index) => ({
-          ...card,
-          id: `example-image-${groupIndex}-${index}`
-        }))
-      ).flat(),
-    [imageExampleCards]
-  );
   const galleryItems = useMemo(() => {
     if (filter === "all") {
       return [
-        ...expandedImageExampleCards.map((card) => ({ card, isExample: true })),
+        ...imageExampleCards.map((card) => ({ card, isExample: true })),
         ...cards.map((card) => ({ card, isExample: false }))
       ];
     }
     return cards.map((card) => ({ card, isExample: false }));
-  }, [cards, expandedImageExampleCards, filter]);
+  }, [cards, imageExampleCards, filter]);
 
   useEffect(() => {
     if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
@@ -1511,7 +1498,24 @@ function toChatContext(messages) {
     }));
 }
 
+function appendChatStreamChunk(current = "", chunk = "") {
+  if (!chunk) return current;
+  if (!current) return chunk;
+  if (chunk === current) return current;
+  if (chunk.startsWith(current)) return chunk;
+
+  const maxOverlap = Math.min(current.length, chunk.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    if (current.endsWith(chunk.slice(0, size))) {
+      return `${current}${chunk.slice(size)}`;
+    }
+  }
+
+  return `${current}${chunk}`;
+}
+
 function ChatCanvas({ messages, isSubmitting, error }) {
+  const hasStreamingMessage = messages.some((message) => message.status === "streaming");
   if (!messages.length && !isSubmitting && !error) {
     return (
       <div className="chat-main-canvas">
@@ -1532,19 +1536,22 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 <Bot size={17} />
               </span>
             )}
-            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""}`}>
+            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
               {message.status === "failed" ? (
                 <>
                   <strong>这次没有回复成功</strong>
                   <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
                 </>
               ) : (
-                message.content
+                <>
+                  {message.content || (message.status === "streaming" ? "正在思考..." : "")}
+                  {message.points > 0 && <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>}
+                </>
               )}
             </div>
           </div>
         ))}
-        {isSubmitting && (
+        {isSubmitting && !hasStreamingMessage && (
           <div className="chat-message-row assistant">
             <span className="chat-message-avatar">
               <Bot size={17} />
@@ -1571,13 +1578,6 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
   const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
-  const inspirationOptions = [
-    "Floating crystal island",
-    "Cyberpunk cityscape",
-    "Ancient temple ruins",
-    "Underwater coral reef",
-    "Alien desert landscape"
-  ];
 
   useEffect(() => {
     if (!model && (options.defaultModel || options.models[0]?.value)) {
@@ -1588,9 +1588,10 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
     }
   }, [model, options, reasoningEffort]);
 
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const canSubmit = prompt.trim().length > 0 && model && !isSubmitting;
-  const modelLabel = selectedModel?.label || "Deepseek V4";
+  const canSubmit = isReady && prompt.trim().length > 0 && model && !isSubmitting;
+  const modelLabel = isReady ? selectedModel?.label || "Deepseek V4" : "模型加载中";
 
   function submitPrompt() {
     if (!canSubmit) {
@@ -1617,42 +1618,20 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
           if (notice) setNotice("");
         }}
         onKeyDown={(event) => {
-          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             submitPrompt();
           }
         }}
-        placeholder="请告诉我您的想法......"
+        placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
       <div className="llm-toolbar">
         <div className="llm-left">
           <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
             +
           </button>
-          <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "inspiration" ? null : "inspiration"))}>
-              <Sparkles className="bolt" size={16} />
-              <span>Inspiration</span>
-              <ChevronDown size={16} />
-            </button>
-            <div className="llm-menu">
-              {inspirationOptions.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  onClick={() => {
-                    setPrompt(item);
-                    setNotice("");
-                    setOpenMenu(null);
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+            <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
               <ChevronDown size={16} />
             </button>
@@ -1715,7 +1694,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
             onClick={() => onSelect(conversation.id)}
           >
             <span>{conversation.title}</span>
-            <small>{conversation.model} 路 {conversation.time}</small>
+            <small>{conversation.model} · {conversation.time}</small>
           </button>
         ))}
       </div>
@@ -1723,7 +1702,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   );
 }
 
-function LegacyChatGenerationView() {
+function ChatGenerationView() {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [options, setOptions] = useState(emptyChatOptions);
@@ -1746,11 +1725,18 @@ function LegacyChatGenerationView() {
   }, []);
 
   async function sendChatMessage({ content, model, reasoningEffort }) {
+    const localId = Date.now();
     const userMessage = {
-      id: `local-${Date.now()}`,
+      id: `local-${localId}`,
       role: "user",
       content,
       status: "completed"
+    };
+    const streamingMessage = {
+      id: `stream-${localId}`,
+      role: "assistant",
+      content: "",
+      status: "streaming"
     };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
@@ -1758,17 +1744,33 @@ function LegacyChatGenerationView() {
     setIsSubmitting(true);
 
     try {
-      const result = await chatApi.sendMessage({
+      setMessages([...nextMessages, streamingMessage]);
+      const result = await chatApi.streamMessage({
         conversationId,
         model,
         reasoningEffort,
         messages: toChatContext(nextMessages)
+      }, {
+        onDelta: (delta) => {
+          setMessages((current) => current.map((message) => (
+            message.id === streamingMessage.id
+              ? { ...message, content: appendChatStreamChunk(message.content, delta) }
+              : message
+          )));
+        }
       });
       setConversationId(result.conversationId);
-      setMessages((current) => [...current, result.message]);
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id ? result.message : message
+      )));
       if (result.credits) setCredits(result.credits);
       chatApi.getConversations().then(setConversations).catch(() => {});
     } catch (error) {
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id
+          ? { ...message, status: "failed", error: error.message || "发送失败" }
+          : message
+      )));
       setSubmitError(error.message || "发送失败");
     } finally {
       setIsSubmitting(false);
@@ -1782,13 +1784,13 @@ function LegacyChatGenerationView() {
     try {
       const historyMessages = await chatApi.getMessages(id);
       setMessages(historyMessages);
-    } catch (error) {
+  } catch (error) {
       setSubmitError(error.message || "加载历史对话失败");
     }
   }
 
   const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
-  const composer = options.models.length > 0 && (
+  const composer = (
     <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
   );
 
@@ -3504,6 +3506,28 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   );
 }
 
+function getMotionActiveTaskCacheKey(navId) {
+  return `jingchuang-ai:${navId}:active-task-id`;
+}
+
+function readMotionActiveTaskId(navId) {
+  try {
+    return window.localStorage.getItem(getMotionActiveTaskCacheKey(navId));
+  } catch {
+    return null;
+  }
+}
+
+function writeMotionActiveTaskId(navId, taskId) {
+  try {
+    const key = getMotionActiveTaskCacheKey(navId);
+    if (taskId) window.localStorage.setItem(key, String(taskId));
+    else window.localStorage.removeItem(key);
+  } catch {
+    // localStorage can be unavailable in restricted browser contexts.
+  }
+}
+
 function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -3512,7 +3536,16 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
   const [viewTab, setViewTab] = useState("home");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(() => readMotionActiveTaskId(navId));
+
+  function applyTaskData(taskData) {
+    setTasks(taskData);
+    setSubmittedTaskId((current) => {
+      if (current && taskData.some((task) => String(task.id) === String(current))) return current;
+      if (current) writeMotionActiveTaskId(navId, null);
+      return null;
+    });
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -3525,7 +3558,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setTasks(taskData);
+        applyTaskData(taskData);
         setCredits(creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || copy.loadError);
@@ -3533,7 +3566,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
     }
     load();
     const unsubscribe = api.subscribe(() => {
-      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && setTasks(value)).catch(() => {});
+      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && applyTaskData(value)).catch(() => {});
       api.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
     });
     return () => {
@@ -3541,6 +3574,10 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
       unsubscribe();
     };
   }, [api, copy.loadError, filter, navId, splitResults]);
+
+  useEffect(() => {
+    writeMotionActiveTaskId(navId, submittedTaskId);
+  }, [navId, submittedTaskId]);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
@@ -3571,6 +3608,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
     try {
       const task = await api.createTask(payload);
       setSubmittedTaskId(task.id);
+      writeMotionActiveTaskId(navId, task.id);
       if (splitResults) setViewTab("home");
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
     } catch (error) {
@@ -3583,7 +3621,11 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
   async function deleteTask(id) {
     await api.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
-    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+    setSubmittedTaskId((current) => {
+      if (String(current) !== String(id)) return current;
+      writeMotionActiveTaskId(navId, null);
+      return null;
+    });
   }
 
   async function toggleFavorite(id) {
@@ -3611,6 +3653,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
               setViewTab("recent");
               setSubmittedTaskId(null);
+              writeMotionActiveTaskId(navId, null);
             }}>最近生成</button>
             <button type="button" disabled>
               <Star size={17} fill="#f8d545" color="#161616" />
@@ -3657,6 +3700,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             onOpenRecent={() => {
               if (splitResults) setViewTab("recent");
               setSubmittedTaskId(null);
+              writeMotionActiveTaskId(navId, null);
             }}
             copy={copy}
           />
@@ -3668,7 +3712,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             <p>{copy.recentEmptyDescription}</p>
           </div>
         )}
-        {(!useWorkbenchView || (isFaceSwapView && viewTab !== "home")) && (
+        {(!useWorkbenchView || !showEmptyHero || (isFaceSwapView && viewTab !== "home")) && (
           <div className={`motion-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
             {visibleTasks.map((task) => (
               <MotionTransferTaskCard

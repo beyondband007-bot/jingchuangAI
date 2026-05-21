@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鲸创 Studio</title>
+  <title>Facemini Studio</title>
   <link rel="icon" type="image/svg+xml" href="./assets/web-icon.svg">
   <script>
     if ("scrollRestoration" in history) {
@@ -1062,7 +1062,7 @@
     .hero-copy {
       text-align: center;
       width: min(720px, calc(100vw - 80px));
-      margin: 26px auto 0;
+      margin: 0 auto;
       display: grid;
       gap: 14px;
     }
@@ -1960,7 +1960,7 @@
       <header class="nav">
         <nav class="nav-links" aria-label="主导航">
           <div class="nav-cluster nav-cluster--left">
-            <a class="nav-item nav-brand" href="#"><span class="brand">Getrue.ai</span></a>
+            <a class="nav-item nav-brand" href="#"><span class="brand">Facemini.com</span></a>
           </div>
           <div class="nav-cluster nav-cluster--center">
             <a class="nav-item nav-item--collapse" href="#product"><span class="nav-link__text" data-label="文生图"></span></a>
@@ -1983,20 +1983,6 @@
       </header>
 
       <section id="home">
-        <div class="eyebrow">
-          <button class="ai-pill" type="button" aria-label="AI驱动的自动化平台">
-            <span class="ai-pill__outer-glow" aria-hidden="true"></span>
-            <span class="ai-pill__border" aria-hidden="true"></span>
-            <span class="ai-pill__liquid" aria-hidden="true"></span>
-            <span class="ai-pill__content">
-              <svg class="ai-pill__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path fill="currentColor" d="M12 2.5 14.2 9.8 21.5 12l-7.3 2.2L12 21.5l-2.2-7.3L2.5 12l7.3-2.2L12 2.5Z"/>
-              </svg>
-              <span>AI驱动的自动化平台</span>
-            </span>
-          </button>
-        </div>
-
         <div class="hero-copy">
           <h1>知识生成于深海之上</h1>
           <p>AI在数据深海中萃取灵感，于浪潮之上生成万象创作，以智能洞见赋予文字与画面全新生命力。</p>
@@ -2034,7 +2020,7 @@
       </section>
     </section>
 
-    <section class="neural-section" aria-label="Getrue.ai 平台能力">
+    <section class="neural-section" aria-label="Facemini.com 平台能力">
       <div class="metrics-strip">
         <div class="metric"><strong>10M+</strong><span>API 调用 / 天</span></div>
         <div class="metric"><strong>99.99%</strong><span>服务可用性</span></div>
@@ -2042,9 +2028,9 @@
         <div class="metric"><strong>1000+</strong><span>企业客户</span></div>
       </div>
 
-      <section class="why-section" aria-label="为什么选择 Getrue.ai">
+      <section class="why-section" aria-label="为什么选择 Facemini.com">
         <div class="section-heading">
-          <h2>为什么选择 Getrue.ai</h2>
+          <h2>为什么选择 Facemini.com</h2>
           <p>一站式解决 AI 应用开发的所有挑战，让您专注于产品创新</p>
         </div>
 
@@ -2193,7 +2179,7 @@
 
     <footer id="about" class="footer">
       <div class="footer-brand">
-        <a class="brand" href="#">Getrue.ai</a>
+        <a class="brand" href="#">Facemini.com</a>
         <p class="footer-copy">一个将品牌表达、AI 工作流与数字体验整合在一起的创意主页模板，适合展示产品、服务与团队能力。</p>
       </div>
 
@@ -2240,7 +2226,7 @@
             </svg>
           </a>
         </div>
-        <p class="footer-legal">© 2026 Getrue.ai All rights reserved.</p>
+        <p class="footer-legal">© 2026 Facemini.com All rights reserved.</p>
       </div>
     </footer>
   </main>
@@ -2395,9 +2381,7 @@
 
       var firstScreen = document.querySelector(".first-screen");
       var heroShell = document.querySelector(".showcase-shell");
-      var heroVideoProgress = 0;
-      var heroVideoTargetY = 0;
-      var heroVideoTargetScale = 1;
+      var heroIntroProgress = 0;
       var heroTouchLastY = 0;
       var features = document.querySelector(".features");
 
@@ -2419,7 +2403,7 @@
         return value * value * value * (value * (value * 6 - 15) + 10);
       }
 
-      function writeHeroVideoFrame(progress) {
+      function writeHeroVideoFrame() {
         document.body.style.setProperty("--hero-video-y", "0px");
         document.body.style.setProperty("--hero-video-scale", "1");
         document.body.style.setProperty("--hero-video-radius", "32px");
@@ -2434,17 +2418,18 @@
       }
 
       function writeHeroCopyFrame(progress) {
-        document.body.style.setProperty("--hero-eyebrow-opacity", "1");
-        document.body.style.setProperty("--hero-eyebrow-shift", "0px");
-        document.body.style.setProperty("--hero-copy-opacity", "1");
-        document.body.style.setProperty("--hero-copy-shift", "0px");
-        document.body.style.setProperty("--hero-actions-opacity", "1");
-        document.body.style.setProperty("--hero-actions-shift", "0px");
+        var eased = smootherStep(clamp(progress, 0, 1));
+        document.body.style.setProperty("--hero-eyebrow-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-eyebrow-shift", (-34 * eased).toFixed(1) + "px");
+        document.body.style.setProperty("--hero-copy-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-copy-shift", (-42 * eased).toFixed(1) + "px");
+        document.body.style.setProperty("--hero-actions-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-actions-shift", (-30 * eased).toFixed(1) + "px");
       }
 
       function writeHeroSequenceFrame(progress) {
         writeHeroCopyFrame(progress);
-        writeHeroVideoFrame(mapRange(progress, 0.38, 1));
+        writeHeroVideoFrame();
       }
 
       function measureHeroVideoTarget() {
@@ -2468,14 +2453,8 @@
         document.body.style.setProperty("--hero-actions-shift", "0px");
 
         var rect = heroShell.getBoundingClientRect();
-        var viewportCenterY = window.innerHeight / 2;
-        var shellCenterY = rect.top + (rect.height / 2);
-        var targetWidth = Math.max(rect.width, window.innerWidth);
-
-        heroVideoTargetY = viewportCenterY - shellCenterY;
-        heroVideoTargetScale = targetWidth / Math.max(rect.width, 1);
         updateFeaturesOffset(rect);
-        // writeHeroSequenceFrame(heroVideoProgress);
+        writeHeroSequenceFrame(heroIntroProgress);
       }
 
       function updateFeaturesOffset(shellRect) {
@@ -2483,18 +2462,17 @@
         var firstScreenBottom = firstScreen
           ? firstScreen.getBoundingClientRect().bottom
           : window.innerHeight;
-        var finalVideoBottom = (window.innerHeight / 2) + ((shellRect.height * heroVideoTargetScale) / 2);
-        var offset = Math.max(baseGap, finalVideoBottom - firstScreenBottom + baseGap);
+        var offset = Math.max(baseGap, shellRect.bottom - firstScreenBottom + baseGap);
         document.body.style.setProperty("--features-offset", Math.ceil(offset) + "px");
       }
 
-      function setHeroVideoProgress(progress) {
-        // document.body.classList.add("hero-sequence-running");
-        heroVideoProgress = clamp(progress, 0, 1);
-        // writeHeroSequenceFrame(heroVideoProgress);
-        // if (heroVideoProgress === 0) {
-        //   document.body.classList.remove("hero-sequence-running");
-        // }
+      function setHeroIntroProgress(progress) {
+        document.body.classList.add("hero-sequence-running");
+        heroIntroProgress = clamp(progress, 0, 1);
+        writeHeroSequenceFrame(heroIntroProgress);
+        if (heroIntroProgress === 0 || heroIntroProgress === 1) {
+          document.body.classList.remove("hero-sequence-running");
+        }
       }
 
       function revealFeatures() {
@@ -2547,44 +2525,44 @@
         });
       }
 
-      function shouldLockHeroVideo(deltaY) {
+      function shouldLockHeroIntro(deltaY) {
         if (!heroShell || window.scrollY > 4) return false;
-        return (deltaY > 0 && heroVideoProgress < 1) || (deltaY < 0 && heroVideoProgress > 0);
+        return (deltaY > 0 && heroIntroProgress < 1) || (deltaY < 0 && heroIntroProgress > 0);
       }
 
-      function advanceHeroVideo(deltaY) {
-        var next = heroVideoProgress + (deltaY / Math.max(window.innerHeight * 1.45, 980));
-        setHeroVideoProgress(next);
+      function advanceHeroIntro(deltaY) {
+        var next = heroIntroProgress + (deltaY / Math.max(window.innerHeight * 0.72, 420));
+        setHeroIntroProgress(next);
       }
 
-      function handleHeroVideoWheel(event) {
-        if (!shouldLockHeroVideo(event.deltaY)) return;
+      function handleHeroIntroWheel(event) {
+        if (!shouldLockHeroIntro(event.deltaY)) return;
         event.preventDefault();
-        advanceHeroVideo(event.deltaY);
+        advanceHeroIntro(event.deltaY);
       }
 
-      function handleHeroVideoTouchStart(event) {
+      function handleHeroIntroTouchStart(event) {
         if (!event.touches || !event.touches.length) return;
         heroTouchLastY = event.touches[0].clientY;
       }
 
-      function handleHeroVideoTouchMove(event) {
+      function handleHeroIntroTouchMove(event) {
         if (!event.touches || !event.touches.length) return;
         var currentY = event.touches[0].clientY;
         var deltaY = heroTouchLastY - currentY;
         heroTouchLastY = currentY;
-        if (Math.abs(deltaY) < 0.5 || !shouldLockHeroVideo(deltaY)) return;
+        if (Math.abs(deltaY) < 0.5 || !shouldLockHeroIntro(deltaY)) return;
         event.preventDefault();
-        advanceHeroVideo(deltaY);
+        advanceHeroIntro(deltaY);
       }
 
       measureHeroVideoTarget();
       window.addEventListener("load", function () {
         requestAnimationFrame(measureHeroVideoTarget);
       }, { once: true });
-      window.addEventListener("wheel", handleHeroVideoWheel, { passive: false });
-      window.addEventListener("touchstart", handleHeroVideoTouchStart, { passive: true });
-      window.addEventListener("touchmove", handleHeroVideoTouchMove, { passive: false });
+      window.addEventListener("wheel", handleHeroIntroWheel, { passive: false });
+      window.addEventListener("touchstart", handleHeroIntroTouchStart, { passive: true });
+      window.addEventListener("touchmove", handleHeroIntroTouchMove, { passive: false });
       window.addEventListener("resize", measureHeroVideoTarget);
       setupScrollReveals();
 
