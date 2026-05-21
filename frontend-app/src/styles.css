@@ -5161,6 +5161,32 @@ a:hover {
   font-weight: 800;
 }
 
+.dh-preview-return-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  color: #f4f0ff;
+  background: rgba(90, 44, 252, 0.16);
+  border: 1px solid rgba(173, 108, 252, 0.42);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(90, 44, 252, 0.16);
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.dh-preview-return-home:hover,
+.dh-preview-return-home:focus-visible {
+  color: #fff;
+  background: rgba(90, 44, 252, 0.28);
+  border-color: rgba(197, 174, 255, 0.66);
+  transform: translateY(-1px);
+}
+
 .dh-preview-header-actions {
   display: flex;
   align-items: center;
@@ -9587,6 +9613,7 @@ select {
   .dh-task-actions button,
   .dh-modal-footer button,
   .dh-preview-back,
+  .dh-preview-return-home,
   .dh-design-voice-button,
   .motion-result-actions a,
   .motion-result-actions button,
@@ -9767,6 +9794,20 @@ select {
   background: var(--brand-gradient);
   border-color: var(--brand-primary);
   box-shadow: 0 14px 32px rgba(93, 30, 224, 0.28);
+}
+
+.feature-page-shell .dh-preview-return-home {
+  color: #f4f0ff;
+  background: rgba(90, 44, 252, 0.16);
+  border-color: rgba(173, 108, 252, 0.42);
+  box-shadow: 0 10px 24px rgba(90, 44, 252, 0.16);
+}
+
+.feature-page-shell .dh-preview-return-home:hover,
+.feature-page-shell .dh-preview-return-home:focus-visible {
+  color: #fff;
+  background: rgba(90, 44, 252, 0.28);
+  border-color: rgba(197, 174, 255, 0.66);
 }
 
 .feature-page-shell :is(

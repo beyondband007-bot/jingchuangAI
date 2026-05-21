@@ -2578,7 +2578,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   );
 }
 
-function DigitalHumanGenerationView() {
+function DigitalHumanGenerationView({ onReturnHome }) {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -2767,7 +2767,14 @@ function DigitalHumanGenerationView() {
                 <Layers size={14} />
                 案例
               </button>
-              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "已完成" : currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>}
+              {currentPreviewTask?.status === "completed" ? (
+                <button className="dh-preview-return-home" type="button" onClick={onReturnHome}>
+                  <Home size={14} />
+                  返回
+                </button>
+              ) : currentPreviewTask ? (
+                <small>{currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>
+              ) : null}
             </div>
           </div>
           <div className="dh-video-shell">
@@ -4524,7 +4531,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
           <ChatGenerationView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="digital-human" activeNav={activeNav} visitedIds={visitedIds}>
-          <DigitalHumanGenerationView />
+          <DigitalHumanGenerationView onReturnHome={() => handleNavChange("home")} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="image-digital-human" activeNav={activeNav} visitedIds={visitedIds}>
           <ImageDigitalHumanView />
