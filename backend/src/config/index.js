@@ -41,7 +41,7 @@ export const config = {
     watermarkVideoModel: process.env.KIE_WATERMARK_VIDEO_MODEL || process.env.KIE_MOTION_TRANSFER_MODEL || "wan/2-7-r2v",
     watermarkVideoResolution: process.env.KIE_WATERMARK_VIDEO_RESOLUTION || "720p",
     watermarkVideoPoints: Number(process.env.KIE_WATERMARK_VIDEO_POINTS || 100),
-    enhanceImageModel: process.env.KIE_ENHANCE_IMAGE_MODEL || "topaz/image-upscale",
+    enhanceImageModel: process.env.KIE_ENHANCE_IMAGE_MODEL || "gpt-image-2-image-to-image",
     enhanceVideoModel: process.env.KIE_ENHANCE_VIDEO_MODEL || "topaz/video-upscale",
     enhanceUpscaleFactor: process.env.KIE_ENHANCE_UPSCALE_FACTOR || "2",
     enhanceImagePoints: Number(process.env.KIE_ENHANCE_IMAGE_POINTS || 25),

@@ -19,7 +19,6 @@ export function mapEnhanceTask(row) {
   return {
     id: String(row.id),
     model: row.model_key,
-    providerModel: row.provider_model,
     mediaType: row.media_type,
     upscaleFactor: row.upscale_factor,
     sourceAssetId: String(row.source_asset_id),

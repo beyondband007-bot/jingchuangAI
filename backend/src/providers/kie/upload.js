@@ -42,7 +42,7 @@ function assertUploadSuccess(response, body) {
 export async function uploadFileToKie({ filePath, fileName, mimeType = "application/octet-stream", uploadPath = "digital-human" }) {
   ensureKieKey();
 
-  const cacheKey = `${filePath}:${uploadPath}`;
+  const cacheKey = `${filePath}:${uploadPath}:${fileName}:${mimeType}`;
   if (uploadCache.has(cacheKey)) {
     return uploadCache.get(cacheKey);
   }
