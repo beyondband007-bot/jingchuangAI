@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facemini  Studio</title>
+  <title>Facemini Studio</title>
   <link rel="icon" type="image/svg+xml" href="./assets/web-icon.svg">
   <script>
     if ("scrollRestoration" in history) {
@@ -23,7 +23,7 @@
       },
     };
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./assets/vendor/tailwindcss.js"></script>
   <style>
     :root {
       --bg: #05030d;
@@ -102,17 +102,6 @@
       overflow-x: hidden;
     }
 
-    #plasma-background {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      pointer-events: none;
-      background: #000000;
-    }
-
     body::before,
     body::after {
       content: "";
@@ -140,7 +129,7 @@
     .page {
       width: var(--container);
       margin: 0 auto;
-      padding: 22px 0 36px;
+      padding: 22px 0 16px;
       position: relative;
       z-index: 2;
     }
@@ -1124,6 +1113,7 @@
     }
 
     .why-section {
+      margin-top: 108px;
       display: grid;
       gap: 42px;
     }
@@ -1600,8 +1590,19 @@
       box-shadow: none;
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 18px;
+      gap: 42px 18px;
       overflow: visible;
+    }
+
+    .features > .section-heading {
+      grid-column: 1 / -1;
+    }
+
+    .features > .medo-grid {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
     }
 
     .feature-card {
@@ -1637,6 +1638,11 @@
       opacity: 1;
       pointer-events: auto;
       transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    .features.features--visible > .section-heading {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
     }
 
     .features.features--visible .feature-card:nth-child(1) {
@@ -1682,7 +1688,7 @@
 
     .footer {
       margin-top: 108px;
-      padding: 19px 0 10px;
+      padding: 20px 0 10px;
       border-top: 1px solid rgba(255, 255, 255, 0.04);
       display: grid;
       grid-template-columns: minmax(0, 1.35fr) 1px minmax(0, 1.55fr) 1px minmax(0, 0.9fr);
@@ -1804,6 +1810,10 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .features > .medo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .why-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -1903,6 +1913,10 @@
         grid-template-columns: 1fr;
       }
 
+      .features > .medo-grid {
+        grid-template-columns: 1fr;
+      }
+
       .footer {
         margin-top: 72px;
       }
@@ -1954,7 +1968,6 @@
   </style>
 </head>
 <body>
-  <canvas id="plasma-background" aria-hidden="true"></canvas>
   <main class="page">
     <section class="first-screen">
       <header class="nav">
@@ -1963,10 +1976,9 @@
             <a class="nav-item nav-brand" href="#"><span class="brand">Facemini.com</span></a>
           </div>
           <div class="nav-cluster nav-cluster--center">
-            <a class="nav-item nav-item--collapse" href="#product"><span class="nav-link__text" data-label="文生图"></span></a>
-            <a class="nav-item nav-item--collapse" href="#solutions"><span class="nav-link__text" data-label="视频生成"></span></a>
-            <a class="nav-item nav-item--collapse" href="#pricing"><span class="nav-link__text" data-label="智能画布"></span></a>
-            <a class="nav-item nav-item--collapse" href="#docs"><span class="nav-link__text" data-label="探索"></span></a>
+            <a class="nav-item nav-item--collapse" href="#product"><span class="nav-link__text" data-label="关于我们"></span></a>
+            <a class="nav-item nav-item--collapse" href="#solutions"><span class="nav-link__text" data-label="关于产品"></span></a>
+            <a class="nav-item nav-item--collapse" href="#docs"><span class="nav-link__text" data-label="探索我们"></span></a>
           </div>
           <div class="nav-cluster nav-cluster--right">
             <a class="nav-item nav-login" href="#signin"><span class="nav-link__text" data-label="登录"></span></a>
@@ -1984,37 +1996,20 @@
 
       <section id="home">
         <div class="hero-copy">
-          <h1>知识生成于深海之上</h1>
-          <p>AI在数据深海中萃取灵感，于浪潮之上生成万象创作，以智能洞见赋予文字与画面全新生命力。</p>
+          <h1>千面创想，一面即达</h1>
+          <p>Facemini，让未来的工作方式，提前发生</p>
           <div class="hero-actions">
             <a class="button pill-cta hero-pill" href="/#/home" target="_top" onclick="sessionStorage.setItem('jingchuang:enter-app', '1')">
               <span class="signup-hero__orbit" aria-hidden="true"></span>
               <span class="signup-hero__liquid" aria-hidden="true"></span>
               <span class="signup-hero__noise" aria-hidden="true"></span>
               <span class="signup-hero__content">
-                <span class="signup-hero__text">开始使用</span>
+                <span class="signup-hero__text">开始探索</span>
                 <svg class="pill-cta__arrow" viewBox="0 0 18 16" fill="none" aria-hidden="true">
                   <path d="M1.5 8H16.5M16.5 8L10.5 2M16.5 8L10.5 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </span>
             </a>
-            <a class="button secondary" href="#docs">
-              查看文档
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 7H15M9 11H15M9 15H12M7 4H17C18.1046 4 19 4.89543 19 6V18C19 19.1046 18.1046 20 17 20H7C5.89543 20 5 19.1046 5 18V6C5 4.89543 5.89543 4 7 4Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        <div class="hero-layout">
-          <div class="showcase-shell">
-            <span class="edge-light" aria-hidden="true"></span>
-            <div class="showcase">
-              <video class="showcase-media" autoplay muted loop playsinline preload="auto">
-                <source src="./4aecacd973a65d4499df367a2e8ad358.mp4" type="video/mp4">
-              </video>
-            </div>
           </div>
         </div>
       </section>
@@ -2022,125 +2017,67 @@
 
     <section class="neural-section" aria-label="Facemini.com 平台能力">
       <div class="metrics-strip">
-        <div class="metric"><strong>10M+</strong><span>API 调用 / 天</span></div>
-        <div class="metric"><strong>99.99%</strong><span>服务可用性</span></div>
+        <div class="metric"><strong>10M+</strong><span>AI 能力日调用量</span></div>
+        <div class="metric"><strong>99.99%</strong><span>平台稳定可用性</span></div>
         <div class="metric"><strong>50ms</strong><span>平均响应延迟</span></div>
-        <div class="metric"><strong>1000+</strong><span>企业客户</span></div>
+        <div class="metric"><strong>500+</strong><span>企业客户与个人</span></div>
       </div>
-
-      <section class="why-section" aria-label="为什么选择 Facemini.com">
-        <div class="section-heading">
-          <h2>为什么选择 Facemini.com</h2>
-          <p>一站式解决 AI 应用开发的所有挑战，让您专注于产品创新</p>
-        </div>
-
-        <div class="why-grid">
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 3H15L16 6H20V12L21 13V17L17 18L16 21H8L7 18L3 17V13L4 12V6H8L9 3Z" stroke="currentColor" stroke-linejoin="round"/><path d="M9 9H15V15H9V9Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
-            <h3>强大的模型支持</h3>
-            <p>支持 GPT-4、Claude、Gemini 等主流大语言模型，一键切换，无缝集成。</p>
-          </article>
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L5 14H11L10 22L19 9H13L13 2Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
-            <h3>极速推理引擎</h3>
-            <p>自研推理优化引擎，响应延迟降低 60%，让用户体验丝滑流畅。</p>
-          </article>
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L19 6V11.5C19 16.2 16.05 20.6 12 22C7.95 20.6 5 16.2 5 11.5V6L12 3Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
-            <h3>企业级安全</h3>
-            <p>SOC 2 Type II 认证，数据端到端加密，满足最严格的合规要求。</p>
-          </article>
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V10M12 19V5M19 19V13" stroke="currentColor" stroke-linecap="round"/><path d="M4 19H20" stroke="currentColor" stroke-linecap="round"/></svg></span>
-            <h3>实时分析洞察</h3>
-            <p>全面的使用分析和性能监控，帮助您持续优化 AI 应用效果。</p>
-          </article>
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor"/><path d="M3 12H21M12 3C14 5.4 15 8.4 15 12C15 15.6 14 18.6 12 21M12 3C10 5.4 9 8.4 9 12C9 15.6 10 18.6 12 21" stroke="currentColor"/></svg></span>
-            <h3>全球边缘部署</h3>
-            <p>在全球 50+ 边缘节点部署，确保用户就近访问，体验最佳。</p>
-          </article>
-          <article class="why-card">
-            <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 9L4 12L8 15M16 9L20 12L16 15M14 5L10 19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <h3>开发者友好</h3>
-            <p>简洁的 API 设计、完善的 SDK 和丰富的示例，5 分钟即可上手。</p>
-          </article>
-        </div>
-      </section>
-
-      <section class="workflow-section" aria-label="功能展示">
-        <div class="workflow-heading">
-          <div class="workflow-pill">
-            功能亮点
-          </div>
-          <h2>强大功能，让你的<span>工作流更简单</span></h2>
-          <p>探索 AI 驱动能力如何提升效率，简化日常协作、洞察分析与任务处理。</p>
-        </div>
-
-        <div class="workflow-grid">
-          <article class="workflow-card workflow-card--automation">
-            <div class="ai-stack" aria-hidden="true">
-              <div class="ai-bubble"><span class="ai-avatar"></span><div><strong>AI 助手</strong><span>你的智能助手</span></div></div>
-              <div class="ai-bubble ai-bubble--active"><span class="ai-avatar"></span><div><strong>AI 助手</strong><span>你的智能助手</span></div></div>
-              <div class="ai-bubble"><span class="ai-avatar"></span><div><strong>AI 助手</strong><span>你的智能助手</span></div></div>
-            </div>
-            <div class="workflow-card-copy">
-              <h3>AI 自动化</h3>
-              <p>通过自动洞察发现趋势与低效环节，让重复流程交给 AI 处理。</p>
-            </div>
-          </article>
-
-          <article class="workflow-card workflow-card--insights">
-            <div class="task-layers" aria-hidden="true">
-              <div class="task-chip"><span class="task-icon">✓</span><span>创建任务</span><span class="task-plus">+</span></div>
-              <div class="task-chip"><span class="task-icon">✓</span><span>查找任务</span><span class="task-plus">+</span></div>
-              <div class="task-chip"><span class="task-icon">✓</span><span>已完成任务</span><span class="task-plus">+</span></div>
-              <svg class="spark" viewBox="0 0 48 48" fill="none"><path d="M9 5L16 14M30 6L27 18M43 23L31 27M18 42L22 31" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M22 20L42 29L30 34L24 46L22 20Z" fill="currentColor"/></svg>
-            </div>
-            <div class="workflow-card-copy">
-              <h3>智能洞察</h3>
-              <p>自动识别趋势、风险与机会，把关键决策信息提前推到你面前。</p>
-            </div>
-          </article>
-
-          <article class="workflow-card workflow-card--prototype">
-            <div class="prototype-panel" aria-hidden="true">
-              <h4>你正在为哪种设备设计？</h4>
-              <div class="device-tabs"><span>手机</span><span>平板</span><span>网页</span></div>
-            </div>
-            <div class="workflow-card-copy">
-              <h3>快速生成原型</h3>
-              <p>只需描述想法，即可生成多页面、可编辑的产品原型，减少从 0 到 1 的等待。</p>
-            </div>
-          </article>
-
-          <article class="workflow-card workflow-card--collab">
-            <div class="timeline-demo" aria-hidden="true">
-              <span class="timeline-line"></span>
-              <span class="timeline-line"></span>
-              <span class="timeline-line"></span>
-              <div class="timeline-step"><small>步骤 1</small>先整理目标</div>
-              <div class="timeline-step"><small>步骤 2</small>确认关键路径</div>
-              <div class="timeline-step"><small>步骤 3</small>同步给团队</div>
-            </div>
-            <div class="workflow-card-copy">
-              <h3>协作工具</h3>
-              <p>让团队围绕 AI 辅助的沟通、任务跟踪与进度同步高效协作。</p>
-            </div>
-          </article>
-        </div>
-      </section>
     </section>
 
-    <section id="product" class="features" aria-label="功能亮点">
+    <section class="why-section" aria-label="为什么选择 Facemini.com">
+      <div class="section-heading">
+        <h2>为什么选择 Facemini.com</h2>
+        <p>一站式解决 AI 应用开发的所有挑战，让您专注于产品创新</p>
+      </div>
+
+      <div class="why-grid">
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 3H15L16 6H20V12L21 13V17L17 18L16 21H8L7 18L3 17V13L4 12V6H8L9 3Z" stroke="currentColor" stroke-linejoin="round"/><path d="M9 9H15V15H9V9Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>强大的模型支持</h3>
+          <p>接入 GPT、Gemini、Claude 等主流大模型能力，支持多模型灵活切换，满足对话、创作、生图、内容生成等不同场景需求。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L5 14H11L10 22L19 9H13L13 2Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>多模态创作能力</h3>
+          <p>覆盖文字、图片、视频、音频等多种内容形态，支持图片生成、视频生成、语音合成、AI 音乐、音色转换等能力，让创意快速转化为作品。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L19 6V11.5C19 16.2 16.05 20.6 12 22C7.95 20.6 5 16.2 5 11.5V6L12 3Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>数字人内容生产</h3>
+          <p>支持生成专属数字人形象，也可使用平台数字人模板快速制作口播短视频，帮助企业降低拍摄成本，提升内容生产效率。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V10M12 19V5M19 19V13" stroke="currentColor" stroke-linecap="round"/><path d="M4 19H20" stroke="currentColor" stroke-linecap="round"/></svg></span>
+          <h3>智能营销工作流</h3>
+          <p>整合爆款图文生成、视频配音、智能抠图、画质提升、提示词反推、语音转文字等营销工具，覆盖从创意生成到素材处理的完整链路。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor"/><path d="M3 12H21M12 3C14 5.4 15 8.4 15 12C15 15.6 14 18.6 12 21M12 3C10 5.4 9 8.4 9 12C9 15.6 10 18.6 12 21" stroke="currentColor"/></svg></span>
+          <h3>稳定安全的服务体验</h3>
+          <p>注重平台稳定性与数据安全，通过加密传输、权限管理与服务监控机制，为个人和企业用户提供可靠的 AI 使用环境。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 9L4 12L8 15M16 9L20 12L16 15M14 5L10 19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>清晰可控的资产管理</h3>
+          <p>提供积分查询、使用记录、购买管理等功能，让用户清晰掌握各项 AI 能力的使用情况，帮助个人与企业更好地控制成本与资源投入。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="product" class="features" aria-label="Facemini.com 能做什么？">
+      <div class="section-heading">
+        <h2>Facemini.com 能做什么</h2>
+        <p>聚焦 AI 应用落地，助力企业与内容业务高效增长</p>
+      </div>
+
       <article class="feature-card">
         <div class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M13 2L5 14H11L10 22L18 10H12L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>AI 自动化</h3>
-        <p>自动处理重复任务，让团队把时间集中在策略、内容与高价值决策上。</p>
+        <h3>企业级AI智能体</h3>
+        <p>深度结合业务场景，构建更智能、更高效的 AI 协作体验。</p>
       </article>
 
       <article class="feature-card">
@@ -2150,8 +2087,8 @@
             <path d="M12 12L20 7.5M12 12V21M12 12L4 7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>无代码搭建</h3>
-        <p>通过模块化页面与组件配置，快速搭建首页、专题页与品牌展示内容。</p>
+        <h3>垂类行业AI落地</h3>
+        <p>面向垂类行业需求，提供SOP级的 AI 应用能力支持。</p>
       </article>
 
       <article class="feature-card">
@@ -2161,8 +2098,8 @@
             <path d="M4 19H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3>实时分析</h3>
-        <p>追踪访问、互动与转化表现，把页面设计和增长优化连成一条闭环。</p>
+        <h3>AI漫剧内容生产</h3>
+        <p>提升内容创作效率，助力多样化视觉内容快速生成。</p>
       </article>
 
       <article class="feature-card">
@@ -2172,15 +2109,15 @@
             <path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>安全可靠</h3>
-        <p>以稳定、可维护的页面结构为基础，兼顾展示效果、性能与后续扩展空间。</p>
+        <h3>通用性营销工具</h3>
+        <p>聚焦增长与传播需求，帮助品牌提升内容与运营效率。</p>
       </article>
     </section>
 
     <footer id="about" class="footer">
       <div class="footer-brand">
         <a class="brand" href="#">Facemini.com</a>
-        <p class="footer-copy">一个将品牌表达、AI 工作流与数字体验整合在一起的创意主页模板，适合展示产品、服务与团队能力。</p>
+        <p class="footer-copy">AI驱动的智能工作流平台，以 AI 重塑工作与创作方式，为个人与企业降本增效。</p>
       </div>
 
       <div class="footer-divider" aria-hidden="true"></div>
@@ -2188,20 +2125,23 @@
       <div class="footer-nav">
         <div class="footer-column">
           <strong>产品</strong>
-          <a href="#product">功能</a>
-          <a href="#solutions">集成</a>
+          <a href="#product">关于我们</a>
+          <a href="#solutions">公司简介</a>
+          <a href="#solutions">团队介绍</a>
         </div>
 
         <div class="footer-column">
           <strong>资源</strong>
-          <a href="#docs">文档</a>
-          <a href="#docs">指南</a>
+          <a href="#docs">产品介绍</a>
+          <a href="#docs">功能指南</a>
+          <a href="#docs">服务定制</a>
         </div>
 
         <div class="footer-column">
           <strong>公司</strong>
-          <a href="#about">关于</a>
-          <a href="#about">博客</a>
+          <a href="#about">探索我们</a>
+          <a href="#about">联系方式</a>
+          <a href="#about">平台资讯</a>
         </div>
       </div>
 
@@ -2231,82 +2171,6 @@
     </footer>
   </main>
   <script>
-    (function () {
-      var canvas = document.getElementById("plasma-background");
-      if (!canvas) return;
-
-      var gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: false });
-      if (!gl) {
-        canvas.style.background =
-          "radial-gradient(circle at 50% 22%, rgba(139, 92, 246, 0.34), transparent 34%), #000";
-        return;
-      }
-
-      var vertexSource = "#version 300 es\nprecision highp float;\nin vec2 position;\nvoid main(){gl_Position=vec4(position,0.0,1.0);}";
-      var fragmentSource = "#version 300 es\nprecision highp float;\nuniform vec2 iResolution;\nuniform float iTime;\nuniform vec2 uMouse;\nout vec4 fragColor;\nvoid mainImage(out vec4 o, vec2 C){vec2 center=iResolution.xy*.5;C=(C-center)/1.5+center;vec2 mouseOffset=(uMouse-center)*.0002;C+=mouseOffset*length(C-center);float i=0.,d,z=0.,T=iTime*.32;vec3 O=vec3(0.),p,S;for(vec2 r=iResolution.xy,Q;++i<60.;O+=o.w/d*o.xyz){p=z*normalize(vec3(C-.5*r,r.y));p.z-=4.;S=p;d=p.y-T;p.x+=.4*(1.+p.y)*sin(d+p.x*.1)*cos(.34*d+p.x*.05);Q=p.xz*=mat2(cos(p.y+vec4(0,11,33,0)-T));z+=d=abs(sqrt(length(Q*Q))-.25*(5.+S.y))/3.+8e-4;o=1.+sin(S.y+p.z*.5+S.z-length(S-p)+vec4(2,1,0,8));}o.xyz=tanh(O/1e4);}bool finite1(float x){return !(isnan(x)||isinf(x));}vec3 sanitize(vec3 c){return vec3(finite1(c.r)?c.r:0.,finite1(c.g)?c.g:0.,finite1(c.b)?c.b:0.);}void main(){vec4 o=vec4(0.);mainImage(o,gl_FragCoord.xy);vec3 rgb=sanitize(o.rgb);float intensity=(rgb.r+rgb.g+rgb.b)/3.;vec3 color=intensity*vec3(.545,.361,.965);float alpha=length(rgb)*.4;fragColor=vec4(color,alpha);}";
-
-      function compile(type, source) {
-        var shader = gl.createShader(type);
-        gl.shaderSource(shader, source);
-        gl.compileShader(shader);
-        return shader;
-      }
-
-      var program = gl.createProgram();
-      gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
-      gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
-      gl.linkProgram(program);
-      gl.useProgram(program);
-
-      var buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-
-      var position = gl.getAttribLocation(program, "position");
-      gl.enableVertexAttribArray(position);
-      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-
-      var resolutionLocation = gl.getUniformLocation(program, "iResolution");
-      var timeLocation = gl.getUniformLocation(program, "iTime");
-      var mouseLocation = gl.getUniformLocation(program, "uMouse");
-      var mouseX = 0;
-      var mouseY = 0;
-      var start = performance.now();
-      var frame = 0;
-      var last = 0;
-
-      function resizePlasma() {
-        var dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 768 ? 0.75 : 1.5);
-        var width = Math.max(1, Math.floor(window.innerWidth * dpr));
-        var height = Math.max(1, Math.floor(window.innerHeight * dpr));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-          gl.viewport(0, 0, width, height);
-        }
-      }
-
-      function render(now) {
-        frame = requestAnimationFrame(render);
-        if (document.hidden || now - last < 33) return;
-        resizePlasma();
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-        gl.uniform1f(timeLocation, (now - start) * 0.001);
-        gl.uniform2f(mouseLocation, mouseX, canvas.height - mouseY);
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
-        last = now;
-      }
-
-      window.addEventListener("mousemove", function (event) {
-        mouseX = event.clientX * (canvas.width / Math.max(window.innerWidth, 1));
-        mouseY = event.clientY * (canvas.height / Math.max(window.innerHeight, 1));
-      }, { passive: true });
-      window.addEventListener("resize", resizePlasma);
-      frame = requestAnimationFrame(render);
-    })();
-
     function resetPageScroll() {
       var root = document.documentElement;
       var previousBehavior = root.style.scrollBehavior;
