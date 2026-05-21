@@ -129,22 +129,61 @@
     .page {
       width: var(--container);
       margin: 0 auto;
-      padding: 22px 0 16px;
+      padding: 0 0 16px;
       position: relative;
       z-index: 2;
     }
 
     .first-screen {
-      min-height: calc(100svh - 22px);
+      position: relative;
+      width: 100vw;
+      min-height: 100svh;
+      margin-left: calc(50% - 50vw);
+      padding-inline: max(24px, calc((100vw - 1180px) / 2));
       display: grid;
       grid-template-rows: auto 1fr;
       align-content: stretch;
+      isolation: isolate;
+      overflow: hidden;
     }
 
     @supports (height: 100dvh) {
       .first-screen {
-        min-height: calc(100dvh - 22px);
+        min-height: 100dvh;
       }
+    }
+
+    .first-screen-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: #000000;
+    }
+
+    .first-screen-bg video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(0.9) contrast(1.22) saturate(1.38);
+    }
+
+    .first-screen-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.28) 58%, rgba(0, 0, 0, 0.64) 100%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.5) 100%);
+    }
+
+    .first-screen > .nav,
+    .first-screen > #home {
+      position: relative;
+      z-index: 2;
     }
 
     .first-screen .nav,
@@ -1970,6 +2009,11 @@
 <body>
   <main class="page">
     <section class="first-screen">
+      <div class="first-screen-bg" aria-hidden="true">
+        <video autoplay muted loop playsinline preload="auto">
+          <source src="./SplashScreen.mp4" type="video/mp4">
+        </video>
+      </div>
       <header class="nav">
         <nav class="nav-links" aria-label="主导航">
           <div class="nav-cluster nav-cluster--left">
@@ -1996,7 +2040,7 @@
 
       <section id="home">
         <div class="hero-copy">
-          <h1>千面创想，一面即达</h1>
+          <h1>千面创想 &nbsp;一面即达</h1>
           <p>Facemini，让未来的工作方式，提前发生</p>
           <div class="hero-actions">
             <a class="button pill-cta hero-pill" href="/#/home" target="_top" onclick="sessionStorage.setItem('jingchuang:enter-app', '1')">
@@ -2010,17 +2054,6 @@
                 </svg>
               </span>
             </a>
-          </div>
-        </div>
-
-        <div class="hero-layout">
-          <div class="showcase-shell">
-            <span class="edge-light" aria-hidden="true"></span>
-            <div class="showcase">
-              <video class="showcase-media" autoplay muted loop playsinline preload="auto">
-                <source src="./4aecacd973a65d4499df367a2e8ad358.mp4" type="video/mp4">
-              </video>
-            </div>
           </div>
         </div>
       </section>
