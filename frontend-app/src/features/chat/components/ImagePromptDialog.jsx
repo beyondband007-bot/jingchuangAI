@@ -371,13 +371,11 @@ export function ImagePromptDialog({
               ...buttonBaseStyle,
               width: "auto",
               minWidth: "120px",
-              background: canSubmit
-                ? "linear-gradient(135deg, rgba(90, 44, 252, 0.96) 0%, rgba(122, 89, 255, 0.92) 100%)"
-                : "rgba(55, 55, 55, 0.5)",
-              border: "none",
-              color: "#ffffff",
-              fontSize: "14px",
-              fontWeight: "700",
+              background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
+              border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
+              color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
+              fontSize: buttonBaseStyle.fontSize,
+              fontWeight: buttonBaseStyle.fontWeight,
               cursor: canSubmit ? "pointer" : "not-allowed",
               opacity: canSubmit ? 1 : 0.6
             }}
