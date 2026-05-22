@@ -34,3 +34,5 @@ server-*.err.log
 
 # Local cache
 .claude/
+start-dev.ps1
+STARTUP.md

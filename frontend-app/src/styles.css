@@ -10578,6 +10578,8 @@ select {
 .chat-main-canvas {
   min-height: calc(100vh - 244px);
   background: transparent !important;
+  height: 50px;
+  box-shadow: none !important;
 }
 
 .llm-empty-state {
@@ -11389,4 +11391,430 @@ section.video-generation-view .sowa-composer {
 }
 .dh-mode-tabs {
   border-bottom: 0;
+}
+
+/* Restored from f2eeff8: unified dropdowns, text focus, and scrollbars. */
+html,
+body,
+#root {
+  overscroll-behavior: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888888 rgba(255, 255, 255, 0.04);
+}
+
+:is(
+  .music-lyrics-preview,
+  .article-form-panel,
+  .article-cases-section,
+  .feature-nav,
+  .example-canvas,
+  .chat-canvas,
+  .chat-main-canvas,
+  .history-list,
+  .dh-config-panel,
+  .llm-menu,
+  .custom-select-menu,
+  .image-filter-tabs,
+  textarea
+) {
+  overscroll-behavior: contain;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #888888;
+  border: 2px solid rgba(5, 5, 5, 0.78);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9a9a9a;
+}
+
+:root * {
+  scrollbar-color: #888888 rgba(255, 255, 255, 0.04) !important;
+}
+
+:root *::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+:root *::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-radius: 999px !important;
+}
+
+:root *::-webkit-scrollbar-thumb {
+  background: #888888 !important;
+  border: 2px solid rgba(5, 5, 5, 0.78) !important;
+  border-radius: 999px !important;
+}
+
+:root *::-webkit-scrollbar-thumb:hover {
+  background: #9a9a9a !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.control-select,
+.llm-select,
+.llm-reasoning-select select,
+.feature-page-shell .dh-view-root .dh-field select,
+.feature-page-shell .dh-view-root .dh-settings-group select {
+  color: var(--text-primary) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.065)) !important;
+  border: 1px solid rgba(176, 199, 226, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.control-select:hover,
+.control-select:focus-within,
+.llm-select:hover,
+.llm-select:focus-visible,
+.llm-select-wrap.is-open .llm-select,
+.llm-reasoning-select select:hover,
+.llm-reasoning-select select:focus,
+.feature-page-shell .dh-view-root .dh-field select:hover,
+.feature-page-shell .dh-view-root .dh-field select:focus,
+.feature-page-shell .dh-view-root .dh-settings-group select:hover,
+.feature-page-shell .dh-view-root .dh-settings-group select:focus {
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 22% 0%, rgba(141, 99, 255, 0.34), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)) !important;
+  border-color: rgba(141, 99, 255, 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(141, 99, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.28) !important;
+  outline: 0;
+}
+
+.control-select select,
+.llm-reasoning-select select,
+.feature-page-shell .dh-view-root select {
+  color-scheme: dark;
+}
+
+.control-select select option,
+.llm-reasoning-select select option,
+.feature-page-shell .dh-view-root select option {
+  color: #eef1f7;
+  background-color: #151318;
+}
+
+.control-select select option:checked,
+.control-select select option:hover,
+.llm-reasoning-select select option:checked,
+.llm-reasoning-select select option:hover,
+.feature-page-shell .dh-view-root select option:checked,
+.feature-page-shell .dh-view-root select option:hover {
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(141, 99, 255, 0.42), rgba(141, 99, 255, 0.24)),
+    #241b33;
+  box-shadow: inset 0 0 0 999px rgba(141, 99, 255, 0.28);
+}
+
+.llm-menu {
+  padding: 8px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.24), transparent 46%),
+    rgba(17, 17, 19, 0.96);
+  border-color: rgba(176, 199, 226, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 22px 58px rgba(0, 0, 0, 0.46);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+
+.llm-menu button {
+  color: rgba(249, 248, 246, 0.78);
+  border: 1px solid transparent;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.llm-menu button:hover,
+.llm-menu button.is-selected {
+  color: #fff;
+  background: rgba(141, 99, 255, 0.18);
+  border-color: rgba(141, 99, 255, 0.26);
+}
+
+.llm-menu button.is-selected {
+  font-weight: 800;
+}
+
+.custom-select {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.custom-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07));
+  border: 1px solid rgba(176, 199, 226, 0.2);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.custom-select-trigger > span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-trigger > svg:first-child {
+  flex: 0 0 auto;
+  color: #8d63ff;
+}
+
+.custom-select-chevron {
+  flex: 0 0 auto;
+  color: rgba(249, 248, 246, 0.64);
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.custom-select.is-open .custom-select-chevron {
+  color: #b69cff;
+  transform: rotate(180deg);
+}
+
+.custom-select-trigger:hover,
+.custom-select-trigger:focus-visible,
+.custom-select.is-open .custom-select-trigger {
+  color: #fff;
+  background:
+    radial-gradient(circle at 22% 0%, rgba(141, 99, 255, 0.34), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  border-color: rgba(141, 99, 255, 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(141, 99, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.28);
+  outline: 0;
+}
+
+.custom-select.is-disabled {
+  opacity: 0.58;
+}
+
+.custom-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 80;
+  display: grid;
+  width: max(100%, 220px);
+  max-height: 280px;
+  overflow: auto;
+  padding: 8px;
+  visibility: hidden;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.22), transparent 46%),
+    linear-gradient(180deg, rgba(35, 35, 37, 0.98), rgba(25, 25, 26, 0.98));
+  border: 1px solid rgba(176, 199, 226, 0.18);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 24px 60px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 140ms ease, visibility 140ms ease, transform 140ms ease;
+}
+
+.custom-select.is-open .custom-select-menu {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.custom-select-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  color: rgba(249, 248, 246, 0.78);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: left;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.custom-select-menu button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-menu button svg {
+  flex: 0 0 auto;
+  color: #9b7cff;
+}
+
+.custom-select-menu button:hover,
+.custom-select-menu button:focus-visible,
+.custom-select-menu button.is-selected {
+  color: #fff;
+  background: rgba(141, 99, 255, 0.18);
+  border-color: rgba(141, 99, 255, 0.26);
+  outline: 0;
+}
+
+.custom-select-menu button.is-selected {
+  font-weight: 850;
+}
+
+.custom-select.control-select,
+.custom-select.llm-reasoning-select,
+.custom-select.idh-select,
+.custom-select.idh-advanced-select {
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.custom-select.control-select .custom-select-trigger,
+.custom-select.llm-reasoning-select .custom-select-trigger,
+.custom-select.idh-select .custom-select-trigger,
+.custom-select.idh-advanced-select .custom-select-trigger {
+  min-height: 38px;
+}
+
+.custom-select.control-select .custom-select-menu,
+.custom-select.llm-reasoning-select .custom-select-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateY(4px) scale(0.98);
+  transform-origin: bottom left;
+}
+
+.custom-select.control-select.is-open .custom-select-menu,
+.custom-select.llm-reasoning-select.is-open .custom-select-menu {
+  transform: translateY(0) scale(1);
+}
+
+.custom-select.model-select .custom-select-menu {
+  width: max(100%, 250px);
+}
+
+.dh-field .custom-select,
+.article-field .custom-select,
+.face-swap-workbench__setting .custom-select {
+  width: 100%;
+}
+
+.dh-field .custom-select-trigger,
+.article-field .custom-select-trigger,
+.face-swap-workbench__setting .custom-select-trigger {
+  min-height: 40px;
+}
+
+.idh-form-card .custom-select {
+  width: 100%;
+}
+
+.idh-advanced .custom-select {
+  width: 100%;
+}
+
+.face-swap-workbench__setting--compact .custom-select-menu,
+.face-swap-workbench__setting--duration .custom-select-menu {
+  width: max(100%, 170px);
+}
+
+.feature-page-shell .custom-select .custom-select-trigger {
+  color: var(--text-primary) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07)) !important;
+  border-color: rgba(176, 199, 226, 0.2) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+.feature-page-shell .custom-select .custom-select-menu {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.22), transparent 46%),
+    linear-gradient(180deg, rgba(35, 35, 37, 0.98), rgba(25, 25, 26, 0.98)) !important;
+  border-color: rgba(176, 199, 226, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 24px 60px rgba(0, 0, 0, 0.48) !important;
+}
+
+.feature-page-shell .custom-select .custom-select-menu button {
+  color: rgba(249, 248, 246, 0.78) !important;
+  border: 1px solid transparent !important;
+}
+
+.feature-page-shell .custom-select .custom-select-menu button:hover,
+.feature-page-shell .custom-select .custom-select-menu button:focus-visible,
+.feature-page-shell .custom-select .custom-select-menu button.is-selected {
+  color: #fff !important;
+  background: rgba(141, 99, 255, 0.18) !important;
+  border-color: rgba(141, 99, 255, 0.26) !important;
 }
