@@ -382,34 +382,34 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   );
 }
 
-const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
-  const frameRef = useRef(null);
+const SplashHome = memo(function SplashHome({ onOpenAuth }) {
+  const frameRefs = useRef([]);
 
   const bindAuthLinks = useCallback(() => {
-    const frame = frameRef.current;
-    try {
-      const doc = frame?.contentDocument;
-      if (!doc) return;
-      const bindLink = (selector, handler) => {
-        const links = Array.from(doc.querySelectorAll(selector));
-        links.forEach((link) => {
-          if (link.dataset.jcAuthBound === "1") return;
-          link.dataset.jcAuthBound = "1";
-          link.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-            handler();
-          }, true);
-        });
-      };
-      bindLink('a[href="#signin"], a[href*="#signin"]', () => onOpenAuth("login"));
-      bindLink('a[href="#signup"], a[href*="#signup"]', () => onOpenAuth("register"));
-      bindLink('a[href="/#/home"], a.hero-pill', onGuestEnter);
-    } catch {
-      // The exported landing page is same-origin locally; ignore if a browser blocks access.
-    }
-  }, [onGuestEnter, onOpenAuth]);
+    frameRefs.current.forEach((frame) => {
+      try {
+        const doc = frame?.contentDocument;
+        if (!doc) return;
+        const bindLink = (selector, handler) => {
+          const links = Array.from(doc.querySelectorAll(selector));
+          links.forEach((link) => {
+            if (link.dataset.jcAuthBound === "1") return;
+            link.dataset.jcAuthBound = "1";
+            link.addEventListener("click", (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+              handler();
+            }, true);
+          });
+        };
+        bindLink('a[href="#signin"], a[href*="#signin"]', () => onOpenAuth("login"));
+        bindLink('a[href="#signup"], a[href*="#signup"]', () => onOpenAuth("register"));
+      } catch {
+        // The exported landing pages are same-origin locally; ignore if a browser blocks access.
+      }
+    });
+  }, [onOpenAuth]);
 
   const handleFrameLoad = useCallback(() => {
     bindAuthLinks();
@@ -425,8 +425,8 @@ const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
 
   return (
     <div className="original-home-shell">
-      <iframe ref={frameRef} className="original-home-frame" title="Facemini AI" src="/new_page/studio.html" onLoad={handleFrameLoad} />
-      <iframe ref={frameRef} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
+      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini AI" src="/new_page/studio.html" onLoad={handleFrameLoad} />
+      <iframe ref={(node) => { frameRefs.current[1] = node; }} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
 });
@@ -1104,7 +1104,7 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
   );
 }
 
-function ImageGenerationView() {
+function ImageGenerationView({ authUser, onOpenAuth }) {
   const cachedSessionRef = useRef(null);
   if (!cachedSessionRef.current) {
     cachedSessionRef.current = readImageGenerationSession();
@@ -1215,8 +1215,20 @@ function ImageGenerationView() {
     return "idle_examples";
   }, [isSubmitting, selectedTask, submitError]);
   const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
+  const isGuest = Boolean(authUser?.isGuest);
+
+  function requestLoginForGeneration() {
+    setSubmitError("请先登录后再生成图片，游客账号没有积分额度。");
+    setIsSubmitting(false);
+    onOpenAuth?.("login");
+  }
 
   async function createTask(payload) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
+
     setActivePrompt(payload.prompt);
     setSubmitError("");
     setIsSubmitting(true);
@@ -1268,6 +1280,11 @@ function ImageGenerationView() {
   }
 
   async function regenerateTask(id) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
+
     const source = cards.find((card) => card.id === id);
     if (source) {
       setActivePrompt(source.prompt);
@@ -4556,7 +4573,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
       )}
       <main className="feature-main">
         <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
-          <ImageGenerationView />
+          <ImageGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="video" activeNav={activeNav} visitedIds={visitedIds}>
           <VideoGenerationView />
@@ -4655,18 +4672,6 @@ function App() {
     window.location.reload();
   }, []);
 
-  const enterAsGuest = useCallback(async () => {
-    try {
-      await authApi.logout();
-    } catch {
-      // Guest entry should still work when there is no active session to clear.
-    } finally {
-      window.sessionStorage.setItem(appEntryStorageKey, "1");
-      window.history.pushState(null, "", "#/home");
-      window.location.reload();
-    }
-  }, []);
-
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -4684,7 +4689,7 @@ function App() {
       return <ImageFeaturePage initialNav={view} onOpenHome={openHome} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
     }
 
-    return <SplashHome onOpenAuth={setAuthDrawerMode} onGuestEnter={enterAsGuest} />;
+    return <SplashHome onOpenAuth={setAuthDrawerMode} />;
   })();
 
   return (

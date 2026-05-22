@@ -159,10 +159,13 @@ export async function resolveCurrentUser(req) {
     };
   }
 
-  const user = await getDemoUser(getPool());
+  const user = await findUserByExternalId(GUEST_USER, getPool());
+  if (!user) {
+    throw new Error("guest-user not initialized. Run npm run db:init first.");
+  }
   return {
     id: user.id,
-    externalId: user.externalId || user.external_id,
+    externalId: user.externalId,
     displayName: user.displayName || "游客",
     username: user.username,
     isGuest: true
