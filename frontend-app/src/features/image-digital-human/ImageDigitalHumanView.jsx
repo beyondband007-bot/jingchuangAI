@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ImagePlus, Star, UserRound, X } from "lucide-react";
+import { ImagePlus, Star, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { CustomSelect } from "../../components/CustomSelect";
 import "./ImageDigitalHumanShowcaseCard.css";
@@ -9,6 +9,17 @@ const emptyImageDigitalHumanOptions = {
   defaults: { model: "kie-s2v-r2v", driveMode: "text" },
   limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 }
 };
+
+const ttsEmotionOptions = [
+  { value: "", label: "自动" },
+  { value: "calm", label: "平静" },
+  { value: "happy", label: "开心" },
+  { value: "sad", label: "悲伤" },
+  { value: "angry", label: "愤怒" },
+  { value: "fearful", label: "紧张" },
+  { value: "disgusted", label: "厌恶" },
+  { value: "surprised", label: "惊讶" }
+];
 
 function ImageDigitalHumanShowcaseCard({
   portraitPreview,
@@ -25,6 +36,14 @@ function ImageDigitalHumanShowcaseCard({
   text,
   textLength,
   onTextChange,
+  emotion,
+  onEmotionChange,
+  speed,
+  onSpeedChange,
+  volume,
+  onVolumeChange,
+  pitch,
+  onPitchChange,
   notice,
   isSubmitting
 }) {
@@ -58,7 +77,7 @@ function ImageDigitalHumanShowcaseCard({
                 }}
               />
               {portraitPreview ? (
-                <img src={portraitPreview} alt="当前上传人物" />
+                <img src={portraitPreview} alt="当前上传人物图" />
               ) : (
                 <div className="idh-showcase-placeholder">
                   <ImagePlus size={56} />
@@ -98,6 +117,7 @@ function ImageDigitalHumanShowcaseCard({
                 </div>
               </div>
             </div>
+
             <div className="idh-showcase-drive-tabs">
               <button
                 className={`idh-showcase-pill ${driveMode === "text" ? "is-active" : ""}`}
@@ -116,6 +136,7 @@ function ImageDigitalHumanShowcaseCard({
                 <span>音频驱动</span>
               </button>
             </div>
+
             <label className="idh-showcase-field">
               <span>模型</span>
               <CustomSelect
@@ -126,6 +147,7 @@ function ImageDigitalHumanShowcaseCard({
                 options={modelOptions}
               />
             </label>
+
             <label className="idh-showcase-field">
               <span>音色</span>
               <CustomSelect
@@ -136,18 +158,51 @@ function ImageDigitalHumanShowcaseCard({
                 options={voiceOptions.map((item) => ({ value: item.id, label: item.name }))}
               />
             </label>
+
             <label className="idh-showcase-field idh-showcase-field--textarea">
               <span>脚本内容</span>
               <textarea value={text} maxLength={2000} onChange={(event) => onTextChange?.(event.target.value)} />
             </label>
+
+            <div className="idh-showcase-tts-panel">
+              <div className="idh-showcase-tts-head">
+                <span>MiniMax TTS 参数</span>
+                <strong>音量、语速、音调与情绪</strong>
+              </div>
+              <label className="idh-showcase-field">
+                <span>音色情绪</span>
+                <CustomSelect
+                  className="idh-showcase-select custom-select-theme-dh"
+                  ariaLabel="音色情绪"
+                  value={emotion}
+                  onChange={onEmotionChange}
+                  options={ttsEmotionOptions}
+                />
+              </label>
+              <div className="idh-showcase-tts-controls">
+                <div className="idh-showcase-tts-sliders">
+                  <label className="idh-showcase-range-field">
+                    <span>语速 <small>{speed.toFixed(2)}x</small></span>
+                    <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => onSpeedChange?.(Number(event.target.value))} />
+                  </label>
+                  <label className="idh-showcase-range-field">
+                    <span>音量 <small>{volume.toFixed(1)}</small></span>
+                    <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => onVolumeChange?.(Number(event.target.value))} />
+                  </label>
+                  <label className="idh-showcase-range-field">
+                    <span>音调 <small>{pitch > 0 ? `+${pitch}` : pitch}</small></span>
+                    <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => onPitchChange?.(Number(event.target.value))} />
+                  </label>
+                </div>
+                <div className="idh-showcase-tts-action">
+                  <button className="idh-showcase-generate-voice dh-generate-button" type="button">生成语音</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="idh-showcase-footer">
-          <div className="idh-showcase-footer-item">
-            <UserRound size={15} />
-            <span>{portraitPreview ? "已就绪，可继续调整。" : "上传图片后可开始生成。"}</span>
-          </div>
           {notice ? <div className="idh-showcase-footer-item is-notice">{notice}</div> : null}
         </div>
       </div>
@@ -165,6 +220,10 @@ export function ImageDigitalHumanView() {
   const [model, setModel] = useState("");
   const [voiceId, setVoiceId] = useState("");
   const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
+  const [emotion, setEmotion] = useState("");
+  const [speed, setSpeed] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [pitch, setPitch] = useState(0);
   const [notice, setNotice] = useState("");
   const [isSubmitting] = useState(false);
 
@@ -240,7 +299,7 @@ export function ImageDigitalHumanView() {
   return (
     <section className="idh-view-root idh-view-root--showcase-only">
       <div className="image-filter-tabs idh-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>首页</button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
@@ -263,6 +322,14 @@ export function ImageDigitalHumanView() {
         text={text}
         textLength={text.length}
         onTextChange={setText}
+        emotion={emotion}
+        onEmotionChange={setEmotion}
+        speed={speed}
+        onSpeedChange={setSpeed}
+        volume={volume}
+        onVolumeChange={setVolume}
+        pitch={pitch}
+        onPitchChange={setPitch}
         notice={notice}
         isSubmitting={isSubmitting}
       />

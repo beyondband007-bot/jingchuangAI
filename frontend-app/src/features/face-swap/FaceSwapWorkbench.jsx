@@ -369,12 +369,12 @@ export function FaceSwapWorkbench({
               <CustomSelect ariaLabel="时长" value={duration} onChange={setDuration} options={durationOptions} />
             </label>
 
-            <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top">
+            <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top face-swap-workbench__toggle--enhance">
               <span>画质增强</span>
               <input type="checkbox" checked={enhanceQuality} onChange={() => setEnhanceQuality((value) => !value)} />
             </label>
 
-            <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top">
+            <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top face-swap-workbench__toggle--optimize">
               <span>人脸优化</span>
               <input type="checkbox" checked={faceOptimize} onChange={() => setFaceOptimize((value) => !value)} />
             </label>
