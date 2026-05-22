@@ -6826,6 +6826,20 @@ a:hover {
   border-top: 1px solid rgba(165, 203, 239, 0.66);
 }
 
+.motion-composer-footer .control-select {
+  flex: 0 0 auto;
+}
+
+.motion-composer-footer .model-select {
+  width: 128px;
+  min-width: 128px;
+}
+
+.motion-composer-footer .control-select:not(.model-select) {
+  width: 108px;
+  min-width: 108px;
+}
+
 .motion-composer-footer .price-pill {
   margin-left: auto;
 }
@@ -8177,10 +8191,18 @@ a:hover {
     min-width: 0;
   }
 
-  .motion-composer-footer .control-select {
-    flex: 1 1 calc(50% - 4px);
-    max-width: none;
-  }
+.motion-composer-footer .control-select {
+  flex: 1 1 calc(50% - 4px);
+  max-width: none;
+}
+
+.motion-composer-footer .model-select {
+  min-width: 128px;
+}
+
+.motion-composer-footer .control-select:not(.model-select) {
+  min-width: 108px;
+}
 
   .motion-composer-footer .price-pill {
     flex: 1 1 auto;
@@ -11782,6 +11804,8 @@ textarea:focus-visible {
 .custom-select.llm-reasoning-select .custom-select-menu {
   top: auto;
   bottom: calc(100% + 8px);
+  width: max-content;
+  min-width: 100%;
   transform: translateY(4px) scale(0.98);
   transform-origin: bottom left;
 }
@@ -11792,7 +11816,8 @@ textarea:focus-visible {
 }
 
 .custom-select.model-select .custom-select-menu {
-  width: max(100%, 250px);
+  width: max-content;
+  min-width: max(100%, 250px);
 }
 
 .dh-field .custom-select,
@@ -11817,7 +11842,7 @@ textarea:focus-visible {
 
 .face-swap-workbench__setting--compact .custom-select-menu,
 .face-swap-workbench__setting--duration .custom-select-menu {
-  width: max(100%, 170px);
+  width: max(100%, 120px);
 }
 
 .feature-page-shell .custom-select .custom-select-trigger {
