@@ -289,6 +289,24 @@
   gap: 12px;
 }
 
+.idh-showcase-tts-controls {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.idh-showcase-tts-sliders {
+  display: grid;
+  gap: 12px;
+}
+
+.idh-showcase-tts-action {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-items: start;
+}
+
 .idh-showcase-tts-head {
   display: grid;
   gap: 3px;
@@ -327,6 +345,11 @@
   width: 100%;
   accent-color: #1677ff;
   background: transparent;
+}
+
+.idh-showcase-generate-voice {
+  width: 100%;
+  margin-top: 0;
 }
 
 .idh-showcase-steps > div {
@@ -412,4 +435,5 @@
   .idh-showcase-steps {
     grid-template-columns: 1fr;
   }
+
 }
