@@ -4219,6 +4219,58 @@ a:hover {
   opacity: 0.6;
 }
 
+.custom-select-theme-dh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+}
+
+.custom-select-theme-dh .custom-select-trigger {
+  min-height: 40px;
+  height: 40px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.custom-select-theme-dh .custom-select-trigger span,
+.custom-select-theme-dh .custom-select-trigger svg {
+  color: inherit;
+}
+
+.custom-select-theme-dh .custom-select-menu {
+  margin-top: 6px;
+  background: #171717;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-dark);
+}
+
+.custom-select-theme-dh .custom-select-menu button {
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.custom-select-theme-dh .custom-select-menu button:hover,
+.custom-select-theme-dh .custom-select-menu button.is-selected {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .control-select:hover,
 .control-select:focus-within {
   background: rgba(255, 255, 255, 0.72);
@@ -5476,42 +5528,6 @@ a:hover {
   background: #f8fafc;
 }
 
-.dh-field .custom-select {
-  width: 100%;
-}
-
-.dh-field .custom-select-trigger {
-  min-height: 40px;
-  height: 40px;
-  padding: 0 10px;
-  color: #172033;
-  background: #f8fafc;
-  border: 1px solid #dbe5ef;
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-.dh-field .custom-select-trigger span {
-  color: inherit;
-}
-
-.dh-field .custom-select-menu {
-  margin-top: 6px;
-  background: #f8fafc;
-  border: 1px solid #dbe5ef;
-  border-radius: 8px;
-  box-shadow: 0 10px 24px rgba(30, 41, 59, 0.08);
-}
-
-.dh-field .custom-select-menu button {
-  color: #172033;
-}
-
-.dh-field .custom-select-menu button:hover,
-.dh-field .custom-select-menu button.is-selected {
-  background: #eef6ff;
-}
-
 .dh-field textarea {
   min-height: 150px;
   padding: 11px 12px;
@@ -6384,29 +6400,27 @@ a:hover {
 }
 
 .idh-mode-tabs button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 28px;
+  min-height: 36px;
   padding: 0 10px;
-  color: #667085;
-  background: #f3f6fa;
-  border: 1px solid #e1e7ef;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .idh-mode-tabs .is-active {
-  color: #174a7c;
-  background: #eef6ff;
-  border-color: #cfe4fb;
+  color: #ffffff;
+  background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .idh-mode-tabs button:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
+  opacity: 0.48;
 }
 
 .idh-composer-body {
@@ -6418,16 +6432,18 @@ a:hover {
 .idh-upload-card {
   position: relative;
   display: grid;
-  min-height: 108px;
-  place-items: center;
-  align-content: center;
   gap: 7px;
+  width: 100%;
+  min-height: 116px;
+  place-items: center;
+  padding: 16px;
   overflow: hidden;
   color: #174a7c;
-  background: #f8fbff;
-  border: 1px dashed #bfd4ea;
+  background: #eef6ff;
+  border: 1px dashed #9ecbff;
   border-radius: 8px;
   cursor: pointer;
+  text-align: center;
 }
 
 .idh-upload-card.has-image {
@@ -6442,12 +6458,15 @@ a:hover {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #eef5fc;
+  background: #eef4fb;
 }
 
 .idh-upload-card strong {
+  max-width: 100%;
+  overflow: hidden;
   color: #172033;
-  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .idh-upload-card span {
@@ -6458,96 +6477,48 @@ a:hover {
 
 .idh-form-card {
   display: grid;
-  gap: 7px;
-  padding: 8px;
+  gap: 13px;
+  padding: 12px;
   background: #f8fafc;
-  border: 1px solid #e6edf5;
+  border: 1px solid #edf1f5;
   border-radius: 8px;
 }
 
 .idh-select {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-  padding: 0 9px;
-  color: #174a7c;
-  background: #fff;
-  border: 1px solid #dbe5ef;
-  border-radius: 7px;
-}
-
-.idh-select select,
-.idh-advanced select {
   width: 100%;
-  min-width: 0;
-  color: #172033;
-  background: transparent;
-  border: 0;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 800;
 }
 
 .idh-form-card textarea {
-  min-height: 46px;
-  padding: 8px 10px;
+  min-height: 92px;
+  padding: 11px 12px;
   color: #172033;
-  background: #fff;
+  background: #f8fafc;
   border: 1px solid #dbe5ef;
-  border-radius: 7px;
+  border-radius: 8px;
   resize: vertical;
   font: inherit;
   font-size: 13px;
-  line-height: 1.5;
-}
-
-.idh-advanced {
-  display: grid;
-  gap: 8px;
-  color: #516073;
-  font-size: 12px;
-}
-
-.idh-advanced summary {
-  cursor: pointer;
-  font-weight: 900;
-}
-
-.idh-advanced label {
-  display: grid;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.idh-advanced span {
-  color: #172033;
-  font-weight: 800;
-}
-
-.idh-advanced input[type="range"] {
-  width: 100%;
-  accent-color: #1677ff;
+  line-height: 1.6;
 }
 
 .idh-preview-voice {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 30px;
-  color: #166534;
-  background: #eafbea;
-  border: 1px solid #bbf7d0;
-  border-radius: 7px;
+  gap: 8px;
+  min-height: 38px;
+  color: #174a7c;
+  background: #eef6ff;
+  border: 1px solid #cfe4fb;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .idh-preview-voice:disabled {
   cursor: not-allowed;
-  opacity: 0.68;
+  opacity: 0.65;
 }
 
 .idh-preview-voice svg,
@@ -6557,7 +6528,6 @@ a:hover {
 
 .idh-audio-preview {
   width: 100%;
-  height: 34px;
 }
 
 .idh-composer-footer {
@@ -6603,12 +6573,12 @@ a:hover {
 }
 
 .idh-notice {
-  padding: 9px 11px;
-  color: #0f4f94;
-  background: #eaf4ff;
-  border: 1px solid #cfe4fb;
-  border-radius: 7px;
-  font-size: 12px;
+  padding: 10px 12px;
+  color: #b42318;
+  background: #fff1ed;
+  border: 1px solid #ffd8c7;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 800;
 }
 
