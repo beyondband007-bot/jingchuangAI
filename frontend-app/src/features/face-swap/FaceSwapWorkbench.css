@@ -345,6 +345,40 @@
   text-align: left;
 }
 
+.face-swap-workbench .custom-select {
+  width: 100%;
+}
+
+.face-swap-workbench .custom-select-trigger {
+  min-height: 40px;
+  padding: 0 12px;
+  color: #f7f8ff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(150, 154, 186, 0.24);
+  border-radius: 10px;
+}
+
+.face-swap-workbench .custom-select-trigger:hover,
+.face-swap-workbench .custom-select.is-open .custom-select-trigger {
+  border-color: rgba(143, 99, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(143, 99, 255, 0.12);
+}
+
+.face-swap-workbench .custom-select-menu {
+  background: #1a1d27;
+  border-color: rgba(143, 99, 255, 0.34);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
+.face-swap-workbench .custom-select-menu button {
+  color: #eef2ff;
+}
+
+.face-swap-workbench .custom-select-menu button:hover,
+.face-swap-workbench .custom-select-menu button.is-selected {
+  background: rgba(143, 99, 255, 0.18);
+}
+
 .face-swap-workbench__setting span,
 .face-swap-workbench__toggle span {
   display: block;

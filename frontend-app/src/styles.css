@@ -4124,6 +4124,7 @@ a:hover {
 }
 
 .control-select {
+  position: relative;
   gap: 6px;
   min-height: 38px;
   padding: 0 10px;
@@ -4134,6 +4135,88 @@ a:hover {
   font-size: 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
   transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.custom-select {
+  position: relative;
+}
+
+.custom-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: inherit;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.custom-select-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-chevron {
+  margin-left: auto;
+  transition: transform 160ms ease;
+}
+
+.custom-select.is-open .custom-select-chevron {
+  transform: rotate(180deg);
+}
+
+.custom-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: none;
+  min-width: 100%;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(146, 197, 253, 0.62);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(22, 119, 255, 0.14);
+}
+
+.custom-select.is-open .custom-select-menu {
+  display: grid;
+  gap: 4px;
+}
+
+.custom-select-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  color: #24496f;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.custom-select-menu button:hover,
+.custom-select-menu button.is-selected {
+  background: rgba(123, 188, 255, 0.14);
+}
+
+.custom-select.is-disabled .custom-select-trigger {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .control-select:hover,

@@ -2149,7 +2149,12 @@ function getDigitalHumanPublicAvatars(list = []) {
   const merged = new Map();
   digitalHumanPublicPlaceholders.forEach((item) => merged.set(item.id, item));
   list.forEach((item) => {
-    if (!merged.has(item.id)) merged.set(item.id, item);
+    const fallback = merged.get(item.id) || {};
+    merged.set(item.id, {
+      ...fallback,
+      ...item,
+      cover: item.cover || item.assetPath || item.imagePath || item.posterPath || fallback.cover
+    });
   });
   return [...merged.values()];
 }
