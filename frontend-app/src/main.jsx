@@ -1104,7 +1104,7 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
   );
 }
 
-function ImageGenerationView() {
+function ImageGenerationView({ authUser, onOpenAuth }) {
   const cachedSessionRef = useRef(null);
   if (!cachedSessionRef.current) {
     cachedSessionRef.current = readImageGenerationSession();
@@ -1215,8 +1215,20 @@ function ImageGenerationView() {
     return "idle_examples";
   }, [isSubmitting, selectedTask, submitError]);
   const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
+  const isGuest = Boolean(authUser?.isGuest);
+
+  function requestLoginForGeneration() {
+    setSubmitError("请先登录后再生成图片，游客账号没有积分额度。");
+    setIsSubmitting(false);
+    onOpenAuth?.("login");
+  }
 
   async function createTask(payload) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
+
     setActivePrompt(payload.prompt);
     setSubmitError("");
     setIsSubmitting(true);
@@ -1268,6 +1280,11 @@ function ImageGenerationView() {
   }
 
   async function regenerateTask(id) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
+
     const source = cards.find((card) => card.id === id);
     if (source) {
       setActivePrompt(source.prompt);
@@ -4567,7 +4584,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
       )}
       <main className="feature-main">
         <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
-          <ImageGenerationView />
+          <ImageGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="video" activeNav={activeNav} visitedIds={visitedIds}>
           <VideoGenerationView />
