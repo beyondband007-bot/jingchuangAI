@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { createHttpError, sendError } from "../../shared/http.js";
 import { getConfig, getRecent, transcribe } from "./transcribe.controller.js";
 
 export const transcribeRouter = Router();
@@ -23,7 +24,16 @@ function uploadAudioSingle(req, res, next) {
   });
 }
 
+function requireCredits(req, res, next) {
+  try {
+    if (req.user?.isGuest) throw createHttpError("积分不够，请充值", 402);
+    next();
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 transcribeRouter.get("/config", getConfig);
 transcribeRouter.get("/recent", getRecent);
 transcribeRouter.get("/tasks", getRecent);
-transcribeRouter.post("/", uploadAudioSingle, transcribe);
+transcribeRouter.post("/", requireCredits, uploadAudioSingle, transcribe);

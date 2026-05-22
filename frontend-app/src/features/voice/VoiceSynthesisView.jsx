@@ -74,7 +74,7 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceSynthesisView() {
+export function VoiceSynthesisView({ authUser, onOpenAuth }) {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
@@ -94,6 +94,12 @@ export function VoiceSynthesisView() {
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
   const recentAudioRefs = useRef({});
+  const isGuest = Boolean(authUser?.isGuest);
+
+  function requestLoginForGeneration() {
+    setNotice("请先登录");
+    onOpenAuth?.("login");
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -162,6 +168,11 @@ export function VoiceSynthesisView() {
   }
 
   async function ensureVoiceClone() {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return null;
+    }
+
     if (!cloneAudio?.fileId) {
       setNotice("请先上传目标音色。");
       return null;
@@ -190,6 +201,11 @@ export function VoiceSynthesisView() {
   }
 
   async function generateSpeech() {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
+
     if (!cloneAudio?.fileId) {
       setNotice("请先上传目标音色。");
       return;

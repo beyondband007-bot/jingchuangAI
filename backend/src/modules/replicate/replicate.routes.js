@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { createHttpError, sendError } from "../../shared/http.js";
 import {
   analyzeImage,
   analyzeVideo,
@@ -42,9 +43,18 @@ function uploadVideoSingle(req, res, next) {
   });
 }
 
+function requireCredits(req, res, next) {
+  try {
+    if (req.user?.isGuest) throw createHttpError("积分不够，请充值", 402);
+    next();
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 replicateRouter.get("/config", getConfig);
 replicateRouter.get("/recent", getRecent);
 replicateRouter.get("/tasks", getRecent);
 replicateRouter.get("/tasks/:id", getTask);
-replicateRouter.post("/analyze-image", uploadImageSingle, analyzeImage);
-replicateRouter.post("/analyze-video", uploadVideoSingle, analyzeVideo);
+replicateRouter.post("/analyze-image", requireCredits, uploadImageSingle, analyzeImage);
+replicateRouter.post("/analyze-video", requireCredits, uploadVideoSingle, analyzeVideo);

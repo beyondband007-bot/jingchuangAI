@@ -1,4 +1,4 @@
-import { sendError } from "../../shared/http.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
 import { getConversationMessages, getModels, listConversations, sendMessage, streamMessage } from "./chat.service.js";
 
 export async function getChatModels(_req, res) {
@@ -27,6 +27,7 @@ export async function listChatMessages(req, res) {
 
 export async function createChatMessage(req, res) {
   try {
+    requireLoggedIn(req.user);
     const result = await sendMessage(req.body, req.user.id);
     res.status(201).json(result);
   } catch (error) {
@@ -40,6 +41,11 @@ function writeStreamEvent(res, event, data) {
 }
 
 export async function streamChatMessage(req, res) {
+  if (req.user?.isGuest) {
+    res.status(401).json({ error: "请先登录" });
+    return;
+  }
+
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");

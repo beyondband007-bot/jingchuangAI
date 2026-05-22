@@ -26,6 +26,17 @@ function createJobsInput(model, { prompt, ratio, duration }) {
     };
   }
 
+  if (model.provider_model.includes("wan/2-7")) {
+    return {
+      prompt,
+      resolution: "720p",
+      ratio,
+      duration: Number(duration),
+      prompt_extend: true,
+      watermark: false
+    };
+  }
+
   return {
     prompt,
     duration: Number(duration),

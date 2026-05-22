@@ -1,4 +1,4 @@
-import { createHttpError, sendError } from "../../shared/http.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
 import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite, uploadReferenceImage } from "./image.service.js";
 
 export async function getImageModels(_req, res) {
@@ -19,9 +19,7 @@ export async function listImageTasks(req, res) {
 
 export async function createImageTask(req, res) {
   try {
-    if (req.user?.isGuest) {
-      throw createHttpError("请先登录后再生成图片，游客账号没有积分额度。", 401);
-    }
+    requireLoggedIn(req.user);
     const task = await createTask(req.body, req.user.id);
     res.status(201).json(task);
   } catch (error) {

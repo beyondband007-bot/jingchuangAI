@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
@@ -101,7 +101,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
       )}
       <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
       <strong>{hasFile ? fileState.fileName : "+ 上传音频文件"}</strong>
-      <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6秒到6分钟"}</small>
+      <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6 秒到 6 分钟"}</small>
     </button>
   );
 }
@@ -138,13 +138,14 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   );
 }
 
-export function TranscribeView() {
+export function TranscribeView({ authUser }) {
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [result, setResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
+  const isGuest = Boolean(authUser?.isGuest);
 
   useEffect(() => {
     try {
@@ -191,6 +192,11 @@ export function TranscribeView() {
   }
 
   async function submitTranscribe() {
+    if (isGuest) {
+      setNotice("积分不够，请充值");
+      return;
+    }
+
     if (!audioFile?.file) {
       setNotice("请先上传音频文件");
       return;
@@ -268,7 +274,7 @@ export function TranscribeView() {
               <FileAudio size={42} />
             </span>
             <h1>语音转文字</h1>
-            <p>上传音频文件，自动提取文字内容，适合短音频转录和歌词草稿整理</p>
+            <p>上传音频文件，自动提取文字内容，适合短音频转录和歌词草稿整理。</p>
           </div>
         )}
 
@@ -327,7 +333,7 @@ export function TranscribeView() {
               <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
             </div>
             <div className="voice-composer-footer">
-              <span>{notice || "MVP 使用 MiniMax 音频预处理能力，建议上传 6 秒到 6 分钟的清晰音频。"}</span>
+              <span>{notice || "建议上传 6 秒到 6 分钟的清晰音频。"}</span>
               <div className="voice-actions">
                 {result && (
                   <button className="voice-download" type="button" onClick={() => downloadText(result)}>

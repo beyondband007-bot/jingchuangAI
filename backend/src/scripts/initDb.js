@@ -814,8 +814,8 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
         ('seedance_2_0_720p', 'jobs', 'seedance/2.0-text-to-video', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
-        ('wan_2_7_720p', 'jobs', 'wan/2.7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
-          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, FALSE, 90)
+        ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
+          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
       ON DUPLICATE KEY UPDATE
         provider_type = VALUES(provider_type),
         provider_model = VALUES(provider_model),

@@ -1217,7 +1217,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   const isGuest = Boolean(authUser?.isGuest);
 
   function requestLoginForGeneration() {
-    setSubmitError("请先登录后再生成图片，游客账号没有积分额度。");
+    setSubmitError("请先登录");
     setIsSubmitting(false);
     onOpenAuth?.("login");
   }
@@ -1630,13 +1630,20 @@ function VideoComposerBar({ options, onSubmit }) {
   );
 }
 
-function VideoGenerationView() {
+function VideoGenerationView({ authUser, onOpenAuth }) {
   const [filter, setFilter] = useState("all");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyVideoOptions);
   const [credits, setCredits] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const isGuest = Boolean(authUser?.isGuest);
+
+  function requestLoginForGeneration() {
+    setSubmitError("请先登录");
+    setIsSubmitting(false);
+    onOpenAuth?.("login");
+  }
 
   // 模块由外层保活挂载，此处始终订阅任务列表
   useEffect(() => {
@@ -1656,6 +1663,10 @@ function VideoGenerationView() {
   }, [filter]);
 
   async function createTask(payload) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
     setSubmitError("");
     setIsSubmitting(true);
     try {
@@ -1676,6 +1687,10 @@ function VideoGenerationView() {
   }
 
   async function regenerateTask(id) {
+    if (isGuest) {
+      requestLoginForGeneration();
+      return;
+    }
     setSubmitError("");
     setIsSubmitting(true);
     try {
@@ -1956,7 +1971,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   );
 }
 
-function ChatGenerationView() {
+function ChatGenerationView({ authUser, onOpenAuth }) {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [options, setOptions] = useState(emptyChatOptions);
@@ -1967,6 +1982,7 @@ function ChatGenerationView() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const isGuest = Boolean(authUser?.isGuest);
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
   useEffect(() => {
@@ -1993,6 +2009,12 @@ function ChatGenerationView() {
   }, [options, selectedModel, selectedReasoningEffort]);
 
   async function sendChatMessage({ content, model, reasoningEffort }) {
+    if (isGuest) {
+      setSubmitError("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
+
     const localId = Date.now();
     const userMessage = {
       id: `local-${localId}`,
@@ -4057,10 +4079,10 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
           <ImageGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="video" activeNav={activeNav} visitedIds={visitedIds}>
-          <VideoGenerationView />
+          <VideoGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="chat" activeNav={activeNav} visitedIds={visitedIds}>
-          <ChatGenerationView />
+          <ChatGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="digital-human" activeNav={activeNav} visitedIds={visitedIds}>
           <DigitalHumanGenerationView onReturnHome={() => handleNavChange("home")} />
@@ -4075,22 +4097,22 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
           <WatermarkRemovalView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="voice" activeNav={activeNav} visitedIds={visitedIds}>
-          <VoiceSynthesisView />
+          <VoiceSynthesisView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="voice-convert" activeNav={activeNav} visitedIds={visitedIds}>
           <VoiceConvertView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="transcribe" activeNav={activeNav} visitedIds={visitedIds}>
-          <TranscribeView />
+          <TranscribeView authUser={authUser} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="article" activeNav={activeNav} visitedIds={visitedIds}>
-          <ArticleGenerationView />
+          <ArticleGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="music" activeNav={activeNav} visitedIds={visitedIds}>
           <MusicGenerationView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="replicate" activeNav={activeNav} visitedIds={visitedIds}>
-          <ReplicateView />
+          <ReplicateView authUser={authUser} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="enhance" activeNav={activeNav} visitedIds={visitedIds}>
           <EnhanceView />
@@ -4099,7 +4121,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
           <RemoveBgView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="video-voice" activeNav={activeNav} visitedIds={visitedIds}>
-          <VideoDubbingView />
+          <VideoDubbingView authUser={authUser} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="face-swap" activeNav={activeNav} visitedIds={visitedIds}>
           <MotionTransferView navId="face-swap" api={faceSwapApi} copy={faceSwapCopy} splitResults />

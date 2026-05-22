@@ -1,4 +1,4 @@
-import { sendError } from "../../shared/http.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
 import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite } from "./article.service.js";
 
 export async function getArticleModels(_req, res) {
@@ -19,6 +19,7 @@ export async function listArticleTasks(req, res) {
 
 export async function createArticleTask(req, res) {
   try {
+    requireLoggedIn(req.user);
     res.status(201).json(await createTask(req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);

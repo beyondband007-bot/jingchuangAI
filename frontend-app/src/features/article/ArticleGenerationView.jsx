@@ -553,7 +553,7 @@ function ArticlePreview({ task, onClose }) {
   );
 }
 
-export function ArticleGenerationView() {
+export function ArticleGenerationView({ authUser, onOpenAuth }) {
   const [form, setForm] = useState(defaultForm);
   const [options, setOptions] = useState(emptyOptions);
   const [model, setModel] = useState("");
@@ -565,6 +565,7 @@ export function ArticleGenerationView() {
   const [viewMode, setViewMode] = useState("home");
   const [previewTask, setPreviewTask] = useState(null);
   const [showAudience, setShowAudience] = useState(false);
+  const isGuest = Boolean(authUser?.isGuest);
 
   useEffect(() => {
     let mounted = true;
@@ -641,6 +642,12 @@ export function ArticleGenerationView() {
   }
 
   async function submitGeneration() {
+    if (isGuest) {
+      setSubmitError("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
+
     if (!form.topic.trim()) {
       setSubmitError("请先填写主题。");
       return;
@@ -674,6 +681,12 @@ export function ArticleGenerationView() {
   }
 
   async function regenerateTask(task) {
+    if (isGuest) {
+      setSubmitError("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
+
     setSubmitError("");
     setIsSubmitting(true);
     setPreviewTask(null);

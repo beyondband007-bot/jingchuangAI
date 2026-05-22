@@ -1,4 +1,4 @@
-import { sendError } from "../../shared/http.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
 import * as service from "./voice.service.js";
 
 export function getVoiceConfig(_req, res) {
@@ -31,7 +31,8 @@ export async function uploadCloneAudio(req, res) {
 
 export async function createVoiceClone(req, res) {
   try {
-    res.status(201).json(await service.createClone(req.body || {}));
+    requireLoggedIn(req.user);
+    res.status(201).json(await service.createClone(req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);
   }
@@ -39,6 +40,7 @@ export async function createVoiceClone(req, res) {
 
 export async function synthesizeVoice(req, res) {
   try {
+    requireLoggedIn(req.user);
     res.status(201).json(await service.synthesize(req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);

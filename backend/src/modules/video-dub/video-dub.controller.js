@@ -1,5 +1,9 @@
-import { sendError } from "../../shared/http.js";
+import { createHttpError, sendError } from "../../shared/http.js";
 import * as service from "./video-dub.service.js";
+
+function requireCredits(user) {
+  if (user?.isGuest) throw createHttpError("积分不够，请充值", 402);
+}
 
 export async function getConfig(req, res) {
   try {
@@ -11,6 +15,7 @@ export async function getConfig(req, res) {
 
 export async function uploadVideo(req, res) {
   try {
+    requireCredits(req.user);
     const result = await service.uploadVideo({ file: req.file });
     res.status(201).json(result);
   } catch (error) {
@@ -20,6 +25,7 @@ export async function uploadVideo(req, res) {
 
 export async function createTask(req, res) {
   try {
+    requireCredits(req.user);
     const result = await service.createTask({
       sourceAssetId: req.body?.sourceAssetId,
       voiceId: req.body?.voiceId,

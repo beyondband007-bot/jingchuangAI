@@ -43,13 +43,13 @@ async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 }
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (task.status === "completed" && hasReplicateContent(task)) return task;
     if (task.status === "completed" && !hasReplicateContent(task)) {
-      throw new Error("Analysis finished without a prompt. Please try again.");
+      throw new Error("分析完成但没有生成提示词，请重试");
     }
     if (task.status === "failed") return task;
     await sleep(intervalMs);
     task = await replicateApi.getTask(taskId);
   }
-  throw new Error("Analysis is still processing. Please check recent analyses later.");
+  throw new Error("分析仍在处理中，请稍后查看最近分析");
 }
 
 function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
@@ -175,7 +175,7 @@ function ReplicateResult({ result, onCopy }) {
   );
 }
 
-export function ReplicateView() {
+export function ReplicateView({ authUser }) {
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -183,6 +183,7 @@ export function ReplicateView() {
   const [currentResult, setCurrentResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
+  const isGuest = Boolean(authUser?.isGuest);
 
   useEffect(() => {
     window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(recentResults));
@@ -198,21 +199,35 @@ export function ReplicateView() {
     };
   }, []);
 
-  async function handleFile(file) {
+  function handleFile(file) {
     setNotice("");
-    setSelectedFile({ name: file.name, size: file.size, type: file.type });
+    setSelectedFile({ file, name: file.name, size: file.size, type: file.type });
+    setCurrentResult(null);
+    setNotice("素材已选择，可以开始反推");
+  }
+
+  async function startReplicate() {
+    if (isGuest) {
+      setNotice("积分不够，请充值");
+      return;
+    }
+    if (!selectedFile?.file) {
+      setNotice("请先上传素材");
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
       const data = mode === "image"
-        ? await replicateApi.analyzeImage(file, file.name)
-        : await replicateApi.analyzeVideo(file, file.name);
-      setNotice("Analysis task submitted. Processing...");
+        ? await replicateApi.analyzeImage(selectedFile.file, selectedFile.name)
+        : await replicateApi.analyzeVideo(selectedFile.file, selectedFile.name);
+      setNotice("分析任务已提交，正在处理...");
       const completed = data.status === "completed" ? data : await waitForReplicateTask(data.id);
       if (completed.status === "failed") {
-        throw new Error(completed.error || "Analysis failed. Please try again later.");
+        throw new Error(completed.error || "分析失败，请稍后重试");
       }
       if (!hasReplicateContent(completed)) {
-        throw new Error("Analysis finished without a prompt. Please try again.");
+        throw new Error("分析完成但没有生成提示词，请重试");
       }
 
       const result = {
@@ -221,7 +236,7 @@ export function ReplicateView() {
         description: completed.description || "",
         tags: completed.tags || [],
         source: completed.source || mode,
-        fileName: completed.fileName || file.name,
+        fileName: completed.fileName || selectedFile.name,
         createdAt: completed.createdAt || formatBeijingDateTime()
       };
 
@@ -275,7 +290,7 @@ export function ReplicateView() {
                 <span className="voice-hero-icon replicate-hero-icon">
                   <Sparkles size={42} />
                 </span>
-                <h1>AI 复刻</h1>
+                <h1>AI 反推提示词</h1>
                 <p>上传参考图片或视频，自动理解画面主体、风格、镜头语言与细节特征，反推出可再次生成的高质量提示词。</p>
               </div>
             )}
@@ -298,7 +313,7 @@ export function ReplicateView() {
             )}
 
             <div className="replicate-floating-composer">
-              <div className="replicate-mode-toggle" aria-label="选择复刻类型">
+              <div className="replicate-mode-toggle" aria-label="选择反推类型">
                 <button
                   type="button"
                   className={mode === "image" ? "active" : ""}
@@ -310,7 +325,7 @@ export function ReplicateView() {
                   disabled={isAnalyzing}
                 >
                   <FileImage size={16} />
-                  图片复刻
+                  图片反推
                 </button>
                 <button
                   type="button"
@@ -323,7 +338,7 @@ export function ReplicateView() {
                   disabled={isAnalyzing}
                 >
                   <FileVideo size={16} />
-                  视频复刻
+                  视频反推
                 </button>
               </div>
 
@@ -333,6 +348,15 @@ export function ReplicateView() {
 
               <div className="replicate-composer-footer">
                 <span>{notice || "图片用于反推画面风格和主体细节；视频会额外分析镜头运动、节奏与动态变化。"}</span>
+                <button
+                  className="voice-generate-button"
+                  type="button"
+                  onClick={startReplicate}
+                  disabled={isAnalyzing || !selectedFile}
+                >
+                  {isAnalyzing ? <Loader2 size={16} /> : <Sparkles size={16} />}
+                  开始反推
+                </button>
               </div>
             </div>
           </>
@@ -342,7 +366,7 @@ export function ReplicateView() {
               <div className="voice-recent-empty">
                 <Upload size={28} />
                 <strong>暂无分析记录</strong>
-                <p>回到主页上传图片或视频开始复刻。</p>
+                <p>回到主页上传图片或视频开始反推。</p>
               </div>
             ) : (
               recentResults.map((item) => (

@@ -1,11 +1,14 @@
 import { randomUUID } from "crypto";
 import { config } from "../../config/index.js";
+import { getPool } from "../../db/pool.js";
 import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minimax/voiceClone.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
+import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { createVoiceSynthesisTaskRow, listVoiceSynthesisTaskRows } from "./voice.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 
+const voiceGenerationPoints = 100;
 const maxAudioBytes = 20 * 1024 * 1024;
 const allowedMimeTypes = new Set(["audio/mpeg", "audio/mp3", "audio/mp4", "audio/mp4a-latm", "audio/x-m4a", "audio/wav", "audio/x-wav"]);
 const allowedExtensions = new Set([".mp3", ".m4a", ".wav"]);
@@ -166,7 +169,45 @@ export async function uploadAudio({ file, purpose, durationMs }) {
   };
 }
 
-export async function createClone(payload) {
+async function chargeVoiceGeneration({ userId, memo }) {
+  const connection = await getPool().getConnection();
+  try {
+    await connection.beginTransaction();
+    await debitCredits(connection, {
+      userId,
+      taskId: null,
+      amount: voiceGenerationPoints,
+      memo
+    });
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+async function refundVoiceGeneration({ userId, memo }) {
+  const connection = await getPool().getConnection();
+  try {
+    await connection.beginTransaction();
+    await refundCredits(connection, {
+      userId,
+      taskId: null,
+      amount: voiceGenerationPoints,
+      memo
+    });
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function createClone(payload, userId) {
   const cloneAudioFileId = String(payload.cloneAudioFileId || payload.file_id || "").trim();
   const promptAudioFileId = String(payload.promptAudioFileId || "").trim();
   const promptText = String(payload.promptText || "").trim();
@@ -182,17 +223,21 @@ export async function createClone(payload) {
     throw createHttpError("promptAudioFileId and promptText must be provided together", 400);
   }
 
-  const result = await createCloneFromUpload({
-    cloneAudioFileId,
-    voiceId,
-    promptAudioFileId,
-    promptText,
-    previewText,
-    model,
-    name
-  });
-
-  return result;
+  await chargeVoiceGeneration({ userId, memo: "voice clone debit" });
+  try {
+    return await createCloneFromUpload({
+      cloneAudioFileId,
+      voiceId,
+      promptAudioFileId,
+      promptText,
+      previewText,
+      model,
+      name
+    });
+  } catch (error) {
+    await refundVoiceGeneration({ userId, memo: "voice clone refund" });
+    throw error;
+  }
 }
 
 export async function synthesize(payload, userId) {
@@ -202,46 +247,55 @@ export async function synthesize(payload, userId) {
   if (!voiceId) throw createHttpError("voiceId is required", 400);
   if (text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
 
-  const speech = await synthesizeMinimaxSpeech({
-    text,
-    voiceId,
-    speed: normalizeNumber(payload.speed, 1),
-    volume: normalizeNumber(payload.volume, 1),
-    pitch: normalizeNumber(payload.pitch, 0),
-    emotion: normalizeEmotion(payload.emotion)
-  });
-
   const taskId = `voice-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const savedAudio = await saveMinimaxSpeechAudio({
-    taskId,
-    audioBuffer: speech.audioBuffer,
-    featureDir: "voice"
-  });
+  await chargeVoiceGeneration({ userId, memo: "voice synthesis debit" });
 
-  const result = {
-    id: taskId,
-    title: text.slice(0, 48) || "语音合成结果",
-    voiceId,
-    voiceName: payload.voiceName || "",
-    audioBase64: speech.audioBase64,
-    audioDataUrl: `data:${speech.mimeType};base64,${speech.audioBase64}`,
-    audioUrl: savedAudio.publicPath,
-    durationMs: speech.durationMs,
-    mimeType: speech.mimeType,
-    createdAt: formatBeijingDateTime()
-  };
+  try {
+    const speech = await synthesizeMinimaxSpeech({
+      text,
+      voiceId,
+      speed: normalizeNumber(payload.speed, 1),
+      volume: normalizeNumber(payload.volume, 1),
+      pitch: normalizeNumber(payload.pitch, 0),
+      emotion: normalizeEmotion(payload.emotion)
+    });
 
-  await createVoiceSynthesisTaskRow({
-    id: taskId,
-    userId,
-    title: result.title,
-    voiceId,
-    voiceName: result.voiceName,
-    text,
-    audioUrl: savedAudio.publicPath,
-    durationMs: speech.durationMs,
-    mimeType: speech.mimeType
-  });
+    const savedAudio = await saveMinimaxSpeechAudio({
+      taskId,
+      audioBuffer: speech.audioBuffer,
+      featureDir: "voice"
+    });
 
-  return result;
+    const result = {
+      id: taskId,
+      title: text.slice(0, 48) || "语音合成结果",
+      voiceId,
+      voiceName: payload.voiceName || "",
+      audioBase64: speech.audioBase64,
+      audioDataUrl: `data:${speech.mimeType};base64,${speech.audioBase64}`,
+      audioUrl: savedAudio.publicPath,
+      durationMs: speech.durationMs,
+      mimeType: speech.mimeType,
+      points: voiceGenerationPoints,
+      price: `${voiceGenerationPoints} 积分`,
+      createdAt: formatBeijingDateTime()
+    };
+
+    await createVoiceSynthesisTaskRow({
+      id: taskId,
+      userId,
+      title: result.title,
+      voiceId,
+      voiceName: result.voiceName,
+      text,
+      audioUrl: savedAudio.publicPath,
+      durationMs: speech.durationMs,
+      mimeType: speech.mimeType
+    });
+
+    return result;
+  } catch (error) {
+    await refundVoiceGeneration({ userId, memo: "voice synthesis refund" });
+    throw error;
+  }
 }

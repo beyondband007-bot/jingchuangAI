@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { createHttpError, sendError } from "../../shared/http.js";
 import {
   getConfig,
   uploadVideo,
@@ -34,9 +35,18 @@ function uploadVideoSingle(req, res, next) {
   });
 }
 
+function requireCredits(req, res, next) {
+  try {
+    if (req.user?.isGuest) throw createHttpError("积分不够，请充值", 402);
+    next();
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 videoDubRouter.get("/config", getConfig);
-videoDubRouter.post("/upload", uploadVideoSingle, uploadVideo);
-videoDubRouter.post("/tasks", createTask);
+videoDubRouter.post("/upload", requireCredits, uploadVideoSingle, uploadVideo);
+videoDubRouter.post("/tasks", requireCredits, createTask);
 videoDubRouter.get("/tasks", getTasks);
 videoDubRouter.get("/tasks/:taskId", getTask);
 videoDubRouter.delete("/tasks/:taskId", deleteTask);

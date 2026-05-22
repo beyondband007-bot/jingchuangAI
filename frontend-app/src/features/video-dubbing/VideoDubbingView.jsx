@@ -254,7 +254,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
   );
 }
 
-export function VideoDubbingView() {
+export function VideoDubbingView({ authUser }) {
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -266,6 +266,7 @@ export function VideoDubbingView() {
   const [previewTask, setPreviewTask] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => readFavoriteIds());
   const [currentStage, setCurrentStage] = useState("");
+  const isGuest = Boolean(authUser?.isGuest);
 
   useEffect(() => {
     let mounted = true;
@@ -324,6 +325,11 @@ export function VideoDubbingView() {
   }
 
   async function submitDub() {
+    if (isGuest) {
+      setNotice("积分不够，请充值");
+      return;
+    }
+
     if (!videoFile?.file) {
       setNotice("请先上传视频文件");
       return;

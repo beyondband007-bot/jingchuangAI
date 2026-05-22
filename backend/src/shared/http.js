@@ -7,3 +7,9 @@ export function createHttpError(message, status = 500) {
   error.status = status;
   return error;
 }
+
+export function requireLoggedIn(user) {
+  if (user?.isGuest) {
+    throw createHttpError("请先登录", 401);
+  }
+}

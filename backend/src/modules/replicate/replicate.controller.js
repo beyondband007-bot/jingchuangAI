@@ -1,5 +1,9 @@
-import { sendError } from "../../shared/http.js";
+import { createHttpError, sendError } from "../../shared/http.js";
 import * as service from "./replicate.service.js";
+
+function requireCredits(user) {
+  if (user?.isGuest) throw createHttpError("积分不够，请充值", 402);
+}
 
 export async function getConfig(req, res) {
   try {
@@ -32,6 +36,7 @@ export async function getTask(req, res) {
 
 export async function analyzeImage(req, res) {
   try {
+    requireCredits(req.user);
     const result = await service.analyzeImage({ file: req.file, userId: req.user.id });
     res.status(202).json(result);
   } catch (error) {
@@ -41,6 +46,7 @@ export async function analyzeImage(req, res) {
 
 export async function analyzeVideo(req, res) {
   try {
+    requireCredits(req.user);
     const result = await service.analyzeVideo({ file: req.file, userId: req.user.id });
     res.status(202).json(result);
   } catch (error) {

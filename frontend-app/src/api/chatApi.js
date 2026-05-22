@@ -1,5 +1,5 @@
 import { API_BASE } from "../apiBase.js";
-import { requestJson as request } from "./request.js";
+import { cleanApiErrorMessage, requestJson as request } from "./request.js";
 
 function parseStreamEvent(block) {
   const lines = block.split(/\r?\n/);
@@ -58,7 +58,12 @@ export const chatApi = {
       } catch {
         body = { error: text };
       }
-      throw new Error(body.error || `Request failed with ${response.status}`);
+      const error = new Error(cleanApiErrorMessage({
+        message: body.error || body.message || `Request failed with ${response.status}`,
+        status: response.status
+      }));
+      error.status = response.status;
+      throw error;
     }
 
     const reader = response.body.getReader();
@@ -79,7 +84,7 @@ export const chatApi = {
         } else if (event === "done") {
           finalResult = data;
         } else if (event === "error") {
-          throw new Error(data?.error || "流式对话失败");
+          throw new Error(cleanApiErrorMessage(data?.error, "发送失败"));
         }
       }
 
@@ -89,11 +94,11 @@ export const chatApi = {
     if (buffer.trim()) {
       const { event, data } = parseStreamEvent(buffer);
       if (event === "done") finalResult = data;
-      if (event === "error") throw new Error(data?.error || "流式对话失败");
+      if (event === "error") throw new Error(cleanApiErrorMessage(data?.error, "发送失败"));
     }
 
     if (!finalResult) {
-      throw new Error("流式对话未返回完成状态");
+      throw new Error("发送失败");
     }
     return finalResult;
   }
