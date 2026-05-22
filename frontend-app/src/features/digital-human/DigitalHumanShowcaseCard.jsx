@@ -1,5 +1,5 @@
 import React from "react";
-import { Mic2, Sparkles, UserRound, Video } from "lucide-react";
+import { UserRound } from "lucide-react";
 import "./DigitalHumanShowcaseCard.css";
 
 function formatModeLabel(mode) {
@@ -22,10 +22,6 @@ export function DigitalHumanShowcaseCard({
   return (
     <section className="dh-showcase-card" aria-label="数字人展示卡片">
       <div className="dh-showcase-hero">
-        <div className="dh-showcase-kicker">
-          <Sparkles size={14} />
-          <span>Digital Human Studio</span>
-        </div>
         <div className="dh-showcase-media">
           {selectedAvatar?.cover ? (
             selectedAvatarIsVideo ? (
@@ -82,17 +78,6 @@ export function DigitalHumanShowcaseCard({
             <strong>生成视频</strong>
             <small>{isSubmitting ? "任务提交中" : "等待发起生成"}</small>
           </div>
-        </div>
-      </div>
-
-      <div className="dh-showcase-footer">
-        <div className="dh-showcase-footer-item">
-          <Mic2 size={15} />
-          <span>当前模式：{formatModeLabel(driveMode)}</span>
-        </div>
-        <div className="dh-showcase-footer-item">
-          <Video size={15} />
-          <span>预计成片：{estimateMinutes} 分钟以内</span>
         </div>
       </div>
     </section>

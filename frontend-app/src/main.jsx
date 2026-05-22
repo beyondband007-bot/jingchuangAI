@@ -2497,20 +2497,6 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
         selectedModelLabel={selectedModel?.label || selectedModel?.value}
         isSubmitting={isSubmitting}
       />
-      <div className="dh-selected-template">
-        <div className="dh-selected-template-media">
-          {selectedAvatar?.cover ? (
-            selectedAvatarIsVideo ? <video src={selectedAvatar.cover} muted loop playsInline preload="metadata" /> : <img src={selectedAvatar.cover} alt={selectedAvatar.name} />
-          ) : (
-            <UserRound size={22} />
-          )}
-        </div>
-        <div>
-          <span>当前数字人模板</span>
-          <strong>{selectedAvatar?.name || "请先选择左侧模板"}</strong>
-          <small>{selectedAvatar?.description || "模板会作为 KIE 口型视频的 reference_video"}</small>
-        </div>
-      </div>
       <div className="dh-mode-tabs">
         <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>文本驱动</button>
         <button type="button" disabled title="音频驱动将在第二阶段接入">音频驱动</button>
@@ -2556,9 +2542,12 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       )}
       <label className="dh-field">
         <span>成片模型</span>
-        <select value={model} onChange={(event) => setModel(event.target.value)}>
-          {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-        </select>
+        <CustomSelect
+          ariaLabel="成片模型"
+          value={model}
+          onChange={setModel}
+          options={options.models}
+        />
         {selectedModel && <small>调用模型：{selectedModel.providerModel || selectedModel.value} · {selectedModel.resolution || "720p"}</small>}
       </label>
       <label className="dh-field">

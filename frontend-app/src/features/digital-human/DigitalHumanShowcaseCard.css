@@ -2,13 +2,6 @@
   display: grid;
   gap: 16px;
   margin-bottom: 18px;
-  padding: 18px;
-  border: 1px solid rgba(125, 157, 255, 0.22);
-  border-radius: 20px;
-  background:
-    radial-gradient(circle at top left, rgba(104, 83, 255, 0.24), transparent 34%),
-    linear-gradient(180deg, rgba(16, 22, 38, 0.96), rgba(9, 13, 23, 0.98));
-  box-shadow: 0 24px 60px rgba(1, 6, 20, 0.38);
 }
 
 .dh-showcase-hero {
@@ -32,7 +25,7 @@
 
 .dh-showcase-media {
   overflow: hidden;
-  min-height: 188px;
+  aspect-ratio: 1 / 1;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(52, 63, 93, 0.9), rgba(17, 22, 35, 0.98));
 }
@@ -41,14 +34,15 @@
 .dh-showcase-media video {
   display: block;
   width: 100%;
-  height: 188px;
+  height: 100%;
   object-fit: cover;
+  object-position: center 18%;
 }
 
 .dh-showcase-placeholder {
   display: grid;
   place-items: center;
-  height: 188px;
+  height: 100%;
   color: rgba(235, 240, 255, 0.8);
 }
 
