@@ -2560,6 +2560,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       <label className="dh-field">
         <span>成片模型</span>
         <CustomSelect
+          className="custom-select-theme-dh"
           ariaLabel="成片模型"
           value={model}
           onChange={setModel}
@@ -2570,6 +2571,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       <label className="dh-field">
         <span>音色</span>
         <CustomSelect
+          className="custom-select-theme-dh"
           ariaLabel="音色"
           value={voiceId}
           onChange={setVoiceId}
@@ -2585,7 +2587,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
           </div>
           <label className="dh-field">
             <span>音色情绪</span>
-            <CustomSelect ariaLabel="音色情绪" value={ttsEmotion} onChange={setTtsEmotion} options={ttsEmotionOptions} />
+            <CustomSelect className="custom-select-theme-dh" ariaLabel="音色情绪" value={ttsEmotion} onChange={setTtsEmotion} options={ttsEmotionOptions} />
           </label>
           <label className="dh-range-field">
             <span>语速 <small>{ttsSpeed.toFixed(2)}x</small></span>
@@ -3004,6 +3006,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
   const fileInputRef = useRef(null);
   const [portrait, setPortrait] = useState(null);
   const [portraitPreview, setPortraitPreview] = useState("");
+  const [driveMode, setDriveMode] = useState(options.defaults?.driveMode || "text");
   const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
@@ -3130,18 +3133,27 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
     <div className="idh-composer" aria-label="图片数字人生成器">
       <ImageDigitalHumanShowcaseCard
         portraitPreview={portraitPreview}
+        driveMode={driveMode}
+        onDriveModeChange={setDriveMode}
+        emotion={emotion}
+        onEmotionChange={setEmotion}
+        emotionOptions={ttsEmotionOptions}
+        speed={speed}
+        onSpeedChange={setSpeed}
+        volume={volume}
+        onVolumeChange={setVolume}
+        pitch={pitch}
+        onPitchChange={setPitch}
         selectedModelLabel={selectedModel?.label || selectedModel?.value}
         selectedVoiceName={selectedVoice?.name}
         textLength={text.length}
         isSubmitting={isSubmitting}
       />
       <div className="idh-mode-tabs">
-        <button className="is-active" type="button">
-          <FileText size={15} />
+        <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>
           文本驱动
         </button>
-        <button type="button" disabled title="音频驱动将在下一阶段开放">
-          <Mic size={15} />
+        <button className={driveMode === "audio" ? "is-active" : ""} type="button" onClick={() => setDriveMode("audio")}>
           音频驱动
         </button>
       </div>
@@ -3177,9 +3189,9 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
           )}
         </button>
         <div className="idh-form-card">
-          <CustomSelect className="idh-select" ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
+          <CustomSelect className="idh-select custom-select-theme-dh" ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
           <CustomSelect
-            className="idh-select"
+            className="idh-select custom-select-theme-dh"
             ariaLabel="音色"
             icon={Mic}
             value={voiceId}
@@ -3192,25 +3204,6 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             onChange={(event) => setText(event.target.value)}
             placeholder="请输入台词，生成语音..."
           />
-          <details className="idh-advanced">
-            <summary>音色参数</summary>
-            <label>
-              <span>情绪</span>
-              <CustomSelect className="idh-advanced-select" ariaLabel="情绪" value={emotion} onChange={setEmotion} options={ttsEmotionOptions} />
-            </label>
-            <label>
-              <span>语速 {speed.toFixed(2)}x</span>
-              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音量 {volume.toFixed(1)}</span>
-              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
-            </label>
-            <label>
-              <span>音调 {pitch > 0 ? `+${pitch}` : pitch}</span>
-              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
-            </label>
-          </details>
           <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={isPreviewing}>
             {isPreviewing ? <Loader2 size={15} /> : <Play size={15} />}
             生成语音
