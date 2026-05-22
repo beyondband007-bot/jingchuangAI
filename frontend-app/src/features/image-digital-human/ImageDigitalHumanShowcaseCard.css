@@ -73,6 +73,7 @@
 .idh-showcase-upload {
   position: relative;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 18px;
   padding: 24px;
   overflow: hidden;
@@ -138,9 +139,10 @@
 
 .idh-showcase-upload-input {
   display: grid;
-  flex: 1 1 auto;
   width: 100%;
-  min-height: 230px;
+  min-height: 100%;
+  height: 100%;
+  align-self: stretch;
   cursor: pointer;
 }
 
@@ -148,7 +150,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 230px;
+  min-height: 100%;
   object-fit: cover;
   border-radius: 20px;
 }
@@ -159,7 +161,7 @@
   justify-items: center;
   gap: 10px;
   height: 100%;
-  min-height: 230px;
+  min-height: 100%;
   padding: 16px;
   overflow: hidden;
   border: 1.5px dashed rgba(178, 86, 255, 0.56);
@@ -280,6 +282,51 @@
   min-height: 92px;
   padding: 11px 12px;
   resize: vertical;
+}
+
+.idh-showcase-tts-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.idh-showcase-tts-head {
+  display: grid;
+  gap: 3px;
+}
+
+.idh-showcase-tts-head span {
+  color: #8f9ab8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.idh-showcase-tts-head strong {
+  color: #eef2ff;
+  font-size: 14px;
+}
+
+.idh-showcase-range-field {
+  display: grid;
+  gap: 7px;
+}
+
+.idh-showcase-range-field span {
+  display: flex;
+  justify-content: space-between;
+  color: #eef2ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.idh-showcase-range-field small {
+  color: #8f9ab8;
+  font-weight: 800;
+}
+
+.idh-showcase-range-field input {
+  width: 100%;
+  accent-color: #1677ff;
+  background: transparent;
 }
 
 .idh-showcase-steps > div {
