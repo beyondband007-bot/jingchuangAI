@@ -107,7 +107,6 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         <div className="tag-row">
           <span className="model-tag">{isVideo ? "视频画质增强" : "图片画质增强"}</span>
           <span className="ratio-tag">{task.upscaleFactor || "2"}x</span>
-          <span className="quality-tag">{task.providerModel || task.model}</span>
         </div>
         <div className="time-row">
           <span>{task.time}</span>

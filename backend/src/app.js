@@ -27,6 +27,7 @@ import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
 export function createApp() {
   const app = express();
 
+  app.set("trust proxy", 1);
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
   app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));

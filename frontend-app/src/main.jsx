@@ -1,4 +1,4 @@
-﻿﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bot,
@@ -54,11 +54,11 @@ import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
 import { MusicGenerationView } from "./features/music/MusicGenerationView";
 import { ReplicateView } from "./features/replicate/ReplicateView";
-import { ChatGenerationView } from "./features/chat/ChatGenerationView";
 import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
 import { PromptSelectField } from "./features/chat/components/PromptSelectField";
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
+import { CustomSelect } from "./components/CustomSelect";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
@@ -69,18 +69,90 @@ import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanS
 import { ImageDigitalHumanShowcaseCard } from "./features/image-digital-human/ImageDigitalHumanShowcaseCard";
 import "./styles.css";
 
-const exampleImages = [
-  { src: "/assets/image/gallery-1.jpg", label: "电影质感人像", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
-  { src: "/assets/image/gallery-2.jpg", label: "时尚产品摄影", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-4.jpg", label: "自然光影", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 积分" },
-  { src: "/assets/image/gallery-6.jpg", label: "水下写实", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 积分" },
-  { src: "/assets/image/gallery-7.jpg", label: "数字人形象", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
-  { src: "/assets/image/gallery-5.jpg", label: "动态创意", model: "4o Image", ratio: "1:1", quality: "1K", price: "21 积分" },
-  { src: "/assets/image/thumb-img-gen.jpg", label: "图片生成", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 积分" },
-  { src: "/assets/image/gallery-9.jpg", label: "灵感封面", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 积分" },
-  { src: "/assets/image/gallery-8.jpg", label: "复古影像", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 积分" },
-  { src: "/assets/image/gallery-10.jpg", label: "概念海报", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 积分" }
-];
+const caseImageFiles = ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];
+const wideInspirationFiles = new Set(["7.jpg","8.jpg","9.jpg","10.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","26.jpg","27.jpg","28.jpg","30.jpg","31.jpg","32.jpg","33.jpg","35.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","55.jpg","70.jpg","71.jpg","72.jpg","73.jpg","89.jpg","90.jpg","91.jpg","94.jpg","108.jpg","thumb-ai-chat.jpg","thumb-img-gen.jpg"]);
+const squareInspirationFiles = new Set(["gallery-1.jpg","gallery-4.jpg","gallery-5.jpg","gallery-8.jpg"]);
+
+function getInspirationAspect(file) {
+  if (wideInspirationFiles.has(file)) return "wide";
+  if (squareInspirationFiles.has(file)) return "square";
+  return "portrait";
+}
+
+function takeFirstAvailable(buckets, preferredTypes) {
+  for (const type of preferredTypes) {
+    if (buckets[type].length) return buckets[type].shift();
+  }
+  return null;
+}
+
+function arrangeInspirationCards(cards, columnCount = 6) {
+  const buckets = cards.reduce((next, card) => {
+    next[card.aspect || "portrait"].push(card);
+    return next;
+  }, { portrait: [], square: [], wide: [] });
+  const nonWideCards = [];
+  while (buckets.portrait.length || buckets.square.length) {
+    nonWideCards.push(takeFirstAvailable(buckets, nonWideCards.length % 5 === 1 ? ["square", "portrait"] : ["portrait", "square"]));
+  }
+  const total = cards.length;
+  const baseLength = Math.floor(total / columnCount);
+  const extraColumns = total % columnCount;
+  const columnLengths = Array.from({ length: columnCount }, (_, index) => baseLength + (index < extraColumns ? 1 : 0));
+  const wideTargets = columnLengths.map((length) => Math.floor(length / 2));
+  let remainingWide = buckets.wide.length - wideTargets.reduce((sum, count) => sum + count, 0);
+  columnLengths.forEach((length, index) => {
+    if (remainingWide > 0 && wideTargets[index] < Math.ceil(length / 2)) {
+      wideTargets[index] += 1;
+      remainingWide -= 1;
+    }
+  });
+
+  const columns = columnLengths.map((length, columnIndex) => {
+    const wideCount = wideTargets[columnIndex];
+    const nonWideCount = length - wideCount;
+    const wideCards = buckets.wide.splice(0, wideCount);
+    const nonWide = nonWideCards.splice(0, nonWideCount);
+    const column = [];
+    let preferWide = wideCount > nonWideCount;
+
+    while (column.length < length && (wideCards.length || nonWide.length)) {
+      if (preferWide && wideCards.length) {
+        column.push(wideCards.shift());
+      } else if (!preferWide && nonWide.length) {
+        column.push(nonWide.shift());
+      } else if (wideCards.length) {
+        column.push(wideCards.shift());
+      } else if (nonWide.length) {
+        column.push(nonWide.shift());
+      }
+      preferWide = !preferWide;
+    }
+
+    return column;
+  });
+
+  const arranged = [];
+  const maxRows = Math.max(...columns.map((column) => column.length));
+  for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
+    columns.forEach((column) => {
+      if (column[rowIndex]) arranged.push(column[rowIndex]);
+    });
+  }
+
+  return arranged;
+}
+
+const exampleImages = caseImageFiles.map((file, index) => ({
+  file,
+  src: `/重构/案例/${encodeURIComponent(file)}`,
+  label: `案例 ${String(index + 1).padStart(2, "0")}`,
+  model: "图片生成",
+  ratio: "案例图",
+  quality: "精选",
+  price: "参考",
+  aspect: getInspirationAspect(file)
+}));
 
 const navItems = [
   { id: "home", label: "首页", icon: Home },
@@ -110,7 +182,7 @@ const navSections = [
   { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
   { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
   { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
-  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://token.facemini.com/portal/index.html" }
 ];
 
 const homeFeatureRoutes = [
@@ -353,6 +425,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
 
   return (
     <div className="original-home-shell">
+      <iframe ref={frameRef} className="original-home-frame" title="Facemini AI" src="/new_page/studio.html" onLoad={handleFrameLoad} />
       <iframe ref={frameRef} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
@@ -414,7 +487,7 @@ const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onL
       )}
       <main className="feature-main home-feature-main">
         <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
-          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 首页" src="/重构/index.html" onLoad={handleFrameLoad} />
+          <iframe ref={frameRef} className="original-home-frame" title="Facemini.com ??" src="/重构/index.html" onLoad={handleFrameLoad} />
         </div>
       </main>
     </div>
@@ -446,7 +519,7 @@ const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, au
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-text">Getrue.ai</span>
+        <span className="feature-brand-text">Facemini.com</span>
         <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
@@ -551,12 +624,16 @@ function ComingSoon({ activeNav }) {
   );
 }
 
-function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = false, isImageGallery = false }) {
-  const isProcessing = card.status === "processing";
+function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExample = false, isImageGallery = false, isSelected = false }) {
+  const isProcessing = card.status === "pending" || card.status === "processing";
   const isFailed = card.status === "failed";
+  const canPreview = Boolean(card.image && onPreview && !isProcessing && !isFailed);
 
   return (
-    <article className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""}`}>
+    <article
+      className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""} ${isSelected ? "is-selected-result" : ""}`}
+      data-image-card-id={card.id}
+    >
       {isImageGallery && (
         <div className="result-card-model-tag">
           <span className="model-tag">{card.model}</span>
@@ -577,6 +654,11 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = fals
             <img src={card.image} alt={card.prompt} />
           )
         ) : null}
+        {canPreview && isImageGallery && (
+          <button className="result-preview-hitarea" type="button" onClick={() => onPreview(card)} aria-label="放大查看图片">
+            <Maximize2 size={18} />
+          </button>
+        )}
         {!isProcessing && !isFailed && !card.image && <span className="broken-image-mark" aria-hidden="true" />}
       </div>
       <div className="result-meta">
@@ -711,6 +793,32 @@ function ComposerBar({ options, onSubmit }) {
 }
 
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
+const imageGenerationSessionKey = "jingchuang:image-generation-session";
+
+function readImageGenerationSession() {
+  try {
+    const cached = window.sessionStorage.getItem(imageGenerationSessionKey);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeImageGenerationSession(next) {
+  try {
+    window.sessionStorage.setItem(imageGenerationSessionKey, JSON.stringify(next));
+  } catch {
+    // Session storage can be unavailable in strict privacy contexts.
+  }
+}
+
+function clearImageGenerationSession() {
+  try {
+    window.sessionStorage.removeItem(imageGenerationSessionKey);
+  } catch {
+    // Ignore storage errors; the in-memory state still drives the current view.
+  }
+}
 
 function ExampleCanvas() {
   return (
@@ -768,6 +876,37 @@ function GeneratingCanvas({ prompt }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ImageGeneratingFeedState({ prompt }) {
+  return (
+    <div className="image-generating-feed-state" role="status" aria-live="polite">
+      <div className="image-generating-orbit" aria-hidden="true">
+        <span />
+        <Loader2 size={30} />
+      </div>
+      <div>
+        <strong>图片正在生成中</strong>
+        <p>{prompt ? `正在处理：“${prompt}”` : "已收到你的请求，正在为你生成图片。"}</p>
+      </div>
+    </div>
+  );
+}
+
+function ImageCompletedNotice({ task, onReveal }) {
+  if (!task?.image) return null;
+
+  return (
+    <button className="image-completed-notice" type="button" onClick={() => onReveal(task)} aria-label="查看生成结果">
+      <div className="image-completed-mark" aria-hidden="true">
+        <CheckCircle2 size={32} />
+      </div>
+      <div>
+        <strong>生图已完成，点击查看结果</strong>
+        <p>{task.prompt}</p>
+      </div>
+    </button>
   );
 }
 
@@ -874,6 +1013,36 @@ function PreviewDrawer({ task, onClose }) {
   );
 }
 
+function ImagePreviewLightbox({ task, onClose }) {
+  if (!task?.image) return null;
+
+  return (
+    <div className="image-preview-lightbox" role="dialog" aria-modal="true" aria-label="图片放大预览">
+      <button className="image-preview-backdrop" type="button" onClick={onClose} aria-label="关闭图片预览" />
+      <div className="image-preview-panel">
+        <div className="image-preview-toolbar">
+          <div>
+            <span>预览</span>
+            <strong>{task.prompt}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭图片预览">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="image-preview-stage">
+          <img src={task.image} alt={task.prompt} />
+        </div>
+        <div className="image-preview-actions">
+          <a href={task.image} download>
+            <Download size={16} />
+            下载
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, onRegenerate }) {
   if (!cards.length) return null;
 
@@ -936,14 +1105,19 @@ function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, on
 }
 
 function ImageGenerationView() {
-  const [filter, setFilter] = useState("all");
+  const cachedSessionRef = useRef(null);
+  if (!cachedSessionRef.current) {
+    cachedSessionRef.current = readImageGenerationSession();
+  }
+  const cachedSession = cachedSessionRef.current;
+  const [filter, setFilter] = useState("inspiration");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [submittedTaskId, setSubmittedTaskId] = useState(null);
-  const [activePrompt, setActivePrompt] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(cachedSession.selectedTaskId || null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(cachedSession.submittedTaskId || null);
+  const [activePrompt, setActivePrompt] = useState(cachedSession.activePrompt || "");
+  const [isSubmitting, setIsSubmitting] = useState(Boolean(cachedSession.isSubmitting));
   const [submitError, setSubmitError] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
@@ -967,6 +1141,12 @@ function ImageGenerationView() {
 
   const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
   const submittedTask = useMemo(() => cards.find((card) => card.id === submittedTaskId) || null, [cards, submittedTaskId]);
+  const activeGenerationTask = submittedTask || selectedTask;
+  const hasActiveGeneration = Boolean(
+    isSubmitting ||
+    activeGenerationTask?.status === "pending" ||
+    activeGenerationTask?.status === "processing"
+  );
   const imageExampleCards = useMemo(
     () => exampleImages.map((item, index) => ({
       id: `example-image-${index}`,
@@ -979,29 +1159,25 @@ function ImageGenerationView() {
       price: item.price,
       prompt: item.label,
       image: item.src,
+      aspect: item.aspect,
       favorite: false
     })),
     []
   );
-  const expandedImageExampleCards = useMemo(
-    () =>
-      Array.from({ length: 3 }, (_, groupIndex) =>
-        imageExampleCards.map((card, index) => ({
-          ...card,
-          id: `example-image-${groupIndex}-${index}`
-        }))
-      ).flat(),
-    [imageExampleCards]
-  );
+  const arrangedImageExampleCards = useMemo(() => arrangeInspirationCards(imageExampleCards, 6), [imageExampleCards]);
   const galleryItems = useMemo(() => {
-    if (filter === "all") {
+    if (filter === "inspiration") {
+      return arrangedImageExampleCards.map((card) => ({ card, isExample: true }));
+    }
+
+    const shouldShowExamples = filter === "all" && cards.length === 0 && !submittedTaskId && !selectedTaskId && !isSubmitting;
+    if (shouldShowExamples) {
       return [
-        ...expandedImageExampleCards.map((card) => ({ card, isExample: true })),
-        ...cards.map((card) => ({ card, isExample: false }))
+        ...arrangedImageExampleCards.map((card) => ({ card, isExample: true }))
       ];
     }
     return cards.map((card) => ({ card, isExample: false }));
-  }, [cards, expandedImageExampleCards, filter]);
+  }, [arrangedImageExampleCards, cards, filter, isSubmitting, selectedTaskId, submittedTaskId]);
 
   useEffect(() => {
     if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
@@ -1014,6 +1190,21 @@ function ImageGenerationView() {
     if (!submittedTaskId || !submittedTask) return;
     setSelectedTaskId(submittedTask.id);
   }, [submittedTask, submittedTaskId]);
+
+  useEffect(() => {
+    if (!submittedTaskId && !selectedTaskId && !activePrompt && !isSubmitting) {
+      clearImageGenerationSession();
+      return;
+    }
+
+    writeImageGenerationSession({
+      submittedTaskId,
+      selectedTaskId,
+      activePrompt,
+      isSubmitting,
+      updatedAt: Date.now()
+    });
+  }, [activePrompt, isSubmitting, selectedTaskId, submittedTaskId]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -1032,11 +1223,25 @@ function ImageGenerationView() {
     setSelectedTaskId(null);
     setIsHistoryOpen(false);
     setPreviewTask(null);
+    writeImageGenerationSession({
+      submittedTaskId: null,
+      selectedTaskId: null,
+      activePrompt: payload.prompt,
+      isSubmitting: true,
+      updatedAt: Date.now()
+    });
 
     try {
       const task = await imageApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
+      writeImageGenerationSession({
+        submittedTaskId: task.id,
+        selectedTaskId: task.id,
+        activePrompt: task.prompt || payload.prompt,
+        isSubmitting: task.status === "pending" || task.status === "processing",
+        updatedAt: Date.now()
+      });
       if (task.status === "failed") {
         setIsSubmitting(false);
       }
@@ -1054,6 +1259,7 @@ function ImageGenerationView() {
     if (submittedTaskId === id) {
       setSubmittedTaskId(null);
       setActivePrompt("");
+      clearImageGenerationSession();
     }
   }
 
@@ -1070,21 +1276,48 @@ function ImageGenerationView() {
     setIsSubmitting(true);
     setIsHistoryOpen(false);
     setPreviewTask(null);
+    writeImageGenerationSession({
+      submittedTaskId: null,
+      selectedTaskId: id,
+      activePrompt: source?.prompt || activePrompt,
+      isSubmitting: true,
+      updatedAt: Date.now()
+    });
 
     try {
       const created = await imageApi.regenerateTask(id);
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
+      writeImageGenerationSession({
+        submittedTaskId: created.id,
+        selectedTaskId: created.id,
+        activePrompt: created.prompt || source?.prompt || activePrompt,
+        isSubmitting: created.status === "pending" || created.status === "processing",
+        updatedAt: Date.now()
+      });
     } catch (error) {
       setSubmitError(error.message || "创建生成任务失败");
       setIsSubmitting(false);
     }
-    setIsSubmitting(false);
+  }
+
+  function revealGeneratedTask(task) {
+    if (!task?.image) return;
+    setFilter("all");
+    setSelectedTaskId(task.id);
+    setPreviewTask(task);
+    setSubmittedTaskId(null);
+    setActivePrompt("");
+    clearImageGenerationSession();
   }
 
   return (
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
+        <button className={filter === "inspiration" ? "selected" : ""} onClick={() => setFilter("inspiration")} type="button">
+          <Sparkles size={17} />
+          灵感
+        </button>
         <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
         <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
@@ -1094,28 +1327,36 @@ function ImageGenerationView() {
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
+      {hasActiveGeneration && <ImageGeneratingFeedState prompt={activeGenerationTask?.prompt || activePrompt} />}
+      {!hasActiveGeneration && submittedTask?.status === "completed" && (
+        <ImageCompletedNotice task={submittedTask} onReveal={revealGeneratedTask} />
+      )}
       {galleryItems.length ? (
         <WaterfallGrid
-          className="image-results-feed"
+          className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""}`}
           gap={6}
+          maxColumns={6}
           items={galleryItems}
           renderItem={({ card, isExample }) => (
             <ResultCard
               card={card}
               isExample={isExample}
               isImageGallery
+              isSelected={!isExample && selectedTaskId === card.id}
+              onPreview={(task) => setPreviewTask(task)}
               onDelete={isExample ? () => {} : deleteTask}
               onFavorite={isExample ? () => {} : toggleFavorite}
               onRegenerate={isExample ? () => {} : regenerateTask}
             />
           )}
         />
-      ) : (
+      ) : !hasActiveGeneration ? (
         <div className="results-feed video-results-feed image-results-feed-empty">
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
-      )}
+      ) : null}
       {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
+      <ImagePreviewLightbox task={previewTask} onClose={() => setPreviewTask(null)} />
     </section>
   );
 }
@@ -1513,7 +1754,24 @@ function toChatContext(messages) {
     }));
 }
 
+function appendChatStreamChunk(current = "", chunk = "") {
+  if (!chunk) return current;
+  if (!current) return chunk;
+  if (chunk === current) return current;
+  if (chunk.startsWith(current)) return chunk;
+
+  const maxOverlap = Math.min(current.length, chunk.length);
+  for (let size = maxOverlap; size > 0; size -= 1) {
+    if (current.endsWith(chunk.slice(0, size))) {
+      return `${current}${chunk.slice(size)}`;
+    }
+  }
+
+  return `${current}${chunk}`;
+}
+
 function ChatCanvas({ messages, isSubmitting, error }) {
+  const hasStreamingMessage = messages.some((message) => message.status === "streaming");
   if (!messages.length && !isSubmitting && !error) {
     return (
       <div className="chat-main-canvas">
@@ -1534,19 +1792,22 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 <Bot size={17} />
               </span>
             )}
-            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""}`}>
+            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
               {message.status === "failed" ? (
                 <>
                   <strong>这次没有回复成功</strong>
                   <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
                 </>
               ) : (
-                message.content
+                <>
+                  {message.content || (message.status === "streaming" ? "正在思考..." : "")}
+                  {message.points > 0 && <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>}
+                </>
               )}
             </div>
           </div>
         ))}
-        {isSubmitting && (
+        {isSubmitting && !hasStreamingMessage && (
           <div className="chat-message-row assistant">
             <span className="chat-message-avatar">
               <Bot size={17} />
@@ -1567,32 +1828,15 @@ function ChatCanvas({ messages, isSubmitting, error }) {
   );
 }
 
-function ChatComposerBar({ options, onSubmit, isSubmitting }) {
+function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange, reasoningEffort, onReasoningEffortChange }) {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(options.defaultModel || options.models[0]?.value || "");
-  const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
-  const inspirationOptions = [
-    "Floating crystal island",
-    "Cyberpunk cityscape",
-    "Ancient temple ruins",
-    "Underwater coral reef",
-    "Alien desert landscape"
-  ];
 
-  useEffect(() => {
-    if (!model && (options.defaultModel || options.models[0]?.value)) {
-      setModel(options.defaultModel || options.models[0].value);
-    }
-    if (!reasoningEffort && options.reasoningEfforts[0]) {
-      setReasoningEffort(options.reasoningEfforts[0].value);
-    }
-  }, [model, options, reasoningEffort]);
-
+  const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const canSubmit = prompt.trim().length > 0 && model && !isSubmitting;
-  const modelLabel = selectedModel?.label || "Deepseek V4";
+  const canSubmit = isReady && prompt.trim().length > 0 && model && !isSubmitting;
+  const modelLabel = isReady ? selectedModel?.label || "Deepseek V4" : "模型加载中";
 
   function submitPrompt() {
     if (!canSubmit) {
@@ -1619,42 +1863,17 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
           if (notice) setNotice("");
         }}
         onKeyDown={(event) => {
-          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+          if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             submitPrompt();
           }
         }}
-        placeholder="请告诉我您的想法......"
+        placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
       <div className="llm-toolbar">
         <div className="llm-left">
-          <button className="llm-square" type="button" onClick={() => setNotice("上传按钮暂未接入文件选择器。")} aria-label="上传">
-            +
-          </button>
-          <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "inspiration" ? null : "inspiration"))}>
-              <Sparkles className="bolt" size={16} />
-              <span>Inspiration</span>
-              <ChevronDown size={16} />
-            </button>
-            <div className="llm-menu">
-              {inspirationOptions.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  onClick={() => {
-                    setPrompt(item);
-                    setNotice("");
-                    setOpenMenu(null);
-                  }}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+            <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
               <ChevronDown size={16} />
             </button>
@@ -1663,8 +1882,9 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
                 <button
                   type="button"
                   key={item.value}
+                  className={item.value === model ? "is-selected" : ""}
                   onClick={() => {
-                    setModel(item.value);
+                    onModelChange(item.value);
                     setOpenMenu(null);
                   }}
                 >
@@ -1676,19 +1896,14 @@ function ChatComposerBar({ options, onSubmit, isSubmitting }) {
         </div>
         <div className="llm-right">
           {options.reasoningEfforts.length > 0 && (
-            <label className="llm-reasoning-select">
-              <select value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value)}>
-                {options.reasoningEfforts.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <CustomSelect
+              ariaLabel="推理强度"
+              className="llm-reasoning-select"
+              value={reasoningEffort}
+              onChange={onReasoningEffortChange}
+              options={options.reasoningEfforts}
+            />
           )}
-          <button className="llm-round" type="button" onClick={() => setNotice("录音按钮暂未接入麦克风权限。")} aria-label="录音">
-            <Mic size={18} />
-          </button>
           <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
             {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
           </button>
@@ -1725,12 +1940,14 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   );
 }
 
-function LegacyChatGenerationView() {
+function ChatGenerationView() {
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [options, setOptions] = useState(emptyChatOptions);
   const [credits, setCredits] = useState(null);
   const [conversationId, setConversationId] = useState(null);
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState("none");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -1747,12 +1964,31 @@ function LegacyChatGenerationView() {
     };
   }, []);
 
+  useEffect(() => {
+    const defaultModel = options.defaultModel || options.models[0]?.value || "";
+    const hasSelectedModel = options.models.some((item) => item.value === selectedModel);
+    if (defaultModel && (!selectedModel || !hasSelectedModel)) {
+      setSelectedModel(defaultModel);
+    }
+    const hasSelectedReasoningEffort = options.reasoningEfforts.some((item) => item.value === selectedReasoningEffort);
+    if (options.reasoningEfforts[0]?.value && (!selectedReasoningEffort || !hasSelectedReasoningEffort)) {
+      setSelectedReasoningEffort(options.reasoningEfforts[0].value);
+    }
+  }, [options, selectedModel, selectedReasoningEffort]);
+
   async function sendChatMessage({ content, model, reasoningEffort }) {
+    const localId = Date.now();
     const userMessage = {
-      id: `local-${Date.now()}`,
+      id: `local-${localId}`,
       role: "user",
       content,
       status: "completed"
+    };
+    const streamingMessage = {
+      id: `stream-${localId}`,
+      role: "assistant",
+      content: "",
+      status: "streaming"
     };
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
@@ -1760,21 +1996,44 @@ function LegacyChatGenerationView() {
     setIsSubmitting(true);
 
     try {
-      const result = await chatApi.sendMessage({
+      setMessages([...nextMessages, streamingMessage]);
+      const result = await chatApi.streamMessage({
         conversationId,
         model,
         reasoningEffort,
         messages: toChatContext(nextMessages)
+      }, {
+        onDelta: (delta) => {
+          setMessages((current) => current.map((message) => (
+            message.id === streamingMessage.id
+              ? { ...message, content: appendChatStreamChunk(message.content, delta) }
+              : message
+          )));
+        }
       });
       setConversationId(result.conversationId);
-      setMessages((current) => [...current, result.message]);
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id ? result.message : message
+      )));
       if (result.credits) setCredits(result.credits);
       chatApi.getConversations().then(setConversations).catch(() => {});
     } catch (error) {
+      setMessages((current) => current.map((message) => (
+        message.id === streamingMessage.id
+          ? { ...message, status: "failed", error: error.message || "发送失败" }
+          : message
+      )));
       setSubmitError(error.message || "发送失败");
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function startNewConversation() {
+    setMessages([]);
+    setConversationId(null);
+    setSubmitError("");
+    setIsHistoryOpen(false);
   }
 
   async function selectConversation(id) {
@@ -1784,14 +2043,22 @@ function LegacyChatGenerationView() {
     try {
       const historyMessages = await chatApi.getMessages(id);
       setMessages(historyMessages);
-    } catch (error) {
+  } catch (error) {
       setSubmitError(error.message || "加载历史对话失败");
     }
   }
 
-  const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
-  const composer = options.models.length > 0 && (
-    <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
+  const isIntroState = !messages.length && !isSubmitting && !submitError;
+  const composer = (
+    <ChatComposerBar
+      options={options}
+      onSubmit={sendChatMessage}
+      isSubmitting={isSubmitting}
+      model={selectedModel}
+      onModelChange={setSelectedModel}
+      reasoningEffort={selectedReasoningEffort}
+      onReasoningEffortChange={setSelectedReasoningEffort}
+    />
   );
 
   return (
@@ -1801,14 +2068,24 @@ function LegacyChatGenerationView() {
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
       {conversations.length > 0 && (
-        <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
-          <Layers size={17} />
-          历史
-          <span>{conversations.length}</span>
-        </button>
+        <>
+          <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
+            <Plus size={16} />
+            新建对话
+          </button>
+          <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+            <Layers size={17} />
+            历史
+            <span>{conversations.length}</span>
+          </button>
+        </>
       )}
       {isHistoryOpen && (
-        <ChatHistoryRail conversations={conversations} activeConversationId={conversationId} onSelect={selectConversation} />
+        <ChatHistoryRail
+          conversations={conversations}
+          activeConversationId={conversationId}
+          onSelect={selectConversation}
+        />
       )}
       {isIntroState ? (
         <div className="llm-intro-layout">
@@ -2281,9 +2558,12 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
       </label>
       <label className="dh-field">
         <span>音色</span>
-        <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
-          {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
+        <CustomSelect
+          ariaLabel="音色"
+          value={voiceId}
+          onChange={setVoiceId}
+          options={voices.map((item) => ({ value: item.id, label: item.name }))}
+        />
         {selectedVoice && <small>{selectedVoice.description}</small>}
       </label>
       <div className="dh-settings-group">
@@ -2294,9 +2574,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
           </div>
           <label className="dh-field">
             <span>音色情绪</span>
-            <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
-              {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
-            </select>
+            <CustomSelect ariaLabel="音色情绪" value={ttsEmotion} onChange={setTtsEmotion} options={ttsEmotionOptions} />
           </label>
           <label className="dh-range-field">
             <span>语速 <small>{ttsSpeed.toFixed(2)}x</small></span>
@@ -2336,7 +2614,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   );
 }
 
-function DigitalHumanGenerationView() {
+function DigitalHumanGenerationView({ onReturnHome }) {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -2525,7 +2803,14 @@ function DigitalHumanGenerationView() {
                 <Layers size={14} />
                 返回
               </button>
-              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "已完成" : currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>}
+              {currentPreviewTask?.status === "completed" ? (
+                <button className="dh-preview-return-home" type="button" onClick={onReturnHome}>
+                  <Home size={14} />
+                  返回
+                </button>
+              ) : currentPreviewTask ? (
+                <small>{currentPreviewTask.status === "failed" ? "失败" : `生成中 ${currentPreviewTask.progress || 0}%`}</small>
+              ) : null}
             </div>
           </div>
           <div className="dh-video-shell">
@@ -2881,17 +3166,15 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
           )}
         </button>
         <div className="idh-form-card">
-          <label className="idh-select">
-            <select value={model} onChange={(event) => setModel(event.target.value)}>
-              {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
-          <label className="idh-select">
-            <Mic size={15} />
-            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
-              {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
-          </label>
+          <CustomSelect className="idh-select" ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
+          <CustomSelect
+            className="idh-select"
+            ariaLabel="音色"
+            icon={Mic}
+            value={voiceId}
+            onChange={setVoiceId}
+            options={voices.map((item) => ({ value: item.id, label: item.name }))}
+          />
           <textarea
             value={text}
             maxLength={options.limits?.maxTextLength || 2000}
@@ -2902,9 +3185,7 @@ function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) 
             <summary>音色参数</summary>
             <label>
               <span>情绪</span>
-              <select value={emotion} onChange={(event) => setEmotion(event.target.value)}>
-                {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
-              </select>
+              <CustomSelect className="idh-advanced-select" ariaLabel="情绪" value={emotion} onChange={setEmotion} options={ttsEmotionOptions} />
             </label>
             <label>
               <span>语速 {speed.toFixed(2)}x</span>
@@ -3497,26 +3778,23 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
         />
       </div>
       <div className="motion-composer-footer">
-        <label className="control-select model-select">
-          <Box size={15} />
-          <select value={model} onChange={(event) => setModel(event.target.value)}>
-            {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </label>
-        <label className="control-select">
-          <Ruler size={15} />
-          <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
-            {(options.modes || emptyMotionTransferOptions.modes).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </label>
-        <label className="control-select">
-          <Timer size={15} />
-          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)}>
-            {(options.characterOrientations || emptyMotionTransferOptions.characterOrientations).map((item) => (
-              <option key={item.value} value={item.value}>{item.label}</option>
-            ))}
-          </select>
-        </label>
+        <CustomSelect className="control-select model-select" ariaLabel="模型" icon={Box} value={model} onChange={setModel} options={options.models} />
+        <CustomSelect
+          className="control-select"
+          ariaLabel="分辨率"
+          icon={Ruler}
+          value={resolution}
+          onChange={setResolution}
+          options={options.modes || emptyMotionTransferOptions.modes}
+        />
+        <CustomSelect
+          className="control-select"
+          ariaLabel="角色方向"
+          icon={Timer}
+          value={characterOrientation}
+          onChange={setCharacterOrientation}
+          options={options.characterOrientations || emptyMotionTransferOptions.characterOrientations}
+        />
         <span className="price-pill">{price}</span>
         <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label={copy.submitLabel}>
           {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
@@ -3527,6 +3805,28 @@ function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionT
   );
 }
 
+function getMotionActiveTaskCacheKey(navId) {
+  return `jingchuang-ai:${navId}:active-task-id`;
+}
+
+function readMotionActiveTaskId(navId) {
+  try {
+    return window.localStorage.getItem(getMotionActiveTaskCacheKey(navId));
+  } catch {
+    return null;
+  }
+}
+
+function writeMotionActiveTaskId(navId, taskId) {
+  try {
+    const key = getMotionActiveTaskCacheKey(navId);
+    if (taskId) window.localStorage.setItem(key, String(taskId));
+    else window.localStorage.removeItem(key);
+  } catch {
+    // localStorage can be unavailable in restricted browser contexts.
+  }
+}
+
 function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -3535,7 +3835,16 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
   const [viewTab, setViewTab] = useState("home");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(() => readMotionActiveTaskId(navId));
+
+  function applyTaskData(taskData) {
+    setTasks(taskData);
+    setSubmittedTaskId((current) => {
+      if (current && taskData.some((task) => String(task.id) === String(current))) return current;
+      if (current) writeMotionActiveTaskId(navId, null);
+      return null;
+    });
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -3548,7 +3857,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setTasks(taskData);
+        applyTaskData(taskData);
         setCredits(creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || copy.loadError);
@@ -3556,7 +3865,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
     }
     load();
     const unsubscribe = api.subscribe(() => {
-      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && setTasks(value)).catch(() => {});
+      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && applyTaskData(value)).catch(() => {});
       api.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
     });
     return () => {
@@ -3564,6 +3873,10 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
       unsubscribe();
     };
   }, [api, copy.loadError, filter, navId, splitResults]);
+
+  useEffect(() => {
+    writeMotionActiveTaskId(navId, submittedTaskId);
+  }, [navId, submittedTaskId]);
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
@@ -3594,6 +3907,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
     try {
       const task = await api.createTask(payload);
       setSubmittedTaskId(task.id);
+      writeMotionActiveTaskId(navId, task.id);
       if (splitResults) setViewTab("home");
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
     } catch (error) {
@@ -3606,7 +3920,11 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
   async function deleteTask(id) {
     await api.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
-    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+    setSubmittedTaskId((current) => {
+      if (String(current) !== String(id)) return current;
+      writeMotionActiveTaskId(navId, null);
+      return null;
+    });
   }
 
   async function toggleFavorite(id) {
@@ -3634,6 +3952,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
               setViewTab("recent");
               setSubmittedTaskId(null);
+              writeMotionActiveTaskId(navId, null);
             }}>最近生成</button>
             <button type="button" disabled>
               <Star size={17} fill="#f8d545" color="#161616" />
@@ -3680,6 +3999,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             onOpenRecent={() => {
               if (splitResults) setViewTab("recent");
               setSubmittedTaskId(null);
+              writeMotionActiveTaskId(navId, null);
             }}
             copy={copy}
           />
@@ -3691,7 +4011,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
             <p>{copy.recentEmptyDescription}</p>
           </div>
         )}
-        {(!useWorkbenchView || (isFaceSwapView && viewTab !== "home")) && (
+        {(!useWorkbenchView || !showEmptyHero || (isFaceSwapView && viewTab !== "home")) && (
           <div className={`motion-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
             {visibleTasks.map((task) => (
               <MotionTransferTaskCard
@@ -4251,7 +4571,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
           <ChatGenerationView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="digital-human" activeNav={activeNav} visitedIds={visitedIds}>
-          <DigitalHumanGenerationView />
+          <DigitalHumanGenerationView onReturnHome={() => handleNavChange("home")} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="image-digital-human" activeNav={activeNav} visitedIds={visitedIds}>
           <ImageDigitalHumanView />

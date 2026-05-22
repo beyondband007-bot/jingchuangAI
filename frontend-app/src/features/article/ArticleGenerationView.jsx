@@ -13,6 +13,7 @@ import {
   X
 } from "lucide-react";
 import { articleApi } from "./articleApi";
+import { CustomSelect } from "../../components/CustomSelect";
 
 const articlePromptMarker = "爆款图文设计";
 const templateThumbBase = "/assets/article/template-thumbs";
@@ -779,30 +780,23 @@ export function ArticleGenerationView() {
           <div className="article-two-col">
             <label className="article-field">
               <span>模型</span>
-              <select value={model} onChange={(event) => setModel(event.target.value)}>
-                {options.models.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
+              <CustomSelect ariaLabel="模型" value={model} onChange={setModel} options={options.models} />
             </label>
             <label className="article-field">
               <span>画幅</span>
-              <select value={form.aspectRatio} onChange={(event) => updateForm({ aspectRatio: event.target.value })}>
-                {options.ratios.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
+              <CustomSelect ariaLabel="画幅" value={form.aspectRatio} onChange={(value) => updateForm({ aspectRatio: value })} options={options.ratios} />
             </label>
           </div>
 
           <div className="article-two-col article-one-col">
             <label className="article-field">
               <span>清晰度</span>
-              <select value={form.quality} onChange={(event) => updateForm({ quality: event.target.value })}>
-                {options.qualities.map((item) => (
-                  <option key={item.value} value={item.value}>{item.value}</option>
-                ))}
-              </select>
+              <CustomSelect
+                ariaLabel="清晰度"
+                value={form.quality}
+                onChange={(value) => updateForm({ quality: value })}
+                options={options.qualities.map((item) => ({ value: item.value, label: item.value }))}
+              />
             </label>
           </div>
 

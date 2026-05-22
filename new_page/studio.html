@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鲸创 Studio</title>
+  <title>Facemini Studio</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/web-icon.svg">
+  <script>
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+  </script>
   <script>
     window.tailwind = window.tailwind || {};
     window.tailwind.config = {
@@ -17,7 +23,7 @@
       },
     };
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./assets/vendor/tailwindcss.js"></script>
   <style>
     :root {
       --bg: #05030d;
@@ -43,6 +49,7 @@
     @font-face {
       font-family: "Zona Pro SemiBold";
       src:
+        url("./assets/fonts/ZonaPro-SemiBold.ttf") format("truetype"),
         local("Zona Pro SemiBold"),
         local("Zona Pro Semibold"),
         local("ZonaPro-SemiBold");
@@ -57,25 +64,41 @@
 
     html {
       scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
     }
 
     body {
+      --hero-video-y: 0px;
+      --hero-video-scale: 1;
+      --hero-video-radius: 32px;
+      --hero-video-frame-opacity: 1;
+      --hero-video-border-alpha: 0.62;
+      --hero-video-inner-alpha: 0.08;
+      --hero-video-glow-alpha: 0.16;
+      --hero-video-shadow-alpha: 0.55;
+      --hero-video-shadow-y: 30px;
+      --hero-video-shadow-blur: 80px;
+      --hero-video-ray-opacity: 0.95;
       --hero-eyebrow-opacity: 1;
       --hero-eyebrow-shift: 0px;
       --hero-copy-opacity: 1;
       --hero-copy-shift: 0px;
       --hero-actions-opacity: 1;
       --hero-actions-shift: 0px;
-      --hero-scale: 1;
+      --features-offset: 24px;
       margin: 0;
       min-height: 100vh;
       font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(circle at 50% 12%, rgba(113, 72, 255, 0.18), transparent 30%),
-        radial-gradient(circle at 12% 32%, rgba(108, 66, 255, 0.18), transparent 28%),
-        radial-gradient(circle at 88% 35%, rgba(123, 90, 255, 0.15), transparent 22%),
-        linear-gradient(180deg, #03020a 0%, #070411 38%, #05030d 100%);
+      background: #000000;
       overflow-x: hidden;
     }
 
@@ -85,27 +108,17 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: -2;
     }
 
     body::before {
+      z-index: 1;
       background:
-        linear-gradient(120deg, transparent 0%, rgba(130, 94, 255, 0.18) 18%, transparent 34%) 5% 18% / 48% 28% no-repeat,
-        linear-gradient(145deg, transparent 0%, rgba(109, 73, 255, 0.12) 16%, transparent 36%) 79% 16% / 38% 24% no-repeat,
-        linear-gradient(110deg, transparent 0%, rgba(144, 110, 255, 0.12) 14%, transparent 30%) -8% 54% / 48% 22% no-repeat,
-        linear-gradient(75deg, transparent 0%, rgba(122, 91, 255, 0.1) 18%, transparent 34%) 70% 61% / 42% 24% no-repeat;
-      filter: blur(14px);
-      opacity: 0.95;
-      animation: sweep 16s linear infinite alternate;
+        radial-gradient(circle at 50% 20%, rgba(139, 92, 246, 0.08), transparent 42%),
+        radial-gradient(circle at center, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.12) 45%, rgba(0, 0, 0, 0.78) 100%);
     }
 
     body::after {
-      background:
-        radial-gradient(circle at center, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.74) 100%),
-        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      background-size: auto, 120px 120px, 120px 120px;
-      opacity: 0.5;
+      display: none;
     }
 
     a {
@@ -116,21 +129,61 @@
     .page {
       width: var(--container);
       margin: 0 auto;
-      padding: 22px 0 36px;
+      padding: 0 0 16px;
       position: relative;
+      z-index: 2;
     }
 
     .first-screen {
-      min-height: calc(100svh - 22px);
+      position: relative;
+      width: 100vw;
+      min-height: 100svh;
+      margin-left: calc(50% - 50vw);
+      padding-inline: max(24px, calc((100vw - 1180px) / 2));
       display: grid;
       grid-template-rows: auto 1fr;
       align-content: stretch;
+      isolation: isolate;
+      overflow: hidden;
     }
 
     @supports (height: 100dvh) {
       .first-screen {
-        min-height: calc(100dvh - 22px);
+        min-height: 100dvh;
       }
+    }
+
+    .first-screen-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+      background: #000000;
+    }
+
+    .first-screen-bg video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
+      filter: brightness(0.9) contrast(1.22) saturate(1.38);
+    }
+
+    .first-screen-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.28) 58%, rgba(0, 0, 0, 0.64) 100%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.5) 100%);
+    }
+
+    .first-screen > .nav,
+    .first-screen > #home {
+      position: relative;
+      z-index: 2;
     }
 
     .first-screen .nav,
@@ -200,6 +253,13 @@
     body.is-loaded #home .hero-actions {
       opacity: var(--hero-actions-opacity);
       transform: translateY(var(--hero-actions-shift));
+    }
+
+    body.hero-sequence-running #home .eyebrow,
+    body.hero-sequence-running #home .hero-copy h1,
+    body.hero-sequence-running #home .hero-copy p,
+    body.hero-sequence-running #home .hero-actions {
+      transition: none;
     }
 
     #home {
@@ -521,6 +581,12 @@
     }
 
     .hero-pill {
+      width: 176px;
+      min-height: 48px;
+      padding: 0 22px;
+    }
+
+    .hero-actions .button.secondary {
       width: 176px;
       min-height: 48px;
       padding: 0 22px;
@@ -856,7 +922,8 @@
       width: 100%;
       border-radius: var(--border-radius);
       isolation: isolate;
-      transform: translate3d(0, 0, 0.01px) scale(var(--hero-scale));
+      z-index: 8;
+      transform: translate3d(0, var(--hero-video-y), 0.01px) scale(var(--hero-video-scale));
       transform-origin: center center;
       display: grid;
       overflow: visible;
@@ -894,7 +961,7 @@
         var(--gradient-six) border-box,
         var(--gradient-seven) border-box,
         var(--gradient-base) border-box;
-      opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+      opacity: calc(var(--hero-video-frame-opacity) * (var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
       mask-image:
         conic-gradient(
           from var(--cursor-angle) at center,
@@ -925,7 +992,7 @@
         radial-gradient(ellipse at 33% 66%, black 5%, transparent 40%),
         conic-gradient(from var(--cursor-angle) at center, transparent 5%, black 15%, black 85%, transparent 95%);
       mask-composite: subtract, add, add, add, add, add;
-      opacity: calc(var(--fill-opacity) * (var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+      opacity: calc(var(--hero-video-frame-opacity) * var(--fill-opacity) * (var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
       mix-blend-mode: soft-light;
     }
 
@@ -934,7 +1001,7 @@
       pointer-events: none;
       z-index: 1;
       mask-image: conic-gradient(from var(--cursor-angle) at center, black 2.5%, transparent 10%, transparent 90%, black 97.5%);
-      opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+      opacity: calc(var(--hero-video-frame-opacity) * (var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
       mix-blend-mode: plus-lighter;
     }
 
@@ -966,15 +1033,15 @@
       min-height: 0;
       display: grid;
       place-items: stretch;
-      border-radius: var(--radius-xl);
-      border: 1px solid rgba(135, 100, 255, 0.62);
+      border-radius: var(--hero-video-radius);
+      border: 1px solid rgba(135 100 255 / var(--hero-video-border-alpha));
       background:
         radial-gradient(circle at center, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.68) 48%, rgba(0, 0, 0, 0.92) 100%),
         linear-gradient(140deg, rgba(30, 19, 71, 0.82), rgba(8, 5, 20, 0.94));
       box-shadow:
-        inset 0 0 0 1px rgba(196, 179, 255, 0.08),
-        0 0 36px rgba(120, 83, 255, 0.16),
-        var(--shadow);
+        inset 0 0 0 1px rgba(196 179 255 / var(--hero-video-inner-alpha)),
+        0 0 36px rgba(120 83 255 / var(--hero-video-glow-alpha)),
+        0 var(--hero-video-shadow-y) var(--hero-video-shadow-blur) rgba(0 0 0 / var(--hero-video-shadow-alpha));
       overflow: hidden;
       isolation: isolate;
     }
@@ -985,7 +1052,7 @@
       position: absolute;
       inset: -15%;
       background-repeat: no-repeat;
-      opacity: 0.95;
+      opacity: var(--hero-video-ray-opacity);
       z-index: -1;
     }
 
@@ -1023,7 +1090,7 @@
     .hero-copy {
       text-align: center;
       width: min(720px, calc(100vw - 80px));
-      margin: 26px auto 0;
+      margin: 0 auto;
       display: grid;
       gap: 14px;
     }
@@ -1041,25 +1108,600 @@
       flex-wrap: wrap;
     }
 
+    .neural-section {
+      margin-top: var(--features-offset);
+      display: grid;
+      gap: 108px;
+    }
+
+    .metrics-strip {
+      border: 1px solid rgba(126, 91, 255, 0.38);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(17, 13, 36, 0.9), rgba(10, 7, 22, 0.92)),
+        radial-gradient(circle at 50% 0%, rgba(113, 84, 255, 0.18), transparent 60%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.018);
+      min-height: 116px;
+      padding: 28px 42px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      align-items: center;
+      gap: 24px;
+    }
+
+    .metric {
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .metric strong {
+      font-family: "Zona Pro SemiBold", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #8468ff;
+      font-size: clamp(2rem, 3.2vw, 3.15rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      font-weight: 600;
+    }
+
+    .metric span {
+      color: rgba(204, 198, 224, 0.72);
+      font-size: 0.76rem;
+      line-height: 1.3;
+    }
+
+    .why-section {
+      margin-top: 108px;
+      display: grid;
+      gap: 42px;
+    }
+
+    .section-heading {
+      display: grid;
+      justify-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      color: #ffffff;
+      font-size: clamp(2.4rem, 3.7vw, 4.25rem);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 300;
+    }
+
+    .section-heading p {
+      margin: 0;
+      color: rgba(204, 198, 224, 0.62);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .why-card {
+      min-height: 158px;
+      padding: 22px 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(119, 91, 221, 0.22);
+      background: rgba(7, 6, 17, 0.72);
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .why-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: #8d73ff;
+      background: rgba(111, 78, 255, 0.18);
+    }
+
+    .why-icon svg {
+      width: 19px;
+      height: 19px;
+      stroke-width: 1.9;
+    }
+
+    .why-card h3 {
+      margin: 0;
+      color: #fbfaff;
+      font-size: 1.03rem;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+
+    .why-card p {
+      margin: 0;
+      color: rgba(204, 198, 224, 0.65);
+      font-size: 0.86rem;
+      line-height: 1.75;
+    }
+
+    .workflow-section {
+      display: grid;
+      gap: 48px;
+      padding: 42px 0 28px;
+    }
+
+    .workflow-heading {
+      display: grid;
+      justify-items: center;
+      text-align: center;
+      gap: 18px;
+    }
+
+    .workflow-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(127, 99, 255, 0.72);
+      color: rgba(245, 242, 255, 0.92);
+      background: linear-gradient(180deg, rgba(30, 23, 62, 0.92), rgba(16, 12, 36, 0.92));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 32px rgba(127, 99, 255, 0.18);
+      font: 700 0.92rem/1 "Zona Pro SemiBold", "Segoe UI", sans-serif;
+    }
+
+    .workflow-heading h2 {
+      max-width: none;
+      margin: 0;
+      color: #ffffff;
+      font-size: clamp(2.4rem, 3.7vw, 4.25rem);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 300;
+      white-space: nowrap;
+    }
+
+    .workflow-heading h2 span {
+      color: #b7abff;
+    }
+
+    .workflow-heading p {
+      max-width: 540px;
+      margin: 0;
+      color: rgba(211, 206, 231, 0.72);
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 24px;
+    }
+
+    .workflow-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 342px;
+      padding: 34px 34px 30px;
+      border-radius: 22px;
+      border: 1px solid rgba(146, 124, 255, 0.18);
+      background:
+        radial-gradient(circle at 50% 115%, rgba(149, 116, 255, 0.64), transparent 36%),
+        radial-gradient(circle at 78% 85%, rgba(77, 64, 255, 0.34), transparent 34%),
+        linear-gradient(135deg, rgba(24, 21, 43, 0.95), rgba(11, 10, 25, 0.96));
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+        0 26px 74px rgba(0, 0, 0, 0.34);
+    }
+
+    .workflow-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%),
+        radial-gradient(circle at 16% 0%, rgba(127, 99, 255, 0.12), transparent 38%);
+      pointer-events: none;
+    }
+
+    .workflow-card--automation {
+      grid-column: span 4;
+    }
+
+    .workflow-card--insights {
+      grid-column: span 8;
+    }
+
+    .workflow-card--prototype,
+    .workflow-card--collab {
+      grid-column: span 6;
+    }
+
+    .workflow-card-copy {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      bottom: 30px;
+      z-index: 2;
+      display: grid;
+      gap: 10px;
+    }
+
+    .workflow-card h3 {
+      margin: 0;
+      color: #ffffff;
+      font-size: clamp(1.25rem, 2.1vw, 1.65rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+    }
+
+    .workflow-card p {
+      margin: 0;
+      max-width: 520px;
+      color: rgba(222, 218, 239, 0.76);
+      font-size: 0.98rem;
+      line-height: 1.62;
+    }
+
+    .ai-stack {
+      position: relative;
+      z-index: 1;
+      height: 180px;
+      display: grid;
+      place-items: start center;
+      padding-top: 28px;
+    }
+
+    .ai-bubble {
+      position: absolute;
+      width: 180px;
+      min-height: 64px;
+      padding: 13px 18px;
+      border-radius: 18px;
+      background: rgba(31, 27, 58, 0.92);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      align-items: center;
+      gap: 12px;
+      color: rgba(246, 244, 255, 0.92);
+    }
+
+    .ai-bubble:nth-child(1) {
+      transform: translateY(-54px) scale(0.72);
+      opacity: 0.18;
+    }
+
+    .ai-bubble:nth-child(2) {
+      transform: translateY(28px) scale(0.8);
+      opacity: 0.14;
+    }
+
+    .ai-bubble:nth-child(3) {
+      transform: translateY(90px) scale(0.64);
+      opacity: 0.1;
+    }
+
+    .ai-bubble--active {
+      transform: translateY(0) scale(1) !important;
+      opacity: 1 !important;
+    }
+
+    .ai-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #9b8cff, #6151ff);
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .ai-bubble strong,
+    .ai-bubble span {
+      display: block;
+    }
+
+    .ai-bubble strong {
+      font-size: 0.94rem;
+    }
+
+    .ai-bubble span {
+      margin-top: 4px;
+      color: rgba(224, 220, 240, 0.66);
+      font-size: 0.72rem;
+    }
+
+    .task-layers {
+      position: relative;
+      z-index: 1;
+      height: 210px;
+    }
+
+    .task-chip {
+      position: absolute;
+      right: 10%;
+      width: min(380px, 58%);
+      height: 74px;
+      border-radius: 10px;
+      background: rgba(33, 29, 60, 0.82);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 24px;
+      color: rgba(231, 228, 246, 0.72);
+      font-weight: 800;
+      font-size: clamp(1rem, 2vw, 1.55rem);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+    }
+
+    .task-chip:nth-child(1) {
+      top: 24px;
+      opacity: 0.42;
+    }
+
+    .task-chip:nth-child(2) {
+      top: 114px;
+      right: 4%;
+      color: rgba(255, 255, 255, 0.92);
+      background: linear-gradient(90deg, rgba(47, 42, 82, 0.94), rgba(69, 58, 150, 0.88));
+      box-shadow: 34px 0 68px rgba(115, 97, 255, 0.42), 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .task-chip:nth-child(3) {
+      top: 204px;
+      opacity: 0.36;
+    }
+
+    .task-icon,
+    .task-plus {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: rgba(230, 226, 250, 0.72);
+    }
+
+    .task-icon {
+      border: 2px solid currentColor;
+      font-size: 1rem;
+    }
+
+    .task-plus {
+      margin-left: auto;
+      border-radius: 50%;
+      background: rgba(127, 99, 255, 0.28);
+      color: #ffffff;
+      font-size: 1.9rem;
+      line-height: 1;
+    }
+
+    .spark {
+      position: absolute;
+      right: 4%;
+      top: 190px;
+      width: 42px;
+      height: 42px;
+      color: #6958ff;
+      filter: drop-shadow(0 0 18px rgba(124, 105, 255, 0.85));
+    }
+
+    .prototype-panel {
+      position: relative;
+      z-index: 1;
+      width: min(460px, 78%);
+      min-height: 184px;
+      margin: -10px auto 0;
+      padding: 36px 38px;
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(18, 16, 39, 0.98), rgba(7, 6, 16, 0.98));
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+      color: rgba(230, 226, 247, 0.72);
+    }
+
+    .prototype-panel h4 {
+      margin: 0 0 16px;
+      color: rgba(238, 235, 250, 0.78);
+      font-size: 0.9rem;
+    }
+
+    .device-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .device-tabs span {
+      min-height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.04);
+      font-size: 0.78rem;
+    }
+
+    .timeline-demo {
+      position: relative;
+      z-index: 1;
+      height: 220px;
+      margin: -12px -34px 0;
+      color: rgba(230, 226, 248, 0.82);
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .timeline-line:nth-child(1) { top: 60px; }
+    .timeline-line:nth-child(2) { top: 114px; }
+    .timeline-line:nth-child(3) { top: 168px; }
+
+    .timeline-step {
+      position: absolute;
+      padding: 12px 16px;
+      border-radius: 6px;
+      background: rgba(80, 68, 178, 0.72);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+      font-size: 0.95rem;
+    }
+
+    .timeline-step small {
+      display: block;
+      margin-bottom: 5px;
+      color: rgba(230, 226, 248, 0.6);
+      letter-spacing: 0.08em;
+    }
+
+    .timeline-step:nth-of-type(1) {
+      left: 2%;
+      top: 76px;
+    }
+
+    .timeline-step:nth-of-type(2) {
+      right: -1%;
+      top: 28px;
+      min-width: 310px;
+      background: rgba(94, 78, 202, 0.82);
+    }
+
+    .timeline-step:nth-of-type(3) {
+      right: 16%;
+      top: 152px;
+      opacity: 0.32;
+    }
+
+    .metrics-strip,
+    .section-heading,
+    .why-card,
+    .workflow-heading,
+    .workflow-card {
+      opacity: 0;
+      transform: translate3d(0, 72px, 0);
+      transition:
+        opacity 780ms cubic-bezier(.22,.61,.36,1),
+        transform 780ms cubic-bezier(.22,.61,.36,1);
+      will-change: opacity, transform;
+    }
+
+    .metrics-strip.reveal-visible,
+    .section-heading.reveal-visible,
+    .workflow-section.reveal-visible .workflow-heading,
+    .workflow-section.reveal-visible .workflow-card,
+    .why-grid.reveal-visible .why-card {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .why-grid.reveal-visible .why-card:nth-child(1) { transition-delay: 0ms; }
+    .why-grid.reveal-visible .why-card:nth-child(2) { transition-delay: 90ms; }
+    .why-grid.reveal-visible .why-card:nth-child(3) { transition-delay: 180ms; }
+    .why-grid.reveal-visible .why-card:nth-child(4) { transition-delay: 270ms; }
+    .why-grid.reveal-visible .why-card:nth-child(5) { transition-delay: 360ms; }
+    .why-grid.reveal-visible .why-card:nth-child(6) { transition-delay: 450ms; }
+    .workflow-section.reveal-visible .workflow-heading { transition-delay: 0ms; }
+    .workflow-section.reveal-visible .workflow-card:nth-child(1) { transition-delay: 120ms; }
+    .workflow-section.reveal-visible .workflow-card:nth-child(2) { transition-delay: 220ms; }
+    .workflow-section.reveal-visible .workflow-card:nth-child(3) { transition-delay: 320ms; }
+    .workflow-section.reveal-visible .workflow-card:nth-child(4) { transition-delay: 420ms; }
+
     .features {
-      margin-top: 56px;
-      padding: 34px 28px;
-      border-radius: 28px;
-      border: 1px solid rgba(136, 105, 255, 0.12);
-      background: linear-gradient(180deg, rgba(14, 10, 31, 0.82), rgba(9, 7, 20, 0.94));
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+      margin-top: 108px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 42px 18px;
+      overflow: visible;
+    }
+
+    .features > .section-heading {
+      grid-column: 1 / -1;
+    }
+
+    .features > .medo-grid {
+      grid-column: 1 / -1;
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 18px;
     }
 
     .feature-card {
-      padding: 18px 16px 12px;
-      border-radius: 22px;
+      min-height: 238px;
+      padding: 24px 18px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(142, 111, 255, 0.18);
+      background:
+        linear-gradient(180deg, rgba(23, 17, 49, 0.86), rgba(12, 9, 27, 0.9)),
+        radial-gradient(circle at 50% 0%, rgba(160, 130, 255, 0.16), transparent 56%);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+        0 18px 48px rgba(0, 0, 0, 0.24);
       display: grid;
       justify-items: center;
+      align-content: start;
       text-align: center;
       gap: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate3d(-96px, 44px, 0) scale(0.965);
+      transform-origin: center center;
+      transition:
+        opacity 720ms cubic-bezier(.22,.61,.36,1),
+        transform 720ms cubic-bezier(.22,.61,.36,1),
+        border-color 240ms ease,
+        box-shadow 240ms ease,
+        background 240ms ease;
+      will-change: opacity, transform;
+    }
+
+    .features.features--visible .feature-card {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    .features.features--visible > .section-heading {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .features.features--visible .feature-card:nth-child(1) {
+      transition-delay: 0ms, 0ms, 0ms, 0ms, 0ms;
+    }
+
+    .features.features--visible .feature-card:nth-child(2) {
+      transition-delay: 110ms, 110ms, 0ms, 0ms, 0ms;
+    }
+
+    .features.features--visible .feature-card:nth-child(3) {
+      transition-delay: 220ms, 220ms, 0ms, 0ms, 0ms;
+    }
+
+    .features.features--visible .feature-card:nth-child(4) {
+      transition-delay: 330ms, 330ms, 0ms, 0ms, 0ms;
+    }
+
+    .features.features--entered .feature-card {
+      transition-delay: 0ms;
     }
 
     .icon {
@@ -1084,8 +1726,8 @@
     }
 
     .footer {
-      margin-top: 34px;
-      padding: 19px 0 10px;
+      margin-top: 108px;
+      padding: 20px 0 10px;
       border-top: 1px solid rgba(255, 255, 255, 0.04);
       display: grid;
       grid-template-columns: minmax(0, 1.35fr) 1px minmax(0, 1.55fr) 1px minmax(0, 0.9fr);
@@ -1173,7 +1815,6 @@
     }
 
     .socials a:hover,
-    .feature-card:hover,
     .footer-column a:hover {
       color: white;
     }
@@ -1208,6 +1849,21 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .features > .medo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .why-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workflow-card--automation,
+      .workflow-card--insights,
+      .workflow-card--prototype,
+      .workflow-card--collab {
+        grid-column: span 12;
+      }
+
       .footer {
         grid-template-columns: 1fr;
         gap: 24px;
@@ -1239,9 +1895,69 @@
         min-height: 320px;
       }
 
+      .neural-section {
+        gap: 72px;
+      }
+
+      .features {
+        margin-top: 72px;
+      }
+
+      .metrics-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 24px 20px;
+      }
+
+      .why-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workflow-section {
+        padding-top: 18px;
+      }
+
+      .workflow-grid {
+        gap: 18px;
+      }
+
+      .workflow-card {
+        min-height: 320px;
+        padding: 26px 22px;
+      }
+
+      .workflow-card-copy {
+        left: 22px;
+        right: 22px;
+        bottom: 24px;
+      }
+
+      .task-chip {
+        width: 84%;
+        right: 4%;
+        padding: 0 16px;
+        font-size: 1rem;
+      }
+
+      .prototype-panel {
+        width: 94%;
+        padding: 28px 20px;
+      }
+
+      .timeline-step:nth-of-type(2) {
+        min-width: 220px;
+      }
+
       .features,
       .footer {
         grid-template-columns: 1fr;
+      }
+
+      .features > .medo-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer {
+        margin-top: 72px;
       }
 
       .footer-nav {
@@ -1280,15 +1996,6 @@
       }
     }
 
-    @keyframes sweep {
-      0% {
-        transform: translate3d(-1.2%, -0.8%, 0) scale(1);
-      }
-      100% {
-        transform: translate3d(1.6%, 1.2%, 0) scale(1.02);
-      }
-    }
-
     @keyframes brand-gradient-flow {
       0% {
         background-position: 0% 50%;
@@ -1302,16 +2009,20 @@
 <body>
   <main class="page">
     <section class="first-screen">
+      <div class="first-screen-bg" aria-hidden="true">
+        <video autoplay muted loop playsinline preload="auto">
+          <source src="./SplashScreen.mp4" type="video/mp4">
+        </video>
+      </div>
       <header class="nav">
         <nav class="nav-links" aria-label="主导航">
           <div class="nav-cluster nav-cluster--left">
-            <a class="nav-item nav-brand" href="#"><span class="brand">Getrue.ai</span></a>
+            <a class="nav-item nav-brand" href="#"><span class="brand">Facemini.com</span></a>
           </div>
           <div class="nav-cluster nav-cluster--center">
-            <a class="nav-item nav-item--collapse" href="#product"><span class="nav-link__text" data-label="文生图"></span></a>
-            <a class="nav-item nav-item--collapse" href="#solutions"><span class="nav-link__text" data-label="视频生成"></span></a>
-            <a class="nav-item nav-item--collapse" href="#pricing"><span class="nav-link__text" data-label="智能画布"></span></a>
-            <a class="nav-item nav-item--collapse" href="#docs"><span class="nav-link__text" data-label="探索"></span></a>
+            <a class="nav-item nav-item--collapse" href="#product"><span class="nav-link__text" data-label="关于我们"></span></a>
+            <a class="nav-item nav-item--collapse" href="#solutions"><span class="nav-link__text" data-label="关于产品"></span></a>
+            <a class="nav-item nav-item--collapse" href="#docs"><span class="nav-link__text" data-label="探索我们"></span></a>
           </div>
           <div class="nav-cluster nav-cluster--right">
             <a class="nav-item nav-login" href="#signin"><span class="nav-link__text" data-label="登录"></span></a>
@@ -1328,66 +2039,89 @@
       </header>
 
       <section id="home">
-        <div class="eyebrow">
-          <button class="ai-pill" type="button" aria-label="AI驱动的自动化平台">
-            <span class="ai-pill__outer-glow" aria-hidden="true"></span>
-            <span class="ai-pill__border" aria-hidden="true"></span>
-            <span class="ai-pill__liquid" aria-hidden="true"></span>
-            <span class="ai-pill__content">
-              <svg class="ai-pill__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path fill="currentColor" d="M12 2.5 14.2 9.8 21.5 12l-7.3 2.2L12 21.5l-2.2-7.3L2.5 12l7.3-2.2L12 2.5Z"/>
-              </svg>
-              <span>AI驱动的自动化平台</span>
-            </span>
-          </button>
-        </div>
-
         <div class="hero-copy">
-          <h1>知识生成于深海之上</h1>
-          <p>AI在数据深海中萃取灵感，于浪潮之上生成万象创作，以智能洞见赋予文字与画面全新生命力。</p>
+          <h1>千面创想 &nbsp;一面即达</h1>
+          <p>Facemini，让未来的工作方式，提前发生</p>
           <div class="hero-actions">
             <a class="button pill-cta hero-pill" href="/#/home" target="_top" onclick="sessionStorage.setItem('jingchuang:enter-app', '1')">
               <span class="signup-hero__orbit" aria-hidden="true"></span>
               <span class="signup-hero__liquid" aria-hidden="true"></span>
               <span class="signup-hero__noise" aria-hidden="true"></span>
               <span class="signup-hero__content">
-                <span class="signup-hero__text">Get Started</span>
+                <span class="signup-hero__text">开始探索</span>
                 <svg class="pill-cta__arrow" viewBox="0 0 18 16" fill="none" aria-hidden="true">
                   <path d="M1.5 8H16.5M16.5 8L10.5 2M16.5 8L10.5 14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </span>
             </a>
-            <a class="button secondary" href="#docs">
-              Explore Docs
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 7H15M9 11H15M9 15H12M7 4H17C18.1046 4 19 4.89543 19 6V18C19 19.1046 18.1046 20 17 20H7C5.89543 20 5 19.1046 5 18V6C5 4.89543 5.89543 4 7 4Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        <div class="hero-layout">
-          <div class="showcase-shell">
-            <span class="edge-light" aria-hidden="true"></span>
-            <div class="showcase">
-              <video class="showcase-media" autoplay muted loop playsinline preload="auto">
-                <source src="./4aecacd973a65d4499df367a2e8ad358.mp4" type="video/mp4">
-              </video>
-            </div>
           </div>
         </div>
       </section>
     </section>
 
-    <section id="product" class="features" aria-label="功能亮点">
+    <section class="neural-section" aria-label="Facemini.com 平台能力">
+      <div class="metrics-strip">
+        <div class="metric"><strong>10M+</strong><span>AI 能力日调用量</span></div>
+        <div class="metric"><strong>99.99%</strong><span>平台稳定可用性</span></div>
+        <div class="metric"><strong>50ms</strong><span>平均响应延迟</span></div>
+        <div class="metric"><strong>500+</strong><span>企业客户与个人</span></div>
+      </div>
+    </section>
+
+    <section class="why-section" aria-label="为什么选择 Facemini.com">
+      <div class="section-heading">
+        <h2>为什么选择 Facemini.com</h2>
+        <p>一站式解决 AI 应用开发的所有挑战，让您专注于产品创新</p>
+      </div>
+
+      <div class="why-grid">
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 3H15L16 6H20V12L21 13V17L17 18L16 21H8L7 18L3 17V13L4 12V6H8L9 3Z" stroke="currentColor" stroke-linejoin="round"/><path d="M9 9H15V15H9V9Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>强大的模型支持</h3>
+          <p>接入 GPT、Gemini、Claude 等主流大模型能力，支持多模型灵活切换，满足对话、创作、生图、内容生成等不同场景需求。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2L5 14H11L10 22L19 9H13L13 2Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>多模态创作能力</h3>
+          <p>覆盖文字、图片、视频、音频等多种内容形态，支持图片生成、视频生成、语音合成、AI 音乐、音色转换等能力，让创意快速转化为作品。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L19 6V11.5C19 16.2 16.05 20.6 12 22C7.95 20.6 5 16.2 5 11.5V6L12 3Z" stroke="currentColor" stroke-linejoin="round"/></svg></span>
+          <h3>数字人内容生产</h3>
+          <p>支持生成专属数字人形象，也可使用平台数字人模板快速制作口播短视频，帮助企业降低拍摄成本，提升内容生产效率。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 19V10M12 19V5M19 19V13" stroke="currentColor" stroke-linecap="round"/><path d="M4 19H20" stroke="currentColor" stroke-linecap="round"/></svg></span>
+          <h3>智能营销工作流</h3>
+          <p>整合爆款图文生成、视频配音、智能抠图、画质提升、提示词反推、语音转文字等营销工具，覆盖从创意生成到素材处理的完整链路。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="currentColor"/><path d="M3 12H21M12 3C14 5.4 15 8.4 15 12C15 15.6 14 18.6 12 21M12 3C10 5.4 9 8.4 9 12C9 15.6 10 18.6 12 21" stroke="currentColor"/></svg></span>
+          <h3>稳定安全的服务体验</h3>
+          <p>注重平台稳定性与数据安全，通过加密传输、权限管理与服务监控机制，为个人和企业用户提供可靠的 AI 使用环境。</p>
+        </article>
+        <article class="why-card">
+          <span class="why-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M8 9L4 12L8 15M16 9L20 12L16 15M14 5L10 19" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <h3>清晰可控的资产管理</h3>
+          <p>提供积分查询、使用记录、购买管理等功能，让用户清晰掌握各项 AI 能力的使用情况，帮助个人与企业更好地控制成本与资源投入。</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="product" class="features" aria-label="Facemini.com 能做什么？">
+      <div class="section-heading">
+        <h2>Facemini.com 能做什么</h2>
+        <p>聚焦 AI 应用落地，助力企业与内容业务高效增长</p>
+      </div>
+
       <article class="feature-card">
         <div class="icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none">
             <path d="M13 2L5 14H11L10 22L18 10H12L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>AI Automation</h3>
-        <p>自动处理重复任务，让团队把时间集中在策略、内容与高价值决策上。</p>
+        <h3>企业级AI智能体</h3>
+        <p>深度结合业务场景，构建更智能、更高效的 AI 协作体验。</p>
       </article>
 
       <article class="feature-card">
@@ -1397,8 +2131,8 @@
             <path d="M12 12L20 7.5M12 12V21M12 12L4 7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>No-Code Builder</h3>
-        <p>通过模块化页面与组件配置，快速搭建首页、专题页与品牌展示内容。</p>
+        <h3>垂类行业AI落地</h3>
+        <p>面向垂类行业需求，提供SOP级的 AI 应用能力支持。</p>
       </article>
 
       <article class="feature-card">
@@ -1408,8 +2142,8 @@
             <path d="M4 19H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3>Real-time Analytics</h3>
-        <p>追踪访问、互动与转化表现，把页面设计和增长优化连成一条闭环。</p>
+        <h3>AI漫剧内容生产</h3>
+        <p>提升内容创作效率，助力多样化视觉内容快速生成。</p>
       </article>
 
       <article class="feature-card">
@@ -1419,36 +2153,39 @@
             <path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>Secure & Reliable</h3>
-        <p>以稳定、可维护的页面结构为基础，兼顾展示效果、性能与后续扩展空间。</p>
+        <h3>通用性营销工具</h3>
+        <p>聚焦增长与传播需求，帮助品牌提升内容与运营效率。</p>
       </article>
     </section>
 
     <footer id="about" class="footer">
       <div class="footer-brand">
-        <a class="brand" href="#">Getrue.ai</a>
-        <p class="footer-copy">一个将品牌表达、AI 工作流与数字体验整合在一起的创意主页模板，适合展示产品、服务与团队能力。</p>
+        <a class="brand" href="#">Facemini.com</a>
+        <p class="footer-copy">AI驱动的智能工作流平台，以 AI 重塑工作与创作方式，为个人与企业降本增效。</p>
       </div>
 
       <div class="footer-divider" aria-hidden="true"></div>
 
       <div class="footer-nav">
         <div class="footer-column">
-          <strong>Product</strong>
-          <a href="#product">Features</a>
-          <a href="#solutions">Integrations</a>
+          <strong>产品</strong>
+          <a href="#product">关于我们</a>
+          <a href="#solutions">公司简介</a>
+          <a href="#solutions">团队介绍</a>
         </div>
 
         <div class="footer-column">
-          <strong>Resources</strong>
-          <a href="#docs">Docs</a>
-          <a href="#docs">Guides</a>
+          <strong>资源</strong>
+          <a href="#docs">产品介绍</a>
+          <a href="#docs">功能指南</a>
+          <a href="#docs">服务定制</a>
         </div>
 
         <div class="footer-column">
-          <strong>Company</strong>
-          <a href="#about">About</a>
-          <a href="#about">Blog</a>
+          <strong>公司</strong>
+          <a href="#about">探索我们</a>
+          <a href="#about">联系方式</a>
+          <a href="#about">平台资讯</a>
         </div>
       </div>
 
@@ -1473,12 +2210,26 @@
             </svg>
           </a>
         </div>
-        <p class="footer-legal">© 2026 Getrue.ai All rights reserved.</p>
+        <p class="footer-legal">© 2026 Facemini.com All rights reserved.</p>
       </div>
     </footer>
   </main>
   <script>
+    function resetPageScroll() {
+      var root = document.documentElement;
+      var previousBehavior = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      requestAnimationFrame(function () {
+        root.style.scrollBehavior = previousBehavior;
+      });
+    }
+
+    resetPageScroll();
+    window.addEventListener("pageshow", resetPageScroll);
+
     window.addEventListener("load", function () {
+      resetPageScroll();
       requestAnimationFrame(function () {
         document.body.classList.add("is-loaded");
       });
@@ -1486,7 +2237,6 @@
 
     (function () {
       var nav = document.querySelector(".nav");
-      var firstScreen = document.querySelector(".first-screen");
       var fadeAt = 72;
       var lastScrollY = window.scrollY;
       var scrollTolerance = 10;
@@ -1496,20 +2246,6 @@
         var currentY = window.scrollY;
         var delta = currentY - lastScrollY;
 
-        if (currentY <= 2 && delta < 0) {
-          introProgress = 0;
-          introComplete = false;
-          videoZoomProgress = 0;
-          videoZoomComplete = false;
-          applyHeroFadeProgress(0);
-          applyVideoZoomProgress(0);
-        }
-
-        if (!introComplete) {
-          nav.classList.remove("nav--fade-menu");
-          lastScrollY = window.scrollY;
-          return;
-        }
         if (window.innerWidth <= 720) {
           nav.classList.remove("nav--fade-menu");
           lastScrollY = window.scrollY;
@@ -1551,6 +2287,12 @@
         navResizeObserver.observe(nav);
       }
 
+      var firstScreen = document.querySelector(".first-screen");
+      var heroShell = document.querySelector(".showcase-shell");
+      var heroIntroProgress = 0;
+      var heroTouchLastY = 0;
+      var features = document.querySelector(".features");
+
       function clamp(value, min, max) {
         return Math.min(Math.max(value, min), max);
       }
@@ -1559,136 +2301,178 @@
         return clamp((progress - start) / Math.max(end - start, 0.0001), 0, 1);
       }
 
-      function applyHeroFadeProgress(progress) {
-        var eyebrowOut = mapRange(progress, 0.02, 0.24);
-        var copyOut = mapRange(progress, 0.18, 0.5);
-        var actionsOut = mapRange(progress, 0.42, 0.74);
-
-        document.body.style.setProperty("--hero-eyebrow-opacity", (1 - eyebrowOut).toFixed(4));
-        document.body.style.setProperty("--hero-eyebrow-shift", (-28 * eyebrowOut).toFixed(2) + "px");
-        document.body.style.setProperty("--hero-copy-opacity", (1 - copyOut).toFixed(4));
-        document.body.style.setProperty("--hero-copy-shift", (-34 * copyOut).toFixed(2) + "px");
-        document.body.style.setProperty("--hero-actions-opacity", (1 - actionsOut).toFixed(4));
-        document.body.style.setProperty("--hero-actions-shift", (-26 * actionsOut).toFixed(2) + "px");
+      function easeInOutCubic(value) {
+        return value < 0.5
+          ? 4 * value * value * value
+          : 1 - Math.pow(-2 * value + 2, 3) / 2;
       }
 
-      var introProgress = 0;
-      var introComplete = false;
-      var videoZoomProgress = 0;
-      var videoZoomComplete = false;
-      var touchStartY = 0;
-      var touchLastY = 0;
-
-      function shouldLockHeroIntro() {
-        return !introComplete && firstScreen && window.scrollY <= 4;
+      function smootherStep(value) {
+        return value * value * value * (value * (value * 6 - 15) + 10);
       }
 
-      function shouldLockVideoZoom() {
-        return introComplete && !videoZoomComplete && firstScreen && window.scrollY <= 4;
+      function writeHeroVideoFrame() {
+        document.body.style.setProperty("--hero-video-y", "0px");
+        document.body.style.setProperty("--hero-video-scale", "1");
+        document.body.style.setProperty("--hero-video-radius", "32px");
+        document.body.style.setProperty("--hero-video-frame-opacity", "1");
+        document.body.style.setProperty("--hero-video-border-alpha", "0.62");
+        document.body.style.setProperty("--hero-video-inner-alpha", "0.08");
+        document.body.style.setProperty("--hero-video-glow-alpha", "0.16");
+        document.body.style.setProperty("--hero-video-shadow-alpha", "0.55");
+        document.body.style.setProperty("--hero-video-shadow-y", "30px");
+        document.body.style.setProperty("--hero-video-shadow-blur", "80px");
+        document.body.style.setProperty("--hero-video-ray-opacity", "0.95");
       }
 
-      function applyVideoZoomProgress(progress) {
-        var showcaseShell = document.querySelector(".showcase-shell");
-        if (!showcaseShell) return;
+      function writeHeroCopyFrame(progress) {
+        var eased = smootherStep(clamp(progress, 0, 1));
+        document.body.style.setProperty("--hero-eyebrow-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-eyebrow-shift", (-34 * eased).toFixed(1) + "px");
+        document.body.style.setProperty("--hero-copy-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-copy-shift", (-42 * eased).toFixed(1) + "px");
+        document.body.style.setProperty("--hero-actions-opacity", String((1 - eased).toFixed(3)));
+        document.body.style.setProperty("--hero-actions-shift", (-30 * eased).toFixed(1) + "px");
+      }
 
-        var shellWidth = showcaseShell.offsetWidth || 1;
-        var shellHeight = showcaseShell.offsetHeight || 1;
-        var targetScale = Math.max(
-          window.innerWidth / shellWidth,
-          window.innerHeight / shellHeight
-        );
-        var scale = 1 + ((targetScale - 1) * progress);
-        document.body.style.setProperty("--hero-scale", scale.toFixed(4));
+      function writeHeroSequenceFrame(progress) {
+        writeHeroCopyFrame(progress);
+        writeHeroVideoFrame();
+      }
+
+      function measureHeroVideoTarget() {
+        if (!heroShell) return;
+        document.body.style.setProperty("--hero-video-y", "0px");
+        document.body.style.setProperty("--hero-video-scale", "1");
+        document.body.style.setProperty("--hero-video-radius", "32px");
+        document.body.style.setProperty("--hero-video-frame-opacity", "1");
+        document.body.style.setProperty("--hero-video-border-alpha", "0.62");
+        document.body.style.setProperty("--hero-video-inner-alpha", "0.08");
+        document.body.style.setProperty("--hero-video-glow-alpha", "0.16");
+        document.body.style.setProperty("--hero-video-shadow-alpha", "0.55");
+        document.body.style.setProperty("--hero-video-shadow-y", "30px");
+        document.body.style.setProperty("--hero-video-shadow-blur", "80px");
+        document.body.style.setProperty("--hero-video-ray-opacity", "0.95");
+        document.body.style.setProperty("--hero-eyebrow-opacity", "1");
+        document.body.style.setProperty("--hero-eyebrow-shift", "0px");
+        document.body.style.setProperty("--hero-copy-opacity", "1");
+        document.body.style.setProperty("--hero-copy-shift", "0px");
+        document.body.style.setProperty("--hero-actions-opacity", "1");
+        document.body.style.setProperty("--hero-actions-shift", "0px");
+
+        var rect = heroShell.getBoundingClientRect();
+        updateFeaturesOffset(rect);
+        writeHeroSequenceFrame(heroIntroProgress);
+      }
+
+      function updateFeaturesOffset(shellRect) {
+        var baseGap = window.innerWidth <= 720 ? 18 : 24;
+        var firstScreenBottom = firstScreen
+          ? firstScreen.getBoundingClientRect().bottom
+          : window.innerHeight;
+        var offset = Math.max(baseGap, shellRect.bottom - firstScreenBottom + baseGap);
+        document.body.style.setProperty("--features-offset", Math.ceil(offset) + "px");
+      }
+
+      function setHeroIntroProgress(progress) {
+        document.body.classList.add("hero-sequence-running");
+        heroIntroProgress = clamp(progress, 0, 1);
+        writeHeroSequenceFrame(heroIntroProgress);
+        if (heroIntroProgress === 0 || heroIntroProgress === 1) {
+          document.body.classList.remove("hero-sequence-running");
+        }
+      }
+
+      function revealFeatures() {
+        if (!features || features.classList.contains("features--visible")) return;
+        features.classList.add("features--visible");
+        window.setTimeout(function () {
+          features.classList.add("features--entered");
+        }, 1150);
+      }
+
+      function revealElement(element) {
+        if (!element) return;
+        element.classList.add("reveal-visible");
+      }
+
+      function setupScrollReveals() {
+        var revealTargets = [
+          { element: document.querySelector(".metrics-strip"), onReveal: revealElement },
+          { element: document.querySelector(".section-heading"), onReveal: revealElement },
+          { element: document.querySelector(".why-grid"), onReveal: revealElement },
+          { element: document.querySelector(".workflow-section"), onReveal: revealElement },
+          { element: features, onReveal: revealFeatures }
+        ].filter(function (item) {
+          return item.element;
+        });
+
+        if (!("IntersectionObserver" in window)) {
+          revealTargets.forEach(function (item) {
+            item.onReveal(item.element);
+          });
+          return;
+        }
+
+        var revealObserver = new IntersectionObserver(function (entries, observer) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var target = revealTargets.find(function (item) {
+              return item.element === entry.target;
+            });
+            if (target) target.onReveal(target.element);
+            observer.unobserve(entry.target);
+          });
+        }, {
+          threshold: 0.22,
+          rootMargin: "0px 0px -10% 0px"
+        });
+
+        revealTargets.forEach(function (item) {
+          revealObserver.observe(item.element);
+        });
+      }
+
+      function shouldLockHeroIntro(deltaY) {
+        if (!heroShell || window.scrollY > 4) return false;
+        return (deltaY > 0 && heroIntroProgress < 1) || (deltaY < 0 && heroIntroProgress > 0);
       }
 
       function advanceHeroIntro(deltaY) {
-        if (!shouldLockHeroIntro()) return false;
-        if (deltaY <= 0 && introProgress <= 0) return true;
-
-        var previous = introProgress;
-        var next = clamp(previous + (deltaY / Math.max(window.innerHeight * 0.72, 420)), 0, 1);
-        introProgress = next;
-        applyHeroFadeProgress(introProgress);
-
-        if (introProgress >= 1) {
-          introComplete = true;
-        }
-
-        return true;
+        var next = heroIntroProgress + (deltaY / Math.max(window.innerHeight * 0.72, 420));
+        setHeroIntroProgress(next);
       }
 
-      function advanceVideoZoom(deltaY) {
-        if (!shouldLockVideoZoom()) return false;
-        if (deltaY <= 0 && videoZoomProgress <= 0) return true;
-
-        var previous = videoZoomProgress;
-        var next = clamp(previous + (deltaY / Math.max(window.innerHeight * 0.9, 560)), 0, 1);
-        videoZoomProgress = next;
-        applyVideoZoomProgress(videoZoomProgress);
-
-        if (videoZoomProgress >= 1) {
-          videoZoomComplete = true;
-        }
-
-        return true;
-      }
-
-      function handleLockedWheel(event) {
-        if (!shouldLockHeroIntro() && !shouldLockVideoZoom()) return;
+      function handleHeroIntroWheel(event) {
+        if (!shouldLockHeroIntro(event.deltaY)) return;
         event.preventDefault();
-
-        if (shouldLockHeroIntro()) {
-          var introPrevious = introProgress;
-          var introNext = clamp(introPrevious + (event.deltaY / Math.max(window.innerHeight * 0.72, 420)), 0, 1);
-          introProgress = introNext;
-          applyHeroFadeProgress(introProgress);
-
-          if (introProgress >= 1) {
-            introComplete = true;
-          }
-          return;
-        }
-
-        if (shouldLockVideoZoom()) {
-          var zoomPrevious = videoZoomProgress;
-          var zoomNext = clamp(zoomPrevious + (event.deltaY / Math.max(window.innerHeight * 0.9, 560)), 0, 1);
-          videoZoomProgress = zoomNext;
-          applyVideoZoomProgress(videoZoomProgress);
-
-          if (videoZoomProgress >= 1) {
-            videoZoomComplete = true;
-          }
-        }
+        advanceHeroIntro(event.deltaY);
       }
 
-      function handleTouchStart(event) {
+      function handleHeroIntroTouchStart(event) {
         if (!event.touches || !event.touches.length) return;
-        touchStartY = event.touches[0].clientY;
-        touchLastY = touchStartY;
+        heroTouchLastY = event.touches[0].clientY;
       }
 
-      function handleTouchMove(event) {
-        if ((!shouldLockHeroIntro() && !shouldLockVideoZoom()) || !event.touches || !event.touches.length) return;
+      function handleHeroIntroTouchMove(event) {
+        if (!event.touches || !event.touches.length) return;
         var currentY = event.touches[0].clientY;
-        var deltaY = touchLastY - currentY;
-        touchLastY = currentY;
-        if (Math.abs(deltaY) < 0.5) return;
+        var deltaY = heroTouchLastY - currentY;
+        heroTouchLastY = currentY;
+        if (Math.abs(deltaY) < 0.5 || !shouldLockHeroIntro(deltaY)) return;
         event.preventDefault();
-        if (shouldLockHeroIntro()) {
-          advanceHeroIntro(deltaY);
-          return;
-        }
-        advanceVideoZoom(deltaY);
+        advanceHeroIntro(deltaY);
       }
 
-      applyHeroFadeProgress(0);
-      applyVideoZoomProgress(0);
-      window.addEventListener("wheel", handleLockedWheel, { passive: false });
-      window.addEventListener("touchstart", handleTouchStart, { passive: true });
-      window.addEventListener("touchmove", handleTouchMove, { passive: false });
-      window.addEventListener("resize", function () {
-        applyVideoZoomProgress(videoZoomProgress);
-      });
+      measureHeroVideoTarget();
+      window.addEventListener("load", function () {
+        requestAnimationFrame(measureHeroVideoTarget);
+      }, { once: true });
+      window.addEventListener("wheel", handleHeroIntroWheel, { passive: false });
+      window.addEventListener("touchstart", handleHeroIntroTouchStart, { passive: true });
+      window.addEventListener("touchmove", handleHeroIntroTouchMove, { passive: false });
+      window.addEventListener("resize", measureHeroVideoTarget);
+      setupScrollReveals();
 
       var glowCards = document.querySelectorAll(".showcase-shell");
 

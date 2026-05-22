@@ -15,14 +15,15 @@ function normalizeUpscaleFactor(value) {
   return String(value || "2").trim() || "2";
 }
 
-export async function createKieEnhanceImageTask({ model, sourceUrl, upscaleFactor }) {
+export async function createKieEnhanceImageTask({ model, sourceUrl, prompt }) {
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
     body: JSON.stringify({
       model,
       input: {
-        image_url: sourceUrl,
-        upscale_factor: normalizeUpscaleFactor(upscaleFactor)
+        prompt,
+        input_urls: [sourceUrl],
+        aspect_ratio: "auto"
       }
     })
   });

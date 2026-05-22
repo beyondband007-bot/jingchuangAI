@@ -836,8 +836,8 @@ async function seedDemoData() {
       INSERT INTO chat_model_prices
         (model_key, provider_model, display_name, points_per_kie_credit, reserve_points, enabled, sort_order)
       VALUES
-        ('gpt-5-4', 'gpt-5-4', 'GPT 5.4', 4.000, 1, TRUE, 10),
-        ('gpt-5-5', 'gpt-5-5', 'GPT 5.5', 4.000, 1, TRUE, 20),
+        ('gpt-5-4', 'gpt-5-4', 'Codex5.4', 4.000, 1, TRUE, 10),
+        ('gpt-5-5', 'gpt-5-5', 'Codex5.5', 4.000, 1, TRUE, 20),
         ('gemini-3-pro', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
         ('claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 40),
         ('claude-opus-4-6', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, TRUE, 50),

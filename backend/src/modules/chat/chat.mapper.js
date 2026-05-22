@@ -9,10 +9,17 @@ function parseJson(value, fallback) {
   }
 }
 
+function formatChatModelName(name) {
+  const displayName = name || "";
+  if (displayName === "GPT 5.4") return "Codex5.4";
+  if (displayName === "GPT 5.5") return "Codex5.5";
+  return displayName;
+}
+
 export function mapChatModel(row) {
   return {
     value: row.model_key,
-    label: row.display_name,
+    label: formatChatModelName(row.display_name),
     providerModel: row.provider_model,
     pointsPerKieCredit: Number(row.points_per_kie_credit || 4),
     reservePoints: Number(row.reserve_points || 1)
@@ -23,7 +30,7 @@ export function mapChatConversation(row) {
   return {
     id: row.id,
     title: row.title,
-    model: row.display_name || row.model_key,
+    model: formatChatModelName(row.display_name) || row.model_key,
     modelKey: row.model_key,
     time: formatBeijingClock(row.updated_at || row.created_at)
   };

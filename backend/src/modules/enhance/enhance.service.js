@@ -1,4 +1,8 @@
 import path from "path";
+import { execFile } from "child_process";
+import { mkdir, readFile, rm } from "fs/promises";
+import { promisify } from "util";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
@@ -32,6 +36,21 @@ import {
   setEnhanceTaskProviderTaskId,
   toggleEnhanceTaskFavorite
 } from "./enhance.repository.js";
+
+const execFileAsync = promisify(execFile);
+
+const KIE_COMPATIBLE_IMAGE_FORMATS = {
+  jpeg: { mimeType: "image/jpeg", ext: ".jpg" },
+  png: { mimeType: "image/png", ext: ".png" },
+  webp: { mimeType: "image/webp", ext: ".webp" }
+};
+
+const defaultImageEnhancePrompt = [
+  "Enhance the image quality while preserving the original composition, identity, layout, colors, and subject.",
+  "Improve sharpness, fine details, texture clarity, edge definition, lighting balance, and overall clean high-resolution appearance.",
+  "Remove compression artifacts, blur, noise, pixelation, and low-quality defects naturally.",
+  "Do not add new objects, do not change the scene, do not alter faces or text content, and do not stylize the image."
+].join(" ");
 
 function getModelDefinitions() {
   return [
@@ -74,6 +93,36 @@ function normalizeUpscaleFactor(value, fallback) {
   return factor || "2";
 }
 
+function detectImageFormat(buffer) {
+  if (!buffer || buffer.length < 12) return "";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpeg";
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return "png";
+  }
+  if (
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "webp";
+  }
+  return "";
+}
+
+function buildKieImageFileName(asset, ext) {
+  const baseName = path.basename(asset.original_name || asset.stored_name || "source", path.extname(asset.original_name || asset.stored_name || ""));
+  const safeBaseName = baseName.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || `enhance-${asset.id}`;
+  return `${safeBaseName}${ext}`;
+}
+
 export async function getCredits() {
   return getDemoUserCredits();
 }
@@ -82,7 +131,12 @@ export function getModels() {
   const models = getModelDefinitions();
   return {
     models: models.map((model) => ({
-      ...model,
+      value: model.value,
+      label: model.label,
+      kind: model.kind,
+      provider: model.provider,
+      basePoints: model.basePoints,
+      upscaleFactor: model.upscaleFactor,
       configured: Boolean(config.kie.apiKey)
     })),
     defaults: {
@@ -188,7 +242,7 @@ export async function createTask(payload) {
       ? await createKieEnhanceImageTask({
         model: model.providerModel,
         sourceUrl: upload.url,
-        upscaleFactor
+        prompt: defaultImageEnhancePrompt
       })
       : await createKieEnhanceVideoTask({
         model: model.providerModel,
@@ -205,7 +259,14 @@ export async function createTask(payload) {
 }
 
 async function uploadAssetToKie(asset, uploadPath) {
-  if (asset.provider_url) return { url: asset.provider_url };
+  if (asset.provider_url && asset.kind !== "image") return { url: asset.provider_url };
+
+  if (asset.kind === "image") {
+    const result = await uploadEnhanceImageToKie(asset, uploadPath);
+    await setEnhanceAssetProviderUrl(asset.id, result.url);
+    return result;
+  }
+
   const result = await uploadFileToKie({
     filePath: asset.file_path,
     fileName: asset.original_name || path.basename(asset.file_path),
@@ -214,6 +275,56 @@ async function uploadAssetToKie(asset, uploadPath) {
   });
   await setEnhanceAssetProviderUrl(asset.id, result.url);
   return result;
+}
+
+async function uploadEnhanceImageToKie(asset, uploadPath) {
+  const bytes = await readFile(asset.file_path);
+  const format = detectImageFormat(bytes);
+  const compatible = KIE_COMPATIBLE_IMAGE_FORMATS[format];
+  if (compatible) {
+    return uploadFileToKie({
+      filePath: asset.file_path,
+      fileName: buildKieImageFileName(asset, compatible.ext),
+      mimeType: compatible.mimeType,
+      uploadPath
+    });
+  }
+
+  const convertedDir = path.resolve(process.cwd(), config.media.storageDir, "enhance", "kie-compatible");
+  await mkdir(convertedDir, { recursive: true });
+  const convertedPath = path.join(convertedDir, `${Date.now()}-${asset.id}.jpg`);
+
+  try {
+    await execFileAsync(ffmpegInstaller.path, [
+      "-y",
+      "-i",
+      asset.file_path,
+      "-frames:v",
+      "1",
+      "-vf",
+      "format=yuv420p",
+      "-q:v",
+      "2",
+      convertedPath
+    ]);
+
+    return await uploadFileToKie({
+      filePath: convertedPath,
+      fileName: buildKieImageFileName(asset, ".jpg"),
+      mimeType: "image/jpeg",
+      uploadPath
+    });
+  } catch (error) {
+    const message = String(error?.stderr || error?.message || "").slice(-400);
+    const wrapped = createHttpError(
+      `image format is not supported by enhancement provider; please upload JPEG, PNG, or WEBP${message ? ` (${message})` : ""}`,
+      400
+    );
+    wrapped.cause = error;
+    throw wrapped;
+  } finally {
+    await rm(convertedPath, { force: true }).catch(() => {});
+  }
 }
 
 async function refreshProcessingTasks() {
