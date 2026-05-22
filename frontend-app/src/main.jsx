@@ -1335,7 +1335,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           灵感
         </button>
         <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
-        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
+        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">最近生成</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
@@ -1691,7 +1691,7 @@ function VideoGenerationView() {
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
         <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">全部结果</button>
-        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
+        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">最近生成</button>
         <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
