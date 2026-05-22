@@ -6400,27 +6400,29 @@ a:hover {
 }
 
 .idh-mode-tabs button {
-  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
   padding: 0 10px;
-  color: #64748b;
-  background: transparent;
-  border: 1px solid transparent;
+  color: #667085;
+  background: #f3f6fa;
+  border: 1px solid #e1e7ef;
   border-radius: 7px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .idh-mode-tabs .is-active {
-  color: #ffffff;
-  background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%);
-  border-color: transparent;
-  box-shadow: none;
+  color: #174a7c;
+  background: #eef6ff;
+  border-color: #cfe4fb;
 }
 
 .idh-mode-tabs button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.58;
 }
 
 .idh-composer-body {
@@ -6432,18 +6434,16 @@ a:hover {
 .idh-upload-card {
   position: relative;
   display: grid;
-  gap: 7px;
-  width: 100%;
-  min-height: 116px;
+  min-height: 108px;
   place-items: center;
-  padding: 16px;
+  align-content: center;
+  gap: 7px;
   overflow: hidden;
   color: #174a7c;
-  background: #eef6ff;
-  border: 1px dashed #9ecbff;
+  background: #f8fbff;
+  border: 1px dashed #bfd4ea;
   border-radius: 8px;
   cursor: pointer;
-  text-align: center;
 }
 
 .idh-upload-card.has-image {
@@ -6458,15 +6458,12 @@ a:hover {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #eef4fb;
+  background: #eef5fc;
 }
 
 .idh-upload-card strong {
-  max-width: 100%;
-  overflow: hidden;
   color: #172033;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 14px;
 }
 
 .idh-upload-card span {
@@ -6477,10 +6474,10 @@ a:hover {
 
 .idh-form-card {
   display: grid;
-  gap: 13px;
-  padding: 12px;
+  gap: 7px;
+  padding: 8px;
   background: #f8fafc;
-  border: 1px solid #edf1f5;
+  border: 1px solid #e6edf5;
   border-radius: 8px;
 }
 
@@ -6489,36 +6486,64 @@ a:hover {
 }
 
 .idh-form-card textarea {
-  min-height: 92px;
-  padding: 11px 12px;
+  min-height: 46px;
+  padding: 8px 10px;
   color: #172033;
-  background: #f8fafc;
+  background: #fff;
   border: 1px solid #dbe5ef;
-  border-radius: 8px;
+  border-radius: 7px;
   resize: vertical;
   font: inherit;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
+}
+
+.idh-advanced {
+  display: grid;
+  gap: 8px;
+  color: #516073;
+  font-size: 12px;
+}
+
+.idh-advanced summary {
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.idh-advanced label {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.idh-advanced span {
+  color: #172033;
+  font-weight: 800;
+}
+
+.idh-advanced input[type="range"] {
+  width: 100%;
+  accent-color: #1677ff;
 }
 
 .idh-preview-voice {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 38px;
-  color: #174a7c;
-  background: #eef6ff;
-  border: 1px solid #cfe4fb;
-  border-radius: 8px;
+  gap: 7px;
+  min-height: 30px;
+  color: #166534;
+  background: #eafbea;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .idh-preview-voice:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.68;
 }
 
 .idh-preview-voice svg,
@@ -6528,6 +6553,7 @@ a:hover {
 
 .idh-audio-preview {
   width: 100%;
+  height: 34px;
 }
 
 .idh-composer-footer {
@@ -6573,12 +6599,12 @@ a:hover {
 }
 
 .idh-notice {
-  padding: 10px 12px;
-  color: #b42318;
-  background: #fff1ed;
-  border: 1px solid #ffd8c7;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 9px 11px;
+  color: #0f4f94;
+  background: #eaf4ff;
+  border: 1px solid #cfe4fb;
+  border-radius: 7px;
+  font-size: 12px;
   font-weight: 800;
 }
 

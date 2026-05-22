@@ -1,6 +1,6 @@
 .idh-showcase-card {
   display: grid;
-  gap: 16px;
+  gap: 22px;
   margin-bottom: 18px;
   padding: 0;
   border: 0;
@@ -32,18 +32,25 @@
 }
 
 .idh-showcase-hero {
-  gap: 14px;
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
 }
 
 .idh-showcase-copy strong {
-  font-size: 20px;
-  color: #f4f6ff;
+  display: block;
+  margin: 18px 0 10px;
+  font-size: 36px;
+  color: #f7f8ff;
+  line-height: 1.05;
 }
 
 .idh-showcase-copy p {
   margin: 0;
-  color: #aeb8d4;
-  line-height: 1.6;
+  max-width: 720px;
+  color: #a6acc7;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 .idh-showcase-frame {
@@ -219,14 +226,16 @@
 }
 
 .idh-showcase-drive-tabs .idh-showcase-pill {
-  min-height: 36px;
+  appearance: none;
   justify-content: center;
+  min-height: 36px;
   padding: 0 10px;
-  color: #64748b;
-  background: transparent;
-  border: 1px solid transparent;
   border-radius: 7px;
+  border: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary);
   cursor: pointer;
+  font: inherit;
   font-size: 13px;
   font-weight: 800;
 }
@@ -236,7 +245,6 @@
   background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: none;
 }
 
 .idh-showcase-field {

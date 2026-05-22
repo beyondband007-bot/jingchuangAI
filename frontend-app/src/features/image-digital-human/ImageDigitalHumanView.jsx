@@ -1,11 +1,18 @@
-import React from "react";
-import { ImagePlus, UserRound, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ImagePlus, Star, UserRound, X } from "lucide-react";
+import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { CustomSelect } from "../../components/CustomSelect";
 import "./ImageDigitalHumanShowcaseCard.css";
 
-export function ImageDigitalHumanShowcaseCard({
+const emptyImageDigitalHumanOptions = {
+  models: [],
+  defaults: { model: "kie-s2v-r2v", driveMode: "text" },
+  limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 }
+};
+
+function ImageDigitalHumanShowcaseCard({
   portraitPreview,
-  driveMode = "text",
+  driveMode,
   onDriveModeChange,
   onSelectPortrait,
   onClearPortrait,
@@ -144,6 +151,121 @@ export function ImageDigitalHumanShowcaseCard({
           {notice ? <div className="idh-showcase-footer-item is-notice">{notice}</div> : null}
         </div>
       </div>
+    </section>
+  );
+}
+
+export function ImageDigitalHumanView() {
+  const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
+  const [voices, setVoices] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [viewTab, setViewTab] = useState("home");
+  const [portraitPreview, setPortraitPreview] = useState("");
+  const [driveMode, setDriveMode] = useState(emptyImageDigitalHumanOptions.defaults.driveMode);
+  const [model, setModel] = useState("");
+  const [voiceId, setVoiceId] = useState("");
+  const [text, setText] = useState("大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。");
+  const [notice, setNotice] = useState("");
+  const [isSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      try {
+        const [modelData, voiceData, creditData] = await Promise.all([
+          imageDigitalHumanApi.getModels(),
+          imageDigitalHumanApi.getVoices(),
+          imageDigitalHumanApi.getCredits().catch(() => null)
+        ]);
+
+        if (!mounted) return;
+        setOptions(modelData);
+        setVoices(voiceData.voices || []);
+        setCredits(creditData);
+        setDriveMode(modelData.defaults?.driveMode || emptyImageDigitalHumanOptions.defaults.driveMode);
+      } catch (error) {
+        if (mounted) setNotice(error.message || "加载图片数字人失败");
+      }
+    }
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+
+    if (!voiceId && voices[0]?.id) {
+      setVoiceId(voices[0].id);
+    }
+  }, [model, options, voiceId, voices]);
+
+  useEffect(() => () => {
+    if (portraitPreview.startsWith("blob:")) {
+      window.URL.revokeObjectURL(portraitPreview);
+    }
+  }, [portraitPreview]);
+
+  function selectPortrait(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("请上传图片文件");
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("图片大小不能超过 10MB");
+      return;
+    }
+    if (portraitPreview.startsWith("blob:")) {
+      window.URL.revokeObjectURL(portraitPreview);
+    }
+    setPortraitPreview(window.URL.createObjectURL(file));
+    setNotice("");
+  }
+
+  function clearPortrait() {
+    if (portraitPreview.startsWith("blob:")) {
+      window.URL.revokeObjectURL(portraitPreview);
+    }
+    setPortraitPreview("");
+    setNotice("");
+  }
+
+  return (
+    <section className="idh-view-root idh-view-root--showcase-only">
+      <div className="image-filter-tabs idh-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+      </div>
+      <ImageDigitalHumanShowcaseCard
+        portraitPreview={portraitPreview}
+        driveMode={driveMode}
+        onDriveModeChange={setDriveMode}
+        onSelectPortrait={selectPortrait}
+        onClearPortrait={clearPortrait}
+        modelOptions={options.models}
+        voiceOptions={voices}
+        selectedModelValue={model}
+        onModelChange={setModel}
+        selectedVoiceValue={voiceId}
+        onVoiceChange={setVoiceId}
+        text={text}
+        textLength={text.length}
+        onTextChange={setText}
+        notice={notice}
+        isSubmitting={isSubmitting}
+      />
     </section>
   );
 }
