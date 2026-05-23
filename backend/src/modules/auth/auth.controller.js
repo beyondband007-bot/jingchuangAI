@@ -1,6 +1,14 @@
 import { sendError } from "../../shared/http.js";
 import { SESSION_COOKIE_NAME } from "../../shared/userService.js";
-import { getAuthState, loginUser, logoutUser, registerUser } from "./auth.service.js";
+import {
+  createPasswordResetChallenge,
+  getAuthState,
+  getSecurityQuestions,
+  loginUser,
+  logoutUser,
+  registerUser,
+  resetPasswordWithSecurityAnswer
+} from "./auth.service.js";
 
 function isSecureRequest(req) {
   const forwardedProto = String(req.headers["x-forwarded-proto"] || "")
@@ -66,6 +74,30 @@ export async function logout(req, res) {
     await logoutUser(req);
     clearSessionCookie(req, res);
     res.json({ ok: true });
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function securityQuestions(_req, res) {
+  try {
+    res.json(getSecurityQuestions());
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function passwordResetChallenge(req, res) {
+  try {
+    res.json(await createPasswordResetChallenge(req.body));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function passwordReset(req, res) {
+  try {
+    res.json(await resetPasswordWithSecurityAnswer(req.body));
   } catch (error) {
     sendError(res, error);
   }

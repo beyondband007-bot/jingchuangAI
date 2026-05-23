@@ -249,15 +249,45 @@ function getInitialView() {
   return "splash";
 }
 
+const emptySecurityQuestions = [
+  { questionKey: "", answer: "" },
+  { questionKey: "", answer: "" },
+  { questionKey: "", answer: "" }
+];
+
+function normalizeResetQuestions(challenge) {
+  const rawQuestions = Array.isArray(challenge?.questions)
+    ? challenge.questions
+    : challenge?.questionKey
+      ? [challenge]
+      : [];
+
+  return rawQuestions
+    .map((question) => ({
+      questionKey: question.questionKey || question.key || "",
+      questionText: question.questionText || question.text || ""
+    }))
+    .filter((question) => question.questionKey && question.questionText);
+}
+
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityQuestionOptions, setSecurityQuestionOptions] = useState([]);
+  const [securityQuestions, setSecurityQuestions] = useState(emptySecurityQuestions);
+  const [resetAnswer, setResetAnswer] = useState("");
+  const [resetQuestionKey, setResetQuestionKey] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetChallenge, setResetChallenge] = useState(null);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [renderMode, setRenderMode] = useState(mode);
   const [isClosing, setIsClosing] = useState(false);
-  const isRegister = mode === "register";
+  const isRegister = renderMode === "register";
+  const isForgot = renderMode === "forgot";
 
   useEffect(() => {
     if (!mode) return;
@@ -266,9 +296,37 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setUsername("");
     setPassword("");
     setConfirmPassword("");
+    setSecurityQuestions(emptySecurityQuestions);
+    setResetAnswer("");
+    setResetQuestionKey("");
+    setResetPassword("");
+    setResetConfirmPassword("");
+    setResetChallenge(null);
     setError("");
+    setSuccessMessage("");
     setIsSubmitting(false);
   }, [mode]);
+
+  useEffect(() => {
+    if (!renderMode || (renderMode !== "register" && renderMode !== "forgot")) return undefined;
+    let mounted = true;
+    authApi.securityQuestions()
+      .then((result) => {
+        if (!mounted) return;
+        const questions = Array.isArray(result.questions) ? result.questions : [];
+        setSecurityQuestionOptions(questions);
+        setSecurityQuestions((current) => current.map((item, index) => ({
+          ...item,
+          questionKey: item.questionKey || questions[index]?.key || ""
+        })));
+      })
+      .catch((loadError) => {
+        if (mounted) setError(loadError.message || "安全问题加载失败，请稍后重试");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [renderMode]);
 
   useEffect(() => {
     if (mode || !renderMode) return undefined;
@@ -290,6 +348,62 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   async function submit(event) {
     event.preventDefault();
     setError("");
+    setSuccessMessage("");
+
+    if (isForgot) {
+      if (!resetChallenge) {
+        setIsSubmitting(true);
+        try {
+          const challenge = await authApi.createPasswordResetChallenge({ username: username.trim() });
+          const questions = normalizeResetQuestions(challenge);
+          if (questions.length === 0) {
+            throw new Error("没有找到可用的安全问题");
+          }
+          setResetChallenge({ ...challenge, questions });
+          setResetQuestionKey(questions[0].questionKey);
+        } catch (submitError) {
+          setError(submitError.message || "获取安全问题失败，请稍后重试");
+        } finally {
+          setIsSubmitting(false);
+        }
+        return;
+      }
+
+      if (resetPassword !== resetConfirmPassword) {
+        setError("两次输入的新密码不一致");
+        return;
+      }
+      if (!resetQuestionKey) {
+        setError("请选择安全问题");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        await authApi.resetPassword({
+          username: username.trim(),
+          challengeId: resetChallenge.challengeId,
+          questionKey: resetQuestionKey,
+          answer: resetAnswer,
+          newPassword: resetPassword
+        });
+        setRenderMode("login");
+        setPassword("");
+        setConfirmPassword("");
+        setResetAnswer("");
+        setResetQuestionKey("");
+        setResetPassword("");
+        setResetConfirmPassword("");
+        setResetChallenge(null);
+        setSuccessMessage("密码已重置，请使用新密码登录");
+      } catch (submitError) {
+        setError(submitError.message || "密码重置失败，请稍后重试");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     if (isRegister && password !== confirmPassword) {
       setError("两次输入的密码不一致");
       return;
@@ -297,6 +411,9 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setIsSubmitting(true);
     try {
       const payload = { username: username.trim(), password };
+      if (isRegister) {
+        payload.securityQuestions = securityQuestions;
+      }
       const result = isRegister ? await authApi.register(payload) : await authApi.login(payload);
       onSuccess(result.user);
     } catch (submitError) {
@@ -306,6 +423,27 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     }
   }
 
+  function updateSecurityQuestion(index, field, value) {
+    setSecurityQuestions((current) => current.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [field]: value } : item
+    )));
+  }
+
+  function getTitle() {
+    if (renderMode === "register") return "创建账号";
+    if (renderMode === "forgot") return "找回密码";
+    return "欢迎回来";
+  }
+
+  function getDescription() {
+    if (renderMode === "register") return "注册后立即获得 1000 积分，请设置 3 个安全问题用于找回密码。";
+    if (renderMode === "forgot") return resetChallenge ? "选择注册时设置的安全问题，然后设置新密码。" : "输入用户名后，选择你注册时设置过的安全问题。";
+    return "登录后即可查看你的积分与生成记录。";
+  }
+
+  const selectedQuestionKeys = securityQuestions.map((item) => item.questionKey).filter(Boolean);
+  const resetQuestionChoices = normalizeResetQuestions(resetChallenge);
+
   return (
     <div className={`auth-drawer-layer ${isClosing ? "is-closing" : ""}`} role="presentation">
       <button className="auth-drawer-backdrop" type="button" aria-label="关闭登录面板" onClick={requestClose} />
@@ -314,8 +452,8 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
           <X size={18} />
         </button>
         <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
-        <h2 id="auth-drawer-title">{renderMode === "register" ? "创建账号" : "欢迎回来"}</h2>
-        <p>{renderMode === "register" ? "注册后立即获得 1000 积分，开始保存你的生成记录。" : "登录后即可查看你的积分与生成记录。"}</p>
+        <h2 id="auth-drawer-title">{getTitle()}</h2>
+        <p>{getDescription()}</p>
         <form className="auth-form" onSubmit={submit}>
           <label>
             <span>用户名</span>
@@ -325,43 +463,129 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
               onChange={(event) => setUsername(event.target.value)}
               placeholder="请输入用户名"
               autoComplete="username"
+              disabled={isForgot && Boolean(resetChallenge)}
             />
           </label>
-          <label>
-            <span>密码</span>
-            <input
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="至少 6 个字符"
-              type="password"
-              autoComplete={renderMode === "register" ? "new-password" : "current-password"}
-            />
-          </label>
-          {renderMode !== "register" && (
+          {!isForgot && (
+            <label>
+              <span>密码</span>
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="至少 6 个字符"
+                type="password"
+                autoComplete={renderMode === "register" ? "new-password" : "current-password"}
+              />
+            </label>
+          )}
+          {renderMode === "login" && (
             <button
               className="auth-forgot-password"
               type="button"
-              onClick={(event) => event.preventDefault()}
+              onClick={() => onModeChange("forgot")}
             >
               忘记密码
             </button>
           )}
           {renderMode === "register" && (
-            <label>
-              <span>确认密码</span>
-              <input
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="请再次输入密码"
-                type="password"
-                autoComplete="new-password"
-              />
-            </label>
+            <>
+              <label>
+                <span>确认密码</span>
+                <input
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="请再次输入密码"
+                  type="password"
+                  autoComplete="new-password"
+                />
+              </label>
+              <div className="auth-security-grid">
+                {securityQuestions.map((item, index) => (
+                  <div className="auth-security-item" key={index}>
+                    <label>
+                      <span>安全问题 {index + 1}</span>
+                      <select
+                        value={item.questionKey}
+                        onChange={(event) => updateSecurityQuestion(index, "questionKey", event.target.value)}
+                      >
+                        <option value="">请选择安全问题</option>
+                        {securityQuestionOptions.map((question) => (
+                          <option
+                            key={question.key}
+                            value={question.key}
+                            disabled={selectedQuestionKeys.includes(question.key) && item.questionKey !== question.key}
+                          >
+                            {question.text}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>答案</span>
+                      <input
+                        value={item.answer}
+                        onChange={(event) => updateSecurityQuestion(index, "answer", event.target.value)}
+                        placeholder="2-80 个字符"
+                        autoComplete="off"
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
+          {isForgot && resetChallenge && (
+            <>
+              <label>
+                <span>安全问题</span>
+                <select
+                  value={resetQuestionKey}
+                  onChange={(event) => setResetQuestionKey(event.target.value)}
+                >
+                  <option value="">请选择安全问题</option>
+                  {resetQuestionChoices.map((question) => (
+                    <option key={question.questionKey} value={question.questionKey}>
+                      {question.questionText}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>答案</span>
+                <input
+                  value={resetAnswer}
+                  onChange={(event) => setResetAnswer(event.target.value)}
+                  placeholder="请输入答案"
+                  autoComplete="off"
+                />
+              </label>
+              <label>
+                <span>新密码</span>
+                <input
+                  value={resetPassword}
+                  onChange={(event) => setResetPassword(event.target.value)}
+                  placeholder="至少 6 个字符"
+                  type="password"
+                  autoComplete="new-password"
+                />
+              </label>
+              <label>
+                <span>确认新密码</span>
+                <input
+                  value={resetConfirmPassword}
+                  onChange={(event) => setResetConfirmPassword(event.target.value)}
+                  placeholder="请再次输入新密码"
+                  type="password"
+                  autoComplete="new-password"
+                />
+              </label>
+            </>
+          )}
+          {successMessage && <div className="auth-success">{successMessage}</div>}
           {error && <div className="auth-error">{error}</div>}
           <button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
-            <span>{renderMode === "register" ? "注册并领取积分" : "登录"}</span>
+            <span>{renderMode === "register" ? "注册并领取积分" : renderMode === "forgot" ? (resetChallenge ? "重置密码" : "获取安全问题") : "登录"}</span>
           </button>
         </form>
         {renderMode === "register" ? (
@@ -369,6 +593,13 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             <span className="auth-mode-switch-label">已有账号？</span>
             <button className="auth-mode-switch auth-mode-switch-link auth-mode-switch-login-link" type="button" onClick={() => onModeChange("login")}>
               去登录
+            </button>
+          </div>
+        ) : renderMode === "forgot" ? (
+          <div className="auth-mode-switch-row">
+            <span className="auth-mode-switch-label">想起密码了？</span>
+            <button className="auth-mode-switch auth-mode-switch-link" type="button" onClick={() => onModeChange("login")}>
+              返回登录
             </button>
           </div>
         ) : (

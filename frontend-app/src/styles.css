@@ -1418,6 +1418,7 @@ a:hover {
   flex-direction: column;
   width: min(430px, 100vw);
   height: 100%;
+  overflow-y: auto;
   pointer-events: auto;
   padding: 42px 34px 32px;
   color: #f9f8f6;
@@ -1490,7 +1491,8 @@ a:hover {
   font-weight: 700;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form select {
   width: 100%;
   min-height: 48px;
   padding: 0 14px;
@@ -1503,7 +1505,26 @@ a:hover {
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
-.auth-form input:focus {
+.auth-form select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, rgba(249, 248, 246, 0.65) 50%), linear-gradient(135deg, rgba(249, 248, 246, 0.65) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 20px, calc(100% - 13px) 20px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.auth-form select option {
+  color: #17131f;
+  background: #fff;
+}
+
+.auth-form input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(176, 199, 226, 0.72);
   box-shadow: 0 0 0 4px rgba(122, 44, 255, 0.18);
@@ -1533,6 +1554,47 @@ a:hover {
   border: 1px solid rgba(255, 120, 148, 0.26);
   border-radius: 8px;
   font-size: 13px;
+}
+
+.auth-success {
+  padding: 10px 12px;
+  color: #dfffe9;
+  background: rgba(62, 211, 124, 0.12);
+  border: 1px solid rgba(120, 255, 176, 0.24);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.auth-security-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-security-item {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+}
+
+.auth-security-challenge {
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px;
+  color: rgba(249, 248, 246, 0.72);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-security-challenge strong {
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .auth-submit {

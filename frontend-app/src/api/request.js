@@ -4,7 +4,8 @@ export function cleanApiErrorMessage(error, fallback = "操作失败，请稍后
   const status = Number(error?.status || 0);
   const message = String(error?.message || error || "").trim();
 
-  if (status === 401 || /请先登录|unauthorized|forbidden/i.test(message)) return "请先登录";
+  if (/请先登录|unauthorized|forbidden/i.test(message)) return "请先登录";
+  if (status === 401 && !message) return "请先登录";
   if (status === 402 || /积分不够|请充值|insufficient/i.test(message)) return "积分不够，请充值";
   if (!message) return fallback;
   if (/^Request failed with \d+/i.test(message)) return fallback;

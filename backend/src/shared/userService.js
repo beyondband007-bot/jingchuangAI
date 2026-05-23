@@ -147,6 +147,10 @@ export async function invalidateSessionToken(token, connection = getPool()) {
   await connection.query("DELETE FROM auth_sessions WHERE token_hash = ?", [hashToken(token)]);
 }
 
+export async function invalidateUserSessions(userId, connection = getPool()) {
+  await connection.query("DELETE FROM auth_sessions WHERE user_id = ?", [userId]);
+}
+
 export async function resolveCurrentUser(req) {
   const sessionUser = await findUserBySessionToken(getSessionTokenFromRequest(req));
   if (sessionUser?.id) {
