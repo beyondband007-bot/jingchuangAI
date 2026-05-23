@@ -12,6 +12,7 @@ import {
   Eraser,
   FileText,
   Film,
+  History,
   Home,
   Image,
   Layers,
@@ -41,6 +42,7 @@ import {
   X
 } from "lucide-react";
 import { authApi } from "./api/authApi";
+import { paymentApi } from "./api/paymentApi";
 import { imageApi } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
@@ -155,6 +157,7 @@ const exampleImages = caseImageFiles.map((file, index) => ({
 
 const navItems = [
   { id: "home", label: "首页", icon: Home },
+  { id: "assets", label: "我的资产", icon: Wallet },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
@@ -181,7 +184,7 @@ const navSections = [
   { type: "group", id: "avatar", label: "数字人", icon: UserRound, children: ["digital-human", "image-digital-human"] },
   { type: "group", id: "audio", label: "音频处理", icon: Music, children: ["voice", "music", "voice-convert"] },
   { type: "group", id: "marketing", label: "营销工具", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
-  { type: "external", id: "assets", label: "我的资产", icon: Wallet, href: "https://token.facemini.com/portal/index.html" }
+  { type: "item", id: "assets" }
 ];
 
 const homeFeatureRoutes = [
@@ -619,6 +622,295 @@ function ComingSoon({ activeNav }) {
       </div>
       <h1>{current?.label || "功能"}暂未开放</h1>
       <p>当前阶段仅接入了图片生成功能，其他能力会在后续迭代中逐步补齐。</p>
+    </section>
+  );
+}
+
+const rechargePresets = [1, 10, 30, 50, 100, 200];
+const finalPaymentStatuses = new Set(["PAID", "CLOSED", "CANCELED", "REFUNDED", "AMOUNT_MISMATCH"]);
+
+function paymentStatusText(status) {
+  return ({
+    CREATED: "已创建",
+    QR_READY: "待扫码",
+    WAITING_PAYMENT: "待支付",
+    SCANNED: "已扫码",
+    PAID: "已到账",
+    CLOSED: "已关闭",
+    CANCELED: "已取消",
+    AMOUNT_MISMATCH: "异常"
+  })[status] || status || "-";
+}
+
+const txTypeMap = {
+  grant: { label: "系统赠送", color: "#a855f7" },
+  debit: { label: "消费扣费", color: "#dc2626" },
+  refund: { label: "积分退回", color: "#2563eb" },
+  recharge: { label: "充值到账", color: "#16a34a" }
+};
+
+function AssetsPage({ authUser, onOpenAuth }) {
+  const isGuest = Boolean(authUser?.isGuest);
+  const [credits, setCredits] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [amount, setAmount] = useState(1);
+  const [activePreset, setActivePreset] = useState(1);
+  const [activeTab, setActiveTab] = useState("recharge");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState("");
+  const [paymentDialog, setPaymentDialog] = useState(null);
+
+  const points = Math.max(1, Number(amount) || 1) * 100;
+
+  const refreshAssets = useCallback(async () => {
+    if (isGuest) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const [creditsState, orderState, txState] = await Promise.all([
+        paymentApi.getCredits(),
+        paymentApi.listOrders(),
+        paymentApi.getCreditTransactions()
+      ]);
+      setCredits(creditsState);
+      setOrders(orderState.orders || []);
+      setTransactions(txState.transactions || []);
+    } catch (nextError) {
+      setError(nextError.message || "资产信息加载失败");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isGuest]);
+
+  useEffect(() => {
+    refreshAssets();
+  }, [refreshAssets]);
+
+  useEffect(() => {
+    if (!paymentDialog || finalPaymentStatuses.has(paymentDialog.order?.status)) return undefined;
+    let alive = true;
+    const sync = async () => {
+      try {
+        const order = await paymentApi.syncOrder(paymentDialog.order.outTradeNo, paymentDialog.orderToken);
+        if (!alive) return;
+        setPaymentDialog((current) => current ? { ...current, order } : current);
+        if (order.status === "PAID") {
+          await refreshAssets();
+          setTimeout(() => {
+            if (alive) setPaymentDialog(null);
+          }, 1200);
+        }
+      } catch (nextError) {
+        if (alive) setPaymentDialog((current) => current ? { ...current, error: nextError.message } : current);
+      }
+    };
+    const timer = window.setInterval(sync, 3000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [paymentDialog, refreshAssets]);
+
+  function selectPreset(value) {
+    setActivePreset(value);
+    setAmount(value);
+  }
+
+  function updateAmount(value) {
+    const nextAmount = Math.max(1, Number.parseInt(value || "1", 10) || 1);
+    setAmount(nextAmount);
+    setActivePreset(rechargePresets.includes(nextAmount) ? nextAmount : null);
+  }
+
+  async function createOrder() {
+    if (isGuest) {
+      onOpenAuth("login");
+      return;
+    }
+    setIsCreating(true);
+    setError("");
+    try {
+      const created = await paymentApi.createOrder(Number(amount));
+      const qrState = await paymentApi.getQrCode(created.order.outTradeNo, created.orderToken);
+      setPaymentDialog({
+        order: qrState.order,
+        orderToken: created.orderToken,
+        qrCodeDataUrl: qrState.qrCodeDataUrl,
+        error: ""
+      });
+      await refreshAssets();
+    } catch (nextError) {
+      setError(nextError.message || "充值订单创建失败");
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  return (
+    <section className="assets-view-root">
+      <header className="assets-toolbar">
+        <div>
+          <h1>我的资产</h1>
+          <p>管理您的积分余额、充值和交易记录</p>
+        </div>
+        <button className="assets-icon-button" type="button" onClick={refreshAssets} disabled={isLoading || isGuest} aria-label="刷新资产">
+          <RefreshCcw size={18} className={isLoading ? "is-spinning" : ""} />
+        </button>
+      </header>
+
+      {isGuest ? (
+        <div className="assets-login-panel">
+          <Wallet size={32} />
+          <strong>登录后查看资产</strong>
+          <p>登录后可查看积分余额、充值记录和消费明细</p>
+          <button type="button" onClick={() => onOpenAuth("login")}>登录</button>
+        </div>
+      ) : (
+        <>
+          <div className="assets-balance-hero">
+            <div className="assets-balance-info">
+              <span>可用积分</span>
+              <strong>{credits?.balance ?? authUser?.credits ?? "-"}</strong>
+              <small>1 元 = 100 积分</small>
+            </div>
+            <div className="assets-balance-actions">
+              <button type="button" onClick={() => setActiveTab("recharge")}>
+                <Wallet size={18} />
+                立即充值
+              </button>
+            </div>
+          </div>
+
+          <div className="assets-tabs-wrapper">
+            <div className="assets-tabs">
+              <button className={`assets-tab ${activeTab === "recharge" ? "is-active" : ""}`} type="button" onClick={() => setActiveTab("recharge")}>
+                <Wallet size={16} />
+                充值中心
+              </button>
+              <button className={`assets-tab ${activeTab === "transactions" ? "is-active" : ""}`} type="button" onClick={() => setActiveTab("transactions")}>
+                <History size={16} />
+                交易记录
+              </button>
+            </div>
+          </div>
+
+          {activeTab === "recharge" && (
+            <div className="assets-recharge-panel">
+              <div className="assets-section-title">
+                <Wallet size={18} />
+                <strong>支付宝充值</strong>
+              </div>
+              <div className="assets-presets">
+                {rechargePresets.map((value) => (
+                  <button className={activePreset === value ? "is-active" : ""} key={value} type="button" onClick={() => selectPreset(value)}>
+                    <span>{value} 元</span>
+                    <small>{value * 100} 积分</small>
+                  </button>
+                ))}
+              </div>
+              <label className="assets-custom-amount">
+                <span>自定义金额</span>
+                <input type="number" min="1" step="1" value={amount} onChange={(event) => updateAmount(event.target.value)} />
+                <em>{points} 积分</em>
+              </label>
+              {error && <div className="assets-error">{error}</div>}
+              <button className="assets-primary-action" type="button" onClick={createOrder} disabled={isCreating}>
+                {isCreating ? <Loader2 size={18} className="is-spinning" /> : <Wallet size={18} />}
+                <span>生成支付宝付款码</span>
+              </button>
+
+              <div className="assets-orders-section">
+                <div className="assets-section-title">
+                  <FileText size={18} />
+                  <strong>近期充值订单</strong>
+                </div>
+                <div className="assets-order-list">
+                  {orders.length ? orders.map((order) => (
+                    <div className={`assets-order-row status-${order.status}`} key={order.outTradeNo}>
+                      <div>
+                        <strong>{order.totalAmount} 元</strong>
+                        <span>{order.outTradeNo}</span>
+                      </div>
+                      <div>
+                        <strong>{order.points} 积分</strong>
+                        <span>{paymentStatusText(order.status)}</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="assets-empty-state">暂无充值订单</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "transactions" && (
+            <div className="assets-transactions-panel">
+              <div className="assets-section-title">
+                <History size={18} />
+                <strong>积分交易记录</strong>
+              </div>
+              {transactions.length ? (
+                <div className="assets-transactions-table">
+                  <div className="assets-transactions-header">
+                    <span>时间</span>
+                    <span>类型</span>
+                    <span>变动</span>
+                    <span>余额</span>
+                    <span>备注</span>
+                  </div>
+                  {transactions.map((tx) => {
+                    const typeInfo = txTypeMap[tx.type] || { label: tx.type, color: "#64748b" };
+                    const isIncome = tx.type === "recharge" || tx.type === "refund" || tx.type === "grant";
+                    return (
+                      <div className="assets-transaction-row" key={tx.id}>
+                        <span>{new Date(tx.createdAt).toLocaleString("zh-CN")}</span>
+                        <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                        <span style={{ color: isIncome ? "#16a34a" : "#dc2626", fontWeight: 700 }}>
+                          {isIncome ? "+" : ""}{tx.amount}
+                        </span>
+                        <span>{tx.balanceAfter}</span>
+                        <span title={tx.memo}>{tx.memo || "-"}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="assets-empty-state">暂无交易记录</div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {paymentDialog && (
+        <div className="assets-payment-backdrop" role="dialog" aria-modal="true" aria-label="支付宝付款码">
+          <div className="assets-payment-dialog">
+            <button className="assets-dialog-close" type="button" onClick={() => setPaymentDialog(null)} aria-label="关闭">
+              <X size={18} />
+            </button>
+            <div className="assets-section-title">
+              {paymentDialog.order?.status === "PAID" ? <CheckCircle2 size={20} /> : <Wallet size={20} />}
+              <strong>{paymentDialog.order?.status === "PAID" ? "充值成功" : "支付宝扫码支付"}</strong>
+            </div>
+            <div className="assets-qr-box">
+              {paymentDialog.qrCodeDataUrl ? (
+                <img src={paymentDialog.qrCodeDataUrl} alt="支付宝充值二维码" />
+              ) : (
+                <Loader2 size={28} className="is-spinning" />
+              )}
+            </div>
+            <div className="assets-dialog-meta">
+              <span>订单 {paymentDialog.order?.outTradeNo}</span>
+              <strong>{paymentDialog.order?.totalAmount} 元 / {paymentDialog.order?.points} 积分</strong>
+              <em>{paymentStatusText(paymentDialog.order?.status)}</em>
+            </div>
+            {paymentDialog.error && <div className="assets-error">{paymentDialog.error}</div>}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -4075,6 +4367,9 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
         </div>
       )}
       <main className="feature-main">
+        <FeatureModuleKeepAlive id="assets" activeNav={activeNav} visitedIds={visitedIds}>
+          <AssetsPage authUser={authUser} onOpenAuth={onOpenAuth} />
+        </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
           <ImageGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
@@ -4126,7 +4421,7 @@ function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogo
         <FeatureModuleKeepAlive id="face-swap" activeNav={activeNav} visitedIds={visitedIds}>
           <MotionTransferView navId="face-swap" api={faceSwapApi} copy={faceSwapCopy} splitResults />
         </FeatureModuleKeepAlive>
-        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg", "video-voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+        {!["assets", "image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg", "video-voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
     </div>
   );

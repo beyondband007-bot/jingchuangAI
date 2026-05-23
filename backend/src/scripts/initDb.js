@@ -67,7 +67,7 @@ async function createTables() {
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
       task_id BIGINT UNSIGNED NULL,
-      type ENUM('grant','debit','refund') NOT NULL,
+      type ENUM('grant','debit','refund','recharge') NOT NULL,
       amount INT NOT NULL,
       balance_after INT NOT NULL,
       memo VARCHAR(255) NULL,
@@ -76,6 +76,17 @@ async function createTables() {
       CONSTRAINT fk_credit_transactions_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [creditTransactionTypeColumns] = await pool.query(
+    `SELECT COLUMN_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'credit_transactions' AND COLUMN_NAME = 'type'
+     LIMIT 1`,
+    [config.db.database]
+  );
+  if (creditTransactionTypeColumns.length && !String(creditTransactionTypeColumns[0].COLUMN_TYPE).includes("'recharge'")) {
+    await pool.query("ALTER TABLE credit_transactions MODIFY COLUMN type ENUM('grant','debit','refund','recharge') NOT NULL");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -88,6 +99,51 @@ async function createTables() {
       INDEX idx_auth_sessions_user (user_id),
       INDEX idx_auth_sessions_expires (expires_at),
       CONSTRAINT fk_auth_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payment_orders (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      out_trade_no VARCHAR(64) NOT NULL UNIQUE,
+      provider VARCHAR(32) NOT NULL,
+      subject VARCHAR(255) NOT NULL,
+      total_amount DECIMAL(10, 2) NOT NULL,
+      points INT NOT NULL,
+      status VARCHAR(32) NOT NULL DEFAULT 'CREATED',
+      status_message VARCHAR(255) NULL,
+      client_token_hash CHAR(64) NULL,
+      qr_code VARCHAR(1024) NULL,
+      qr_code_data_url MEDIUMTEXT NULL,
+      alipay_trade_no VARCHAR(64) NULL,
+      alipay_trade_status VARCHAR(32) NULL,
+      paid_at DATETIME NULL,
+      canceled_at DATETIME NULL,
+      closed_at DATETIME NULL,
+      last_checked_at DATETIME NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_payment_orders_user_created (user_id, created_at),
+      INDEX idx_payment_orders_provider (provider),
+      INDEX idx_payment_orders_status (status),
+      INDEX idx_payment_orders_created_at (created_at),
+      CONSTRAINT fk_payment_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payment_events (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      order_id BIGINT UNSIGNED NOT NULL,
+      event_type VARCHAR(64) NOT NULL,
+      provider VARCHAR(32) NOT NULL,
+      payload_json JSON NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_payment_events_order_id (order_id),
+      INDEX idx_payment_events_event_type (event_type),
+      INDEX idx_payment_events_created_at (created_at),
+      CONSTRAINT fk_payment_events_order FOREIGN KEY (order_id) REFERENCES payment_orders(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 

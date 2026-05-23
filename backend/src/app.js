@@ -19,6 +19,7 @@ import { videoRouter } from "./modules/video/video.routes.js";
 import { voiceConvertRouter } from "./modules/voice-convert/voiceConvert.routes.js";
 import { transcribeRouter } from "./modules/transcribe/transcribe.routes.js";
 import { musicRouter } from "./modules/music/music.routes.js";
+import { paymentPublicRouter, paymentRouter } from "./modules/payment/payment.routes.js";
 import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
 import { sendError } from "./shared/http.js";
@@ -30,6 +31,7 @@ export function createApp() {
   app.set("trust proxy", 1);
   app.use(cors({ origin: true, credentials: true }));
   app.use(express.json({ limit: "1mb" }));
+  app.use(express.urlencoded({ extended: false, limit: "1mb" }));
   app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));
 
   app.get("/health", async (_req, res) => {
@@ -46,11 +48,25 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/payment", paymentPublicRouter);
   app.use("/api", attachCurrentUser);
 
   app.get("/api/me/credits", async (req, res) => {
     try {
       res.json(await getUserCredits(req.user.id));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  app.get("/api/me/credit-transactions", async (req, res) => {
+    try {
+      if (req.user?.isGuest) {
+        res.status(401).json({ error: "请先登录" });
+        return;
+      }
+      const { listCreditTransactions } = await import("./modules/payment/payment.service.js");
+      res.json(await listCreditTransactions(req.user.id));
     } catch (error) {
       sendError(res, error);
     }
@@ -71,6 +87,7 @@ export function createApp() {
   app.use("/api/voice-convert", voiceConvertRouter);
   app.use("/api/transcribe", transcribeRouter);
   app.use("/api/music", musicRouter);
+  app.use("/api/payment", paymentRouter);
   app.use("/api/replicate", replicateRouter);
   app.use("/api/video-dub", videoDubRouter);
 

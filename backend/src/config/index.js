@@ -61,6 +61,14 @@ export const config = {
     baseUrl: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     model: process.env.QWEN_MODEL || "qwen-vl-plus"
   },
+  alipay: {
+    env: process.env.ALIPAY_ENV || "sandbox",
+    appId: process.env.ALIPAY_APP_ID || "",
+    sellerId: process.env.ALIPAY_SELLER_ID || "",
+    privateKeyPath: process.env.ALIPAY_PRIVATE_KEY_PATH || "",
+    publicKeyPath: process.env.ALIPAY_PUBLIC_KEY_PATH || "",
+    publicBaseUrl: (process.env.ALIPAY_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, "")
+  },
   media: {
     storageDir: process.env.MEDIA_STORAGE_DIR || "storage",
     publicAssetsDir: process.env.PUBLIC_ASSETS_DIR || "../frontend-app/public"
