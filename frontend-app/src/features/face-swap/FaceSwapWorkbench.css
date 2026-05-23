@@ -125,7 +125,7 @@
   min-height: clamp(220px, 32vw, 290px);
   overflow: hidden;
   border: 1.5px dashed rgba(178, 86, 255, 0.56);
-  border-radius: 20px;
+  border-radius: 16px;
   background: radial-gradient(circle at center, rgba(144, 78, 255, 0.16), rgba(66, 38, 122, 0.1));
   color: #f7f7ff;
   text-align: center;
