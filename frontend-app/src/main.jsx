@@ -658,8 +658,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth }) {
 
   return (
     <div className="original-home-shell">
-      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini AI" src="/new_page/studio.html" onLoad={handleFrameLoad} />
-      <iframe ref={(node) => { frameRefs.current[1] = node; }} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
+      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini Studio" src="/new_page/studio.html" onLoad={handleFrameLoad} />
     </div>
   );
 });
@@ -1314,7 +1313,24 @@ function ComposerBar({ options, onSubmit }) {
   );
 }
 
-const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
+const defaultImageOptions = {
+  models: [
+    { value: "gpt_image_2", label: "GPT Image 2", basePoints: 35 },
+    { value: "nano_banana_pro", label: "Nano Banana Pro", basePoints: 63 },
+    { value: "flux_2_pro", label: "Flux 2 Pro", basePoints: 18 },
+    { value: "imagen_4_fast", label: "Imagen 4 Fast", basePoints: 14 },
+    { value: "seedream_4_5", label: "Seedream 4.5", basePoints: 22 },
+    { value: "gpt_image_1_5_i2i", label: "GPT Image 1.5 图生图", basePoints: 35 }
+  ],
+  ratios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
+  qualities: [
+    { value: "1K", multiplier: 0.8 },
+    { value: "2K", multiplier: 1 },
+    { value: "4K", multiplier: 1.65 }
+  ],
+  counts: [1]
+};
+const emptyOptions = defaultImageOptions;
 const imageGenerationSessionKey = "jingchuang:image-generation-session";
 
 function readImageGenerationSession() {
@@ -1894,13 +1910,27 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
       ) : null}
-      {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
+      <ComposerBar options={options} onSubmit={createTask} />
       <ImagePreviewLightbox task={previewTask} onClose={() => setPreviewTask(null)} />
     </section>
   );
 }
 
-const emptyVideoOptions = { models: [], ratios: [], durations: [], counts: [1], modes: [] };
+const defaultVideoOptions = {
+  models: [
+    { value: "veo_3_1_fast", label: "Veo 3.1 Fast", providerType: "veo", providerModel: "veo3_fast", mode: "first-frame", priceUnit: "per_second", basePoints: 280, rmbPerSecond: 2.8, ratios: ["16:9", "9:16"], durations: [8], defaultRatio: "16:9", defaultDuration: 8 },
+    { value: "veo_3_1_lite", label: "Veo 3.1 Lite", providerType: "veo", providerModel: "veo3_lite", mode: "first-frame", priceUnit: "per_second", basePoints: 120, rmbPerSecond: 1.2, ratios: ["16:9", "9:16"], durations: [8], defaultRatio: "16:9", defaultDuration: 8 },
+    { value: "kling_3_std", label: "Kling 3.0 Std", providerType: "jobs", providerModel: "kling-3.0/video", mode: "std", priceUnit: "per_second", basePoints: 49, rmbPerSecond: 0.49, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
+    { value: "kling_3_pro", label: "Kling 3.0 Pro", providerType: "jobs", providerModel: "kling-3.0/video", mode: "pro", priceUnit: "per_second", basePoints: 63, rmbPerSecond: 0.63, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
+    { value: "kling_3_4k", label: "Kling 3.0 4K", providerType: "jobs", providerModel: "kling-3.0/video", mode: "4K", priceUnit: "per_second", basePoints: 235, rmbPerSecond: 2.345, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
+    { value: "wan_2_7_720p", label: "Wan 2.7 720P", providerType: "jobs", providerModel: "wan/2-7-text-to-video", mode: "first-frame", priceUnit: "per_second", basePoints: 56, rmbPerSecond: 0.56, ratios: ["16:9", "9:16", "1:1", "4:3", "3:4"], durations: [2, 3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 }
+  ],
+  ratios: ["16:9", "9:16", "1:1", "4:3", "3:4"],
+  durations: [2, 3, 4, 5, 6, 8, 10, 15],
+  counts: [1],
+  modes: [{ value: "first-frame", label: "首帧模式" }]
+};
+const emptyVideoOptions = defaultVideoOptions;
 const videoExampleCards = [
   {
     id: "example-video-1",
@@ -2291,7 +2321,7 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
           />
         )}
       </div>
-      {options.models.length > 0 && <VideoComposerBar options={options} onSubmit={createTask} />}
+      <VideoComposerBar options={options} onSubmit={createTask} />
     </section>
   );
 }
@@ -2692,18 +2722,18 @@ function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, 
 }
 
 const digitalHumanPublicPlaceholders = [
-  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" },
-  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" }
+  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/主播对话.mp4" },
+  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/产品讲解员.mp4" },
+  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/健康科普员.mp4" },
+  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/居家知性女性.mp4" },
+  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/房地产经纪人.mp4" },
+  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/文旅推荐官.mp4" },
+  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/时尚类女主播.mp4" },
+  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/知识科普类女主播.mp4" },
+  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场女高管.mp4" },
+  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场轻商务女主播.mp4" },
+  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/财经主播.mp4" },
+  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/运营达人.mp4" }
 ];
 
 function getDigitalHumanPublicAvatars(list = []) {
@@ -2734,7 +2764,7 @@ function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) 
 
 function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRename, onDelete, mine = false }) {
   const isTraining = avatar.status === "training";
-  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar.cover || "");
+  const isVideoCover = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(avatar.cover || "");
   return (
     <article className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}>
       <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`选择 ${avatar.name}`}>
@@ -2775,7 +2805,7 @@ function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRenam
 }
 
 function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
-  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar?.cover || "");
+  const isVideoCover = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(avatar?.cover || "");
 
   if (!avatar) return null;
 
@@ -2959,7 +2989,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
   const estimate = Math.max(1, Math.ceil(text.length / 180));
-  const selectedAvatarIsVideo = /\.(mp4|webm|mov)$/i.test(selectedAvatar?.cover || "");
+  const selectedAvatarIsVideo = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(selectedAvatar?.cover || "");
   const currentPreviewSignature = getDigitalHumanPreviewSignature({
     text,
     voiceId,
@@ -4077,7 +4107,10 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
 }
 
 const emptyWatermarkOptions = {
-  models: [],
+  models: [
+    { value: "kie-watermark-image", label: "图片去水印", kind: "image", provider: "kie", providerModel: "gpt-image-2-image-to-image", basePoints: 25, resolution: "2K", configured: true },
+    { value: "kie-watermark-video", label: "视频去水印", kind: "video", provider: "kie", providerModel: "wan/2-7-r2v", basePoints: 100, resolution: "720p", configured: true }
+  ],
   defaults: {
     imageModel: "kie-watermark-image",
     videoModel: "kie-watermark-video",
@@ -4531,7 +4564,7 @@ function WatermarkRemovalView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && options.models.length > 0 && (
+      {viewTab === "home" && (
         <WatermarkComposer
           options={options}
           onSubmit={createTask}
