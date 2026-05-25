@@ -19,6 +19,8 @@
   --radius-lg: 12px;
   --feature-content-inline-offset: 8px;
   --feature-content-width: calc(100% - (var(--feature-content-inline-offset) * 2));
+  --feature-sidebar-width: 256px;
+  --feature-page-padding-x: 24px;
 }
 
 input, textarea, button {
@@ -2940,7 +2942,7 @@ a:hover {
 .image-gen-view {
   position: relative;
   min-height: 100vh;
-  padding: 0 24px 154px;
+  padding: 0 var(--feature-page-padding-x) 154px;
   background: #101010;
 }
 
@@ -7804,6 +7806,10 @@ a:hover {
 }
 
 @media (max-width: 900px) {
+  :root {
+    --feature-sidebar-width: 0px;
+  }
+
   .feature-sidebar {
     flex-basis: 200px;
     width: 200px;
@@ -7901,6 +7907,11 @@ a:hover {
 }
 
 @media (max-width: 680px) {
+  :root {
+    --feature-sidebar-width: 0px;
+    --feature-page-padding-x: 12px;
+  }
+
   .feature-page-shell {
     display: block;
   }
@@ -7931,7 +7942,7 @@ a:hover {
   }
 
   .image-gen-view {
-    padding: 0 12px 178px;
+    padding: 0 var(--feature-page-padding-x) 178px;
   }
 
   .chat-view-root {
@@ -10940,6 +10951,10 @@ select {
 }
 
 @media (max-width: 900px) {
+  :root {
+    --feature-sidebar-width: 0px;
+  }
+
   .feature-page-shell {
     display: block !important;
   }
@@ -11293,15 +11308,21 @@ section.image-gen-view .sowa-composer {
 .image-generating-feed-state {
   position: fixed;
   top: 84px;
-  right: 32px;
-  left: 32px;
+  right: calc(var(--feature-page-padding-x) + var(--feature-content-inline-offset));
+  left: calc(var(--feature-sidebar-width) + var(--feature-page-padding-x) + var(--feature-content-inline-offset));
   z-index: 110;
   width: auto;
   margin: 0;
 }
 
 .image-completed-notice {
-  width: var(--feature-content-width);
+  position: fixed;
+  top: 84px;
+  right: calc(var(--feature-page-padding-x) + var(--feature-content-inline-offset));
+  left: calc(var(--feature-sidebar-width) + var(--feature-page-padding-x) + var(--feature-content-inline-offset));
+  z-index: 110;
+  width: auto;
+  margin: 0;
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -11372,6 +11393,10 @@ section.image-gen-view .sowa-composer {
 }
 
 .image-results-feed.is-generating {
+  margin-top: 222px;
+}
+
+.image-gen-view.has-completed-notice .image-results-feed {
   margin-top: 222px;
 }
 
@@ -11511,12 +11536,23 @@ section.image-gen-view .sowa-composer {
 
   .image-generating-feed-state {
     top: 78px;
-    right: 14px;
-    left: 14px;
+    right: calc(var(--feature-page-padding-x) + 2px);
+    left: calc(var(--feature-sidebar-width) + var(--feature-page-padding-x) + 2px);
+    min-height: 170px;
+  }
+
+  .image-completed-notice {
+    top: 78px;
+    right: calc(var(--feature-page-padding-x) + 2px);
+    left: calc(var(--feature-sidebar-width) + var(--feature-page-padding-x) + 2px);
     min-height: 170px;
   }
 
   .image-results-feed.is-generating {
+    margin-top: 202px;
+  }
+
+  .image-gen-view.has-completed-notice .image-results-feed {
     margin-top: 202px;
   }
 
