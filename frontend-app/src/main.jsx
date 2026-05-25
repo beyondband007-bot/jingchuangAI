@@ -2457,46 +2457,48 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
         }}
         placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
-      <div className="llm-toolbar">
-        <div className="llm-left">
-          <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
-            <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
-              <span>{modelLabel}</span>
-              <ChevronDown size={16} />
-            </button>
-            <div className="llm-menu">
-              {options.models.map((item) => (
-                <button
-                  type="button"
-                  key={item.value}
-                  className={item.value === model ? "is-selected" : ""}
-                  onClick={() => {
-                    onModelChange(item.value);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
+      <div className="llm-composer-footer">
+        <div className="llm-toolbar">
+          <div className="llm-left">
+            <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
+              <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+                <span>{modelLabel}</span>
+                <ChevronDown size={16} />
+              </button>
+              <div className="llm-menu">
+                {options.models.map((item) => (
+                  <button
+                    type="button"
+                    key={item.value}
+                    className={item.value === model ? "is-selected" : ""}
+                    onClick={() => {
+                      onModelChange(item.value);
+                      setOpenMenu(null);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+          <div className="llm-right">
+            {options.reasoningEfforts.length > 0 && (
+              <CustomSelect
+                ariaLabel="推理强度"
+                className="llm-reasoning-select"
+                value={reasoningEffort}
+                onChange={onReasoningEffortChange}
+                options={options.reasoningEfforts}
+              />
+            )}
+            <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
+              {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+            </button>
+          </div>
         </div>
-        <div className="llm-right">
-          {options.reasoningEfforts.length > 0 && (
-            <CustomSelect
-              ariaLabel="推理强度"
-              className="llm-reasoning-select"
-              value={reasoningEffort}
-              onChange={onReasoningEffortChange}
-              options={options.reasoningEfforts}
-            />
-          )}
-          <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="发送">
-            {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
-          </button>
-        </div>
+        {notice && <div className="composer-notice warning">{notice}</div>}
       </div>
-      {notice && <div className="composer-notice warning">{notice}</div>}
     </div>
   );
 }
@@ -2661,37 +2663,43 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
         <h1>大模型</h1>
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
-      {conversations.length > 0 && (
-        <>
-          <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
-            <Plus size={16} />
-            新建对话
-          </button>
-          <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
-            <Layers size={17} />
-            历史
-            <span>{conversations.length}</span>
-          </button>
-        </>
-      )}
-      {isHistoryOpen && (
-        <ChatHistoryRail
-          conversations={conversations}
-          activeConversationId={conversationId}
-          onSelect={selectConversation}
-        />
-      )}
-      {isIntroState ? (
-        <div className="llm-intro-layout">
-          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
-          {composer}
+      <div className="chat-content-layout">
+        <div className="chat-dialog-column">
+          {isIntroState ? (
+            <div className="llm-intro-layout">
+              <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+              {composer}
+            </div>
+          ) : (
+            <>
+              <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+              {composer}
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
-          {composer}
-        </>
-      )}
+        <aside className="chat-actions-panel" aria-label="对话操作">
+          {conversations.length > 0 && (
+            <>
+              <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
+                <Plus size={16} />
+                新建对话
+              </button>
+              <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+                <Layers size={17} />
+                历史
+                <span>{conversations.length}</span>
+              </button>
+            </>
+          )}
+          {isHistoryOpen && (
+            <ChatHistoryRail
+              conversations={conversations}
+              activeConversationId={conversationId}
+              onSelect={selectConversation}
+            />
+          )}
+        </aside>
+      </div>
     </section>
   );
 }

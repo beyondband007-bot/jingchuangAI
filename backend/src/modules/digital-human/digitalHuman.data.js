@@ -163,13 +163,6 @@ export const voices = [
     sampleUrl: ""
   },
   {
-    id: "Chinese (Mandarin)_Lyrical_Voice",
-    name: "抒情女声",
-    description: "柔和、有表达力，适合情感口播和品牌故事",
-    language: "中文普通话",
-    sampleUrl: ""
-  },
-  {
     id: "Chinese (Mandarin)_HK_Flight_Attendant",
     name: "亲和服务声",
     description: "清楚、礼貌、服务感强，适合导览和介绍",
