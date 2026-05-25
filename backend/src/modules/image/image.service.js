@@ -25,13 +25,16 @@ import {
   toggleImageTaskFavorite
 } from "./image.repository.js";
 import {
+  gptImage2ImageToImageModelKey,
+  gptImage2ModelKey,
   imageCountOptions,
   imageQualityOptions,
   imageRatioOptions,
-  imageToImageModelKey,
   qualityMultiplier,
   validateImagePayload
 } from "./image.options.js";
+
+const hiddenImageModelKeys = new Set([gptImage2ImageToImageModelKey, "gpt_image_1_5_i2i"]);
 
 export async function getCredits(userId) {
   return getUserCredits(userId);
@@ -39,17 +42,13 @@ export async function getCredits(userId) {
 
 export async function getModels() {
   const models = await findEnabledImageModels();
-  if (!models.some((model) => model.value === imageToImageModelKey)) {
-    models.push({ value: imageToImageModelKey, label: "GPT Image 1.5 图生图", basePoints: 35 });
-  }
   return {
-    models,
+    models: models.filter((model) => !hiddenImageModelKeys.has(model.value)),
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
     counts: imageCountOptions
   };
 }
-
 export async function uploadReferenceImage({ file }) {
   if (!file) {
     throw createHttpError("file is required", 400);
@@ -85,8 +84,11 @@ export async function getTask(id, userId) {
 export async function createTask(payload, userId) {
   const { prompt, ratio, quality, count = 1, source } = payload;
   const referenceImageUrl = typeof payload.referenceImageUrl === "string" ? payload.referenceImageUrl.trim() : "";
-  const model = referenceImageUrl ? imageToImageModelKey : payload.model;
-  validateImagePayload({ prompt, model, ratio, quality, count, referenceImageUrl });
+  const requestedModel = payload.model;
+  validateImagePayload({ prompt, model: requestedModel, ratio, quality, count, referenceImageUrl });
+  const model = referenceImageUrl && requestedModel === gptImage2ModelKey
+    ? gptImage2ImageToImageModelKey
+    : requestedModel;
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -96,7 +98,7 @@ export async function createTask(payload, userId) {
   try {
     await connection.beginTransaction();
     let modelPrice = await findImageModelPrice(connection, model);
-    if (!modelPrice && model === imageToImageModelKey) {
+    if (!modelPrice && model === gptImage2ImageToImageModelKey) {
       modelPrice = await findImageModelPrice(connection, "gpt_image_2");
     }
     if (!modelPrice) {

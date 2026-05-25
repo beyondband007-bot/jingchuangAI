@@ -5,6 +5,7 @@ export function mapImageModelToKie(modelKey) {
   const modelMap = {
     gpt_image_1_5_i2i: "gpt-image/1.5-image-to-image",
     gpt_image_2: "gpt-image-2-text-to-image",
+    gpt_image_2_i2i: "gpt-image-2-image-to-image",
     four_o_image: "4o-image",
     nano_banana_pro: "nano-banana-pro",
     flux_2_pro: "flux-2/pro-text-to-image",
@@ -25,21 +26,32 @@ function mapGptImageQuality(quality) {
 }
 
 export async function createKieImageTask({ prompt, modelKey, ratio, quality, referenceImageUrls = [] }) {
-  const isImageToImage = modelKey === "gpt_image_1_5_i2i";
-  const input = isImageToImage
+  const isGptImage15ImageToImage = modelKey === "gpt_image_1_5_i2i";
+  const isGptImage2ImageToImage = modelKey === "gpt_image_2_i2i";
+  const isGptImage2 = modelKey === "gpt_image_2" || isGptImage2ImageToImage;
+  const input = isGptImage15ImageToImage
     ? {
         prompt,
         input_urls: referenceImageUrls,
         aspect_ratio: ratio || "auto",
         quality: mapGptImageQuality(quality)
       }
+    : isGptImage2ImageToImage
+      ? {
+          prompt,
+          input_urls: referenceImageUrls,
+          aspect_ratio: ratio || "auto",
+          resolution: quality || "2K"
+        }
     : {
         prompt,
         aspect_ratio: ratio || "auto",
         resolution: quality || "2K",
-        output_format: "jpg",
-        google_search: false,
-        image_input: referenceImageUrls
+        ...(isGptImage2 ? {} : {
+          output_format: "jpg",
+          google_search: false,
+          image_input: referenceImageUrls
+        })
       };
 
   const body = {

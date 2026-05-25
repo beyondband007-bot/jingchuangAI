@@ -67,6 +67,7 @@ export async function createChatMessage(connection, {
   conversationId,
   role,
   content,
+  attachments = [],
   modelKey = null,
   costPoints = 0,
   kieCreditsConsumed = 0,
@@ -76,12 +77,13 @@ export async function createChatMessage(connection, {
 }) {
   const [result] = await connection.query(
     `INSERT INTO chat_messages
-     (conversation_id, role, content, model_key, cost_points, kie_credits_consumed, usage_json, status, error_message)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     (conversation_id, role, content, attachments_json, model_key, cost_points, kie_credits_consumed, usage_json, status, error_message)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       conversationId,
       role,
       content,
+      attachments?.length ? JSON.stringify(attachments) : null,
       modelKey,
       costPoints,
       kieCreditsConsumed,

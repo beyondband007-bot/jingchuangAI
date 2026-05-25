@@ -17,10 +17,11 @@ function normalizeBaseUrl() {
 
 function extractUploadedUrl(body) {
   return (
-    body?.data?.downloadUrl ||
-    body?.data?.download_url ||
     body?.data?.fileUrl ||
     body?.data?.file_url ||
+    body?.data?.url ||
+    body?.data?.downloadUrl ||
+    body?.data?.download_url ||
     body?.downloadUrl ||
     body?.fileUrl ||
     body?.url ||

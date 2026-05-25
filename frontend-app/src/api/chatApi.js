@@ -33,6 +33,15 @@ export const chatApi = {
     return request(`/api/chat/conversations/${conversationId}/messages`);
   },
 
+  async uploadAttachment(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/chat/uploads", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   async sendMessage(payload) {
     return request("/api/chat/messages", {
       method: "POST",
