@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ImagePlus, Star, X } from "lucide-react";
+import { ImagePlus, Star, Wand2, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { CustomSelect } from "../../components/CustomSelect";
 import "./ImageDigitalHumanShowcaseCard.css";
@@ -195,7 +195,10 @@ function ImageDigitalHumanShowcaseCard({
                   </label>
                 </div>
                 <div className="idh-showcase-tts-action">
-                  <button className="idh-showcase-generate-voice dh-generate-button" type="button">生成语音</button>
+                  <button className="idh-showcase-generate-voice dh-generate-button" type="button">
+                    <Wand2 size={18} />
+                    生成语音
+                  </button>
                 </div>
               </div>
             </div>
