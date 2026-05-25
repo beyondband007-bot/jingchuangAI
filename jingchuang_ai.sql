@@ -421,6 +421,7 @@ CREATE TABLE `image_model_prices`  (
 -- Records of image_model_prices
 -- ----------------------------
 INSERT INTO `image_model_prices` VALUES (1, 'gpt_image_2', 'GPT Image 2', 35, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
+INSERT INTO `image_model_prices` VALUES (9, 'gpt_image_2_i2i', 'GPT Image 2 图生图', 35, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (2, 'four_o_image', '4o Image', 21, 0, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (3, 'nano_banana_pro', 'Nano Banana Pro', 63, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (4, 'flux_2_pro', 'Flux 2 Pro', 18, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');

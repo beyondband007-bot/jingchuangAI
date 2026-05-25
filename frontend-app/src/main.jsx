@@ -1,4 +1,4 @@
-﻿﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bot,
@@ -255,21 +255,6 @@ const emptySecurityQuestions = [
   { questionKey: "", answer: "" }
 ];
 
-function normalizeResetQuestions(challenge) {
-  const rawQuestions = Array.isArray(challenge?.questions)
-    ? challenge.questions
-    : challenge?.questionKey
-      ? [challenge]
-      : [];
-
-  return rawQuestions
-    .map((question) => ({
-      questionKey: question.questionKey || question.key || "",
-      questionText: question.questionText || question.text || ""
-    }))
-    .filter((question) => question.questionKey && question.questionText);
-}
-
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -355,12 +340,8 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         setIsSubmitting(true);
         try {
           const challenge = await authApi.createPasswordResetChallenge({ username: username.trim() });
-          const questions = normalizeResetQuestions(challenge);
-          if (questions.length === 0) {
-            throw new Error("没有找到可用的安全问题");
-          }
-          setResetChallenge({ ...challenge, questions });
-          setResetQuestionKey(questions[0].questionKey);
+          setResetChallenge(challenge);
+          setResetQuestionKey(challenge.questions?.[0]?.questionKey || "");
         } catch (submitError) {
           setError(submitError.message || "获取安全问题失败，请稍后重试");
         } finally {
@@ -442,7 +423,6 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   }
 
   const selectedQuestionKeys = securityQuestions.map((item) => item.questionKey).filter(Boolean);
-  const resetQuestionChoices = normalizeResetQuestions(resetChallenge);
 
   return (
     <div className={`auth-drawer-layer ${isClosing ? "is-closing" : ""}`} role="presentation">
@@ -543,7 +523,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
                   onChange={(event) => setResetQuestionKey(event.target.value)}
                 >
                   <option value="">请选择安全问题</option>
-                  {resetQuestionChoices.map((question) => (
+                  {(resetChallenge.questions || []).map((question) => (
                     <option key={question.questionKey} value={question.questionKey}>
                       {question.questionText}
                     </option>
@@ -658,7 +638,8 @@ const SplashHome = memo(function SplashHome({ onOpenAuth }) {
 
   return (
     <div className="original-home-shell">
-      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini Studio" src="/new_page/studio.html" onLoad={handleFrameLoad} />
+      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini AI" src="/new_page/studio.html" onLoad={handleFrameLoad} />
+      <iframe ref={(node) => { frameRefs.current[1] = node; }} className="original-home-frame" title="椴稿垱AI首页" src="/new_page/page.html" onLoad={handleFrameLoad} />
     </div>
   );
 });
@@ -1161,7 +1142,7 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
         </div>
       )}
       <div className={`result-preview ${card.grid ? "preview-grid" : ""}`}>
-        {isProcessing && <div className="processing-state">生成中...</div>}
+        {isProcessing && <div className="processing-state">生成涓?..</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
         {!isProcessing && !isFailed && card.image ? (
           card.grid ? (
@@ -1180,6 +1161,11 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
             <Maximize2 size={18} />
           </button>
         )}
+        {card.referenceImageUrl && (
+          <span className="result-reference-thumb" title="参考图">
+            <img src={card.referenceImageUrl} alt="" />
+          </span>
+        )}
         {!isProcessing && !isFailed && !card.image && <span className="broken-image-mark" aria-hidden="true" />}
       </div>
       <div className="result-meta">
@@ -1187,6 +1173,7 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
           {!isImageGallery && <span className="model-tag">{card.model}</span>}
           {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
           {!isImageGallery && <span className="quality-tag">{card.quality}</span>}
+          {card.referenceImageUrl && !isImageGallery && <span className="reference-tag">参考图</span>}
           {card.count > 1 && <span className="count-tag">{card.count}张</span>}
         </div>
         {!isImageGallery && (
@@ -1234,12 +1221,58 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
   );
 }
 
+function formatReferenceImageSize(bytes = 0) {
+  if (!bytes || Number.isNaN(Number(bytes))) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function ReferenceImageSlot({ image, isUploading, onRemove }) {
+  if (!image && !isUploading) return null;
+
+  if (isUploading) {
+    return (
+      <div className="image-reference-slot">
+        <div className="image-reference-card is-uploading">
+          <span className="image-reference-preview">
+            <Loader2 size={16} className="is-spinning" />
+          </span>
+          <span className="image-reference-meta">
+            <strong>参考图上传中</strong>
+            <small>上传完成后自动用于生成</small>
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="image-reference-slot">
+      <div className="image-reference-card">
+        <span className="image-reference-preview">
+          {image?.url ? <img src={image.url} alt="" /> : <Image size={16} />}
+        </span>
+        <span className="image-reference-meta">
+          <strong title={image?.originalName || "参考图"}>{image?.originalName || "参考图"}</strong>
+          <small>{formatReferenceImageSize(image?.size)}</small>
+        </span>
+        <button type="button" onClick={onRemove} aria-label="移除参考图">
+          <X size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ComposerBar({ options, onSubmit }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(options.models[0]?.value || "");
   const [ratio, setRatio] = useState(options.ratios[0] || "");
   const [quality, setQuality] = useState(options.qualities[0]?.value || "");
+  const [referenceImage, setReferenceImage] = useState(null);
+  const [isUploadingReference, setIsUploadingReference] = useState(false);
   const [notice, setNotice] = useState("");
+  const referenceInputRef = useRef(null);
 
   useEffect(() => {
     if (!model && options.models[0]) setModel(options.models[0].value);
@@ -1249,10 +1282,11 @@ function ComposerBar({ options, onSubmit }) {
 
   const count = 1;
   const price = imageApi.calculatePrice({ model, quality, count, models: options.models, qualities: options.qualities });
-  const canSubmit = prompt.trim().length > 0;
+  const canSubmit = prompt.trim().length > 0 && !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
+    setReferenceImage(null);
     setNotice("已清空提示词");
   }
 
@@ -1261,13 +1295,45 @@ function ComposerBar({ options, onSubmit }) {
     setNotice("已填入随机提示词");
   }
 
+  async function handleReferenceSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingReference(true);
+    setNotice("");
+    try {
+      const uploaded = await imageApi.uploadReference(file);
+      setReferenceImage({
+        url: uploaded.referenceImageUrl || uploaded.url,
+        originalName: uploaded.originalName || file.name,
+        size: uploaded.size || file.size,
+        mimeType: uploaded.mimeType || file.type
+      });
+    } catch (error) {
+      setNotice(error.message || "参考图上传失败，请重试");
+    } finally {
+      setIsUploadingReference(false);
+      event.target.value = "";
+    }
+  }
+
   function handleAddPrompt() {
-    setNotice("当前图片生成暂不支持添加参考素材");
+    referenceInputRef.current?.click();
+  }
+
+  function removeReferenceImage() {
+    setReferenceImage(null);
+    setNotice("");
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请先输入图片描述");
+      setNotice(isUploadingReference ? "参考图上传完成后再生成" : "请先输入图片描述");
+      return;
+    }
+
+    if (referenceImage && model !== "gpt_image_2") {
+      setNotice("当前模型暂不支持参考图，请切换 GPT Image 2");
       return;
     }
 
@@ -1276,14 +1342,23 @@ function ComposerBar({ options, onSubmit }) {
       model,
       ratio,
       quality,
-      count
+      count,
+      referenceImageUrl: referenceImage?.url || null
     });
     setNotice("已创建生成任务");
     setPrompt("");
+    setReferenceImage(null);
   }
 
   return (
     <div className="sowa-composer" aria-label="图片生成输入框">
+      <input
+        ref={referenceInputRef}
+        type="file"
+        hidden
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleReferenceSelect}
+      />
       <ImagePromptDialog
         ariaLabel="图片生成输入框"
         placeholder="选择模型后，释放你的创作灵感"
@@ -1308,29 +1383,19 @@ function ComposerBar({ options, onSubmit }) {
         onQualityChange={setQuality}
         qualityOptions={options.qualities}
         price={price}
+        referenceSlot={(
+          <ReferenceImageSlot
+            image={referenceImage}
+            isUploading={isUploadingReference}
+            onRemove={removeReferenceImage}
+          />
+        )}
       />
     </div>
   );
 }
 
-const defaultImageOptions = {
-  models: [
-    { value: "gpt_image_2", label: "GPT Image 2", basePoints: 35 },
-    { value: "nano_banana_pro", label: "Nano Banana Pro", basePoints: 63 },
-    { value: "flux_2_pro", label: "Flux 2 Pro", basePoints: 18 },
-    { value: "imagen_4_fast", label: "Imagen 4 Fast", basePoints: 14 },
-    { value: "seedream_4_5", label: "Seedream 4.5", basePoints: 22 },
-    { value: "gpt_image_1_5_i2i", label: "GPT Image 1.5 图生图", basePoints: 35 }
-  ],
-  ratios: ["1:1", "3:4", "4:3", "9:16", "16:9"],
-  qualities: [
-    { value: "1K", multiplier: 0.8 },
-    { value: "2K", multiplier: 1 },
-    { value: "4K", multiplier: 1.65 }
-  ],
-  counts: [1]
-};
-const emptyOptions = defaultImageOptions;
+const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 const imageGenerationSessionKey = "jingchuang:image-generation-session";
 
 function readImageGenerationSession() {
@@ -1693,7 +1758,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       ratio: item.ratio,
       quality: item.quality,
       count: 1,
-      time: "示例",
+      time: "绀轰緥",
       price: item.price,
       prompt: item.label,
       image: item.src,
@@ -1753,7 +1818,6 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     return "idle_examples";
   }, [isSubmitting, selectedTask, submitError]);
   const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
-  const showCompletedNotice = Boolean(!hasActiveGeneration && submittedTask?.status === "completed");
   const isGuest = Boolean(authUser?.isGuest);
 
   function requestLoginForGeneration() {
@@ -1868,7 +1932,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   }
 
   return (
-    <section className={`image-gen-view video-gen-view-root ${hasActiveGeneration ? "has-active-generation" : ""} ${showCompletedNotice ? "has-completed-notice" : ""}`}>
+    <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
         <button className={filter === "inspiration" ? "selected" : ""} onClick={() => setFilter("inspiration")} type="button">
           <Sparkles size={17} />
@@ -1884,7 +1948,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
       {hasActiveGeneration && <ImageGeneratingFeedState prompt={activeGenerationTask?.prompt || activePrompt} />}
-      {showCompletedNotice && (
+      {!hasActiveGeneration && submittedTask?.status === "completed" && (
         <ImageCompletedNotice task={submittedTask} onReveal={revealGeneratedTask} />
       )}
       {galleryItems.length ? (
@@ -1911,27 +1975,13 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
       ) : null}
-      <ComposerBar options={options} onSubmit={createTask} />
+      {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
       <ImagePreviewLightbox task={previewTask} onClose={() => setPreviewTask(null)} />
     </section>
   );
 }
 
-const defaultVideoOptions = {
-  models: [
-    { value: "veo_3_1_fast", label: "Veo 3.1 Fast", providerType: "veo", providerModel: "veo3_fast", mode: "first-frame", priceUnit: "per_second", basePoints: 280, rmbPerSecond: 2.8, ratios: ["16:9", "9:16"], durations: [8], defaultRatio: "16:9", defaultDuration: 8 },
-    { value: "veo_3_1_lite", label: "Veo 3.1 Lite", providerType: "veo", providerModel: "veo3_lite", mode: "first-frame", priceUnit: "per_second", basePoints: 120, rmbPerSecond: 1.2, ratios: ["16:9", "9:16"], durations: [8], defaultRatio: "16:9", defaultDuration: 8 },
-    { value: "kling_3_std", label: "Kling 3.0 Std", providerType: "jobs", providerModel: "kling-3.0/video", mode: "std", priceUnit: "per_second", basePoints: 49, rmbPerSecond: 0.49, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
-    { value: "kling_3_pro", label: "Kling 3.0 Pro", providerType: "jobs", providerModel: "kling-3.0/video", mode: "pro", priceUnit: "per_second", basePoints: 63, rmbPerSecond: 0.63, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
-    { value: "kling_3_4k", label: "Kling 3.0 4K", providerType: "jobs", providerModel: "kling-3.0/video", mode: "4K", priceUnit: "per_second", basePoints: 235, rmbPerSecond: 2.345, ratios: ["16:9", "9:16", "1:1"], durations: [3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 },
-    { value: "wan_2_7_720p", label: "Wan 2.7 720P", providerType: "jobs", providerModel: "wan/2-7-text-to-video", mode: "first-frame", priceUnit: "per_second", basePoints: 56, rmbPerSecond: 0.56, ratios: ["16:9", "9:16", "1:1", "4:3", "3:4"], durations: [2, 3, 4, 5, 6, 8, 10, 15], defaultRatio: "16:9", defaultDuration: 6 }
-  ],
-  ratios: ["16:9", "9:16", "1:1", "4:3", "3:4"],
-  durations: [2, 3, 4, 5, 6, 8, 10, 15],
-  counts: [1],
-  modes: [{ value: "first-frame", label: "首帧模式" }]
-};
-const emptyVideoOptions = defaultVideoOptions;
+const emptyVideoOptions = { models: [], ratios: [], durations: [], counts: [1], modes: [] };
 const videoExampleCards = [
   {
     id: "example-video-1",
@@ -2322,7 +2372,7 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
           />
         )}
       </div>
-      <VideoComposerBar options={options} onSubmit={createTask} />
+      {options.models.length > 0 && <VideoComposerBar options={options} onSubmit={createTask} />}
     </section>
   );
 }
@@ -2331,42 +2381,52 @@ const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
 const chatContextRoles = new Set(["system", "user", "assistant"]);
 
 function toChatContext(messages) {
-  const usableMessages = messages
-    .filter((message) => message.status !== "failed" && chatContextRoles.has(message.role) && message.content?.trim())
-    .map((message) => ({
-      ...message,
-      content: message.content.trim()
-    }));
-  const latestUserIndex = usableMessages.map((message) => message.role).lastIndexOf("user");
-
-  return usableMessages
-    .map((message) => ({
-      role: message.role,
-      content: message.content,
-      attachments: message.role === "user" && usableMessages.indexOf(message) === latestUserIndex
-        ? message.attachments || []
-        : []
-    }));
-}
-
-function toChatContextWithAttachments(messages) {
-  const usableMessages = messages
+  return messages
     .filter((message) => (
       message.status !== "failed" &&
       chatContextRoles.has(message.role) &&
       (message.content?.trim() || message.attachments?.length)
     ))
     .map((message) => ({
-      ...message,
-      content: message.content?.trim() || ""
+      role: message.role,
+      content: message.content?.trim() || "",
+      attachments: message.attachments || []
     }));
-  const latestUserIndex = usableMessages.map((message) => message.role).lastIndexOf("user");
+}
 
-  return usableMessages.map((message, index) => ({
-    role: message.role,
-    content: message.content,
-    attachments: message.role === "user" && index === latestUserIndex ? message.attachments || [] : []
-  }));
+function formatChatAttachmentSize(bytes = 0) {
+  if (!bytes || Number.isNaN(Number(bytes))) return "";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function ChatAttachmentList({ attachments = [], onRemove, isStatic = false }) {
+  if (!attachments.length) return null;
+
+  return (
+    <div className="chat-attachment-list">
+      {attachments.map((attachment, index) => (
+        <div className={`chat-attachment-card ${isStatic ? "is-static" : ""}`} key={attachment.id || attachment.url || index}>
+          <span className="chat-attachment-preview">
+            {attachment.kind === "image" && attachment.url ? (
+              <img src={attachment.url} alt="" />
+            ) : (
+              <FileText size={14} />
+            )}
+          </span>
+          <span className="chat-attachment-meta">
+            <strong title={attachment.originalName || "attachment"}>{attachment.originalName || "attachment"}</strong>
+            <small>{formatChatAttachmentSize(attachment.size)}</small>
+          </span>
+          {!isStatic && (
+            <button type="button" onClick={() => onRemove?.(index)} aria-label="移除附件">
+              <X size={11} />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function appendChatStreamChunk(current = "", chunk = "") {
@@ -2383,52 +2443,6 @@ function appendChatStreamChunk(current = "", chunk = "") {
   }
 
   return `${current}${chunk}`;
-}
-
-function formatAttachmentSize(bytes = 0) {
-  const size = Number(bytes || 0);
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function ChatAttachmentCard({ attachment, onRemove }) {
-  const isImage = attachment.kind === "image" || String(attachment.mimeType || "").startsWith("image/");
-  return (
-    <div className={`chat-attachment-card ${isImage ? "is-image" : "is-file"} ${onRemove ? "" : "is-static"}`}>
-      <span className="chat-attachment-preview">
-        {isImage ? (
-          <img src={attachment.url} alt="" />
-        ) : (
-          <FileText size={15} />
-        )}
-      </span>
-      <span className="chat-attachment-meta">
-        <strong title={attachment.originalName}>{attachment.originalName || "附件"}</strong>
-        <small>{formatAttachmentSize(attachment.size)}</small>
-      </span>
-      {onRemove && (
-        <button type="button" onClick={onRemove} aria-label="移除附件">
-          <X size={12} />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function ChatAttachmentList({ attachments = [], onRemove }) {
-  if (!attachments.length) return null;
-  return (
-    <div className="chat-attachment-list">
-      {attachments.map((attachment, index) => (
-        <ChatAttachmentCard
-          attachment={attachment}
-          key={`${attachment.id || attachment.url}-${index}`}
-          onRemove={onRemove ? () => onRemove(index) : null}
-        />
-      ))}
-    </div>
-  );
 }
 
 function ChatCanvas({ messages, isSubmitting, error }) {
@@ -2453,22 +2467,18 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 <Bot size={17} />
               </span>
             )}
-            <div className="chat-message-stack">
-              <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
-                {message.status === "failed" ? (
-                  <>
-                    <strong>这次没有回复成功</strong>
-                    <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
-                  </>
-                ) : (
-                  <>
-                    {message.content || (message.status === "streaming" ? "正在思考..." : "")}
-                    <ChatAttachmentList attachments={message.attachments || []} />
-                  </>
-                )}
-              </div>
-              {message.status !== "failed" && message.points > 0 && (
-                <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>
+            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
+              {message.status === "failed" ? (
+                <>
+                  <strong>这次没有回复成功</strong>
+                  <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
+                </>
+              ) : (
+                <>
+                  {message.content || (message.status === "streaming" ? "正在思考..." : "")}
+                  <ChatAttachmentList attachments={message.attachments || []} isStatic />
+                  {message.points > 0 && <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>}
+                </>
               )}
             </div>
           </div>
@@ -2497,56 +2507,61 @@ function ChatCanvas({ messages, isSubmitting, error }) {
 function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange, reasoningEffort, onReasoningEffortChange }) {
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
-  const fileInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
 
   const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const hasContent = prompt.trim().length > 0 || attachments.length > 0;
-  const canSubmit = isReady && hasContent && model && !isSubmitting && !isUploading;
+  const canSubmit = isReady && (prompt.trim().length > 0 || attachments.length > 0) && model && !isSubmitting && !isUploadingAttachment;
   const modelLabel = isReady ? selectedModel?.label || "Deepseek V4" : "模型加载中";
 
-  async function uploadFiles(files) {
-    const selectedFiles = Array.from(files || []);
-    if (!selectedFiles.length) return;
-    if (attachments.length + selectedFiles.length > 5) {
-      setNotice("最多只能上传 5 个附件。");
+  async function handleAttachmentSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (attachments.length >= 5) {
+      setNotice("单次最多上传 5 个附件。");
+      event.target.value = "";
       return;
     }
 
-    setIsUploading(true);
+    setIsUploadingAttachment(true);
     setNotice("");
     try {
-      const uploaded = [];
-      for (const file of selectedFiles) {
-        uploaded.push(await chatApi.uploadAttachment(file));
-      }
-      setAttachments((current) => [...current, ...uploaded]);
+      const uploaded = await chatApi.uploadAttachment(file);
+      setAttachments((current) => [...current, {
+        id: uploaded.id || uploaded.url,
+        url: uploaded.url,
+        originalName: uploaded.originalName || file.name,
+        mimeType: uploaded.mimeType || file.type,
+        size: uploaded.size || file.size,
+        kind: uploaded.kind || (file.type.startsWith("image/") ? "image" : "file")
+      }]);
     } catch (error) {
       setNotice(error.message || "附件上传失败，请重试。");
     } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsUploadingAttachment(false);
+      event.target.value = "";
     }
   }
 
   function removeAttachment(index) {
-    setAttachments((current) => current.filter((_, currentIndex) => currentIndex !== index));
+    setAttachments((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setNotice("");
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice(isUploading ? "附件上传完成后再发送。" : "请输入内容或上传附件后再发送。");
+      setNotice(isUploadingAttachment ? "附件上传完成后再发送。" : "请输入内容或上传附件后再发送。");
       return;
     }
 
     onSubmit({
       content: prompt.trim(),
-      attachments,
       model,
-      reasoningEffort
+      reasoningEffort,
+      attachments
     });
     setPrompt("");
     setAttachments([]);
@@ -2556,14 +2571,12 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
   return (
     <div className="llm-composer chat-composer" aria-label="大模型输入框">
       <input
-        ref={fileInputRef}
+        ref={attachmentInputRef}
         type="file"
-        multiple
         hidden
-        accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.txt,.doc,.docx"
-        onChange={(event) => uploadFiles(event.target.files)}
+        accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={handleAttachmentSelect}
       />
-      <ChatAttachmentList attachments={attachments} onRemove={removeAttachment} />
       <textarea
         className="llm-input"
         value={prompt}
@@ -2579,16 +2592,18 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
         }}
         placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
+      <ChatAttachmentList attachments={attachments} onRemove={removeAttachment} />
       <div className="llm-toolbar">
         <div className="llm-left">
           <button
             className="llm-square"
             type="button"
-            disabled={!isReady || isSubmitting || isUploading}
-            onClick={() => fileInputRef.current?.click()}
+            disabled={!isReady || isSubmitting || isUploadingAttachment || attachments.length >= 5}
+            onClick={() => attachmentInputRef.current?.click()}
             aria-label="上传附件"
+            title="上传附件"
           >
-            {isUploading ? <Loader2 size={18} /> : <Plus size={20} />}
+            {isUploadingAttachment ? <Loader2 size={16} /> : <Plus size={16} />}
           </button>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
             <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
@@ -2636,9 +2651,9 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   if (!conversations.length) return null;
 
   return (
-    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
+    <aside className="history-rail chat-history-rail" aria-label="AI 瀵硅瘽历史">
       <div className="history-rail-header">
-        <span>历史对话</span>
+        <span>历史瀵硅瘽</span>
         <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
@@ -2650,7 +2665,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
             onClick={() => onSelect(conversation.id)}
           >
             <span>{conversation.title}</span>
-            <small>{conversation.model} 于{conversation.time}</small>
+            <small>{conversation.model} 璺?{conversation.time}</small>
           </button>
         ))}
       </div>
@@ -2695,7 +2710,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
     }
   }, [options, selectedModel, selectedReasoningEffort]);
 
-  async function sendChatMessage({ content, attachments = [], model, reasoningEffort }) {
+  async function sendChatMessage({ content, model, reasoningEffort, attachments = [] }) {
     if (isGuest) {
       setSubmitError("请先登录");
       onOpenAuth?.("login");
@@ -2727,7 +2742,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
         conversationId,
         model,
         reasoningEffort,
-        messages: toChatContextWithAttachments(nextMessages)
+        messages: toChatContext(nextMessages)
       }, {
         onDelta: (delta) => {
           setMessages((current) => current.map((message) => (
@@ -2857,18 +2872,18 @@ function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, 
 }
 
 const digitalHumanPublicPlaceholders = [
-  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/主播对话.mp4" },
-  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/产品讲解员.mp4" },
-  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/健康科普员.mp4" },
-  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/居家知性女性.mp4" },
-  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/房地产经纪人.mp4" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/文旅推荐官.mp4" },
-  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/时尚类女主播.mp4" },
-  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/知识科普类女主播.mp4" },
-  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场女高管.mp4" },
-  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/职场轻商务女主播.mp4" },
-  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/财经主播.mp4" },
-  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/digital-human/运营达人.mp4" }
+  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
+  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
+  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
+  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
+  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
+  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" },
+  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
+  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
+  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
+  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
+  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
+  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" }
 ];
 
 function getDigitalHumanPublicAvatars(list = []) {
@@ -2899,7 +2914,7 @@ function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) 
 
 function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRename, onDelete, mine = false }) {
   const isTraining = avatar.status === "training";
-  const isVideoCover = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(avatar.cover || "");
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar.cover || "");
   return (
     <article className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}>
       <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`选择 ${avatar.name}`}>
@@ -2940,7 +2955,7 @@ function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRenam
 }
 
 function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
-  const isVideoCover = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(avatar?.cover || "");
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar?.cover || "");
 
   if (!avatar) return null;
 
@@ -3124,7 +3139,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
   const estimate = Math.max(1, Math.ceil(text.length / 180));
-  const selectedAvatarIsVideo = /\.(mp4|webm|mov)(?:[?#].*)?$/i.test(selectedAvatar?.cover || "");
+  const selectedAvatarIsVideo = /\.(mp4|webm|mov)$/i.test(selectedAvatar?.cover || "");
   const currentPreviewSignature = getDigitalHumanPreviewSignature({
     text,
     voiceId,
@@ -4242,10 +4257,7 @@ function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = 
 }
 
 const emptyWatermarkOptions = {
-  models: [
-    { value: "kie-watermark-image", label: "图片去水印", kind: "image", provider: "kie", providerModel: "gpt-image-2-image-to-image", basePoints: 25, resolution: "2K", configured: true },
-    { value: "kie-watermark-video", label: "视频去水印", kind: "video", provider: "kie", providerModel: "wan/2-7-r2v", basePoints: 100, resolution: "720p", configured: true }
-  ],
+  models: [],
   defaults: {
     imageModel: "kie-watermark-image",
     videoModel: "kie-watermark-video",
@@ -4699,7 +4711,7 @@ function WatermarkRemovalView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && (
+      {viewTab === "home" && options.models.length > 0 && (
         <WatermarkComposer
           options={options}
           onSubmit={createTask}
@@ -4710,7 +4722,7 @@ function WatermarkRemovalView() {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM，仅切换 display，避免侧栏切换时卸载导致状态丢失。 */
+/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   if (!visitedIds.has(id)) return null;
   return (

@@ -28,7 +28,7 @@ const referenceUpload = multer({
       callback(null, `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`);
     }
   }),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 30 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
     if (!allowedTypes.has(String(file.mimetype || ""))) {
@@ -42,10 +42,13 @@ const referenceUpload = multer({
 function uploadReference(req, res, next) {
   referenceUpload.single("file")(req, res, (error) => {
     if (!error) {
+      if (req.file?.originalname) {
+        req.file.originalname = Buffer.from(req.file.originalname, "latin1").toString("utf8");
+      }
       next();
       return undefined;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "image must be 10MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "image must be 30MB or smaller" : error.message;
     return res.status(400).json({ error: message });
   });
 }
