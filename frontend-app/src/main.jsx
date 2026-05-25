@@ -68,6 +68,7 @@ import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
 import { ImageDigitalHumanView } from "./features/image-digital-human/ImageDigitalHumanView";
+import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
 const caseImageFiles = ["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];
@@ -614,54 +615,6 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     </div>
   );
 }
-
-const SplashHome = memo(function SplashHome({ onOpenAuth }) {
-  const frameRefs = useRef([]);
-
-  const bindAuthLinks = useCallback(() => {
-    frameRefs.current.forEach((frame) => {
-      try {
-        const doc = frame?.contentDocument;
-        if (!doc) return;
-        const bindLink = (selector, handler) => {
-          const links = Array.from(doc.querySelectorAll(selector));
-          links.forEach((link) => {
-            if (link.dataset.jcAuthBound === "1") return;
-            link.dataset.jcAuthBound = "1";
-            link.addEventListener("click", (event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              event.stopImmediatePropagation();
-              handler();
-            }, true);
-          });
-        };
-        bindLink('a[href="#signin"], a[href*="#signin"]', () => onOpenAuth("login"));
-        bindLink('a[href="#signup"], a[href*="#signup"]', () => onOpenAuth("register"));
-      } catch {
-        // The exported landing pages are same-origin locally; ignore if a browser blocks access.
-      }
-    });
-  }, [onOpenAuth]);
-
-  const handleFrameLoad = useCallback(() => {
-    bindAuthLinks();
-    let tries = 0;
-    const timer = window.setInterval(() => {
-      tries += 1;
-      bindAuthLinks();
-      if (tries >= 20) {
-        window.clearInterval(timer);
-      }
-    }, 200);
-  }, [bindAuthLinks]);
-
-  return (
-    <div className="original-home-shell">
-      <iframe ref={(node) => { frameRefs.current[0] = node; }} className="original-home-frame" title="Facemini Studio" src="/new_page/studio.html" onLoad={handleFrameLoad} />
-    </div>
-  );
-});
 
 const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onLogout }) {
   const frameRef = useRef(null);
@@ -4729,6 +4682,12 @@ function App() {
     setView(nextId);
   }, []);
 
+  const enterAppHome = useCallback(() => {
+    window.sessionStorage.setItem(appEntryStorageKey, "1");
+    window.history.pushState(null, "", "#/home");
+    setView("home");
+  }, []);
+
   const finishAuth = useCallback((user) => {
     setAuthUser(user);
     setAuthDrawerMode(null);
@@ -4754,7 +4713,7 @@ function App() {
       return <ImageFeaturePage initialNav={view} onOpenHome={openHome} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
     }
 
-    return <SplashHome onOpenAuth={setAuthDrawerMode} />;
+    return <StudioLanding onOpenAuth={setAuthDrawerMode} onEnterApp={enterAppHome} />;
   })();
 
   return (
