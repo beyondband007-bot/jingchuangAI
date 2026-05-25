@@ -20,7 +20,8 @@ export function ImagePromptDialog({
   quality,
   onQualityChange,
   qualityOptions,
-  price
+  price,
+  referenceSlot
 }) {
   const [isHovering, setIsHovering] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -138,6 +139,8 @@ export function ImagePromptDialog({
           }}
         />
       </div>
+
+      {referenceSlot}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>

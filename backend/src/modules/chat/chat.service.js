@@ -1,5 +1,7 @@
+import { unlink } from "fs/promises";
 import { getPool } from "../../db/pool.js";
 import { createKieChatResponse, createKieChatStream } from "../../providers/kie/chat.js";
+import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { getUserCredits } from "../../shared/userService.js";
@@ -20,6 +22,10 @@ import {
 
 function buildTitle(messages) {
   const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  if (!lastUserMessage?.content && lastUserMessage?.attachments?.[0]?.originalName) {
+    const attachmentTitle = lastUserMessage.attachments[0].originalName;
+    return attachmentTitle.length > 32 ? `${attachmentTitle.slice(0, 32)}...` : attachmentTitle;
+  }
   const title = lastUserMessage?.content || "新的对话";
   return title.length > 32 ? `${title.slice(0, 32)}...` : title;
 }
@@ -32,6 +38,38 @@ function calculatePoints(model, kieCreditsConsumed) {
 
 async function createProviderChatResponse({ model, messages, reasoningEffort }) {
   return createKieChatResponse({ model, messages, reasoningEffort });
+}
+
+function getAttachmentKind(file) {
+  return String(file?.mimetype || "").startsWith("image/") ? "image" : "file";
+}
+
+export async function uploadChatAttachment({ file }) {
+  if (!file) {
+    throw createHttpError("file is required", 400);
+  }
+
+  try {
+    const upload = await uploadFileToKie({
+      filePath: file.path,
+      fileName: file.filename || file.originalname || "chat-attachment",
+      mimeType: file.mimetype || "application/octet-stream",
+      uploadPath: "chat-uploads"
+    });
+
+    return {
+      id: upload.raw?.data?.fileId || upload.url,
+      url: upload.url,
+      originalName: file.originalname || file.filename || "attachment",
+      mimeType: file.mimetype || "application/octet-stream",
+      size: file.size || 0,
+      kind: getAttachmentKind(file)
+    };
+  } finally {
+    if (file.path) {
+      await unlink(file.path).catch(() => {});
+    }
+  }
 }
 
 export async function getModels() {
@@ -100,6 +138,7 @@ export async function sendMessage(payload, userId) {
       conversationId: resolvedConversationId,
       role: "user",
       content: latestUserMessage.content,
+      attachments: latestUserMessage.attachments,
       modelKey: model
     });
     await touchChatConversation(setupConnection, resolvedConversationId);
@@ -231,6 +270,7 @@ async function prepareChatMessage(payload, userId) {
       conversationId: resolvedConversationId,
       role: "user",
       content: latestUserMessage.content,
+      attachments: latestUserMessage.attachments,
       modelKey: model
     });
     await touchChatConversation(setupConnection, resolvedConversationId);
