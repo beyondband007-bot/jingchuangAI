@@ -8,6 +8,7 @@ build/
 
 # Environment and secrets
 .env
+.env.production
 .env.local
 .env.*.local
 
@@ -25,6 +26,7 @@ Thumbs.db
 .vscode/
 
 # Runtime data
+backend/storage/
 backend/backend-*.out.log
 backend/backend-*.err.log
 server-*.out.log
@@ -32,3 +34,5 @@ server-*.err.log
 
 # Local cache
 .claude/
+start-dev.ps1
+STARTUP.md

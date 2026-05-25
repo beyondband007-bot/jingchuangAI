@@ -1,0 +1,121 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_BIND_ADDRESS:-127.0.0.1}:${MYSQL_HOST_PORT:-3308}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-jingchuang_dev_password}
+      MYSQL_DATABASE: ${DB_NAME:-jingchuang_ai}
+    volumes:
+      - jingchuang_ai_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3006
+      HOST: 0.0.0.0
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-jingchuang_dev_password}
+      DB_NAME: ${DB_NAME:-jingchuang_ai}
+      DEFAULT_DEMO_CREDITS: ${DEFAULT_DEMO_CREDITS:-100}
+      MEDIA_STORAGE_DIR: /app/storage
+      PUBLIC_ASSETS_DIR: /app/public
+      KIE_API_KEY: ${KIE_API_KEY:-}
+      KIE_API_BASE_URL: ${KIE_API_BASE_URL:-https://api.kie.ai}
+      KIE_IMAGE_MODEL: ${KIE_IMAGE_MODEL:-nano-banana-2}
+      KIE_DIGITAL_HUMAN_MODEL: ${KIE_DIGITAL_HUMAN_MODEL:-kling/ai-avatar-pro}
+      KIE_DIGITAL_HUMAN_RESOLUTION: ${KIE_DIGITAL_HUMAN_RESOLUTION:-720p}
+      KIE_DIGITAL_HUMAN_DURATION: ${KIE_DIGITAL_HUMAN_DURATION:-5}
+      KIE_IMAGE_DIGITAL_HUMAN_PRIMARY_MODEL: ${KIE_IMAGE_DIGITAL_HUMAN_PRIMARY_MODEL:-kling/ai-avatar-pro}
+      KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_MODEL: ${KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_MODEL:-kling/ai-avatar-pro}
+      KIE_IMAGE_DIGITAL_HUMAN_RESOLUTION: ${KIE_IMAGE_DIGITAL_HUMAN_RESOLUTION:-480p}
+      KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_RESOLUTION: ${KIE_IMAGE_DIGITAL_HUMAN_FALLBACK_RESOLUTION:-720p}
+      KIE_MOTION_TRANSFER_MODEL: ${KIE_MOTION_TRANSFER_MODEL:-kling-3.0/motion-control}
+      KIE_MOTION_TRANSFER_RESOLUTION: ${KIE_MOTION_TRANSFER_RESOLUTION:-720p}
+      KIE_MOTION_TRANSFER_CHARACTER_ORIENTATION: ${KIE_MOTION_TRANSFER_CHARACTER_ORIENTATION:-image}
+      KIE_MOTION_TRANSFER_POINTS: ${KIE_MOTION_TRANSFER_POINTS:-100}
+      KIE_FACE_SWAP_MODEL: ${KIE_FACE_SWAP_MODEL:-wan/2-7-r2v}
+      KIE_FACE_SWAP_RESOLUTION: ${KIE_FACE_SWAP_RESOLUTION:-720p}
+      KIE_FACE_SWAP_DURATION: ${KIE_FACE_SWAP_DURATION:-5}
+      KIE_FACE_SWAP_POINTS: ${KIE_FACE_SWAP_POINTS:-100}
+      KIE_WATERMARK_IMAGE_MODEL: ${KIE_WATERMARK_IMAGE_MODEL:-gpt-image-2-image-to-image}
+      KIE_WATERMARK_IMAGE_RESOLUTION: ${KIE_WATERMARK_IMAGE_RESOLUTION:-2K}
+      KIE_WATERMARK_IMAGE_POINTS: ${KIE_WATERMARK_IMAGE_POINTS:-25}
+      KIE_WATERMARK_VIDEO_MODEL: ${KIE_WATERMARK_VIDEO_MODEL:-wan/2-7-r2v}
+      KIE_WATERMARK_VIDEO_RESOLUTION: ${KIE_WATERMARK_VIDEO_RESOLUTION:-720p}
+      KIE_WATERMARK_VIDEO_POINTS: ${KIE_WATERMARK_VIDEO_POINTS:-100}
+      KIE_ENHANCE_IMAGE_MODEL: ${KIE_ENHANCE_IMAGE_MODEL:-gpt-image-2-image-to-image}
+      KIE_ENHANCE_VIDEO_MODEL: ${KIE_ENHANCE_VIDEO_MODEL:-topaz/video-upscale}
+      KIE_ENHANCE_UPSCALE_FACTOR: ${KIE_ENHANCE_UPSCALE_FACTOR:-2}
+      KIE_ENHANCE_IMAGE_POINTS: ${KIE_ENHANCE_IMAGE_POINTS:-25}
+      KIE_ENHANCE_VIDEO_POINTS: ${KIE_ENHANCE_VIDEO_POINTS:-100}
+      KIE_REMOVE_BG_IMAGE_MODEL: ${KIE_REMOVE_BG_IMAGE_MODEL:-recraft/remove-background}
+      KIE_REMOVE_BG_IMAGE_POINTS: ${KIE_REMOVE_BG_IMAGE_POINTS:-25}
+      KIE_FILE_UPLOAD_BASE_URL: ${KIE_FILE_UPLOAD_BASE_URL:-https://kieai.redpandaai.co}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      MINIMAX_GROUP_ID: ${MINIMAX_GROUP_ID:-}
+      MINIMAX_BASE_URL: ${MINIMAX_BASE_URL:-https://api.minimaxi.com}
+      MINIMAX_TTS_MODEL: ${MINIMAX_TTS_MODEL:-speech-2.8-turbo}
+      QWEN_API_KEY: ${QWEN_API_KEY:-${DASHSCOPE_API_KEY:-}}
+      QWEN_BASE_URL: ${QWEN_BASE_URL:-https://dashscope-intl.aliyuncs.com/compatible-mode/v1}
+      QWEN_MODEL: ${QWEN_MODEL:-qwen-vl-plus}
+      ALIPAY_ENV: ${ALIPAY_ENV:-sandbox}
+      ALIPAY_APP_ID: ${ALIPAY_APP_ID:-}
+      ALIPAY_SELLER_ID: ${ALIPAY_SELLER_ID:-}
+      ALIPAY_PRIVATE_KEY_PATH: ${ALIPAY_PRIVATE_KEY_PATH:-/run/secrets/payment-keys/app_private_key.pem}
+      ALIPAY_PUBLIC_KEY_PATH: ${ALIPAY_PUBLIC_KEY_PATH:-/run/secrets/payment-keys/alipay_public_key.pem}
+      ALIPAY_PUBLIC_BASE_URL: ${ALIPAY_PUBLIC_BASE_URL:-${PUBLIC_BASE_URL:-}}
+    volumes:
+      - jingchuang_ai_media:/app/storage
+      - ./secrets/payment-keys:/run/secrets/payment-keys:ro
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3006/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./frontend-app
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL-}
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:${FRONTEND_PORT:-8088}:80"
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_started
+    ports:
+      - "${CADDY_BIND_ADDRESS:-127.0.0.1}:${CADDY_HTTP_PORT:-9080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - jingchuang_ai_caddy_data:/data
+      - jingchuang_ai_caddy_config:/config
+
+volumes:
+  jingchuang_ai_mysql_data:
+  jingchuang_ai_media:
+  jingchuang_ai_caddy_data:
+  jingchuang_ai_caddy_config:

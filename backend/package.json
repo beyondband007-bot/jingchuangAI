@@ -6,13 +6,16 @@
   "scripts": {
     "dev": "node src/server.js",
     "start": "node src/server.js",
-    "db:init": "node src/initDb.js",
-    "db:check": "node src/checkDb.js"
+    "db:init": "node src/scripts/initDb.js",
+    "db:check": "node src/scripts/checkDb.js"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "mysql2": "^3.15.3"
+    "multer": "^2.1.1",
+    "mysql2": "^3.15.3",
+    "qrcode": "^1.5.4"
   }
 }

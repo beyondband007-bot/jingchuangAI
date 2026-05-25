@@ -1,0 +1,445 @@
+.idh-showcase-card {
+  display: grid;
+  gap: 22px;
+  margin-bottom: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.idh-showcase-hero,
+.idh-showcase-copy,
+.idh-showcase-settings,
+.idh-showcase-steps,
+.idh-showcase-footer {
+  display: grid;
+  gap: 10px;
+}
+
+.idh-showcase-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(116, 97, 255, 0.18);
+  color: #d8ddff;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.idh-showcase-hero {
+  justify-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+.idh-showcase-copy strong {
+  display: block;
+  margin: 18px 0 10px;
+  font-size: 36px;
+  color: #f7f8ff;
+  line-height: 1.05;
+}
+
+.idh-showcase-copy p {
+  margin: 0;
+  max-width: 720px;
+  color: #a6acc7;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.idh-showcase-frame {
+  display: grid;
+  gap: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.idh-showcase-stage {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.idh-showcase-upload {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 24px;
+  overflow: hidden;
+  min-height: auto;
+  height: 100%;
+  border-radius: 24px;
+  border: 1px solid rgba(120, 126, 159, 0.28);
+  background:
+    linear-gradient(180deg, rgba(26, 27, 40, 0.98), rgba(14, 15, 22, 0.98)),
+    radial-gradient(circle at top, rgba(117, 112, 255, 0.18), transparent 60%);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.32);
+}
+
+.idh-showcase-upload-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.idh-showcase-step-badge {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 900;
+  color: #ffffff;
+  background: linear-gradient(135deg, #b256ff, #7b5cff);
+}
+
+.idh-showcase-upload-copy {
+  min-width: 0;
+}
+
+.idh-showcase-upload-copy h3 {
+  margin: 0 0 6px;
+  color: #f6f7ff;
+  font-size: 22px;
+}
+
+.idh-showcase-upload-copy p {
+  margin: 0;
+  color: #9fa7c5;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.idh-showcase-format-pill {
+  margin-left: auto;
+  padding: 9px 12px;
+  color: #c6cce6;
+  background: rgba(86, 96, 138, 0.22);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.idh-showcase-upload-input {
+  display: grid;
+  width: 100%;
+  min-height: 100%;
+  height: 100%;
+  align-self: stretch;
+  cursor: pointer;
+}
+
+.idh-showcase-upload img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.idh-showcase-placeholder {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 100%;
+  padding: 16px;
+  overflow: hidden;
+  border: 1.5px dashed rgba(178, 86, 255, 0.56);
+  border-radius: 16px;
+  background: radial-gradient(circle at center, rgba(144, 78, 255, 0.16), rgba(66, 38, 122, 0.1));
+  text-align: center;
+  color: #f7f7ff;
+  transition: transform 180ms ease, border-color 180ms ease, filter 180ms ease;
+}
+
+.idh-showcase-upload-input:hover .idh-showcase-placeholder {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+
+.idh-showcase-placeholder svg {
+  color: #A179FF;
+}
+
+.idh-showcase-placeholder strong {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.idh-showcase-placeholder span {
+  color: #aab2cf;
+  font-size: 14px;
+}
+
+.idh-showcase-upload-cloud {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  opacity: 0.25;
+}
+
+.idh-showcase-clear {
+  position: absolute;
+  top: 96px;
+  right: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #f3f5ff;
+  background: rgba(11, 13, 20, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+}
+
+.idh-showcase-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(123, 139, 184, 0.2);
+  background: rgba(9, 13, 24, 0.82);
+  color: #dce3ff;
+}
+
+.idh-showcase-drive-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idh-showcase-drive-tabs .idh-showcase-pill {
+  appearance: none;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--app-border);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.idh-showcase-drive-tabs .idh-showcase-pill.is-active,
+.idh-showcase-steps > div.is-active > span {
+  background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.idh-showcase-field {
+  display: grid;
+  gap: 6px;
+}
+
+.idh-showcase-settings {
+  align-content: start;
+}
+
+.idh-showcase-settings .idh-showcase-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.idh-showcase-field span {
+  color: #8f9ab8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.idh-showcase-field .custom-select,
+.idh-showcase-field textarea {
+  width: 100%;
+  font: inherit;
+}
+
+.idh-showcase-field textarea {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-primary);
+  min-height: 92px;
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.idh-showcase-tts-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.idh-showcase-tts-controls {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.idh-showcase-tts-sliders {
+  display: grid;
+  gap: 12px;
+}
+
+.idh-showcase-tts-action {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-items: start;
+}
+
+.idh-showcase-tts-head {
+  display: grid;
+  gap: 3px;
+}
+
+.idh-showcase-tts-head span {
+  color: #8f9ab8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.idh-showcase-tts-head strong {
+  color: #eef2ff;
+  font-size: 14px;
+}
+
+.idh-showcase-range-field {
+  display: grid;
+  gap: 7px;
+}
+
+.idh-showcase-range-field span {
+  display: flex;
+  justify-content: space-between;
+  color: #eef2ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.idh-showcase-range-field small {
+  color: #8f9ab8;
+  font-weight: 800;
+}
+
+.idh-showcase-range-field input {
+  width: 100%;
+  accent-color: #1677ff;
+  background: transparent;
+}
+
+.idh-showcase-generate-voice {
+  width: 100%;
+  margin-top: 0;
+}
+
+.idh-showcase-steps > div {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(120, 139, 182, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 17, 30, 0.74);
+}
+
+.idh-showcase-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.idh-showcase-steps > div > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(115, 127, 156, 0.28);
+  color: #f3f5ff;
+  font-weight: 700;
+}
+
+.idh-showcase-steps > div > div {
+  display: grid;
+  gap: 4px;
+}
+
+.idh-showcase-steps strong,
+.idh-showcase-summary strong {
+  color: #eef2ff;
+  font-size: 14px;
+}
+
+.idh-showcase-steps small,
+.idh-showcase-summary span {
+  color: #8f9ab8;
+  font-size: 12px;
+}
+
+.idh-showcase-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idh-showcase-summary div,
+.idh-showcase-footer-item {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(120, 139, 182, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 17, 30, 0.74);
+}
+
+.idh-showcase-footer-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #dce3ff;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.idh-showcase-footer-item.is-notice {
+  display: block;
+  color: #dce3ff;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .idh-showcase-stage,
+  .idh-showcase-summary,
+  .idh-showcase-steps {
+    grid-template-columns: 1fr;
+  }
+
+}

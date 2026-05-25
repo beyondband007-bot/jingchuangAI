@@ -32,7 +32,7 @@ VITE_ASSET_BASE_URL=/                        # 静态资源 base 路径（子路
 VITE_WS_URL=ws://localhost:3001              # WebSocket 连接地址
 
 # 可选
-VITE_APP_NAME=鲸创AI
+VITE_APP_NAME=脸谱AI
 VITE_APP_VERSION=1.0.0
 ```
 
@@ -613,7 +613,7 @@ SMTP_PASS=
 
 ```mermaid
 gantt
-    title 鲸创AI 增量开发进度（9周）
+    title 脸谱AI 增量开发进度（9周）
     dateFormat  YYYY-MM-DD
     axisFormat  %m/%d
 

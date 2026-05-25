@@ -5,6 +5,20 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "127.0.0.1",
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:3006",
+        changeOrigin: true
+      },
+      "/media": {
+        target: "http://127.0.0.1:3006",
+        changeOrigin: true
+      },
+      "/health": {
+        target: "http://127.0.0.1:3006",
+        changeOrigin: true
+      }
+    }
   }
 });

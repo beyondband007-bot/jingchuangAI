@@ -1,25 +1,9 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:3006";
+﻿import { requestJson as request } from "./request.js";
 const listeners = new Set();
 let pollTimer;
-
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {})
-    }
-  });
-
-  const text = await response.text();
-  const body = text ? JSON.parse(text) : {};
-
-  if (!response.ok) {
-    throw new Error(body.error || `Request failed with ${response.status}`);
-  }
-
-  return body;
-}
+let modelsPromise;
+let creditsPromise;
+export const imageToImageModelKey = "gpt_image_1_5_i2i";
 
 function notify() {
   listeners.forEach((listener) => listener());
@@ -50,11 +34,18 @@ export const imageApi = {
   },
 
   async getCredits() {
-    return request("/api/me/credits");
+    creditsPromise ||= request("/api/me/credits");
+    return creditsPromise;
+  },
+
+  async refreshCredits() {
+    creditsPromise = request("/api/me/credits");
+    return creditsPromise;
   },
 
   async getModels() {
-    return request("/api/image/models");
+    modelsPromise ||= request("/api/image/models");
+    return modelsPromise;
   },
 
   async getTasks({ filter = "all" } = {}) {
@@ -64,8 +55,15 @@ export const imageApi = {
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
     const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
-    if (!selectedModel || !selectedQuality) return "¥0.00";
-    return `¥${((selectedModel.basePoints * selectedQuality.multiplier * count) / 100).toFixed(2)}`;
+    if (!selectedModel || !selectedQuality) return "0 积分";
+    return `${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
+  },
+
+  calculatePriceDetail({ model, quality, count, models = [], qualities = [] }) {
+    const selectedModel = models.find((item) => item.value === model) || models[0];
+    const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
+    if (!selectedModel || !selectedQuality) return "扣费标准：模型基础积分 × 清晰度倍率 × 张数";
+    return `扣费标准：${selectedModel.basePoints} × ${selectedQuality.multiplier} × ${count} = ${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
   },
 
   getRandomPrompt() {
@@ -87,6 +85,15 @@ export const imageApi = {
     return task;
   },
 
+  async uploadReference(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/image/uploads/reference", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   async deleteTask(id) {
     const result = await request(`/api/image/tasks/${id}`, { method: "DELETE" });
     notify();
@@ -106,7 +113,8 @@ export const imageApi = {
       model: task.modelKey,
       ratio: task.ratio,
       quality: task.quality,
-      count: task.count || 1
+      count: task.count || 1,
+      referenceImageUrl: task.referenceImageUrl || null
     });
     notify();
     return created;

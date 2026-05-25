@@ -1,0 +1,4474 @@
+﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  Bot,
+  Box,
+  ChevronDown,
+  CheckCircle2,
+  Camera,
+  Copy,
+  Dice5,
+  Download,
+  Eraser,
+  FileText,
+  Film,
+  Home,
+  Image,
+  Layers,
+  LogIn,
+  Loader2,
+  LogOut,
+  Maximize2,
+  Mic,
+  Music,
+  Play,
+  Plus,
+  RefreshCcw,
+  Ruler,
+  Search,
+  Send,
+  PlaySquare,
+  Scissors,
+  Sparkles,
+  Star,
+  Target,
+  Timer,
+  Trash2,
+  UserRound,
+  Video,
+  Wallet,
+  Wand2,
+  X
+} from "lucide-react";
+import { authApi } from "./api/authApi";
+import { imageApi } from "./api/imageApi";
+import { videoApi } from "./api/videoApi";
+import { chatApi } from "./api/chatApi";
+import { digitalHumanApi } from "./api/digitalHumanApi";
+import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
+import { motionTransferApi } from "./api/motionTransferApi";
+import { faceSwapApi } from "./api/faceSwapApi";
+import { watermarkApi } from "./api/watermarkApi";
+import { VoiceSynthesisView } from "./features/voice/VoiceSynthesisView";
+import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
+import { TranscribeView } from "./features/transcribe/TranscribeView";
+import { MusicGenerationView } from "./features/music/MusicGenerationView";
+import { ReplicateView } from "./features/replicate/ReplicateView";
+import { ChatGenerationView } from "./features/chat/ChatGenerationView";
+import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
+import { PromptSelectField } from "./features/chat/components/PromptSelectField";
+import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
+import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
+import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
+import { EnhanceView } from "./features/enhance/EnhanceView";
+import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
+import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
+import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
+import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
+import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
+import { ImageDigitalHumanShowcaseCard } from "./features/image-digital-human/ImageDigitalHumanShowcaseCard";
+import "./styles.css";
+
+const exampleImages = [
+  { src: "/assets/image/gallery-1.jpg", label: "鐢靛奖璐ㄦ劅浜哄儚", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 绉垎" },
+  { src: "/assets/image/gallery-2.jpg", label: "鏃跺皻浜у搧鎽勫奖", model: "Nano Banana Pro", ratio: "1:1", quality: "2K", price: "63 绉垎" },
+  { src: "/assets/image/gallery-4.jpg", label: "鑷劧鍏夊奖", model: "Imagen 4", ratio: "16:9", quality: "2K", price: "28 绉垎" },
+  { src: "/assets/image/gallery-6.jpg", label: "姘翠笅鍐欏疄", model: "Flux 2 Pro", ratio: "4:3", quality: "1K", price: "18 绉垎" },
+  { src: "/assets/image/gallery-7.jpg", label: "数字人形象", model: "GPT Image 2", ratio: "9:16", quality: "2K", price: "35 积分" },
+  { src: "/assets/image/gallery-5.jpg", label: "动态创意", model: "4o Image", ratio: "1:1", quality: "1K", price: "21 积分" },
+  { src: "/assets/image/thumb-img-gen.jpg", label: "鍥剧墖鐢熸垚", model: "Imagen 4 Fast", ratio: "1:1", quality: "1K", price: "14 绉垎" },
+  { src: "/assets/image/gallery-9.jpg", label: "鐏垫劅灏侀潰", model: "Seedream 4.5", ratio: "16:9", quality: "2K", price: "22 绉垎" },
+  { src: "/assets/image/gallery-8.jpg", label: "澶嶅彜褰卞儚", model: "Nano Banana Pro", ratio: "3:4", quality: "2K", price: "63 绉垎" },
+  { src: "/assets/image/gallery-10.jpg", label: "姒傚康娴锋姤", model: "Seedream 4.5", ratio: "9:16", quality: "2K", price: "22 绉垎" }
+];
+
+const navItems = [
+  { id: "home", label: "棣栭〉", icon: Home },
+  { id: "image", label: "鍥剧墖鐢熸垚", icon: Image },
+  { id: "video", label: "瑙嗛鐢熸垚", icon: Video },
+  { id: "chat", label: "大模型", icon: Bot },
+  { id: "digital-human", label: "数字人", icon: UserRound },
+  { id: "image-digital-human", label: "图片数字人", icon: Camera },
+  { id: "motion", label: "鍔ㄤ綔杩佺Щ", icon: Sparkles },
+  { id: "face-swap", label: "瑙嗛鎹㈣劯", icon: Scissors },
+  { id: "voice", label: "璇煶鍚堟垚", icon: Mic },
+  { id: "article", label: "鐖嗘鍥炬枃", icon: FileText },
+  { id: "watermark", label: "去水印", icon: Eraser },
+  { id: "voice-convert", label: "闊宠壊杞崲", icon: Mic },
+  { id: "transcribe", label: "璇煶杞枃瀛?, icon: Mic },
+  { id: "video-voice", label: "瑙嗛閰嶉煶", icon: PlaySquare },
+  { id: "music", label: "AI闊充箰", icon: Music },
+  { id: "replicate", label: "鍙嶆帹鎻愮ず璇?, icon: Copy },
+  { id: "enhance", label: "鐢昏川鎻愬崌", icon: Wand2 },
+  { id: "remove-bg", label: "鏅鸿兘鎶犲浘", icon: Layers }
+];
+
+const navSections = [
+  { type: "item", id: "home" },
+  { type: "item", id: "chat" },
+  { type: "group", id: "vision", label: "瑙嗚鐢熸垚", icon: Box, children: ["image", "video", "face-swap", "motion"] },
+  { type: "group", id: "avatar", label: "鏁板瓧浜?, icon: UserRound, children: ["digital-human", "image-digital-human"] },
+  { type: "group", id: "audio", label: "闊抽澶勭悊", icon: Music, children: ["voice", "music", "voice-convert"] },
+  { type: "group", id: "marketing", label: "钀ラ攢宸ュ叿", icon: Send, children: ["article", "video-voice", "watermark", "remove-bg", "enhance", "replicate", "transcribe"] },
+  { type: "external", id: "assets", label: "鎴戠殑璧勪骇", icon: Wallet, href: "https://www.getureai.com/portal/index.html" }
+];
+
+const homeFeatureRoutes = [
+  "image",
+  "video",
+  "chat",
+  "digital-human",
+  "image-digital-human",
+  "motion",
+  "face-swap",
+  "voice",
+  "article",
+  "watermark",
+  "enhance",
+  "remove-bg",
+  "voice-convert",
+  "transcribe",
+  "music",
+  "replicate",
+  "video-voice"
+];
+
+const appEntryStorageKey = "jingchuang:enter-app";
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => originalFetch(input, { credentials: "include", ...init });
+const featureNavIds = navItems.map((item) => item.id).filter((id) => id !== "home");
+const featureNavIdSet = new Set(featureNavIds);
+const appNavIdSet = new Set(navItems.map((item) => item.id));
+
+function getRouteView() {
+  const hashView = window.location.hash.replace(/^#\/?/, "");
+  if (appNavIdSet.has(hashView)) return hashView;
+  if (window.location.pathname === "/chat" || window.location.hash === "#/chat") return "chat";
+  if (window.location.pathname === "/home" || window.location.hash === "#/home") return "home";
+  if (window.location.pathname === "/image-digital-human" || window.location.hash === "#/image-digital-human") return "image-digital-human";
+  if (window.location.pathname === "/digital-human" || window.location.hash === "#/digital-human") return "digital-human";
+  if (window.location.pathname === "/motion-transfer" || window.location.hash === "#/motion") return "motion";
+  if (window.location.pathname === "/face-swap" || window.location.hash === "#/face-swap") return "face-swap";
+  if (window.location.pathname === "/watermark" || window.location.hash === "#/watermark") return "watermark";
+  if (window.location.pathname === "/voice-conversion" || window.location.hash === "#/voice-convert") return "voice-convert";
+  if (window.location.pathname === "/transcribe" || window.location.hash === "#/transcribe") return "transcribe";
+  if (window.location.pathname === "/article" || window.location.hash === "#/article") return "article";
+  if (window.location.pathname === "/music" || window.location.hash === "#/music") return "music";
+  if (window.location.pathname === "/replicate" || window.location.hash === "#/replicate") return "replicate";
+  if (window.location.pathname === "/enhance" || window.location.hash === "#/enhance") return "enhance";
+  if (window.location.pathname === "/remove-bg" || window.location.hash === "#/remove-bg") return "remove-bg";
+  if (window.location.pathname === "/voice" || window.location.hash === "#/voice") return "voice";
+  if (window.location.pathname === "/video" || window.location.hash === "#/video") return "video";
+  if (window.location.pathname === "/image" || window.location.hash === "#/image") return "image";
+  return "splash";
+}
+
+function getInitialView() {
+  const shouldEnterApp = window.sessionStorage.getItem(appEntryStorageKey) === "1";
+  if (shouldEnterApp) {
+    window.sessionStorage.removeItem(appEntryStorageKey);
+    return getRouteView();
+  }
+  if (window.location.pathname !== "/" || window.location.hash) {
+    window.history.replaceState(null, "", "/");
+  }
+  return "splash";
+}
+
+function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [renderMode, setRenderMode] = useState(mode);
+  const [isClosing, setIsClosing] = useState(false);
+  const isRegister = mode === "register";
+
+  useEffect(() => {
+    if (!mode) return;
+    setRenderMode(mode);
+    setIsClosing(false);
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
+    setError("");
+    setIsSubmitting(false);
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode || !renderMode) return undefined;
+    setIsClosing(true);
+    const timer = window.setTimeout(() => {
+      setIsClosing(false);
+      setRenderMode(null);
+    }, 520);
+    return () => window.clearTimeout(timer);
+  }, [mode, renderMode]);
+
+  if (!renderMode) return null;
+
+  function requestClose() {
+    if (isClosing) return;
+    onClose();
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setError("");
+    if (isRegister && password !== confirmPassword) {
+      setError("涓ゆ杈撳叆鐨勫瘑鐮佷笉涓€鑷?);
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = { username: username.trim(), password };
+      const result = isRegister ? await authApi.register(payload) : await authApi.login(payload);
+      onSuccess(result.user);
+    } catch (submitError) {
+      setError(submitError.message || "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className={`auth-drawer-layer ${isClosing ? "is-closing" : ""}`} role="presentation">
+      <button className="auth-drawer-backdrop" type="button" aria-label="鍏抽棴鐧诲綍闈㈡澘" onClick={requestClose} />
+      <aside className="auth-drawer" role="dialog" aria-modal="true" aria-labelledby="auth-drawer-title">
+        <button className="auth-drawer-close" type="button" aria-label="鍏抽棴" onClick={requestClose}>
+          <X size={18} />
+        </button>
+        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <h2 id="auth-drawer-title">{renderMode === "register" ? "鍒涘缓璐﹀彿" : "娆㈣繋鍥炴潵"}</h2>
+        <p>{renderMode === "register" ? "娉ㄥ唽鍚庣珛鍗宠幏寰?1000 绉垎锛屽紑濮嬩繚瀛樹綘鐨勭敓鎴愯褰曘€? : "鐧诲綍鍚庡皢鍒囨崲鍒颁綘鐨勭Н鍒嗕笌鐢熸垚璁板綍銆?}</p>
+        <form className="auth-form" onSubmit={submit}>
+          <label>
+            <span>鐢ㄦ埛鍚?/span>
+            <input
+              autoFocus
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              placeholder="璇疯緭鍏ョ敤鎴峰悕"
+              autoComplete="username"
+            />
+          </label>
+          <label>
+            <span>瀵嗙爜</span>
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="鑷冲皯 6 涓瓧绗?
+              type="password"
+              autoComplete={renderMode === "register" ? "new-password" : "current-password"}
+            />
+          </label>
+          {renderMode !== "register" && (
+            <button
+              className="auth-forgot-password"
+              type="button"
+              onClick={(event) => event.preventDefault()}
+            >
+              蹇樿瀵嗙爜
+            </button>
+          )}
+          {renderMode === "register" && (
+            <label>
+              <span>纭瀵嗙爜</span>
+              <input
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                placeholder="璇峰啀娆¤緭鍏ュ瘑鐮?
+                type="password"
+                autoComplete="new-password"
+              />
+            </label>
+          )}
+          {error && <div className="auth-error">{error}</div>}
+          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
+            <span>{renderMode === "register" ? "娉ㄥ唽骞堕鍙栫Н鍒? : "鐧诲綍"}</span>
+          </button>
+        </form>
+        {renderMode === "register" ? (
+          <div className="auth-mode-switch-row">
+            <span className="auth-mode-switch-label">宸叉湁璐﹀彿</span>
+            <button className="auth-mode-switch auth-mode-switch-link auth-mode-switch-login-link" type="button" onClick={() => onModeChange("login")}>
+              鍘荤櫥褰?
+            </button>
+          </div>
+        ) : (
+          <div className="auth-mode-switch-row">
+            <span className="auth-mode-switch-label">杩樻病鏈夎处鍙凤紵</span>
+            <button className="auth-mode-switch auth-mode-switch-link" type="button" onClick={() => onModeChange("register")}>
+              绔嬪嵆娉ㄥ唽
+            </button>
+          </div>
+        )}
+      </aside>
+    </div>
+  );
+}
+
+const SplashHome = memo(function SplashHome({ onOpenAuth, onGuestEnter }) {
+  const frameRef = useRef(null);
+
+  const bindAuthLinks = useCallback(() => {
+    const frame = frameRef.current;
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const bindLink = (selector, handler) => {
+        const links = Array.from(doc.querySelectorAll(selector));
+        links.forEach((link) => {
+          if (link.dataset.jcAuthBound === "1") return;
+          link.dataset.jcAuthBound = "1";
+          link.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            handler();
+          }, true);
+        });
+      };
+      bindLink('a[href="#signin"], a[href*="#signin"]', () => onOpenAuth("login"));
+      bindLink('a[href="#signup"], a[href*="#signup"]', () => onOpenAuth("register"));
+      bindLink('a[href="/#/home"], a.hero-pill', onGuestEnter);
+    } catch {
+      // The exported landing page is same-origin locally; ignore if a browser blocks access.
+    }
+  }, [onGuestEnter, onOpenAuth]);
+
+  const handleFrameLoad = useCallback(() => {
+    bindAuthLinks();
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      bindAuthLinks();
+      if (tries >= 20) {
+        window.clearInterval(timer);
+      }
+    }, 200);
+  }, [bindAuthLinks]);
+
+  return (
+    <div className="original-home-shell">
+      <iframe ref={frameRef} className="original-home-frame" title="椴稿垱AI棣栭〉" src="/new_page/page.html" onLoad={handleFrameLoad} />
+    </div>
+  );
+});
+
+const AppHome = memo(function AppHome({ onOpenFeature, authUser, onOpenAuth, onLogout }) {
+  const frameRef = useRef(null);
+  const [isReady, setIsReady] = useState(false);
+  const isGuest = Boolean(authUser?.isGuest);
+
+  const bindHomeFeatureCards = useCallback(() => {
+    const frame = frameRef.current;
+    try {
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const cards = Array.from(doc.querySelectorAll(".feature-card"));
+      cards.forEach((card, index) => {
+        const route = homeFeatureRoutes[index];
+        if (!route || card.dataset.jcRouteBound === route) return;
+        card.dataset.jcRouteBound = route;
+        card.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOpenFeature(route);
+        });
+      });
+    } catch {
+      // The home iframe is same-origin in Vite; ignore if a browser blocks access.
+    }
+  }, [onOpenFeature]);
+
+  const handleFrameLoad = useCallback(() => {
+    setIsReady(true);
+    bindHomeFeatureCards();
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      bindHomeFeatureCards();
+      if (tries >= 20) window.clearInterval(timer);
+    }, 100);
+  }, [bindHomeFeatureCards]);
+
+  const handleNavChange = useCallback((id) => {
+    if (id === "home") {
+      window.history.pushState(null, "", "#/home");
+      return;
+    }
+    onOpenFeature(id);
+  }, [onOpenFeature]);
+
+  return (
+    <div className={`feature-page-shell home-page-shell ${isGuest ? "is-guest" : ""}`}>
+      <FeatureSidebar activeNav="home" onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
+      {isGuest && (
+        <div className="feature-guest-auth-actions" aria-label="娓稿璐﹀彿鍏ュ彛">
+          <button type="button" onClick={() => onOpenAuth("login")}>鐧诲綍</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>娉ㄥ唽</button>
+        </div>
+      )}
+      <main className="feature-main home-feature-main">
+        <div className={`original-home-shell app-home-shell ${isReady ? "is-ready" : "is-loading"}`}>
+          <iframe ref={frameRef} className="original-home-frame" title="Getrue.ai 棣栭〉" src="/閲嶆瀯/index.html" onLoad={handleFrameLoad} />
+        </div>
+      </main>
+    </div>
+  );
+});
+
+const FeatureSidebar = memo(function FeatureSidebar({ activeNav, onNavChange, authUser, onOpenAuth, onLogout }) {
+  const isLoadingUser = !authUser;
+  const isGuest = Boolean(authUser?.isGuest);
+  const [query, setQuery] = useState("");
+  const [openGroups, setOpenGroups] = useState(() => ({
+    vision: true,
+    avatar: true,
+    audio: true,
+    marketing: true
+  }));
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const getNavItem = useCallback((id) => navItems.find((item) => item.id === id), []);
+  const isVisible = useCallback((item) => {
+    if (!normalizedQuery) return true;
+    return item?.label?.toLowerCase().includes(normalizedQuery) || item?.id?.toLowerCase().includes(normalizedQuery);
+  }, [normalizedQuery]);
+
+  const toggleGroup = useCallback((id) => {
+    setOpenGroups((current) => ({ ...current, [id]: !current[id] }));
+  }, []);
+
+  return (
+    <aside className="feature-sidebar">
+      <div className="feature-brand">
+        <span className="feature-brand-text">Getrue.ai</span>
+        <span className="feature-brand-beta">锛堝唴娴嬶級</span>
+      </div>
+      <label className="feature-nav-search">
+        <Search size={16} />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="鎼滅储..." />
+      </label>
+      <nav className="feature-nav" aria-label="鍔熻兘瀵艰埅">
+        {navSections.map((section) => {
+          if (section.type === "item") {
+            const item = getNavItem(section.id);
+            if (!item || !isVisible(item)) return null;
+            const Icon = item.icon;
+            const active = activeNav === item.id;
+            return (
+              <div className="feature-nav-section" key={section.id}>
+                <button className={`feature-nav-item ${active ? "is-active" : ""}`} onClick={() => onNavChange(item.id)} type="button">
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{item.label}</span>
+                </button>
+              </div>
+            );
+          }
+
+          if (section.type === "external") {
+            if (normalizedQuery && !section.label.toLowerCase().includes(normalizedQuery) && !section.id.toLowerCase().includes(normalizedQuery)) return null;
+            const Icon = section.icon;
+            return (
+              <div className="feature-nav-section" key={section.id}>
+                <button className="feature-nav-item" onClick={() => window.open(section.href, "_blank", "noopener,noreferrer")} type="button">
+                  <Icon size={18} strokeWidth={1.9} />
+                  <span>{section.label}</span>
+                </button>
+              </div>
+            );
+          }
+
+          const children = section.children.map(getNavItem).filter(Boolean).filter(isVisible);
+          const hasActiveChild = section.children.includes(activeNav);
+          if (!children.length && normalizedQuery) return null;
+          const GroupIcon = section.icon;
+          const isOpen = Boolean(openGroups[section.id] || hasActiveChild || normalizedQuery);
+          return (
+            <div className="feature-nav-section feature-nav-section--group" key={section.id}>
+              <button className={`feature-nav-group ${hasActiveChild ? "is-active" : ""} ${isOpen ? "is-open" : ""}`} type="button" onClick={() => toggleGroup(section.id)}>
+                <GroupIcon size={18} strokeWidth={1.9} />
+                <span>{section.label}</span>
+                <ChevronDown className="feature-nav-chevron" size={16} />
+              </button>
+              <div className={`feature-nav-children ${isOpen ? "is-open" : ""}`}>
+                {children.map((item) => {
+                  const Icon = item.icon;
+                  const active = activeNav === item.id;
+                  return (
+                    <button className={`feature-nav-child ${active ? "is-active" : ""}`} key={item.id} onClick={() => onNavChange(item.id)} type="button">
+                      <span className="feature-nav-child-icon">
+                        <Icon size={15} strokeWidth={1.9} />
+                      </span>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+      {isLoadingUser ? (
+        <button className="feature-login" type="button" onClick={() => onOpenAuth("login")}>
+          <LogIn size={16} />
+          <span>鐧诲綍</span>
+        </button>
+      ) : (
+        <div className={`feature-user-panel ${isGuest ? "is-guest" : ""}`}>
+          <div className="feature-user-avatar">
+            <UserRound size={17} />
+          </div>
+          <div className="feature-user-copy">
+            <strong>{isGuest ? "娓稿" : authUser.displayName || authUser.username}</strong>
+            {!isGuest && <span>绉垎 {authUser.credits ?? "-"}</span>}
+          </div>
+          {!isGuest && (
+            <button type="button" onClick={onLogout} aria-label="閫€鍑虹櫥褰?>
+              <LogOut size={16} />
+            </button>
+          )}
+        </div>
+      )}
+    </aside>
+  );
+});
+
+function ComingSoon({ activeNav }) {
+  const current = useMemo(() => navItems.find((item) => item.id === activeNav), [activeNav]);
+  return (
+    <section className="coming-soon-panel">
+      <div className="coming-soon-icon">
+        <Sparkles size={28} />
+      </div>
+      <h1>{current?.label || "鍔熻兘"}鏆傛湭寮€鏀?/h1>
+      <p>褰撳墠闃舵浠呮帴鍏ュ浘鐗囩敓鎴愬姛鑳斤紝鍏跺畠鑳藉姏浼氬湪鍚庣画杩唬涓€愭琛ラ綈銆?/p>
+    </section>
+  );
+}
+
+function ResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = false, isImageGallery = false }) {
+  const isProcessing = card.status === "processing";
+  const isFailed = card.status === "failed";
+
+  return (
+    <article className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""}`}>
+      {isImageGallery && (
+        <div className="result-card-model-tag">
+          <span className="model-tag">{card.model}</span>
+        </div>
+      )}
+      <div className={`result-preview ${card.grid ? "preview-grid" : ""}`}>
+        {isProcessing && <div className="processing-state">鐢熸垚涓?..</div>}
+        {isFailed && <div className="failed-state">鐢熸垚澶辫触</div>}
+        {!isProcessing && !isFailed && card.image ? (
+          card.grid ? (
+            <>
+              <img src={card.image} alt={card.prompt} />
+              <img src="/assets/image/gallery-3.jpg" alt={card.prompt} />
+              <img src="/assets/image/gallery-4.jpg" alt={card.prompt} />
+              <img src="/assets/image/gallery-5.jpg" alt={card.prompt} />
+            </>
+          ) : (
+            <img src={card.image} alt={card.prompt} />
+          )
+        ) : null}
+        {!isProcessing && !isFailed && !card.image && <span className="broken-image-mark" aria-hidden="true" />}
+      </div>
+      <div className="result-meta">
+        <div className="tag-row">
+          {!isImageGallery && <span className="model-tag">{card.model}</span>}
+          {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
+          {!isImageGallery && <span className="quality-tag">{card.quality}</span>}
+          {card.count > 1 && <span className="count-tag">{card.count}寮?/span>}
+        </div>
+        {!isImageGallery && (
+          <div className="time-row">
+            <span>{card.time || "绀轰緥"}</span>
+            <strong>{card.price}</strong>
+          </div>
+        )}
+        {isImageGallery ? (
+          <div className="gallery-title-row">
+            <p>{card.error || card.prompt}</p>
+            <strong>{card.price}</strong>
+          </div>
+        ) : (
+        <>
+        <p>{card.error || card.prompt}</p>
+        <div className="card-actions">
+          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌" disabled={isExample}>
+            <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
+          </button>
+          {card.image ? (
+            <a className="card-action-link" href={card.image} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              涓嬭浇
+            </button>
+          )}
+          <button type="button" onClick={() => onRegenerate(card.id)} disabled={isExample}>
+            <RefreshCcw size={15} />
+            鍐嶆鐢熸垚
+          </button>
+          <button type="button" onClick={() => onDelete(card.id)} disabled={isExample}>
+            <Trash2 size={15} />
+            鍒犻櫎
+          </button>
+        </div>
+        </>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function ComposerBar({ options, onSubmit }) {
+  const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState(options.models[0]?.value || "");
+  const [ratio, setRatio] = useState(options.ratios[0] || "");
+  const [quality, setQuality] = useState(options.qualities[0]?.value || "");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && options.models[0]) setModel(options.models[0].value);
+    if (!ratio && options.ratios[0]) setRatio(options.ratios[0]);
+    if (!quality && options.qualities[0]) setQuality(options.qualities[0].value);
+  }, [model, options, quality, ratio]);
+
+  const count = 1;
+  const price = imageApi.calculatePrice({ model, quality, count, models: options.models, qualities: options.qualities });
+  const canSubmit = prompt.trim().length > 0;
+
+  function clearPrompt() {
+    setPrompt("");
+    setNotice("宸叉竻绌烘彁绀鸿瘝");
+  }
+
+  function fillRandomPrompt() {
+    setPrompt(imageApi.getRandomPrompt());
+    setNotice("宸插～鍏ラ殢鏈烘彁绀鸿瘝");
+  }
+
+  function handleAddPrompt() {
+    setNotice("褰撳墠鍥剧墖鐢熸垚鏆備笉鏀寔娣诲姞鍙傝€冪礌鏉?);
+  }
+
+  function submitPrompt() {
+    if (!canSubmit) {
+      setNotice("璇峰厛杈撳叆鍥剧墖鎻忚堪");
+      return;
+    }
+
+    onSubmit({
+      prompt: prompt.trim(),
+      model,
+      ratio,
+      quality,
+      count
+    });
+    setNotice("宸插垱寤虹敓鎴愪换鍔?);
+    setPrompt("");
+  }
+
+  return (
+    <div className="sowa-composer" aria-label="鍥剧墖鐢熸垚杈撳叆妗?>
+      <ImagePromptDialog
+        ariaLabel="鍥剧墖鐢熸垚杈撳叆妗?
+        placeholder="閫夋嫨妯″瀷鍚庯紝閲婃斁浣犵殑鍒涗綔鐏垫劅"
+        value={prompt}
+        onChange={(value) => {
+          setPrompt(value);
+          if (notice) setNotice("");
+        }}
+        onSubmit={submitPrompt}
+        canSubmit={canSubmit}
+        notice={notice}
+        onAdd={handleAddPrompt}
+        onRandom={fillRandomPrompt}
+        onClear={clearPrompt}
+        model={model}
+        onModelChange={setModel}
+        modelOptions={options.models}
+        ratio={ratio}
+        onRatioChange={setRatio}
+        ratioOptions={options.ratios}
+        quality={quality}
+        onQualityChange={setQuality}
+        qualityOptions={options.qualities}
+        price={price}
+      />
+    </div>
+  );
+}
+
+const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
+
+function ExampleCanvas() {
+  return (
+    <div className="image-canvas example-canvas" aria-label="鍥剧墖鐢熸垚妗堜緥">
+      <div className="example-canvas-copy">
+        <span>鍥剧墖鐢熸垚</span>
+        <h1>閫夋嫨涓€涓柟鍚戯紝鎴栫洿鎺ヨ緭鍏ヤ綘鐨勫浘鐗囨弿杩?/h1>
+      </div>
+      <div className="example-card-grid">
+        {exampleImages.map((item) => (
+          <button className="example-card" key={item.src} type="button">
+            <span className="example-card-preview">
+              <img src={item.src} alt={item.label} />
+            </span>
+            <span className="example-card-tags">
+              <span>{item.model}</span>
+              <span>{item.ratio}</span>
+              <span>{item.quality}</span>
+            </span>
+            <span className="example-card-meta">
+              <span>{item.label}</span>
+              <strong>{item.price}</strong>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GeneratingCanvas({ prompt }) {
+  return (
+    <div className="image-canvas chat-canvas" aria-live="polite">
+      <div className="chat-thread">
+        {prompt && (
+          <div className="chat-row user">
+            <div className="chat-bubble">{prompt}</div>
+          </div>
+        )}
+        <div className="chat-row assistant">
+          <div className="assistant-avatar">
+            <Sparkles size={17} />
+          </div>
+          <div className="chat-bubble waiting">
+            <div className="chat-waiting-title">
+              <Loader2 size={18} />
+              <span>宸叉敹鍒颁綘鐨勮姹傦紝姝ｅ湪涓轰綘鐢熸垚鍥剧墖</span>
+            </div>
+            <div className="chat-waiting-card">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompletedCanvas({ task, onPreview }) {
+  return (
+    <div className="image-canvas chat-canvas">
+      <div className="chat-thread">
+        <div className="chat-row user">
+          <div className="chat-bubble">{task.prompt}</div>
+        </div>
+        <div className="chat-row assistant">
+          <div className="assistant-avatar">
+            <CheckCircle2 size={17} />
+          </div>
+          <div className="chat-bubble result">
+            <span>宸蹭负浣犵敓鎴愬浘鐗?/span>
+            <button className="chat-result-image" type="button" onClick={() => onPreview(task)} aria-label="鏌ョ湅鐢熸垚鍥剧墖">
+              <img src={task.image} alt={task.prompt} />
+            </button>
+            <div className="chat-result-actions">
+              <a href={task.image} download>
+                <Download size={15} />
+                涓嬭浇
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FailedCanvas({ task, prompt, error, onRetry }) {
+  const message = task?.error || error || "鍥剧墖鐢熸垚閬囧埌闂锛岃绋嶅悗閲嶈瘯銆?;
+
+  return (
+    <div className="image-canvas chat-canvas" role="status">
+      <div className="chat-thread">
+        {(task?.prompt || prompt) && (
+          <div className="chat-row user">
+            <div className="chat-bubble">{task?.prompt || prompt}</div>
+          </div>
+        )}
+        <div className="chat-row assistant">
+          <div className="assistant-avatar error">
+            <Sparkles size={17} />
+          </div>
+          <div className="chat-bubble failed">
+            <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+            <p>{message}</p>
+            {task && (
+              <button type="button" onClick={() => onRetry(task.id)}>
+                <RefreshCcw size={17} />
+                鍐嶆鐢熸垚
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImageWorkspaceCanvas({ status, selectedTask, activePrompt, submitError, onRetry, onPreview }) {
+  if (status === "generating") {
+    return <GeneratingCanvas prompt={selectedTask?.prompt || activePrompt} />;
+  }
+
+  if (status === "completed" && selectedTask?.image) {
+    return <CompletedCanvas task={selectedTask} onPreview={onPreview} />;
+  }
+
+  if (status === "failed") {
+    return <FailedCanvas task={selectedTask} prompt={activePrompt} error={submitError} onRetry={onRetry} />;
+  }
+
+  return <ExampleCanvas />;
+}
+
+function PreviewDrawer({ task, onClose }) {
+  if (!task?.image) return null;
+
+  return (
+    <aside className="preview-drawer" aria-label="鐢熸垚鍥剧墖棰勮鐢诲竷">
+      <div className="preview-drawer-header">
+        <div>
+          <span>棰勮</span>
+          <strong>{task.prompt}</strong>
+        </div>
+        <button type="button" onClick={onClose} aria-label="鍏抽棴棰勮">
+          鑴?
+        </button>
+      </div>
+      <div className="preview-drawer-stage">
+        <img src={task.image} alt={task.prompt} />
+      </div>
+      <div className="preview-drawer-actions">
+        <a href={task.image} download>
+          <Download size={16} />
+          涓嬭浇
+        </a>
+      </div>
+    </aside>
+  );
+}
+
+function HistoryRail({ cards, selectedTaskId, onSelect, onDelete, onFavorite, onRegenerate }) {
+  if (!cards.length) return null;
+
+  return (
+    <aside className="history-rail" aria-label="鍥剧墖鐢熸垚鍘嗗彶">
+      <div className="history-rail-header">
+        <span>鍘嗗彶缁撴灉</span>
+        <strong>{cards.length}</strong>
+      </div>
+      <div className="history-list">
+        {cards.map((card) => {
+          const isSelected = selectedTaskId === card.id;
+          const isProcessing = card.status === "pending" || card.status === "processing";
+          const isFailed = card.status === "failed";
+
+          return (
+            <article className={`history-item ${isSelected ? "is-selected" : ""} status-${card.status}`} key={card.id}>
+              <button className="history-preview" type="button" onClick={() => onSelect(card.id)} aria-label={`鏌ョ湅 ${card.prompt}`}>
+                {card.image && !isFailed ? <img src={card.image} alt={card.prompt} /> : null}
+                {isProcessing && (
+                  <span className="history-processing">
+                    <Loader2 size={18} />
+                  </span>
+                )}
+                {isFailed && <span className="history-failed">澶辫触</span>}
+                {!card.image && !isProcessing && !isFailed && <span className="broken-image-mark" aria-hidden="true" />}
+              </button>
+              <div className="history-meta">
+                <button className="history-title" type="button" onClick={() => onSelect(card.id)}>
+                  {card.prompt}
+                </button>
+                <div className="history-tags">
+                  <span>{card.ratio}</span>
+                  <span>{card.quality}</span>
+                  <span>{card.time}</span>
+                </div>
+                <div className="history-actions">
+                  <button type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌">
+                    <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
+                  </button>
+                  {card.image && (
+                    <a href={card.image} download aria-label="涓嬭浇鍥剧墖">
+                      <Download size={15} />
+                    </a>
+                  )}
+                  <button type="button" onClick={() => onRegenerate(card.id)} aria-label="鍐嶆鐢熸垚">
+                    <RefreshCcw size={15} />
+                  </button>
+                  <button type="button" onClick={() => onDelete(card.id)} aria-label="鍒犻櫎">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+function ImageGenerationView() {
+  const [filter, setFilter] = useState("all");
+  const [cards, setCards] = useState([]);
+  const [options, setOptions] = useState(emptyOptions);
+  const [credits, setCredits] = useState(null);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [activePrompt, setActivePrompt] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [previewTask, setPreviewTask] = useState(null);
+
+  // 甯搁┗鎸傝浇锛氬垏鎹晶鏍忓叾瀹冩ā鍧楁椂涓嶅嵏杞斤紝閬垮厤鐢熸垚涓姸鎬佷笌鍒楄〃缂撳瓨涓㈠け
+  useEffect(() => {
+    let mounted = true;
+    imageApi.getModels().then((value) => mounted && setOptions(value));
+    imageApi.getCredits().then((value) => mounted && setCredits(value));
+    imageApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+
+    const unsubscribe = imageApi.subscribe(() => {
+      imageApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [filter]);
+
+  const selectedTask = useMemo(() => cards.find((card) => card.id === selectedTaskId) || null, [cards, selectedTaskId]);
+  const submittedTask = useMemo(() => cards.find((card) => card.id === submittedTaskId) || null, [cards, submittedTaskId]);
+  const imageExampleCards = useMemo(
+    () => exampleImages.map((item, index) => ({
+      id: `example-image-${index}`,
+      status: "completed",
+      model: item.model,
+      ratio: item.ratio,
+      quality: item.quality,
+      count: 1,
+      time: "绀轰緥",
+      price: item.price,
+      prompt: item.label,
+      image: item.src,
+      favorite: false
+    })),
+    []
+  );
+  const expandedImageExampleCards = useMemo(
+    () =>
+      Array.from({ length: 3 }, (_, groupIndex) =>
+        imageExampleCards.map((card, index) => ({
+          ...card,
+          id: `example-image-${groupIndex}-${index}`
+        }))
+      ).flat(),
+    [imageExampleCards]
+  );
+  const galleryItems = useMemo(() => {
+    if (filter === "all") {
+      return [
+        ...expandedImageExampleCards.map((card) => ({ card, isExample: true })),
+        ...cards.map((card) => ({ card, isExample: false }))
+      ];
+    }
+    return cards.map((card) => ({ card, isExample: false }));
+  }, [cards, expandedImageExampleCards, filter]);
+
+  useEffect(() => {
+    if (submittedTask && (submittedTask.status === "completed" || submittedTask.status === "failed")) {
+      setSelectedTaskId(submittedTask.id);
+      setIsSubmitting(false);
+    }
+  }, [submittedTask]);
+
+  useEffect(() => {
+    if (!submittedTaskId || !submittedTask) return;
+    setSelectedTaskId(submittedTask.id);
+  }, [submittedTask, submittedTaskId]);
+
+  const canvasStatus = useMemo(() => {
+    if (submitError) return "failed";
+    if (isSubmitting) return "generating";
+    if (selectedTask?.status === "pending" || selectedTask?.status === "processing") return "generating";
+    if (selectedTask?.status === "failed") return "failed";
+    if (selectedTask?.status === "completed" && selectedTask.image) return "completed";
+    return "idle_examples";
+  }, [isSubmitting, selectedTask, submitError]);
+  const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
+
+  async function createTask(payload) {
+    setActivePrompt(payload.prompt);
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSelectedTaskId(null);
+    setIsHistoryOpen(false);
+    setPreviewTask(null);
+
+    try {
+      const task = await imageApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setSelectedTaskId(task.id);
+      if (task.status === "failed") {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓鐢熸垚浠诲姟澶辫触");
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await imageApi.deleteTask(id);
+    if (selectedTaskId === id) {
+      setSelectedTaskId(null);
+    }
+    if (submittedTaskId === id) {
+      setSubmittedTaskId(null);
+      setActivePrompt("");
+    }
+  }
+
+  async function toggleFavorite(id) {
+    await imageApi.toggleFavorite(id);
+  }
+
+  async function regenerateTask(id) {
+    const source = cards.find((card) => card.id === id);
+    if (source) {
+      setActivePrompt(source.prompt);
+    }
+    setSubmitError("");
+    setIsSubmitting(true);
+    setIsHistoryOpen(false);
+    setPreviewTask(null);
+
+    try {
+      const created = await imageApi.regenerateTask(id);
+      setSubmittedTaskId(created.id);
+      setSelectedTaskId(created.id);
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓鐢熸垚浠诲姟澶辫触");
+      setIsSubmitting(false);
+    }
+    setIsSubmitting(false);
+  }
+
+  return (
+    <section className="image-gen-view video-gen-view-root">
+      <div className="image-filter-tabs">
+        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">鍏ㄩ儴缁撴灉</button>
+        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
+        <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
+          <Star size={17} fill="#f8d545" color="#161616" />
+          鏀惰棌
+        </button>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      {submitError && <div className="video-submit-error">{submitError}</div>}
+      {galleryItems.length ? (
+        <WaterfallGrid
+          className="image-results-feed"
+          gap={6}
+          items={galleryItems}
+          renderItem={({ card, isExample }) => (
+            <ResultCard
+              card={card}
+              isExample={isExample}
+              isImageGallery
+              onDelete={isExample ? () => {} : deleteTask}
+              onFavorite={isExample ? () => {} : toggleFavorite}
+              onRegenerate={isExample ? () => {} : regenerateTask}
+            />
+          )}
+        />
+      ) : (
+        <div className="results-feed video-results-feed image-results-feed-empty">
+          <div className="empty-results video-empty-results">鏆傛棤鍥剧墖缁撴灉</div>
+        </div>
+      )}
+      {options.models.length > 0 && <ComposerBar options={options} onSubmit={createTask} />}
+    </section>
+  );
+}
+
+const emptyVideoOptions = { models: [], ratios: [], durations: [], counts: [1], modes: [] };
+const videoExampleCards = [
+  {
+    id: "example-video-1",
+    status: "completed",
+    model: "Veo 3.1 Fast",
+    modelKey: "veo_3_1_fast",
+    ratio: "16:9",
+    duration: 8,
+    time: "10:51",
+    rmb: "绾︼骏22.4",
+    price: "2240 绉垎",
+    prompt: "鏈潵閮藉競涓紝宸ㄥ瀷鎬吔涓庤韩绌垮楠ㄩ瑁呯敳鐨勬垬澹湪楂樻灦妗ヤ笅灞曞紑婵€鐑堟垬鏂楋紝寤虹瓚宕╁銆佺伀鐒板洓璧凤紝鐢婚潰鍏锋湁鐢靛奖绾ц川鎰燂紝鐏版殫鑹茶皟锛岄珮閫熷姩鎬侀暅澶淬€?,
+    video: "/assets/video/瑙嗛1.mp4?v=h264",
+    favorite: false
+  },
+  {
+    id: "example-video-2",
+    status: "completed",
+    model: "Kling 3.0 Std",
+    modelKey: "kling_3_std",
+    ratio: "16:9",
+    duration: 6,
+    time: "10:45",
+    rmb: "绾︼骏2.9",
+    price: "294 绉垎",
+    prompt: "鍙ら浠欎緺鐢峰瓙锛岄闂存湁绮捐嚧鑺辩汗锛屼竴鍙粦铦跺仠椹婚蓟灏栧悗鍖栦綔娴佸厜婧㈠僵鐨勯噾灞為潰鍏疯浜庨潰閮紝闅忓悗鍦ㄩ浘姘斿讥婕殑绔规灄涓珮閫熸垬鏂楋紝榛戠孩閰嶈壊锛屽姩浣滃噷鍘夐閫搞€?,
+    video: "/assets/video/瑙嗛2.mp4",
+    favorite: false
+  },
+  {
+    id: "example-video-3",
+    status: "completed",
+    model: "Veo 3.1 Lite",
+    modelKey: "veo_3_1_lite",
+    ratio: "16:9",
+    duration: 8,
+    time: "10:45",
+    rmb: "绾︼骏9.6",
+    price: "960 绉垎",
+    prompt: "鍞編鍙ら娴极鍦烘櫙锛屽コ瀛愮溂鐪镐腑椋炲嚭涓€鍙彂鍏夌殑绮夎壊铦磋澏锛屾嫋鐫€闀块暱鐨勭櫧鑹茬罕甯︼紝椋炶繃鐩涘紑鐨勬ū鑺变笌椋炴獝缈樿鐨勫彜寤虹瓚锛岀┖涓娴潃涔︽硶鏂囧瓧锛岃壊璋冩煍鍜屾ⅵ骞伙紝绮夌櫧浜ょ粐銆?,
+    video: "/assets/video/瑙嗛3.mp4",
+    favorite: false
+  },
+  {
+    id: "example-video-4",
+    status: "completed",
+    model: "Kling 3.0 Pro",
+    modelKey: "kling_3_pro",
+    ratio: "9:16",
+    duration: 10,
+    time: "02:15",
+    rmb: "绾︼骏6.3",
+    price: "630 绉垎",
+    prompt: "娌欐紶搴熷湡椋庢牸鐨勫姩婕垬鏂楋紝缁垮彂濂冲瓙鎴寸潃宸ㄥ瀷鍏介闈㈠叿锛屼笌鎵嬫寔鏁ｅ彂绱壊鍏夎姃闀垮垁鐨勯粦鍙戠敺瀛愬湪娌欏皹涓縺鐑堜氦閿嬶紝鍔ㄤ綔鍏呮弧寮犲姏锛岀传榛戦厤鑹诧紝鐑熷皹椋炴壃銆?,
+    video: "/assets/video/瑙嗛4.mp4",
+    favorite: false
+  },
+  {
+    id: "example-video-5",
+    status: "completed",
+    model: "Kling 3.0 Std",
+    modelKey: "kling_3_std",
+    ratio: "1:1",
+    duration: 8,
+    time: "12:24",
+    rmb: "绾︼骏3.9",
+    price: "392 绉垎",
+    prompt: "鏃ョ郴鍔ㄦ极椋庢牸锛岃韩绌跨櫧琛～鏍℃湇鐨勫皯骞存矇鍏ユ繁钃濊壊鐨勬捣搴曪紝闃冲厜閫忚繃姘撮潰娲掍笅鍏夋潫锛屽懆鍥存皵娉″崌鑵撅紝灏戝勾浼告墜瑙︾鍙戝厜姘旀场锛岄殢鍚庤宸ㄥぇ婕╂丁鍗峰叆锛岀敾闈㈤潤璋ц€岀绉樸€?,
+    video: "/assets/video/瑙嗛5.mp4",
+    favorite: false
+  },
+  {
+    id: "example-video-6",
+    status: "completed",
+    model: "Veo 3.1 Fast",
+    modelKey: "veo_3_1_fast",
+    ratio: "9:16",
+    duration: 8,
+    time: "11:57",
+    rmb: "绾︼骏22.4",
+    price: "2240 绉垎",
+    prompt: "涓滄柟濂囧够浠欎緺鎰忓锛屼袱鍙€氫綋閫忔槑鍙戝厜鐨勭伒楣垮湪鐎戝竷婧祦涓庨浘姘旂辑缁曠殑灞辨灄闂村璺戣烦璺冿紝韫勪笅鐢熻緣锛岃韩涓婂甫鏈夋祦鍏夋嫋灏撅紝绌挎浜庡彜寤轰笌瀵嗘灄涔嬮棿锛屾皼鍥寸┖鐏电绉橈紝闈掔豢鑹茶皟銆?,
+    video: "/assets/video/瑙嗛6.mp4",
+    favorite: false
+  }
+];
+
+function getVideoModelOptions(options, modelKey) {
+  const selectedModel = options.models.find((item) => item.value === modelKey) || options.models[0];
+  return {
+    model: selectedModel,
+    ratios: selectedModel?.ratios?.length ? selectedModel.ratios : options.ratios,
+    durations: selectedModel?.durations?.length ? selectedModel.durations : options.durations
+  };
+}
+
+function VideoPreview({ task }) {
+  const isProcessing = task.status === "pending" || task.status === "processing";
+  const isFailed = task.status === "failed";
+
+  if (task.video && !isFailed) {
+    return (
+      <video src={task.video} controls playsInline preload="metadata" />
+    );
+  }
+
+  return (
+    <div className={`video-placeholder ${isFailed ? "is-failed" : ""}`}>
+      {isProcessing ? <Loader2 size={24} /> : <Play size={34} fill="currentColor" />}
+      {(isFailed || isProcessing) && <span>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</span>}
+    </div>
+  );
+}
+
+function VideoResultCard({ card, onDelete, onFavorite, onRegenerate, isExample = false }) {
+  return (
+    <article className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}>
+      <div className="result-preview video-result-preview">
+        <VideoPreview task={card} />
+        <span className="video-duration-badge">{card.duration}s</span>
+      </div>
+      <div className="result-meta">
+        <div className="tag-row">
+          <span className="model-tag">{card.model}</span>
+          <span className="ratio-tag">{card.ratio}</span>
+          <span className="quality-tag">{card.duration}绉?/span>
+          <span className="count-tag">棣栧抚</span>
+        </div>
+        <div className="time-row">
+          <span>{card.time}</span>
+          <strong>{card.rmb || card.price}</strong>
+        </div>
+        <p>{card.error || card.prompt}</p>
+        <div className="card-actions">
+          <button className={`icon-circle ${card.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(card.id)} aria-label="鏀惰棌" disabled={isExample}>
+            <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
+          </button>
+          {card.video ? (
+            <a className="card-action-link" href={card.video} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              涓嬭浇
+            </button>
+          )}
+          <button type="button" onClick={() => onRegenerate(card.id)} disabled={isExample}>
+            <RefreshCcw size={15} />
+            鍐嶆鐢熸垚
+          </button>
+          <button type="button" onClick={() => onDelete(card.id)} disabled={isExample}>
+            <Trash2 size={15} />
+            鍒犻櫎
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function VideoComposerBar({ options, onSubmit }) {
+  const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState(options.models[0]?.value || "");
+  const modelOptions = getVideoModelOptions(options, model);
+  const [ratio, setRatio] = useState(modelOptions.model?.defaultRatio || modelOptions.ratios[0] || "");
+  const [duration, setDuration] = useState(modelOptions.model?.defaultDuration || modelOptions.durations[0] || "");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && options.models[0]) {
+      setModel(options.models[0].value);
+      return;
+    }
+
+    const nextOptions = getVideoModelOptions(options, model);
+    if (nextOptions.model) {
+      if (!nextOptions.ratios.includes(ratio)) setRatio(nextOptions.model.defaultRatio || nextOptions.ratios[0] || "");
+      if (!nextOptions.durations.includes(Number(duration))) setDuration(nextOptions.model.defaultDuration || nextOptions.durations[0] || "");
+    }
+  }, [duration, model, options, ratio]);
+
+  const count = 1;
+  const price = videoApi.calculatePrice({ model, duration, count, models: options.models });
+  const rmb = videoApi.calculateRmb({ model, duration, count, models: options.models });
+  const canSubmit = prompt.trim().length > 0 && model && ratio && duration;
+
+  function clearPrompt() {
+    setPrompt("");
+    setNotice("宸叉竻绌烘彁绀鸿瘝");
+  }
+
+  function fillRandomPrompt() {
+    setPrompt(videoApi.getRandomPrompt());
+    setNotice("宸插～鍏ラ殢鏈烘彁绀鸿瘝");
+  }
+
+  function handleAddPrompt() {
+    setNotice("褰撳墠瑙嗛鐢熸垚鏆備笉鏀寔娣诲姞鍙傝€冪礌鏉?);
+  }
+
+  function submitPrompt() {
+    if (!canSubmit) {
+      setNotice("璇峰厛杈撳叆瑙嗛鎻忚堪");
+      return;
+    }
+
+    onSubmit({
+      prompt: prompt.trim(),
+      model,
+      ratio,
+      duration: Number(duration),
+      mode: "first-frame",
+      count
+    });
+    setNotice("宸插垱寤鸿棰戠敓鎴愪换鍔?);
+    setPrompt("");
+  }
+
+  return (
+    <div className="sowa-composer video-composer" aria-label="瑙嗛鐢熸垚杈撳叆妗?>
+      <VideoPromptDialog
+        ariaLabel="瑙嗛鐢熸垚杈撳叆妗?
+        placeholder="璇锋弿杩颁綘鎯崇敓鎴愮殑瑙嗛..."
+        value={prompt}
+        onChange={(value) => {
+          setPrompt(value);
+          if (notice) setNotice("");
+        }}
+        onSubmit={submitPrompt}
+        canSubmit={canSubmit}
+        notice={notice}
+        onAdd={handleAddPrompt}
+        onRandom={fillRandomPrompt}
+        onClear={clearPrompt}
+        model={model}
+        onModelChange={setModel}
+        modelOptions={options.models}
+        ratio={ratio}
+        onRatioChange={setRatio}
+        ratioOptions={modelOptions.ratios}
+        duration={duration}
+        onDurationChange={setDuration}
+        durationOptions={modelOptions.durations}
+        price={price}
+        rmb={rmb}
+      />
+    </div>
+  );
+}
+
+function VideoGenerationView() {
+  const [filter, setFilter] = useState("all");
+  const [cards, setCards] = useState([]);
+  const [options, setOptions] = useState(emptyVideoOptions);
+  const [credits, setCredits] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓璁㈤槄浠诲姟鍒楄〃
+  useEffect(() => {
+    let mounted = true;
+    videoApi.getModels().then((value) => mounted && setOptions(value));
+    videoApi.getCredits().then((value) => mounted && setCredits(value));
+    videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+
+    const unsubscribe = videoApi.subscribe(() => {
+      videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [filter]);
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await videoApi.createTask(payload);
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓瑙嗛鐢熸垚浠诲姟澶辫触");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await videoApi.deleteTask(id);
+  }
+
+  async function toggleFavorite(id) {
+    await videoApi.toggleFavorite(id);
+  }
+
+  async function regenerateTask(id) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    try {
+      await videoApi.regenerateTask(id);
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓瑙嗛鐢熸垚浠诲姟澶辫触");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="image-gen-view video-gen-view-root">
+      <div className="image-filter-tabs">
+        <button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")} type="button">鍏ㄩ儴缁撴灉</button>
+        <button className={filter === "recent" ? "selected" : ""} onClick={() => setFilter("recent")} type="button">杩?4灏忔椂</button>
+        <button className={filter === "favorite" ? "selected" : ""} onClick={() => setFilter("favorite")} type="button">
+          <Star size={17} fill="#f8d545" color="#161616" />
+          鏀惰棌
+        </button>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      {submitError && <div className="video-submit-error">{submitError}</div>}
+      <div className="results-feed video-results-feed">
+        {filter === "all" ? (
+          <>
+            {videoExampleCards.map((card) => (
+              <VideoResultCard
+                card={card}
+                key={card.id}
+                isExample
+                onDelete={() => {}}
+                onFavorite={() => {}}
+                onRegenerate={() => {}}
+              />
+            ))}
+            {cards.map((card) => (
+              <VideoResultCard
+                card={card}
+                key={card.id}
+                onDelete={deleteTask}
+                onFavorite={toggleFavorite}
+                onRegenerate={regenerateTask}
+              />
+            ))}
+          </>
+        ) : (
+          cards.length ? cards.map((card) => (
+            <VideoResultCard
+              card={card}
+              key={card.id}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRegenerate={regenerateTask}
+            />
+          )) : <div className="empty-results video-empty-results">鏆傛棤瑙嗛缁撴灉</div>
+        )}
+        {isSubmitting && (
+          <VideoResultCard
+            card={{
+              id: "submitting",
+              status: "processing",
+              model: "鍒涘缓涓?,
+              ratio: "16:9",
+              duration: 8,
+              time: "--:--",
+              rmb: null,
+              price: "璁＄畻涓?,
+              prompt: "姝ｅ湪鎻愪氦瑙嗛鐢熸垚浠诲姟",
+              favorite: false
+            }}
+            onDelete={() => {}}
+            onFavorite={() => {}}
+            onRegenerate={() => {}}
+          />
+        )}
+      </div>
+      {options.models.length > 0 && <VideoComposerBar options={options} onSubmit={createTask} />}
+    </section>
+  );
+}
+
+const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
+const chatContextRoles = new Set(["system", "user", "assistant"]);
+
+function toChatContext(messages) {
+  return messages
+    .filter((message) => message.status !== "failed" && chatContextRoles.has(message.role) && message.content?.trim())
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim()
+    }));
+}
+
+function ChatCanvas({ messages, isSubmitting, error }) {
+  if (!messages.length && !isSubmitting && !error) {
+    return (
+      <div className="chat-main-canvas">
+        <div className="chat-empty-state llm-empty-state">
+          <h1>閲婃斁浣犵殑鍒涗綔鐏垫劅</h1>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chat-main-canvas" aria-live="polite">
+      <div className="chat-conversation-thread">
+        {messages.map((message) => (
+          <div className={`chat-message-row ${message.role}`} key={message.id}>
+            {message.role === "assistant" && (
+              <span className={`chat-message-avatar ${message.status === "failed" ? "is-error" : ""}`}>
+                <Bot size={17} />
+              </span>
+            )}
+            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""}`}>
+              {message.status === "failed" ? (
+                <>
+                  <strong>杩欐娌℃湁鍥炲鎴愬姛</strong>
+                  <p>{message.error || "瀵硅瘽鏈嶅姟鏆傛椂涓嶅彲鐢紝璇风◢鍚庨噸璇曘€?}</p>
+                </>
+              ) : (
+                message.content
+              )}
+            </div>
+          </div>
+        ))}
+        {isSubmitting && (
+          <div className="chat-message-row assistant">
+            <span className="chat-message-avatar">
+              <Bot size={17} />
+            </span>
+            <div className="chat-message-bubble is-loading">
+              <Loader2 size={17} />
+              <span>姝ｅ湪鎬濊€?..</span>
+            </div>
+          </div>
+        )}
+        {error && (
+          <div className="chat-inline-error" role="alert">
+            {error}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ChatComposerBar({ options, onSubmit, isSubmitting }) {
+  const [prompt, setPrompt] = useState("");
+  const [model, setModel] = useState(options.defaultModel || options.models[0]?.value || "");
+  const [reasoningEffort, setReasoningEffort] = useState(options.reasoningEfforts[0]?.value || "none");
+  const [notice, setNotice] = useState("");
+  const [openMenu, setOpenMenu] = useState(null);
+  const inspirationOptions = [
+    "Floating crystal island",
+    "Cyberpunk cityscape",
+    "Ancient temple ruins",
+    "Underwater coral reef",
+    "Alien desert landscape"
+  ];
+
+  useEffect(() => {
+    if (!model && (options.defaultModel || options.models[0]?.value)) {
+      setModel(options.defaultModel || options.models[0].value);
+    }
+    if (!reasoningEffort && options.reasoningEfforts[0]) {
+      setReasoningEffort(options.reasoningEfforts[0].value);
+    }
+  }, [model, options, reasoningEffort]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const canSubmit = prompt.trim().length > 0 && model && !isSubmitting;
+  const modelLabel = selectedModel?.label || "Deepseek V4";
+
+  function submitPrompt() {
+    if (!canSubmit) {
+      setNotice("璇疯緭鍏ュ唴瀹瑰悗鍐嶅彂閫併€?);
+      return;
+    }
+
+    onSubmit({
+      content: prompt.trim(),
+      model,
+      reasoningEffort
+    });
+    setPrompt("");
+    setNotice("");
+  }
+
+  return (
+    <div className="llm-composer chat-composer" aria-label="澶фā鍨嬭緭鍏ユ">
+      <textarea
+        className="llm-input"
+        value={prompt}
+        onChange={(event) => {
+          setPrompt(event.target.value);
+          if (notice) setNotice("");
+        }}
+        onKeyDown={(event) => {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            event.preventDefault();
+            submitPrompt();
+          }
+        }}
+        placeholder="璇峰憡璇夋垜鎮ㄧ殑鎯虫硶......"
+      />
+      <div className="llm-toolbar">
+        <div className="llm-left">
+          <button className="llm-square" type="button" onClick={() => setNotice("涓婁紶鎸夐挳鏆傛湭鎺ュ叆鏂囦欢閫夋嫨鍣ㄣ€?)} aria-label="涓婁紶">
+            +
+          </button>
+          <div className={`llm-select-wrap ${openMenu === "inspiration" ? "is-open" : ""}`}>
+            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "inspiration" ? null : "inspiration"))}>
+              <Sparkles className="bolt" size={16} />
+              <span>Inspiration</span>
+              <ChevronDown size={16} />
+            </button>
+            <div className="llm-menu">
+              {inspirationOptions.map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => {
+                    setPrompt(item);
+                    setNotice("");
+                    setOpenMenu(null);
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
+            <button className="llm-select" type="button" onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
+              <span>{modelLabel}</span>
+              <ChevronDown size={16} />
+            </button>
+            <div className="llm-menu">
+              {options.models.map((item) => (
+                <button
+                  type="button"
+                  key={item.value}
+                  onClick={() => {
+                    setModel(item.value);
+                    setOpenMenu(null);
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="llm-right">
+          {options.reasoningEfforts.length > 0 && (
+            <label className="llm-reasoning-select">
+              <select value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value)}>
+                {options.reasoningEfforts.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button className="llm-round" type="button" onClick={() => setNotice("褰曢煶鎸夐挳鏆傛湭鎺ュ叆楹﹀厠椋庢潈闄愩€?)} aria-label="褰曢煶">
+            <Mic size={18} />
+          </button>
+          <button className="llm-round primary" type="button" disabled={!canSubmit} onClick={submitPrompt} aria-label="鍙戦€?>
+            {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+          </button>
+        </div>
+      </div>
+      {notice && <div className="composer-notice warning">{notice}</div>}
+    </div>
+  );
+}
+
+function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
+  if (!conversations.length) return null;
+
+  return (
+    <aside className="history-rail chat-history-rail" aria-label="AI 瀵硅瘽鍘嗗彶">
+      <div className="history-rail-header">
+        <span>鍘嗗彶瀵硅瘽</span>
+        <strong>{conversations.length}</strong>
+      </div>
+      <div className="history-list chat-history-list">
+        {conversations.map((conversation) => (
+          <button
+            className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
+            key={conversation.id}
+            type="button"
+            onClick={() => onSelect(conversation.id)}
+          >
+            <span>{conversation.title}</span>
+            <small>{conversation.model} 璺?{conversation.time}</small>
+          </button>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function LegacyChatGenerationView() {
+  const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [options, setOptions] = useState(emptyChatOptions);
+  const [credits, setCredits] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓鎷夊彇瀵硅瘽閰嶇疆涓庡巻鍙插垪琛?
+  useEffect(() => {
+    let mounted = true;
+    chatApi.getModels().then((value) => mounted && setOptions(value)).catch((error) => mounted && setSubmitError(error.message));
+    chatApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    chatApi.getConversations().then((value) => mounted && setConversations(value)).catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function sendChatMessage({ content, model, reasoningEffort }) {
+    const userMessage = {
+      id: `local-${Date.now()}`,
+      role: "user",
+      content,
+      status: "completed"
+    };
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setSubmitError("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await chatApi.sendMessage({
+        conversationId,
+        model,
+        reasoningEffort,
+        messages: toChatContext(nextMessages)
+      });
+      setConversationId(result.conversationId);
+      setMessages((current) => [...current, result.message]);
+      if (result.credits) setCredits(result.credits);
+      chatApi.getConversations().then(setConversations).catch(() => {});
+    } catch (error) {
+      setSubmitError(error.message || "鍙戦€佸け璐?);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function selectConversation(id) {
+    setSubmitError("");
+    setConversationId(id);
+    setIsHistoryOpen(false);
+    try {
+      const historyMessages = await chatApi.getMessages(id);
+      setMessages(historyMessages);
+    } catch (error) {
+      setSubmitError(error.message || "鍔犺浇鍘嗗彶瀵硅瘽澶辫触");
+    }
+  }
+
+  const isIntroState = !messages.length && !isSubmitting && !submitError && !isHistoryOpen;
+  const composer = options.models.length > 0 && (
+    <ChatComposerBar options={options} onSubmit={sendChatMessage} isSubmitting={isSubmitting} />
+  );
+
+  return (
+    <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
+      <div className="chat-topbar">
+        <h1>澶фā鍨?/h1>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      {conversations.length > 0 && (
+        <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+          <Layers size={17} />
+          鍘嗗彶
+          <span>{conversations.length}</span>
+        </button>
+      )}
+      {isHistoryOpen && (
+        <ChatHistoryRail conversations={conversations} activeConversationId={conversationId} onSelect={selectConversation} />
+      )}
+      {isIntroState ? (
+        <div className="llm-intro-layout">
+          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+          {composer}
+        </div>
+      ) : (
+        <>
+          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+          {composer}
+        </>
+      )}
+    </section>
+  );
+}
+
+const emptyDigitalHumanOptions = { models: [], defaults: { model: "", driveMode: "text" } };
+const digitalHumanMaxAudioMs = 15000;
+const ttsEmotionOptions = [
+  { value: "", label: "鑷姩" },
+  { value: "calm", label: "骞抽潤" },
+  { value: "happy", label: "寮€蹇? },
+  { value: "sad", label: "鎮蹭激" },
+  { value: "angry", label: "鎰ゆ€? },
+  { value: "fearful", label: "瀹虫€? },
+  { value: "disgusted", label: "鍘屾伓" },
+  { value: "surprised", label: "鎯婅" }
+];
+
+function formatDurationMs(durationMs = 0) {
+  return `${(Number(durationMs || 0) / 1000).toFixed(1)} 绉抈;
+}
+
+function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion }) {
+  return JSON.stringify({
+    text: String(text || "").trim(),
+    voiceId,
+    speed: Number(speed),
+    volume: Number(volume),
+    pitch: Number(pitch),
+    emotion: emotion || ""
+  });
+}
+
+const digitalHumanPublicPlaceholders = [
+  { id: "public-anchor-dialogue", name: "涓绘挱瀵硅瘽", description: "閫傚悎涓绘挱瀵硅瘽銆佽瑙ｄ笌鐭棰戝彛鎾唴瀹广€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/涓绘挱瀵硅瘽.mp4" },
+  { id: "public-product", name: "浜у搧璁茶В鍛?, description: "閫傚悎浜у搧浠嬬粛銆佸崠鐐硅鏄庝笌鍔熻兘婕旂ず銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/浜у搧璁茶В鍛?mp4" },
+  { id: "public-medical", name: "鍋ュ悍绉戞櫘鍛?, description: "閫傚悎鍋ュ悍绉戞櫘銆佺煡璇嗘櫘鍙婁笌涓撲笟瑙ｈ銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鍋ュ悍绉戞櫘鍛?mp4" },
+  { id: "public-home-lady", name: "灞呭鐭ユ€уコ鎬?, description: "閫傚悎鐢熸椿鏂瑰紡鍒嗕韩銆佹棩甯告帹鑽愪笌杞诲唴瀹硅〃杈俱€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/灞呭鐭ユ€уコ鎬?mp4" },
+  { id: "public-real-estate", name: "鎴垮湴浜х粡绾汉", description: "閫傚悎妤肩洏浠嬬粛銆佹埧浜ц瑙ｄ笌閿€鍞挩璇€?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鎴垮湴浜х粡绾汉.mp4" },
+  { id: "public-travel", name: "鏂囨梾鎺ㄨ崘瀹?, description: "閫傚悎鏅偣鎺ㄨ崘銆佽矾绾夸粙缁嶄笌鏂囨梾瀹ｄ紶銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鏂囨梾鎺ㄨ崘瀹?mp4" },
+  { id: "public-fashion-host", name: "鏃跺皻绫诲コ涓绘挱", description: "閫傚悎绌挎惌鍒嗕韩銆佹椂灏氭帹鑽愪笌缇庡鍐呭銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鏃跺皻绫诲コ涓绘挱.mp4" },
+  { id: "public-knowledge-host", name: "鐭ヨ瘑绉戞櫘绫诲コ涓绘挱", description: "閫傚悎鐭ヨ瘑璁茶В銆佽绋嬭妭閫変笌淇℃伅姊崇悊銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鐭ヨ瘑绉戞櫘绫诲コ涓绘挱.mp4" },
+  { id: "public-executive-lady", name: "鑱屽満濂抽珮绠?, description: "閫傚悎鍟嗗姟姹囨姤銆佺鐞嗚鐐逛笌鑱屼笟琛ㄨ揪銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鑱屽満濂抽珮绠?mp4" },
+  { id: "public-business-host", name: "鑱屽満杞诲晢鍔″コ涓绘挱", description: "閫傚悎浼佷笟瀹ｄ紶銆佽亴鍦哄垎浜笌鍝佺墝鍐呭銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/鑱屽満杞诲晢鍔″コ涓绘挱.mp4" },
+  { id: "public-finance", name: "璐㈢粡涓绘挱", description: "閫傚悎璐㈢粡瑙ｈ銆佸競鍦鸿瀵熶笌璧勮鎾姤銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/璐㈢粡涓绘挱.mp4" },
+  { id: "public-operations", name: "杩愯惀杈句汉", description: "閫傚悎娲诲姩杩愯惀銆佸闀挎渚嬩笌鏂规硶鍒嗕韩銆?, language: "涓枃 / 閫氱敤", status: "ready", cover: "/assets/digital-human/杩愯惀杈句汉.mp4" }
+];
+
+function getDigitalHumanPublicAvatars(list = []) {
+  const merged = new Map();
+  digitalHumanPublicPlaceholders.forEach((item) => merged.set(item.id, item));
+  list.forEach((item) => {
+    if (!merged.has(item.id)) merged.set(item.id, item);
+  });
+  return [...merged.values()];
+}
+
+function DigitalHumanEmptyMedia({ title, description, icon: Icon = UserRound }) {
+  return (
+    <div className="dh-empty-media">
+      <span className="dh-empty-media-icon">
+        <Icon size={24} />
+      </span>
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </div>
+  );
+}
+
+function DigitalHumanAvatarCard({ avatar, selected, onSelect, onPreview, onRename, onDelete, mine = false }) {
+  const isTraining = avatar.status === "training";
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar.cover || "");
+  return (
+    <article className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}>
+      <button className="dh-avatar-cover" type="button" onClick={() => onSelect(avatar)} aria-label={`閫夋嫨 ${avatar.name}`}>
+        {isVideoCover ? (
+          <video src={avatar.cover} muted loop playsInline preload="metadata" onMouseEnter={(event) => event.currentTarget.play()} onMouseLeave={(event) => event.currentTarget.pause()} />
+        ) : avatar.cover ? (
+          <img src={avatar.cover} alt={avatar.name} />
+        ) : (
+          <DigitalHumanEmptyMedia title="褰㈣薄绱犳潗浣? description="绛夊緟琛ュ厖鏁板瓧浜鸿棰戞垨灏侀潰" />
+        )}
+        <span className="dh-avatar-badge">{selected ? "宸查€変腑" : isTraining ? "璁粌涓? : avatar.cover ? "妯℃澘" : "鍗犱綅"}</span>
+      </button>
+      <div className="dh-avatar-info">
+        <strong>{avatar.name}</strong>
+        <span>{avatar.language}</span>
+        <p>{avatar.description}</p>
+      </div>
+      <div className="dh-avatar-actions">
+        <button type="button" onClick={() => onPreview(avatar)}>
+          <Play size={14} />
+          棰勮
+        </button>
+        {mine && (
+          <>
+            <button type="button" onClick={() => onRename(avatar)}>
+              <FileText size={14} />
+              鏀瑰悕
+            </button>
+            <button type="button" onClick={() => onDelete(avatar.id)}>
+              <Trash2 size={14} />
+              鍒犻櫎
+            </button>
+          </>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
+  const isVideoCover = /\.(mp4|webm|mov)$/i.test(avatar?.cover || "");
+
+  if (!avatar) return null;
+
+  return (
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="dh-avatar-preview-modal">
+        <div className="dh-modal-header">
+          <div>
+            <span>褰㈣薄棰勮</span>
+            <strong>{avatar.name}</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="鍏抽棴">鑴?/button>
+        </div>
+        <div className="dh-avatar-preview-body">
+          {isVideoCover ? (
+            <video src={avatar.cover} controls autoPlay playsInline />
+          ) : avatar.cover ? (
+            <img src={avatar.cover} alt={avatar.name} />
+          ) : (
+            <DigitalHumanEmptyMedia title="鏆傛棤棰勮绱犳潗" description="绛夊緟琛ュ厖鏁板瓧浜鸿棰戞垨灏侀潰" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DigitalHumanTaskCard({ task, selected, onSelect, onDelete, onRegenerate }) {
+  const isProcessing = task.status === "processing" || task.status === "pending";
+  const isCompleted = task.status === "completed";
+  const isFailed = task.status === "failed";
+  return (
+    <article className={`dh-task-card ${selected ? "is-selected" : ""}`}>
+      <button className="dh-task-preview" type="button" onClick={() => onSelect(task)}>
+        {task.resultUrl ? (
+          <video src={task.resultUrl} muted playsInline preload="metadata" />
+        ) : task.thumbnailUrl ? <img src={task.thumbnailUrl} alt={task.avatarName} /> : (
+          <DigitalHumanEmptyMedia
+            icon={Video}
+            title={isFailed ? "鐢熸垚澶辫触" : isCompleted ? "缁撴灉寰呰繑鍥? : "鐢熸垚涓?}
+            description={isFailed ? task.error || "浠诲姟澶辫触锛岀Н鍒嗗凡閫€鍥? : isCompleted ? "鐐瑰嚮鏌ョ湅鐢熸垚缁撴灉" : `${task.progress || 0}%`}
+          />
+        )}
+      </button>
+      <div className="dh-task-meta">
+        <strong>{task.avatarName}</strong>
+        <span>{task.voiceName} 路 {task.driveMode === "audio" ? "闊抽椹卞姩" : "鏂囧瓧椹卞姩"} 路 {task.providerModel || "KIE Wan 2.7"}</span>
+        <div className="dh-progress-track">
+          <i style={{ width: `${task.progress || 0}%` }} />
+        </div>
+        <small>{task.createdAt}</small>
+      </div>
+      <div className="dh-task-actions">
+        <button type="button" onClick={() => onRegenerate(task.id)} disabled={isProcessing}>
+          <RefreshCcw size={14} />
+        </button>
+        <button type="button" onClick={() => onDelete(task.id)}>
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function DigitalHumanGeneratingState({ task }) {
+  return (
+    <div className="dh-generating-state">
+      <span className="dh-spinner" aria-hidden="true" />
+      <strong>姝ｅ湪鐢熸垚鍙ｅ瀷瑙嗛</strong>
+      <p>MiniMax 宸茬敓鎴愰┍鍔ㄩ煶棰戯紝KIE 姝ｅ湪鍚堟垚鏁板瓧浜哄彛鎾垚鐗囥€?/p>
+      <div className="dh-generation-progress">
+        <i style={{ width: `${task?.progress || 0}%` }} />
+      </div>
+      <small>{task?.progress || 0}% 路 瀹屾垚鍚庝細鑷姩鍥炲～鍒拌繖閲?/small>
+    </div>
+  );
+}
+
+function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
+  const fileInputRef = useRef(null);
+  const [name, setName] = useState("");
+  const [file, setFile] = useState(null);
+  const [notice, setNotice] = useState("");
+
+  function submit() {
+    if (!name.trim()) {
+      setNotice("璇疯緭鍏ュ舰璞″悕绉?);
+      return;
+    }
+    if (!file) {
+      setNotice("璇烽€夋嫨瑙嗛绱犳潗锛屽綋鍓嶅彧璁板綍鏂囦欢鍚嶄綔涓哄崰浣嶃€?);
+      return;
+    }
+    onCreate({ name: name.trim(), fileName: file.name });
+  }
+
+  return (
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="dh-modal">
+        <div className="dh-modal-header">
+          <div>
+            <span>鍒涘缓褰㈣薄</span>
+            <strong>棰勭暀璁粌绱犳潗鍏ュ彛</strong>
+          </div>
+          <button type="button" onClick={onClose} aria-label="鍏抽棴">脳</button>
+        </div>
+        <div className="dh-modal-body">
+          <label className="dh-field">
+            <span>褰㈣薄鍚嶇О</span>
+            <input value={name} onChange={(event) => setName(event.target.value)} placeholder="渚嬪锛氫骇鍝佽瑙ｅ憳" />
+          </label>
+          <button className="dh-upload-zone" type="button" onClick={() => fileInputRef.current?.click()}>
+            <input ref={fileInputRef} type="file" accept="video/*" hidden onChange={(event) => {
+              setFile(event.target.files?.[0] || null);
+              event.target.value = "";
+            }} />
+            {file && (
+              <span
+                className="upload-clear-button"
+                role="button"
+                tabIndex={0}
+                title="鍙栨秷涓婁紶"
+                aria-label="鍙栨秷涓婁紶"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setFile(null);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setFile(null);
+                  }
+                }}
+              >
+                <X size={13} />
+              </span>
+            )}
+            <Video size={24} />
+            <strong>{file ? file.name : "閫夋嫨鏁板瓧浜鸿缁冭棰?}</strong>
+            <span>{file ? "绱犳潗浼氬湪鐪熷疄鎺ュ彛鎺ュ叆鍚庝笂浼? : "褰撳墠涓嶄笂浼犳枃浠讹紝鍙繚鐣?UI 鍜?API 缁撴瀯"}</span>
+          </button>
+          {notice && <div className="dh-form-notice">{notice}</div>}
+        </div>
+        <div className="dh-modal-footer">
+          <button type="button" onClick={onClose}>鍙栨秷</button>
+          <button type="button" onClick={submit} disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
+            鍒涘缓褰㈣薄
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, isSubmitting }) {
+  const audioInputRef = useRef(null);
+  const [driveMode, setDriveMode] = useState("text");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜灏嗕负鎮ㄤ粙缁嶅叏鏂扮殑鏁板瓧浜哄姛鑳姐€?);
+  const [audioFile, setAudioFile] = useState(null);
+  const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
+  const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
+  const [ttsSpeed, setTtsSpeed] = useState(1);
+  const [ttsVolume, setTtsVolume] = useState(1);
+  const [ttsPitch, setTtsPitch] = useState(0);
+  const [ttsEmotion, setTtsEmotion] = useState("");
+  const [isDesigningVoice, setIsDesigningVoice] = useState(false);
+  const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!voiceId && voices[0]?.id) setVoiceId(voices[0].id);
+  }, [model, options, voiceId, voices]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
+  const estimate = Math.max(1, Math.ceil(text.length / 180));
+  const selectedAvatarIsVideo = /\.(mp4|webm|mov)$/i.test(selectedAvatar?.cover || "");
+  const currentPreviewSignature = getDigitalHumanPreviewSignature({
+    text,
+    voiceId,
+    speed: ttsSpeed,
+    volume: ttsVolume,
+    pitch: ttsPitch,
+    emotion: ttsEmotion
+  });
+  const isPreviewCurrent = voicePreviewInfo?.signature === currentPreviewSignature;
+  const currentAudioTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+
+  async function previewVoice() {
+    if (!text.trim()) {
+      setNotice("璇疯緭鍏ョ敤浜庤瘯鍚殑鏂囨湰鑴氭湰");
+      return;
+    }
+    setNotice("");
+    setIsDesigningVoice(true);
+    try {
+      const result = await digitalHumanApi.previewVoice({
+        previewText: text.trim(),
+        voiceId,
+        speed: ttsSpeed,
+        volume: ttsVolume,
+        pitch: ttsPitch,
+        emotion: ttsEmotion
+      });
+      if (result.audioDataUrl) setVoicePreviewUrl(result.audioDataUrl);
+      const durationMs = Number(result.durationMs || 0);
+      setVoicePreviewInfo({
+        signature: currentPreviewSignature,
+        durationMs,
+        videoDuration: result.videoDuration || Math.ceil(durationMs / 1000)
+      });
+      setNotice(
+        durationMs > digitalHumanMaxAudioMs
+          ? `褰撳墠闊抽 ${formatDurationMs(durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭枃鏈垨鍒囩墖鍚庡垎娈电敓鎴恅
+          : `宸茬敓鎴愬綋鍓嶉煶鑹茶瘯鍚紝瑙嗛鏃堕暱灏嗘寜闊抽鍙嶆帹涓?${result.videoDuration || Math.ceil(durationMs / 1000)} 绉抈
+      );
+    } catch (error) {
+      setNotice(error.message || "闊宠壊璇曞惉澶辫触");
+    } finally {
+      setIsDesigningVoice(false);
+    }
+  }
+
+  function submit() {
+    if (!selectedAvatar) {
+      setNotice("璇峰厛閫夋嫨鏁板瓧浜哄舰璞?);
+      return;
+    }
+    if (driveMode === "text" && !text.trim()) {
+      setNotice("璇疯緭鍏ユ枃鏈剼鏈?);
+      return;
+    }
+    if (driveMode === "audio" && !audioFile) {
+      setNotice("璇蜂笂浼犻煶棰戞枃浠?);
+      return;
+    }
+    if (!voicePreviewInfo || !isPreviewCurrent) {
+      setNotice("璇峰厛璇曞惉褰撳墠闊宠壊锛岀郴缁熶細鏍规嵁璇曞惉闊抽鏃堕暱鍙嶆帹瑙嗛鏃堕暱");
+      return;
+    }
+    if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
+      setNotice(`褰撳墠闊抽 ${formatDurationMs(voicePreviewInfo.durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭枃鏈垨鍒囩墖鍚庡垎娈电敓鎴恅);
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      avatarId: selectedAvatar.id,
+      avatarName: selectedAvatar.name,
+      driveMode,
+      text,
+      audioName: audioFile?.name || "",
+      voiceId,
+      model,
+      speed: ttsSpeed,
+      volume: ttsVolume,
+      pitch: ttsPitch,
+      emotion: ttsEmotion
+    });
+  }
+
+  return (
+    <aside className="dh-config-panel">
+      <div className="dh-config-header">
+        <strong>鏁板瓧浜哄彛鎾垚鐗?/strong>
+      </div>
+      <DigitalHumanShowcaseCard
+        selectedAvatar={selectedAvatar}
+        selectedAvatarIsVideo={selectedAvatarIsVideo}
+        driveMode={driveMode}
+        textLength={text.length}
+        estimateMinutes={estimate}
+        selectedVoiceName={selectedVoice?.name}
+        selectedModelLabel={selectedModel?.label || selectedModel?.value}
+        isSubmitting={isSubmitting}
+      />
+      <div className="dh-selected-template">
+        <div className="dh-selected-template-media">
+          {selectedAvatar?.cover ? (
+            selectedAvatarIsVideo ? <video src={selectedAvatar.cover} muted loop playsInline preload="metadata" /> : <img src={selectedAvatar.cover} alt={selectedAvatar.name} />
+          ) : (
+            <UserRound size={22} />
+          )}
+        </div>
+        <div>
+          <span>褰撳墠鏁板瓧浜烘ā鏉?/span>
+          <strong>{selectedAvatar?.name || "璇峰厛閫夋嫨宸︿晶妯℃澘"}</strong>
+          <small>{selectedAvatar?.description || "妯℃澘浼氫綔涓?KIE 鍙ｅ瀷瑙嗛鐨?reference_video"}</small>
+        </div>
+      </div>
+      <div className="dh-mode-tabs">
+        <button className={driveMode === "text" ? "is-active" : ""} type="button" onClick={() => setDriveMode("text")}>鏂囧瓧椹卞姩</button>
+        <button type="button" disabled title="闊抽椹卞姩灏嗗湪绗簩闃舵鎺ュ叆">闊抽椹卞姩</button>
+      </div>
+      {driveMode === "text" ? (
+        <label className="dh-field dh-script-field">
+          <span>鏂囨湰鑴氭湰 <small>{text.length} / 2000 璺?棰勮 {estimate} 鍒嗛挓</small></span>
+          <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} placeholder="璇疯緭鍏ユ暟瀛椾汉瑕佽鐨勮瘽..." />
+        </label>
+      ) : (
+        <button className="dh-audio-upload" type="button" onClick={() => audioInputRef.current?.click()}>
+          <input ref={audioInputRef} type="file" accept="audio/*" hidden onChange={(event) => {
+            setAudioFile(event.target.files?.[0] || null);
+            event.target.value = "";
+          }} />
+          {audioFile && (
+            <span
+              className="upload-clear-button"
+              role="button"
+              tabIndex={0}
+              title="鍙栨秷涓婁紶"
+              aria-label="鍙栨秷涓婁紶"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setAudioFile(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setAudioFile(null);
+                }
+              }}
+            >
+              <X size={13} />
+            </span>
+          )}
+          <Mic size={22} />
+          <strong>{audioFile ? audioFile.name : "涓婁紶椹卞姩闊抽"}</strong>
+          <span>{audioFile ? "宸查€夋嫨锛岀湡瀹炴帴鍙ｆ帴鍏ュ悗涓婁紶" : "闄愬埗 3 鍒嗛挓浠ュ唴锛屽綋鍓嶄负鍗犱綅"}</span>
+        </button>
+      )}
+      <label className="dh-field">
+        <span>鎴愮墖妯″瀷</span>
+        <select value={model} onChange={(event) => setModel(event.target.value)}>
+          {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+        </select>
+        {selectedModel && <small>璋冪敤妯″瀷锛歿selectedModel.providerModel || selectedModel.value} 璺?{selectedModel.resolution || "720p"}</small>}
+      </label>
+      <label className="dh-field">
+        <span>闊宠壊</span>
+        <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
+          {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        {selectedVoice && <small>{selectedVoice.description}</small>}
+      </label>
+      <div className="dh-settings-group">
+        <div className="dh-minimax-options">
+          <div className="dh-minimax-options-head">
+            <span>MiniMax TTS 鍙傛暟</span>
+            <strong>闊抽噺銆佽閫熴€侀煶璋冧笌鎯呯华</strong>
+          </div>
+          <label className="dh-field">
+            <span>闊宠壊鎯呯华</span>
+            <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
+              {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="dh-range-field">
+            <span>璇€?<small>{ttsSpeed.toFixed(2)}x</small></span>
+            <input type="range" min="0.5" max="2" step="0.05" value={ttsSpeed} onChange={(event) => setTtsSpeed(Number(event.target.value))} />
+          </label>
+          <label className="dh-range-field">
+            <span>闊抽噺 <small>{ttsVolume.toFixed(1)}</small></span>
+            <input type="range" min="0.1" max="10" step="0.1" value={ttsVolume} onChange={(event) => setTtsVolume(Number(event.target.value))} />
+          </label>
+          <label className="dh-range-field">
+            <span>闊宠皟 <small>{ttsPitch > 0 ? `+${ttsPitch}` : ttsPitch}</small></span>
+            <input type="range" min="-12" max="12" step="1" value={ttsPitch} onChange={(event) => setTtsPitch(Number(event.target.value))} />
+          </label>
+        </div>
+        <button className="dh-design-voice-button" type="button" onClick={previewVoice} disabled={isDesigningVoice}>
+          {isDesigningVoice ? <Loader2 size={16} /> : <Mic size={16} />}
+          璇曞惉褰撳墠闊宠壊
+        </button>
+        {voicePreviewUrl && <audio className="dh-voice-preview" src={voicePreviewUrl} controls />}
+        <div className={`dh-duration-check ${currentAudioTooLong ? "is-warning" : isPreviewCurrent ? "is-ready" : ""}`}>
+          {isPreviewCurrent ? (
+            <span>
+              褰撳墠闊抽 {formatDurationMs(voicePreviewInfo.durationMs)}
+              {currentAudioTooLong ? "锛岃秴杩?15 绉掞紝闇€瑕佸垏鐗? : `锛岃棰戝皢鐢熸垚 ${voicePreviewInfo.videoDuration} 绉抈}
+            </span>
+          ) : (
+            <span>鐢熸垚鍓嶈鍏堣瘯鍚綋鍓嶉煶鑹诧紝鐢ㄧ湡瀹為煶棰戞椂闀垮弽鎺ㄨ棰戞椂闀?/span>
+          )}
+        </div>
+      </div>
+      {notice && <div className="dh-form-notice">{notice}</div>}
+      <button className="dh-generate-button" type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || currentAudioTooLong}>
+        {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        鐢ㄥ綋鍓嶆ā鏉跨敓鎴愬彛鍨嬭棰?
+      </button>
+    </aside>
+  );
+}
+
+function DigitalHumanGenerationView() {
+  const [tab, setTab] = useState("public");
+  const [avatars, setAvatars] = useState({ public: [], mine: [] });
+  const [tasks, setTasks] = useState([]);
+  const [voices, setVoices] = useState([]);
+  const [options, setOptions] = useState(emptyDigitalHumanOptions);
+  const [credits, setCredits] = useState(null);
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [previewAvatar, setPreviewAvatar] = useState(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // 妯″潡鐢卞灞備繚娲绘寕杞斤紝姝ゅ濮嬬粓璁㈤槄鏁板瓧浜轰换鍔′笌褰㈣薄
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, avatarData, voiceData, taskData, creditData] = await Promise.all([
+          digitalHumanApi.getModels(),
+          digitalHumanApi.getAvatars(),
+          digitalHumanApi.getVoices(),
+          digitalHumanApi.getTasks(),
+          digitalHumanApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setAvatars(avatarData);
+        setVoices(voiceData.voices || []);
+        setTasks(taskData);
+        setCredits(creditData);
+        setSelectedAvatar((current) => current || avatarData.public?.[0] || avatarData.mine?.[0] || null);
+      } catch (loadError) {
+        if (mounted) setError(loadError.message || "鍔犺浇鏁板瓧浜哄姛鑳藉け璐?);
+      }
+    }
+    load();
+    const unsubscribe = digitalHumanApi.subscribe(() => {
+      digitalHumanApi.getTasks().then((value) => {
+        if (!mounted) return;
+        setTasks(value);
+        setSelectedTask((current) => {
+          if (!current) return current;
+          return value.find((task) => String(task.id) === String(current.id)) || current;
+        });
+      }).catch(() => {});
+      digitalHumanApi.getAvatars().then((value) => mounted && setAvatars(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  async function createTask(payload) {
+    setError("");
+    setIsSubmitting(true);
+    try {
+      const task = await digitalHumanApi.createTask(payload);
+      setSelectedTask(task);
+      setTab("history");
+    } catch (submitError) {
+      setError(submitError.message || "鍒涘缓鏁板瓧浜轰换鍔″け璐?);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function createAvatar(payload) {
+    setIsSubmitting(true);
+    try {
+      const avatar = await digitalHumanApi.createAvatar(payload);
+      setSelectedAvatar(avatar);
+      setTab("mine");
+      setIsCreateOpen(false);
+    } catch (submitError) {
+      setError(submitError.message || "鍒涘缓褰㈣薄澶辫触");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteAvatar(id) {
+    await digitalHumanApi.deleteAvatar(id);
+    setSelectedAvatar((current) => current?.id === id ? null : current);
+  }
+
+  async function renameAvatar(avatar) {
+    const nextName = window.prompt("杈撳叆鏂扮殑褰㈣薄鍚嶇О", avatar.name);
+    if (!nextName?.trim()) return;
+    const updated = await digitalHumanApi.updateAvatar(avatar.id, { name: nextName.trim() });
+    setSelectedAvatar(updated);
+  }
+
+  async function deleteTask(id) {
+    await digitalHumanApi.deleteTask(id);
+    setSelectedTask((current) => current?.id === id ? null : current);
+  }
+
+  async function regenerateTask(id) {
+    const task = await digitalHumanApi.regenerateTask(id);
+    setSelectedTask(task);
+  }
+
+  const visibleAvatars = tab === "mine" ? avatars.mine : getDigitalHumanPublicAvatars(avatars.public);
+  const currentPreviewTask = selectedTask;
+  const isPreviewProcessing = currentPreviewTask && !["completed", "failed"].includes(currentPreviewTask.status);
+
+  return (
+    <section className="dh-view-root">
+      <div className="dh-topbar">
+        <div>
+          <span>鏁板瓧浜?/span>
+          <h1>鍒涘缓浼氳璇濈殑鏁板瓧浜鸿棰?/h1>
+        </div>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      {error && <div className="video-submit-error">{error}</div>}
+      <div className={`dh-workspace ${currentPreviewTask ? "is-generating" : "is-browsing"}`}>
+        {!currentPreviewTask ? (
+        <section className="dh-library-panel">
+          <div className="dh-library-heading">
+            <div>
+              <span>绗?1 姝?/span>
+              <strong>閫夋嫨鏁板瓧浜烘ā鏉?/strong>
+            </div>
+            <small>{selectedAvatar ? `宸查€夋嫨锛?{selectedAvatar.name}` : "閫夋嫨鍚庡彸渚т細鏄剧ず褰撳墠妯℃澘鍜岃皟鐢ㄦā鍨?}</small>
+          </div>
+          <div className="dh-tabs">
+            <button className={tab === "public" ? "is-active" : ""} type="button" onClick={() => setTab("public")}>鍏叡褰㈣薄</button>
+            <button className={tab === "mine" ? "is-active" : ""} type="button" onClick={() => setTab("mine")}>鎴戠殑褰㈣薄</button>
+            <button className={tab === "history" ? "is-active" : ""} type="button" onClick={() => setTab("history")}>鐢熸垚璁板綍</button>
+          </div>
+          {tab === "mine" && (
+            <button className="dh-create-card" type="button" onClick={() => setIsCreateOpen(true)}>
+              <Plus size={20} />
+              <strong>鍒涘缓褰㈣薄</strong>
+              <span>棰勭暀瑙嗛璁粌鍏ュ彛</span>
+            </button>
+          )}
+          {tab === "history" ? (
+            <div className="dh-task-list">
+              {tasks.length ? tasks.map((task) => (
+                <DigitalHumanTaskCard
+                  key={task.id}
+                  task={task}
+                  selected={currentPreviewTask?.id === task.id}
+                  onSelect={setSelectedTask}
+                  onDelete={deleteTask}
+                  onRegenerate={regenerateTask}
+                />
+              )) : <DigitalHumanEmptyMedia icon={Video} title="鏆傛棤鐢熸垚璁板綍" description="鎻愪氦浠诲姟鍚庝細鍦ㄨ繖閲屾樉绀鸿繘搴? />}
+            </div>
+          ) : (
+            <div className="dh-avatar-list">
+              {visibleAvatars.length ? visibleAvatars.map((avatar) => (
+                <DigitalHumanAvatarCard
+                  key={avatar.id}
+                  avatar={avatar}
+                  selected={selectedAvatar?.id === avatar.id}
+                  onSelect={setSelectedAvatar}
+                  onPreview={setPreviewAvatar}
+                  onRename={renameAvatar}
+                  onDelete={deleteAvatar}
+                  mine={tab === "mine"}
+                />
+              )) : <DigitalHumanEmptyMedia title="杩樻病鏈夎嚜瀹氫箟褰㈣薄" description="鐐瑰嚮鍒涘缓褰㈣薄锛屽悗缁帴鍏?Minimax 璁粌鎺ュ彛" />}
+            </div>
+          )}
+        </section>
+        ) : (
+        <main className="dh-preview-stage">
+          <div className="dh-preview-header">
+            <div>
+              <span>{currentPreviewTask ? "鐢熸垚棰勮" : "褰㈣薄棰勮"}</span>
+              <strong>{currentPreviewTask?.avatarName || selectedAvatar?.name || "璇烽€夋嫨鏁板瓧浜哄舰璞?}</strong>
+            </div>
+            <div className="dh-preview-header-actions">
+              {currentPreviewTask?.resultUrl && (
+                <a className="dh-download-button" href={currentPreviewTask.resultUrl} download target="_blank" rel="noreferrer">
+                  <Download size={14} />
+                  涓嬭浇瑙嗛
+                </a>
+              )}
+              <button className="dh-preview-back" type="button" onClick={() => setSelectedTask(null)}>
+                <Layers size={14} />
+                妗堜緥
+              </button>
+              {currentPreviewTask && <small>{currentPreviewTask.status === "completed" ? "宸插畬鎴? : currentPreviewTask.status === "failed" ? "澶辫触" : `鐢熸垚涓?${currentPreviewTask.progress || 0}%`}</small>}
+            </div>
+          </div>
+          <div className="dh-video-shell">
+            {currentPreviewTask?.resultUrl ? (
+              <video src={currentPreviewTask.resultUrl} controls />
+            ) : isPreviewProcessing ? (
+              <DigitalHumanGeneratingState task={currentPreviewTask} />
+            ) : (
+              <DigitalHumanEmptyMedia
+                icon={currentPreviewTask ? Film : UserRound}
+                title={currentPreviewTask?.status === "failed" ? "鐢熸垚澶辫触" : currentPreviewTask?.status === "completed" ? "瑙嗛缁撴灉寰呰繑鍥? : "姝ｅ湪鐢熸垚鏁板瓧浜鸿棰?}
+                description={currentPreviewTask?.status === "failed" ? currentPreviewTask.error : currentPreviewTask ? `浠诲姟宸叉彁浜わ紝MiniMax 鐢熸垚闊抽鍚庣敱 KIE 鐢熸垚鍙ｅ瀷瑙嗛銆傚綋鍓嶈繘搴?${currentPreviewTask.progress || 0}%` : "杩欓噷浼氬睍绀洪€変腑褰㈣薄鎴栫敓鎴愬悗鐨勮棰?}
+              />
+            )}
+          </div>
+          <div className="dh-preview-details">
+            <div>
+              <span>褰撳墠褰㈣薄</span>
+              <strong>{selectedAvatar?.name || "鏈€夋嫨"}</strong>
+            </div>
+            <div>
+              <span>椹卞姩鏂瑰紡</span>
+              <strong>{currentPreviewTask?.driveMode === "audio" ? "闊抽椹卞姩" : "鏂囧瓧椹卞姩"}</strong>
+            </div>
+            <div>
+              <span>鎺ュ彛鐘舵€?/span>
+              <strong>{currentPreviewTask?.providerModel || "MiniMax + KIE"}</strong>
+            </div>
+          </div>
+        </main>
+        )}
+        <DigitalHumanConfigPanel
+          options={options}
+          voices={voices}
+          selectedAvatar={selectedAvatar}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+        />
+      </div>
+      {isCreateOpen && (
+        <DigitalHumanCreateAvatarModal
+          onClose={() => setIsCreateOpen(false)}
+          onCreate={createAvatar}
+          isSubmitting={isSubmitting}
+        />
+      )}
+      {previewAvatar && (
+        <DigitalHumanAvatarPreviewModal
+          avatar={previewAvatar}
+          onClose={() => setPreviewAvatar(null)}
+        />
+      )}
+    </section>
+  );
+}
+
+const emptyImageDigitalHumanOptions = {
+  models: [],
+  defaults: { model: "kie-s2v-r2v", driveMode: "text" },
+  limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 }
+};
+
+function ImageDigitalHumanTaskCard({ task, onDelete, onRegenerate }) {
+  const videoRef = useRef(null);
+  const isProcessing = task.status === "processing" || task.status === "pending";
+  const isFailed = task.status === "failed";
+  const hasVideo = Boolean(task.resultUrl && !isFailed);
+
+  function openFullscreen() {
+    const video = videoRef.current;
+    if (!video) return;
+    const requestFullscreen = video.requestFullscreen || video.webkitRequestFullscreen || video.msRequestFullscreen;
+    requestFullscreen?.call(video);
+  }
+
+  return (
+    <article className={`idh-result-card status-${task.status}`}>
+      <div className="idh-result-preview">
+        {hasVideo ? (
+          <>
+            <video ref={videoRef} src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.portraitUrl} />
+            <button className="idh-fullscreen-button" type="button" onClick={openFullscreen} aria-label="鍏ㄥ睆鎾斁">
+              <Maximize2 size={15} />
+            </button>
+          </>
+        ) : task.portraitUrl ? (
+          <img src={task.portraitUrl} alt="浜虹墿鐓х墖" />
+        ) : (
+          <Camera size={24} />
+        )}
+        {isProcessing && (
+          <div className="idh-processing-mask">
+            <Loader2 size={20} />
+            <span>{task.progress || 0}%</span>
+          </div>
+        )}
+        {isFailed && <div className="idh-failed-mask">鐢熸垚澶辫触</div>}
+      </div>
+      <div className="idh-result-meta">
+        <div className="idh-result-title">
+          <strong>{task.voiceName || "MiniMax 闊宠壊"}</strong>
+          <span>{task.usedProviderModel || task.providerModel || "KIE"}</span>
+        </div>
+        <p>{task.error || task.text}</p>
+        <div className="idh-progress-track">
+          <i style={{ width: `${task.progress || 0}%` }} />
+        </div>
+        <div className="idh-result-actions">
+          <small>{task.time} 璺?{task.costPoints || 0} 绉垎</small>
+          <span>
+            {task.resultUrl && (
+              <a href={task.resultUrl} download target="_blank" rel="noreferrer" aria-label="涓嬭浇瑙嗛">
+                <Download size={15} />
+              </a>
+            )}
+            <button type="button" onClick={() => onRegenerate(task.id)} disabled={isProcessing} aria-label="閲嶆柊鐢熸垚">
+              <RefreshCcw size={15} />
+            </button>
+            <button type="button" onClick={() => onDelete(task.id)} aria-label="鍒犻櫎">
+              <Trash2 size={15} />
+            </button>
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ImageDigitalHumanCenterState({ task, isSubmitting, error, onOpenRecent }) {
+  const isProcessing = isSubmitting || task?.status === "processing" || task?.status === "pending";
+  const isFailed = Boolean(error || task?.status === "failed");
+  const isCompleted = task?.status === "completed" && task?.resultUrl;
+
+  if (!isProcessing && !isFailed && !isCompleted) return null;
+
+  if (isCompleted) {
+    return (
+      <section className="idh-center-state is-completed" aria-live="polite">
+        <div className="idh-center-copy">
+          <CheckCircle2 size={22} />
+          <strong>瑙嗛宸茬敓鎴?/strong>
+          <p>鏈鍥剧墖鏁板瓧浜鸿棰戝凡淇濆瓨鍒版渶杩戠敓鎴愩€備富椤典笉浼氬睍绀烘渚嬶紝鏂逛究缁х画鍒涘缓涓嬩竴鏉¤棰戙€?/p>
+          <button type="button" onClick={onOpenRecent}>
+            <Layers size={15} />
+            鏌ョ湅鏈€杩戠敓鎴?
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (isCompleted) {
+    return (
+      <section className="idh-center-state is-completed" aria-live="polite">
+        <div className="idh-center-video">
+          <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.portraitUrl} />
+        </div>
+        <div className="idh-center-copy">
+          <CheckCircle2 size={22} />
+          <strong>瑙嗛宸茬敓鎴?/strong>
+          <p>鍙ｅ瀷瑙嗛宸茬粡瀹屾垚锛屽彲浠ョ洿鎺ラ瑙堟垨涓嬭浇銆?/p>
+          <a href={task.resultUrl} download target="_blank" rel="noreferrer">
+            <Download size={15} />
+            涓嬭浇瑙嗛
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <section className="idh-center-state is-failed" role="alert">
+        <span className="idh-center-icon">
+          <Sparkles size={24} />
+        </span>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="idh-center-state is-processing" aria-live="polite">
+      <span className="idh-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>姝ｅ湪鐢熸垚鍥剧墖鏁板瓧浜鸿棰?/strong>
+      <p>姝ｅ湪鐢熸垚璇煶銆佷笂浼犱汉鐗╃収鐗囷紝骞跺悎鎴愬彛鍨嬭棰戙€傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?/p>
+      <div className="idh-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
+    </section>
+  );
+}
+
+function ImageDigitalHumanComposer({ options, voices, onSubmit, isSubmitting }) {
+  const fileInputRef = useRef(null);
+  const [portrait, setPortrait] = useState(null);
+  const [portraitPreview, setPortraitPreview] = useState("");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜浼氱敤涓€寮犵収鐗囷紝涓轰綘鐢熸垚鑷劧鍙ｅ瀷鐨勬暟瀛椾汉瑙嗛銆?);
+  const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
+  const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
+  const [speed, setSpeed] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [pitch, setPitch] = useState(0);
+  const [emotion, setEmotion] = useState("");
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
+  const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!voiceId && voices[0]?.id) setVoiceId(voices[0].id);
+  }, [model, options, voiceId, voices]);
+
+  useEffect(() => {
+    return () => {
+      if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    };
+  }, [portraitPreview]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
+  const previewSignature = getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, emotion });
+  const isPreviewCurrent = voicePreviewInfo?.signature === previewSignature;
+  const isTooLong = isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+  const price = `${selectedModel?.basePoints || 0} 绉垎/娆;
+
+  function selectPortrait(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("璇蜂笂浼犲浘鐗囨枃浠?);
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
+      return;
+    }
+    if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    setPortrait(file);
+    setPortraitPreview(window.URL.createObjectURL(file));
+    setNotice("");
+  }
+
+  function clearPortrait(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setPortrait(null);
+    if (portraitPreview) window.URL.revokeObjectURL(portraitPreview);
+    setPortraitPreview("");
+    setNotice("");
+  }
+
+  async function previewVoice() {
+    if (!text.trim()) {
+      setNotice("璇疯緭鍏ョ敤浜庤瘯鍚殑鍙拌瘝");
+      return;
+    }
+    setNotice("");
+    setIsPreviewing(true);
+    try {
+      const result = await imageDigitalHumanApi.previewVoice({
+        previewText: text.trim(),
+        voiceId,
+        speed,
+        volume,
+        pitch,
+        emotion
+      });
+      if (result.audioDataUrl) setVoicePreviewUrl(result.audioDataUrl);
+      const durationMs = Number(result.durationMs || 0);
+      setVoicePreviewInfo({
+        signature: previewSignature,
+        durationMs,
+        videoDuration: result.videoDuration || Math.ceil(durationMs / 1000)
+      });
+      setNotice(
+        durationMs > digitalHumanMaxAudioMs
+          ? `褰撳墠闊抽 ${formatDurationMs(durationMs)}锛岃秴杩?15 绉掞紝璇风缉鐭彴璇峘
+          : `宸茬敓鎴愯瘯鍚煶棰戯紝瑙嗛棰勮 ${result.videoDuration || Math.ceil(durationMs / 1000)} 绉抈
+      );
+    } catch (error) {
+      setNotice(error.message || "闊宠壊璇曞惉澶辫触");
+    } finally {
+      setIsPreviewing(false);
+    }
+  }
+
+  function submit() {
+    if (!portrait) {
+      setNotice("璇峰厛涓婁紶浜虹墿姝ｉ潰鐓?);
+      return;
+    }
+    if (!text.trim()) {
+      setNotice("璇疯緭鍏ュ彴璇?);
+      return;
+    }
+    if (!voicePreviewInfo || !isPreviewCurrent) {
+      setNotice("璇峰厛璇曞惉褰撳墠鍙拌瘝鍜岄煶鑹?);
+      return;
+    }
+    if (isTooLong) {
+      setNotice(`褰撳墠闊抽 ${formatDurationMs(voicePreviewInfo.durationMs)}锛岃秴杩?15 绉抈);
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      portrait,
+      text: text.trim(),
+      voiceId,
+      model,
+      speed,
+      volume,
+      pitch,
+      emotion
+    });
+  }
+
+  return (
+    <div className="idh-composer" aria-label="鍥剧墖鏁板瓧浜虹敓鎴愬櫒">
+      <ImageDigitalHumanShowcaseCard
+        portraitPreview={portraitPreview}
+        selectedModelLabel={selectedModel?.label || selectedModel?.value}
+        selectedVoiceName={selectedVoice?.name}
+        textLength={text.length}
+        isSubmitting={isSubmitting}
+      />
+      <div className="idh-mode-tabs">
+        <button className="is-active" type="button">
+          <FileText size={15} />
+          鏂囨湰椹卞姩
+        </button>
+        <button type="button" disabled title="闊抽椹卞姩灏嗗湪涓嬩竴闃舵寮€鏀?>
+          <Mic size={15} />
+          闊抽椹卞姩
+        </button>
+      </div>
+      <div className="idh-composer-body">
+        <button className={`idh-upload-card ${portraitPreview ? "has-image" : ""}`} type="button" onClick={() => fileInputRef.current?.click()}>
+          <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={(event) => {
+            selectPortrait(event.target.files?.[0]);
+            event.target.value = "";
+          }} />
+          {portraitPreview ? (
+            <img src={portraitPreview} alt="宸蹭笂浼犱汉鐗╃収" />
+          ) : (
+            <>
+              <Plus size={18} />
+              <strong>涓婁紶鍥剧墖</strong>
+              <span>浜虹墿姝ｉ潰鐓?/span>
+            </>
+          )}
+          {portraitPreview && (
+            <span
+              className="upload-clear-button"
+              role="button"
+              tabIndex={0}
+              title="鍙栨秷涓婁紶"
+              aria-label="鍙栨秷涓婁紶"
+              onClick={clearPortrait}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") clearPortrait(event);
+              }}
+            >
+              <X size={13} />
+            </span>
+          )}
+        </button>
+        <div className="idh-form-card">
+          <label className="idh-select">
+            <select value={model} onChange={(event) => setModel(event.target.value)}>
+              {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+          <label className="idh-select">
+            <Mic size={15} />
+            <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
+              {voices.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            </select>
+          </label>
+          <textarea
+            value={text}
+            maxLength={options.limits?.maxTextLength || 2000}
+            onChange={(event) => setText(event.target.value)}
+            placeholder="璇疯緭鍏ュ彴璇嶏紝鐢熸垚璇煶..."
+          />
+          <details className="idh-advanced">
+            <summary>闊宠壊鍙傛暟</summary>
+            <label>
+              <span>鎯呯华</span>
+              <select value={emotion} onChange={(event) => setEmotion(event.target.value)}>
+                {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span>璇€?{speed.toFixed(2)}x</span>
+              <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>闊抽噺 {volume.toFixed(1)}</span>
+              <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
+            </label>
+            <label>
+              <span>闊宠皟 {pitch > 0 ? `+${pitch}` : pitch}</span>
+              <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
+            </label>
+          </details>
+          <button className="idh-preview-voice" type="button" onClick={previewVoice} disabled={isPreviewing}>
+            {isPreviewing ? <Loader2 size={15} /> : <Play size={15} />}
+            鐢熸垚璇煶
+          </button>
+          {voicePreviewUrl && <audio className="idh-audio-preview" src={voicePreviewUrl} controls />}
+        </div>
+      </div>
+      <div className="idh-composer-footer">
+        <span>鍥剧墖涓庨煶棰戝ぇ灏忓潎涓嶈秴杩?10MB</span>
+        <small>{selectedVoice?.description || selectedModel?.primaryModel}</small>
+        <strong>{price}</strong>
+        <button type="button" onClick={submit} disabled={isSubmitting || !isPreviewCurrent || isTooLong} aria-label="鐢熸垚鍥剧墖鏁板瓧浜鸿棰?>
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+      {notice && <div className={`idh-notice ${isTooLong ? "is-warning" : ""}`}>{notice}</div>}
+    </div>
+  );
+}
+
+function ImageDigitalHumanView() {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
+  const [voices, setVoices] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const [viewTab, setViewTab] = useState("home");
+  const [portraitPreview, setPortraitPreview] = useState("");
+  const [model, setModel] = useState("");
+  const [voiceId, setVoiceId] = useState("");
+  const [text, setText] = useState("澶у濂斤紝娆㈣繋鏉ュ埌鎴戜滑鐨?AI 鍒涗綔骞冲彴銆備粖澶╂垜浼氱敤涓€寮犵収鐗囷紝涓轰綘鐢熸垚鑷劧鍙ｅ瀷鐨勬暟瀛椾汉瑙嗛銆?);
+  const [showcaseNotice, setShowcaseNotice] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, voiceData, taskData, creditData] = await Promise.all([
+          imageDigitalHumanApi.getModels(),
+          imageDigitalHumanApi.getVoices(),
+          imageDigitalHumanApi.getTasks(),
+          imageDigitalHumanApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setVoices(voiceData.voices || []);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || "鍔犺浇鍥剧墖鏁板瓧浜哄け璐?);
+      }
+    }
+    load();
+    const unsubscribe = imageDigitalHumanApi.subscribe(() => {
+      imageDigitalHumanApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
+      imageDigitalHumanApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!voiceId && voices[0]?.id) {
+      setVoiceId(voices[0].id);
+    }
+  }, [model, options, voiceId, voices]);
+
+  useEffect(() => {
+    return () => {
+      if (portraitPreview.startsWith("blob:")) {
+        window.URL.revokeObjectURL(portraitPreview);
+      }
+    };
+  }, [portraitPreview]);
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const showHero = viewTab === "home" && !showCenterState;
+  const visibleResultTasks = viewTab === "recent" && submittedTaskId
+    ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+    : viewTab === "recent" ? tasks : [];
+  const showRecentEmpty = viewTab === "recent" && !showCenterState && visibleResultTasks.length === 0;
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
+
+  function selectShowcasePortrait(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setShowcaseNotice("璇蜂笂浼犲浘鐗囨枃浠?);
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setShowcaseNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
+      return;
+    }
+    if (portraitPreview.startsWith("blob:")) {
+      window.URL.revokeObjectURL(portraitPreview);
+    }
+    setPortraitPreview(window.URL.createObjectURL(file));
+    setShowcaseNotice("");
+  }
+
+  function clearShowcasePortrait() {
+    if (portraitPreview.startsWith("blob:")) {
+      window.URL.revokeObjectURL(portraitPreview);
+    }
+    setPortraitPreview("");
+    setShowcaseNotice("");
+  }
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await imageDigitalHumanApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓鍥剧墖鏁板瓧浜轰换鍔″け璐?);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await imageDigitalHumanApi.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function regenerateTask(id) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await imageDigitalHumanApi.regenerateTask(id);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current]);
+    } catch (error) {
+      setSubmitError(error.message || "閲嶆柊鐢熸垚澶辫触");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="idh-view-root idh-view-root--showcase-only">
+      <div className="image-filter-tabs idh-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          收藏
+        </button>
+        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+      </div>
+      <ImageDigitalHumanShowcaseCard
+        portraitPreview={portraitPreview}
+        onSelectPortrait={selectShowcasePortrait}
+        onClearPortrait={clearShowcasePortrait}
+        modelOptions={options.models}
+        voiceOptions={voices}
+        selectedModelValue={model}
+        selectedModelLabel={selectedModel?.label || selectedModel?.value || ""}
+        onModelChange={setModel}
+        selectedVoiceValue={voiceId}
+        selectedVoiceName={selectedVoice?.name || ""}
+        onVoiceChange={setVoiceId}
+        text={text}
+        textLength={text.length}
+        onTextChange={setText}
+        notice={showcaseNotice}
+        isSubmitting={isSubmitting}
+      />
+    </section>
+  );
+
+  /* return (
+    <section className="idh-view-root">
+      <div className="image-filter-tabs idh-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>鏈€杩戠敓鎴?/button>
+        <button type="button" disabled>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          鏀惰棌
+        </button>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      <div className="idh-workspace">
+        <div className={`idh-canvas ${showCenterState ? "has-active-task" : ""}`}>
+        {showHero && <div className="idh-hero-empty">
+          <span className="idh-hero-icon">
+            <Camera size={34} />
+          </span>
+          <h1>鍥剧墖鏁板瓧浜?/h1>
+          <p>涓婁紶浜虹墿鐓х墖鍜岄煶棰戯紝鐢熸垚鏁板瓧浜鸿璇濊棰?/p>
+        </div>}
+        {showCenterState && (
+          <ImageDigitalHumanCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="idh-recent-empty">
+            <Layers size={24} />
+            <strong>鏆傛棤鏈€杩戠敓鎴?/strong>
+            <p>鐢熸垚瀹屾垚鐨勮棰戜細淇濆瓨鍦ㄨ繖閲岋紝涓婚〉鍙繚鐣欏垱浣滃叆鍙ｃ€?/p>
+          </div>
+        )}
+        <div className={`idh-results-feed ${visibleResultTasks.length ? "has-results" : ""}`}>
+          {visibleResultTasks.map((task) => (
+            <ImageDigitalHumanTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onRegenerate={regenerateTask}
+            />
+          ))}
+        </div>
+        </div>
+      {options.models.length > 0 && voices.length > 0 && (
+          <div className="idh-side-panel">
+            <ImageDigitalHumanComposer
+              options={options}
+              voices={voices}
+              onSubmit={createTask}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+      )}
+      </div>
+    </section>
+  ); */
+}
+
+const emptyMotionTransferOptions = {
+  models: [],
+  defaults: { model: "kie-motion-transfer", resolution: "720p", characterOrientation: "image" },
+  modes: [
+    { value: "720p", label: "720p" },
+    { value: "1080p", label: "1080p" }
+  ],
+  characterOrientations: [
+    { value: "image", label: "鍥剧墖鏈濆悜", maxSeconds: 10 },
+    { value: "video", label: "瑙嗛鏈濆悜", maxSeconds: 30 }
+  ],
+  limits: {
+    maxImageBytes: 10 * 1024 * 1024,
+    maxVideoBytes: 100 * 1024 * 1024,
+    recommendedVideoSeconds: 30
+  }
+};
+
+const motionTransferCopy = {
+  emptyTitle: "寮€鍚綘鐨勫姩浣滆縼绉?,
+  emptyDescription: "涓婁紶鍥剧墖鍜屽姩浣滆棰戯紝璁╅潤鎬佷汉鐗╁姩璧锋潵",
+  completedTitle: "鍔ㄤ綔杩佺Щ宸插畬鎴?,
+  processingCreate: "姝ｅ湪鍒涘缓鍔ㄤ綔杩佺Щ浠诲姟",
+  processingGenerate: "姝ｅ湪鐢熸垚鍔ㄤ綔杩佺Щ瑙嗛",
+  processingDescription: "姝ｅ湪涓婁紶浜虹墿鍥剧墖鍜屽姩浣滃弬鑰冭棰戯紝骞舵彁浜ょ粰 KIE 鍚堟垚銆傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?,
+  recentEmptyTitle: "鏆傛棤鍔ㄤ綔杩佺Щ缁撴灉",
+  recentEmptyDescription: "鐢熸垚瀹屾垚鐨勮棰戜細淇濆瓨鍦ㄨ繖閲屻€?,
+  imageTitle: "涓婁紶鍗曚汉鍥?,
+  imageHint: "涓讳綋娓呮櫚锛屽崟浜烘晥鏋滄渶濂?,
+  videoTitle: "涓婁紶鍔ㄤ綔瑙嗛",
+  submitLabel: "鐢熸垚鍔ㄤ綔杩佺Щ瑙嗛",
+  panelLabel: "鍔ㄤ綔杩佺Щ涓婁紶闈㈡澘",
+  imageRequired: "璇峰厛涓婁紶鍗曚汉鍥剧墖",
+  videoRequired: "璇峰厛涓婁紶鍔ㄤ綔瑙嗛",
+  imageFallback: "浜虹墿鍥剧墖",
+  videoFallback: "鍔ㄤ綔瑙嗛",
+  loadError: "鍔犺浇鍔ㄤ綔杩佺Щ澶辫触",
+  createError: "鍒涘缓鍔ㄤ綔杩佺Щ浠诲姟澶辫触"
+};
+
+const faceSwapCopy = {
+  emptyTitle: "寮€鍚綘鐨勮棰戞崲鑴?,
+  emptyDescription: "涓婁紶浜鸿劯鍥惧拰鐩爣瑙嗛锛岃浜虹墿韬唤鑷劧铻嶅悎鍒拌棰戜腑",
+  completedTitle: "瑙嗛鎹㈣劯宸插畬鎴?,
+  processingCreate: "姝ｅ湪鍒涘缓瑙嗛鎹㈣劯浠诲姟",
+  processingGenerate: "姝ｅ湪鐢熸垚鎹㈣劯瑙嗛",
+  processingDescription: "姝ｅ湪涓婁紶浜鸿劯鍥剧墖鍜岀洰鏍囪棰戯紝骞舵彁浜ょ粰 KIE 鍚堟垚銆傚畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?,
+  recentEmptyTitle: "鏆傛棤瑙嗛鎹㈣劯缁撴灉",
+  recentEmptyDescription: "鐢熸垚瀹屾垚鐨勬崲鑴歌棰戜細淇濆瓨鍦ㄨ繖閲屻€?,
+  imageTitle: "涓婁紶浜鸿劯鍥?,
+  imageHint: "姝ｈ劯娓呮櫚锛屽厜绾胯嚜鐒舵晥鏋滄渶濂?,
+  videoTitle: "涓婁紶鐩爣瑙嗛",
+  submitLabel: "鐢熸垚鎹㈣劯瑙嗛",
+  panelLabel: "瑙嗛鎹㈣劯涓婁紶闈㈡澘",
+  imageRequired: "璇峰厛涓婁紶浜鸿劯鍥剧墖",
+  videoRequired: "璇峰厛涓婁紶鐩爣瑙嗛",
+  imageFallback: "浜鸿劯鍥剧墖",
+  videoFallback: "鐩爣瑙嗛",
+  loadError: "鍔犺浇瑙嗛鎹㈣劯澶辫触",
+  createError: "鍒涘缓瑙嗛鎹㈣劯浠诲姟澶辫触"
+};
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${value} B`;
+}
+
+function MotionTransferCenterState({ task, isSubmitting, error, onOpenRecent, copy = motionTransferCopy }) {
+  if (task?.status === "completed") {
+    return (
+      <section className="motion-center-state is-completed">
+        <div className="motion-result-player">
+          <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.imageUrl} />
+        </div>
+        <div className="motion-result-copy">
+          <span className="motion-center-icon">
+            <CheckCircle2 size={24} />
+          </span>
+          <h2>{copy.completedTitle}</h2>
+          <p>{task.prompt}</p>
+          <div className="motion-result-actions">
+            <a href={task.resultUrl} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+            <button type="button" onClick={onOpenRecent}>
+              鏌ョ湅鍘嗗彶
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || task?.status === "failed") {
+    return (
+      <section className="motion-center-state is-failed">
+        <span className="motion-center-icon">
+          <Sparkles size={24} />
+        </span>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="motion-center-state is-processing" aria-live="polite">
+      <span className="motion-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>{isSubmitting ? copy.processingCreate : copy.processingGenerate}</strong>
+      <p>{copy.processingDescription}</p>
+      <div className="motion-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
+    </section>
+  );
+}
+
+function MotionTransferTaskCard({ task, onDelete, onFavorite, onRepeat, copy = motionTransferCopy }) {
+  const isProcessing = task.status === "processing";
+  const isFailed = task.status === "failed";
+  return (
+    <article className={`motion-task-card status-${task.status}`}>
+      <div className="motion-task-preview">
+        {task.resultUrl && !isFailed ? (
+          <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.imageUrl} />
+        ) : (
+          <div className={`motion-task-placeholder ${isFailed ? "is-failed" : ""}`}>
+            {isProcessing ? <Loader2 size={26} /> : <Video size={26} />}
+            <strong>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</strong>
+          </div>
+        )}
+      </div>
+      <div className="motion-task-meta">
+        <div className="tag-row">
+          <span className="model-tag">{task.providerModel || task.model}</span>
+          <span className="ratio-tag">{task.resolution}</span>
+          <span className="quality-tag">{task.characterOrientation === "video" ? "瑙嗛鏈濆悜" : "鍥剧墖鏈濆悜"}</span>
+        </div>
+        <div className="time-row">
+          <span>{task.time}</span>
+          <strong>{task.price}</strong>
+        </div>
+        <p>{task.error || task.prompt}</p>
+        <div className="motion-source-row">
+          <span>
+            <Image size={14} />
+            {task.imageFileName || copy.imageFallback}
+          </span>
+          <span>
+            <Film size={14} />
+            {task.videoFileName || copy.videoFallback}
+          </span>
+        </div>
+        <div className="card-actions motion-card-actions">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="鏀惰棌">
+            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
+          </button>
+          {task.resultUrl ? (
+            <a className="card-action-link" href={task.resultUrl} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              涓嬭浇
+            </button>
+          )}
+          <button type="button" onClick={() => onRepeat(task)}>
+            <RefreshCcw size={15} />
+            鍐嶆鐢熸垚
+          </button>
+          <button type="button" onClick={() => onDelete(task.id)}>
+            <Trash2 size={15} />
+            鍒犻櫎
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MotionTransferUploadSlot({ kind, title, hint, asset, previewUrl, isUploading, onSelect, onClear }) {
+  const inputRef = useRef(null);
+  const Icon = kind === "image" ? Image : Film;
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
+  return (
+    <button className={`motion-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={kind === "image" ? "image/*" : "video/*"}
+        hidden
+        onChange={(event) => {
+          onSelect(event.target.files?.[0] || null);
+          event.target.value = "";
+        }}
+      />
+      {previewUrl ? (
+        kind === "image" ? (
+          <img src={previewUrl} alt={title} />
+        ) : (
+          <video src={previewUrl} muted playsInline preload="metadata" />
+        )
+      ) : (
+        <>
+          <Plus size={16} />
+          <strong>{title}</strong>
+          <span>{hint}</span>
+        </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="鍙栨秷涓婁紶"
+          aria-label="鍙栨秷涓婁紶"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
+      {asset && <small>{asset.fileName} 璺?{formatBytes(asset.sizeBytes)}</small>}
+      {isUploading && (
+        <span className="motion-uploading">
+          <Loader2 size={16} />
+          涓婁紶涓?
+        </span>
+      )}
+      {!isUploading && previewUrl && (
+        <span className="motion-upload-kind">
+          <Icon size={14} />
+          鏇存崲绱犳潗
+        </span>
+      )}
+    </button>
+  );
+}
+
+function MotionTransferComposer({ options, onSubmit, isSubmitting, api = motionTransferApi, copy = motionTransferCopy }) {
+  const [imageAsset, setImageAsset] = useState(null);
+  const [videoAsset, setVideoAsset] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [videoPreview, setVideoPreview] = useState("");
+  const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
+  const [resolution, setResolution] = useState(options.defaults?.resolution || "720p");
+  const [characterOrientation, setCharacterOrientation] = useState(options.defaults?.characterOrientation || "image");
+  const [notice, setNotice] = useState("");
+  const [uploading, setUploading] = useState("");
+
+  useEffect(() => {
+    if (!model && (options.defaults?.model || options.models[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+    if (!resolution && options.defaults?.resolution) setResolution(options.defaults.resolution);
+    if (!characterOrientation && options.defaults?.characterOrientation) setCharacterOrientation(options.defaults.characterOrientation);
+  }, [characterOrientation, model, options, resolution]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+      if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    };
+  }, [imagePreview, videoPreview]);
+
+  const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
+  const price = `${selectedModel?.basePoints || 0} 绉垎`;
+  const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
+
+  async function selectImage(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("璇蜂笂浼犲浘鐗囨枃浠?);
+      return;
+    }
+    if (file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
+      return;
+    }
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview(window.URL.createObjectURL(file));
+    setImageAsset(null);
+    setUploading("image");
+    setNotice("");
+    try {
+      setImageAsset(await api.uploadImage(file));
+    } catch (error) {
+      setImagePreview("");
+      setNotice(error.message || "鍥剧墖涓婁紶澶辫触");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  async function selectVideo(file) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setNotice("璇蜂笂浼犺棰戞枃浠?);
+      return;
+    }
+    if (file.size > (options.limits?.maxVideoBytes || 100 * 1024 * 1024)) {
+      setNotice("瑙嗛澶у皬涓嶈兘瓒呰繃 200MB");
+      return;
+    }
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview(window.URL.createObjectURL(file));
+    setVideoAsset(null);
+    setUploading("video");
+    setNotice("");
+    try {
+      setVideoAsset(await api.uploadVideo(file));
+    } catch (error) {
+      setVideoPreview("");
+      setNotice(error.message || "瑙嗛涓婁紶澶辫触");
+    } finally {
+      setUploading("");
+    }
+  }
+
+  function clearImage() {
+    setImageAsset(null);
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview("");
+    setNotice("");
+  }
+
+  function clearVideo() {
+    setVideoAsset(null);
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview("");
+    setNotice("");
+  }
+
+  function submit() {
+    if (!imageAsset) {
+      setNotice(copy.imageRequired);
+      return;
+    }
+    if (!videoAsset) {
+      setNotice(copy.videoRequired);
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      imageAssetId: imageAsset.id,
+      videoAssetId: videoAsset.id,
+      model,
+      resolution,
+      characterOrientation
+    });
+  }
+
+  return (
+    <div className="motion-composer" aria-label={copy.panelLabel}>
+      <div className="motion-upload-grid">
+        <MotionTransferUploadSlot
+          kind="image"
+          title={copy.imageTitle}
+          hint={copy.imageHint}
+          asset={imageAsset}
+          previewUrl={imagePreview}
+          isUploading={uploading === "image"}
+          onSelect={selectImage}
+          onClear={clearImage}
+        />
+        <MotionTransferUploadSlot
+          kind="video"
+          title={copy.videoTitle}
+          hint={`寤鸿 ${options.limits?.recommendedVideoSeconds || 30} 绉掑唴`}
+          asset={videoAsset}
+          previewUrl={videoPreview}
+          isUploading={uploading === "video"}
+          onSelect={selectVideo}
+          onClear={clearVideo}
+        />
+      </div>
+      <div className="motion-composer-footer">
+        <label className="control-select model-select">
+          <Box size={15} />
+          <select value={model} onChange={(event) => setModel(event.target.value)}>
+            {options.models.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
+        </label>
+        <label className="control-select">
+          <Ruler size={15} />
+          <select value={resolution} onChange={(event) => setResolution(event.target.value)}>
+            {(options.modes || emptyMotionTransferOptions.modes).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
+        </label>
+        <label className="control-select">
+          <Timer size={15} />
+          <select value={characterOrientation} onChange={(event) => setCharacterOrientation(event.target.value)}>
+            {(options.characterOrientations || emptyMotionTransferOptions.characterOrientations).map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
+            ))}
+          </select>
+        </label>
+        <span className="price-pill">{price}</span>
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label={copy.submitLabel}>
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+      {notice && <div className="composer-notice warning">{notice}</div>}
+    </div>
+  );
+}
+
+function MotionTransferView({ navId = "motion", api = motionTransferApi, copy = motionTransferCopy, splitResults = false }) {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyMotionTransferOptions);
+  const [credits, setCredits] = useState(null);
+  const [filter, setFilter] = useState("all");
+  const [viewTab, setViewTab] = useState("home");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, taskData, creditData] = await Promise.all([
+          api.getModels(),
+          api.getTasks({ filter: splitResults ? "all" : filter }),
+          api.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || copy.loadError);
+      }
+    }
+    load();
+    const unsubscribe = api.subscribe(() => {
+      api.getTasks({ filter: splitResults ? "all" : filter }).then((value) => mounted && setTasks(value)).catch(() => {});
+      api.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [api, copy.loadError, filter, navId, splitResults]);
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const isFaceSwapView = splitResults && navId === "face-swap";
+  const useWorkbenchView = isFaceSwapView || navId === "motion";
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const showEmptyHero = splitResults
+    ? viewTab === "home" && !showCenterState
+    : !showCenterState && tasks.length === 0 && filter !== "favorite";
+  const visibleTasks = splitResults
+    ? viewTab === "recent"
+      ? submittedTaskId
+        ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+        : tasks
+      : viewTab === "favorite"
+        ? tasks.filter((task) => task.favorite)
+      : []
+    : submittedTaskId
+      ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+      : tasks;
+  const showRecentEmpty = splitResults
+    ? (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0
+    : !showEmptyHero && !showCenterState && visibleTasks.length === 0;
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    try {
+      const task = await api.createTask(payload);
+      setSubmittedTaskId(task.id);
+      if (splitResults) setViewTab("home");
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || copy.createError);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await api.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function toggleFavorite(id) {
+    const updated = await api.toggleFavorite(id);
+    setTasks((current) => current.map((task) => String(task.id) === String(id) ? updated : task));
+  }
+
+  function repeatTask(task) {
+    createTask({
+      imageAssetId: task.imageAssetId,
+      videoAssetId: task.videoAssetId,
+      model: task.model,
+      resolution: task.resolution,
+      characterOrientation: task.characterOrientation,
+      prompt: task.prompt
+    });
+  }
+
+  return (
+    <section className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""}`}>
+      <div className="image-filter-tabs motion-filter-tabs">
+        {splitResults ? (
+          <>
+            <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
+            <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}>鏈€杩戠敓鎴?/button>
+            <button type="button" disabled>
+              <Star size={17} fill="#f8d545" color="#161616" />
+              鏀惰棌
+            </button>
+          </>
+        ) : (
+          <>
+            <button className={filter === "all" ? "selected" : ""} type="button" onClick={() => setFilter("all")}>鍏ㄩ儴缁撴灉</button>
+            <button className={filter === "favorite" ? "selected" : ""} type="button" onClick={() => setFilter("favorite")}>
+              <Star size={17} fill="#f8d545" color="#161616" />
+              鏀惰棌
+            </button>
+          </>
+        )}
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      <div className={`motion-canvas ${showCenterState ? "has-active-task" : ""}`}>
+        {useWorkbenchView && (isFaceSwapView ? viewTab === "home" : showEmptyHero) && !showCenterState && (
+          <FaceSwapWorkbench
+            options={options}
+            onSubmit={createTask}
+            isSubmitting={isSubmitting}
+            api={api}
+            copy={copy}
+            heading={navId === "motion" ? "AI 鍔ㄤ綔杩佺Щ" : "AI 鎹㈣劯宸ュ叿"}
+            privacyText={navId === "motion" ? "鎮ㄤ笂浼犵殑鍐呭浠呯敤浜庡姩浣滆縼绉诲鐞嗭紝涓嶄細琚敤浜庡叾浠栫敤閫斻€? : "鎮ㄤ笂浼犵殑鍐呭浠呯敤浜庢崲鑴稿鐞嗭紝涓嶄細琚敤浜庡叾浠栫敤閫斻€?}
+          />
+        )}
+        {!useWorkbenchView && showEmptyHero && (
+          <div className="motion-hero-empty">
+            <span className="motion-hero-icon">
+              <Sparkles size={34} />
+            </span>
+            <h1>{copy.emptyTitle}</h1>
+            <p>{copy.emptyDescription}</p>
+          </div>
+        )}
+        {showCenterState && (
+          <MotionTransferCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              if (splitResults) setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+            copy={copy}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="motion-recent-empty">
+            <Layers size={24} />
+            <strong>{copy.recentEmptyTitle}</strong>
+            <p>{copy.recentEmptyDescription}</p>
+          </div>
+        )}
+        {(!useWorkbenchView || (isFaceSwapView && viewTab !== "home")) && (
+          <div className={`motion-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
+            {visibleTasks.map((task) => (
+              <MotionTransferTaskCard
+                key={task.id}
+                task={task}
+                onDelete={deleteTask}
+                onFavorite={toggleFavorite}
+                onRepeat={repeatTask}
+                copy={copy}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      {options.models.length > 0 && !useWorkbenchView && (
+        <MotionTransferComposer
+          options={options}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+          api={api}
+          copy={copy}
+        />
+      )}
+    </section>
+  );
+}
+
+const emptyWatermarkOptions = {
+  models: [],
+  defaults: {
+    imageModel: "kie-watermark-image",
+    videoModel: "kie-watermark-video",
+    imageResolution: "2K",
+    videoResolution: "720p"
+  },
+  limits: {
+    maxImageBytes: 10 * 1024 * 1024,
+    maxVideoBytes: 200 * 1024 * 1024,
+    recommendedVideoSeconds: 15
+  }
+};
+
+function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
+  if (task?.status === "completed") {
+    const isVideo = task.mediaType === "video";
+    return (
+      <section className="watermark-center-state is-completed">
+        <div className={`watermark-result-stage ${isVideo ? "is-video" : ""}`}>
+          {isVideo ? (
+            <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.sourceUrl} />
+          ) : (
+            <img src={task.resultUrl} alt={task.sourceFileName || "鍘绘按鍗扮粨鏋?} />
+          )}
+        </div>
+        <div className="watermark-result-copy">
+          <span className="watermark-center-icon">
+            <CheckCircle2 size={24} />
+          </span>
+          <h2>鍘绘按鍗板凡瀹屾垚</h2>
+          <p>{task.sourceFileName || "缁撴灉宸蹭繚瀛樺埌鏈€杩戠敓鎴?}</p>
+          <div className="watermark-result-actions">
+            <a href={task.resultUrl} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+            <button type="button" onClick={onOpenRecent}>鏌ョ湅鏈€杩戠敓鎴?/button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error || task?.status === "failed") {
+    return (
+      <section className="watermark-center-state is-failed">
+        <span className="watermark-center-icon">
+          <Eraser size={24} />
+        </span>
+        <strong>杩欐娌℃湁鐢熸垚鎴愬姛</strong>
+        <p>{error || task?.error || "鐢熸垚鏈嶅姟杩斿洖浜嗛敊璇紝绉垎浼氭寜浠诲姟鐘舵€佽嚜鍔ㄥ鐞嗐€?}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="watermark-center-state is-processing" aria-live="polite">
+      <span className="watermark-center-spinner">
+        <Loader2 size={30} />
+      </span>
+      <strong>{isSubmitting ? "姝ｅ湪鍒涘缓鍘绘按鍗颁换鍔? : "姝ｅ湪鏅鸿兘鍘婚櫎姘村嵃"}</strong>
+      <p>绱犳潗姝ｅ湪鎻愪氦缁?KIE 澶勭悊锛屽畬鎴愬悗浼氳嚜鍔ㄥ洖濉埌杩欓噷銆?/p>
+      <div className="watermark-center-progress">
+        <i style={{ width: `${task?.progress || 28}%` }} />
+      </div>
+      <small>{task?.progress ? `${task.progress}%` : "浠诲姟鍑嗗涓?} 路 璇蜂繚鎸侀〉闈㈡墦寮€</small>
+    </section>
+  );
+}
+
+function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+  const isProcessing = task.status === "processing";
+  const isFailed = task.status === "failed";
+  const isVideo = task.mediaType === "video";
+
+  return (
+    <article className={`watermark-task-card status-${task.status}`}>
+      <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
+        {task.resultUrl && !isFailed ? (
+          isVideo ? (
+            <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+          ) : (
+            <img src={task.resultUrl} alt={task.sourceFileName || "鍘绘按鍗扮粨鏋?} />
+          )
+        ) : (
+          <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
+            {isProcessing ? <Loader2 size={26} /> : isVideo ? <Video size={26} /> : <Image size={26} />}
+            <strong>{isFailed ? "鐢熸垚澶辫触" : "鐢熸垚涓?}</strong>
+          </div>
+        )}
+      </div>
+      <div className="watermark-task-meta">
+        <div className="tag-row">
+          <span className="model-tag">{task.mediaType === "video" ? "瑙嗛鍘绘按鍗? : "鍥剧墖鍘绘按鍗?}</span>
+          <span className="ratio-tag">{task.resolution}</span>
+          <span className="quality-tag">{task.providerModel || task.model}</span>
+        </div>
+        <div className="time-row">
+          <span>{task.time}</span>
+          <strong>{task.price}</strong>
+        </div>
+        <p>{task.error || task.sourceFileName || "鏅鸿兘鍘绘按鍗扮粨鏋?}</p>
+        <div className="watermark-source-row">
+          <span>
+            {isVideo ? <Film size={14} /> : <Image size={14} />}
+            {task.sourceFileName || "婧愮礌鏉?}
+          </span>
+        </div>
+        <div className="card-actions watermark-card-actions">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="鏀惰棌">
+            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
+          </button>
+          {task.resultUrl ? (
+            <a className="card-action-link" href={task.resultUrl} download>
+              <Download size={15} />
+              涓嬭浇
+            </a>
+          ) : (
+            <button type="button" disabled>
+              <Download size={15} />
+              涓嬭浇
+            </button>
+          )}
+          <button type="button" onClick={() => onRepeat(task)}>
+            <RefreshCcw size={15} />
+            鍐嶆鐢熸垚
+          </button>
+          <button type="button" onClick={() => onDelete(task.id)}>
+            <Trash2 size={15} />
+            鍒犻櫎
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function WatermarkUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
+  const inputRef = useRef(null);
+  const isVideo = mode === "video";
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
+  return (
+    <button className={`watermark-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={isVideo ? "video/*" : "image/*"}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0] || null;
+          event.target.value = "";
+          onSelect(file);
+        }}
+      />
+      {previewUrl ? (
+        isVideo ? (
+          <video src={previewUrl} muted playsInline preload="metadata" />
+        ) : (
+          <img src={previewUrl} alt="涓婁紶绱犳潗棰勮" />
+        )
+      ) : (
+        <>
+          <Plus size={18} />
+          <strong>{isVideo ? "+ 涓婁紶瑙嗛鏂囦欢" : "+ 涓婁紶鍥剧墖鏂囦欢"}</strong>
+          <span>{isVideo ? "寤鸿 15 绉掑唴锛屾渶澶?200MB" : "鏀寔 JPG/PNG锛屾渶澶?10MB"}</span>
+        </>
+      )}
+      {previewUrl && !isUploading && (
+        <span
+          className="upload-clear-button"
+          role="button"
+          tabIndex={0}
+          title="鍙栨秷涓婁紶"
+          aria-label="鍙栨秷涓婁紶"
+          onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
+        >
+          <X size={13} />
+        </span>
+      )}
+      {sourceAsset && <small>{sourceAsset.fileName} 路 {formatBytes(sourceAsset.sizeBytes)}</small>}
+      {isUploading && (
+        <span className="watermark-uploading">
+          <Loader2 size={16} />
+          涓婁紶涓?
+        </span>
+      )}
+      {!isUploading && previewUrl && (
+        <span className="watermark-upload-kind">
+          {isVideo ? <Film size={14} /> : <Image size={14} />}
+          鏇存崲绱犳潗
+        </span>
+      )}
+    </button>
+  );
+}
+
+function WatermarkComposer({ options, onSubmit, isSubmitting }) {
+  const [mode, setMode] = useState("image");
+  const [sourceAsset, setSourceAsset] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [notice, setNotice] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
+  const resolution = mode === "video" ? options.defaults?.videoResolution || "720p" : options.defaults?.imageResolution || "2K";
+  const price = `${selectedModel?.basePoints || 0} 绉垎`;
+  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
+
+  function changeMode(nextMode) {
+    setMode(nextMode);
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+  }
+
+  function clearSource() {
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+  }
+
+  async function selectSource(file) {
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if ((mode === "image" && !isImage) || (mode === "video" && !isVideo)) {
+      setNotice(mode === "image" ? "璇蜂笂浼犲浘鐗囨枃浠? : "璇蜂笂浼犺棰戞枃浠?);
+      return;
+    }
+    if (isImage && file.size > (options.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("鍥剧墖澶у皬涓嶈兘瓒呰繃 10MB");
+      return;
+    }
+    if (isVideo && file.size > (options.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
+      setNotice("瑙嗛澶у皬涓嶈兘瓒呰繃 100MB");
+      return;
+    }
+
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(window.URL.createObjectURL(file));
+    setSourceAsset(null);
+    setUploading(true);
+    setNotice("");
+    try {
+      setSourceAsset(await watermarkApi.uploadSource(file));
+      setNotice("绱犳潗涓婁紶瀹屾垚");
+    } catch (error) {
+      setPreviewUrl("");
+      setNotice(error.message || "绱犳潗涓婁紶澶辫触");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function submit() {
+    if (!sourceAsset) {
+      setNotice(mode === "image" ? "璇峰厛涓婁紶鍥剧墖鏂囦欢" : "璇峰厛涓婁紶瑙嗛鏂囦欢");
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      sourceAssetId: sourceAsset.id,
+      model: selectedModel?.value,
+      resolution
+    });
+  }
+
+  return (
+    <div className="watermark-composer" aria-label="鍘绘按鍗颁笂浼犻潰鏉?>
+      <div className="watermark-mode-tabs">
+        <button className={mode === "image" ? "is-active" : ""} type="button" onClick={() => changeMode("image")}>
+          <Image size={15} />
+          鍥剧墖鍘绘按鍗?
+        </button>
+        <button className={mode === "video" ? "is-active" : ""} type="button" onClick={() => changeMode("video")}>
+          <Film size={15} />
+          瑙嗛鍘绘按鍗?
+        </button>
+      </div>
+      <WatermarkUploadSlot
+        mode={mode}
+        sourceAsset={sourceAsset}
+        previewUrl={previewUrl}
+        isUploading={uploading}
+        onSelect={selectSource}
+        onClear={clearSource}
+      />
+      <div className="watermark-composer-footer">
+        <span>{notice || (mode === "video" ? "瑙嗛浼氫繚鐣欏師闊抽骞跺皾璇曡嚜鐒朵慨澶嶆按鍗板尯鍩? : "鍥剧墖浼氳嚜鍔ㄤ慨澶嶆按鍗板尯鍩熷苟淇濇寔涓讳綋鍐呭")}</span>
+        <strong>{price}</strong>
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="寮€濮嬪幓姘村嵃">
+          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WatermarkRemovalView() {
+  const [tasks, setTasks] = useState([]);
+  const [options, setOptions] = useState(emptyWatermarkOptions);
+  const [credits, setCredits] = useState(null);
+  const [viewTab, setViewTab] = useState("home");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submittedTaskId, setSubmittedTaskId] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [modelData, taskData, creditData] = await Promise.all([
+          watermarkApi.getModels(),
+          watermarkApi.getTasks(),
+          watermarkApi.getCredits().catch(() => null)
+        ]);
+        if (!mounted) return;
+        setOptions(modelData);
+        setTasks(taskData);
+        setCredits(creditData);
+      } catch (error) {
+        if (mounted) setSubmitError(error.message || "鍔犺浇鍘绘按鍗板け璐?);
+      }
+    }
+    load();
+    const unsubscribe = watermarkApi.subscribe(() => {
+      watermarkApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
+      watermarkApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    });
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
+  const showCenterState = isSubmitting || submitError || submittedTask;
+  const visibleTasks = viewTab === "favorite"
+    ? tasks.filter((task) => task.favorite && String(task.id) !== String(submittedTaskId))
+    : viewTab === "recent"
+      ? tasks.filter((task) => String(task.id) !== String(submittedTaskId))
+      : [];
+  const showEmptyHero = viewTab === "home" && !showCenterState;
+  const showRecentEmpty = (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0;
+
+  async function createTask(payload) {
+    setSubmitError("");
+    setIsSubmitting(true);
+    setSubmittedTaskId(null);
+    setViewTab("home");
+    try {
+      const task = await watermarkApi.createTask(payload);
+      setSubmittedTaskId(task.id);
+      setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
+    } catch (error) {
+      setSubmitError(error.message || "鍒涘缓鍘绘按鍗颁换鍔″け璐?);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function deleteTask(id) {
+    await watermarkApi.deleteTask(id);
+    setTasks((current) => current.filter((task) => task.id !== id));
+    setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
+  }
+
+  async function toggleFavorite(id) {
+    const updated = await watermarkApi.toggleFavorite(id);
+    setTasks((current) => current.map((task) => String(task.id) === String(id) ? updated : task));
+  }
+
+  function repeatTask(task) {
+    createTask({
+      sourceAssetId: task.sourceAssetId,
+      model: task.model,
+      resolution: task.resolution,
+      prompt: task.prompt
+    });
+  }
+
+  return (
+    <section className="watermark-view-root">
+      <div className="image-filter-tabs watermark-filter-tabs">
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>涓婚〉</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
+          setViewTab("recent");
+          setSubmittedTaskId(null);
+        }}>鏈€杩戠敓鎴?/button>
+        <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
+          setViewTab("favorite");
+          setSubmittedTaskId(null);
+        }}>
+          <Star size={17} fill="#f8d545" color="#161616" />
+          鏀惰棌
+        </button>
+        {credits && <span className="credits-chip">绉垎 {credits.balance}</span>}
+      </div>
+      <div className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
+        {showEmptyHero && (
+          <div className="watermark-hero-empty">
+            <span className="watermark-hero-icon">
+              <Eraser size={36} />
+            </span>
+            <h1>鏅鸿兘鍘绘按鍗?/h1>
+            <p>涓婁紶鍥剧墖鎴栬棰戯紝AI 鏅鸿兘涓€閿幓闄ゆ按鍗?/p>
+          </div>
+        )}
+        {showCenterState && (
+          <WatermarkCenterState
+            task={submittedTask}
+            isSubmitting={isSubmitting && !submittedTask}
+            error={submitError}
+            onOpenRecent={() => {
+              setViewTab("recent");
+              setSubmittedTaskId(null);
+            }}
+          />
+        )}
+        {showRecentEmpty && (
+          <div className="watermark-recent-empty">
+            <Eraser size={24} />
+            <strong>{viewTab === "favorite" ? "鏆傛棤鏀惰棌缁撴灉" : "鏆傛棤鏈€杩戠敓鎴?}</strong>
+            <p>{viewTab === "favorite" ? "鏀惰棌鍚庣殑鍘绘按鍗扮粨鏋滀細鏄剧ず鍦ㄨ繖閲屻€? : "鐢熸垚瀹屾垚鐨勫浘鐗囨垨瑙嗛浼氫繚瀛樺湪杩欓噷銆?}</p>
+          </div>
+        )}
+        <div className={`watermark-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
+          {visibleTasks.map((task) => (
+            <WatermarkTaskCard
+              key={task.id}
+              task={task}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRepeat={repeatTask}
+            />
+          ))}
+        </div>
+      </div>
+      {viewTab === "home" && options.models.length > 0 && (
+        <WatermarkComposer
+          options={options}
+          onSubmit={createTask}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </section>
+  );
+}
+
+/** 鍚勫姛鑳芥ā鍧楅娆¤繘鍏ュ悗甯搁┗ DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
+function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
+  if (!visitedIds.has(id)) return null;
+  return (
+    <div
+      className="feature-module-keepalive"
+      style={{ display: activeNav === id ? "contents" : "none" }}
+      aria-hidden={activeNav !== id}
+      data-feature-module={id}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ImageFeaturePage({ initialNav, onOpenHome, authUser, onOpenAuth, onLogout }) {
+  const firstNav = initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
+  const isGuest = Boolean(authUser?.isGuest);
+  const [activeNav, setActiveNav] = useState(firstNav);
+  const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
+
+  useEffect(() => {
+    const next = initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
+    setActiveNav(next);
+    setVisitedIds((prev) => new Set(prev).add(next));
+  }, [initialNav]);
+
+  useEffect(() => {
+    if (featureNavIdSet.has(activeNav)) {
+      setVisitedIds((prev) => new Set(prev).add(activeNav));
+    }
+  }, [activeNav]);
+
+  const handleNavChange = useCallback((id) => {
+    if (id === "home") {
+      window.history.pushState(null, "", "#/home");
+      onOpenHome();
+      return;
+    }
+    const nextId = id;
+    if (featureNavIdSet.has(nextId)) {
+      window.history.pushState(null, "", `#/${nextId}`);
+    }
+    setActiveNav((current) => (current === nextId ? current : nextId));
+  }, [onOpenHome]);
+
+  return (
+    <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>
+      <FeatureSidebar activeNav={activeNav} onNavChange={handleNavChange} authUser={authUser} onOpenAuth={onOpenAuth} onLogout={onLogout} />
+      {isGuest && (
+        <div className="feature-guest-auth-actions" aria-label="娓稿璐﹀彿鍏ュ彛">
+          <button type="button" onClick={() => onOpenAuth("login")}>鐧诲綍</button>
+          <button type="button" onClick={() => onOpenAuth("register")}>娉ㄥ唽</button>
+        </div>
+      )}
+      <main className="feature-main">
+        <FeatureModuleKeepAlive id="image" activeNav={activeNav} visitedIds={visitedIds}>
+          <ImageGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="video" activeNav={activeNav} visitedIds={visitedIds}>
+          <VideoGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="chat" activeNav={activeNav} visitedIds={visitedIds}>
+          <ChatGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="digital-human" activeNav={activeNav} visitedIds={visitedIds}>
+          <DigitalHumanGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="image-digital-human" activeNav={activeNav} visitedIds={visitedIds}>
+          <ImageDigitalHumanView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="motion" activeNav={activeNav} visitedIds={visitedIds}>
+          <MotionTransferView splitResults />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="watermark" activeNav={activeNav} visitedIds={visitedIds}>
+          <WatermarkRemovalView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="voice" activeNav={activeNav} visitedIds={visitedIds}>
+          <VoiceSynthesisView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="voice-convert" activeNav={activeNav} visitedIds={visitedIds}>
+          <VoiceConvertView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="transcribe" activeNav={activeNav} visitedIds={visitedIds}>
+          <TranscribeView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="article" activeNav={activeNav} visitedIds={visitedIds}>
+          <ArticleGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="music" activeNav={activeNav} visitedIds={visitedIds}>
+          <MusicGenerationView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="replicate" activeNav={activeNav} visitedIds={visitedIds}>
+          <ReplicateView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="enhance" activeNav={activeNav} visitedIds={visitedIds}>
+          <EnhanceView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="remove-bg" activeNav={activeNav} visitedIds={visitedIds}>
+          <RemoveBgView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="video-voice" activeNav={activeNav} visitedIds={visitedIds}>
+          <VideoDubbingView />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive id="face-swap" activeNav={activeNav} visitedIds={visitedIds}>
+          <MotionTransferView navId="face-swap" api={faceSwapApi} copy={faceSwapCopy} splitResults />
+        </FeatureModuleKeepAlive>
+        {!["image", "video", "chat", "digital-human", "image-digital-human", "motion", "face-swap", "watermark", "voice", "voice-convert", "transcribe", "article", "music", "replicate", "enhance", "remove-bg", "video-voice"].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
+      </main>
+    </div>
+  );
+}
+
+function App() {
+  const [view, setView] = useState(getInitialView);
+  const [authUser, setAuthUser] = useState(null);
+  const [authDrawerMode, setAuthDrawerMode] = useState(null);
+
+  useEffect(() => {
+    const onPopState = () => setView(getRouteView());
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    authApi.me()
+      .then((state) => {
+        if (mounted) setAuthUser(state.user);
+      })
+      .catch(() => {
+        if (mounted) setAuthUser({ isGuest: true, displayName: "娓稿", username: "guest" });
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const openHome = useCallback(() => {
+    setView("home");
+  }, []);
+
+  const openFeature = useCallback((id = "image") => {
+    const nextId = featureNavIdSet.has(id) ? id : "image";
+    window.history.pushState(null, "", `#/${nextId}`);
+    setView(nextId);
+  }, []);
+
+  const finishAuth = useCallback((user) => {
+    setAuthUser(user);
+    setAuthDrawerMode(null);
+    window.sessionStorage.setItem(appEntryStorageKey, "1");
+    window.history.pushState(null, "", "#/home");
+    window.location.reload();
+  }, []);
+
+  const enterAsGuest = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Guest entry should still work when there is no active session to clear.
+    } finally {
+      window.sessionStorage.setItem(appEntryStorageKey, "1");
+      window.history.pushState(null, "", "#/home");
+      window.location.reload();
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } finally {
+      window.location.reload();
+    }
+  }, []);
+
+  const page = (() => {
+    if (view === "home") {
+      return <AppHome onOpenFeature={openFeature} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
+    }
+
+    if (featureNavIdSet.has(view)) {
+      return <ImageFeaturePage initialNav={view} onOpenHome={openHome} authUser={authUser} onOpenAuth={setAuthDrawerMode} onLogout={logout} />;
+    }
+
+    return <SplashHome onOpenAuth={setAuthDrawerMode} onGuestEnter={enterAsGuest} />;
+  })();
+
+  return (
+    <>
+      {page}
+      <AuthDrawer
+        mode={authDrawerMode}
+        onClose={() => setAuthDrawerMode(null)}
+        onModeChange={setAuthDrawerMode}
+        onSuccess={finishAuth}
+      />
+    </>
+  );
+}
+
+createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
