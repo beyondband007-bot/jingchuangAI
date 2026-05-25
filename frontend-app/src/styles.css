@@ -11204,6 +11204,35 @@ select {
   overflow: visible;
 }
 
+.image-results-feed .result-card.is-image-gallery.status-pending .result-preview,
+.image-results-feed .result-card.is-image-gallery.status-processing .result-preview,
+.image-results-feed .result-card.is-image-gallery.status-failed .result-preview,
+.image-results-feed .result-card.is-image-gallery .result-preview.is-placeholder-preview {
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 50% 42%, rgba(141, 99, 255, 0.24), transparent 34%),
+    #0f1015;
+}
+
+.image-results-feed .result-card.is-image-gallery .processing-state,
+.image-results-feed .result-card.is-image-gallery .failed-state {
+  min-height: 100%;
+  color: rgba(255, 255, 255, 0.72);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.04);
+  background-size: 220% 100%;
+  border: 0;
+}
+
+.image-results-feed .result-card.is-image-gallery .failed-state {
+  color: #ffd8d8;
+  background: rgba(255, 75, 113, 0.12);
+}
+
 .image-results-feed .result-card.is-image-gallery .result-preview img {
   width: 100%;
   height: auto;

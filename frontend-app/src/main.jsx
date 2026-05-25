@@ -1149,6 +1149,7 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
   const isProcessing = card.status === "pending" || card.status === "processing";
   const isFailed = card.status === "failed";
   const canPreview = Boolean(card.image && onPreview && !isProcessing && !isFailed);
+  const shouldShowPlaceholder = isProcessing || isFailed || !card.image;
 
   return (
     <article
@@ -1160,7 +1161,7 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
           <span className="model-tag">{card.model}</span>
         </div>
       )}
-      <div className={`result-preview ${card.grid ? "preview-grid" : ""}`}>
+      <div className={`result-preview ${card.grid ? "preview-grid" : ""} ${shouldShowPlaceholder ? "is-placeholder-preview" : ""}`}>
         {isProcessing && <div className="processing-state">生成中...</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
         {!isProcessing && !isFailed && card.image ? (
