@@ -651,6 +651,7 @@ async function createTables() {
       conversation_id BIGINT UNSIGNED NOT NULL,
       role ENUM('system','user','assistant') NOT NULL,
       content MEDIUMTEXT NOT NULL,
+      attachments_json JSON NULL,
       model_key VARCHAR(80) NULL,
       cost_points INT NOT NULL DEFAULT 0,
       kie_credits_consumed DECIMAL(12,4) NOT NULL DEFAULT 0,
@@ -662,6 +663,17 @@ async function createTables() {
       CONSTRAINT fk_chat_messages_conversation FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [chatMessageColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'chat_messages'`,
+    [config.db.database]
+  );
+  const chatMessageColumnNames = new Set(chatMessageColumns.map((column) => column.COLUMN_NAME));
+  if (!chatMessageColumnNames.has("attachments_json")) {
+    await pool.query("ALTER TABLE chat_messages ADD COLUMN attachments_json JSON NULL AFTER content");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS music_tasks (

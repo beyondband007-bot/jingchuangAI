@@ -9,6 +9,23 @@ function parseJson(value, fallback) {
   }
 }
 
+function fixMojibakeName(value) {
+  if (typeof value !== "string" || !/[ÃÂåæäçé]/.test(value)) return value;
+  try {
+    const decoded = Buffer.from(value, "latin1").toString("utf8");
+    return decoded && !decoded.includes("�") ? decoded : value;
+  } catch {
+    return value;
+  }
+}
+
+function parseAttachments(value) {
+  return parseJson(value, []).map((attachment) => ({
+    ...attachment,
+    originalName: fixMojibakeName(attachment.originalName)
+  }));
+}
+
 function formatChatModelName(name) {
   const displayName = name || "";
   if (displayName === "GPT 5.4") return "Codex5.4";
@@ -44,6 +61,7 @@ export function mapChatMessage(row) {
     conversationId: row.conversation_id,
     role: row.role,
     content: row.content,
+    attachments: parseAttachments(row.attachments_json),
     modelKey: row.model_key || null,
     status: row.status,
     points,

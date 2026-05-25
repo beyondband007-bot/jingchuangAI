@@ -10771,6 +10771,97 @@ select {
   border-color: rgba(168, 85, 247, 0.36) !important;
 }
 
+.chat-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.chat-message-bubble .chat-attachment-list {
+  margin-top: 10px;
+}
+
+.llm-composer .chat-attachment-list {
+  margin: 0 0 12px;
+}
+
+.chat-attachment-card {
+  display: inline-grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 7px;
+  max-width: min(210px, 100%);
+  min-height: 34px;
+  padding: 5px 6px;
+  color: #eef1f7;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+}
+
+.chat-attachment-card.is-static {
+  grid-template-columns: 22px minmax(0, 1fr);
+}
+
+.chat-attachment-preview {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  overflow: hidden;
+  color: #78a8ff;
+  background: rgba(120, 168, 255, 0.16);
+  border-radius: 5px;
+}
+
+.chat-attachment-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-attachment-meta {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.chat-attachment-meta strong,
+.chat-attachment-meta small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-attachment-meta strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chat-attachment-meta small {
+  color: rgba(238, 241, 247, 0.6);
+  font-size: 10px;
+}
+
+.chat-attachment-card button {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0;
+  color: rgba(238, 241, 247, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.chat-attachment-card button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
 .llm-composer.chat-composer {
   position: absolute;
   right: 58px;
@@ -10870,6 +10961,11 @@ select {
 }
 
 .llm-round:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.llm-square:disabled {
   cursor: not-allowed;
   opacity: 0.52;
 }

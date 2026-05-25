@@ -68,6 +68,7 @@ CREATE TABLE `chat_messages`  (
   `conversation_id` bigint UNSIGNED NOT NULL,
   `role` enum('system','user','assistant') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `content` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attachments_json` json NULL,
   `model_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `cost_points` int NOT NULL DEFAULT 0,
   `kie_credits_consumed` decimal(12, 4) NOT NULL DEFAULT 0.0000,

@@ -2331,12 +2331,42 @@ const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
 const chatContextRoles = new Set(["system", "user", "assistant"]);
 
 function toChatContext(messages) {
-  return messages
+  const usableMessages = messages
     .filter((message) => message.status !== "failed" && chatContextRoles.has(message.role) && message.content?.trim())
     .map((message) => ({
-      role: message.role,
+      ...message,
       content: message.content.trim()
     }));
+  const latestUserIndex = usableMessages.map((message) => message.role).lastIndexOf("user");
+
+  return usableMessages
+    .map((message) => ({
+      role: message.role,
+      content: message.content,
+      attachments: message.role === "user" && usableMessages.indexOf(message) === latestUserIndex
+        ? message.attachments || []
+        : []
+    }));
+}
+
+function toChatContextWithAttachments(messages) {
+  const usableMessages = messages
+    .filter((message) => (
+      message.status !== "failed" &&
+      chatContextRoles.has(message.role) &&
+      (message.content?.trim() || message.attachments?.length)
+    ))
+    .map((message) => ({
+      ...message,
+      content: message.content?.trim() || ""
+    }));
+  const latestUserIndex = usableMessages.map((message) => message.role).lastIndexOf("user");
+
+  return usableMessages.map((message, index) => ({
+    role: message.role,
+    content: message.content,
+    attachments: message.role === "user" && index === latestUserIndex ? message.attachments || [] : []
+  }));
 }
 
 function appendChatStreamChunk(current = "", chunk = "") {
@@ -2353,6 +2383,52 @@ function appendChatStreamChunk(current = "", chunk = "") {
   }
 
   return `${current}${chunk}`;
+}
+
+function formatAttachmentSize(bytes = 0) {
+  const size = Number(bytes || 0);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function ChatAttachmentCard({ attachment, onRemove }) {
+  const isImage = attachment.kind === "image" || String(attachment.mimeType || "").startsWith("image/");
+  return (
+    <div className={`chat-attachment-card ${isImage ? "is-image" : "is-file"} ${onRemove ? "" : "is-static"}`}>
+      <span className="chat-attachment-preview">
+        {isImage ? (
+          <img src={attachment.url} alt="" />
+        ) : (
+          <FileText size={15} />
+        )}
+      </span>
+      <span className="chat-attachment-meta">
+        <strong title={attachment.originalName}>{attachment.originalName || "附件"}</strong>
+        <small>{formatAttachmentSize(attachment.size)}</small>
+      </span>
+      {onRemove && (
+        <button type="button" onClick={onRemove} aria-label="移除附件">
+          <X size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ChatAttachmentList({ attachments = [], onRemove }) {
+  if (!attachments.length) return null;
+  return (
+    <div className="chat-attachment-list">
+      {attachments.map((attachment, index) => (
+        <ChatAttachmentCard
+          attachment={attachment}
+          key={`${attachment.id || attachment.url}-${index}`}
+          onRemove={onRemove ? () => onRemove(index) : null}
+        />
+      ))}
+    </div>
+  );
 }
 
 function ChatCanvas({ messages, isSubmitting, error }) {
@@ -2385,7 +2461,10 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                     <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
                   </>
                 ) : (
-                  message.content || (message.status === "streaming" ? "正在思考..." : "")
+                  <>
+                    {message.content || (message.status === "streaming" ? "正在思考..." : "")}
+                    <ChatAttachmentList attachments={message.attachments || []} />
+                  </>
                 )}
               </div>
               {message.status !== "failed" && message.points > 0 && (
@@ -2417,31 +2496,74 @@ function ChatCanvas({ messages, isSubmitting, error }) {
 
 function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange, reasoningEffort, onReasoningEffortChange }) {
   const [prompt, setPrompt] = useState("");
+  const [attachments, setAttachments] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
+  const fileInputRef = useRef(null);
 
   const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0];
-  const canSubmit = isReady && prompt.trim().length > 0 && model && !isSubmitting;
+  const hasContent = prompt.trim().length > 0 || attachments.length > 0;
+  const canSubmit = isReady && hasContent && model && !isSubmitting && !isUploading;
   const modelLabel = isReady ? selectedModel?.label || "Deepseek V4" : "模型加载中";
+
+  async function uploadFiles(files) {
+    const selectedFiles = Array.from(files || []);
+    if (!selectedFiles.length) return;
+    if (attachments.length + selectedFiles.length > 5) {
+      setNotice("最多只能上传 5 个附件。");
+      return;
+    }
+
+    setIsUploading(true);
+    setNotice("");
+    try {
+      const uploaded = [];
+      for (const file of selectedFiles) {
+        uploaded.push(await chatApi.uploadAttachment(file));
+      }
+      setAttachments((current) => [...current, ...uploaded]);
+    } catch (error) {
+      setNotice(error.message || "附件上传失败，请重试。");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function removeAttachment(index) {
+    setAttachments((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请输入内容后再发送。");
+      setNotice(isUploading ? "附件上传完成后再发送。" : "请输入内容或上传附件后再发送。");
       return;
     }
 
     onSubmit({
       content: prompt.trim(),
+      attachments,
       model,
       reasoningEffort
     });
     setPrompt("");
+    setAttachments([]);
     setNotice("");
   }
 
   return (
     <div className="llm-composer chat-composer" aria-label="大模型输入框">
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.pdf,.txt,.doc,.docx"
+        onChange={(event) => uploadFiles(event.target.files)}
+      />
+      <ChatAttachmentList attachments={attachments} onRemove={removeAttachment} />
       <textarea
         className="llm-input"
         value={prompt}
@@ -2459,6 +2581,15 @@ function ChatComposerBar({ options, onSubmit, isSubmitting, model, onModelChange
       />
       <div className="llm-toolbar">
         <div className="llm-left">
+          <button
+            className="llm-square"
+            type="button"
+            disabled={!isReady || isSubmitting || isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="上传附件"
+          >
+            {isUploading ? <Loader2 size={18} /> : <Plus size={20} />}
+          </button>
           <div className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}>
             <button className="llm-select" type="button" disabled={!isReady} onClick={() => setOpenMenu((current) => (current === "model" ? null : "model"))}>
               <span>{modelLabel}</span>
@@ -2564,7 +2695,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
     }
   }, [options, selectedModel, selectedReasoningEffort]);
 
-  async function sendChatMessage({ content, model, reasoningEffort }) {
+  async function sendChatMessage({ content, attachments = [], model, reasoningEffort }) {
     if (isGuest) {
       setSubmitError("请先登录");
       onOpenAuth?.("login");
@@ -2576,6 +2707,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
       id: `local-${localId}`,
       role: "user",
       content,
+      attachments,
       status: "completed"
     };
     const streamingMessage = {
@@ -2595,7 +2727,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
         conversationId,
         model,
         reasoningEffort,
-        messages: toChatContext(nextMessages)
+        messages: toChatContextWithAttachments(nextMessages)
       }, {
         onDelta: (delta) => {
           setMessages((current) => current.map((message) => (
