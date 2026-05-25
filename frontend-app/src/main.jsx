@@ -1,4 +1,4 @@
-﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿﻿﻿import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Bot,
@@ -2808,37 +2808,43 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
         <h1>大模型</h1>
         {credits && <span className="credits-chip">积分 {credits.balance}</span>}
       </div>
-      {conversations.length > 0 && (
-        <>
-          <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
-            <Plus size={16} />
-            新建对话
-          </button>
-          <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
-            <Layers size={17} />
-            历史
-            <span>{conversations.length}</span>
-          </button>
-        </>
-      )}
-      {isHistoryOpen && (
-        <ChatHistoryRail
-          conversations={conversations}
-          activeConversationId={conversationId}
-          onSelect={selectConversation}
-        />
-      )}
-      {isIntroState ? (
-        <div className="llm-intro-layout">
-          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
-          {composer}
+      <div className="chat-content-layout">
+        <div className="chat-dialog-column">
+          {isIntroState ? (
+            <div className="llm-intro-layout">
+              <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+              {composer}
+            </div>
+          ) : (
+            <>
+              <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
+              {composer}
+            </>
+          )}
         </div>
-      ) : (
-        <>
-          <ChatCanvas messages={messages} isSubmitting={isSubmitting} error={submitError} />
-          {composer}
-        </>
-      )}
+        <aside className="chat-actions-panel" aria-label="对话操作">
+          {conversations.length > 0 && (
+            <>
+              <button className="chat-new-conversation-button" type="button" onClick={startNewConversation} disabled={isSubmitting}>
+                <Plus size={16} />
+                新建对话
+              </button>
+              <button className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`} type="button" onClick={() => setIsHistoryOpen((value) => !value)}>
+                <Layers size={17} />
+                历史
+                <span>{conversations.length}</span>
+              </button>
+            </>
+          )}
+          {isHistoryOpen && (
+            <ChatHistoryRail
+              conversations={conversations}
+              activeConversationId={conversationId}
+              onSelect={selectConversation}
+            />
+          )}
+        </aside>
+      </div>
     </section>
   );
 }
