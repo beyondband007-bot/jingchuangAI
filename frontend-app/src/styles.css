@@ -4654,6 +4654,17 @@ a:hover {
   justify-content: flex-start;
 }
 
+.chat-message-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(640px, 76%);
+}
+
+.chat-message-row.user .chat-message-stack {
+  align-items: flex-end;
+}
+
 .chat-message-avatar {
   display: grid;
   flex: 0 0 34px;
@@ -4673,7 +4684,7 @@ a:hover {
 }
 
 .chat-message-bubble {
-  max-width: min(640px, 76%);
+  max-width: 100%;
   padding: 12px 14px;
   color: #172033;
   background: #f8fafc;
@@ -4689,6 +4700,15 @@ a:hover {
   color: #fff;
   background: #1677ff;
   border-color: #1677ff;
+}
+
+.chat-message-cost {
+  display: block;
+  margin-top: 4px;
+  padding: 0 2px;
+  color: #8a94a6;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .chat-message-bubble.is-loading {
@@ -7923,8 +7943,12 @@ a:hover {
     min-height: 520px;
   }
 
-  .chat-message-bubble {
+  .chat-message-stack {
     max-width: 86%;
+  }
+
+  .chat-message-bubble {
+    max-width: 100%;
     font-size: 14px;
   }
 
@@ -10727,6 +10751,10 @@ select {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
+.chat-message-cost {
+  color: #8d95a5;
+}
+
 .chat-message-row.user .chat-message-bubble {
   background: rgba(168, 85, 247, 0.22) !important;
   border-color: rgba(168, 85, 247, 0.36) !important;
@@ -11262,6 +11290,16 @@ section.image-gen-view .sowa-composer {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.26);
 }
 
+.image-generating-feed-state {
+  position: fixed;
+  top: 84px;
+  right: 32px;
+  left: 32px;
+  z-index: 110;
+  width: auto;
+  margin: 0;
+}
+
 .image-completed-notice {
   width: var(--feature-content-width);
   font: inherit;
@@ -11334,7 +11372,7 @@ section.image-gen-view .sowa-composer {
 }
 
 .image-results-feed.is-generating {
-  margin-top: 10px;
+  margin-top: 222px;
 }
 
 @keyframes imageGeneratingSpin {
@@ -11469,6 +11507,17 @@ section.image-gen-view .sowa-composer {
     justify-items: center;
     padding: 26px 18px;
     text-align: center;
+  }
+
+  .image-generating-feed-state {
+    top: 78px;
+    right: 14px;
+    left: 14px;
+    min-height: 170px;
+  }
+
+  .image-results-feed.is-generating {
+    margin-top: 202px;
   }
 
   .image-preview-lightbox {

@@ -1161,7 +1161,7 @@ function ResultCard({ card, onDelete, onFavorite, onRegenerate, onPreview, isExa
         </div>
       )}
       <div className={`result-preview ${card.grid ? "preview-grid" : ""}`}>
-        {isProcessing && <div className="processing-state">生成涓?..</div>}
+        {isProcessing && <div className="processing-state">生成中...</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
         {!isProcessing && !isFailed && card.image ? (
           card.grid ? (
@@ -1693,7 +1693,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       ratio: item.ratio,
       quality: item.quality,
       count: 1,
-      time: "绀轰緥",
+      time: "示例",
       price: item.price,
       prompt: item.label,
       image: item.src,
@@ -1867,7 +1867,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   }
 
   return (
-    <section className="image-gen-view video-gen-view-root">
+    <section className={`image-gen-view video-gen-view-root ${hasActiveGeneration ? "has-active-generation" : ""}`}>
       <div className="image-filter-tabs">
         <button className={filter === "inspiration" ? "selected" : ""} onClick={() => setFilter("inspiration")} type="button">
           <Sparkles size={17} />
@@ -2376,17 +2376,19 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 <Bot size={17} />
               </span>
             )}
-            <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
-              {message.status === "failed" ? (
-                <>
-                  <strong>这次没有回复成功</strong>
-                  <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
-                </>
-              ) : (
-                <>
-                  {message.content || (message.status === "streaming" ? "正在思考..." : "")}
-                  {message.points > 0 && <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>}
-                </>
+            <div className="chat-message-stack">
+              <div className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}>
+                {message.status === "failed" ? (
+                  <>
+                    <strong>这次没有回复成功</strong>
+                    <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
+                  </>
+                ) : (
+                  message.content || (message.status === "streaming" ? "正在思考..." : "")
+                )}
+              </div>
+              {message.status !== "failed" && message.points > 0 && (
+                <small className="chat-message-cost">{message.price || `${message.points} 积分`}</small>
               )}
             </div>
           </div>
@@ -2502,9 +2504,9 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   if (!conversations.length) return null;
 
   return (
-    <aside className="history-rail chat-history-rail" aria-label="AI 瀵硅瘽历史">
+    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
-        <span>历史瀵硅瘽</span>
+        <span>历史对话</span>
         <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
@@ -2516,7 +2518,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
             onClick={() => onSelect(conversation.id)}
           >
             <span>{conversation.title}</span>
-            <small>{conversation.model} 璺?{conversation.time}</small>
+            <small>{conversation.model} 于{conversation.time}</small>
           </button>
         ))}
       </div>
@@ -4575,7 +4577,7 @@ function WatermarkRemovalView() {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
+/** 各功能模块首次进入后常驻 DOM，仅切换 display，避免侧栏切换时卸载导致状态丢失。 */
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   if (!visitedIds.has(id)) return null;
   return (
