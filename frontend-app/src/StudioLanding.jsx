@@ -1,10 +1,8 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import studioLandingHtml from "./StudioLandingContent";
 
 export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterApp }) {
   const rootRef = useRef(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isVideoReady, setIsVideoReady] = useState(false);
 
   const handleClick = useCallback((event) => {
     const actionTarget = event.target.closest("[data-studio-action]");
@@ -25,88 +23,37 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     const root = rootRef.current;
     if (!root) return undefined;
 
-    const video = root.querySelector("[data-studio-video]");
-    if (!video) return undefined;
+    const burst = root.querySelector("[data-studio-burst-canvas]");
+    if (!burst) return undefined;
 
-    const firstScreen = root.querySelector(".first-screen");
-    const startTime = Number(video.dataset.startTime || 0);
-    let didSeekToStart = false;
-    let visibilityFrame = 0;
+    let cancelled = false;
+    let cleanupBurst = null;
+    const burstModuleUrl = "/new_page/assets/prismatic-burst.js";
+    const importPublicModule = new Function("url", "return import(url)");
 
-    const playVideo = () => {
-      video.play?.().catch(() => {});
-    };
-    const markReady = () => {
-      setIsVideoReady(true);
-      playVideo();
-    };
-    const syncStartTime = () => {
-      if (!Number.isFinite(startTime) || startTime <= 0 || didSeekToStart) {
-        return;
-      }
-      didSeekToStart = true;
-      try {
-        video.currentTime = startTime;
-      } catch {
-        // Some browsers reject early seeks before enough media data is buffered.
-      }
-    };
-    const syncVideoVisibility = () => {
-      visibilityFrame = 0;
-      const isHeroVisible = !firstScreen || firstScreen.getBoundingClientRect().bottom > 80;
-      if (isHeroVisible) {
-        playVideo();
-      } else {
-        video.pause?.();
-      }
-    };
-    const scheduleVideoVisibility = () => {
-      if (!visibilityFrame) {
-        visibilityFrame = requestAnimationFrame(syncVideoVisibility);
-      }
-    };
+    importPublicModule(burstModuleUrl)
+      .then(({ mountPrismaticBurst }) => {
+        if (cancelled || !root.isConnected) return;
 
-    video.addEventListener("loadedmetadata", syncStartTime);
-    video.addEventListener("loadeddata", markReady);
-    video.addEventListener("canplay", markReady);
-    video.addEventListener("seeked", markReady);
-    video.addEventListener("playing", markReady);
-
-    if (video.readyState >= 1) {
-      syncStartTime();
-    }
-    if (video.readyState >= 2) markReady();
-    video.load();
-    playVideo();
-    scheduleVideoVisibility();
-    let firstScreenObserver = null;
-    if (firstScreen && "IntersectionObserver" in window) {
-      firstScreenObserver = new IntersectionObserver((entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        if (entry.isIntersecting) {
-          playVideo();
-        } else {
-          video.pause?.();
-        }
-      }, { threshold: 0 });
-      firstScreenObserver.observe(firstScreen);
-    }
-    window.addEventListener("scroll", scheduleVideoVisibility, { passive: true });
-    document.addEventListener("scroll", scheduleVideoVisibility, { passive: true });
-    window.addEventListener("resize", scheduleVideoVisibility);
+        cleanupBurst = mountPrismaticBurst(burst, {
+          opacity: 0.96,
+          intensity: 2.2,
+          speed: 0.82,
+          distort: 1.08,
+          noiseAmount: 0.2,
+          rayCount: 13,
+        });
+        root.classList.add("is-video-ready");
+      })
+      .catch((error) => {
+        console.warn("Failed to start studio WebGL burst:", error);
+        root.classList.add("is-video-ready");
+      });
 
     return () => {
-      firstScreenObserver?.disconnect();
-      if (visibilityFrame) cancelAnimationFrame(visibilityFrame);
-      window.removeEventListener("scroll", scheduleVideoVisibility);
-      document.removeEventListener("scroll", scheduleVideoVisibility);
-      window.removeEventListener("resize", scheduleVideoVisibility);
-      video.removeEventListener("loadedmetadata", syncStartTime);
-      video.removeEventListener("loadeddata", markReady);
-      video.removeEventListener("canplay", markReady);
-      video.removeEventListener("seeked", markReady);
-      video.removeEventListener("playing", markReady);
+      cancelled = true;
+      root.classList.remove("is-video-ready");
+      cleanupBurst?.();
     };
   }, []);
 
@@ -128,12 +75,13 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     }
 
     resetPageScroll();
-    const loadFrame = requestAnimationFrame(() => setIsLoaded(true));
+    const loadFrame = requestAnimationFrame(() => root.classList.add("is-loaded"));
     window.addEventListener("pageshow", resetPageScroll);
 
     return () => {
       document.body.classList.remove("studio-landing-active");
       document.documentElement.classList.remove("studio-landing-active");
+      root.classList.remove("is-loaded");
       cancelAnimationFrame(loadFrame);
       window.removeEventListener("pageshow", resetPageScroll);
     };
@@ -147,7 +95,6 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     const firstScreen = root.querySelector(".first-screen");
     const heroShell = root.querySelector(".showcase-shell");
     const features = root.querySelector(".features");
-    const heroVideo = root.querySelector("[data-studio-video]");
     let lastScrollY = window.scrollY;
     let heroIntroProgress = 0;
     let pendingWheelX = 0;
@@ -276,25 +223,9 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
       element?.classList.add("reveal-visible");
     }
 
-    function syncHeroVideoPlayback() {
-      if (!heroVideo || !firstScreen) return;
-      if (firstScreen.getBoundingClientRect().bottom > 80) {
-        root.dataset.heroVideoState = "playing";
-        heroVideo.style.display = "";
-        heroVideo.autoplay = true;
-        heroVideo.play?.().catch(() => {});
-      } else {
-        root.dataset.heroVideoState = "paused";
-        heroVideo.autoplay = false;
-        heroVideo.pause?.();
-        heroVideo.style.display = "none";
-        window.setTimeout(() => {
-          if (root.dataset.heroVideoState === "paused") {
-            heroVideo.pause?.();
-            heroVideo.style.display = "none";
-          }
-        }, 120);
-      }
+    function syncHeroCanvasState() {
+      if (!firstScreen) return;
+      root.dataset.heroCanvasState = firstScreen.getBoundingClientRect().bottom > 80 ? "playing" : "paused";
     }
 
     function findScrollableAncestor(startNode) {
@@ -324,7 +255,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
         } else {
           scheduleRevealCheck();
         }
-        syncHeroVideoPlayback();
+        syncHeroCanvasState();
       }
     }
 
@@ -385,7 +316,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
             target.element.dataset.revealed = "true";
             target.onReveal(target.element);
           }
-          syncHeroVideoPlayback();
+          syncHeroCanvasState();
           observer.unobserve(entry.target);
         });
       }, {
@@ -406,7 +337,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
         revealFrame = requestAnimationFrame(() => {
           revealFrame = 0;
           revealVisibleTargets();
-          syncHeroVideoPlayback();
+          syncHeroCanvasState();
         });
       }
     }
@@ -496,7 +427,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
       syncNavFadeState();
       measureHeroVideoTarget();
       revealAfterScroll();
-      syncHeroVideoPlayback();
+      syncHeroCanvasState();
     };
     window.addEventListener("scroll", syncNavFadeState, { passive: true });
     window.addEventListener("scroll", revealAfterScroll, { passive: true });
@@ -528,7 +459,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
   return (
     <div
       ref={rootRef}
-      className={`studio-landing ${isLoaded ? "is-loaded" : ""} ${isVideoReady ? "is-video-ready" : ""}`}
+      className="studio-landing"
       onClick={handleClick}
       dangerouslySetInnerHTML={{ __html: studioLandingHtml }}
     />

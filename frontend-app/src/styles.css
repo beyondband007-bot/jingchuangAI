@@ -1,4 +1,4 @@
-* {
+﻿* {
   box-sizing: border-box;
 }
 
@@ -8433,7 +8433,7 @@ a:hover {
 }
 
 /* ============================================
-   video-dubbing — 视频配音功能
+   video-dubbing 鈥?瑙嗛閰嶉煶鍔熻兘
    ============================================ */
 
 .video-dub-view-root {
@@ -12809,7 +12809,7 @@ textarea:focus-visible {
   box-shadow: 0 16px 34px rgba(93, 30, 224, 0.34);
 }
 
-/* 余额大卡片 */
+/* 浣欓澶у崱鐗?*/
 .assets-balance-hero {
   display: flex;
   align-items: center;
@@ -12869,7 +12869,7 @@ textarea:focus-visible {
   box-shadow: 0 6px 18px rgba(90, 44, 252, 0.3);
 }
 
-/* 标签页 */
+/* 鏍囩椤?*/
 .assets-tabs-wrapper {
   max-width: 1120px;
   margin: 0 auto 16px;
@@ -12911,7 +12911,7 @@ textarea:focus-visible {
   box-shadow: 0 4px 12px rgba(93, 30, 224, 0.24);
 }
 
-/* 面板容器 */
+/* 闈㈡澘瀹瑰櫒 */
 .assets-recharge-panel,
 .assets-transactions-panel {
   max-width: 1120px;
@@ -12936,7 +12936,7 @@ textarea:focus-visible {
   color: var(--brand-primary);
 }
 
-/* 预设金额 */
+/* 棰勮閲戦 */
 .assets-presets {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -12977,7 +12977,7 @@ textarea:focus-visible {
   font-weight: 500;
 }
 
-/* 自定义金额 */
+/* 鑷畾涔夐噾棰?*/
 .assets-custom-amount {
   display: grid;
   grid-template-columns: auto minmax(120px, 180px) auto;
@@ -13016,7 +13016,7 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
-/* 错误提示 */
+/* 閿欒鎻愮ず */
 .assets-error {
   margin: 0 0 14px;
   padding: 10px 14px;
@@ -13027,7 +13027,7 @@ textarea:focus-visible {
   font-size: 13px;
 }
 
-/* 主按钮 */
+/* 涓绘寜閽?*/
 .assets-primary-action {
   display: inline-flex;
   align-items: center;
@@ -13058,7 +13058,7 @@ textarea:focus-visible {
   opacity: 0.72;
 }
 
-/* 订单列表区域 */
+/* 璁㈠崟鍒楄〃鍖哄煙 */
 .assets-orders-section {
   margin-top: 24px;
   padding-top: 24px;
@@ -13119,7 +13119,7 @@ textarea:focus-visible {
   background: var(--success-soft);
 }
 
-/* 空态 */
+/* 绌烘€?*/
 .assets-empty-state {
   padding: 32px;
   color: var(--text-faint);
@@ -13130,7 +13130,7 @@ textarea:focus-visible {
   font-size: 14px;
 }
 
-/* 交易记录表格 */
+/* 浜ゆ槗璁板綍琛ㄦ牸 */
 .assets-transactions-table {
   display: grid;
   gap: 2px;
@@ -13183,7 +13183,7 @@ textarea:focus-visible {
   color: var(--text-muted);
 }
 
-/* 支付弹窗 */
+/* 鏀粯寮圭獥 */
 .assets-payment-backdrop {
   position: fixed;
   inset: 0;
@@ -13249,7 +13249,7 @@ textarea:focus-visible {
   font-style: normal;
 }
 
-/* 响应式 */
+/* 鍝嶅簲寮?*/
 @media (max-width: 900px) {
   .assets-view-root {
     padding: 20px 14px;
@@ -13506,13 +13506,12 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   background: #000000;
 }
 
-.studio-landing .first-screen-bg video {
+.studio-landing .first-screen-bg canvas {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  object-position: center;
-  filter: brightness(0.9) contrast(1.22) saturate(1.38);
+  opacity: 0.98;
+  mix-blend-mode: lighten;
 }
 
 .studio-landing .first-screen-bg::after {
@@ -15658,29 +15657,24 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   }
 }
 
-.studio-landing .first-screen-poster {
+.studio-landing .studio-prismatic-canvas {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  filter: brightness(0.9) contrast(1.22) saturate(1.38);
-  opacity: 1;
-  transition: opacity 420ms ease;
-}
-
-.studio-landing .studio-hero-video {
+  overflow: hidden;
   opacity: 0;
   transition: opacity 520ms ease;
 }
 
-.studio-landing.is-video-ready .studio-hero-video {
-  opacity: 1;
+.studio-landing .studio-prismatic-canvas canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0.96;
+  mix-blend-mode: lighten;
 }
 
-.studio-landing.is-video-ready .first-screen-poster {
-  opacity: 0;
+.studio-landing.is-video-ready .studio-prismatic-canvas {
+  opacity: 1;
 }
 
 .studio-landing .first-screen {

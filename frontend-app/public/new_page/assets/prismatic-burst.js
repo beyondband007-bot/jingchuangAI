@@ -1,315 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#00000b">
-  <title>Facemini.com</title>
-  <style>
-    html,
-    body {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #00000b;
-      color: #fff;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: inherit;
-    }
-
-    body {
-      min-height: 100vh;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    #brand-prelude {
-      position: fixed;
-      inset: 0;
-      z-index: 6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      isolation: isolate;
-      background:
-        radial-gradient(circle at center, #0c0e22 0%, #090b19 34%, #030511 68%, #00000b 100%);
-      cursor: pointer;
-      pointer-events: auto;
-      opacity: 1;
-      transition: opacity 1100ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 1100ms;
-      overflow: hidden;
-    }
-
-    #brand-prelude.is-hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    #brand-prelude-burst {
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-      opacity: 0;
-      animation: brand-prelude-burst-fade-in 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    #brand-prelude-burst::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at center, rgba(12, 14, 34, 0.12) 0%, rgba(4, 4, 16, 0.22) 58%, rgba(0, 0, 11, 0.3) 100%);
-      pointer-events: none;
-    }
-
-    #brand-prelude-burst canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    @keyframes brand-prelude-burst-fade-in {
-      0% { opacity: 0; }
-      100% { opacity: 1; }
-    }
-
-    .brand-prelude-text {
-      position: relative;
-      z-index: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      max-width: calc(100vw - 72px);
-      height: auto;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 96px;
-      font-weight: 600;
-      line-height: 1;
-      letter-spacing: 0;
-      white-space: nowrap;
-      transform: scale(1);
-      opacity: 0;
-      will-change: transform, opacity;
-      transition: transform 1250ms cubic-bezier(0.16, 1, 0.3, 1), opacity 900ms cubic-bezier(0.32, 0, 0.08, 1);
-    }
-
-    .brand-prelude-text.is-visible {
-      opacity: 1;
-    }
-
-    .brand-prelude-text.is-clicked {
-      animation: brand-prelude-click-out 1120ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-      pointer-events: none;
-    }
-
-    .brand-prelude-char {
-      display: inline-block;
-      position: relative;
-      opacity: 0;
-      transform: translateY(34px);
-      background: linear-gradient(90deg, #5A2CFC 0%, #D8DEFF 100%);
-      background-repeat: no-repeat;
-      background-size: var(--brand-word-width, 100%) 100%;
-      background-position: calc(var(--brand-char-left, 0px) * -1) 0;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: transparent;
-      will-change: transform, opacity;
-      transition: transform 820ms cubic-bezier(0.22, 1, 0.36, 1), opacity 760ms cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .brand-prelude-char::after {
-      content: attr(data-char);
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-      pointer-events: none;
-      white-space: pre;
-      opacity: 0;
-      color: transparent;
-      -webkit-text-stroke: 1px rgba(255, 255, 255, 0.5);
-      text-shadow: none;
-      transition: opacity 220ms ease;
-    }
-
-    .brand-prelude-char::before {
-      content: attr(data-char);
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: -1;
-      pointer-events: none;
-      white-space: pre;
-      opacity: 0;
-      background-image: linear-gradient(90deg, rgba(90, 44, 252, 0.52) 0%, rgba(216, 222, 255, 0.62) 100%);
-      background-repeat: no-repeat;
-      background-size: var(--brand-word-width, 100%) 100%;
-      background-position: calc(var(--brand-char-left, 0px) * -1) 0;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      color: transparent;
-      filter: blur(24px);
-      transform: scale(0.88);
-      transition: opacity 420ms ease, transform 1100ms cubic-bezier(0.22, 1, 0.36, 1), filter 900ms ease;
-    }
-
-    .brand-prelude-char.is-visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .brand-prelude-text.is-ready:hover .brand-prelude-char::before {
-      opacity: 1;
-      filter: blur(32px);
-      transform: scale(1.18);
-      animation: brand-prelude-glow-breathe 2200ms ease-in-out infinite;
-    }
-
-    .brand-prelude-text.is-ready:hover .brand-prelude-char::after {
-      opacity: 1;
-    }
-
-    @keyframes brand-prelude-glow-breathe {
-      0% {
-        opacity: 0.62;
-        transform: scale(1.02);
-        filter: blur(24px);
-      }
-      50% {
-        opacity: 1;
-        transform: scale(1.22);
-        filter: blur(34px);
-      }
-      100% {
-        opacity: 0.72;
-        transform: scale(1.08);
-        filter: blur(28px);
-      }
-    }
-
-    @keyframes brand-prelude-click-out {
-      0% {
-        opacity: 1;
-        transform: scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: scale(2.05);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .brand-prelude-text {
-        max-width: calc(100vw - 36px);
-        font-size: 46px;
-      }
-    }
-
-    @media (min-width: 641px) and (max-width: 960px) {
-      .brand-prelude-text {
-        font-size: 72px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <main id="brand-prelude" aria-label="Facemini.com">
-    <div id="brand-prelude-burst" aria-hidden="true"></div>
-    <div class="brand-prelude-text" data-brand-text="Facemini.com" aria-label="Facemini.com">Facemini.com</div>
-  </main>
-  <script>
-    (() => {
-      const prelude = document.getElementById("brand-prelude");
-      const textNode = document.querySelector(".brand-prelude-text");
-      const brandCharStaggerMs = 65;
-      const brandPreludeDelayMs = 120;
-      const brandClickOutDelayMs = 720;
-      let brandCharTimers = [];
-      let clickEffectStarted = false;
-      let navigationStarted = false;
-
-      const clearBrandCharTimers = () => {
-        brandCharTimers.forEach((timer) => window.clearTimeout(timer));
-        brandCharTimers = [];
-      };
-
-      const prepareBrandPrelude = () => {
-        if (!textNode) return [];
-        const text = textNode.getAttribute("data-brand-text") || textNode.textContent || "";
-        textNode.textContent = "";
-        const chars = Array.from(text).map((character) => {
-          const span = document.createElement("span");
-          span.className = "brand-prelude-char";
-          span.textContent = character === " " ? "\u00A0" : character;
-          span.setAttribute("data-char", character === " " ? "\u00A0" : character);
-          textNode.appendChild(span);
-          return span;
-        });
-        const wordWidth = textNode.getBoundingClientRect().width;
-        textNode.style.setProperty("--brand-word-width", `${wordWidth}px`);
-        chars.forEach((char) => {
-          char.style.setProperty("--brand-char-left", `${char.offsetLeft}px`);
-        });
-        return chars;
-      };
-
-      const runBrandPrelude = () => {
-        const chars = prepareBrandPrelude();
-        if (!textNode || !chars.length) return;
-        clearBrandCharTimers();
-        textNode.classList.remove("is-ready");
-        textNode.classList.add("is-visible");
-        chars.forEach((char, index) => {
-          const timer = window.setTimeout(() => {
-            char.classList.add("is-visible");
-          }, brandPreludeDelayMs + index * brandCharStaggerMs);
-          brandCharTimers.push(timer);
-        });
-        const readyTimer = window.setTimeout(() => {
-          textNode.classList.add("is-ready");
-        }, brandPreludeDelayMs + (chars.length - 1) * brandCharStaggerMs + 860);
-        brandCharTimers.push(readyTimer);
-      };
-
-      const playClickEffect = () => {
-        if (clickEffectStarted) return;
-        clickEffectStarted = true;
-        textNode?.classList.add("is-clicked");
-      };
-
-      runBrandPrelude();
-      const openStudio = (event) => {
-        if (navigationStarted || event.defaultPrevented || event.button > 0) return;
-        event.preventDefault();
-        event.stopPropagation();
-        navigationStarted = true;
-        playClickEffect();
-        window.setTimeout(() => {
-          prelude?.classList.add("is-hidden");
-          window.location.href = "./studio.html";
-        }, brandClickOutDelayMs);
-      };
-      window.addEventListener("pointerdown", playClickEffect, { once: true });
-      window.addEventListener("click", openStudio, true);
-      window.addEventListener("pagehide", clearBrandCharTimers, { once: true });
-    })();
-  </script>
-    <script type="module" data-brand-prelude-burst-script>
-      import { Renderer, Program, Mesh, Triangle, Texture } from "./assets/vendor/ogl.mjs";
+import { Renderer, Program, Mesh, Triangle, Texture } from "./vendor/ogl.mjs";
 
       const vertexShader = `#version 300 es
 in vec2 position;
@@ -500,10 +189,11 @@ void main(){
         ];
       };
 
-      try {
-        const burstContainer = document.getElementById("brand-prelude-burst");
+
+export function mountPrismaticBurst(burstContainer, options = {}) {
+  try {
         if (!burstContainer) {
-          throw new Error("Missing #brand-prelude-burst container.");
+          throw new Error("Missing PrismaticBurst container.");
         }
 
         const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -522,7 +212,7 @@ void main(){
         gl.canvas.style.inset = "0";
         gl.canvas.style.width = "100%";
         gl.canvas.style.height = "100%";
-        gl.canvas.style.opacity = "0.96";
+        gl.canvas.style.opacity = String(options.opacity ?? 0.96);
         gl.canvas.style.mixBlendMode = "lighten";
         burstContainer.appendChild(gl.canvas);
 
@@ -545,23 +235,23 @@ void main(){
           uniforms: {
             uResolution: { value: [1, 1] },
             uTime: { value: 0 },
-            uIntensity: { value: 2.2 },
-            uSpeed: { value: 0.82 },
+            uIntensity: { value: options.intensity ?? 2.2 },
+            uSpeed: { value: options.speed ?? 0.82 },
             uAnimType: { value: 1 },
             uMouse: { value: [0.5, 0.5] },
             uColorCount: { value: 0 },
-            uDistort: { value: 1.08 },
+            uDistort: { value: options.distort ?? 1.08 },
             uOffset: { value: [0, 0] },
             uGradient: { value: gradientTexture },
-            uNoiseAmount: { value: 0.2 },
-            uRayCount: { value: 13 }
+            uNoiseAmount: { value: options.noiseAmount ?? 0.2 },
+            uRayCount: { value: options.rayCount ?? 13 }
           }
         });
 
         const triangle = new Triangle(gl);
         const mesh = new Mesh(gl, { geometry: triangle, program });
 
-        const colors = ["#5A2CFC", "#AD6CFC", "#D8DEFF"];
+        const colors = options.colors ?? ["#5A2CFC", "#AD6CFC", "#D8DEFF"];
         const gradientData = new Uint8Array(colors.length * 4);
         colors.forEach((hex, index) => {
           const [r, g, b] = hexToRgb01(hex);
@@ -674,15 +364,14 @@ void main(){
           }
         };
 
-        window.addEventListener("pagehide", cleanup, { once: true });
-
         resize();
         updateOffset();
+        renderer.render({ scene: mesh });
         rafId = window.requestAnimationFrame(tick);
-      } catch (error) {
-        console.warn("PrismaticBurst fallback active:", error);
-      }
-    </script>
+        return cleanup;
 
-</body>
-</html>
+  } catch (error) {
+    console.warn("PrismaticBurst fallback active:", error);
+    return () => {};
+  }
+}
