@@ -80,7 +80,7 @@
 }
 
 .voice-conversion-workbench__upload-box {
-  min-height: 260px;
+  min-height: 290px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -293,6 +293,21 @@
 .voice-conversion-workbench__side-head span {
   color: #a875ff;
   font-size: 13px;
+}
+
+.voice-conversion-workbench__advanced-field {
+  display: grid;
+  gap: 6px;
+}
+
+.voice-conversion-workbench__advanced-field + .voice-conversion-workbench__advanced-field {
+  margin-top: 14px;
+}
+
+.voice-conversion-workbench__advanced-field > span {
+  color: #8f9ab8;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .voice-conversion-workbench__preset {

@@ -1,5 +1,6 @@
-import React from "react";
-import { Download, FileAudio, Mic2, Play, SlidersHorizontal } from "lucide-react";
+import React, { useState } from "react";
+import { Download, FileAudio, Mic2, Play } from "lucide-react";
+import { CustomSelect } from "../../components/CustomSelect";
 import "./voiceConversionWorkbenchCard.css";
 
 const presetVoices = [
@@ -7,6 +8,30 @@ const presetVoices = [
   { name: "磁性男声", desc: "低沉稳定，适合解说与课程", active: false },
   { name: "少年音色", desc: "清爽灵动，适合角色配音", active: false },
   { name: "主播音色", desc: "标准咬字，适合直播与口播", active: false }
+];
+
+const voiceConversionModelOptions = [
+  { value: "voice-clone-pro", label: "Voice Clone Pro" },
+  { value: "voice-clone-studio", label: "Voice Clone Studio" },
+  { value: "voice-clone-fast", label: "Voice Clone Fast" }
+];
+
+const voiceConversionDenoiseOptions = [
+  { value: "low", label: "低" },
+  { value: "medium", label: "中等" },
+  { value: "high", label: "高" },
+  { value: "max", label: "最高" }
+];
+
+const voiceConversionEmotionOptions = [
+  { value: "on", label: "开启" },
+  { value: "off", label: "关闭" }
+];
+
+const voiceConversionFormatOptions = [
+  { value: "mp3", label: "mp3" },
+  { value: "m4a", label: "m4a" },
+  { value: "wav", label: "wav" }
 ];
 
 function UploadBox({ icon: Icon, title, note, fileState, accept, isUploading, onPick, onClear, tone = "default" }) {
@@ -87,6 +112,11 @@ export function VoiceConversionWorkbenchCard({
   onConvert,
   onDownloadResult
 }) {
+  const [advancedModel, setAdvancedModel] = useState(voiceConversionModelOptions[0].value);
+  const [denoiseLevel, setDenoiseLevel] = useState(voiceConversionDenoiseOptions[1].value);
+  const [preserveEmotion, setPreserveEmotion] = useState(voiceConversionEmotionOptions[0].value);
+  const [outputFormat, setOutputFormat] = useState(voiceConversionFormatOptions[0].value);
+
   return (
     <section className="voice-conversion-workbench">
       <div className="voice-conversion-workbench__shell">
@@ -237,14 +267,48 @@ export function VoiceConversionWorkbenchCard({
 
           <div className="voice-conversion-workbench__side-card">
             <div className="voice-conversion-workbench__side-head">
-              <b><SlidersHorizontal size={16} /> 高级设置</b>
+              <b>高级设置</b>
             </div>
-            {["转换模型：Voice Clone Pro", "降噪强度：中等", "保留情绪：开启", "输出格式：MP3"].map((item) => (
-              <div className="voice-conversion-workbench__select" key={item}>
-                {item}
-                <span>∨</span>
-              </div>
-            ))}
+            <label className="voice-conversion-workbench__advanced-field">
+              <span>模型</span>
+              <CustomSelect
+                className="control-select"
+                ariaLabel="转换模型"
+                value={advancedModel}
+                onChange={setAdvancedModel}
+                options={voiceConversionModelOptions}
+              />
+            </label>
+            <label className="voice-conversion-workbench__advanced-field">
+              <span>降噪强度</span>
+              <CustomSelect
+                className="control-select"
+                ariaLabel="降噪强度"
+                value={denoiseLevel}
+                onChange={setDenoiseLevel}
+                options={voiceConversionDenoiseOptions}
+              />
+            </label>
+            <label className="voice-conversion-workbench__advanced-field">
+              <span>保留情绪</span>
+              <CustomSelect
+                className="control-select"
+                ariaLabel="保留情绪"
+                value={preserveEmotion}
+                onChange={setPreserveEmotion}
+                options={voiceConversionEmotionOptions}
+              />
+            </label>
+            <label className="voice-conversion-workbench__advanced-field">
+              <span>输出格式</span>
+              <CustomSelect
+                className="control-select"
+                ariaLabel="输出格式"
+                value={outputFormat}
+                onChange={setOutputFormat}
+                options={voiceConversionFormatOptions}
+              />
+            </label>
           </div>
         </aside>
       </div>

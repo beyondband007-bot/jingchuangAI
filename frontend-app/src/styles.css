@@ -12087,7 +12087,7 @@ textarea:focus-visible {
   width: max(100%, 120px);
 }
 
-.feature-page-shell .custom-select .custom-select-trigger {
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-trigger {
   color: var(--text-primary) !important;
   background:
     radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
@@ -12098,7 +12098,7 @@ textarea:focus-visible {
     0 12px 30px rgba(0, 0, 0, 0.18) !important;
 }
 
-.feature-page-shell .custom-select .custom-select-menu {
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu {
   background:
     radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.22), transparent 46%),
     linear-gradient(180deg, rgba(35, 35, 37, 0.98), rgba(25, 25, 26, 0.98)) !important;
@@ -12108,20 +12108,20 @@ textarea:focus-visible {
     0 24px 60px rgba(0, 0, 0, 0.48) !important;
 }
 
-.feature-page-shell .custom-select .custom-select-menu button {
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button {
   color: #ffffff !important;
   border: 1px solid transparent !important;
 }
 
-.feature-page-shell .custom-select .custom-select-menu button span,
-.feature-page-shell .custom-select .custom-select-menu button svg {
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button span,
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button svg {
   color: #ffffff !important;
   opacity: 1 !important;
 }
 
-.feature-page-shell .custom-select .custom-select-menu button:hover,
-.feature-page-shell .custom-select .custom-select-menu button:focus-visible,
-.feature-page-shell .custom-select .custom-select-menu button.is-selected {
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button:hover,
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button:focus-visible,
+.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button.is-selected {
   color: #fff !important;
   background: rgba(141, 99, 255, 0.18) !important;
   border-color: rgba(141, 99, 255, 0.26) !important;
