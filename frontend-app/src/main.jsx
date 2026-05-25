@@ -1753,6 +1753,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     return "idle_examples";
   }, [isSubmitting, selectedTask, submitError]);
   const showHistory = Boolean(submittedTaskId || selectedTaskId || isSubmitting);
+  const showCompletedNotice = Boolean(!hasActiveGeneration && submittedTask?.status === "completed");
   const isGuest = Boolean(authUser?.isGuest);
 
   function requestLoginForGeneration() {
@@ -1867,7 +1868,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   }
 
   return (
-    <section className={`image-gen-view video-gen-view-root ${hasActiveGeneration ? "has-active-generation" : ""}`}>
+    <section className={`image-gen-view video-gen-view-root ${hasActiveGeneration ? "has-active-generation" : ""} ${showCompletedNotice ? "has-completed-notice" : ""}`}>
       <div className="image-filter-tabs">
         <button className={filter === "inspiration" ? "selected" : ""} onClick={() => setFilter("inspiration")} type="button">
           <Sparkles size={17} />
@@ -1883,7 +1884,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
       {hasActiveGeneration && <ImageGeneratingFeedState prompt={activeGenerationTask?.prompt || activePrompt} />}
-      {!hasActiveGeneration && submittedTask?.status === "completed" && (
+      {showCompletedNotice && (
         <ImageCompletedNotice task={submittedTask} onReveal={revealGeneratedTask} />
       )}
       {galleryItems.length ? (
