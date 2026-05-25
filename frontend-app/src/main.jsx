@@ -8,6 +8,7 @@
 } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  CircleAlert,
   Bot,
   Box,
   ChevronDown,
@@ -3394,6 +3395,7 @@ function ChatComposerBar({
   isSubmitting,
   model,
   onModelChange,
+  onModelSwitchNotice,
   reasoningEffort,
   onReasoningEffortChange,
 }) {
@@ -3545,6 +3547,9 @@ function ChatComposerBar({
                   key={item.value}
                   className={item.value === model ? "is-selected" : ""}
                   onClick={() => {
+                    if (item.value !== model) {
+                      onModelSwitchNotice?.();
+                    }
                     onModelChange(item.value);
                     setOpenMenu(null);
                   }}
@@ -3624,6 +3629,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [modelSwitchNotice, setModelSwitchNotice] = useState("");
   const isGuest = Boolean(authUser?.isGuest);
   const historyPanelWidth = useMemo(() => {
     if (!conversations.length) return 120;
@@ -3655,6 +3661,20 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!modelSwitchNotice) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setModelSwitchNotice("");
+    }, 2600);
+
+    return () => window.clearTimeout(timer);
+  }, [modelSwitchNotice]);
+
+  const showModelSwitchNotice = useCallback(() => {
+    setModelSwitchNotice("对话中更换模型可能会导致输出不稳定");
   }, []);
 
   useEffect(() => {
@@ -3787,6 +3807,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
       isSubmitting={isSubmitting}
       model={selectedModel}
       onModelChange={setSelectedModel}
+      onModelSwitchNotice={showModelSwitchNotice}
       reasoningEffort={selectedReasoningEffort}
       onReasoningEffortChange={setSelectedReasoningEffort}
     />
@@ -3803,6 +3824,14 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
+      {modelSwitchNotice && (
+        <div className="chat-floating-notice" role="status" aria-live="polite">
+          <span className="chat-floating-notice-icon">
+            <CircleAlert size={16} />
+          </span>
+          <span>{modelSwitchNotice}</span>
+        </div>
+      )}
       <div className="chat-content-layout">
         <div className="chat-dialog-column">
           {isIntroState ? (
