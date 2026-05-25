@@ -1,37 +1,8 @@
 import React from "react";
-import { ChevronDown, ChevronRight, FileAudio, FileText, Info, Play, Sparkles, Wand2 } from "lucide-react";
+import { ChevronDown, FileAudio, FileText, Info, Wand2 } from "lucide-react";
 import "./aiMusicGenerationWorkbenchCard.css";
 
 const styleTags = ["流行", "电子", "嘻哈", "古典", "国风", "轻音乐", "摇滚", "爵士"];
-
-const presetCards = [
-  { title: "温暖治愈", desc: "轻柔舒缓，温暖治愈，适合放松与陪伴", accent: "cover-1" },
-  { title: "动感流行", desc: "节奏明快，活力四射，适合运动与派对", accent: "cover-2" },
-  { title: "史诗电影", desc: "磅礴大气，情绪丰富，适合影视配乐", accent: "cover-3" },
-  { title: "国风古韵", desc: "古典韵味，悠扬婉转，适合传统文化", accent: "cover-4" }
-];
-
-function PresetCard({ item, index, onUse }) {
-  return (
-    <button className={`ai-music-workbench__preset ${index === 0 ? "is-active" : ""}`} type="button" onClick={() => onUse(item)}>
-      <span className={`ai-music-workbench__preset-cover ${item.accent}`} />
-      <span className="ai-music-workbench__preset-copy">
-        <strong>{item.title}</strong>
-        <small>{item.desc}</small>
-      </span>
-      <span className="ai-music-workbench__play"><Play size={15} fill="currentColor" /></span>
-    </button>
-  );
-}
-
-function SelectRow({ label, value }) {
-  return (
-    <div className="ai-music-workbench__select-row">
-      <span>{label}</span>
-      <button type="button">{value}<ChevronDown size={16} /></button>
-    </div>
-  );
-}
 
 export function AiMusicGenerationWorkbenchCard({
   prompt,
@@ -47,7 +18,6 @@ export function AiMusicGenerationWorkbenchCard({
   onToggleInstrumental,
   onToggleLyricsOptimizer,
   onGenerate,
-  onUsePreset,
   onUseStyleTag,
   onDownloadMp3,
   onDownloadLyrics
@@ -137,36 +107,6 @@ export function AiMusicGenerationWorkbenchCard({
             </div>
           ) : null}
         </section>
-
-        <aside className="ai-music-workbench__side">
-          <section className="ai-music-workbench__card">
-            <div className="ai-music-workbench__panel-title">
-              <h3>风格预设</h3>
-              <span>更多预设 <ChevronRight size={14} /></span>
-            </div>
-            {presetCards.map((item, index) => (
-              <PresetCard key={item.title} item={item} index={index} onUse={onUsePreset} />
-            ))}
-          </section>
-
-          <section className="ai-music-workbench__card">
-            <div className="ai-music-workbench__panel-title">
-              <h3>高级设置</h3>
-              <ChevronDown size={16} />
-            </div>
-            <SelectRow label="音乐时长" value="3:00" />
-            <SelectRow label="BPM" value="自动" />
-            <SelectRow label="调式 (Key)" value="自动" />
-            <SelectRow label="乐器偏好" value="自动匹配" />
-            <div className="ai-music-workbench__tip">
-              <Sparkles size={18} />
-              <div>
-                <b>创作小贴士</b>
-                <p>描述越具体，AI 生成的音乐越符合预期。可添加情绪、场景、乐器和节奏信息。</p>
-              </div>
-            </div>
-          </section>
-        </aside>
       </div>
     </section>
   );
