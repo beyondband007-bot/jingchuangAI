@@ -3624,6 +3624,16 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const isGuest = Boolean(authUser?.isGuest);
+  const historyPanelWidth = useMemo(() => {
+    if (!conversations.length) return 120;
+
+    const longestTitleLength = conversations.reduce((longest, item) => {
+      const titleLength = [...String(item.title || "")].length;
+      return Math.max(longest, titleLength);
+    }, 0);
+
+    return Math.min(300, Math.max(120, 120 + longestTitleLength * 14));
+  }, [conversations]);
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
   useEffect(() => {
@@ -3782,7 +3792,10 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   );
 
   return (
-    <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
+    <section
+      className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}
+      style={{ "--chat-actions-width": `${historyPanelWidth}px` }}
+    >
       <div className="chat-topbar">
         <h1>大模型</h1>
         {credits && (
