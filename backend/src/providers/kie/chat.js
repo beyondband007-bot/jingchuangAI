@@ -3,22 +3,68 @@ import { requestKie } from "./client.js";
 
 const chatTimeoutMs = Number(process.env.KIE_CHAT_TIMEOUT_MS || 60000);
 
+function hasAttachments(message) {
+  return Array.isArray(message.attachments) && message.attachments.length > 0;
+}
+
+function mapCodexContent(message) {
+  const content = [];
+  if (message.content) {
+    content.push({
+      type: "input_text",
+      text: message.content
+    });
+  }
+
+  for (const attachment of message.attachments || []) {
+    if (attachment.kind === "image") {
+      content.push({
+        type: "input_image",
+        image_url: attachment.url
+      });
+    } else {
+      content.push({
+        type: "input_file",
+        file_url: attachment.url
+      });
+    }
+  }
+
+  return content.length ? content : [{ type: "input_text", text: "" }];
+}
+
+function mapOpenAiContent(message) {
+  const content = [];
+  if (message.content) {
+    content.push({
+      type: "text",
+      text: message.content
+    });
+  }
+
+  for (const attachment of message.attachments || []) {
+    content.push({
+      type: "image_url",
+      image_url: {
+        url: attachment.url
+      }
+    });
+  }
+
+  return content.length ? content : "";
+}
+
 function mapMessage(message) {
   return {
     role: message.role,
-    content: [
-      {
-        type: "input_text",
-        text: message.content
-      }
-    ]
+    content: mapCodexContent(message)
   };
 }
 
 function mapOpenAiMessage(message) {
   return {
     role: message.role,
-    content: message.content
+    content: hasAttachments(message) ? mapOpenAiContent(message) : message.content
   };
 }
 
@@ -45,6 +91,8 @@ function splitClaudeMessages(messages) {
 function flattenMessagesForKie(messages) {
   if (messages.length <= 1) return messages;
 
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+
   const transcript = messages
     .map((message) => {
       if (message.role === "system") return `System: ${message.content}`;
@@ -56,7 +104,8 @@ function flattenMessagesForKie(messages) {
   return [
     {
       role: "user",
-      content: `Continue the conversation using the transcript below. Answer the latest user message.\n\n${transcript}`
+      content: `Continue the conversation using the transcript below. Answer the latest user message.\n\n${transcript}`,
+      attachments: latestUserMessage?.attachments || []
     }
   ];
 }
@@ -68,13 +117,21 @@ function getChatProvider(model) {
   return "codex";
 }
 
+function getCodexResponsePath(model) {
+  const providerModel = String(model.provider_model || model.model_key || "");
+  return providerModel.includes("codex") ? "/api/v1/responses" : "/codex/v1/responses";
+}
+
 export function extractChatText(record) {
   if (typeof record?.output_text === "string" && record.output_text.trim()) {
     return record.output_text.trim();
   }
+  if (typeof record?.response?.output_text === "string" && record.response.output_text.trim()) {
+    return record.response.output_text.trim();
+  }
 
   const chunks = [];
-  for (const item of record?.output || []) {
+  for (const item of record?.output || record?.response?.output || []) {
     for (const content of item.content || []) {
       if (typeof content.text === "string") chunks.push(content.text);
       if (typeof content.output_text === "string") chunks.push(content.output_text);
@@ -95,7 +152,9 @@ function extractStreamDelta(record) {
     record?.delta,
     record?.output_text_delta,
     record?.data?.delta,
-    record?.data?.output_text_delta
+    record?.data?.output_text_delta,
+    record?.response?.delta,
+    record?.response?.output_text_delta
   ];
 
   for (const value of candidates) {
@@ -119,6 +178,9 @@ function extractStreamText(record) {
   if (typeof record?.data?.output_text === "string" && record.data.output_text) return record.data.output_text;
   if (typeof record?.data?.text === "string" && record.data.text) return record.data.text;
   if (typeof record?.data?.content === "string" && record.data.content) return record.data.content;
+  if (typeof record?.response?.output_text === "string" && record.response.output_text) return record.response.output_text;
+  if (typeof record?.response?.text === "string" && record.response.text) return record.response.text;
+  if (typeof record?.response?.content === "string" && record.response.content) return record.response.content;
   return extractChatText(record);
 }
 
@@ -198,6 +260,12 @@ function buildOpenAiChatBody({ model, messages, reasoningEffort, stream }) {
 }
 
 function buildClaudeBody({ model, messages, reasoningEffort, stream }) {
+  if (messages.some(hasAttachments)) {
+    const error = new Error("当前模型不支持该附件类型");
+    error.status = 400;
+    throw error;
+  }
+
   const { system, messages: claudeMessages } = splitClaudeMessages(messages);
   const body = {
     model: model.provider_model,
@@ -230,7 +298,7 @@ function getEndpointAndBody({ model, messages, reasoningEffort, stream }) {
   }
   return {
     provider,
-    path: "/codex/v1/responses",
+    path: getCodexResponsePath(model),
     body: buildChatBody({ model, messages, reasoningEffort, stream })
   };
 }

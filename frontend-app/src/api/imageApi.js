@@ -4,6 +4,7 @@ let pollTimer;
 let modelsPromise;
 let creditsPromise;
 export const imageToImageModelKey = "gpt_image_1_5_i2i";
+export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 
 function notify() {
   listeners.forEach((listener) => listener());

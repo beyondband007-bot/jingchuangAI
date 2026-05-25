@@ -68,6 +68,7 @@ CREATE TABLE `chat_messages`  (
   `conversation_id` bigint UNSIGNED NOT NULL,
   `role` enum('system','user','assistant') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `content` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attachments_json` json NULL,
   `model_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `cost_points` int NOT NULL DEFAULT 0,
   `kie_credits_consumed` decimal(12, 4) NOT NULL DEFAULT 0.0000,
@@ -420,6 +421,7 @@ CREATE TABLE `image_model_prices`  (
 -- Records of image_model_prices
 -- ----------------------------
 INSERT INTO `image_model_prices` VALUES (1, 'gpt_image_2', 'GPT Image 2', 35, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
+INSERT INTO `image_model_prices` VALUES (9, 'gpt_image_2_i2i', 'GPT Image 2 图生图', 35, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (2, 'four_o_image', '4o Image', 21, 0, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (3, 'nano_banana_pro', 'Nano Banana Pro', 63, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 INSERT INTO `image_model_prices` VALUES (4, 'flux_2_pro', 'Flux 2 Pro', 18, 1, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
