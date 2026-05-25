@@ -75,6 +75,7 @@ import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
 import { ImageDigitalHumanView } from "./features/image-digital-human/ImageDigitalHumanView";
+import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
 const caseImageFiles = [
@@ -6718,6 +6719,12 @@ function App() {
     setView(nextId);
   }, []);
 
+  const enterAppHome = useCallback(() => {
+    window.sessionStorage.setItem(appEntryStorageKey, "1");
+    window.history.pushState(null, "", "#/home");
+    setView("home");
+  }, []);
+
   const finishAuth = useCallback((user) => {
     setAuthUser(user);
     setAuthDrawerMode(null);
@@ -6758,7 +6765,9 @@ function App() {
       );
     }
 
-    return <SplashHome onOpenAuth={setAuthDrawerMode} />;
+    return (
+      <StudioLanding onOpenAuth={setAuthDrawerMode} onEnterApp={enterAppHome} />
+    );
   })();
 
   return (
