@@ -169,11 +169,6 @@ export function MusicGenerationView() {
     setPrompt((current) => [current.trim(), textToAppend].filter(Boolean).join("，").slice(0, 200));
   }
 
-  function applyPreset(item) {
-    appendPrompt(item.title);
-    setNotice(`已应用预设：${item.title}`);
-  }
-
   return (
     <section className="voice-conversion-view-root music-generation-view">
       <div className="image-filter-tabs voice-filter-tabs">
@@ -207,7 +202,6 @@ export function MusicGenerationView() {
               onToggleInstrumental={setIsInstrumental}
               onToggleLyricsOptimizer={setLyricsOptimizer}
               onGenerate={generate}
-              onUsePreset={applyPreset}
               onUseStyleTag={appendPrompt}
               onDownloadMp3={downloadMp3}
               onDownloadLyrics={downloadLyrics}
