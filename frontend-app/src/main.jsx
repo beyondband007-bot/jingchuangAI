@@ -3592,10 +3592,10 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   return (
     <aside
       className="history-rail chat-history-rail"
-      aria-label="AI 瀵硅瘽历史"
+      aria-label="AI 对话历史"
     >
       <div className="history-rail-header">
-        <span>历史瀵硅瘽</span>
+        <span>历史对话</span>
         <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
@@ -3608,7 +3608,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
           >
             <span>{conversation.title}</span>
             <small>
-              {conversation.model} 璺?{conversation.time}
+              {conversation.model} · {conversation.time}
             </small>
           </button>
         ))}
