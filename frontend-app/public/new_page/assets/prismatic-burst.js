@@ -196,7 +196,7 @@ export function mountPrismaticBurst(burstContainer, options = {}) {
           throw new Error("Missing PrismaticBurst container.");
         }
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const dpr = Math.min(window.devicePixelRatio || 1, 1);
         const renderer = new Renderer({
           dpr,
           alpha: false,
@@ -277,7 +277,7 @@ export function mountPrismaticBurst(burstContainer, options = {}) {
         let lastTime = performance.now();
         let lastRenderTime = 0;
         let elapsed = 0;
-        const minRenderIntervalMs = 1000 / 30;
+        const minRenderIntervalMs = 1000 / 24;
 
         const resize = () => {
           const width = burstContainer.clientWidth || 1;

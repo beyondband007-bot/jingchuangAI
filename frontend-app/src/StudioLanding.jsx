@@ -37,11 +37,11 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
 
         cleanupBurst = mountPrismaticBurst(burst, {
           opacity: 0.96,
-          intensity: 2.2,
-          speed: 0.82,
-          distort: 1.08,
-          noiseAmount: 0.2,
-          rayCount: 13,
+          intensity: 1.85,
+          speed: 0.68,
+          distort: 0.9,
+          noiseAmount: 0.16,
+          rayCount: 11,
         });
         root.classList.add("is-video-ready");
       })
@@ -65,12 +65,11 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     document.documentElement.classList.add("studio-landing-active");
 
     function resetPageScroll() {
-      const pageRoot = document.documentElement;
-      const previousBehavior = pageRoot.style.scrollBehavior;
-      pageRoot.style.scrollBehavior = "auto";
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      const previousBehavior = root.style.scrollBehavior;
+      root.style.scrollBehavior = "auto";
+      root.scrollTo({ top: 0, left: 0, behavior: "auto" });
       requestAnimationFrame(() => {
-        pageRoot.style.scrollBehavior = previousBehavior;
+        root.style.scrollBehavior = previousBehavior;
       });
     }
 
@@ -95,11 +94,9 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     const firstScreen = root.querySelector(".first-screen");
     const heroShell = root.querySelector(".showcase-shell");
     const features = root.querySelector(".features");
-    let lastScrollY = window.scrollY;
+    const getScrollY = () => root.scrollTop;
+    let lastScrollY = getScrollY();
     let heroIntroProgress = 0;
-    let pendingWheelX = 0;
-    let pendingWheelY = 0;
-    let wheelFrame = 0;
     let revealFrame = 0;
     let revealVisibleTargets = null;
     const cleanups = [];
@@ -118,12 +115,12 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
 
     function syncNavFadeState() {
       if (!nav) return;
-      const currentY = window.scrollY;
+      const currentY = getScrollY();
       const delta = currentY - lastScrollY;
 
       if (window.innerWidth <= 720) {
         nav.classList.remove("nav--fade-menu");
-        lastScrollY = window.scrollY;
+        lastScrollY = getScrollY();
         return;
       }
 
@@ -226,59 +223,6 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     function syncHeroCanvasState() {
       if (!firstScreen) return;
       root.dataset.heroCanvasState = firstScreen.getBoundingClientRect().bottom > 80 ? "playing" : "paused";
-    }
-
-    function findScrollableAncestor(startNode) {
-      let node = startNode;
-      while (node && node !== document.body && node !== document.documentElement) {
-        if (node instanceof HTMLElement) {
-          const style = window.getComputedStyle(node);
-          const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY)
-            && node.scrollHeight > node.clientHeight + 1;
-          if (canScrollY) return node;
-        }
-        node = node.parentElement;
-      }
-      return null;
-    }
-
-    function flushLandingWheel() {
-      wheelFrame = 0;
-      const left = pendingWheelX;
-      const top = pendingWheelY;
-      pendingWheelX = 0;
-      pendingWheelY = 0;
-      if (left || top) {
-        window.scrollBy({ top, left, behavior: "auto" });
-        if (typeof revealVisibleTargets === "function") {
-          revealVisibleTargets();
-        } else {
-          scheduleRevealCheck();
-        }
-        syncHeroCanvasState();
-      }
-    }
-
-    function handleLandingWheel(event) {
-      if (!root.contains(event.target)) return;
-      const scrollable = findScrollableAncestor(event.target);
-      if (scrollable && scrollable !== document.body && scrollable !== document.documentElement) return;
-
-      const multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE
-        ? 16
-        : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-          ? window.innerHeight
-          : 1;
-      const nextTop = event.deltaY * multiplier;
-      const nextLeft = event.deltaX * multiplier;
-      if (nextTop === 0 && nextLeft === 0) return;
-
-      event.preventDefault();
-      pendingWheelY += nextTop;
-      pendingWheelX += nextLeft;
-      if (!wheelFrame) {
-        wheelFrame = requestAnimationFrame(flushLandingWheel);
-      }
     }
 
     function setupScrollReveals() {
@@ -429,12 +373,9 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
       revealAfterScroll();
       syncHeroCanvasState();
     };
-    window.addEventListener("scroll", syncNavFadeState, { passive: true });
-    window.addEventListener("scroll", revealAfterScroll, { passive: true });
-    document.addEventListener("scroll", syncNavFadeState, { passive: true });
-    document.addEventListener("scroll", revealAfterScroll, { passive: true });
+    root.addEventListener("scroll", syncNavFadeState, { passive: true });
+    root.addEventListener("scroll", revealAfterScroll, { passive: true });
     window.addEventListener("resize", onResize);
-    window.addEventListener("wheel", handleLandingWheel, { passive: false });
 
     let navResizeObserver = null;
     if (window.ResizeObserver && nav) {
@@ -445,14 +386,10 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     return () => {
       cleanups.forEach((cleanup) => cleanup());
       navResizeObserver?.disconnect();
-      if (wheelFrame) cancelAnimationFrame(wheelFrame);
       if (revealFrame) cancelAnimationFrame(revealFrame);
-      window.removeEventListener("scroll", syncNavFadeState);
-      window.removeEventListener("scroll", revealAfterScroll);
-      document.removeEventListener("scroll", syncNavFadeState);
-      document.removeEventListener("scroll", revealAfterScroll);
+      root.removeEventListener("scroll", syncNavFadeState);
+      root.removeEventListener("scroll", revealAfterScroll);
       window.removeEventListener("resize", onResize);
-      window.removeEventListener("wheel", handleLandingWheel);
     };
   }, []);
 

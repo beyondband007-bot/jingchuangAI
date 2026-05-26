@@ -13505,18 +13505,20 @@ textarea:focus-visible {
 html.studio-landing-active,
 body.studio-landing-active {
   background: #000;
-  height: auto;
+  height: 100%;
   min-height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
+  overscroll-behavior: auto;
   scrollbar-width: auto;
   -ms-overflow-style: auto;
 }
 
 body.studio-landing-active #root {
-  height: auto;
+  height: 100vh;
   min-height: 100vh;
-  overflow: visible;
+  overflow: hidden;
+  overscroll-behavior: auto;
 }
 
 html.studio-landing-active::-webkit-scrollbar,
@@ -13571,16 +13573,10 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 }
 
 .studio-landing {
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.studio-landing::-webkit-scrollbar,
-.studio-landing::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  scroll-behavior: auto;
+  scrollbar-width: auto;
+  -ms-overflow-style: auto;
+  overscroll-behavior: auto;
 }
 
 .studio-landing {
@@ -13603,11 +13599,13 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   --hero-actions-shift: 0px;
   --features-offset: 24px;
   margin: 0;
+  height: 100vh;
   min-height: 100vh;
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--text);
   background: #000000;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .studio-landing::before,
