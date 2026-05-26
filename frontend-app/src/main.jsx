@@ -1728,13 +1728,13 @@ function ResultCard({
         {!isProcessing && !isFailed && card.image ? (
           card.grid ? (
             <>
-              <img src={card.image} alt={card.prompt} />
-              <img src="/assets/image/gallery-3.jpg" alt={card.prompt} />
-              <img src="/assets/image/gallery-4.jpg" alt={card.prompt} />
-              <img src="/assets/image/gallery-5.jpg" alt={card.prompt} />
+              <PreloadImage src={card.image} alt={card.prompt} />
+              <PreloadImage src="/assets/image/gallery-3.jpg" alt={card.prompt} />
+              <PreloadImage src="/assets/image/gallery-4.jpg" alt={card.prompt} />
+              <PreloadImage src="/assets/image/gallery-5.jpg" alt={card.prompt} />
             </>
           ) : (
-            <img src={card.image} alt={card.prompt} />
+            <PreloadImage src={card.image} alt={card.prompt} />
           )
         ) : null}
         {canPreview && isImageGallery && (
@@ -2305,6 +2305,64 @@ function ImagePreviewLightbox({ task, onClose }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function PreloadImage({ src, alt }) {
+  const [loadState, setLoadState] = useState(src ? "loading" : "empty");
+
+  useEffect(() => {
+    if (!src) {
+      setLoadState("empty");
+      return undefined;
+    }
+
+    let cancelled = false;
+    let retryTimer;
+    setLoadState("loading");
+
+    const loadImage = () => {
+      const probe = new window.Image();
+      probe.decoding = "async";
+      probe.onload = () => {
+        if (!cancelled) setLoadState("ready");
+      };
+      probe.onerror = () => {
+        if (cancelled) return;
+        setLoadState("loading");
+        retryTimer = window.setTimeout(loadImage, 2500);
+      };
+      probe.src = src;
+    };
+
+    loadImage();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
+    };
+  }, [src]);
+
+  if (!src) return null;
+
+  const isLoading = loadState === "loading" || loadState === "failed";
+
+  return (
+    <span className="preload-image-frame">
+      {isLoading && (
+        <span className="image-preload-skeleton" aria-label="图片加载中">
+          <Loader2 size={22} />
+          <span>图片加载中</span>
+        </span>
+      )}
+      <img
+        className={isLoading ? "is-image-loading" : ""}
+        src={src}
+        alt={alt}
+        onLoad={() => setLoadState("ready")}
+        onError={() => setLoadState("failed")}
+      />
+    </span>
   );
 }
 
@@ -4071,6 +4129,17 @@ function getDigitalHumanPublicAvatars(list = []) {
   return [...merged.values()];
 }
 
+function resolveDigitalHumanAvatarSelection(current, avatarData) {
+  const allAvatars = getDigitalHumanPublicAvatars(avatarData.public);
+  const myAvatars = Array.isArray(avatarData.mine) ? avatarData.mine : [];
+  const matchedAvatar = current?.id
+    ? [...allAvatars, ...myAvatars].find((item) => String(item.id) === String(current.id))
+    : null;
+  if (matchedAvatar) return matchedAvatar;
+  if (current) return current;
+  return allAvatars[0] || myAvatars[0] || null;
+}
+
 function DigitalHumanEmptyMedia({
   title,
   description,
@@ -4084,6 +4153,67 @@ function DigitalHumanEmptyMedia({
       <strong>{title}</strong>
       <p>{description}</p>
     </div>
+  );
+}
+
+function DigitalHumanCoverSkeleton({ label = "封面加载中" }) {
+  return (
+    <div className="dh-cover-skeleton" aria-label={label}>
+      <Loader2 size={24} />
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function DigitalHumanPreloadCover({ avatar, isVideoCover }) {
+  const [loadState, setLoadState] = useState("loading");
+  const cover = avatar?.cover || "";
+
+  useEffect(() => {
+    setLoadState(cover ? "loading" : "empty");
+  }, [cover]);
+
+  if (!cover) {
+    return (
+      <DigitalHumanEmptyMedia
+        title="形象素材位"
+        description="等待补充数字人视频或封面"
+      />
+    );
+  }
+
+  const isLoading = loadState === "loading";
+  const isFailed = loadState === "failed";
+
+  return (
+    <>
+      {(isLoading || isFailed) && <DigitalHumanCoverSkeleton label="封面加载中" />}
+      {isVideoCover ? (
+        <video
+          className={isLoading || isFailed ? "is-cover-loading" : ""}
+          src={cover}
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          onLoadedData={() => setLoadState("ready")}
+          onCanPlay={() => setLoadState("ready")}
+          onError={() => setLoadState("failed")}
+          onMouseEnter={(event) => {
+            if (loadState === "ready") event.currentTarget.play();
+          }}
+          onMouseLeave={(event) => event.currentTarget.pause()}
+        />
+      ) : (
+        <img
+          className={isLoading || isFailed ? "is-cover-loading" : ""}
+          src={cover}
+          alt={avatar.name}
+          onLoad={() => setLoadState("ready")}
+          onError={() => setLoadState("failed")}
+        />
+      )}
+    </>
   );
 }
 
@@ -4108,24 +4238,7 @@ function DigitalHumanAvatarCard({
         onClick={() => onSelect(avatar)}
         aria-label={`选择 ${avatar.name}`}
       >
-        {isVideoCover ? (
-          <video
-            src={avatar.cover}
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            onMouseEnter={(event) => event.currentTarget.play()}
-            onMouseLeave={(event) => event.currentTarget.pause()}
-          />
-        ) : avatar.cover ? (
-          <img src={avatar.cover} alt={avatar.name} />
-        ) : (
-          <DigitalHumanEmptyMedia
-            title="形象素材位"
-            description="等待补充数字人视频或封面"
-          />
-        )}
+        <DigitalHumanPreloadCover avatar={avatar} isVideoCover={isVideoCover} />
         <span className="dh-avatar-badge">
           {selected
             ? "已选中"
@@ -4752,10 +4865,7 @@ function DigitalHumanGenerationView({ onReturnHome }) {
         setVoices(voiceData.voices || []);
         setTasks(taskData);
         setCredits(creditData);
-        setSelectedAvatar(
-          (current) =>
-            current || avatarData.public?.[0] || avatarData.mine?.[0] || null,
-        );
+        setSelectedAvatar((current) => resolveDigitalHumanAvatarSelection(current, avatarData));
       } catch (loadError) {
         if (mounted) setError(loadError.message || "加载数字人功能失败");
       }
@@ -4779,6 +4889,10 @@ function DigitalHumanGenerationView({ onReturnHome }) {
       digitalHumanApi
         .getAvatars()
         .then((value) => mounted && setAvatars(value))
+        .then((value) => {
+          if (!mounted || !value) return;
+          setSelectedAvatar((current) => resolveDigitalHumanAvatarSelection(current, value));
+        })
         .catch(() => {});
     });
     return () => {
