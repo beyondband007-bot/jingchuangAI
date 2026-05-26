@@ -10864,6 +10864,7 @@ select {
   gap: 12px;
   min-width: 0;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .llm-intro-layout {
@@ -10948,6 +10949,7 @@ select {
   max-height: calc(100vh - 196px);
   background: rgba(20, 20, 22, 0.98) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
+  pointer-events: auto;
 }
 
 .chat-new-conversation-button {
@@ -10969,6 +10971,7 @@ select {
   cursor: pointer;
   font-size: 13px;
   font-weight: 800;
+  pointer-events: auto;
   transition:
     background 160ms ease,
     border-color 160ms ease,
@@ -10984,6 +10987,10 @@ select {
 .chat-new-conversation-button:disabled {
   cursor: not-allowed;
   opacity: 0.52;
+}
+
+.chat-view-root .history-toggle {
+  pointer-events: auto;
 }
 
 .chat-history-rail .history-rail-header {

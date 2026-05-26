@@ -3674,8 +3674,9 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   }, [modelSwitchNotice]);
 
   const showModelSwitchNotice = useCallback(() => {
+    if (!messages.length && !isSubmitting && !submitError) return;
     setModelSwitchNotice("对话中更换模型可能会导致输出不稳定");
-  }, []);
+  }, [isSubmitting, messages.length, submitError]);
 
   useEffect(() => {
     const defaultModel = options.defaultModel || options.models[0]?.value || "";
@@ -3785,6 +3786,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
     setConversationId(null);
     setSubmitError("");
     setIsHistoryOpen(false);
+    setModelSwitchNotice("");
   }
 
   async function selectConversation(id) {
