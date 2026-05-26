@@ -1723,7 +1723,7 @@ function ResultCard({
       <div
         className={`result-preview ${card.grid ? "preview-grid" : ""} ${shouldShowPlaceholder ? "is-placeholder-preview" : ""}`}
       >
-        {isProcessing && <div className="processing-state">生成涓?..</div>}
+        {isProcessing && <div className="processing-state">生成中...</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
         {!isProcessing && !isFailed && card.image ? (
           card.grid ? (
@@ -2474,7 +2474,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
         ratio: item.ratio,
         quality: item.quality,
         count: 1,
-        time: "绀轰緥",
+        time: "示例",
         price: item.price,
         prompt: item.label,
         image: item.src,
@@ -3401,7 +3401,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
             </span>
             <div className="chat-message-bubble is-loading">
               <Loader2 size={17} />
-              <span>正在鎬濊€?..</span>
+              <span>正在思考...</span>
             </div>
           </div>
         )}
