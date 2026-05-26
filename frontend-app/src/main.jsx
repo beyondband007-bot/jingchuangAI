@@ -1148,7 +1148,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-text">Facemini.com</span>
+        <span className="feature-brand-text">Facemini</span>
         <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
@@ -3595,10 +3595,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   if (!conversations.length) return null;
 
   return (
-    <aside
-      className="history-rail chat-history-rail"
-      aria-label="AI 对话历史"
-    >
+    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
         <span>历史对话</span>
         <strong>{conversations.length}</strong>
