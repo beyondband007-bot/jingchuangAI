@@ -4290,7 +4290,7 @@ function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
             <strong>{avatar.name}</strong>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭">
-            关闭
+            <X size={18} />
           </button>
         </div>
         <div className="dh-avatar-preview-body">

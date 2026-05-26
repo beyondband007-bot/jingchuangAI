@@ -18,6 +18,31 @@
       --ref-border: #262626; --ref-subtle: #888888; --ref-nav: #d1d5db; --ref-purple: #a855f7;
     }
     * { border-color: hsl(var(--border)); box-sizing: border-box; }
+    html,
+    body {
+      scrollbar-width: thin;
+      scrollbar-color: #888888 rgba(255, 255, 255, 0.04);
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    html::-webkit-scrollbar-track,
+    body::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.035);
+      border-radius: 999px;
+    }
+    html::-webkit-scrollbar-thumb,
+    body::-webkit-scrollbar-thumb {
+      background: #888888;
+      border: 2px solid rgba(5, 5, 5, 0.78);
+      border-radius: 999px;
+    }
+    html::-webkit-scrollbar-thumb:hover,
+    body::-webkit-scrollbar-thumb:hover {
+      background: #9a9a9a;
+    }
     body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); font-family: 'Zona Pro', system-ui, sans-serif; -webkit-font-smoothing: antialiased; margin: 0; }
     .app-shell { display: flex; min-height: 100vh; }
     .sidebar-desktop { position: fixed; top: 0; left: 0; bottom: 0; width: 256px; background: hsl(var(--sidebar-background)); border-right: 1px solid var(--ref-border); display: flex; flex-direction: column; z-index: 30; overflow: hidden; }
@@ -123,7 +148,11 @@
     .topbar-btn svg { width: 15px; height: 15px; }
     .topbar-btn.primary { background: hsl(var(--sidebar-primary)); border-color: hsl(var(--sidebar-primary)); color: hsl(var(--sidebar-primary-foreground)); }
     .topbar-btn.primary:hover { opacity: 0.9; }
-    .page-scroll { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+    .page-scroll { flex: 1; overflow-y: auto; padding: 28px 32px 60px; scrollbar-width: thin; scrollbar-color: #888888 rgba(255, 255, 255, 0.04); }
+    .page-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .page-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.035); border-radius: 999px; }
+    .page-scroll::-webkit-scrollbar-thumb { background: #888888; border: 2px solid rgba(5, 5, 5, 0.78); border-radius: 999px; }
+    .page-scroll::-webkit-scrollbar-thumb:hover { background: #9a9a9a; }
     .hero-section { position: relative; border-radius: 20px; margin-bottom: 32px; overflow: hidden; min-height: min(29vh, 280px); color: #fff; background: radial-gradient(circle at 72% 30%, rgba(90, 44, 252, 0.26), transparent 34%), linear-gradient(135deg, #0b0b10 0%, #151326 52%, #070711 100%); }
     .hero-bg-video {
       position: absolute;
