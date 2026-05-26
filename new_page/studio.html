@@ -10,20 +10,6 @@
       history.scrollRestoration = "manual";
     }
   </script>
-  <script>
-    window.tailwind = window.tailwind || {};
-    window.tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ["Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", "sans-serif"],
-          },
-        },
-      },
-    };
-  </script>
-  <script src="./assets/vendor/tailwindcss.js"></script>
   <style>
     :root {
       --bg: #05030d;
@@ -49,7 +35,7 @@
     @font-face {
       font-family: "Zona Pro SemiBold";
       src:
-        url("./assets/fonts/ZonaPro-SemiBold.ttf") format("truetype"),
+        url("./assets/fonts/ZonaPro-SemiBold.woff2") format("woff2"),
         local("Zona Pro SemiBold"),
         local("Zona Pro Semibold"),
         local("ZonaPro-SemiBold");
@@ -64,15 +50,21 @@
 
     html {
       scroll-behavior: smooth;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      scrollbar-width: auto;
+      -ms-overflow-style: auto;
     }
 
     html::-webkit-scrollbar,
     body::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      display: none;
+      width: 10px;
+      height: 10px;
+      display: initial;
+    }
+
+    html::-webkit-scrollbar-thumb,
+    body::-webkit-scrollbar-thumb {
+      background: rgba(127, 94, 255, 0.45);
+      border-radius: 999px;
     }
 
     body {
@@ -129,7 +121,7 @@
     .page {
       width: var(--container);
       margin: 0 auto;
-      padding: 0 0 16px;
+      padding: 0 0 36px;
       position: relative;
       z-index: 2;
     }
@@ -162,13 +154,12 @@
       background: #000000;
     }
 
-    .first-screen-bg video {
+    .first-screen-bg canvas {
       width: 100%;
       height: 100%;
       display: block;
-      object-fit: cover;
-      object-position: center;
-      filter: brightness(0.9) contrast(1.22) saturate(1.38);
+      opacity: 0.98;
+      mix-blend-mode: lighten;
     }
 
     .first-screen-bg::after {
@@ -1727,7 +1718,7 @@
 
     .footer {
       margin-top: 108px;
-      padding: 20px 0 10px;
+      padding: 19px 0 10px;
       border-top: 1px solid rgba(255, 255, 255, 0.04);
       display: grid;
       grid-template-columns: minmax(0, 1.35fr) 1px minmax(0, 1.55fr) 1px minmax(0, 0.9fr);
@@ -1772,8 +1763,9 @@
 
     .footer-column {
       display: grid;
-      gap: 11px;
+      gap: 16px;
       align-content: start;
+      text-align: center;
     }
 
     .footer-column strong {
@@ -2004,15 +1996,32 @@
         background-position: 100% 50%;
       }
     }
+
+    .first-screen {
+      overflow: visible;
+    }
+
+    .studio-prismatic-canvas {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      opacity: 1;
+    }
+
+    .studio-prismatic-canvas canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      opacity: 0.96;
+      mix-blend-mode: lighten;
+    }
   </style>
 </head>
 <body>
   <main class="page">
     <section class="first-screen">
       <div class="first-screen-bg" aria-hidden="true">
-        <video autoplay muted loop playsinline preload="auto">
-          <source src="./SplashScreen.mp4" type="video/mp4">
-        </video>
+        <div class="studio-prismatic-canvas" data-studio-burst-canvas></div>
       </div>
       <header class="nav">
         <nav class="nav-links" aria-label="主导航">
@@ -2114,48 +2123,50 @@
         <p>聚焦 AI 应用落地，助力企业与内容业务高效增长</p>
       </div>
 
-      <article class="feature-card">
-        <div class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M13 2L5 14H11L10 22L18 10H12L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3>企业级AI智能体</h3>
-        <p>深度结合业务场景，构建更智能、更高效的 AI 协作体验。</p>
-      </article>
+      <div class="medo-grid">
+        <article class="feature-card">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M13 2L5 14H11L10 22L18 10H12L13 2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>企业级AI智能体</h3>
+          <p>深度结合业务场景，构建更智能、更高效的 AI 协作体验。</p>
+        </article>
 
-      <article class="feature-card">
-        <div class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-            <path d="M12 12L20 7.5M12 12V21M12 12L4 7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3>垂类行业AI落地</h3>
-        <p>面向垂类行业需求，提供SOP级的 AI 应用能力支持。</p>
-      </article>
+        <article class="feature-card">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M12 12L20 7.5M12 12V21M12 12L4 7.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>垂类行业AI落地</h3>
+          <p>面向垂类行业需求，提供SOP级的 AI 应用能力支持。</p>
+        </article>
 
-      <article class="feature-card">
-        <div class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M5 19V10M12 19V5M19 19V13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M4 19H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h3>AI漫剧内容生产</h3>
-        <p>提升内容创作效率，助力多样化视觉内容快速生成。</p>
-      </article>
+        <article class="feature-card">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M5 19V10M12 19V5M19 19V13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M4 19H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>AI漫剧内容生产</h3>
+          <p>提升内容创作效率，助力多样化视觉内容快速生成。</p>
+        </article>
 
-      <article class="feature-card">
-        <div class="icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 3L19 6V11.5C19 16.2 16.05 20.6 12 22C7.95 20.6 5 16.2 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-            <path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3>通用性营销工具</h3>
-        <p>聚焦增长与传播需求，帮助品牌提升内容与运营效率。</p>
-      </article>
+        <article class="feature-card">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L19 6V11.5C19 16.2 16.05 20.6 12 22C7.95 20.6 5 16.2 5 11.5V6L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M9.5 12.5L11.2 14.2L14.8 10.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3>通用性营销工具</h3>
+          <p>聚焦增长与传播需求，帮助品牌提升内容与运营效率。</p>
+        </article>
+      </div>
     </section>
 
     <footer id="about" class="footer">
@@ -2168,21 +2179,18 @@
 
       <div class="footer-nav">
         <div class="footer-column">
-          <strong>产品</strong>
           <a href="#product">关于我们</a>
           <a href="#solutions">公司简介</a>
           <a href="#solutions">团队介绍</a>
         </div>
 
         <div class="footer-column">
-          <strong>资源</strong>
           <a href="#docs">产品介绍</a>
           <a href="#docs">功能指南</a>
           <a href="#docs">服务定制</a>
         </div>
 
         <div class="footer-column">
-          <strong>公司</strong>
           <a href="#about">探索我们</a>
           <a href="#about">联系方式</a>
           <a href="#about">平台资讯</a>
@@ -2288,10 +2296,16 @@
       }
 
       var firstScreen = document.querySelector(".first-screen");
+      var heroVideo = document.querySelector(".first-screen-bg video");
       var heroShell = document.querySelector(".showcase-shell");
       var heroIntroProgress = 0;
       var heroTouchLastY = 0;
       var features = document.querySelector(".features");
+      var pendingWheelX = 0;
+      var pendingWheelY = 0;
+      var wheelFrame = 0;
+      var revealFrame = 0;
+      var videoVisibilityFrame = 0;
 
       function clamp(value, min, max) {
         return Math.min(Math.max(value, min), max);
@@ -2309,6 +2323,42 @@
 
       function smootherStep(value) {
         return value * value * value * (value * (value * 6 - 15) + 10);
+      }
+
+      function syncHeroVideoVisibility() {
+        videoVisibilityFrame = 0;
+        if (!heroVideo) return;
+        var isHeroVisible = !firstScreen || firstScreen.getBoundingClientRect().bottom > 80;
+        if (isHeroVisible) {
+          heroVideo.play && heroVideo.play().catch(function () {});
+        } else {
+          heroVideo.pause && heroVideo.pause();
+        }
+      }
+
+      function scheduleHeroVideoVisibility() {
+        if (!videoVisibilityFrame) {
+          videoVisibilityFrame = requestAnimationFrame(syncHeroVideoVisibility);
+        }
+      }
+
+      if (heroVideo) {
+        scheduleHeroVideoVisibility();
+        if (firstScreen && "IntersectionObserver" in window) {
+          var firstScreenObserver = new IntersectionObserver(function (entries) {
+            var entry = entries[0];
+            if (!entry) return;
+            if (entry.isIntersecting) {
+              heroVideo.play && heroVideo.play().catch(function () {});
+            } else {
+              heroVideo.pause && heroVideo.pause();
+            }
+          }, { threshold: 0 });
+          firstScreenObserver.observe(firstScreen);
+        }
+        window.addEventListener("scroll", scheduleHeroVideoVisibility, { passive: true });
+        document.addEventListener("scroll", scheduleHeroVideoVisibility, { passive: true });
+        window.addEventListener("resize", scheduleHeroVideoVisibility);
       }
 
       function writeHeroVideoFrame() {
@@ -2383,11 +2433,12 @@
         }
       }
 
-      function revealFeatures() {
-        if (!features || features.classList.contains("features--visible")) return;
-        features.classList.add("features--visible");
+      function revealFeatures(element) {
+        var target = element || features;
+        if (!target || target.classList.contains("features--visible")) return;
+        target.classList.add("features--visible");
         window.setTimeout(function () {
-          features.classList.add("features--entered");
+          target.classList.add("features--entered");
         }, 1150);
       }
 
@@ -2396,19 +2447,65 @@
         element.classList.add("reveal-visible");
       }
 
-      function setupScrollReveals() {
-        var revealTargets = [
-          { element: document.querySelector(".metrics-strip"), onReveal: revealElement },
-          { element: document.querySelector(".section-heading"), onReveal: revealElement },
-          { element: document.querySelector(".why-grid"), onReveal: revealElement },
-          { element: document.querySelector(".workflow-section"), onReveal: revealElement },
-          { element: features, onReveal: revealFeatures }
-        ].filter(function (item) {
-          return item.element;
+      function syncHeroVideoPlayback() {
+        if (!heroVideo || !firstScreen) return;
+        if (firstScreen.getBoundingClientRect().bottom > 80) {
+          document.body.dataset.heroVideoState = "playing";
+          heroVideo.style.display = "";
+          heroVideo.autoplay = true;
+          heroVideo.play && heroVideo.play().catch(function () {});
+        } else {
+          document.body.dataset.heroVideoState = "paused";
+          heroVideo.autoplay = false;
+          heroVideo.pause && heroVideo.pause();
+          heroVideo.style.display = "none";
+          window.setTimeout(function () {
+            if (document.body.dataset.heroVideoState === "paused") {
+              heroVideo.pause && heroVideo.pause();
+              heroVideo.style.display = "none";
+            }
+          }, 120);
+        }
+      }
+
+      function revealVisibleTargets(revealTargets) {
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        revealTargets.forEach(function (item) {
+          if (!item.element || item.element.dataset.revealed === "true") return;
+          var rect = item.element.getBoundingClientRect();
+          if (rect.top < viewportHeight * 0.9 && rect.bottom > viewportHeight * 0.05) {
+            item.element.dataset.revealed = "true";
+            item.onReveal(item.element);
+          }
         });
+      }
+
+      function setupScrollReveals() {
+        function getRevealTargets() {
+          return []
+            .concat(Array.from(document.querySelectorAll(".metrics-strip")).map(function (element) {
+              return { element: element, onReveal: revealElement };
+            }))
+            .concat(Array.from(document.querySelectorAll(".section-heading")).map(function (element) {
+              return { element: element, onReveal: revealElement };
+            }))
+            .concat(Array.from(document.querySelectorAll(".why-grid")).map(function (element) {
+              return { element: element, onReveal: revealElement };
+            }))
+            .concat(Array.from(document.querySelectorAll(".workflow-section")).map(function (element) {
+              return { element: element, onReveal: revealElement };
+            }))
+            .concat(Array.from(document.querySelectorAll(".features")).map(function (element) {
+              return { element: element, onReveal: revealFeatures };
+            }))
+            .filter(function (item) {
+              return item.element;
+            });
+        }
+        var revealTargets = getRevealTargets();
 
         if (!("IntersectionObserver" in window)) {
-          revealTargets.forEach(function (item) {
+          getRevealTargets().forEach(function (item) {
             item.onReveal(item.element);
           });
           return;
@@ -2417,10 +2514,14 @@
         var revealObserver = new IntersectionObserver(function (entries, observer) {
           entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
-            var target = revealTargets.find(function (item) {
+            var target = getRevealTargets().find(function (item) {
               return item.element === entry.target;
             });
-            if (target) target.onReveal(target.element);
+            if (target) {
+              target.element.dataset.revealed = "true";
+              target.onReveal(target.element);
+            }
+            syncHeroVideoPlayback();
             observer.unobserve(entry.target);
           });
         }, {
@@ -2431,11 +2532,14 @@
         revealTargets.forEach(function (item) {
           revealObserver.observe(item.element);
         });
+        revealVisibleTargets(revealTargets);
+        return function () {
+          revealVisibleTargets(getRevealTargets());
+        };
       }
 
       function shouldLockHeroIntro(deltaY) {
-        if (!heroShell || window.scrollY > 4) return false;
-        return (deltaY > 0 && heroIntroProgress < 1) || (deltaY < 0 && heroIntroProgress > 0);
+        return false;
       }
 
       function advanceHeroIntro(deltaY) {
@@ -2464,15 +2568,81 @@
         advanceHeroIntro(deltaY);
       }
 
+      function findScrollableAncestor(startNode) {
+        var node = startNode;
+        while (node && node !== document.body && node !== document.documentElement) {
+          if (node instanceof HTMLElement) {
+            var style = window.getComputedStyle(node);
+            var canScrollY = /(auto|scroll|overlay)/.test(style.overflowY)
+              && node.scrollHeight > node.clientHeight + 1;
+            if (canScrollY) return node;
+          }
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      function flushLandingWheel() {
+        wheelFrame = 0;
+        var left = pendingWheelX;
+        var top = pendingWheelY;
+        pendingWheelX = 0;
+        pendingWheelY = 0;
+        if (left || top) {
+          window.scrollBy({ top: top, left: left, behavior: "auto" });
+          if (typeof revealCurrentViewport === "function") {
+            revealCurrentViewport();
+          } else {
+            scheduleRevealCheck();
+          }
+          syncHeroVideoPlayback();
+        }
+      }
+
+      function handleLandingWheel(event) {
+        var scrollable = findScrollableAncestor(event.target);
+        if (scrollable && scrollable !== document.body && scrollable !== document.documentElement) return;
+
+        var multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? window.innerHeight
+            : 1;
+        var nextTop = event.deltaY * multiplier;
+        var nextLeft = event.deltaX * multiplier;
+        if (nextTop === 0 && nextLeft === 0) return;
+
+        event.preventDefault();
+        pendingWheelY += nextTop;
+        pendingWheelX += nextLeft;
+        if (!wheelFrame) {
+          wheelFrame = requestAnimationFrame(flushLandingWheel);
+        }
+      }
+
+      var revealCurrentViewport = setupScrollReveals();
+      function scheduleRevealCheck() {
+        if (typeof revealCurrentViewport === "function" && !revealFrame) {
+          revealFrame = requestAnimationFrame(function () {
+            revealFrame = 0;
+            revealCurrentViewport();
+            syncHeroVideoPlayback();
+          });
+        }
+      }
+      var revealAfterScroll = scheduleRevealCheck;
+
       measureHeroVideoTarget();
       window.addEventListener("load", function () {
         requestAnimationFrame(measureHeroVideoTarget);
       }, { once: true });
       window.addEventListener("wheel", handleHeroIntroWheel, { passive: false });
+      window.addEventListener("wheel", handleLandingWheel, { passive: false });
+      window.addEventListener("scroll", revealAfterScroll, { passive: true });
+      document.addEventListener("scroll", revealAfterScroll, { passive: true });
       window.addEventListener("touchstart", handleHeroIntroTouchStart, { passive: true });
       window.addEventListener("touchmove", handleHeroIntroTouchMove, { passive: false });
       window.addEventListener("resize", measureHeroVideoTarget);
-      setupScrollReveals();
 
       var glowCards = document.querySelectorAll(".showcase-shell");
 
@@ -2552,6 +2722,26 @@
       });
 
     })();
+  </script>
+    <script type="module">
+    import { mountPrismaticBurst } from "./assets/prismatic-burst.js";
+
+    const burst = document.querySelector("[data-studio-burst-canvas]");
+    const cleanup = burst
+      ? mountPrismaticBurst(burst, {
+          opacity: 0.96,
+          intensity: 2.2,
+          speed: 0.82,
+          distort: 1.08,
+          noiseAmount: 0.2,
+          rayCount: 13,
+        })
+      : null;
+
+    document.body.classList.add("is-video-ready");
+    if (cleanup) {
+      window.addEventListener("pagehide", cleanup, { once: true });
+    }
   </script>
   <script type="text/plain" data-disabled="true">
     import React from "https://esm.sh/react@18.3.1";

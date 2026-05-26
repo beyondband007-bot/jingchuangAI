@@ -72,21 +72,10 @@
       pointer-events: none;
     }
 
-    #brand-prelude-video,
     #brand-prelude-burst canvas {
       display: block;
       width: 100%;
       height: 100%;
-    }
-
-    #brand-prelude-video {
-      position: absolute;
-      inset: 0;
-      object-fit: cover;
-      object-position: center;
-      opacity: 0.96;
-      mix-blend-mode: lighten;
-      background: #00000b;
     }
 
     @keyframes brand-prelude-burst-fade-in {
@@ -239,11 +228,7 @@
 </head>
 <body>
   <main id="brand-prelude" aria-label="Facemini.com">
-    <div id="brand-prelude-burst" aria-hidden="true">
-      <video id="brand-prelude-video" autoplay muted loop playsinline preload="auto">
-        <source src="./SplashScreen.mp4" type="video/mp4">
-      </video>
-    </div>
+    <div id="brand-prelude-burst" aria-hidden="true"></div>
     <div class="brand-prelude-text" data-brand-text="Facemini.com" aria-label="Facemini.com">Facemini.com</div>
   </main>
   <script>
@@ -323,7 +308,7 @@
       window.addEventListener("pagehide", clearBrandCharTimers, { once: true });
     })();
   </script>
-    <script type="text/plain" data-brand-prelude-burst-script data-disabled="video-background">
+    <script type="module" data-brand-prelude-burst-script>
       import { Renderer, Program, Mesh, Triangle, Texture } from "./assets/vendor/ogl.mjs";
 
       const vertexShader = `#version 300 es
@@ -701,4 +686,3 @@ void main(){
 
 </body>
 </html>
-
