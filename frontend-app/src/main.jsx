@@ -1148,7 +1148,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
   return (
     <aside className="feature-sidebar">
       <div className="feature-brand">
-        <span className="feature-brand-text">Facemini.com</span>
+        <span className="feature-brand-text">Facemini</span>
         <span className="feature-brand-beta">（内测）</span>
       </div>
       <label className="feature-nav-search">
@@ -2877,6 +2877,25 @@ function getVideoModelOptions(options, modelKey) {
   };
 }
 
+function getVideoTaskTimestamp(task) {
+  const value =
+    task?.createdAt ||
+    task?.created_at ||
+    task?.updatedAt ||
+    task?.updated_at;
+  const timestamp = value ? new Date(value).getTime() : NaN;
+  if (Number.isFinite(timestamp)) return timestamp;
+  return Number(task?.id) || 0;
+}
+
+function sortVideoTasksByNewest(tasks) {
+  return [...tasks].sort((a, b) => {
+    const timestampDiff = getVideoTaskTimestamp(b) - getVideoTaskTimestamp(a);
+    if (timestampDiff !== 0) return timestampDiff;
+    return (Number(b?.id) || 0) - (Number(a?.id) || 0);
+  });
+}
+
 function VideoPreview({ task }) {
   const isProcessing =
     task.status === "pending" || task.status === "processing";
@@ -3150,6 +3169,8 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
     }
   }
 
+  const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
+
   return (
     <section className="image-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
@@ -3181,41 +3202,6 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
       </div>
       {submitError && <div className="video-submit-error">{submitError}</div>}
       <div className="results-feed video-results-feed">
-        {filter === "all" ? (
-          <>
-            {videoExampleCards.map((card) => (
-              <VideoResultCard
-                card={card}
-                key={card.id}
-                isExample
-                onDelete={() => {}}
-                onFavorite={() => {}}
-                onRegenerate={() => {}}
-              />
-            ))}
-            {cards.map((card) => (
-              <VideoResultCard
-                card={card}
-                key={card.id}
-                onDelete={deleteTask}
-                onFavorite={toggleFavorite}
-                onRegenerate={regenerateTask}
-              />
-            ))}
-          </>
-        ) : cards.length ? (
-          cards.map((card) => (
-            <VideoResultCard
-              card={card}
-              key={card.id}
-              onDelete={deleteTask}
-              onFavorite={toggleFavorite}
-              onRegenerate={regenerateTask}
-            />
-          ))
-        ) : (
-          <div className="empty-results video-empty-results">暂无视频结果</div>
-        )}
         {isSubmitting && (
           <VideoResultCard
             card={{
@@ -3234,6 +3220,41 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
             onFavorite={() => {}}
             onRegenerate={() => {}}
           />
+        )}
+        {filter === "all" ? (
+          <>
+            {sortedCards.map((card) => (
+              <VideoResultCard
+                card={card}
+                key={card.id}
+                onDelete={deleteTask}
+                onFavorite={toggleFavorite}
+                onRegenerate={regenerateTask}
+              />
+            ))}
+            {videoExampleCards.map((card) => (
+              <VideoResultCard
+                card={card}
+                key={card.id}
+                isExample
+                onDelete={() => {}}
+                onFavorite={() => {}}
+                onRegenerate={() => {}}
+              />
+            ))}
+          </>
+        ) : sortedCards.length ? (
+          sortedCards.map((card) => (
+            <VideoResultCard
+              card={card}
+              key={card.id}
+              onDelete={deleteTask}
+              onFavorite={toggleFavorite}
+              onRegenerate={regenerateTask}
+            />
+          ))
+        ) : (
+          <div className="empty-results video-empty-results">暂无视频结果</div>
         )}
       </div>
       {options.models.length > 0 && (
@@ -3595,10 +3616,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
   if (!conversations.length) return null;
 
   return (
-    <aside
-      className="history-rail chat-history-rail"
-      aria-label="AI 对话历史"
-    >
+    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
         <span>历史对话</span>
         <strong>{conversations.length}</strong>
