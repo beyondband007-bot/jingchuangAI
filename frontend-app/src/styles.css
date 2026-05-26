@@ -4312,6 +4312,7 @@ a:hover {
   font-weight: 800;
 }
 
+.custom-select-theme-dh:hover .custom-select-trigger,
 .custom-select-theme-dh .custom-select-trigger:hover,
 .custom-select-theme-dh .custom-select-trigger:focus-visible,
 .custom-select-theme-dh.is-open .custom-select-trigger {
@@ -5609,6 +5610,8 @@ a:hover {
 .dh-field {
   display: grid;
   gap: 8px;
+  position: relative;
+  overflow: visible;
 }
 
 .dh-field > span,
@@ -5695,9 +5698,16 @@ a:hover {
   display: grid;
   gap: 13px;
   padding: 12px;
+  overflow: visible;
   background: #f8fafc;
   border: 1px solid #edf1f5;
   border-radius: 8px;
+}
+
+.dh-field .custom-select,
+.dh-field .custom-select.is-open {
+  position: relative;
+  z-index: 120;
 }
 
 .dh-settings-group label {
@@ -9982,18 +9992,18 @@ select {
   box-shadow: none;
 }
 
-.feature-page-shell .custom-select-menu {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu {
   background: #171717 !important;
   border-color: var(--app-border) !important;
   box-shadow: var(--shadow-dark) !important;
 }
 
-.feature-page-shell .custom-select-menu button {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button {
   color: var(--text-primary) !important;
 }
 
-.feature-page-shell .custom-select-menu button:hover,
-.feature-page-shell .custom-select-menu button.is-selected {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button:hover,
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button.is-selected {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -12199,6 +12209,21 @@ textarea:focus-visible {
   transform: translateY(0) scale(1);
 }
 
+.custom-select-menu.is-floating {
+  visibility: visible;
+  opacity: 1;
+  min-width: 0;
+  max-width: calc(100vw - 16px);
+}
+
+.custom-select-menu.is-floating.is-top {
+  transform-origin: bottom left;
+}
+
+.custom-select-menu.is-floating.is-bottom {
+  transform-origin: top left;
+}
+
 .custom-select-menu button {
   display: flex;
   align-items: center;
@@ -12262,8 +12287,8 @@ textarea:focus-visible {
   min-height: 38px;
 }
 
-.custom-select.control-select .custom-select-menu,
-.custom-select.llm-reasoning-select .custom-select-menu {
+.custom-select.control-select .custom-select-menu:not(.is-floating),
+.custom-select.llm-reasoning-select .custom-select-menu:not(.is-floating) {
   top: auto;
   bottom: calc(100% + 8px);
   width: max-content;
@@ -12272,12 +12297,12 @@ textarea:focus-visible {
   transform-origin: bottom left;
 }
 
-.custom-select.control-select.is-open .custom-select-menu,
-.custom-select.llm-reasoning-select.is-open .custom-select-menu {
+.custom-select.control-select.is-open .custom-select-menu:not(.is-floating),
+.custom-select.llm-reasoning-select.is-open .custom-select-menu:not(.is-floating) {
   transform: translateY(0) scale(1);
 }
 
-.custom-select.model-select .custom-select-menu {
+.custom-select.model-select .custom-select-menu:not(.is-floating) {
   width: max-content;
   min-width: max(100%, 250px);
 }
@@ -12307,10 +12332,27 @@ textarea:focus-visible {
   width: max(100%, 120px);
 }
 
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-trigger {
+.motion-composer-footer .custom-select-menu.is-floating,
+.face-swap-workbench__setting .custom-select-menu.is-floating {
+  min-width: 168px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.motion-composer-footer .model-select .custom-select-menu.is-floating,
+.face-swap-workbench__setting--model .custom-select-menu.is-floating {
+  min-width: 220px;
+}
+
+.motion-composer-footer .custom-select-menu.is-floating::-webkit-scrollbar,
+.face-swap-workbench__setting .custom-select-menu.is-floating::-webkit-scrollbar {
+  display: none;
+}
+
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-trigger {
   color: var(--text-primary) !important;
   background:
-    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07)) !important;
   border-color: rgba(176, 199, 226, 0.2) !important;
   box-shadow:
@@ -12318,7 +12360,7 @@ textarea:focus-visible {
     0 12px 30px rgba(0, 0, 0, 0.18) !important;
 }
 
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu {
   background:
     radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.22), transparent 46%),
     linear-gradient(180deg, rgba(35, 35, 37, 0.98), rgba(25, 25, 26, 0.98)) !important;
@@ -12328,23 +12370,58 @@ textarea:focus-visible {
     0 24px 60px rgba(0, 0, 0, 0.48) !important;
 }
 
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button {
   color: #ffffff !important;
   border: 1px solid transparent !important;
 }
 
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button span,
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button svg {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button span,
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button svg {
   color: #ffffff !important;
   opacity: 1 !important;
 }
 
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button:hover,
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button:focus-visible,
-.feature-page-shell .custom-select:not(.idh-advanced-select) .custom-select-menu button.is-selected {
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button:hover,
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button:focus-visible,
+.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button.is-selected {
   color: #fff !important;
   background: rgba(141, 99, 255, 0.18) !important;
   border-color: rgba(141, 99, 255, 0.26) !important;
+}
+
+.feature-page-shell .face-swap-workbench__setting .custom-select-trigger,
+.feature-page-shell .motion-composer-footer .custom-select-trigger,
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger {
+  color: var(--text-primary) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.065)) !important;
+  border-color: rgba(176, 199, 226, 0.18) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+.feature-page-shell .face-swap-workbench__setting .custom-select:hover .custom-select-trigger,
+.feature-page-shell .face-swap-workbench__setting .custom-select-trigger:hover,
+.feature-page-shell .face-swap-workbench__setting .custom-select-trigger:focus-visible,
+.feature-page-shell .face-swap-workbench__setting .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .motion-composer-footer .custom-select:hover .custom-select-trigger,
+.feature-page-shell .motion-composer-footer .custom-select-trigger:hover,
+.feature-page-shell .motion-composer-footer .custom-select-trigger:focus-visible,
+.feature-page-shell .motion-composer-footer .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:hover,
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:focus-visible,
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select.is-open .custom-select-trigger {
+  color: #fff !important;
+  background:
+    radial-gradient(circle at 22% 0%, rgba(141, 99, 255, 0.34), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)) !important;
+  border-color: rgba(141, 99, 255, 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px rgba(141, 99, 255, 0.12),
+    0 14px 34px rgba(0, 0, 0, 0.28) !important;
 }
 
 .assets-view-root {

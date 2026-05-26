@@ -140,7 +140,7 @@ function ImageDigitalHumanShowcaseCard({
             <label className="idh-showcase-field">
               <span>模型</span>
               <CustomSelect
-                className="control-select"
+                className="idh-showcase-select custom-select-theme-dh"
                 ariaLabel="模型"
                 value={selectedModelValue}
                 onChange={onModelChange}
@@ -151,7 +151,7 @@ function ImageDigitalHumanShowcaseCard({
             <label className="idh-showcase-field">
               <span>音色</span>
               <CustomSelect
-                className="control-select"
+                className="idh-showcase-select custom-select-theme-dh"
                 ariaLabel="音色"
                 value={selectedVoiceValue}
                 onChange={onVoiceChange}
@@ -172,7 +172,7 @@ function ImageDigitalHumanShowcaseCard({
               <label className="idh-showcase-field">
                 <span>音色情绪</span>
                 <CustomSelect
-                  className="control-select"
+                  className="idh-showcase-select custom-select-theme-dh"
                   ariaLabel="音色情绪"
                   value={emotion}
                   onChange={onEmotionChange}

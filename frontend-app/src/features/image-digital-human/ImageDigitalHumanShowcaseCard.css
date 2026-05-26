@@ -258,10 +258,13 @@
 .idh-showcase-field {
   display: grid;
   gap: 6px;
+  position: relative;
+  overflow: visible;
 }
 
 .idh-showcase-settings {
   align-content: start;
+  overflow: visible;
 }
 
 .idh-showcase-settings .idh-showcase-steps {
@@ -278,6 +281,12 @@
 .idh-showcase-field textarea {
   width: 100%;
   font: inherit;
+}
+
+.idh-showcase-field .custom-select,
+.idh-showcase-field .custom-select.is-open {
+  position: relative;
+  z-index: 120;
 }
 
 .idh-showcase-field textarea {
