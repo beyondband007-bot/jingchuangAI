@@ -126,6 +126,7 @@ export function VoiceConversionWorkbenchCard({
               <div className="assets-section-title voice-conversion-workbench__upload-title">
                 <span className="voice-conversion-workbench__upload-index is-photo">1</span>
                 <strong>上传目标音色</strong>
+                <span className="voice-conversion-workbench__format-pill">MP3/M4A/WAV</span>
               </div>
               <UploadBox
                 icon={Mic2}
@@ -143,6 +144,7 @@ export function VoiceConversionWorkbenchCard({
               <div className="assets-section-title voice-conversion-workbench__upload-title">
                 <span className="voice-conversion-workbench__upload-index is-video">2</span>
                 <strong>上传音频文件</strong>
+                <span className="voice-conversion-workbench__format-pill">MP3/M4A/WAV/FLAC/WEBM</span>
               </div>
               <UploadBox
                 icon={FileAudio}

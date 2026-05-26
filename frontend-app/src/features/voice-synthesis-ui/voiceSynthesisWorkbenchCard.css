@@ -56,6 +56,20 @@
   color: #f5f7ff;
 }
 
+.voice-synthesis-workspace__format-pill {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  color: #c6cce6;
+  background: rgba(86, 96, 138, 0.22);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .voice-synthesis-workspace__step span:first-child {
   display: none;
 }

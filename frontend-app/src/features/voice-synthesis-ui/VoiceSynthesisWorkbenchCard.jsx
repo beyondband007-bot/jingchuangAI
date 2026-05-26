@@ -50,6 +50,7 @@ export function VoiceSynthesisWorkbenchCard({
               <div className="voice-synthesis-workspace__step">
                 <span>1</span>
                 <h2>选择目标音色</h2>
+                <span className="voice-synthesis-workspace__format-pill">MP3/M4A/WAV</span>
               </div>
 
               <div className="voice-synthesis-workspace__upload-grid">

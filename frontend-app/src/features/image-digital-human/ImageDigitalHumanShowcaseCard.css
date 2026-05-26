@@ -128,11 +128,14 @@
 
 .idh-showcase-format-pill {
   margin-left: auto;
-  padding: 9px 12px;
+  height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
   color: #c6cce6;
   background: rgba(86, 96, 138, 0.22);
-  border-radius: 10px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
 }
