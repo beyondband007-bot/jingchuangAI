@@ -175,13 +175,6 @@
   background: #12131b;
 }
 
-.face-swap-workbench__upload-cloud {
-  position: absolute;
-  right: 20px;
-  bottom: 18px;
-  opacity: 0.25;
-}
-
 .face-swap-workbench__clear-button,
 .face-swap-workbench__uploading {
   position: absolute;
