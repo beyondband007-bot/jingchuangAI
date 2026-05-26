@@ -48,17 +48,21 @@
       box-sizing: border-box;
     }
 
+    html,
+    body {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
     html {
       scroll-behavior: smooth;
-      scrollbar-width: auto;
-      -ms-overflow-style: auto;
     }
 
     html::-webkit-scrollbar,
     body::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-      display: initial;
+      width: 0;
+      height: 0;
+      display: none;
     }
 
     html::-webkit-scrollbar-thumb,

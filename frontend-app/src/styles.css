@@ -13510,8 +13510,8 @@ body.studio-landing-active {
   overflow-x: hidden;
   overflow-y: hidden;
   overscroll-behavior: auto;
-  scrollbar-width: auto;
-  -ms-overflow-style: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 body.studio-landing-active #root {
@@ -13523,9 +13523,9 @@ body.studio-landing-active #root {
 
 html.studio-landing-active::-webkit-scrollbar,
 body.studio-landing-active::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-  display: initial;
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 
 html.studio-landing-active::-webkit-scrollbar-thumb,
@@ -13574,9 +13574,15 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
 .studio-landing {
   scroll-behavior: auto;
-  scrollbar-width: auto;
-  -ms-overflow-style: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   overscroll-behavior: auto;
+}
+
+.studio-landing::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
 }
 
 .studio-landing {
