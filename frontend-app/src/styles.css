@@ -11985,7 +11985,8 @@ section.image-gen-view .sowa-composer {
   margin-top: 222px;
 }
 
-.image-gen-view.has-completed-notice .image-results-feed {
+.image-gen-view.has-completed-notice .image-results-feed,
+.image-results-feed.has-completed-notice {
   margin-top: 222px;
 }
 
@@ -12146,7 +12147,8 @@ section.image-gen-view .sowa-composer {
     margin-top: 202px;
   }
 
-  .image-gen-view.has-completed-notice .image-results-feed {
+  .image-gen-view.has-completed-notice .image-results-feed,
+  .image-results-feed.has-completed-notice {
     margin-top: 202px;
   }
 

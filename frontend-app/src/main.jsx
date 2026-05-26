@@ -2462,6 +2462,9 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     activeGenerationTask?.status === "pending" ||
     activeGenerationTask?.status === "processing",
   );
+  const hasCompletedNotice = Boolean(
+    !hasActiveGeneration && submittedTask?.status === "completed",
+  );
   const imageExampleCards = useMemo(
     () =>
       exampleImages.map((item, index) => ({
@@ -2675,7 +2678,9 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   }
 
   return (
-    <section className="image-gen-view video-gen-view-root">
+    <section
+      className={`image-gen-view video-gen-view-root ${hasCompletedNotice ? "has-completed-notice" : ""}`}
+    >
       <div className="image-filter-tabs">
         <button
           className={filter === "inspiration" ? "selected" : ""}
@@ -2717,7 +2722,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           prompt={activeGenerationTask?.prompt || activePrompt}
         />
       )}
-      {!hasActiveGeneration && submittedTask?.status === "completed" && (
+      {hasCompletedNotice && (
         <ImageCompletedNotice
           task={submittedTask}
           onReveal={revealGeneratedTask}
@@ -2725,7 +2730,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       )}
       {galleryItems.length ? (
         <WaterfallGrid
-          className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""}`}
+          className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
           gap={6}
           maxColumns={6}
           items={galleryItems}
