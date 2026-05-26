@@ -1,4 +1,4 @@
-﻿import React, {
+﻿﻿import React, {
   memo,
   useCallback,
   useEffect,
@@ -5497,12 +5497,6 @@ function MotionTransferUploadSlot({
           上传中
         </span>
       )}
-      {!isUploading && previewUrl && (
-        <span className="motion-upload-kind">
-          <Icon size={14} />
-          更换素材
-        </span>
-      )}
     </button>
   );
 }
@@ -5661,7 +5655,7 @@ function MotionTransferComposer({
       </div>
       <div className="motion-composer-footer">
         <CustomSelect
-          className="control-select model-select"
+          className="control-select model-select content-fit-select"
           ariaLabel="模型"
           icon={Box}
           value={model}
@@ -5669,7 +5663,7 @@ function MotionTransferComposer({
           options={options.models}
         />
         <CustomSelect
-          className="control-select"
+          className="control-select content-fit-select"
           ariaLabel="分辨率"
           icon={Ruler}
           value={resolution}

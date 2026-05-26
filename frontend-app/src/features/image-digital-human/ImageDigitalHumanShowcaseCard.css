@@ -289,6 +289,11 @@
   z-index: 120;
 }
 
+.idh-showcase-field .custom-select-theme-dh .custom-select-trigger {
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .idh-showcase-field textarea {
   border: 1px solid var(--app-border);
   border-radius: 8px;

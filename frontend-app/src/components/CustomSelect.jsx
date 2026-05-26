@@ -34,7 +34,7 @@ function measureMenuContentWidth(triggerElement, normalizedOptions) {
     return Math.max(maxWidth, labelWidth);
   }, 0);
 
-  return Math.ceil(widestLabel + 64);
+  return Math.ceil(widestLabel + 72);
 }
 
 export function CustomSelect({
@@ -61,11 +61,17 @@ export function CustomSelect({
 
     const rect = triggerRef.current.getBoundingClientRect();
     const estimatedHeight = Math.min(menuRef.current?.offsetHeight || (normalizedOptions.length * 40 + 16), 280);
-    const contentWidth = Math.max(
-      menuRef.current ? Math.ceil(menuRef.current.scrollWidth) : 0,
-      measureMenuContentWidth(triggerRef.current, normalizedOptions)
+    const shouldFitContent = Boolean(
+      rootRef.current?.classList.contains("content-fit-select") ||
+      rootRef.current?.closest(".face-swap-workbench__setting--model")
     );
-    const width = Math.min(window.innerWidth - 16, Math.max(rect.width, contentWidth));
+    const contentWidth = shouldFitContent
+      ? measureMenuContentWidth(triggerRef.current, normalizedOptions)
+      : 0;
+    const width = Math.min(
+      window.innerWidth - 16,
+      Math.ceil(shouldFitContent ? Math.max(rect.width, contentWidth) : rect.width)
+    );
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
     const openUpward = spaceBelow < estimatedHeight + 12 && spaceAbove > spaceBelow;

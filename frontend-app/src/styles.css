@@ -1,4 +1,4 @@
-﻿* {
+﻿﻿* {
   box-sizing: border-box;
 }
 
@@ -11414,7 +11414,7 @@ select {
   padding: 0 14px;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -12576,6 +12576,7 @@ textarea:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
 }
 
 .custom-select-trigger > svg:first-child {
@@ -12692,7 +12693,7 @@ textarea:focus-visible {
   border-radius: 10px;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0;
   text-align: left;
@@ -12859,7 +12860,10 @@ textarea:focus-visible {
 
 .feature-page-shell .face-swap-workbench__setting .custom-select-trigger,
 .feature-page-shell .motion-composer-footer .custom-select-trigger,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger {
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger,
+.feature-page-shell .dh-field .custom-select-trigger,
+.feature-page-shell .dh-settings-group .custom-select-trigger,
+.feature-page-shell .idh-showcase-field .custom-select-trigger {
   color: var(--text-primary) !important;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.065)) !important;
@@ -12880,7 +12884,19 @@ textarea:focus-visible {
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select:hover .custom-select-trigger,
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:hover,
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:focus-visible,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select.is-open .custom-select-trigger {
+.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .dh-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell .dh-field .custom-select-trigger:hover,
+.feature-page-shell .dh-field .custom-select-trigger:focus-visible,
+.feature-page-shell .dh-field .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .dh-settings-group .custom-select:hover .custom-select-trigger,
+.feature-page-shell .dh-settings-group .custom-select-trigger:hover,
+.feature-page-shell .dh-settings-group .custom-select-trigger:focus-visible,
+.feature-page-shell .dh-settings-group .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .idh-showcase-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell .idh-showcase-field .custom-select-trigger:hover,
+.feature-page-shell .idh-showcase-field .custom-select-trigger:focus-visible,
+.feature-page-shell .idh-showcase-field .custom-select.is-open .custom-select-trigger {
   color: #fff !important;
   background:
     radial-gradient(circle at 22% 0%, rgba(141, 99, 255, 0.34), transparent 55%),

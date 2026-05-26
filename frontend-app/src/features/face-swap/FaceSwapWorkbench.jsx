@@ -7,7 +7,6 @@ import {
   Play,
   Settings,
   Sparkles,
-  UploadCloud,
   Video,
   X
 } from "lucide-react";
@@ -103,7 +102,6 @@ function UploadCard({
             <Icon size={56} />
             <strong>{isPhoto ? "点击或拖拽照片到此处上传" : "点击或拖拽视频到此处上传"}</strong>
             <span>{isPhoto ? "建议使用正面、光线充足的照片" : "建议视频中主体清晰，时长不超过 10 分钟"}</span>
-            <UploadCloud className="face-swap-workbench__upload-cloud" size={20} />
           </>
         )}
         {previewUrl && !isUploading && (
@@ -361,12 +359,12 @@ export function FaceSwapWorkbench({
 
             <label className="face-swap-workbench__setting face-swap-workbench__setting--compact">
               <span>分辨率</span>
-              <CustomSelect ariaLabel="分辨率" value={resolution} onChange={setResolution} options={resolutionOptions} />
+              <CustomSelect className="content-fit-select" ariaLabel="分辨率" value={resolution} onChange={setResolution} options={resolutionOptions} />
             </label>
 
             <label className="face-swap-workbench__setting face-swap-workbench__setting--duration">
               <span>时长</span>
-              <CustomSelect ariaLabel="时长" value={duration} onChange={setDuration} options={durationOptions} />
+              <CustomSelect className="content-fit-select" ariaLabel="时长" value={duration} onChange={setDuration} options={durationOptions} />
             </label>
 
             <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top face-swap-workbench__toggle--enhance">
