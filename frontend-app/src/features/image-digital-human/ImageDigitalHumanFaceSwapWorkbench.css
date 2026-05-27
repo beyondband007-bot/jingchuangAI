@@ -61,6 +61,17 @@
   animation: spin 1s linear infinite;
 }
 
+.image-digital-human-workbench__privacy-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #98a2c0;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 @media (max-width: 900px) {
   .image-digital-human-workbench .face-swap-workbench__upload-grid {
     grid-template-columns: 1fr;

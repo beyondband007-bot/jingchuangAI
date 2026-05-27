@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ImagePlus, Loader2, Wand2, X } from "lucide-react";
+import { ImagePlus, Loader2, LockKeyhole, Wand2, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { CustomSelect } from "../../components/CustomSelect";
 import "../face-swap/FaceSwapWorkbench.css";
@@ -298,6 +298,11 @@ export function ImageDigitalHumanFaceSwapWorkbench({
       </div>
 
       {notice ? <div className="face-swap-workbench__notice">{notice}</div> : null}
+
+      <div className="image-digital-human-workbench__privacy-note">
+        <LockKeyhole size={16} />
+        您上传的内容仅用于换脸处理，不会被用于其他用途。
+      </div>
     </div>
   );
 }

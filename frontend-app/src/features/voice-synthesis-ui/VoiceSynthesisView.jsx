@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, LockKeyhole, Mic, Music, Play, Star, Trash2 } from "lucide-react";
-import { VoiceSynthesisWorkbenchCard } from "../voice-synthesis-ui/VoiceSynthesisWorkbenchCard";
+import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
 import { voiceApi } from "./voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
