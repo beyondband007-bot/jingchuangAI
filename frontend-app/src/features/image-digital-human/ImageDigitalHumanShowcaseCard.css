@@ -32,9 +32,7 @@
 }
 
 .idh-showcase-hero {
-  justify-items: center;
-  gap: 20px;
-  text-align: center;
+  display: none;
 }
 
 .idh-showcase-copy strong {
@@ -54,13 +52,7 @@
 }
 
 .idh-showcase-frame {
-  display: grid;
-  gap: 18px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  display: contents;
 }
 
 .idh-showcase-stage {
@@ -450,6 +442,10 @@
   display: block;
   color: #dce3ff;
   line-height: 1.5;
+}
+
+.idh-showcase-footer {
+  display: none;
 }
 
 @media (max-width: 900px) {

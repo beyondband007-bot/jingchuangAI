@@ -1,0 +1,68 @@
+.image-digital-human-workbench .face-swap-workbench__upload-card {
+  display: flex;
+  flex-direction: column;
+  align-content: start;
+  min-height: 0;
+}
+
+.image-digital-human-workbench .face-swap-workbench__upload-grid {
+  align-items: stretch;
+}
+
+.image-digital-human-workbench__card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.image-digital-human-workbench__card .idh-showcase-upload,
+.image-digital-human-workbench__card .idh-showcase-settings {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+}
+
+.image-digital-human-workbench__card .idh-showcase-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.image-digital-human-workbench__card .idh-showcase-upload-input {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+}
+
+.image-digital-human-workbench__card .idh-showcase-upload img,
+.image-digital-human-workbench__card .idh-showcase-placeholder {
+  min-height: 0;
+  height: 100%;
+}
+
+.image-digital-human-workbench__card .idh-showcase-settings {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.image-digital-human-workbench__card .idh-showcase-steps {
+  display: grid;
+}
+
+.image-digital-human-workbench__spinner {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 900px) {
+  .image-digital-human-workbench .face-swap-workbench__upload-grid {
+    grid-template-columns: 1fr;
+  }
+}

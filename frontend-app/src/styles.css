@@ -12790,6 +12790,12 @@ textarea:focus-visible {
   width: max(100%, 120px);
 }
 
+[data-feature-module="image-digital-human"] .face-swap-workbench__settings,
+[data-feature-module="image-digital-human"] .face-swap-workbench__privacy {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .feature-page-shell
   .custom-select:not(.idh-advanced-select)
   .custom-select-trigger {

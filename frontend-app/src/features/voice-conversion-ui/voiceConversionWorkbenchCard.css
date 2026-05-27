@@ -94,6 +94,7 @@
 }
 
 .voice-conversion-workbench__upload-box {
+  position: relative;
   min-height: 290px;
   height: 100%;
   display: flex;
@@ -155,11 +156,42 @@
   font-size: 13px;
 }
 
+.voice-conversion-workbench__upload-strong {
+  font-size: 18px;
+  line-height: 1.35;
+  color: #f7f7ff;
+}
+
+.voice-conversion-workbench__upload-note {
+  color: #a9b3cf;
+  font-size: 13px;
+}
+
 .voice-conversion-workbench__upload-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 4px;
+}
+
+.voice-conversion-workbench__upload-clear {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f3f5ff;
+  background: rgba(11, 13, 20, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .voice-conversion-workbench__ghost,

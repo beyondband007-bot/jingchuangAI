@@ -34,9 +34,29 @@ const voiceConversionFormatOptions = [
   { value: "wav", label: "wav" }
 ];
 
-function UploadBox({ icon: Icon, title, note, fileState, accept, isUploading, onPick, onClear, tone = "default" }) {
+function UploadBox({
+  icon: Icon,
+  title,
+  note,
+  fileState,
+  accept,
+  isUploading,
+  onPick,
+  onClear,
+  tone = "default"
+}) {
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear();
+  }
+
   return (
-    <label className={`voice-conversion-workbench__upload-box ${tone === "video" ? "is-video" : ""} ${fileState ? "has-file" : ""}`}>
+    <label
+      className={`voice-conversion-workbench__upload-box ${
+        tone === "video" ? "is-video" : ""
+      } ${fileState ? "has-file" : ""}`}
+    >
       <input
         type="file"
         accept={accept}
@@ -49,28 +69,28 @@ function UploadBox({ icon: Icon, title, note, fileState, accept, isUploading, on
         }}
       />
       <div className="voice-conversion-workbench__upload-icon">
-        <Icon size={42} />
+        <Icon size={56} />
       </div>
-      <h3>{fileState?.fileName || title}</h3>
-      <p>
+      <strong className="voice-conversion-workbench__upload-strong">
+        {fileState?.fileName || title}
+      </strong>
+      <span className="voice-conversion-workbench__upload-note">
         {fileState
-          ? `时长 ${Math.max(1, Math.round((fileState.durationMs || 0) / 1000))} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`
+          ? `时长 ${Math.max(
+              1,
+              Math.round((fileState.durationMs || 0) / 1000)
+            )} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`
           : note}
-      </p>
+      </span>
       {fileState ? (
-        <div className="voice-conversion-workbench__upload-actions">
-          <button
-            type="button"
-            className="voice-conversion-workbench__ghost is-secondary"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onClear();
-            }}
-          >
-            清除音频
-          </button>
-        </div>
+        <button
+          type="button"
+          className="voice-conversion-workbench__upload-clear"
+          aria-label="清除已上传音频"
+          onClick={clearFile}
+        >
+          ×
+        </button>
       ) : null}
     </label>
   );
@@ -112,10 +132,18 @@ export function VoiceConversionWorkbenchCard({
   onConvert,
   onDownloadResult
 }) {
-  const [advancedModel, setAdvancedModel] = useState(voiceConversionModelOptions[0].value);
-  const [denoiseLevel, setDenoiseLevel] = useState(voiceConversionDenoiseOptions[1].value);
-  const [preserveEmotion, setPreserveEmotion] = useState(voiceConversionEmotionOptions[0].value);
-  const [outputFormat, setOutputFormat] = useState(voiceConversionFormatOptions[0].value);
+  const [advancedModel, setAdvancedModel] = useState(
+    voiceConversionModelOptions[0].value
+  );
+  const [denoiseLevel, setDenoiseLevel] = useState(
+    voiceConversionDenoiseOptions[1].value
+  );
+  const [preserveEmotion, setPreserveEmotion] = useState(
+    voiceConversionEmotionOptions[0].value
+  );
+  const [outputFormat, setOutputFormat] = useState(
+    voiceConversionFormatOptions[0].value
+  );
 
   return (
     <section className="voice-conversion-workbench">
@@ -124,9 +152,13 @@ export function VoiceConversionWorkbenchCard({
           <div className="voice-conversion-workbench__upload-grid">
             <div className="voice-conversion-workbench__upload-column">
               <div className="assets-section-title voice-conversion-workbench__upload-title">
-                <span className="voice-conversion-workbench__upload-index is-photo">1</span>
+                <span className="voice-conversion-workbench__upload-index is-photo">
+                  1
+                </span>
                 <strong>上传目标音色</strong>
-                <span className="voice-conversion-workbench__format-pill">MP3/M4A/WAV</span>
+                <span className="voice-conversion-workbench__format-pill">
+                  MP3/M4A/WAV
+                </span>
               </div>
               <UploadBox
                 icon={Mic2}
@@ -142,9 +174,13 @@ export function VoiceConversionWorkbenchCard({
 
             <div className="voice-conversion-workbench__upload-column">
               <div className="assets-section-title voice-conversion-workbench__upload-title">
-                <span className="voice-conversion-workbench__upload-index is-video">2</span>
+                <span className="voice-conversion-workbench__upload-index is-video">
+                  2
+                </span>
                 <strong>上传音频文件</strong>
-                <span className="voice-conversion-workbench__format-pill">MP3/M4A/WAV/FLAC/WEBM</span>
+                <span className="voice-conversion-workbench__format-pill">
+                  MP3/M4A/WAV/FLAC/WEBM
+                </span>
               </div>
               <UploadBox
                 icon={FileAudio}
@@ -217,7 +253,11 @@ export function VoiceConversionWorkbenchCard({
 
             {resultAudio ? (
               <div className="voice-conversion-workbench__result-actions">
-                <button type="button" className="voice-conversion-workbench__ghost" onClick={onDownloadResult}>
+                <button
+                  type="button"
+                  className="voice-conversion-workbench__ghost"
+                  onClick={onDownloadResult}
+                >
                   <Download size={16} />
                   下载结果
                 </button>
@@ -225,7 +265,7 @@ export function VoiceConversionWorkbenchCard({
             ) : null}
           </section>
 
-          {(demoAudio || resultAudio) ? (
+          {demoAudio || resultAudio ? (
             <div className="voice-conversion-workbench__audio-results">
               {demoAudio ? (
                 <div>
@@ -252,7 +292,12 @@ export function VoiceConversionWorkbenchCard({
               <span>更多音色</span>
             </div>
             {presetVoices.map((item) => (
-              <div className={`voice-conversion-workbench__preset ${item.active ? "is-active" : ""}`} key={item.name}>
+              <div
+                className={`voice-conversion-workbench__preset ${
+                  item.active ? "is-active" : ""
+                }`}
+                key={item.name}
+              >
                 <div className="voice-conversion-workbench__avatar">
                   <Mic2 size={18} />
                 </div>

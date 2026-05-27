@@ -73,9 +73,9 @@ import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
+import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-human/ImageDigitalHumanFaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
-import { ImageDigitalHumanView } from "./features/image-digital-human/ImageDigitalHumanView";
 import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
@@ -5724,6 +5724,7 @@ function MotionTransferView({
   api = motionTransferApi,
   copy = motionTransferCopy,
   splitResults = false,
+  WorkbenchComponent = FaceSwapWorkbench,
 }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -5919,7 +5920,7 @@ function MotionTransferView({
         {useWorkbenchView &&
           (isFaceSwapView ? viewTab === "home" : showEmptyHero) &&
           !showCenterState && (
-            <FaceSwapWorkbench
+            <WorkbenchComponent
               options={options}
               onSubmit={createTask}
               isSubmitting={isSubmitting}
@@ -6724,7 +6725,13 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ImageDigitalHumanView />
+          <MotionTransferView
+            navId="face-swap"
+            api={faceSwapApi}
+            copy={faceSwapCopy}
+            splitResults
+            WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="motion"
