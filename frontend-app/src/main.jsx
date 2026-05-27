@@ -61,7 +61,7 @@ import { watermarkApi } from "./api/watermarkApi";
 import { VoiceSynthesisFaceSwapWorkbench } from "./features/voice-synthesis-ui/VoiceSynthesisFaceSwapWorkbench";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
-import { MusicGenerationView } from "./features/music/MusicGenerationView";
+import { MusicGenerationFaceSwapWorkbench } from "./features/music-generation-ui/MusicGenerationFaceSwapWorkbench";
 import { ReplicateView } from "./features/replicate/ReplicateView";
 import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
 import { PromptSelectField } from "./features/chat/components/PromptSelectField";
@@ -6786,7 +6786,13 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MusicGenerationView />
+          <MotionTransferView
+            navId="face-swap"
+            api={faceSwapApi}
+            copy={faceSwapCopy}
+            splitResults
+            WorkbenchComponent={MusicGenerationFaceSwapWorkbench}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"

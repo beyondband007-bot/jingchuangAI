@@ -264,7 +264,7 @@ export function VoiceSynthesisFaceSwapWorkbench({
         </section>
       </div>
 
-      <section className="face-swap-workbench__settings" aria-hidden="true" />
+
       <div className="voice-synthesis-face-swap-workbench__privacy-note">
         <LockKeyhole size={16} />
         您上传的内容仅用于换脸处理，不会被用于其他用途。
