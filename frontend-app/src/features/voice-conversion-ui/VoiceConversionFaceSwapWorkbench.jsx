@@ -174,7 +174,7 @@ function SettingsSlider({ label, displayValue, minLabel, maxLabel, ...props }) {
 export function VoiceConversionFaceSwapWorkbench({
   copy,
   heading = "音色转换",
-  privacyText = "您上传的内容仅用于换脸处理，不会被用于其他用途。",
+  privacyText = "您上传的内容仅用于音色转换处理，不会被用于其他用途。",
 }) {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);

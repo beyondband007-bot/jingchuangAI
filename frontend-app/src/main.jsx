@@ -5746,6 +5746,7 @@ function MotionTransferView({
   splitResults = false,
   WorkbenchComponent = FaceSwapWorkbench,
   heading,
+  privacyText,
 }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -5949,9 +5950,10 @@ function MotionTransferView({
               copy={copy}
               heading={heading || (navId === "motion" ? "AI 动作迁移" : "AI 换脸工具")}
               privacyText={
-                navId === "motion"
+                privacyText ||
+                (navId === "motion"
                   ? "您上传的内容仅用于动作迁移处理，不会被用于其他用途。"
-                  : "您上传的内容仅用于换脸处理，不会被用于其他用途。"
+                  : "您上传的内容仅用于换脸处理，不会被用于其他用途。")
               }
             />
           )}
@@ -6795,6 +6797,7 @@ function ImageFeaturePage({
             splitResults
             WorkbenchComponent={VoiceConversionFaceSwapWorkbench}
             heading="音色转换"
+            privacyText="您上传的内容仅用于音色转换处理，不会被用于其他用途。"
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive

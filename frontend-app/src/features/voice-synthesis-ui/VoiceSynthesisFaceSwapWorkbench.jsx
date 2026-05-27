@@ -26,6 +26,7 @@ function readAudioDuration(file) {
 export function VoiceSynthesisFaceSwapWorkbench({
   heading = "AI 换脸工具",
   copy,
+  privacyText = "您上传的内容仅用于语音合成处理，不会被用于其他用途。",
 }) {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState(false);

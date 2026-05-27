@@ -246,10 +246,7 @@ export function MusicGenerationFaceSwapWorkbench({
         </section>
       </div>
 
-      <div className="music-generation-face-swap-workbench__privacy-note">
-        <LockKeyhole size={16} />
-        您上传的内容仅用于换脸处理，不会被用于其他用途。
-      </div>
+
     </div>
   );
 }
