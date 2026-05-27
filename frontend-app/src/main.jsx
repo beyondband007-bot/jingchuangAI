@@ -59,7 +59,7 @@ import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
 import { watermarkApi } from "./api/watermarkApi";
 import { VoiceSynthesisFaceSwapWorkbench } from "./features/voice-synthesis-ui/VoiceSynthesisFaceSwapWorkbench";
-import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
+import { VoiceConversionFaceSwapWorkbench } from "./features/voice-conversion-ui/VoiceConversionFaceSwapWorkbench";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
 import { MusicGenerationFaceSwapWorkbench } from "./features/music-generation-ui/MusicGenerationFaceSwapWorkbench";
 import { ReplicateView } from "./features/replicate/ReplicateView";
@@ -6765,7 +6765,13 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceConvertView />
+          <MotionTransferView
+            navId="face-swap"
+            api={faceSwapApi}
+            copy={faceSwapCopy}
+            splitResults
+            WorkbenchComponent={VoiceConversionFaceSwapWorkbench}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
