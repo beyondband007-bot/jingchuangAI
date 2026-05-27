@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, LockKeyhole, Mic, Music, Play, Star, Trash2 } from "lucide-react";
 import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
-import { voiceApi } from "./voiceApi";
+import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";

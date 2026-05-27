@@ -789,11 +789,10 @@
 }
 
 .voice-synthesis-face-swap-workbench__panel {
-  padding: 0;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(28, 32, 46, 0.94), rgba(18, 21, 31, 0.94));
+  border: 1px solid rgba(183, 194, 235, 0.12);
+  border-radius: 24px;
 }
 
 .voice-synthesis-face-swap-workbench__privacy-note {
