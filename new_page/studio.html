@@ -1784,7 +1784,7 @@
       display: grid;
       align-content: space-between;
       justify-items: end;
-      gap: 16px;
+      gap: 8px;
       min-height: 98px;
     }
 
@@ -1795,8 +1795,8 @@
     }
 
     .socials a {
-      width: 54px;
-      height: 54px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: grid;
       place-items: center;
@@ -1816,6 +1816,15 @@
       color: rgba(255,255,255,0.82);
       text-align: right;
       white-space: nowrap;
+      margin: 0;
+    }
+
+    .footer-beian {
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.82);
+      text-align: right;
+      white-space: nowrap;
+      margin: 0;
     }
 
     .button svg,
@@ -1966,14 +1975,18 @@
         white-space: normal;
       }
 
+      .footer-beian {
+        text-align: left;
+        white-space: normal;
+      }
       .socials {
         justify-content: flex-start;
         flex-wrap: wrap;
       }
 
       .socials a {
-        width: 68px;
-        height: 68px;
+        width: 48px;
+        height: 48px;
       }
     }
 
@@ -2219,6 +2232,7 @@
           </a>
         </div>
         <p class="footer-legal">© 2026 Facemini All rights reserved.</p>
+        <a class="footer-beian" href="https://beian.miit.gov.cn/" target="_blank">鄂ICP备2021002927号-3</a>
       </div>
     </footer>
   </main>

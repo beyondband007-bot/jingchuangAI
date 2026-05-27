@@ -48,21 +48,17 @@
       box-sizing: border-box;
     }
 
-    html,
-    body {
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
     html {
       scroll-behavior: smooth;
+      scrollbar-width: auto;
+      -ms-overflow-style: auto;
     }
 
     html::-webkit-scrollbar,
     body::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      display: none;
+      width: 10px;
+      height: 10px;
+      display: initial;
     }
 
     html::-webkit-scrollbar-thumb,
@@ -1788,7 +1784,7 @@
       display: grid;
       align-content: space-between;
       justify-items: end;
-      gap: 16px;
+      gap: 8px;
       min-height: 98px;
     }
 
@@ -1799,8 +1795,8 @@
     }
 
     .socials a {
-      width: 54px;
-      height: 54px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: grid;
       place-items: center;
@@ -1820,6 +1816,15 @@
       color: rgba(255,255,255,0.82);
       text-align: right;
       white-space: nowrap;
+      margin: 0;
+    }
+
+    .footer-beian {
+      font-size: 0.76rem;
+      color: rgba(255,255,255,0.82);
+      text-align: right;
+      white-space: nowrap;
+      margin: 0;
     }
 
     .button svg,
@@ -1970,14 +1975,18 @@
         white-space: normal;
       }
 
+      .footer-beian {
+        text-align: left;
+        white-space: normal;
+      }
       .socials {
         justify-content: flex-start;
         flex-wrap: wrap;
       }
 
       .socials a {
-        width: 68px;
-        height: 68px;
+        width: 48px;
+        height: 48px;
       }
     }
 
@@ -2223,6 +2232,7 @@
           </a>
         </div>
         <p class="footer-legal">© 2026 Facemini All rights reserved.</p>
+        <a class="footer-beian" href="https://beian.miit.gov.cn/" target="_blank">鄂ICP备2021002927号-3</a>
       </div>
     </footer>
   </main>
@@ -2303,7 +2313,11 @@
       var heroVideo = document.querySelector(".first-screen-bg video");
       var heroShell = document.querySelector(".showcase-shell");
       var heroIntroProgress = 0;
+      var heroTouchLastY = 0;
       var features = document.querySelector(".features");
+      var pendingWheelX = 0;
+      var pendingWheelY = 0;
+      var wheelFrame = 0;
       var revealFrame = 0;
       var videoVisibilityFrame = 0;
 
@@ -2538,6 +2552,88 @@
         };
       }
 
+      function shouldLockHeroIntro(deltaY) {
+        return false;
+      }
+
+      function advanceHeroIntro(deltaY) {
+        var next = heroIntroProgress + (deltaY / Math.max(window.innerHeight * 0.72, 420));
+        setHeroIntroProgress(next);
+      }
+
+      function handleHeroIntroWheel(event) {
+        if (!shouldLockHeroIntro(event.deltaY)) return;
+        event.preventDefault();
+        advanceHeroIntro(event.deltaY);
+      }
+
+      function handleHeroIntroTouchStart(event) {
+        if (!event.touches || !event.touches.length) return;
+        heroTouchLastY = event.touches[0].clientY;
+      }
+
+      function handleHeroIntroTouchMove(event) {
+        if (!event.touches || !event.touches.length) return;
+        var currentY = event.touches[0].clientY;
+        var deltaY = heroTouchLastY - currentY;
+        heroTouchLastY = currentY;
+        if (Math.abs(deltaY) < 0.5 || !shouldLockHeroIntro(deltaY)) return;
+        event.preventDefault();
+        advanceHeroIntro(deltaY);
+      }
+
+      function findScrollableAncestor(startNode) {
+        var node = startNode;
+        while (node && node !== document.body && node !== document.documentElement) {
+          if (node instanceof HTMLElement) {
+            var style = window.getComputedStyle(node);
+            var canScrollY = /(auto|scroll|overlay)/.test(style.overflowY)
+              && node.scrollHeight > node.clientHeight + 1;
+            if (canScrollY) return node;
+          }
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      function flushLandingWheel() {
+        wheelFrame = 0;
+        var left = pendingWheelX;
+        var top = pendingWheelY;
+        pendingWheelX = 0;
+        pendingWheelY = 0;
+        if (left || top) {
+          window.scrollBy({ top: top, left: left, behavior: "auto" });
+          if (typeof revealCurrentViewport === "function") {
+            revealCurrentViewport();
+          } else {
+            scheduleRevealCheck();
+          }
+          syncHeroVideoPlayback();
+        }
+      }
+
+      function handleLandingWheel(event) {
+        var scrollable = findScrollableAncestor(event.target);
+        if (scrollable && scrollable !== document.body && scrollable !== document.documentElement) return;
+
+        var multiplier = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? 16
+          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? window.innerHeight
+            : 1;
+        var nextTop = event.deltaY * multiplier;
+        var nextLeft = event.deltaX * multiplier;
+        if (nextTop === 0 && nextLeft === 0) return;
+
+        event.preventDefault();
+        pendingWheelY += nextTop;
+        pendingWheelX += nextLeft;
+        if (!wheelFrame) {
+          wheelFrame = requestAnimationFrame(flushLandingWheel);
+        }
+      }
+
       var revealCurrentViewport = setupScrollReveals();
       function scheduleRevealCheck() {
         if (typeof revealCurrentViewport === "function" && !revealFrame) {
@@ -2554,8 +2650,12 @@
       window.addEventListener("load", function () {
         requestAnimationFrame(measureHeroVideoTarget);
       }, { once: true });
+      window.addEventListener("wheel", handleHeroIntroWheel, { passive: false });
+      window.addEventListener("wheel", handleLandingWheel, { passive: false });
       window.addEventListener("scroll", revealAfterScroll, { passive: true });
       document.addEventListener("scroll", revealAfterScroll, { passive: true });
+      window.addEventListener("touchstart", handleHeroIntroTouchStart, { passive: true });
+      window.addEventListener("touchmove", handleHeroIntroTouchMove, { passive: false });
       window.addEventListener("resize", measureHeroVideoTarget);
 
       var glowCards = document.querySelectorAll(".showcase-shell");
@@ -2644,11 +2744,11 @@
     const cleanup = burst
       ? mountPrismaticBurst(burst, {
           opacity: 0.96,
-          intensity: 1.85,
-          speed: 0.68,
-          distort: 0.9,
-          noiseAmount: 0.16,
-          rayCount: 11,
+          intensity: 2.2,
+          speed: 0.82,
+          distort: 1.08,
+          noiseAmount: 0.2,
+          rayCount: 13,
         })
       : null;
 

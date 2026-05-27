@@ -998,7 +998,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth }) {
         }}
         className="original-home-frame"
         title="Facemini AI"
-        src="/new_page/studio.html"
+        src="/new_page/studio.html?v=20260527"
         onLoad={handleFrameLoad}
       />
       <iframe

@@ -15664,7 +15664,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   display: grid;
   align-content: space-between;
   justify-items: end;
-  gap: 16px;
+  gap: 8px;
   min-height: 98px;
 }
 
@@ -15692,6 +15692,14 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 }
 
 .studio-landing .footer-legal {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: right;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.studio-landing .footer-beian {
   font-size: 0.76rem;
   color: rgba(255, 255, 255, 0.82);
   text-align: right;
@@ -15842,6 +15850,11 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   }
 
   .studio-landing .footer-legal {
+    text-align: left;
+    white-space: normal;
+  }
+
+  .studio-landing .footer-beian {
     text-align: left;
     white-space: normal;
   }
