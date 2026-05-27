@@ -5259,6 +5259,26 @@ const faceSwapCopy = {
   createError: "创建视频换脸任务失败",
 };
 
+const imageDigitalHumanCopy = {
+  ...faceSwapCopy,
+  emptyDescription: "上传人物正面图，配置脚本与音色，快速生成口型自然的视频内容",
+};
+
+const voiceSynthesisCopy = {
+  ...faceSwapCopy,
+  emptyDescription: "上传目标音色并输入文本，一键生成专属语音",
+};
+
+const musicGenerationCopy = {
+  ...faceSwapCopy,
+  emptyDescription: "输入风格描述和歌词，AI 为你快速创作专属音乐",
+};
+
+const voiceConversionCopy = {
+  ...faceSwapCopy,
+  emptyDescription: "上传目标音色和源音频，自动提取内容并转换成目标声音",
+};
+
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
   if (value >= 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
@@ -5725,6 +5745,7 @@ function MotionTransferView({
   copy = motionTransferCopy,
   splitResults = false,
   WorkbenchComponent = FaceSwapWorkbench,
+  heading,
 }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -5926,7 +5947,7 @@ function MotionTransferView({
               isSubmitting={isSubmitting}
               api={api}
               copy={copy}
-              heading={navId === "motion" ? "AI 动作迁移" : "AI 换脸工具"}
+              heading={heading || (navId === "motion" ? "AI 动作迁移" : "AI 换脸工具")}
               privacyText={
                 navId === "motion"
                   ? "您上传的内容仅用于动作迁移处理，不会被用于其他用途。"
@@ -6728,9 +6749,10 @@ function ImageFeaturePage({
           <MotionTransferView
             navId="face-swap"
             api={faceSwapApi}
-            copy={faceSwapCopy}
+            copy={imageDigitalHumanCopy}
             splitResults
             WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
+            heading="图片数字人生成"
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -6755,9 +6777,10 @@ function ImageFeaturePage({
           <MotionTransferView
             navId="face-swap"
             api={faceSwapApi}
-            copy={faceSwapCopy}
+            copy={voiceSynthesisCopy}
             splitResults
             WorkbenchComponent={VoiceSynthesisFaceSwapWorkbench}
+            heading="语音合成"
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -6768,9 +6791,10 @@ function ImageFeaturePage({
           <MotionTransferView
             navId="face-swap"
             api={faceSwapApi}
-            copy={faceSwapCopy}
+            copy={voiceConversionCopy}
             splitResults
             WorkbenchComponent={VoiceConversionFaceSwapWorkbench}
+            heading="音色转换"
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -6795,9 +6819,10 @@ function ImageFeaturePage({
           <MotionTransferView
             navId="face-swap"
             api={faceSwapApi}
-            copy={faceSwapCopy}
+            copy={musicGenerationCopy}
             splitResults
             WorkbenchComponent={MusicGenerationFaceSwapWorkbench}
+            heading="AI 音乐生成"
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive

@@ -25,7 +25,7 @@ const ttsEmotionOptions = [
 
 export function ImageDigitalHumanFaceSwapWorkbench({
   copy,
-  heading = "AI 换脸工具",
+  heading = "图片数字人生成",
 }) {
   const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
   const [voices, setVoices] = useState([]);
@@ -301,7 +301,7 @@ export function ImageDigitalHumanFaceSwapWorkbench({
 
       <div className="image-digital-human-workbench__privacy-note">
         <LockKeyhole size={16} />
-        您上传的内容仅用于换脸处理，不会被用于其他用途。
+        您上传的内容仅用于生成数字人处理，不会被用于其他用途。
       </div>
     </div>
   );

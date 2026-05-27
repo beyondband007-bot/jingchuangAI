@@ -172,6 +172,7 @@ function SettingsSlider({ label, displayValue, minLabel, maxLabel, ...props }) {
 }
 
 export function VoiceConversionFaceSwapWorkbench({
+  copy,
   heading = "音色转换",
   privacyText = "您上传的内容仅用于换脸处理，不会被用于其他用途。",
 }) {
@@ -329,7 +330,7 @@ export function VoiceConversionFaceSwapWorkbench({
       <div className="face-swap-workbench__hero">
         <div>
           <h1>{heading}</h1>
-          <p>上传目标音色和源音频，自动提取内容并转换成目标声音。</p>
+          <p>{copy?.emptyDescription || "上传目标音色和源音频，自动提取内容并转换成目标声音"}</p>
         </div>
       </div>
 
