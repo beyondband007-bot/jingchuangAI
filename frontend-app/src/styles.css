@@ -4012,10 +4012,22 @@ a:hover {
   gap: 8px;
   color: rgba(226, 232, 240, 0.84);
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.12) 46%, rgba(255, 255, 255, 0.04) 100%),
-    radial-gradient(circle at 50% 18%, rgba(122, 44, 255, 0.18), transparent 42%),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.12) 46%,
+      rgba(255, 255, 255, 0.04) 100%
+    ),
+    radial-gradient(
+      circle at 50% 18%,
+      rgba(122, 44, 255, 0.18),
+      transparent 42%
+    ),
     rgba(11, 12, 15, 0.96);
-  background-size: 220% 100%, auto, auto;
+  background-size:
+    220% 100%,
+    auto,
+    auto;
   animation: image-preload-skeleton-sheen 1.35s ease-in-out infinite;
   pointer-events: none;
 }
@@ -4033,10 +4045,16 @@ a:hover {
 
 @keyframes image-preload-skeleton-sheen {
   0% {
-    background-position: 180% 0, center, center;
+    background-position:
+      180% 0,
+      center,
+      center;
   }
   100% {
-    background-position: -40% 0, center, center;
+    background-position:
+      -40% 0,
+      center,
+      center;
   }
 }
 
@@ -5364,10 +5382,22 @@ a:hover {
   padding: 18px;
   color: rgba(226, 232, 240, 0.86);
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.12) 46%, rgba(255, 255, 255, 0.04) 100%),
-    radial-gradient(circle at 50% 18%, rgba(122, 44, 255, 0.18), transparent 42%),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.12) 46%,
+      rgba(255, 255, 255, 0.04) 100%
+    ),
+    radial-gradient(
+      circle at 50% 18%,
+      rgba(122, 44, 255, 0.18),
+      transparent 42%
+    ),
     rgba(11, 12, 15, 0.96);
-  background-size: 220% 100%, auto, auto;
+  background-size:
+    220% 100%,
+    auto,
+    auto;
   animation: dh-cover-skeleton-sheen 1.35s ease-in-out infinite;
   text-align: center;
   pointer-events: none;
@@ -5386,10 +5416,16 @@ a:hover {
 
 @keyframes dh-cover-skeleton-sheen {
   0% {
-    background-position: 180% 0, center, center;
+    background-position:
+      180% 0,
+      center,
+      center;
   }
   100% {
-    background-position: -40% 0, center, center;
+    background-position:
+      -40% 0,
+      center,
+      center;
   }
 }
 
@@ -10275,18 +10311,29 @@ select {
   box-shadow: none;
 }
 
-.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu {
+.feature-page-shell
+  .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select)
+  .custom-select-menu {
   background: #171717 !important;
   border-color: var(--app-border) !important;
   box-shadow: var(--shadow-dark) !important;
 }
 
-.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button {
+.feature-page-shell
+  .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select)
+  .custom-select-menu
+  button {
   color: var(--text-primary) !important;
 }
 
-.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button:hover,
-.feature-page-shell .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select) .custom-select-menu button.is-selected {
+.feature-page-shell
+  .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select)
+  .custom-select-menu
+  button:hover,
+.feature-page-shell
+  .custom-select:not(.custom-select-theme-dh):not(.idh-advanced-select)
+  .custom-select-menu
+  button.is-selected {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 
@@ -12756,7 +12803,8 @@ textarea:focus-visible {
 }
 
 .custom-select.control-select.is-open .custom-select-menu:not(.is-floating),
-.custom-select.llm-reasoning-select.is-open .custom-select-menu:not(.is-floating) {
+.custom-select.llm-reasoning-select.is-open
+  .custom-select-menu:not(.is-floating) {
   transform: translateY(0) scale(1);
 }
 
@@ -12802,7 +12850,11 @@ textarea:focus-visible {
   color: var(--text-primary) !important;
   background:
     radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07)) !important;
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.13),
+      rgba(255, 255, 255, 0.07)
+    ) !important;
   border-color: rgba(176, 199, 226, 0.2) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -12866,52 +12918,115 @@ textarea:focus-visible {
 
 .feature-page-shell .face-swap-workbench__setting .custom-select-trigger,
 .feature-page-shell .motion-composer-footer .custom-select-trigger,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger,
-.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-workbench__advanced-field
+  .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-face-swap-workbench__advanced-field
+  .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select-trigger,
 .feature-page-shell .dh-settings-group .custom-select-trigger,
 .feature-page-shell .idh-showcase-field .custom-select-trigger {
   color: var(--text-primary) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.065)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.13),
+    rgba(255, 255, 255, 0.065)
+  ) !important;
   border-color: rgba(176, 199, 226, 0.18) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 12px 30px rgba(0, 0, 0, 0.18) !important;
 }
 
-.feature-page-shell .face-swap-workbench__setting .custom-select:hover .custom-select-trigger,
+.feature-page-shell
+  .face-swap-workbench__setting
+  .custom-select:hover
+  .custom-select-trigger,
 .feature-page-shell .face-swap-workbench__setting .custom-select-trigger:hover,
-.feature-page-shell .face-swap-workbench__setting .custom-select-trigger:focus-visible,
-.feature-page-shell .face-swap-workbench__setting .custom-select.is-open .custom-select-trigger,
-.feature-page-shell .motion-composer-footer .custom-select:hover .custom-select-trigger,
+.feature-page-shell
+  .face-swap-workbench__setting
+  .custom-select-trigger:focus-visible,
+.feature-page-shell
+  .face-swap-workbench__setting
+  .custom-select.is-open
+  .custom-select-trigger,
+.feature-page-shell
+  .motion-composer-footer
+  .custom-select:hover
+  .custom-select-trigger,
 .feature-page-shell .motion-composer-footer .custom-select-trigger:hover,
-.feature-page-shell .motion-composer-footer .custom-select-trigger:focus-visible,
-.feature-page-shell .motion-composer-footer .custom-select.is-open .custom-select-trigger,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select:hover .custom-select-trigger,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:hover,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:focus-visible,
-.feature-page-shell .voice-conversion-workbench__advanced-field .custom-select.is-open .custom-select-trigger,
-.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select:hover .custom-select-trigger,
-.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger:hover,
-.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger:focus-visible,
-.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select.is-open .custom-select-trigger,
+.feature-page-shell
+  .motion-composer-footer
+  .custom-select-trigger:focus-visible,
+.feature-page-shell
+  .motion-composer-footer
+  .custom-select.is-open
+  .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-workbench__advanced-field
+  .custom-select:hover
+  .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-workbench__advanced-field
+  .custom-select-trigger:hover,
+.feature-page-shell
+  .voice-conversion-workbench__advanced-field
+  .custom-select-trigger:focus-visible,
+.feature-page-shell
+  .voice-conversion-workbench__advanced-field
+  .custom-select.is-open
+  .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-face-swap-workbench__advanced-field
+  .custom-select:hover
+  .custom-select-trigger,
+.feature-page-shell
+  .voice-conversion-face-swap-workbench__advanced-field
+  .custom-select-trigger:hover,
+.feature-page-shell
+  .voice-conversion-face-swap-workbench__advanced-field
+  .custom-select-trigger:focus-visible,
+.feature-page-shell
+  .voice-conversion-face-swap-workbench__advanced-field
+  .custom-select.is-open
+  .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select:hover .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select-trigger:hover,
 .feature-page-shell .dh-field .custom-select-trigger:focus-visible,
 .feature-page-shell .dh-field .custom-select.is-open .custom-select-trigger,
-.feature-page-shell .dh-settings-group .custom-select:hover .custom-select-trigger,
+.feature-page-shell
+  .dh-settings-group
+  .custom-select:hover
+  .custom-select-trigger,
 .feature-page-shell .dh-settings-group .custom-select-trigger:hover,
 .feature-page-shell .dh-settings-group .custom-select-trigger:focus-visible,
-.feature-page-shell .dh-settings-group .custom-select.is-open .custom-select-trigger,
-.feature-page-shell .idh-showcase-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell
+  .dh-settings-group
+  .custom-select.is-open
+  .custom-select-trigger,
+.feature-page-shell
+  .idh-showcase-field
+  .custom-select:hover
+  .custom-select-trigger,
 .feature-page-shell .idh-showcase-field .custom-select-trigger:hover,
 .feature-page-shell .idh-showcase-field .custom-select-trigger:focus-visible,
-.feature-page-shell .idh-showcase-field .custom-select.is-open .custom-select-trigger {
+.feature-page-shell
+  .idh-showcase-field
+  .custom-select.is-open
+  .custom-select-trigger {
   color: #fff !important;
   background:
-    radial-gradient(circle at 22% 0%, rgba(141, 99, 255, 0.34), transparent 55%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)) !important;
+    radial-gradient(
+      circle at 22% 0%,
+      rgba(141, 99, 255, 0.34),
+      transparent 55%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.08)
+    ) !important;
   border-color: rgba(141, 99, 255, 0.48) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -14236,26 +14351,6 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
 .studio-landing .hero-pill .signup-hero__content {
   gap: 12px;
-}
-
-.studio-landing .signup-hero__orbit {
-  position: absolute;
-  width: 145%;
-  aspect-ratio: 1;
-  border-radius: 999px;
-  background: conic-gradient(
-    from 0deg,
-    transparent,
-    rgba(255, 255, 255, 0.72),
-    transparent,
-    rgba(88, 51, 255, 0.65),
-    transparent
-  );
-  filter: blur(13px);
-  opacity: 0.52;
-  animation: signup-spin 4.8s linear infinite;
-  z-index: 0;
-  pointer-events: none;
 }
 
 .studio-landing .signup-hero__liquid {
