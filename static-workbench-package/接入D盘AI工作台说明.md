@@ -28,7 +28,7 @@ D:\AI工作台
       index.html
       placeholder.svg
       icon.svg
-      内部hero区.mp4
+      Home_Top.mp4
       fonts\
         ZonaPro-SemiBold.ttf
       arc-cards\
@@ -93,7 +93,7 @@ public\重构\index.html
 
 ```html
 fonts/ZonaPro-SemiBold.ttf
-内部hero区.mp4
+Home_Top.mp4
 arc-cards/01_图片生成.png
 案例/gallery-1.jpg
 placeholder.svg
@@ -126,7 +126,7 @@ public\重构
 
 ```text
 /public/重构/index.html
-/public/重构/内部hero区.mp4
+/public/重构/Home_Top.mp4
 /public/重构/arc-cards/...
 /public/重构/案例/...
 ```
