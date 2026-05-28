@@ -12867,6 +12867,7 @@ textarea:focus-visible {
 .feature-page-shell .face-swap-workbench__setting .custom-select-trigger,
 .feature-page-shell .motion-composer-footer .custom-select-trigger,
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger,
+.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select-trigger,
 .feature-page-shell .dh-settings-group .custom-select-trigger,
 .feature-page-shell .idh-showcase-field .custom-select-trigger {
@@ -12891,6 +12892,10 @@ textarea:focus-visible {
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:hover,
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select-trigger:focus-visible,
 .feature-page-shell .voice-conversion-workbench__advanced-field .custom-select.is-open .custom-select-trigger,
+.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger:hover,
+.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select-trigger:focus-visible,
+.feature-page-shell .voice-conversion-face-swap-workbench__advanced-field .custom-select.is-open .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select:hover .custom-select-trigger,
 .feature-page-shell .dh-field .custom-select-trigger:hover,
 .feature-page-shell .dh-field .custom-select-trigger:focus-visible,

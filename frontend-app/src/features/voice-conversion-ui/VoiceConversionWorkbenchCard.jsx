@@ -3,35 +3,28 @@ import { Download, FileAudio, Mic2, Play } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
 import "./voiceConversionWorkbenchCard.css";
 
-const presetVoices = [
-  { name: "清澈女声", desc: "明亮自然，适合旁白与短视频", active: true },
-  { name: "磁性男声", desc: "低沉稳定，适合解说与课程", active: false },
-  { name: "少年音色", desc: "清爽灵动，适合角色配音", active: false },
-  { name: "主播音色", desc: "标准咬字，适合直播与口播", active: false }
-];
-
 const voiceConversionModelOptions = [
   { value: "voice-clone-pro", label: "Voice Clone Pro" },
   { value: "voice-clone-studio", label: "Voice Clone Studio" },
-  { value: "voice-clone-fast", label: "Voice Clone Fast" }
+  { value: "voice-clone-fast", label: "Voice Clone Fast" },
 ];
 
 const voiceConversionDenoiseOptions = [
   { value: "low", label: "低" },
   { value: "medium", label: "中等" },
   { value: "high", label: "高" },
-  { value: "max", label: "最高" }
+  { value: "max", label: "最高" },
 ];
 
 const voiceConversionEmotionOptions = [
   { value: "on", label: "开启" },
-  { value: "off", label: "关闭" }
+  { value: "off", label: "关闭" },
 ];
 
 const voiceConversionFormatOptions = [
   { value: "mp3", label: "mp3" },
   { value: "m4a", label: "m4a" },
-  { value: "wav", label: "wav" }
+  { value: "wav", label: "wav" },
 ];
 
 function UploadBox({
@@ -43,7 +36,7 @@ function UploadBox({
   isUploading,
   onPick,
   onClear,
-  tone = "default"
+  tone = "default",
 }) {
   function clearFile(event) {
     event.preventDefault();
@@ -78,7 +71,7 @@ function UploadBox({
         {fileState
           ? `时长 ${Math.max(
               1,
-              Math.round((fileState.durationMs || 0) / 1000)
+              Math.round((fileState.durationMs || 0) / 1000),
             )} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`
           : note}
       </span>
@@ -130,19 +123,19 @@ export function VoiceConversionWorkbenchCard({
   onVolumeChange,
   onPitchChange,
   onConvert,
-  onDownloadResult
+  onDownloadResult,
 }) {
   const [advancedModel, setAdvancedModel] = useState(
-    voiceConversionModelOptions[0].value
+    voiceConversionModelOptions[0].value,
   );
   const [denoiseLevel, setDenoiseLevel] = useState(
-    voiceConversionDenoiseOptions[1].value
+    voiceConversionDenoiseOptions[1].value,
   );
   const [preserveEmotion, setPreserveEmotion] = useState(
-    voiceConversionEmotionOptions[0].value
+    voiceConversionEmotionOptions[0].value,
   );
   const [outputFormat, setOutputFormat] = useState(
-    voiceConversionFormatOptions[0].value
+    voiceConversionFormatOptions[0].value,
   );
 
   return (
@@ -241,6 +234,54 @@ export function VoiceConversionWorkbenchCard({
               />
             </div>
 
+            <div className="voice-conversion-workbench__inline-advanced">
+              <div className="voice-conversion-workbench__side-head voice-conversion-workbench__side-head--inline">
+                <b>高级设置</b>
+              </div>
+              <div className="voice-conversion-workbench__advanced-grid">
+                <label className="voice-conversion-workbench__advanced-field">
+                  <span>模型</span>
+                  <CustomSelect
+                    className="control-select"
+                    ariaLabel="转换模型"
+                    value={advancedModel}
+                    onChange={setAdvancedModel}
+                    options={voiceConversionModelOptions}
+                  />
+                </label>
+                <label className="voice-conversion-workbench__advanced-field">
+                  <span>降噪强度</span>
+                  <CustomSelect
+                    className="control-select"
+                    ariaLabel="降噪强度"
+                    value={denoiseLevel}
+                    onChange={setDenoiseLevel}
+                    options={voiceConversionDenoiseOptions}
+                  />
+                </label>
+                <label className="voice-conversion-workbench__advanced-field">
+                  <span>保留情绪</span>
+                  <CustomSelect
+                    className="control-select"
+                    ariaLabel="保留情绪"
+                    value={preserveEmotion}
+                    onChange={setPreserveEmotion}
+                    options={voiceConversionEmotionOptions}
+                  />
+                </label>
+                <label className="voice-conversion-workbench__advanced-field">
+                  <span>输出格式</span>
+                  <CustomSelect
+                    className="control-select"
+                    ariaLabel="输出格式"
+                    value={outputFormat}
+                    onChange={setOutputFormat}
+                    options={voiceConversionFormatOptions}
+                  />
+                </label>
+              </div>
+            </div>
+
             <button
               type="button"
               className="voice-synthesis-workspace__generate-button dh-generate-button voice-conversion-workbench__generate"
@@ -284,80 +325,6 @@ export function VoiceConversionWorkbenchCard({
 
           {notice ? <div className="composer-notice warning">{notice}</div> : null}
         </div>
-
-        <aside className="voice-conversion-workbench__sidebar">
-          <div className="voice-conversion-workbench__side-card">
-            <div className="voice-conversion-workbench__side-head">
-              <b>预设音色</b>
-              <span>更多音色</span>
-            </div>
-            {presetVoices.map((item) => (
-              <div
-                className={`voice-conversion-workbench__preset ${
-                  item.active ? "is-active" : ""
-                }`}
-                key={item.name}
-              >
-                <div className="voice-conversion-workbench__avatar">
-                  <Mic2 size={18} />
-                </div>
-                <div>
-                  <b>{item.name}</b>
-                  <span>{item.desc}</span>
-                </div>
-                <button type="button" aria-label={`试听${item.name}`}>
-                  <Play size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div className="voice-conversion-workbench__side-card">
-            <div className="voice-conversion-workbench__side-head">
-              <b>高级设置</b>
-            </div>
-            <label className="voice-conversion-workbench__advanced-field">
-              <span>模型</span>
-              <CustomSelect
-                className="control-select"
-                ariaLabel="转换模型"
-                value={advancedModel}
-                onChange={setAdvancedModel}
-                options={voiceConversionModelOptions}
-              />
-            </label>
-            <label className="voice-conversion-workbench__advanced-field">
-              <span>降噪强度</span>
-              <CustomSelect
-                className="control-select"
-                ariaLabel="降噪强度"
-                value={denoiseLevel}
-                onChange={setDenoiseLevel}
-                options={voiceConversionDenoiseOptions}
-              />
-            </label>
-            <label className="voice-conversion-workbench__advanced-field">
-              <span>保留情绪</span>
-              <CustomSelect
-                className="control-select"
-                ariaLabel="保留情绪"
-                value={preserveEmotion}
-                onChange={setPreserveEmotion}
-                options={voiceConversionEmotionOptions}
-              />
-            </label>
-            <label className="voice-conversion-workbench__advanced-field">
-              <span>输出格式</span>
-              <CustomSelect
-                className="control-select"
-                ariaLabel="输出格式"
-                value={outputFormat}
-                onChange={setOutputFormat}
-                options={voiceConversionFormatOptions}
-              />
-            </label>
-          </div>
-        </aside>
       </div>
     </section>
   );

@@ -316,10 +316,9 @@
 
 .face-swap-workbench__settings-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  column-gap: 34px;
-  row-gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  row-gap: 22px;
 }
 
 .face-swap-workbench__settings-controls {
@@ -533,11 +532,12 @@
 
 .face-swap-workbench__action-area {
   display: grid;
-  align-self: end;
-  justify-self: start;
+  align-self: start;
+  justify-self: end;
   gap: 10px;
-  padding-left: 6px;
-  justify-items: start;
+  padding-left: 0;
+  justify-items: end;
+  width: 100%;
 }
 
 .face-swap-workbench__start-button {
@@ -556,6 +556,17 @@
   font-size: 16px;
   font-weight: 900;
   cursor: pointer;
+}
+
+.voice-conversion-face-swap-workbench__action-area {
+  justify-self: stretch;
+  justify-items: stretch;
+  width: calc(100% + 6px);
+  margin-left: -6px;
+}
+
+.voice-conversion-face-swap-workbench__action-area .face-swap-workbench__start-button {
+  width: 100%;
 }
 
 .face-swap-workbench__start-button:disabled {
@@ -619,88 +630,243 @@
   text-align: center;
 }
 
-.voice-conversion-face-swap-workbench .face-swap-workbench__upload-grid {
-  align-items: stretch;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-}
-
-.voice-conversion-face-swap-workbench__card {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.voice-conversion-face-swap-workbench__card--plain {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.voice-conversion-face-swap-workbench__workspace {
-  display: grid;
-  flex: 1 1 auto;
-  gap: 18px;
-}
-
-.voice-conversion-face-swap-workbench__sidebar {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.voice-conversion-face-swap-workbench__card .voice-conversion-workbench__workspace {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-}
-
-.voice-conversion-face-swap-workbench__card .voice-conversion-workbench__shell {
-  display: contents;
-}
-
-.voice-conversion-face-swap-workbench__card .voice-conversion-workbench__settings-panel {
-  margin-top: 18px;
-}
-
-.voice-conversion-face-swap-workbench__card .voice-conversion-workbench__generate {
-  margin-top: 4px;
-}
-
-.voice-conversion-face-swap-workbench__panel {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  padding: 20px;
-  background: linear-gradient(180deg, rgba(28, 32, 46, 0.94), rgba(18, 21, 31, 0.94));
-  border: 1px solid rgba(183, 194, 235, 0.12);
-  border-radius: 24px;
-}
-
-.voice-conversion-face-swap-workbench__card .voice-conversion-workbench__side-head b {
-  color: #f5f7ff;
-}
-
-.voice-conversion-face-swap-workbench__privacy-note {
+.voice-conversion-workbench__upload-title {
   display: flex;
   align-items: center;
+  min-height: 28px;
+  margin-bottom: 16px;
+}
+
+.voice-conversion-workbench__format-pill {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  color: #c6cce6;
+  background: rgba(86, 96, 138, 0.22);
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.voice-conversion-workbench__upload-index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.voice-conversion-workbench__upload-index.is-photo {
+  background: linear-gradient(135deg, #b256ff, #7b5cff);
+}
+
+.voice-conversion-workbench__upload-index.is-video {
+  background: linear-gradient(135deg, #2f8fff, #5065ff);
+}
+
+.voice-conversion-workbench__upload-box {
+  position: relative;
+  min-height: 290px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: #98a2c0;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 10px;
+  padding: 16px;
+  color: #f7f7ff;
+  background: radial-gradient(
+    circle at center,
+    rgba(144, 78, 255, 0.16),
+    rgba(66, 38, 122, 0.1)
+  );
+  border: 1.5px dashed rgba(178, 86, 255, 0.56);
+  border-radius: 16px;
   text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 180ms ease, border-color 180ms ease, filter 180ms ease;
+}
+
+.voice-conversion-workbench__upload-box:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+
+.voice-conversion-workbench__upload-box.is-video {
+  border-color: rgba(50, 129, 255, 0.56);
+  background: radial-gradient(
+    circle at center,
+    rgba(44, 133, 255, 0.16),
+    rgba(31, 62, 126, 0.1)
+  );
+}
+
+.voice-conversion-workbench__upload-box.has-file {
+  border-style: solid;
+  background: linear-gradient(
+    180deg,
+    rgba(89, 99, 255, 0.12),
+    rgba(6, 8, 14, 0.18)
+  );
+}
+
+.voice-conversion-workbench__upload-box.is-video.has-file {
+  background: linear-gradient(
+    180deg,
+    rgba(44, 133, 255, 0.14),
+    rgba(8, 14, 28, 0.22)
+  );
+}
+
+.voice-conversion-workbench__upload-box input {
+  display: none;
+}
+
+.voice-conversion-workbench__upload-box.has-file img,
+.voice-conversion-workbench__upload-box.has-file video {
+  width: 100%;
+  height: 100%;
+  min-height: 258px;
+  object-fit: contain;
+  display: block;
+  background: #12131b;
+}
+
+.voice-conversion-workbench__upload-icon {
+  color: #b99cff;
+}
+
+.voice-conversion-workbench__upload-box.is-video .voice-conversion-workbench__upload-icon {
+  color: #5aa5ff;
+}
+
+.voice-conversion-workbench__upload-strong {
+  font-size: 18px;
+  line-height: 1.35;
+  color: #f7f7ff;
+}
+
+.voice-conversion-workbench__upload-note {
+  color: #a9b3cf;
+  font-size: 13px;
+}
+
+.voice-conversion-workbench__upload-clear {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #f3f5ff;
+  background: rgba(11, 13, 20, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.voice-conversion-face-swap-workbench__upload-meta {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  overflow: hidden;
+  padding: 8px 10px;
+  color: #d9dff2;
+  background: rgba(8, 9, 14, 0.7);
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-conversion-face-swap-workbench__settings-block {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+  width: calc(100% + 34px);
+  margin-right: -34px;
+}
+
+.voice-conversion-face-swap-workbench__sliders {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  width: 100%;
+}
+
+.voice-conversion-face-swap-workbench__slider {
+  display: grid;
+  gap: 10px;
+}
+
+.voice-conversion-face-swap-workbench__slider-header,
+.voice-conversion-face-swap-workbench__slider-range {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.voice-conversion-face-swap-workbench__slider-header {
+  color: #eaf0ff;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.voice-conversion-face-swap-workbench__slider input {
+  width: 100%;
+  accent-color: #8d54ff;
+}
+
+.voice-conversion-face-swap-workbench__slider-range {
+  margin-top: -8px;
+  color: #8995b8;
+  font-size: 16px;
+}
+
+.voice-conversion-face-swap-workbench__advanced-head {
+  color: #f4f6ff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.voice-conversion-face-swap-workbench__advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.voice-conversion-face-swap-workbench__advanced-field {
+  display: grid;
+  gap: 6px;
+}
+
+.voice-conversion-face-swap-workbench__advanced-field > span {
+  color: #8f9ab8;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 1320px) {
   .face-swap-workbench__settings-body {
     grid-template-columns: 1fr;
-  }
-
-  .face-swap-workbench__settings-controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .face-swap-workbench__action-area {
@@ -710,9 +876,15 @@
 }
 
 @media (max-width: 960px) {
+  .voice-conversion-face-swap-workbench__settings-block {
+    width: 100%;
+    margin-right: 0;
+  }
+
   .face-swap-workbench__hero,
   .face-swap-workbench__upload-grid,
-  .face-swap-workbench__settings-controls {
+  .voice-conversion-face-swap-workbench__sliders,
+  .voice-conversion-face-swap-workbench__advanced-grid {
     grid-template-columns: 1fr;
   }
 

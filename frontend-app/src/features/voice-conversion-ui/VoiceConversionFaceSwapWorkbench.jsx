@@ -1,23 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Download,
   FileAudio,
+  Loader2,
   LockKeyhole,
   Mic2,
-  Play,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
-import { formatBeijingStamp } from "../../utils/time";
-import { voiceConvertApi } from "../voice-convert/voiceConvertApi";
-import "./voiceConversionWorkbenchCard.css";
 import "./VoiceConversionFaceSwapWorkbench.css";
-
-const presetVoices = [
-  { name: "清澈女声", desc: "明亮自然，适合旁白与短视频", active: true },
-  { name: "磁性男声", desc: "低沉稳定，适合解说与课程", active: false },
-  { name: "少年音色", desc: "清爽灵动，适合角色配音", active: false },
-  { name: "主播音色", desc: "标准咬字，适合直播与口播", active: false },
-];
 
 const voiceConversionModelOptions = [
   { value: "voice-clone-pro", label: "Voice Clone Pro" },
@@ -43,127 +34,29 @@ const voiceConversionFormatOptions = [
   { value: "wav", label: "wav" },
 ];
 
-function makeVoiceId() {
-  return `VoiceConvert_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function makeVoiceDownloadName(prefix = "voice-convert") {
-  return `${prefix}-${formatBeijingStamp()}.mp3`;
-}
-
-function readAudioDuration(file) {
-  return new Promise((resolve) => {
-    const audio = document.createElement("audio");
-    const url = URL.createObjectURL(file);
-    const cleanup = () => URL.revokeObjectURL(url);
-    audio.preload = "metadata";
-    audio.onloadedmetadata = () => {
-      const durationMs = Number.isFinite(audio.duration) ? audio.duration * 1000 : 0;
-      cleanup();
-      resolve(durationMs);
-    };
-    audio.onerror = () => {
-      cleanup();
-      resolve(0);
-    };
-    audio.src = url;
-  });
-}
-
-async function downloadVoiceFile({ audioDataUrl, audioUrl, fileName }) {
-  let href = audioDataUrl || "";
-  let shouldRevoke = false;
-
-  if (!href && audioUrl) {
-    const response = await fetch(audioUrl);
-    if (!response.ok) throw new Error("下载音频失败");
-    href = URL.createObjectURL(await response.blob());
-    shouldRevoke = true;
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
   }
-
-  if (!href) throw new Error("暂无可下载音频");
-
-  const link = document.createElement("a");
-  link.href = href;
-  link.download = fileName || makeVoiceDownloadName();
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  if (shouldRevoke) URL.revokeObjectURL(href);
-}
-
-function UploadBox({
-  icon: Icon,
-  title,
-  note,
-  fileState,
-  accept,
-  isUploading,
-  onPick,
-  onClear,
-  tone = "default",
-}) {
-  function clearFile(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClear();
-  }
-
-  return (
-    <label
-      className={`voice-conversion-workbench__upload-box ${
-        tone === "video" ? "is-video" : ""
-      } ${fileState ? "has-file" : ""}`}
-    >
-      <input
-        type="file"
-        accept={accept}
-        hidden
-        disabled={isUploading}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (file) onPick(file);
-        }}
-      />
-      <div className="voice-conversion-workbench__upload-icon">
-        <Icon size={56} />
-      </div>
-      <strong className="voice-conversion-workbench__upload-strong">
-        {fileState?.fileName || title}
-      </strong>
-      <span className="voice-conversion-workbench__upload-note">
-        {fileState
-          ? `时长 ${Math.max(
-              1,
-              Math.round((fileState.durationMs || 0) / 1000),
-            )} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`
-          : note}
-      </span>
-      {fileState ? (
-        <button
-          type="button"
-          className="voice-conversion-workbench__upload-clear"
-          aria-label="清除已上传音频"
-          onClick={clearFile}
-        >
-          ×
-        </button>
-      ) : null}
-    </label>
-  );
+  const rounded =
+    value >= 100 || index === 0 ? Math.round(value) : value.toFixed(1);
+  return `${rounded} ${units[index]}`;
 }
 
 function SettingsSlider({ label, displayValue, minLabel, maxLabel, ...props }) {
   return (
-    <label className="voice-synthesis-workspace__slider">
-      <span className="voice-synthesis-workspace__slider-header">
+    <label className="voice-conversion-face-swap-workbench__slider">
+      <span className="voice-conversion-face-swap-workbench__slider-header">
         <span>{label}</span>
         <strong>{displayValue}</strong>
       </span>
       <input {...props} />
-      <span className="voice-synthesis-workspace__slider-range">
+      <span className="voice-conversion-face-swap-workbench__slider-range">
         <small>{minLabel}</small>
         <small>{maxLabel}</small>
       </span>
@@ -171,23 +64,138 @@ function SettingsSlider({ label, displayValue, minLabel, maxLabel, ...props }) {
   );
 }
 
+function UploadCard({
+  type,
+  title,
+  asset,
+  previewUrl,
+  isUploading,
+  accept,
+  onSelect,
+  onClear,
+}) {
+  const isTarget = type === "target";
+  const inputRef = useRef(null);
+  const Icon = isTarget ? Mic2 : FileAudio;
+  const formatText = isTarget ? "MP3/M4A/WAV" : "MP3/M4A/WAV/FLAC/WEBM";
+  const uploadTitle = isTarget
+    ? "点击或拖拽目标音色文件到此处上传"
+    : "点击或拖拽源音频文件到此处上传";
+  const uploadNote = isTarget
+    ? "支持 mp3、m4a、wav"
+    : "支持 mp3、m4a、wav、flac、webm";
+
+  function clearFile(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onClear?.();
+  }
+
+  return (
+    <section className="face-swap-workbench__upload-card">
+      <div className="assets-section-title voice-conversion-workbench__upload-title">
+        <span
+          className={`voice-conversion-workbench__upload-index ${
+            isTarget ? "is-photo" : "is-video"
+          }`}
+        >
+          {isTarget ? "1" : "2"}
+        </span>
+        <strong>{title}</strong>
+        <span className="voice-conversion-workbench__format-pill">
+          {formatText}
+        </span>
+      </div>
+
+      <button
+        className={`voice-conversion-workbench__upload-box ${
+          isTarget ? "" : "is-video"
+        } ${previewUrl ? "has-file" : ""}`}
+        type="button"
+        onClick={() => inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          hidden
+          onChange={(event) => {
+            onSelect?.(event.target.files?.[0] || null);
+            event.target.value = "";
+          }}
+        />
+
+        {previewUrl ? (
+          isTarget ? (
+            <img src={previewUrl} alt={title} />
+          ) : (
+            <video src={previewUrl} muted playsInline preload="metadata" />
+          )
+        ) : (
+          <>
+            <div className="voice-conversion-workbench__upload-icon">
+              <Icon size={56} />
+            </div>
+            <strong className="voice-conversion-workbench__upload-strong">
+              {uploadTitle}
+            </strong>
+            <span className="voice-conversion-workbench__upload-note">
+              {uploadNote}
+            </span>
+          </>
+        )}
+
+        {previewUrl && !isUploading && (
+          <span
+            className="voice-conversion-workbench__upload-clear"
+            role="button"
+            tabIndex={0}
+            aria-label="清除已上传素材"
+            onClick={clearFile}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") clearFile(event);
+            }}
+          >
+            <X size={14} />
+          </span>
+        )}
+
+        {asset && (
+          <span className="voice-conversion-face-swap-workbench__upload-meta">
+            {asset.fileName} · {formatBytes(asset.sizeBytes)}
+          </span>
+        )}
+
+        {isUploading && (
+          <span className="face-swap-workbench__uploading">
+            <Loader2 size={14} />
+            上传中
+          </span>
+        )}
+      </button>
+    </section>
+  );
+}
+
 export function VoiceConversionFaceSwapWorkbench({
+  options,
+  onSubmit,
+  isSubmitting,
+  api,
   copy,
   heading = "音色转换",
-  privacyText = "您上传的内容仅用于音色转换处理，不会被用于其他用途。",
+  privacyText = "您上传的内容仅用于处理，不会被用于其他用途。",
 }) {
-  const [targetAudio, setTargetAudio] = useState(null);
-  const [sourceAudio, setSourceAudio] = useState(null);
-  const [uploading, setUploading] = useState("");
-  const [notice, setNotice] = useState("");
+  const [imageAsset, setImageAsset] = useState(null);
+  const [videoAsset, setVideoAsset] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [videoPreview, setVideoPreview] = useState("");
+  const [model, setModel] = useState(
+    options?.defaults?.model || options?.models?.[0]?.value || "",
+  );
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
-  const [isConverting, setIsConverting] = useState(false);
-  const [demoAudio, setDemoAudio] = useState("");
-  const [resultAudio, setResultAudio] = useState("");
-  const [resultUrl, setResultUrl] = useState("");
-  const [resultFileName, setResultFileName] = useState("voice-convert.mp3");
   const [advancedModel, setAdvancedModel] = useState(
     voiceConversionModelOptions[0].value,
   );
@@ -200,358 +208,254 @@ export function VoiceConversionFaceSwapWorkbench({
   const [outputFormat, setOutputFormat] = useState(
     voiceConversionFormatOptions[0].value,
   );
+  const [notice, setNotice] = useState("");
+  const [uploading, setUploading] = useState("");
 
-  async function uploadTargetFile(file) {
+  useEffect(() => {
+    if (!model && (options?.defaults?.model || options?.models?.[0]?.value)) {
+      setModel(options.defaults?.model || options.models[0].value);
+    }
+  }, [model, options]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+      if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    };
+  }, [imagePreview, videoPreview]);
+
+  async function selectImage(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("请上传图片文件");
+      return;
+    }
+    if (file.size > (options?.limits?.maxImageBytes || 10 * 1024 * 1024)) {
+      setNotice("图片大小不能超过 10MB");
+      return;
+    }
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview(window.URL.createObjectURL(file));
+    setImageAsset(null);
+    setUploading("image");
     setNotice("");
-    setUploading("target");
     try {
-      const durationMs = await readAudioDuration(file);
-      if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
-        throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav。");
-      }
-
-      const result = await voiceConvertApi.uploadTargetAudio(file, durationMs);
-      setTargetAudio({
-        ...result,
-        fileName: file.name,
-        size: file.size,
-        durationMs,
-      });
-      setDemoAudio("");
-      setResultAudio("");
-      setResultUrl("");
-      setNotice("目标音色上传完成。");
+      setImageAsset(await api.uploadImage(file));
     } catch (error) {
-      setNotice(error.message || "目标音色上传失败");
+      setImagePreview("");
+      setNotice(error.message || "图片上传失败");
     } finally {
       setUploading("");
     }
   }
 
-  function clearTargetAudio() {
-    setTargetAudio(null);
-    setDemoAudio("");
-    setResultAudio("");
-    setResultUrl("");
-    setNotice("");
-  }
-
-  function clearSourceAudio() {
-    setSourceAudio(null);
-    setResultAudio("");
-    setResultUrl("");
-    setNotice("");
-  }
-
-  async function pickSourceFile(file) {
-    setNotice("");
-    try {
-      if (file.size > 50 * 1024 * 1024) {
-        throw new Error("源音频需小于 50MB。");
-      }
-      const durationMs = await readAudioDuration(file);
-      if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
-        throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm。");
-      }
-      setSourceAudio({
-        file,
-        fileName: file.name,
-        size: file.size,
-        durationMs,
-      });
-      setResultAudio("");
-      setResultUrl("");
-      setNotice("源音频已选择。");
-    } catch (error) {
-      setNotice(error.message || "源音频选择失败");
-    }
-  }
-
-  async function convertVoice() {
-    if (!targetAudio?.fileId) {
-      setNotice("请先上传目标音色。");
+  async function selectVideo(file) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setNotice("请上传视频文件");
       return;
     }
-    if (!sourceAudio?.file) {
-      setNotice("请先上传源音频。");
+    if (file.size > (options?.limits?.maxVideoBytes || 200 * 1024 * 1024)) {
+      setNotice("视频大小不能超过 200MB");
       return;
     }
-
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview(window.URL.createObjectURL(file));
+    setVideoAsset(null);
+    setUploading("video");
     setNotice("");
-    setIsConverting(true);
     try {
-      const result = await voiceConvertApi.convert({
-        sourceAudio: sourceAudio.file,
-        cloneAudioFileId: targetAudio.fileId,
-        generatedVoiceId: makeVoiceId(),
-        name: targetAudio.fileName
-          ? targetAudio.fileName.replace(/\.[^.]+$/, "")
-          : "目标音色",
-        sourceDurationMs: sourceAudio.durationMs,
-        speed,
-        volume,
-        pitch,
-        model: advancedModel,
-        denoiseLevel,
-        preserveEmotion,
-        outputFormat,
-      });
-      const fileName = makeVoiceDownloadName();
-      setDemoAudio(result.demoAudio || "");
-      setResultAudio(result.audioDataUrl || "");
-      setResultUrl(result.audioUrl || "");
-      setResultFileName(fileName);
-      setNotice(
-        result.rhythmMeta?.adjusted
-          ? "转换完成，已按源音频时长自动校准语速。"
-          : "转换完成。",
-      );
+      setVideoAsset(await api.uploadVideo(file));
     } catch (error) {
-      setNotice(error.message || "音色转换失败");
+      setVideoPreview("");
+      setNotice(error.message || "视频上传失败");
     } finally {
-      setIsConverting(false);
+      setUploading("");
     }
   }
 
-  async function handleDownloadResult() {
-    try {
-      await downloadVoiceFile({
-        audioDataUrl: resultAudio,
-        audioUrl: resultUrl,
-        fileName: resultFileName,
-      });
-    } catch (error) {
-      setNotice(error.message || "下载音频失败");
+  function clearImage() {
+    setImageAsset(null);
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    setImagePreview("");
+    setNotice("");
+  }
+
+  function clearVideo() {
+    setVideoAsset(null);
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setVideoPreview("");
+    setNotice("");
+  }
+
+  function submit() {
+    if (!imageAsset) {
+      setNotice(copy.imageRequired);
+      return;
     }
+    if (!videoAsset) {
+      setNotice(copy.videoRequired);
+      return;
+    }
+    setNotice("");
+    onSubmit({
+      imageAssetId: imageAsset.id,
+      videoAssetId: videoAsset.id,
+      model,
+      speed,
+      volume,
+      pitch,
+      advancedModel,
+      denoiseLevel,
+      preserveEmotion,
+      outputFormat,
+    });
   }
 
   return (
-    <div className="face-swap-workbench voice-conversion-face-swap-workbench">
+    <div className="face-swap-workbench">
       <div className="face-swap-workbench__hero">
         <div>
           <h1>{heading}</h1>
-          <p>{copy?.emptyDescription || "上传目标音色和源音频，自动提取内容并转换成目标声音"}</p>
+          <p>{copy.emptyDescription}</p>
         </div>
       </div>
 
       <div className="face-swap-workbench__upload-grid">
-        <section className="face-swap-workbench__upload-card voice-conversion-face-swap-workbench__card">
-          <div className="voice-conversion-face-swap-workbench__workspace">
-            <div className="voice-conversion-workbench__upload-grid">
-              <div className="voice-conversion-workbench__upload-column">
-                <div className="assets-section-title voice-conversion-workbench__upload-title">
-                  <span className="voice-conversion-workbench__upload-index is-photo">
-                    1
-                  </span>
-                  <strong>上传目标音色</strong>
-                  <span className="voice-conversion-workbench__format-pill">
-                    MP3/M4A/WAV
-                  </span>
-                </div>
-                <UploadBox
-                  icon={Mic2}
-                  title="点击或拖拽目标音色文件到此处上传"
-                  note="支持 mp3、m4a、wav"
-                  fileState={targetAudio}
-                  accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
-                  isUploading={uploading === "target"}
-                  onPick={uploadTargetFile}
-                  onClear={clearTargetAudio}
-                />
-              </div>
+        <UploadCard
+          type="target"
+          title="上传目标音色"
+          asset={imageAsset}
+          previewUrl={imagePreview}
+          isUploading={uploading === "image"}
+          accept="image/*"
+          onSelect={selectImage}
+          onClear={clearImage}
+        />
+        <UploadCard
+          type="source"
+          title="上传音频文件"
+          asset={videoAsset}
+          previewUrl={videoPreview}
+          isUploading={uploading === "video"}
+          accept="video/*"
+          onSelect={selectVideo}
+          onClear={clearVideo}
+        />
+      </div>
 
-              <div className="voice-conversion-workbench__upload-column">
-                <div className="assets-section-title voice-conversion-workbench__upload-title">
-                  <span className="voice-conversion-workbench__upload-index is-video">
-                    2
-                  </span>
-                  <strong>上传音频文件</strong>
-                  <span className="voice-conversion-workbench__format-pill">
-                    MP3/M4A/WAV/FLAC/WEBM
-                  </span>
-                </div>
-                <UploadBox
-                  icon={FileAudio}
-                  title="点击或拖拽源音频文件到此处上传"
-                  note="支持 mp3、m4a、wav、flac、webm"
-                  fileState={sourceAudio}
-                  tone="video"
-                  accept=".mp3,.m4a,.wav,.flac,.webm,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/webm,video/webm"
-                  isUploading={uploading === "source"}
-                  onPick={pickSourceFile}
-                  onClear={clearSourceAudio}
-                />
-              </div>
+      <section className="face-swap-workbench__settings">
+        <div className="face-swap-workbench__settings-title">生成设置</div>
+
+        <div className="face-swap-workbench__settings-body">
+          <div className="voice-conversion-face-swap-workbench__settings-block">
+            <div className="voice-conversion-face-swap-workbench__sliders">
+              <SettingsSlider
+                label="语速"
+                displayValue={`${speed.toFixed(2)}x`}
+                min="0.5"
+                max="2"
+                step="0.05"
+                minLabel="0.5x"
+                maxLabel="2.0x"
+                type="range"
+                value={speed}
+                onChange={(event) => setSpeed(Number(event.target.value))}
+              />
+              <SettingsSlider
+                label="音量"
+                displayValue={volume.toFixed(1)}
+                min="0.1"
+                max="10"
+                step="0.1"
+                minLabel="0.1"
+                maxLabel="10"
+                type="range"
+                value={volume}
+                onChange={(event) => setVolume(Number(event.target.value))}
+              />
+              <SettingsSlider
+                label="音调"
+                displayValue={pitch > 0 ? `+${pitch}` : String(pitch)}
+                min="-12"
+                max="12"
+                step="1"
+                minLabel="-12"
+                maxLabel="+12"
+                type="range"
+                value={pitch}
+                onChange={(event) => setPitch(Number(event.target.value))}
+              />
             </div>
 
-            <section className="voice-synthesis-workspace__panel voice-conversion-workbench__settings-panel">
-              <div className="voice-synthesis-workspace__step">
-                <span>3</span>
-                <h2>生成设置</h2>
-              </div>
+            <div className="voice-conversion-face-swap-workbench__advanced-head">
+              高级设置
+            </div>
 
-              <div className="voice-synthesis-workspace__sliders">
-                <SettingsSlider
-                  label="语速"
-                  displayValue={`${speed.toFixed(2)}x`}
-                  min="0.5"
-                  max="2"
-                  step="0.05"
-                  minLabel="0.5x"
-                  maxLabel="2.0x"
-                  type="range"
-                  value={speed}
-                  onChange={(event) => setSpeed(Number(event.target.value))}
-                />
-                <SettingsSlider
-                  label="音量"
-                  displayValue={volume.toFixed(1)}
-                  min="0.1"
-                  max="10"
-                  step="0.1"
-                  minLabel="0.1"
-                  maxLabel="10"
-                  type="range"
-                  value={volume}
-                  onChange={(event) => setVolume(Number(event.target.value))}
-                />
-                <SettingsSlider
-                  label="音调"
-                  displayValue={pitch > 0 ? `+${pitch}` : String(pitch)}
-                  min="-12"
-                  max="12"
-                  step="1"
-                  minLabel="-12"
-                  maxLabel="+12"
-                  type="range"
-                  value={pitch}
-                  onChange={(event) => setPitch(Number(event.target.value))}
-                />
-              </div>
-
-              <button
-                type="button"
-                className="voice-synthesis-workspace__generate-button dh-generate-button voice-conversion-workbench__generate"
-                onClick={convertVoice}
-                disabled={isConverting || !targetAudio || !sourceAudio}
-              >
-                <Play size={18} />
-                {isConverting ? "转换中..." : "开始转换"}
-              </button>
-
-              {resultAudio ? (
-                <div className="voice-conversion-workbench__result-actions">
-                  <button
-                    type="button"
-                    className="voice-conversion-workbench__ghost"
-                    onClick={handleDownloadResult}
-                  >
-                    <Download size={16} />
-                    下载结果
-                  </button>
-                </div>
-              ) : null}
-            </section>
-
-            {demoAudio || resultAudio ? (
-              <div className="voice-conversion-workbench__audio-results">
-                {demoAudio ? (
-                  <div>
-                    <span>音色试听</span>
-                    <audio src={demoAudio} controls />
-                  </div>
-                ) : null}
-                {resultAudio || resultUrl ? (
-                  <div>
-                    <span>转换结果</span>
-                    <audio src={resultAudio || resultUrl} controls />
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {notice ? <div className="composer-notice warning">{notice}</div> : null}
-          </div>
-        </section>
-
-        <section className="voice-conversion-face-swap-workbench__card voice-conversion-face-swap-workbench__card--plain">
-          <aside className="voice-conversion-face-swap-workbench__sidebar">
-            <section className="voice-conversion-workbench__side-card voice-conversion-face-swap-workbench__panel">
-              <div className="voice-conversion-workbench__side-head">
-                <b>预设音色</b>
-                <span>更多音色</span>
-              </div>
-              {presetVoices.map((item) => (
-                <div
-                  className={`voice-conversion-workbench__preset ${
-                    item.active ? "is-active" : ""
-                  }`}
-                  key={item.name}
-                >
-                  <div className="voice-conversion-workbench__avatar">
-                    <Mic2 size={18} />
-                  </div>
-                  <div>
-                    <b>{item.name}</b>
-                    <span>{item.desc}</span>
-                  </div>
-                  <button type="button" aria-label={`试听${item.name}`}>
-                    <Play size={14} />
-                  </button>
-                </div>
-              ))}
-            </section>
-
-            <section className="voice-conversion-workbench__side-card voice-conversion-face-swap-workbench__panel">
-              <div className="voice-conversion-workbench__side-head">
-                <b>高级设置</b>
-              </div>
-
-              <label className="voice-conversion-workbench__advanced-field">
+            <div className="voice-conversion-face-swap-workbench__advanced-grid">
+              <label className="voice-conversion-face-swap-workbench__advanced-field">
                 <span>模型</span>
                 <CustomSelect
+                  ariaLabel="转换模型"
+                  className="idh-showcase-select custom-select-theme-dh"
                   value={advancedModel}
                   onChange={setAdvancedModel}
                   options={voiceConversionModelOptions}
-                  ariaLabel="模型"
                 />
               </label>
 
-              <label className="voice-conversion-workbench__advanced-field">
-                <span>降噪等级</span>
+              <label className="voice-conversion-face-swap-workbench__advanced-field">
+                <span>降噪强度</span>
                 <CustomSelect
+                  ariaLabel="降噪强度"
+                  className="idh-showcase-select custom-select-theme-dh"
                   value={denoiseLevel}
                   onChange={setDenoiseLevel}
                   options={voiceConversionDenoiseOptions}
-                  ariaLabel="降噪等级"
                 />
               </label>
 
-              <label className="voice-conversion-workbench__advanced-field">
+              <label className="voice-conversion-face-swap-workbench__advanced-field">
                 <span>保留情绪</span>
                 <CustomSelect
+                  ariaLabel="保留情绪"
+                  className="idh-showcase-select custom-select-theme-dh"
                   value={preserveEmotion}
                   onChange={setPreserveEmotion}
                   options={voiceConversionEmotionOptions}
-                  ariaLabel="保留情绪"
                 />
               </label>
 
-              <label className="voice-conversion-workbench__advanced-field">
+              <label className="voice-conversion-face-swap-workbench__advanced-field">
                 <span>输出格式</span>
                 <CustomSelect
+                  ariaLabel="输出格式"
+                  className="idh-showcase-select custom-select-theme-dh"
                   value={outputFormat}
                   onChange={setOutputFormat}
                   options={voiceConversionFormatOptions}
-                  ariaLabel="输出格式"
                 />
               </label>
-            </section>
-          </aside>
-        </section>
-      </div>
+            </div>
 
-      <div className="voice-conversion-face-swap-workbench__privacy-note">
+            <div className="face-swap-workbench__action-area voice-conversion-face-swap-workbench__action-area">
+              <button
+                className="face-swap-workbench__start-button"
+                type="button"
+                onClick={submit}
+                disabled={isSubmitting || !!uploading}
+              >
+                {isSubmitting ? <Loader2 size={18} /> : <Sparkles size={18} />}
+                {copy.submitLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {notice && <div className="face-swap-workbench__notice">{notice}</div>}
+
+      <div className="face-swap-workbench__privacy">
         <LockKeyhole size={16} />
         {privacyText}
       </div>
