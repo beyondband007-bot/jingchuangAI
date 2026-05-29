@@ -10718,7 +10718,7 @@ select {
   display: inline-block;
   font-size: 25px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1;
   letter-spacing: -0.03em;
   color: transparent;
   background-image: linear-gradient(
@@ -10736,18 +10736,23 @@ select {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: brand-gradient-shift 5s ease-in-out infinite;
-  transform: translate(-5px, 17px);
+  transform: translate(30px, 21px);
 }
 
 .feature-brand-beta {
   display: inline-block;
   color: #a855f7;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
-  transform: translate(-5px, 17px);
+  transform: translate(35px, 17px);
+  color: #fff;
+  background: linear-gradient(to top, #ad6cfc 0%, #5a2cfc 100%);
+  box-shadow: 0 8px 18px rgba(90, 44, 252, 0.22);
+  padding: 3px 6px;
+  border-radius: 999px;
 }
 
 @keyframes brand-gradient-shift {

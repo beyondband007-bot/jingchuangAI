@@ -1149,7 +1149,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
     <aside className="feature-sidebar">
       <div className="feature-brand">
         <span className="feature-brand-text">Facemini</span>
-        <span className="feature-brand-beta">（内测）</span>
+        <span className="feature-brand-beta">Beta</span>
       </div>
       <label className="feature-nav-search">
         <Search size={16} />
