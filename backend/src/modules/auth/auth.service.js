@@ -20,6 +20,7 @@ const REGISTER_GRANT_POINTS = 1000;
 const SMS_SEND_INTERVAL_MS = 60 * 1000;
 const SMS_MAX_ATTEMPTS = 5;
 const SMS_SCENES = new Set(["register", "login", "password_reset"]);
+const CAPTCHA_TYPE_SLIDER = 9;
 
 function assertPassword(password) {
   const normalizedPassword = String(password || "");
@@ -188,7 +189,120 @@ export function getSecurityQuestions() {
   return { questions: [] };
 }
 
-export async function sendSmsCode(payload) {
+export function getCaptchaClientConfig() {
+  const provider = config.captcha.provider || "tencent";
+  const enabled =
+    provider === "tencent" &&
+    Boolean(config.captcha.tencentAppId) &&
+    (config.captcha.dryRun ||
+      Boolean(
+        config.captcha.tencentAppSecretKey &&
+          config.tencentCloud.secretId &&
+          config.tencentCloud.secretKey
+      ));
+  return {
+    provider,
+    appId: provider === "tencent" ? config.captcha.tencentAppId : "",
+    enabled
+  };
+}
+
+function getRequestIp(req) {
+  const forwardedFor = String(req?.headers?.["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  const value =
+    forwardedFor ||
+    String(req?.headers?.["x-real-ip"] || "").trim() ||
+    req?.ip ||
+    req?.socket?.remoteAddress ||
+    "";
+  return String(value).replace(/^::ffff:/, "") || "127.0.0.1";
+}
+
+function normalizeCaptchaPayload(payload) {
+  const captcha = payload?.captcha || {};
+  const provider = String(captcha.provider || "").trim();
+  const ticket = String(captcha.ticket || "").trim();
+  const randstr = String(captcha.randstr || "").trim();
+
+  if (!provider && !ticket && !randstr) {
+    throw createHttpError("请先完成验证码验证", 400);
+  }
+  if (provider !== "tencent") {
+    throw createHttpError("验证码服务类型无效", 400);
+  }
+  if (!ticket || !randstr) {
+    throw createHttpError("验证码参数不完整，请重新验证", 400);
+  }
+  return { ticket, randstr };
+}
+
+function assertTencentCaptchaConfigured() {
+  if (
+    config.captcha.provider !== "tencent" ||
+    !config.tencentCloud.secretId ||
+    !config.tencentCloud.secretKey ||
+    !config.captcha.tencentAppId ||
+    !config.captcha.tencentAppSecretKey
+  ) {
+    throw createHttpError("验证码服务未配置完整", 500);
+  }
+}
+
+function getCaptchaAppIdPayloadValue() {
+  const value = Number(config.captcha.tencentAppId);
+  return Number.isFinite(value) ? value : config.captcha.tencentAppId;
+}
+
+function formatTencentCaptchaError(resultOrError) {
+  const message = resultOrError?.CaptchaMsg || resultOrError?.message || "验证码验证失败";
+  if (/AppId|appId|CaptchaAppId|not match|mismatch/i.test(message)) {
+    return `验证码验证失败：CaptchaAppId 不匹配。腾讯云返回：${message}`;
+  }
+  if (/secret|AppSecret|key|permission|Unauthorized|AuthFailure/i.test(message)) {
+    return `验证码验证失败：验证码密钥或腾讯云权限异常。腾讯云返回：${message}`;
+  }
+  if (/ticket|expired|expire|timeout|invalid|used|reuse|duplicate|重复|过期|无效/i.test(message)) {
+    return `验证码已失效，请重新验证。腾讯云返回：${message}`;
+  }
+  return `验证码验证失败。腾讯云返回：${message}`;
+}
+
+async function verifyTencentCaptcha(payload, req) {
+  if (config.captcha.dryRun) {
+    return;
+  }
+
+  const captcha = normalizeCaptchaPayload(payload);
+  assertTencentCaptchaConfigured();
+  let response;
+  try {
+    response = await callTencentCloud({
+      service: "captcha",
+      host: "captcha.tencentcloudapi.com",
+      version: "2019-07-22",
+      action: "DescribeCaptchaResult",
+      payload: {
+        CaptchaType: CAPTCHA_TYPE_SLIDER,
+        Ticket: captcha.ticket,
+        UserIp: getRequestIp(req),
+        Randstr: captcha.randstr,
+        CaptchaAppId: getCaptchaAppIdPayloadValue(),
+        AppSecretKey: config.captcha.tencentAppSecretKey
+      }
+    });
+  } catch (error) {
+    throw createHttpError(formatTencentCaptchaError(error), 500);
+  }
+
+  const result = response?.Response || {};
+  if (Number(result.CaptchaCode) !== 1) {
+    throw createHttpError(formatTencentCaptchaError(result), 400);
+  }
+}
+
+export async function sendSmsCode(payload, req) {
   const scene = normalizeSmsScene(payload?.scene);
   const phone = normalizePhone(payload?.phone);
   const pool = getPool();
@@ -209,6 +323,8 @@ export async function sendSmsCode(payload) {
       throw createHttpError(`请在 ${waitSeconds} 秒后再获取验证码`, 429);
     }
   }
+
+  await verifyTencentCaptcha(payload, req);
 
   const code = String(randomInt(100000, 1000000));
   await sendVerificationSms(phone, code, scene);

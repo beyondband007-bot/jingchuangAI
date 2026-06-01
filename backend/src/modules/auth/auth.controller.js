@@ -2,6 +2,7 @@ import { sendError } from "../../shared/http.js";
 import { SESSION_COOKIE_NAME } from "../../shared/userService.js";
 import {
   createPasswordResetChallenge,
+  getCaptchaClientConfig,
   getAuthState,
   getSecurityQuestions,
   loginUserWithPhoneCode,
@@ -83,7 +84,15 @@ export async function phoneCodeLogin(req, res) {
 
 export async function smsCode(req, res) {
   try {
-    res.json(await sendSmsCode(req.body));
+    res.json(await sendSmsCode(req.body, req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function captchaConfig(_req, res) {
+  try {
+    res.json(getCaptchaClientConfig());
   } catch (error) {
     sendError(res, error);
   }

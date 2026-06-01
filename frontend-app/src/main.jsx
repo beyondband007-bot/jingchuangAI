@@ -510,6 +510,41 @@ function getInitialView() {
   return "splash";
 }
 
+let tencentCaptchaScriptPromise = null;
+
+function loadTencentCaptchaScript() {
+  if (window.TencentCaptcha) {
+    return Promise.resolve();
+  }
+  if (tencentCaptchaScriptPromise) {
+    return tencentCaptchaScriptPromise;
+  }
+
+  tencentCaptchaScriptPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector(
+      'script[src="https://turing.captcha.qcloud.com/TJCaptcha.js"]',
+    );
+    if (existingScript) {
+      existingScript.addEventListener("load", resolve, { once: true });
+      existingScript.addEventListener(
+        "error",
+        () => reject(new Error("验证码组件加载失败，请稍后重试")),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://turing.captcha.qcloud.com/TJCaptcha.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("验证码组件加载失败，请稍后重试"));
+    document.head.appendChild(script);
+  });
+
+  return tencentCaptchaScriptPromise;
+}
+
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [loginMethod, setLoginMethod] = useState("phone-code");
   const [phone, setPhone] = useState("");
@@ -582,6 +617,40 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     return "login";
   }
 
+  async function runTencentCaptcha() {
+    const captchaConfig = await authApi.captchaConfig();
+    if (captchaConfig.provider !== "tencent" || !captchaConfig.enabled || !captchaConfig.appId) {
+      throw new Error("验证码服务未配置完整");
+    }
+    await loadTencentCaptchaScript();
+    if (!window.TencentCaptcha) {
+      throw new Error("验证码组件加载失败，请稍后重试");
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const captcha = new window.TencentCaptcha(
+          String(captchaConfig.appId),
+          (result) => {
+            if (Number(result?.ret) === 0 && result?.ticket && result?.randstr) {
+              resolve({
+                provider: "tencent",
+                ticket: result.ticket,
+                randstr: result.randstr,
+              });
+              return;
+            }
+            resolve(null);
+          },
+          { enableDarkMode: "force" },
+        );
+        captcha.show();
+      } catch (captchaError) {
+        reject(captchaError);
+      }
+    });
+  }
+
   async function requestSmsCode() {
     setError("");
     setSuccessMessage("");
@@ -592,9 +661,14 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
 
     setIsSendingCode(true);
     try {
+      const captcha = await runTencentCaptcha();
+      if (!captcha) {
+        return;
+      }
       const result = await authApi.sendSmsCode({
         phone: phone.trim(),
         scene: getSmsScene(),
+        captcha,
       });
       setSmsCooldown(60);
       setSuccessMessage(
@@ -709,7 +783,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   }
 
   const codeButtonText = isSendingCode
-    ? "发送中"
+    ? "校验中"
     : smsCooldown > 0
       ? `${smsCooldown}s`
       : "获取验证码";

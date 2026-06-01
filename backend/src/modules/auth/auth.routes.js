@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  captchaConfig,
   login,
   logout,
   me,
@@ -15,6 +16,7 @@ export const authRouter = Router();
 
 authRouter.get("/me", me);
 authRouter.get("/security-questions", securityQuestions);
+authRouter.get("/captcha/config", captchaConfig);
 authRouter.post("/sms-code", smsCode);
 authRouter.post("/register", register);
 authRouter.post("/login", login);

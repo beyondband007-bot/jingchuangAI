@@ -37,6 +37,10 @@ export const authApi = {
     });
   },
 
+  async captchaConfig() {
+    return request("/api/auth/captcha/config");
+  },
+
   async logout() {
     return request("/api/auth/logout", { method: "POST" });
   },

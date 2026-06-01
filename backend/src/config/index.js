@@ -76,6 +76,12 @@ export const config = {
     codeExpireMinutes: String(process.env.SMS_CODE_EXPIRE_MINUTES || "5"),
     dryRun: process.env.SMS_DRY_RUN === "true"
   },
+  captcha: {
+    provider: process.env.CAPTCHA_PROVIDER || "tencent",
+    dryRun: process.env.CAPTCHA_DRY_RUN === "true",
+    tencentAppId: process.env.TENCENT_CAPTCHA_APP_ID || "",
+    tencentAppSecretKey: process.env.TENCENT_CAPTCHA_APP_SECRET_KEY || ""
+  },
   alipay: {
     env: process.env.ALIPAY_ENV || "sandbox",
     appId: process.env.ALIPAY_APP_ID || "",
