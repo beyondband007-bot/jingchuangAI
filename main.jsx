@@ -239,7 +239,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         <button className="auth-drawer-close" type="button" aria-label="关闭" onClick={requestClose}>
           <X size={18} />
         </button>
-        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <div className="auth-drawer-kicker">Facemini AI ACCOUNT</div>
         <h2 id="auth-drawer-title">{renderMode === "register" ? "创建账号" : "欢迎回来"}</h2>
         <p>{renderMode === "register" ? "注册后立即获得 1000 积分，开始保存你的生成记录。" : "登录后即可查看你的积分与生成记录。"}</p>
         <form className="auth-form" onSubmit={submit}>

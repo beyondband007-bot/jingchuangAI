@@ -23,6 +23,20 @@ export const authApi = {
     });
   },
 
+  async loginWithPhoneCode(payload) {
+    return request("/api/auth/login/phone-code", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async sendSmsCode(payload) {
+    return request("/api/auth/sms-code", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
   async logout() {
     return request("/api/auth/logout", { method: "POST" });
   },

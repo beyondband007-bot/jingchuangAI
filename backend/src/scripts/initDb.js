@@ -19,7 +19,9 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       external_id VARCHAR(64) NOT NULL UNIQUE,
-      username VARCHAR(64) NULL UNIQUE,
+      username VARCHAR(64) NULL,
+      phone VARCHAR(20) NULL UNIQUE,
+      email VARCHAR(254) NULL UNIQUE,
       password_hash VARCHAR(255) NULL,
       display_name VARCHAR(120) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -37,8 +39,14 @@ async function createTables() {
   if (!userColumnNames.has("username")) {
     await pool.query("ALTER TABLE users ADD COLUMN username VARCHAR(64) NULL AFTER external_id");
   }
+  if (!userColumnNames.has("phone")) {
+    await pool.query("ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL AFTER username");
+  }
+  if (!userColumnNames.has("email")) {
+    await pool.query("ALTER TABLE users ADD COLUMN email VARCHAR(254) NULL AFTER phone");
+  }
   if (!userColumnNames.has("password_hash")) {
-    await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER username");
+    await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email");
   }
 
   const [usernameIndexes] = await pool.query(
@@ -47,8 +55,30 @@ async function createTables() {
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'username' AND NON_UNIQUE = 0`,
     [config.db.database]
   );
-  if (usernameIndexes.length === 0) {
-    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_username (username)");
+  for (const index of usernameIndexes) {
+    if (index.INDEX_NAME !== "PRIMARY") {
+      await pool.query(`ALTER TABLE users DROP INDEX \`${index.INDEX_NAME}\``);
+    }
+  }
+
+  const [phoneIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'phone' AND NON_UNIQUE = 0`,
+    [config.db.database]
+  );
+  if (phoneIndexes.length === 0) {
+    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_phone (phone)");
+  }
+
+  const [emailIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email' AND NON_UNIQUE = 0`,
+    [config.db.database]
+  );
+  if (emailIndexes.length === 0) {
+    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_email (email)");
   }
 
   await pool.query(`
@@ -99,6 +129,25 @@ async function createTables() {
       INDEX idx_auth_sessions_user (user_id),
       INDEX idx_auth_sessions_expires (expires_at),
       CONSTRAINT fk_auth_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS auth_verification_codes (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      channel ENUM('sms') NOT NULL DEFAULT 'sms',
+      scene ENUM('register','login','password_reset') NOT NULL,
+      target VARCHAR(64) NOT NULL,
+      code_hash CHAR(64) NOT NULL,
+      salt VARCHAR(64) NOT NULL,
+      expires_at DATETIME NOT NULL,
+      sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      attempts INT NOT NULL DEFAULT 0,
+      consumed_at DATETIME NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_auth_verification_lookup (channel, scene, target, consumed_at, expires_at),
+      INDEX idx_auth_verification_sent (channel, scene, target, sent_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 

@@ -40,6 +40,32 @@ CREATE TABLE `auth_sessions`  (
 -- ----------------------------
 
 -- ----------------------------
+-- Table structure for auth_verification_codes
+-- ----------------------------
+DROP TABLE IF EXISTS `auth_verification_codes`;
+CREATE TABLE `auth_verification_codes`  (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `channel` enum('sms') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sms',
+  `scene` enum('register','login','password_reset') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code_hash` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `salt` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `sent_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `attempts` int NOT NULL DEFAULT 0,
+  `consumed_at` datetime NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_auth_verification_lookup`(`channel` ASC, `scene` ASC, `target` ASC, `consumed_at` ASC, `expires_at` ASC) USING BTREE,
+  INDEX `idx_auth_verification_sent`(`channel` ASC, `scene` ASC, `target` ASC, `sent_at` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of auth_verification_codes
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for chat_conversations
 -- ----------------------------
 DROP TABLE IF EXISTS `chat_conversations`;
@@ -648,20 +674,23 @@ CREATE TABLE `users`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `external_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `email` varchar(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `display_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `external_id`(`external_id` ASC) USING BTREE,
-  UNIQUE INDEX `username`(`username` ASC) USING BTREE
+  UNIQUE INDEX `uq_users_phone`(`phone` ASC) USING BTREE,
+  UNIQUE INDEX `uq_users_email`(`email` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES (1, 'demo-user', NULL, NULL, '匿名用户', '2026-05-18 06:42:34', '2026-05-18 06:42:34');
-INSERT INTO `users` VALUES (2, 'guest-user', NULL, NULL, '游客', '2026-05-18 06:42:34', '2026-05-18 06:42:34');
+INSERT INTO `users` VALUES (1, 'demo-user', NULL, NULL, NULL, NULL, '匿名用户', '2026-05-18 06:42:34', '2026-05-18 06:42:34');
+INSERT INTO `users` VALUES (2, 'guest-user', NULL, NULL, NULL, NULL, '游客', '2026-05-18 06:42:34', '2026-05-18 06:42:34');
 
 -- ----------------------------
 -- Table structure for video_generation_tasks

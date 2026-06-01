@@ -61,6 +61,21 @@ export const config = {
     baseUrl: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     model: process.env.QWEN_MODEL || "qwen-vl-plus"
   },
+  tencentCloud: {
+    secretId: process.env.TENCENTCLOUD_SECRET_ID || "",
+    secretKey: process.env.TENCENTCLOUD_SECRET_KEY || "",
+    region: process.env.TENCENTCLOUD_REGION || "ap-guangzhou"
+  },
+  sms: {
+    sdkAppId: process.env.SMS_SDK_APP_ID || "",
+    signName: process.env.SMS_SIGN_NAME || "",
+    loginTemplateId: process.env.SMS_LOGIN_TEMPLATE_ID || "",
+    registerTemplateId: process.env.SMS_REGISTER_TEMPLATE_ID || "",
+    reviseTemplateId: process.env.SMS_REVISE_TEMPLATE_ID || "",
+    templateParamMode: process.env.SMS_TEMPLATE_PARAM_MODE || "code_time",
+    codeExpireMinutes: String(process.env.SMS_CODE_EXPIRE_MINUTES || "5"),
+    dryRun: process.env.SMS_DRY_RUN === "true"
+  },
   alipay: {
     env: process.env.ALIPAY_ENV || "sandbox",
     appId: process.env.ALIPAY_APP_ID || "",

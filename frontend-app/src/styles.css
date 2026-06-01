@@ -1497,7 +1497,7 @@ a:hover {
 }
 
 .auth-drawer p {
-  max-width: 320px;
+  max-width: 360px;
   margin: 0;
   color: rgba(249, 248, 246, 0.68);
   font-size: 14px;
@@ -1508,6 +1508,37 @@ a:hover {
   display: grid;
   gap: 16px;
   margin-top: 34px;
+}
+
+.auth-method-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 10px;
+}
+
+.auth-method-tab {
+  min-height: 38px;
+  color: rgba(249, 248, 246, 0.68);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.auth-method-tab.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
 .auth-form label {
@@ -1576,9 +1607,44 @@ a:hover {
   color: rgba(249, 248, 246, 0.38);
 }
 
+.auth-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 8px;
+}
+
+.auth-code-row input {
+  min-width: 0;
+}
+
+.auth-code-send {
+  min-height: 48px;
+  padding: 0 12px;
+  color: #fff;
+  background: rgba(173, 108, 252, 0.2);
+  border: 1px solid rgba(173, 108, 252, 0.44);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.auth-code-send:hover:not(:disabled) {
+  background: rgba(173, 108, 252, 0.3);
+  border-color: rgba(173, 108, 252, 0.68);
+}
+
+.auth-code-send:disabled {
+  cursor: wait;
+  opacity: 0.64;
+}
+
 .auth-forgot-password {
-  justify-self: flex-start;
-  margin-top: -8px;
   padding: 0;
   color: #ad6cfc;
   background: transparent;
@@ -1587,6 +1653,7 @@ a:hover {
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .auth-error {
@@ -1679,6 +1746,18 @@ a:hover {
   font-weight: 700;
 }
 
+.auth-mode-switch-row--login {
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.auth-mode-switch-group {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
 .auth-mode-switch-label {
   color: rgba(249, 248, 246, 0.78);
 }
@@ -1762,6 +1841,10 @@ a:hover {
 
   .auth-drawer h2 {
     font-size: 32px;
+  }
+
+  .auth-code-row {
+    grid-template-columns: minmax(0, 1fr) 96px;
   }
 }
 

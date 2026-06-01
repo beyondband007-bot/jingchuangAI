@@ -4,10 +4,12 @@ import {
   createPasswordResetChallenge,
   getAuthState,
   getSecurityQuestions,
+  loginUserWithPhoneCode,
   loginUser,
   logoutUser,
   registerUser,
-  resetPasswordWithSecurityAnswer
+  resetPasswordWithSecurityAnswer,
+  sendSmsCode
 } from "./auth.service.js";
 
 function isSecureRequest(req) {
@@ -64,6 +66,24 @@ export async function login(req, res) {
     const result = await loginUser(req.body);
     setSessionCookie(req, res, result.session);
     res.json({ user: result.user });
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function phoneCodeLogin(req, res) {
+  try {
+    const result = await loginUserWithPhoneCode(req.body);
+    setSessionCookie(req, res, result.session);
+    res.json({ user: result.user });
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function smsCode(req, res) {
+  try {
+    res.json(await sendSmsCode(req.body));
   } catch (error) {
     sendError(res, error);
   }

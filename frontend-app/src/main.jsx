@@ -510,78 +510,46 @@ function getInitialView() {
   return "splash";
 }
 
-const emptySecurityQuestions = [
-  { questionKey: "", answer: "" },
-  { questionKey: "", answer: "" },
-  { questionKey: "", answer: "" },
-];
-
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
-  const [username, setUsername] = useState("");
+  const [loginMethod, setLoginMethod] = useState("phone-code");
+  const [phone, setPhone] = useState("");
+  const [smsCode, setSmsCode] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [securityQuestionOptions, setSecurityQuestionOptions] = useState([]);
-  const [securityQuestions, setSecurityQuestions] = useState(
-    emptySecurityQuestions,
-  );
-  const [resetAnswer, setResetAnswer] = useState("");
-  const [resetQuestionKey, setResetQuestionKey] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetConfirmPassword, setResetConfirmPassword] = useState("");
-  const [resetChallenge, setResetChallenge] = useState(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [smsCooldown, setSmsCooldown] = useState(0);
   const [renderMode, setRenderMode] = useState(mode);
   const [isClosing, setIsClosing] = useState(false);
   const isRegister = renderMode === "register";
   const isForgot = renderMode === "forgot";
+  const isLogin = renderMode === "login";
+  const isPasswordLogin = isLogin && loginMethod === "password";
+  const isPhoneCodeLogin = isLogin && loginMethod === "phone-code";
 
   useEffect(() => {
     if (!mode) return;
     setRenderMode(mode);
     setIsClosing(false);
-    setUsername("");
+    setLoginMethod("phone-code");
+    setPhone("");
+    setSmsCode("");
+    setIdentifier("");
     setPassword("");
     setConfirmPassword("");
-    setSecurityQuestions(emptySecurityQuestions);
-    setResetAnswer("");
-    setResetQuestionKey("");
     setResetPassword("");
     setResetConfirmPassword("");
-    setResetChallenge(null);
     setError("");
     setSuccessMessage("");
     setIsSubmitting(false);
+    setIsSendingCode(false);
+    setSmsCooldown(0);
   }, [mode]);
-
-  useEffect(() => {
-    if (!renderMode || (renderMode !== "register" && renderMode !== "forgot"))
-      return undefined;
-    let mounted = true;
-    authApi
-      .securityQuestions()
-      .then((result) => {
-        if (!mounted) return;
-        const questions = Array.isArray(result.questions)
-          ? result.questions
-          : [];
-        setSecurityQuestionOptions(questions);
-        setSecurityQuestions((current) =>
-          current.map((item, index) => ({
-            ...item,
-            questionKey: item.questionKey || questions[index]?.key || "",
-          })),
-        );
-      })
-      .catch((loadError) => {
-        if (mounted)
-          setError(loadError.message || "安全问题加载失败，请稍后重试");
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [renderMode]);
 
   useEffect(() => {
     if (mode || !renderMode) return undefined;
@@ -593,11 +561,52 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     return () => window.clearTimeout(timer);
   }, [mode, renderMode]);
 
+  useEffect(() => {
+    if (smsCooldown <= 0) return undefined;
+    const timer = window.setTimeout(() => {
+      setSmsCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [smsCooldown]);
+
   if (!renderMode) return null;
 
   function requestClose() {
     if (isClosing) return;
     onClose();
+  }
+
+  function getSmsScene() {
+    if (isRegister) return "register";
+    if (isForgot) return "password_reset";
+    return "login";
+  }
+
+  async function requestSmsCode() {
+    setError("");
+    setSuccessMessage("");
+    if (!phone.trim()) {
+      setError("请输入手机号");
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const result = await authApi.sendSmsCode({
+        phone: phone.trim(),
+        scene: getSmsScene(),
+      });
+      setSmsCooldown(60);
+      setSuccessMessage(
+        result.debugCode
+          ? `短信验证码已发送，调试码：${result.debugCode}`
+          : "短信验证码已发送，请在 5 分钟内完成验证",
+      );
+    } catch (sendError) {
+      setError(sendError.message || "验证码发送失败，请稍后重试");
+    } finally {
+      setIsSendingCode(false);
+    }
   }
 
   async function submit(event) {
@@ -606,48 +615,30 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setSuccessMessage("");
 
     if (isForgot) {
-      if (!resetChallenge) {
-        setIsSubmitting(true);
-        try {
-          const challenge = await authApi.createPasswordResetChallenge({
-            username: username.trim(),
-          });
-          setResetChallenge(challenge);
-          setResetQuestionKey(challenge.questions?.[0]?.questionKey || "");
-        } catch (submitError) {
-          setError(submitError.message || "获取安全问题失败，请稍后重试");
-        } finally {
-          setIsSubmitting(false);
-        }
-        return;
-      }
-
       if (resetPassword !== resetConfirmPassword) {
         setError("两次输入的新密码不一致");
         return;
       }
-      if (!resetQuestionKey) {
-        setError("请选择安全问题");
+      if (!phone.trim() || !smsCode.trim()) {
+        setError("请输入手机号和验证码");
         return;
       }
-
       setIsSubmitting(true);
       try {
         await authApi.resetPassword({
-          username: username.trim(),
-          challengeId: resetChallenge.challengeId,
-          questionKey: resetQuestionKey,
-          answer: resetAnswer,
+          phone: phone.trim(),
+          code: smsCode.trim(),
           newPassword: resetPassword,
         });
         setRenderMode("login");
+        setLoginMethod("password");
+        setIdentifier(phone.trim());
+        setPhone("");
+        setSmsCode("");
         setPassword("");
         setConfirmPassword("");
-        setResetAnswer("");
-        setResetQuestionKey("");
         setResetPassword("");
         setResetConfirmPassword("");
-        setResetChallenge(null);
         setSuccessMessage("密码已重置，请使用新密码登录");
       } catch (submitError) {
         setError(submitError.message || "密码重置失败，请稍后重试");
@@ -657,33 +648,49 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
       return;
     }
 
-    if (isRegister && password !== confirmPassword) {
-      setError("两次输入的密码不一致");
+    if (isRegister) {
+      if (password !== confirmPassword) {
+        setError("两次输入的密码不一致");
+        return;
+      }
+      if (!phone.trim() || !smsCode.trim()) {
+        setError("请输入手机号和验证码");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await authApi.register({
+          phone: phone.trim(),
+          code: smsCode.trim(),
+          password,
+        });
+        onSuccess(result.user);
+      } catch (submitError) {
+        setError(submitError.message || "注册失败，请稍后重试");
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
+
     setIsSubmitting(true);
     try {
-      const payload = { username: username.trim(), password };
-      if (isRegister) {
-        payload.securityQuestions = securityQuestions;
-      }
-      const result = isRegister
-        ? await authApi.register(payload)
-        : await authApi.login(payload);
+      const result = isPhoneCodeLogin
+        ? await authApi.loginWithPhoneCode({
+            phone: phone.trim(),
+            code: smsCode.trim(),
+          })
+        : await authApi.login({
+            identifier: identifier.trim(),
+            password,
+          });
       onSuccess(result.user);
     } catch (submitError) {
-      setError(submitError.message || "操作失败，请稍后重试");
+      setError(submitError.message || "登录失败，请稍后重试");
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  function updateSecurityQuestion(index, field, value) {
-    setSecurityQuestions((current) =>
-      current.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item,
-      ),
-    );
   }
 
   function getTitle() {
@@ -694,17 +701,56 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
 
   function getDescription() {
     if (renderMode === "register")
-      return "注册后立即获得 1000 积分，请设置 3 个安全问题用于找回密码。";
+      return "使用手机号完成验证，注册后立即获得 1000 积分。";
     if (renderMode === "forgot")
-      return resetChallenge
-        ? "选择注册时设置的安全问题，然后设置新密码。"
-        : "输入用户名后，选择你注册时设置过的安全问题。";
-    return "登录后即可查看你的积分与生成记录。";
+      return "通过手机号验证码验证身份，然后设置新密码。";
+    if (isPasswordLogin) return "可使用手机号、邮箱或用户名登录。";
+    return "使用手机号验证码快速登录，未注册手机号将自动创建账号。";
   }
 
-  const selectedQuestionKeys = securityQuestions
-    .map((item) => item.questionKey)
-    .filter(Boolean);
+  const codeButtonText = isSendingCode
+    ? "发送中"
+    : smsCooldown > 0
+      ? `${smsCooldown}s`
+      : "获取验证码";
+
+  const renderPhoneCodeFields = (codeLabel = "验证码") => (
+    <>
+      <label>
+        <span>手机号</span>
+        <input
+          autoFocus={!isPasswordLogin}
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          placeholder="请输入手机号"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+        />
+      </label>
+      <label className="auth-code-field">
+        <span>{codeLabel}</span>
+        <div className="auth-code-row">
+          <input
+            value={smsCode}
+            onChange={(event) => setSmsCode(event.target.value)}
+            placeholder="6 位验证码"
+            inputMode="numeric"
+            maxLength={6}
+            autoComplete="one-time-code"
+          />
+          <button
+            className="auth-code-send"
+            type="button"
+            onClick={requestSmsCode}
+            disabled={isSendingCode || smsCooldown > 0}
+          >
+            {codeButtonText}
+          </button>
+        </div>
+      </label>
+    </>
+  );
 
   return (
     <div
@@ -735,44 +781,65 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         <h2 id="auth-drawer-title">{getTitle()}</h2>
         <p>{getDescription()}</p>
         <form className="auth-form" onSubmit={submit}>
-          <label>
-            <span>用户名</span>
-            <input
-              autoFocus
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="请输入用户名"
-              autoComplete="username"
-              disabled={isForgot && Boolean(resetChallenge)}
-            />
-          </label>
-          {!isForgot && (
-            <label>
-              <span>密码</span>
-              <input
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="至少 6 个字符"
-                type="password"
-                autoComplete={
-                  renderMode === "register"
-                    ? "new-password"
-                    : "current-password"
-                }
-              />
-            </label>
+          {isLogin && (
+            <div className="auth-method-tabs" role="tablist" aria-label="登录方式">
+              <button
+                type="button"
+                className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
+                onClick={() => setLoginMethod("phone-code")}
+              >
+                手机号登录
+              </button>
+              <button
+                type="button"
+                className={`auth-method-tab ${loginMethod === "password" ? "is-active" : ""}`}
+                onClick={() => setLoginMethod("password")}
+              >
+                密码登录
+              </button>
+            </div>
           )}
-          {renderMode === "login" && (
-            <button
-              className="auth-forgot-password"
-              type="button"
-              onClick={() => onModeChange("forgot")}
-            >
-              忘记密码
-            </button>
-          )}
-          {renderMode === "register" && (
+
+          {isPhoneCodeLogin && renderPhoneCodeFields("短信验证码")}
+
+          {isPasswordLogin && (
             <>
+              <label>
+                <span>账号</span>
+                <input
+                  autoFocus
+                  value={identifier}
+                  onChange={(event) => setIdentifier(event.target.value)}
+                  placeholder="手机号 / 邮箱 / 用户名"
+                  autoComplete="username"
+                />
+              </label>
+              <label>
+                <span>密码</span>
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="请输入密码"
+                  type="password"
+                  autoComplete="current-password"
+                />
+              </label>
+            </>
+          )}
+
+          {isRegister && (
+            <>
+              {renderPhoneCodeFields("短信验证码")}
+              <label>
+                <span>密码</span>
+                <input
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="至少 6 个字符"
+                  type="password"
+                  autoComplete="new-password"
+                />
+              </label>
               <label>
                 <span>确认密码</span>
                 <input
@@ -783,84 +850,12 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
                   autoComplete="new-password"
                 />
               </label>
-              <div className="auth-security-grid">
-                {securityQuestions.map((item, index) => (
-                  <div className="auth-security-item" key={index}>
-                    <label>
-                      <span>安全问题 {index + 1}</span>
-                      <select
-                        value={item.questionKey}
-                        onChange={(event) =>
-                          updateSecurityQuestion(
-                            index,
-                            "questionKey",
-                            event.target.value,
-                          )
-                        }
-                      >
-                        <option value="">请选择安全问题</option>
-                        {securityQuestionOptions.map((question) => (
-                          <option
-                            key={question.key}
-                            value={question.key}
-                            disabled={
-                              selectedQuestionKeys.includes(question.key) &&
-                              item.questionKey !== question.key
-                            }
-                          >
-                            {question.text}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>答案</span>
-                      <input
-                        value={item.answer}
-                        onChange={(event) =>
-                          updateSecurityQuestion(
-                            index,
-                            "answer",
-                            event.target.value,
-                          )
-                        }
-                        placeholder="2-80 个字符"
-                        autoComplete="off"
-                      />
-                    </label>
-                  </div>
-                ))}
-              </div>
             </>
           )}
-          {isForgot && resetChallenge && (
+
+          {isForgot && (
             <>
-              <label>
-                <span>安全问题</span>
-                <select
-                  value={resetQuestionKey}
-                  onChange={(event) => setResetQuestionKey(event.target.value)}
-                >
-                  <option value="">请选择安全问题</option>
-                  {(resetChallenge.questions || []).map((question) => (
-                    <option
-                      key={question.questionKey}
-                      value={question.questionKey}
-                    >
-                      {question.questionText}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>答案</span>
-                <input
-                  value={resetAnswer}
-                  onChange={(event) => setResetAnswer(event.target.value)}
-                  placeholder="请输入答案"
-                  autoComplete="off"
-                />
-              </label>
+              {renderPhoneCodeFields("短信验证码")}
               <label>
                 <span>新密码</span>
                 <input
@@ -885,6 +880,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
               </label>
             </>
           )}
+
           {successMessage && (
             <div className="auth-success">{successMessage}</div>
           )}
@@ -895,9 +891,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
               {renderMode === "register"
                 ? "注册并领取积分"
                 : renderMode === "forgot"
-                  ? resetChallenge
-                    ? "重置密码"
-                    : "获取安全问题"
+                  ? "重置密码"
                   : "登录"}
             </span>
           </button>
@@ -925,14 +919,23 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             </button>
           </div>
         ) : (
-          <div className="auth-mode-switch-row">
-            <span className="auth-mode-switch-label">还没有账号？</span>
+          <div className="auth-mode-switch-row auth-mode-switch-row--login">
+            <div className="auth-mode-switch-group">
+              <span className="auth-mode-switch-label">还没有账号？</span>
+              <button
+                className="auth-mode-switch auth-mode-switch-link"
+                type="button"
+                onClick={() => onModeChange("register")}
+              >
+                立即注册
+              </button>
+            </div>
             <button
-              className="auth-mode-switch auth-mode-switch-link"
+              className="auth-forgot-password"
               type="button"
-              onClick={() => onModeChange("register")}
+              onClick={() => onModeChange("forgot")}
             >
-              立即注册
+              找回密码
             </button>
           </div>
         )}

@@ -239,7 +239,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         <button className="auth-drawer-close" type="button" aria-label="鍏抽棴" onClick={requestClose}>
           <X size={18} />
         </button>
-        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <div className="auth-drawer-kicker">Facemini AI ACCOUNT</div>
         <h2 id="auth-drawer-title">{renderMode === "register" ? "鍒涘缓璐﹀彿" : "娆㈣繋鍥炴潵"}</h2>
         <p>{renderMode === "register" ? "娉ㄥ唽鍚庣珛鍗宠幏寰?1000 绉垎锛屽紑濮嬩繚瀛樹綘鐨勭敓鎴愯褰曘€? : "鐧诲綍鍚庡皢鍒囨崲鍒颁綘鐨勭Н鍒嗕笌鐢熸垚璁板綍銆?}</p>
         <form className="auth-form" onSubmit={submit}>

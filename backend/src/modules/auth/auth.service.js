@@ -1,10 +1,12 @@
-import { createHmac, randomUUID, timingSafeEqual } from "crypto";
+import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "crypto";
+import https from "https";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import { createHttpError } from "../../shared/http.js";
 import {
   createSession,
-  findUserByUsername,
+  findUserByLoginIdentifier,
+  findUserByPhone,
   getSessionTokenFromRequest,
   getUserCredits,
   hashPassword,
@@ -15,48 +17,11 @@ import {
 } from "../../shared/userService.js";
 
 const REGISTER_GRANT_POINTS = 1000;
-const SECURITY_QUESTION_COUNT = 3;
-const PASSWORD_RESET_CHALLENGE_TTL_MS = 10 * 60 * 1000;
+const SMS_SEND_INTERVAL_MS = 60 * 1000;
+const SMS_MAX_ATTEMPTS = 5;
+const SMS_SCENES = new Set(["register", "login", "password_reset"]);
 
-const SECURITY_QUESTIONS = [
-  { key: "first_school", text: "你的第一所学校叫什么？" },
-  { key: "childhood_friend", text: "你童年最好的朋友叫什么？" },
-  { key: "favorite_teacher", text: "你印象最深的老师叫什么？" },
-  { key: "birth_city", text: "你出生的城市是哪里？" },
-  { key: "first_pet", text: "你的第一只宠物叫什么？" },
-  { key: "favorite_book", text: "你最喜欢的一本书叫什么？" },
-  { key: "mother_hometown", text: "你母亲的家乡在哪里？" },
-  { key: "first_job", text: "你的第一份工作或实习单位叫什么？" }
-];
-
-const SECURITY_QUESTION_MAP = new Map(SECURITY_QUESTIONS.map((question) => [question.key, question]));
-
-function normalizeUsername(username) {
-  return String(username || "").trim();
-}
-
-function normalizeSecurityAnswer(answer) {
-  return String(answer || "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
-
-function assertCredentials({ username, password }) {
-  const normalizedUsername = normalizeUsername(username);
-  const normalizedPassword = String(password || "");
-
-  if (normalizedUsername.length < 3 || normalizedUsername.length > 32) {
-    throw createHttpError("用户名长度需为 3-32 个字符", 400);
-  }
-  if (normalizedPassword.length < 6 || normalizedPassword.length > 128) {
-    throw createHttpError("密码长度需为 6-128 个字符", 400);
-  }
-
-  return { username: normalizedUsername, password: normalizedPassword };
-}
-
-function assertNewPassword(password) {
+function assertPassword(password) {
   const normalizedPassword = String(password || "");
   if (normalizedPassword.length < 6 || normalizedPassword.length > 128) {
     throw createHttpError("密码长度需为 6-128 个字符", 400);
@@ -64,70 +29,64 @@ function assertNewPassword(password) {
   return normalizedPassword;
 }
 
-function assertSecurityQuestions(securityQuestions) {
-  if (!Array.isArray(securityQuestions) || securityQuestions.length !== SECURITY_QUESTION_COUNT) {
-    throw createHttpError("请设置 3 个安全问题", 400);
+function assertSmsCode(code) {
+  const normalizedCode = String(code || "").trim();
+  if (!/^\d{6}$/.test(normalizedCode)) {
+    throw createHttpError("请输入 6 位验证码", 400);
   }
-
-  const seen = new Set();
-  return securityQuestions.map((item) => {
-    const questionKey = String(item?.questionKey || "").trim();
-    const answer = normalizeSecurityAnswer(item?.answer);
-
-    if (!SECURITY_QUESTION_MAP.has(questionKey)) {
-      throw createHttpError("安全问题无效", 400);
-    }
-    if (seen.has(questionKey)) {
-      throw createHttpError("安全问题不能重复", 400);
-    }
-    if (answer.length < 2 || answer.length > 80) {
-      throw createHttpError("安全问题答案需为 2-80 个字符", 400);
-    }
-
-    seen.add(questionKey);
-    return { questionKey, answer };
-  });
+  return normalizedCode;
 }
 
-function getResetChallengeSecret() {
-  return (
-    process.env.AUTH_RESET_SECRET ||
-    process.env.SESSION_SECRET ||
-    config.db.password ||
-    "jingchuang-ai-password-reset-dev-secret"
-  );
+function normalizeSmsScene(scene) {
+  const normalizedScene = String(scene || "").trim();
+  if (!SMS_SCENES.has(normalizedScene)) {
+    throw createHttpError("验证码场景无效", 400);
+  }
+  return normalizedScene;
 }
 
-function signResetChallenge(payload) {
-  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createHmac("sha256", getResetChallengeSecret()).update(body).digest("base64url");
-  return `${body}.${signature}`;
+export function normalizePhone(phone) {
+  const value = String(phone || "").trim().replace(/[\s-]/g, "");
+  if (/^1\d{10}$/.test(value)) return value;
+  if (/^861\d{10}$/.test(value)) return value.slice(2);
+  if (/^\+861\d{10}$/.test(value)) return value.slice(3);
+  throw createHttpError("请输入有效的手机号", 400);
 }
 
-function readResetChallenge(challengeId) {
-  const [body, signature] = String(challengeId || "").split(".");
-  if (!body || !signature) {
-    throw createHttpError("找回密码验证已失效，请重新获取问题", 400);
-  }
+function normalizeEmail(email) {
+  const value = String(email || "").trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : "";
+}
 
-  const expected = createHmac("sha256", getResetChallengeSecret()).update(body).digest("base64url");
-  const signatureBuffer = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (signatureBuffer.length !== expectedBuffer.length || !timingSafeEqual(signatureBuffer, expectedBuffer)) {
-    throw createHttpError("找回密码验证已失效，请重新获取问题", 400);
+function normalizeLoginIdentifier(identifier) {
+  const value = String(identifier || "").trim();
+  if (!value) {
+    throw createHttpError("请输入手机号、邮箱或用户名", 400);
   }
-
-  let payload;
   try {
-    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    return normalizePhone(value);
   } catch {
-    throw createHttpError("找回密码验证已失效，请重新获取问题", 400);
+    return normalizeEmail(value) || value;
   }
+}
 
-  if (!payload?.userId || Number(payload.expiresAt) < Date.now()) {
-    throw createHttpError("找回密码验证已失效，请重新获取问题", 400);
-  }
-  return payload;
+function toE164Phone(phone) {
+  return `+86${phone}`;
+}
+
+function getSmsCodeTtlMs() {
+  const minutes = Number(config.sms.codeExpireMinutes || 5);
+  return (Number.isFinite(minutes) && minutes > 0 ? minutes : 5) * 60 * 1000;
+}
+
+function hashCode(scene, target, code, salt) {
+  return createHash("sha256").update(`${salt}:${scene}:${target}:${code}`, "utf8").digest("hex");
+}
+
+function timingSafeEqualHex(left, right) {
+  const leftBuffer = Buffer.from(String(left || ""), "hex");
+  const rightBuffer = Buffer.from(String(right || ""), "hex");
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function publicUser(user, credits) {
@@ -135,9 +94,88 @@ function publicUser(user, credits) {
     id: user.externalId,
     username: user.username || user.displayName || "游客",
     displayName: user.displayName || user.username || "游客",
+    phone: user.phone || null,
+    email: user.email || null,
     isGuest: Boolean(user.isGuest),
     credits
   };
+}
+
+async function grantInitialCredits(userId, connection) {
+  await connection.query("INSERT INTO credit_accounts (user_id, balance) VALUES (?, ?)", [
+    userId,
+    REGISTER_GRANT_POINTS
+  ]);
+  await connection.query(
+    `INSERT INTO credit_transactions (user_id, type, amount, balance_after, memo)
+     VALUES (?, 'grant', ?, ?, 'register initial credits')`,
+    [userId, REGISTER_GRANT_POINTS, REGISTER_GRANT_POINTS]
+  );
+}
+
+async function createPhoneUser(phone, connection, passwordHash = null) {
+  const [result] = await connection.query(
+    `INSERT INTO users (external_id, username, phone, password_hash, display_name)
+     VALUES (?, ?, ?, ?, ?)`,
+    [phone, phone, phone, passwordHash, phone]
+  );
+  await grantInitialCredits(result.insertId, connection);
+  return {
+    id: result.insertId,
+    externalId: phone,
+    username: phone,
+    displayName: phone,
+    phone,
+    email: null,
+    isGuest: false
+  };
+}
+
+async function verifySmsCode(scene, phone, code, connection) {
+  const normalizedCode = assertSmsCode(code);
+  const [rows] = await connection.query(
+    `SELECT id, code_hash AS codeHash, salt, expires_at AS expiresAt, attempts
+     FROM auth_verification_codes
+     WHERE channel = 'sms' AND scene = ? AND target = ? AND consumed_at IS NULL
+     ORDER BY id DESC
+     LIMIT 1
+     FOR UPDATE`,
+    [scene, phone]
+  );
+  const saved = rows[0] || null;
+  if (!saved) {
+    throw createHttpError("请先获取验证码", 400);
+  }
+
+  if (new Date(saved.expiresAt).getTime() < Date.now()) {
+    await connection.query("UPDATE auth_verification_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?", [saved.id]);
+    throw createHttpError("验证码已过期，请重新获取", 400);
+  }
+
+  if (Number(saved.attempts || 0) >= SMS_MAX_ATTEMPTS) {
+    await connection.query("UPDATE auth_verification_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?", [saved.id]);
+    throw createHttpError("验证码错误次数过多，请重新获取", 400);
+  }
+
+  const nextAttempts = Number(saved.attempts || 0) + 1;
+  const expectedHash = hashCode(scene, phone, normalizedCode, saved.salt);
+  if (!timingSafeEqualHex(expectedHash, saved.codeHash)) {
+    await connection.query(
+      `UPDATE auth_verification_codes
+       SET attempts = ?, consumed_at = IF(? >= ?, CURRENT_TIMESTAMP, consumed_at)
+       WHERE id = ?`,
+      [nextAttempts, nextAttempts, SMS_MAX_ATTEMPTS, saved.id]
+    );
+    throw createHttpError(
+      nextAttempts >= SMS_MAX_ATTEMPTS ? "验证码错误次数过多，请重新获取" : "验证码不正确",
+      400
+    );
+  }
+
+  await connection.query(
+    "UPDATE auth_verification_codes SET attempts = ?, consumed_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [nextAttempts, saved.id]
+  );
 }
 
 export async function getAuthState(req) {
@@ -147,66 +185,72 @@ export async function getAuthState(req) {
 }
 
 export function getSecurityQuestions() {
-  return { questions: SECURITY_QUESTIONS };
+  return { questions: [] };
+}
+
+export async function sendSmsCode(payload) {
+  const scene = normalizeSmsScene(payload?.scene);
+  const phone = normalizePhone(payload?.phone);
+  const pool = getPool();
+
+  const [recentRows] = await pool.query(
+    `SELECT sent_at AS sentAt
+     FROM auth_verification_codes
+     WHERE channel = 'sms' AND scene = ? AND target = ? AND consumed_at IS NULL
+     ORDER BY id DESC
+     LIMIT 1`,
+    [scene, phone]
+  );
+  const recent = recentRows[0] || null;
+  if (recent) {
+    const elapsed = Date.now() - new Date(recent.sentAt).getTime();
+    if (elapsed < SMS_SEND_INTERVAL_MS) {
+      const waitSeconds = Math.ceil((SMS_SEND_INTERVAL_MS - elapsed) / 1000);
+      throw createHttpError(`请在 ${waitSeconds} 秒后再获取验证码`, 429);
+    }
+  }
+
+  const code = String(randomInt(100000, 1000000));
+  await sendVerificationSms(phone, code, scene);
+
+  const salt = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + getSmsCodeTtlMs());
+  await pool.query(
+    `INSERT INTO auth_verification_codes (channel, scene, target, code_hash, salt, expires_at, sent_at)
+     VALUES ('sms', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+    [scene, phone, hashCode(scene, phone, code, salt), salt, expiresAt]
+  );
+
+  return {
+    ok: true,
+    message: "短信验证码已发送",
+    ...(config.sms.dryRun ? { debugCode: code } : {})
+  };
 }
 
 export async function registerUser(payload) {
-  const { username, password } = assertCredentials(payload);
-  const securityQuestions = assertSecurityQuestions(payload?.securityQuestions);
+  const phone = normalizePhone(payload?.phone);
+  const code = assertSmsCode(payload?.code);
+  const password = assertPassword(payload?.password);
   const pool = getPool();
   const connection = await pool.getConnection();
 
   try {
     await connection.beginTransaction();
-
-    const existing = await findUserByUsername(username, connection);
+    const existing = await findUserByLoginIdentifier(phone, connection);
     if (existing) {
-      throw createHttpError("用户名已存在", 409);
+      throw createHttpError("该手机号已注册", 409);
     }
 
+    await verifySmsCode("register", phone, code, connection);
     const passwordHash = await hashPassword(password);
-    const externalId = `user-${randomUUID()}`;
-    const [result] = await connection.query(
-      `INSERT INTO users (external_id, username, password_hash, display_name)
-       VALUES (?, ?, ?, ?)`,
-      [externalId, username, passwordHash, username]
-    );
-    const userId = result.insertId;
-
-    await connection.query("INSERT INTO credit_accounts (user_id, balance) VALUES (?, ?)", [
-      userId,
-      REGISTER_GRANT_POINTS
-    ]);
-    await connection.query(
-      `INSERT INTO credit_transactions (user_id, type, amount, balance_after, memo)
-       VALUES (?, 'grant', ?, ?, 'register initial credits')`,
-      [userId, REGISTER_GRANT_POINTS, REGISTER_GRANT_POINTS]
-    );
-
-    for (const question of securityQuestions) {
-      const answerHash = await hashPassword(question.answer);
-      await connection.query(
-        `INSERT INTO user_security_questions (user_id, question_key, answer_hash)
-         VALUES (?, ?, ?)`,
-        [userId, question.questionKey, answerHash]
-      );
-    }
-
-    const session = await createSession(userId, connection);
+    const user = await createPhoneUser(phone, connection, passwordHash);
+    const session = await createSession(user.id, connection);
     await connection.commit();
 
     return {
       session,
-      user: publicUser(
-        {
-          id: userId,
-          externalId,
-          username,
-          displayName: username,
-          isGuest: false
-        },
-        REGISTER_GRANT_POINTS
-      )
+      user: publicUser(user, REGISTER_GRANT_POINTS)
     };
   } catch (error) {
     await connection.rollback();
@@ -217,10 +261,17 @@ export async function registerUser(payload) {
 }
 
 export async function loginUser(payload) {
-  const { username, password } = assertCredentials(payload);
-  const user = await findUserByUsername(username);
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    throw createHttpError("用户名或密码错误", 401);
+  const identifier = normalizeLoginIdentifier(payload?.identifier ?? payload?.username);
+  const password = assertPassword(payload?.password);
+  const user = await findUserByLoginIdentifier(identifier);
+  if (!user) {
+    throw createHttpError("账号或密码错误", 401);
+  }
+  if (!user.passwordHash) {
+    throw createHttpError("该账号未设置密码，请使用手机号验证码登录或找回密码设置密码", 401);
+  }
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    throw createHttpError("账号或密码错误", 401);
   }
 
   const session = await createSession(user.id);
@@ -231,105 +282,228 @@ export async function loginUser(payload) {
   };
 }
 
-export async function logoutUser(req) {
-  await invalidateSessionToken(getSessionTokenFromRequest(req));
-}
-
-export async function createPasswordResetChallenge(payload) {
-  const username = normalizeUsername(payload?.username);
-  if (!username) {
-    throw createHttpError("请输入用户名", 400);
-  }
-
-  const user = await findUserByUsername(username);
-  if (!user) {
-    throw createHttpError("账号未设置安全问题，无法通过此方式找回密码", 404);
-  }
-
-  const [rows] = await getPool().query(
-    `SELECT question_key AS questionKey
-     FROM user_security_questions
-     WHERE user_id = ?`,
-    [user.id]
-  );
-  if (rows.length === 0) {
-    throw createHttpError("账号未设置安全问题，无法通过此方式找回密码", 404);
-  }
-
-  const candidates = rows.filter((row) => SECURITY_QUESTION_MAP.has(row.questionKey));
-  if (candidates.length === 0) {
-    throw createHttpError("账号未设置安全问题，无法通过此方式找回密码", 404);
-  }
-
-  const challengeId = signResetChallenge({
-    userId: user.id,
-    username,
-    expiresAt: Date.now() + PASSWORD_RESET_CHALLENGE_TTL_MS
-  });
-
-  return {
-    challengeId,
-    questions: candidates.map((candidate) => {
-      const question = SECURITY_QUESTION_MAP.get(candidate.questionKey);
-      return {
-        questionKey: candidate.questionKey,
-        questionText: question.text
-      };
-    })
-  };
-}
-
-export async function resetPasswordWithSecurityAnswer(payload) {
-  const username = normalizeUsername(payload?.username);
-  const questionKey = String(payload?.questionKey || "").trim();
-  const newPassword = assertNewPassword(payload?.newPassword);
-  const answer = normalizeSecurityAnswer(payload?.answer);
-  if (!username) {
-    throw createHttpError("请输入用户名", 400);
-  }
-  if (!SECURITY_QUESTION_MAP.has(questionKey)) {
-    throw createHttpError("请选择安全问题", 400);
-  }
-  if (answer.length < 2 || answer.length > 80) {
-    throw createHttpError("安全问题答案错误", 401);
-  }
-
-  const challenge = readResetChallenge(payload?.challengeId);
-  if (challenge.username !== username) {
-    throw createHttpError("找回密码验证已失效，请重新获取问题", 400);
-  }
-
-  const user = await findUserByUsername(username);
-  if (!user || Number(user.id) !== Number(challenge.userId)) {
-    throw createHttpError("安全问题答案错误", 401);
-  }
-
-  const [rows] = await getPool().query(
-    `SELECT answer_hash AS answerHash
-     FROM user_security_questions
-     WHERE user_id = ? AND question_key = ?
-     LIMIT 1`,
-    [user.id, questionKey]
-  );
-  const securityQuestion = rows[0] || null;
-  if (!securityQuestion || !(await verifyPassword(answer, securityQuestion.answerHash))) {
-    throw createHttpError("安全问题答案错误", 401);
-  }
-
-  const passwordHash = await hashPassword(newPassword);
+export async function loginUserWithPhoneCode(payload) {
+  const phone = normalizePhone(payload?.phone);
+  const code = assertSmsCode(payload?.code);
   const pool = getPool();
   const connection = await pool.getConnection();
+
   try {
     await connection.beginTransaction();
-    await connection.query("UPDATE users SET password_hash = ? WHERE id = ?", [passwordHash, user.id]);
-    await invalidateUserSessions(user.id, connection);
+    await verifySmsCode("login", phone, code, connection);
+
+    let user = await findUserByPhone(phone, connection);
+    let credits = REGISTER_GRANT_POINTS;
+    if (!user) {
+      user = await createPhoneUser(phone, connection);
+    } else {
+      credits = (await getUserCredits(user.id)).balance;
+    }
+
+    const session = await createSession(user.id, connection);
     await connection.commit();
+
+    return {
+      session,
+      user: publicUser({ ...user, isGuest: false }, credits)
+    };
   } catch (error) {
     await connection.rollback();
     throw error;
   } finally {
     connection.release();
   }
+}
 
-  return { ok: true };
+export async function logoutUser(req) {
+  await invalidateSessionToken(getSessionTokenFromRequest(req));
+}
+
+export async function createPasswordResetChallenge() {
+  throw createHttpError("请使用手机号验证码找回密码", 410);
+}
+
+export async function resetPasswordWithSecurityAnswer(payload) {
+  return resetPasswordWithSmsCode(payload);
+}
+
+export async function resetPasswordWithSmsCode(payload) {
+  const phone = normalizePhone(payload?.phone);
+  const code = assertSmsCode(payload?.code);
+  const newPassword = assertPassword(payload?.newPassword);
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const user = await findUserByPhone(phone, connection);
+    if (!user) {
+      throw createHttpError("该手机号尚未注册", 404);
+    }
+
+    await verifySmsCode("password_reset", phone, code, connection);
+    const passwordHash = await hashPassword(newPassword);
+    await connection.query("UPDATE users SET password_hash = ? WHERE id = ?", [passwordHash, user.id]);
+    await invalidateUserSessions(user.id, connection);
+    await connection.commit();
+    return { ok: true };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+async function sendVerificationSms(phone, code, scene) {
+  const templateId =
+    scene === "register"
+      ? config.sms.registerTemplateId
+      : scene === "password_reset"
+        ? config.sms.reviseTemplateId
+        : config.sms.loginTemplateId;
+
+  if (config.sms.dryRun) {
+    return;
+  }
+
+  if (
+    !config.tencentCloud.secretId ||
+    !config.tencentCloud.secretKey ||
+    !config.sms.sdkAppId ||
+    !templateId ||
+    !config.sms.signName
+  ) {
+    throw createHttpError("短信服务未配置完整", 500);
+  }
+
+  const response = await callTencentCloud({
+    service: "sms",
+    host: "sms.tencentcloudapi.com",
+    version: "2021-01-11",
+    action: "SendSms",
+    payload: {
+      PhoneNumberSet: [toE164Phone(phone)],
+      SmsSdkAppId: config.sms.sdkAppId,
+      SignName: config.sms.signName,
+      TemplateId: templateId,
+      TemplateParamSet: getSmsTemplateParamSet(code)
+    }
+  }).catch((error) => {
+    throw createHttpError(formatTencentSmsError(error), 500);
+  });
+
+  const status = response?.Response?.SendStatusSet?.[0];
+  if (status?.Code && status.Code !== "Ok") {
+    throw createHttpError(formatTencentSmsError(new Error(status.Message || status.Code)), 500);
+  }
+}
+
+function getSmsTemplateParamSet(code) {
+  if (config.sms.templateParamMode === "code") {
+    return [code];
+  }
+  return [code, config.sms.codeExpireMinutes];
+}
+
+function formatTencentSmsError(error) {
+  const message = error?.message || "短信验证码发送失败";
+  if (/not authorized|UnauthorizedOperation|no permission|sms:SendSms/i.test(message)) {
+    return "短信发送失败：当前腾讯云密钥没有 sms:SendSms 权限，请在 CAM 中给该用户授权短信发送权限";
+  }
+  if (/Template/i.test(message)) {
+    return `短信发送失败：短信模板配置或审核状态异常。腾讯云返回：${message}`;
+  }
+  if (/Sign/i.test(message)) {
+    return `短信发送失败：短信签名配置或审核状态异常。腾讯云返回：${message}`;
+  }
+  if (/Limit|Frequency|Rate/i.test(message)) {
+    return `短信发送过于频繁，请稍后再试。腾讯云返回：${message}`;
+  }
+  return `短信验证码发送失败。腾讯云返回：${message}`;
+}
+
+function sha256Hex(value) {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function hmac(key, value) {
+  return createHmac("sha256", key).update(value, "utf8").digest();
+}
+
+function hmacHex(key, value) {
+  return createHmac("sha256", key).update(value, "utf8").digest("hex");
+}
+
+function callTencentCloud({ service, host, version, action, payload }) {
+  const body = JSON.stringify(payload);
+  const algorithm = "TC3-HMAC-SHA256";
+  const timestamp = Math.floor(Date.now() / 1000);
+  const date = new Date(timestamp * 1000).toISOString().slice(0, 10);
+  const hashedRequestPayload = sha256Hex(body);
+  const canonicalHeaders = `content-type:application/json; charset=utf-8\nhost:${host}\nx-tc-action:${action.toLowerCase()}\n`;
+  const signedHeaders = "content-type;host;x-tc-action";
+  const canonicalRequest = [
+    "POST",
+    "/",
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    hashedRequestPayload
+  ].join("\n");
+  const credentialScope = `${date}/${service}/tc3_request`;
+  const stringToSign = [
+    algorithm,
+    timestamp,
+    credentialScope,
+    sha256Hex(canonicalRequest)
+  ].join("\n");
+  const secretDate = hmac(`TC3${config.tencentCloud.secretKey}`, date);
+  const secretService = hmac(secretDate, service);
+  const secretSigning = hmac(secretService, "tc3_request");
+  const signature = hmacHex(secretSigning, stringToSign);
+  const authorization = `${algorithm} Credential=${config.tencentCloud.secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  return new Promise((resolve, reject) => {
+    const request = https.request(
+      {
+        method: "POST",
+        host,
+        path: "/",
+        headers: {
+          Authorization: authorization,
+          "Content-Type": "application/json; charset=utf-8",
+          Host: host,
+          "X-TC-Action": action,
+          "X-TC-Timestamp": String(timestamp),
+          "X-TC-Version": version,
+          "X-TC-Region": config.tencentCloud.region
+        }
+      },
+      (response) => {
+        let data = "";
+        response.setEncoding("utf8");
+        response.on("data", (chunk) => {
+          data += chunk;
+        });
+        response.on("end", () => {
+          let parsed = null;
+          try {
+            parsed = data ? JSON.parse(data) : null;
+          } catch {
+            parsed = null;
+          }
+          if (response.statusCode >= 400 || parsed?.Response?.Error) {
+            reject(new Error(parsed?.Response?.Error?.Message || data || "腾讯云接口请求失败"));
+            return;
+          }
+          resolve(parsed || data);
+        });
+      }
+    );
+
+    request.on("error", reject);
+    request.write(body);
+    request.end();
+  });
 }

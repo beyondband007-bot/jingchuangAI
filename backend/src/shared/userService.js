@@ -20,7 +20,10 @@ export function getCurrentExternalId() {
 
 export async function findUserByExternalId(externalId, connection = getPool()) {
   const [rows] = await connection.query(
-    "SELECT id, external_id AS externalId, display_name AS displayName, username FROM users WHERE external_id = ? LIMIT 1",
+    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email
+     FROM users
+     WHERE external_id = ?
+     LIMIT 1`,
     [externalId]
   );
   return rows[0] || null;
@@ -28,7 +31,8 @@ export async function findUserByExternalId(externalId, connection = getPool()) {
 
 export async function findUserByUsername(username, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, password_hash AS passwordHash
+    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+       password_hash AS passwordHash
      FROM users
      WHERE username = ?
      LIMIT 1`,
@@ -37,9 +41,36 @@ export async function findUserByUsername(username, connection = getPool()) {
   return rows[0] || null;
 }
 
+export async function findUserByPhone(phone, connection = getPool()) {
+  const [rows] = await connection.query(
+    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+       password_hash AS passwordHash
+     FROM users
+     WHERE phone = ?
+     LIMIT 1`,
+    [phone]
+  );
+  return rows[0] || null;
+}
+
+export async function findUserByLoginIdentifier(identifier, connection = getPool()) {
+  const [rows] = await connection.query(
+    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+       password_hash AS passwordHash
+     FROM users
+     WHERE external_id = ? OR phone = ? OR LOWER(email) = ?
+     LIMIT 1`,
+    [identifier, identifier, identifier]
+  );
+  return rows[0] || null;
+}
+
 export async function findUserById(userId, connection = getPool()) {
   const [rows] = await connection.query(
-    "SELECT id, external_id AS externalId, display_name AS displayName, username FROM users WHERE id = ? LIMIT 1",
+    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email
+     FROM users
+     WHERE id = ?
+     LIMIT 1`,
     [userId]
   );
   return rows[0] || null;
@@ -53,7 +84,9 @@ export async function getDemoUser(connection) {
       external_id: currentUser.externalId,
       externalId: currentUser.externalId,
       displayName: currentUser.displayName,
-      username: currentUser.username
+      username: currentUser.username,
+      phone: currentUser.phone,
+      email: currentUser.email
     };
   }
 
@@ -66,7 +99,9 @@ export async function getDemoUser(connection) {
     external_id: user.externalId,
     externalId: user.externalId,
     displayName: user.displayName,
-    username: user.username
+    username: user.username,
+    phone: user.phone,
+    email: user.email
   };
 }
 
@@ -128,7 +163,8 @@ export async function findUserBySessionToken(token, connection = getPool()) {
   if (!token) return null;
   const tokenHash = hashToken(token);
   const [rows] = await connection.query(
-    `SELECT u.id, u.external_id AS externalId, u.display_name AS displayName, u.username, s.id AS sessionId
+    `SELECT u.id, u.external_id AS externalId, u.display_name AS displayName, u.username, u.phone, u.email,
+       s.id AS sessionId
      FROM auth_sessions s
      INNER JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = ? AND s.expires_at > CURRENT_TIMESTAMP
@@ -159,6 +195,8 @@ export async function resolveCurrentUser(req) {
       externalId: sessionUser.externalId,
       displayName: sessionUser.displayName,
       username: sessionUser.username,
+      phone: sessionUser.phone,
+      email: sessionUser.email,
       isGuest: false
     };
   }
@@ -172,6 +210,8 @@ export async function resolveCurrentUser(req) {
     externalId: user.externalId,
     displayName: user.displayName || "游客",
     username: user.username,
+    phone: user.phone,
+    email: user.email,
     isGuest: true
   };
 }
