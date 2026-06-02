@@ -76,6 +76,7 @@ import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-human/ImageDigitalHumanFaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
+import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
@@ -1349,13 +1350,18 @@ const FeatureSidebar = memo(function FeatureSidebar({
             <strong>
               {isGuest ? "游客" : authUser.displayName || authUser.username}
             </strong>
-            {!isGuest && <span>积分 {authUser.credits ?? "-"}</span>}
+            {!isGuest && (
+              <>
+                <span className="feature-user-credit-text">积分 {authUser.credits ?? "-"}</span>
+              </>
+            )}
           </div>
           {!isGuest && (
             <button type="button" onClick={onLogout} aria-label="退出登录">
               <LogOut size={16} />
             </button>
           )}
+          {!isGuest && <div className="feature-user-credit-bar" aria-hidden="true" />}
         </div>
       )}
     </aside>
@@ -6889,7 +6895,11 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ArticleGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
+          <ArticleGenerationView
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            ShowcaseCardComponent={ViralGraphicGeneratorShowcaseCard}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="music"

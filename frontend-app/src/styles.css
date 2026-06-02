@@ -2121,8 +2121,8 @@ a:hover {
 }
 
 .article-visual-option-grid button:hover {
-  border-color: #93c5fd;
-  background: #f8fbff;
+  border-color: #c6d3e2;
+  background: #fcfdff;
   transform: translateY(-1px);
 }
 
@@ -2272,11 +2272,28 @@ a:hover {
   font-weight: 900;
 }
 
+.article-submit-price-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  padding: 8px 12px;
+  color: #f5d475 !important;
+  background: rgba(61, 46, 16, 0.82);
+  border: 1px solid rgba(255, 212, 117, 0.2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .article-submit-row button {
   background: #111827;
-  border-color: #111827;
+  border: 0;
   color: #ffffff;
   min-width: 128px;
+}
+
+.article-recommendation button {
+  border: 0;
 }
 
 .article-submit-row button:disabled {
@@ -2284,7 +2301,6 @@ a:hover {
   cursor: not-allowed;
 }
 
-.article-submit-row button svg,
 .article-generating-state svg {
   animation: article-spin 1s linear infinite;
 }
@@ -2402,6 +2418,11 @@ a:hover {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+}
+
+.article-cases-section > .article-section-head,
+.article-cases-section > .article-case-grid {
+  display: none;
 }
 
 .article-cases-section::-webkit-scrollbar {
@@ -2943,6 +2964,7 @@ a:hover {
 .feature-user-panel {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 34px;
+  grid-template-rows: auto auto;
   align-items: center;
   gap: 9px;
   margin: 12px;
@@ -2973,11 +2995,13 @@ a:hover {
 
 .feature-user-copy {
   display: grid;
+  grid-column: 2;
   min-width: 0;
+  gap: 4px;
 }
 
 .feature-user-copy strong,
-.feature-user-copy span {
+.feature-user-credit-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2995,9 +3019,20 @@ a:hover {
   -webkit-box-orient: vertical;
 }
 
-.feature-user-copy span {
+.feature-user-credit-text {
   color: #64748b;
   font-size: 12px;
+}
+
+.feature-user-credit-bar {
+  display: block;
+  grid-column: 2 / -1;
+  width: 100%;
+  height: 12px;
+  min-height: 12px;
+  border-radius: 10px;
+  background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%);
+  box-shadow: 0 10px 20px rgba(81, 92, 255, 0.2);
 }
 
 .feature-user-panel button {
@@ -10051,6 +10086,12 @@ select {
   border-color: var(--brand-primary-border);
 }
 
+.article-visual-option-grid button:hover {
+  border-color: rgba(183, 200, 255, 0.22);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: none;
+}
+
 .article-visual-option-grid button.is-selected,
 .article-option-row button.is-selected,
 .article-pill-row button.is-selected,
@@ -10069,6 +10110,13 @@ select {
   background: linear-gradient(90deg, #ad6cfc 0%, #5a2cfc 100%);
   border-color: #5a2cfc;
   box-shadow: 0 12px 28px rgba(93, 30, 224, 0.2);
+}
+
+.article-visual-option-grid button.is-selected {
+  color: #eef2ff;
+  background: rgba(120, 88, 224, 0.2);
+  border-color: rgba(173, 108, 252, 0.52);
+  box-shadow: 0 0 0 3px rgba(141, 99, 255, 0.12);
 }
 
 .feature-login,
@@ -11029,6 +11077,18 @@ select {
 .feature-user-copy span,
 .feature-user-panel button {
   color: #a1a1aa !important;
+}
+
+.feature-user-credit-bar {
+  display: block !important;
+  grid-column: 2 / -1 !important;
+  width: 100% !important;
+  height: 12px !important;
+  min-height: 12px !important;
+  margin-top: 2px;
+  border-radius: 999px !important;
+  background: linear-gradient(to right, #ad6cfc 0%, #5a2cfc 100%) !important;
+  box-shadow: 0 10px 20px rgba(81, 92, 255, 0.2) !important;
 }
 
 .feature-user-panel button {
@@ -13006,6 +13066,7 @@ textarea:focus-visible {
 
 .feature-page-shell .face-swap-workbench__setting .custom-select-trigger,
 .feature-page-shell .motion-composer-footer .custom-select-trigger,
+.feature-page-shell .article-field .custom-select-trigger,
 .feature-page-shell
   .voice-conversion-workbench__advanced-field
   .custom-select-trigger,
@@ -13051,6 +13112,10 @@ textarea:focus-visible {
   .motion-composer-footer
   .custom-select.is-open
   .custom-select-trigger,
+.feature-page-shell .article-field .custom-select:hover .custom-select-trigger,
+.feature-page-shell .article-field .custom-select-trigger:hover,
+.feature-page-shell .article-field .custom-select-trigger:focus-visible,
+.feature-page-shell .article-field .custom-select.is-open .custom-select-trigger,
 .feature-page-shell
   .voice-conversion-workbench__advanced-field
   .custom-select:hover

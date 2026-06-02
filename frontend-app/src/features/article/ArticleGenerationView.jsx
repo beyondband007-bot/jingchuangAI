@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { articleApi } from "./articleApi";
 import { CustomSelect } from "../../components/CustomSelect";
+import { ViralGraphicGeneratorShowcaseCard } from "../viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 
 const articlePromptMarker = "爆款图文设计";
 const templateThumbBase = "/assets/article/template-thumbs";
@@ -553,7 +554,7 @@ function ArticlePreview({ task, onClose }) {
   );
 }
 
-export function ArticleGenerationView({ authUser, onOpenAuth }) {
+export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardComponent = ViralGraphicGeneratorShowcaseCard }) {
   const [form, setForm] = useState(defaultForm);
   const [options, setOptions] = useState(emptyOptions);
   const [model, setModel] = useState("");
@@ -842,7 +843,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth }) {
           </div>
 
           <div className="article-submit-row">
-            <span>{price}</span>
+            <span className="article-submit-price-pill">{price}</span>
             <button type="button" onClick={submitGeneration} disabled={isGenerating || !options.models.length}>
               {isGenerating ? <Loader2 size={18} /> : <Sparkles size={18} />}
               {isGenerating ? "生成中" : "生成图文"}
@@ -906,6 +907,11 @@ export function ArticleGenerationView({ authUser, onOpenAuth }) {
           </section>
 
           <section className="article-cases-section">
+            <ShowcaseCardComponent
+              templates={caseStudies}
+              isGenerating={isGenerating}
+              onUseTemplate={applyTemplate}
+            />
             <div className="article-section-head">
               <div>
                 <span>案例灵感</span>
