@@ -71,7 +71,7 @@ import { CustomSelect } from "./components/CustomSelect";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
-import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
+import { VideoDubbingFaceSwapWorkbench } from "./features/video-dubbing/VideoDubbingFaceSwapWorkbench";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-human/ImageDigitalHumanFaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
@@ -6941,7 +6941,13 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VideoDubbingView authUser={authUser} />
+          <MotionTransferView
+            navId="face-swap"
+            api={faceSwapApi}
+            copy={faceSwapCopy}
+            splitResults
+            WorkbenchComponent={VideoDubbingFaceSwapWorkbench}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="face-swap"

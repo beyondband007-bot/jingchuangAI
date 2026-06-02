@@ -8726,7 +8726,7 @@ a:hover {
 }
 
 /* ============================================
-   video-dubbing 鈥?瑙嗛閰嶉煶鍔熻兘
+   video-dubbing - 视频配音功能
    ============================================ */
 
 .video-dub-view-root {
@@ -13298,7 +13298,7 @@ textarea:focus-visible {
   box-shadow: 0 16px 34px rgba(93, 30, 224, 0.34);
 }
 
-/* 浣欓澶у崱鐗?*/
+/* 余额大卡片 */
 .assets-balance-hero {
   display: flex;
   align-items: center;
@@ -13400,7 +13400,7 @@ textarea:focus-visible {
   box-shadow: 0 4px 12px rgba(93, 30, 224, 0.24);
 }
 
-/* 闈㈡澘瀹瑰櫒 */
+/* 面板容器 */
 .assets-recharge-panel,
 .assets-transactions-panel {
   max-width: 1120px;
@@ -13425,7 +13425,7 @@ textarea:focus-visible {
   color: var(--brand-primary);
 }
 
-/* 棰勮閲戦 */
+/* 预设金额 */
 .assets-presets {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -13466,7 +13466,7 @@ textarea:focus-visible {
   font-weight: 500;
 }
 
-/* 鑷畾涔夐噾棰?*/
+/* 自定义金额 */
 .assets-custom-amount {
   display: grid;
   grid-template-columns: auto minmax(120px, 180px) auto;
@@ -13547,7 +13547,7 @@ textarea:focus-visible {
   opacity: 0.72;
 }
 
-/* 璁㈠崟鍒楄〃鍖哄煙 */
+/* 订单列表区域 */
 .assets-orders-section {
   margin-top: 24px;
   padding-top: 24px;
@@ -13619,7 +13619,7 @@ textarea:focus-visible {
   font-size: 14px;
 }
 
-/* 浜ゆ槗璁板綍琛ㄦ牸 */
+/* 交易记录表格 */
 .assets-transactions-table {
   display: grid;
   gap: 2px;
@@ -13672,7 +13672,7 @@ textarea:focus-visible {
   color: var(--text-muted);
 }
 
-/* 鏀粯寮圭獥 */
+/* 支付弹窗 */
 .assets-payment-backdrop {
   position: fixed;
   inset: 0;
@@ -13738,7 +13738,7 @@ textarea:focus-visible {
   font-style: normal;
 }
 
-/* 鍝嶅簲寮?*/
+/* 响应式 */
 @media (max-width: 900px) {
   .assets-view-root {
     padding: 20px 14px;
