@@ -3122,7 +3122,8 @@ a:hover {
   align-items: center;
   gap: 22px;
   height: 66px;
-  padding: 0 8px;
+  margin: 0 -24px;
+  padding: 0 32px;
   background: rgba(246, 247, 249, 0.94);
   backdrop-filter: blur(14px);
 }
