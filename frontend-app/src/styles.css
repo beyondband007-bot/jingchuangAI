@@ -1465,6 +1465,131 @@ a:hover {
   animation: auth-slide-out 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
+.logout-confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.logout-confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 5, 0.75);
+  border: 0;
+  cursor: pointer;
+  animation: auth-fade-in 220ms ease both;
+}
+
+.logout-confirm-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 16px;
+  width: min(420px, 100%);
+  padding: 22px;
+  color: #f9f8f6;
+  background:
+    radial-gradient(
+      circle at 16% 0%,
+      rgba(122, 44, 255, 0.24),
+      transparent 38%
+    ),
+    linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(8, 8, 8, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
+  animation: logout-confirm-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.logout-confirm-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 12px;
+}
+
+.logout-confirm-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.logout-confirm-copy h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.logout-confirm-copy p {
+  margin: 0;
+  color: rgba(249, 248, 246, 0.68);
+  font-size: 13px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.logout-confirm-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.logout-confirm-actions button {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 15px;
+  color: #f9f8f6;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.logout-confirm-actions button:hover:not(:disabled),
+.logout-confirm-actions button:focus-visible {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.logout-confirm-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.logout-confirm-actions button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.logout-confirm-actions button:last-child {
+  color: #ffffff;
+  background: #dc2626;
+  border-color: #ef4444;
+  box-shadow: 0 14px 28px rgba(220, 38, 38, 0.26);
+}
+
+.logout-confirm-actions button:last-child:hover:not(:disabled),
+.logout-confirm-actions button:last-child:focus-visible {
+  background: #ef4444;
+  border-color: #f87171;
+}
+
 .auth-drawer-close {
   position: absolute;
   top: 20px;
@@ -1833,6 +1958,18 @@ a:hover {
   }
 }
 
+@keyframes logout-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 640px) {
   .auth-drawer {
     width: 100vw;
@@ -1845,6 +1982,19 @@ a:hover {
 
   .auth-code-row {
     grid-template-columns: minmax(0, 1fr) 96px;
+  }
+
+  .logout-confirm-dialog {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .logout-confirm-actions {
+    width: 100%;
+  }
+
+  .logout-confirm-actions button {
+    flex: 1;
   }
 }
 

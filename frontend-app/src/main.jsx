@@ -1019,6 +1019,51 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   );
 }
 
+function LogoutConfirmDialog({ isSubmitting, onCancel, onConfirm }) {
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key === "Escape" && !isSubmitting) {
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isSubmitting, onCancel]);
+
+  return (
+    <div className="logout-confirm-layer" role="presentation">
+      <button
+        className="logout-confirm-backdrop"
+        type="button"
+        aria-label="取消退出登录"
+        onClick={isSubmitting ? undefined : onCancel}
+      />
+      <section
+        className="logout-confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-confirm-title"
+      >
+        <div className="logout-confirm-icon">
+          <LogOut size={20} />
+        </div>
+        <div className="logout-confirm-copy">
+          <h2 id="logout-confirm-title">确认退出登录？</h2>
+          <p>退出后需要重新登录，账号资产和历史记录会在下次登录后恢复。</p>
+        </div>
+        <div className="logout-confirm-actions">
+          <button type="button" onClick={onCancel} disabled={isSubmitting}>
+            取消
+          </button>
+          <button type="button" onClick={onConfirm} disabled={isSubmitting}>
+            {isSubmitting ? "退出中" : "确认退出"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 const SplashHome = memo(function SplashHome({ onOpenAuth }) {
   const frameRefs = useRef([]);
 
@@ -7000,6 +7045,8 @@ function App() {
   const [view, setView] = useState(getInitialView);
   const [authUser, setAuthUser] = useState(null);
   const [authDrawerMode, setAuthDrawerMode] = useState(null);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const onPopState = () => setView(getRouteView());
@@ -7056,13 +7103,25 @@ function App() {
     window.location.reload();
   }, []);
 
-  const logout = useCallback(async () => {
+  const requestLogout = useCallback(() => {
+    setIsLogoutConfirmOpen(true);
+  }, []);
+
+  const cancelLogout = useCallback(() => {
+    if (!isLoggingOut) {
+      setIsLogoutConfirmOpen(false);
+    }
+  }, [isLoggingOut]);
+
+  const confirmLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
     try {
       await authApi.logout();
     } finally {
       window.location.reload();
     }
-  }, []);
+  }, [isLoggingOut]);
 
   const page = (() => {
     if (view === "home") {
@@ -7072,7 +7131,7 @@ function App() {
           onOpenLanding={openLanding}
           authUser={authUser}
           onOpenAuth={setAuthDrawerMode}
-          onLogout={logout}
+          onLogout={requestLogout}
         />
       );
     }
@@ -7085,7 +7144,7 @@ function App() {
           onOpenLanding={openLanding}
           authUser={authUser}
           onOpenAuth={setAuthDrawerMode}
-          onLogout={logout}
+          onLogout={requestLogout}
         />
       );
     }
@@ -7104,6 +7163,13 @@ function App() {
         onModeChange={setAuthDrawerMode}
         onSuccess={finishAuth}
       />
+      {isLogoutConfirmOpen && (
+        <LogoutConfirmDialog
+          isSubmitting={isLoggingOut}
+          onCancel={cancelLogout}
+          onConfirm={confirmLogout}
+        />
+      )}
     </>
   );
 }
