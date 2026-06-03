@@ -2872,12 +2872,29 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   min-height: 64px;
   padding: 0 16px;
   color: #1e293b;
+  background: transparent;
+  border: 0;
   font-size: 18px;
   font-weight: 600;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   border-bottom: 1px solid #cbd5e1;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.feature-brand:hover {
+  background: #f8fafc;
+}
+
+.feature-brand:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--brand-focus-ring);
 }
 
 .feature-brand-mark {
@@ -10843,7 +10860,17 @@ select {
   gap: 4px !important;
   padding: 0 16px !important;
   color: #fff !important;
+  background: transparent !important;
   border-bottom-color: #262626 !important;
+}
+
+.feature-brand:hover,
+.feature-brand:focus-visible {
+  background: #111111 !important;
+}
+
+.feature-brand:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(173, 108, 252, 0.42);
 }
 
 .feature-brand-text {

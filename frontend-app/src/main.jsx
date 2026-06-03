@@ -1094,6 +1094,7 @@ const SplashHome = memo(function SplashHome({ onOpenAuth }) {
 
 const AppHome = memo(function AppHome({
   onOpenFeature,
+  onOpenLanding,
   authUser,
   onOpenAuth,
   onLogout,
@@ -1152,6 +1153,7 @@ const AppHome = memo(function AppHome({
       <FeatureSidebar
         activeNav="home"
         onNavChange={handleNavChange}
+        onOpenLanding={onOpenLanding}
         authUser={authUser}
         onOpenAuth={onOpenAuth}
         onLogout={onLogout}
@@ -1189,6 +1191,7 @@ const AppHome = memo(function AppHome({
 const FeatureSidebar = memo(function FeatureSidebar({
   activeNav,
   onNavChange,
+  onOpenLanding,
   authUser,
   onOpenAuth,
   onLogout,
@@ -1225,10 +1228,15 @@ const FeatureSidebar = memo(function FeatureSidebar({
 
   return (
     <aside className="feature-sidebar">
-      <div className="feature-brand">
+      <button
+        className="feature-brand"
+        type="button"
+        onClick={onOpenLanding}
+        aria-label="返回 Facemini 首页"
+      >
         <span className="feature-brand-text">Facemini</span>
         <span className="feature-brand-beta">Beta</span>
-      </div>
+      </button>
       <label className="feature-nav-search">
         <Search size={16} />
         <input
@@ -6727,6 +6735,7 @@ function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
 function ImageFeaturePage({
   initialNav,
   onOpenHome,
+  onOpenLanding,
   authUser,
   onOpenAuth,
   onLogout,
@@ -6771,6 +6780,7 @@ function ImageFeaturePage({
       <FeatureSidebar
         activeNav={activeNav}
         onNavChange={handleNavChange}
+        onOpenLanding={onOpenLanding}
         authUser={authUser}
         onOpenAuth={onOpenAuth}
         onLogout={onLogout}
@@ -7027,6 +7037,11 @@ function App() {
     setView(nextId);
   }, []);
 
+  const openLanding = useCallback(() => {
+    window.history.pushState(null, "", "/");
+    setView("splash");
+  }, []);
+
   const enterAppHome = useCallback(() => {
     window.sessionStorage.setItem(appEntryStorageKey, "1");
     window.history.pushState(null, "", "#/home");
@@ -7054,6 +7069,7 @@ function App() {
       return (
         <AppHome
           onOpenFeature={openFeature}
+          onOpenLanding={openLanding}
           authUser={authUser}
           onOpenAuth={setAuthDrawerMode}
           onLogout={logout}
@@ -7066,6 +7082,7 @@ function App() {
         <ImageFeaturePage
           initialNav={view}
           onOpenHome={openHome}
+          onOpenLanding={openLanding}
           authUser={authUser}
           onOpenAuth={setAuthDrawerMode}
           onLogout={logout}
