@@ -55,10 +55,8 @@ async function createTables() {
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'username' AND NON_UNIQUE = 0`,
     [config.db.database]
   );
-  for (const index of usernameIndexes) {
-    if (index.INDEX_NAME !== "PRIMARY") {
-      await pool.query(`ALTER TABLE users DROP INDEX \`${index.INDEX_NAME}\``);
-    }
+  if (usernameIndexes.length === 0) {
+    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_username (username)");
   }
 
   const [phoneIndexes] = await pool.query(

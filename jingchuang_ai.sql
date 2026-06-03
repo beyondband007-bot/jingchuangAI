@@ -682,6 +682,7 @@ CREATE TABLE `users`  (
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `external_id`(`external_id` ASC) USING BTREE,
+  UNIQUE INDEX `uq_users_username`(`username` ASC) USING BTREE,
   UNIQUE INDEX `uq_users_phone`(`phone` ASC) USING BTREE,
   UNIQUE INDEX `uq_users_email`(`email` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;

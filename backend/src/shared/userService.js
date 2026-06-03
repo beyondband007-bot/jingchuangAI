@@ -58,7 +58,7 @@ export async function findUserByLoginIdentifier(identifier, connection = getPool
     `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
        password_hash AS passwordHash
      FROM users
-     WHERE external_id = ? OR phone = ? OR LOWER(email) = ?
+     WHERE username = ? OR phone = ? OR LOWER(email) = ?
      LIMIT 1`,
     [identifier, identifier, identifier]
   );

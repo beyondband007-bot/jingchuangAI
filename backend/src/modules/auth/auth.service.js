@@ -93,8 +93,8 @@ function timingSafeEqualHex(left, right) {
 function publicUser(user, credits) {
   return {
     id: user.externalId,
-    username: user.username || user.displayName || "游客",
-    displayName: user.displayName || user.username || "游客",
+    username: user.username || null,
+    displayName: user.displayName || "游客",
     phone: user.phone || null,
     email: user.email || null,
     isGuest: Boolean(user.isGuest),
@@ -114,16 +114,47 @@ async function grantInitialCredits(userId, connection) {
   );
 }
 
+function createRandomExternalId() {
+  return `user_${randomBytes(6).toString("hex")}`;
+}
+
+function isExternalIdDuplicate(error) {
+  const message = `${error?.message || ""} ${error?.sqlMessage || ""}`;
+  return error?.code === "ER_DUP_ENTRY" && /external_id/i.test(message);
+}
+
+function isUserIdentityDuplicate(error) {
+  const message = `${error?.message || ""} ${error?.sqlMessage || ""}`;
+  return error?.code === "ER_DUP_ENTRY" && /(username|phone)/i.test(message);
+}
+
 async function createPhoneUser(phone, connection, passwordHash = null) {
-  const [result] = await connection.query(
-    `INSERT INTO users (external_id, username, phone, password_hash, display_name)
-     VALUES (?, ?, ?, ?, ?)`,
-    [phone, phone, phone, passwordHash, phone]
-  );
+  let result;
+  let externalId;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    externalId = createRandomExternalId();
+    try {
+      [result] = await connection.query(
+        `INSERT INTO users (external_id, username, phone, password_hash, display_name)
+         VALUES (?, ?, ?, ?, ?)`,
+        [externalId, phone, phone, passwordHash, phone]
+      );
+      break;
+    } catch (error) {
+      if (isExternalIdDuplicate(error)) continue;
+      if (isUserIdentityDuplicate(error)) {
+        throw createHttpError("手机号或用户名已被占用", 409);
+      }
+      throw error;
+    }
+  }
+  if (!result) {
+    throw createHttpError("用户 ID 生成失败，请重试", 500);
+  }
   await grantInitialCredits(result.insertId, connection);
   return {
     id: result.insertId,
-    externalId: phone,
+    externalId,
     username: phone,
     displayName: phone,
     phone,

@@ -1356,7 +1356,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
           </div>
           <div className="feature-user-copy">
             <strong>
-              {isGuest ? "游客" : authUser.displayName || authUser.username}
+              {isGuest ? "游客" : authUser.displayName}
             </strong>
             {!isGuest && (
               <>
