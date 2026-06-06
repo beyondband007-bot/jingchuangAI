@@ -122,6 +122,12 @@ function getCodexResponsePath(model) {
   return providerModel.includes("codex") ? "/api/v1/responses" : "/codex/v1/responses";
 }
 
+function getGeminiChatPath(model) {
+  const providerModel = String(model.provider_model || model.model_key || "");
+  const endpointModel = providerModel.replace(/-openai$/, "");
+  return `/${endpointModel}/v1/chat/completions`;
+}
+
 export function extractChatText(record) {
   if (typeof record?.output_text === "string" && record.output_text.trim()) {
     return record.output_text.trim();
@@ -285,7 +291,7 @@ function getEndpointAndBody({ model, messages, reasoningEffort, stream }) {
   if (provider === "gemini") {
     return {
       provider,
-      path: "/gemini-3-pro/v1/chat/completions",
+      path: getGeminiChatPath(model),
       body: buildOpenAiChatBody({ model, messages, reasoningEffort, stream })
     };
   }

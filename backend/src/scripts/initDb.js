@@ -966,13 +966,14 @@ async function seedDemoData() {
       INSERT INTO chat_model_prices
         (model_key, provider_model, display_name, points_per_kie_credit, reserve_points, enabled, sort_order)
       VALUES
-        ('gpt-5-4', 'gpt-5-4', 'Codex5.4', 4.000, 1, TRUE, 10),
-        ('gpt-5-5', 'gpt-5-5', 'Codex5.5', 4.000, 1, TRUE, 20),
+        ('gpt-5-4', 'gpt-5.4-codex', 'GPT-5.4-codex', 4.000, 1, TRUE, 10),
+        ('gpt-5-5', 'gpt-5.5-codex', 'GPT-5.5-codex', 4.000, 1, TRUE, 20),
         ('gemini-3-pro', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
-        ('claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 40),
-        ('claude-opus-4-6', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, TRUE, 50),
-        ('gemini-3-pro-openai', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, FALSE, 60),
-        ('gemini-2.5-flash', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, FALSE, 70)
+        ('gemini-3.1-pro-openai', 'gemini-3.1-pro-openai', 'Gemini 3.1 pro', 4.000, 1, TRUE, 40),
+        ('claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 50),
+        ('claude-opus-4-6', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, TRUE, 60),
+        ('gemini-3-pro-openai', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, FALSE, 70),
+        ('gemini-2.5-flash', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, FALSE, 80)
       ON DUPLICATE KEY UPDATE
         provider_model = VALUES(provider_model),
         display_name = VALUES(display_name),

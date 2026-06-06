@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const MODEL_OPTIONS = ["Deepseek V4", "Kimi K2.6", "MiniMax M2.7", "Codex5.5"];
+const MODEL_OPTIONS = ["Deepseek V4", "Kimi K2.6", "MiniMax M2.7", "GPT-5.5-codex", "Gemini 3 Pro", "Gemini 3.1 pro"];
 const INSPIRATION_OPTIONS = [
   "Floating crystal island",
   "Cyberpunk cityscape",

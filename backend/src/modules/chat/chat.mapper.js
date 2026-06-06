@@ -28,8 +28,8 @@ function parseAttachments(value) {
 
 function formatChatModelName(name) {
   const displayName = name || "";
-  if (displayName === "GPT 5.4") return "Codex5.4";
-  if (displayName === "GPT 5.5") return "Codex5.5";
+  if (displayName === "GPT 5.4" || displayName === "Codex5.4" || displayName === "gpt-5.4-codex") return "GPT-5.4-codex";
+  if (displayName === "GPT 5.5" || displayName === "Codex5.5" || displayName === "gpt-5.5-codex") return "GPT-5.5-codex";
   return displayName;
 }
 
