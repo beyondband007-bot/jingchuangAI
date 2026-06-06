@@ -12355,10 +12355,19 @@ select {
 
 /* Image generation floating dialog width */
 section.image-gen-view .sowa-composer {
-  max-width: 800px !important;
-  width: 800px !important;
+  max-width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  ) !important;
+  width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  ) !important;
   right: auto !important;
-  left: 50% !important;
+  left: calc(
+    var(--feature-sidebar-width) +
+      ((100vw - var(--feature-sidebar-width)) / 2)
+  ) !important;
   transform: translateX(-50%) !important;
   z-index: 120 !important;
   background: transparent !important;

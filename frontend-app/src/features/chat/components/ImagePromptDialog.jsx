@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export function ImagePromptDialog({
   ariaLabel,
@@ -27,6 +27,24 @@ export function ImagePromptDialog({
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showRatioDropdown, setShowRatioDropdown] = useState(false);
   const [showQualityDropdown, setShowQualityDropdown] = useState(false);
+  const textareaRef = useRef(null);
+  const maxPromptRows = 9;
+  const promptLineHeight = 24;
+  const promptMaxHeight = maxPromptRows * promptLineHeight;
+
+  function resizePromptTextarea() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(textarea.scrollHeight, promptMaxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY =
+      textarea.scrollHeight > promptMaxHeight ? "auto" : "hidden";
+  }
+
+  useEffect(() => {
+    resizePromptTextarea();
+  }, [value]);
 
   const shellStyle = useMemo(
     () => ({
@@ -113,8 +131,12 @@ export function ImagePromptDialog({
     >
       <div style={{ marginBottom: "16px" }}>
         <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onChange(event.target.value);
+            window.requestAnimationFrame(resizePromptTextarea);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -132,9 +154,11 @@ export function ImagePromptDialog({
             color: "#ffffff",
             fontSize: "16px",
             fontWeight: "400",
-            lineHeight: "1.5",
+            lineHeight: `${promptLineHeight}px`,
             fontFamily: "inherit",
             minHeight: "28px",
+            maxHeight: `${promptMaxHeight}px`,
+            overflowY: "hidden",
             padding: 0
           }}
         />
