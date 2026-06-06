@@ -16606,3 +16606,12 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   place-items: center;
   grid-template-columns: 1fr;
 }
+
+.voice-recent-empty > p,
+.motion-recent-empty > p,
+.watermark-recent-empty > p,
+.video-dub-recent-empty > p,
+.idh-recent-empty > p,
+.article-history-empty > p {
+  display: none !important;
+}

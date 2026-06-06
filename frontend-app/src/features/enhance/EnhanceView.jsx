@@ -451,7 +451,7 @@ export function EnhanceView() {
         {showRecentEmpty && (
           <div className="watermark-recent-empty enhance-recent-empty">
             <Wand2 size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无最近生成"}</strong>
+            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无生成记录"}</strong>
             <p>{viewTab === "favorite" ? "收藏后的增强结果会显示在这里。" : "增强完成的图片或视频会保存在这里。"}</p>
           </div>
         )}

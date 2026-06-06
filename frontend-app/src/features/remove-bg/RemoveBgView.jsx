@@ -398,7 +398,7 @@ export function RemoveBgView() {
         {showRecentEmpty && (
           <div className="watermark-recent-empty remove-bg-recent-empty">
             <Layers size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无最近生成"}</strong>
+            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无生成记录"}</strong>
             <p>{viewTab === "favorite" ? "收藏后的去背景结果会显示在这里。" : "去背景完成的透明图片会保存在这里。"}</p>
           </div>
         )}
