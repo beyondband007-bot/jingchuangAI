@@ -57,6 +57,7 @@ import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
 import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
+import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import { watermarkApi } from "./api/watermarkApi";
 import { VoiceSynthesisView } from "./features/voice-synthesis-ui/VoiceSynthesisView";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
@@ -71,7 +72,7 @@ import { CustomSelect } from "./components/CustomSelect";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
-import { VideoDubbingFaceSwapWorkbench } from "./features/video-dubbing/VideoDubbingFaceSwapWorkbench";
+import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-human/ImageDigitalHumanFaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
@@ -5397,7 +5398,26 @@ const faceSwapCopy = {
 
 const imageDigitalHumanCopy = {
   ...faceSwapCopy,
+  emptyTitle: "开启你的图片数字人",
   emptyDescription: "上传人物正面图，配置脚本与音色，快速生成口型自然的视频内容",
+  completedTitle: "图片数字人已完成",
+  processingCreate: "正在创建图片数字人任务",
+  processingGenerate: "正在生成数字人视频",
+  processingDescription:
+    "正在处理人物图片、脚本和音色配置。完成后会自动回填到这里。",
+  recentEmptyTitle: "暂无图片数字人结果",
+  recentEmptyDescription: "生成完成的数字人视频会保存在这里。",
+  imageTitle: "上传人物图",
+  imageHint: "正面清晰，光线自然效果最佳",
+  videoTitle: "配置脚本与音色",
+  submitLabel: "生成数字人视频",
+  panelLabel: "图片数字人生成面板",
+  imageRequired: "请先上传人物图片",
+  videoRequired: "请先完成脚本与音色配置",
+  imageFallback: "人物图片",
+  videoFallback: "数字人视频",
+  loadError: "加载图片数字人失败",
+  createError: "创建图片数字人任务失败",
 };
 
 const voiceSynthesisCopy = {
@@ -5413,6 +5433,50 @@ const musicGenerationCopy = {
 const voiceConversionCopy = {
   ...faceSwapCopy,
   emptyDescription: "上传目标音色和源音频，自动提取内容并转换成目标声音",
+};
+
+function mapImageDigitalHumanMotionTask(task) {
+  if (!task) return task;
+  return {
+    ...task,
+    prompt: task.text || "图片数字人视频",
+    imageUrl: task.portraitUrl || task.imageUrl || "",
+    imageFileName: "人物图片",
+    videoFileName: task.voiceName || "数字人视频",
+    model: task.model || task.modelKey || "image-digital-human",
+    providerModel: task.providerModel || task.usedProviderModel || task.model,
+    resolution: task.duration ? `${task.duration}s` : "数字人",
+    characterOrientation: "image",
+    price: task.costPoints ? `积分 ${task.costPoints}` : "",
+    favorite: Boolean(task.favorite),
+  };
+}
+
+const imageDigitalHumanMotionApi = {
+  subscribe: imageDigitalHumanApi.subscribe,
+  getCredits: imageDigitalHumanApi.getCredits,
+  getModels: imageDigitalHumanApi.getModels,
+
+  async getTasks({ filter = "all" } = {}) {
+    const tasks = await imageDigitalHumanApi.getTasks();
+    const mapped = tasks.map(mapImageDigitalHumanMotionTask);
+    if (filter === "favorite") return mapped.filter((task) => task.favorite);
+    return mapped;
+  },
+
+  async createTask() {
+    throw new Error("请在主页提交图片数字人任务");
+  },
+
+  async deleteTask(id) {
+    return imageDigitalHumanApi.deleteTask(id);
+  },
+
+  async toggleFavorite(id) {
+    const tasks = await imageDigitalHumanApi.getTasks();
+    const task = tasks.find((item) => String(item.id) === String(id));
+    return mapImageDigitalHumanMotionTask(task || { id, favorite: false });
+  },
 };
 
 function formatBytes(bytes) {
@@ -6887,8 +6951,8 @@ function ImageFeaturePage({
           visitedIds={visitedIds}
         >
           <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
+            navId="image-digital-human"
+            api={imageDigitalHumanMotionApi}
             copy={imageDigitalHumanCopy}
             splitResults
             WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
@@ -6974,13 +7038,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={faceSwapCopy}
-            splitResults
-            WorkbenchComponent={VideoDubbingFaceSwapWorkbench}
-          />
+          <VideoDubbingView authUser={authUser} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="face-swap"

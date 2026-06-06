@@ -972,7 +972,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
                   </div>
                 </article>
               ))}
-              {!articleCards.length && <div className="article-history-empty">还没有爆款图文历史。</div>}
+              {!articleCards.length && <div className="article-history-empty">还没有爆款图文历史</div>}
             </div>
           </section>
       )}
