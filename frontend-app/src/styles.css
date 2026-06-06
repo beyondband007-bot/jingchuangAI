@@ -3222,7 +3222,7 @@ a:hover {
   position: fixed;
   top: 16px;
   right: 40px;
-  z-index: 20;
+  z-index: 999999;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -7312,7 +7312,7 @@ a:hover {
 .motion-filter-tabs {
   position: sticky;
   top: 0;
-  z-index: 6;
+  z-index: 99999;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
 }
