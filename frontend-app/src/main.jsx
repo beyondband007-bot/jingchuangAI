@@ -18,6 +18,8 @@ import {
   Dice5,
   Download,
   Eraser,
+  Eye,
+  EyeOff,
   FileText,
   Film,
   History,
@@ -556,6 +558,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [visiblePasswords, setVisiblePasswords] = useState({});
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -581,6 +584,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setConfirmPassword("");
     setResetPassword("");
     setResetConfirmPassword("");
+    setVisiblePasswords({});
     setError("");
     setSuccessMessage("");
     setIsSubmitting(false);
@@ -828,6 +832,47 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     </>
   );
 
+  function renderPasswordField({
+    id,
+    label,
+    value,
+    onChange,
+    placeholder,
+    autoComplete,
+  }) {
+    const isVisible = Boolean(visiblePasswords[id]);
+    const Icon = isVisible ? EyeOff : Eye;
+
+    return (
+      <label>
+        <span>{label}</span>
+        <div className="auth-password-control">
+          <input
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            type={isVisible ? "text" : "password"}
+            autoComplete={autoComplete}
+          />
+          <button
+            className="auth-password-toggle"
+            type="button"
+            aria-label={isVisible ? "隐藏密码" : "显示密码"}
+            aria-pressed={isVisible}
+            onClick={() =>
+              setVisiblePasswords((current) => ({
+                ...current,
+                [id]: !current[id],
+              }))
+            }
+          >
+            <Icon size={18} />
+          </button>
+        </div>
+      </label>
+    );
+  }
+
   return (
     <div
       className={`auth-drawer-layer ${isClosing ? "is-closing" : ""}`}
@@ -890,70 +935,59 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
                   autoComplete="username"
                 />
               </label>
-              <label>
-                <span>密码</span>
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="请输入密码"
-                  type="password"
-                  autoComplete="current-password"
-                />
-              </label>
+              {renderPasswordField({
+                id: "login",
+                label: "密码",
+                value: password,
+                onChange: (event) => setPassword(event.target.value),
+                placeholder: "请输入密码",
+                autoComplete: "current-password",
+              })}
             </>
           )}
 
           {isRegister && (
             <>
               {renderPhoneCodeFields("短信验证码")}
-              <label>
-                <span>密码</span>
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="至少 6 个字符"
-                  type="password"
-                  autoComplete="new-password"
-                />
-              </label>
-              <label>
-                <span>确认密码</span>
-                <input
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="请再次输入密码"
-                  type="password"
-                  autoComplete="new-password"
-                />
-              </label>
+              {renderPasswordField({
+                id: "register",
+                label: "密码",
+                value: password,
+                onChange: (event) => setPassword(event.target.value),
+                placeholder: "至少 6 个字符",
+                autoComplete: "new-password",
+              })}
+              {renderPasswordField({
+                id: "register-confirm",
+                label: "确认密码",
+                value: confirmPassword,
+                onChange: (event) => setConfirmPassword(event.target.value),
+                placeholder: "请再次输入密码",
+                autoComplete: "new-password",
+              })}
             </>
           )}
 
           {isForgot && (
             <>
               {renderPhoneCodeFields("短信验证码")}
-              <label>
-                <span>新密码</span>
-                <input
-                  value={resetPassword}
-                  onChange={(event) => setResetPassword(event.target.value)}
-                  placeholder="至少 6 个字符"
-                  type="password"
-                  autoComplete="new-password"
-                />
-              </label>
-              <label>
-                <span>确认新密码</span>
-                <input
-                  value={resetConfirmPassword}
-                  onChange={(event) =>
-                    setResetConfirmPassword(event.target.value)
-                  }
-                  placeholder="请再次输入新密码"
-                  type="password"
-                  autoComplete="new-password"
-                />
-              </label>
+              {renderPasswordField({
+                id: "reset",
+                label: "新密码",
+                value: resetPassword,
+                onChange: (event) => setResetPassword(event.target.value),
+                placeholder: "至少 6 个字符",
+                autoComplete: "new-password",
+              })}
+              {renderPasswordField({
+                id: "reset-confirm",
+                label: "确认新密码",
+                value: resetConfirmPassword,
+                onChange: (event) =>
+                  setResetConfirmPassword(event.target.value),
+                placeholder: "请再次输入新密码",
+                autoComplete: "new-password",
+              })}
             </>
           )}
 
