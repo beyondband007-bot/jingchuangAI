@@ -34,7 +34,7 @@ button {
 .voice-conversion-view-root {
   position: relative;
   min-height: 100vh;
-  padding: 0 24px 24px;
+  padding: 0 24px;
   background: #f6f7f9;
 }
 
@@ -49,11 +49,11 @@ button {
 .voice-conversion-canvas {
   position: relative;
   display: grid;
-  min-height: calc(100vh - 88px);
+  min-height: calc(100vh - 70px);
   overflow: hidden;
   justify-items: center;
-  align-content: start;
-  padding: 64px 24px 48px;
+  align-content: center;
+  padding: 18px 0;
   background: #fff;
 }
 
@@ -672,7 +672,6 @@ button {
 }
 
 .music-canvas {
-  padding-bottom: 420px;
   place-items: start center;
 }
 
@@ -7373,7 +7372,7 @@ a:hover {
 .motion-view-root {
   position: relative;
   min-height: 100vh;
-  padding: 0 24px 188px;
+  padding: 0 24px;
   background: #fff;
 }
 
@@ -7771,8 +7770,8 @@ a:hover {
 
 .face-swap-view-root .motion-canvas {
   gap: 26px;
-  min-height: calc(100vh - 250px);
-  padding: 150px 0;
+  min-height: calc(100vh - 70px);
+  padding: 18px 0;
   overflow: visible;
   background: #101010 !important;
   box-shadow: none !important;
@@ -7854,7 +7853,7 @@ a:hover {
 .watermark-view-root {
   position: relative;
   min-height: 100vh;
-  padding: 0 24px 188px;
+  padding: 0 24px;
   background: #fff;
 }
 
@@ -7869,11 +7868,11 @@ a:hover {
 .watermark-canvas {
   position: relative;
   display: grid;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 70px);
   padding: 64px 24px 180px;
   overflow: hidden;
   background: #fff;
-  border: 1px solid #e7edf5;
+  border: none;
 }
 
 .watermark-canvas.has-active-task {
@@ -8975,12 +8974,13 @@ a:hover {
 .video-dub-canvas {
   position: relative;
   display: grid;
-  min-height: calc(100vh - 88px);
+  min-height: calc(100vh - 90px);
   overflow: hidden;
   place-items: center;
   padding: 92px 48px 300px;
   background: #fff;
-  border: 1px solid #e5eaf2;
+  border: 1px solid transparent !important;
+
 }
 
 .video-dub-canvas.is-recent {
@@ -10588,7 +10588,6 @@ select {
   color: var(--text-primary);
   background:transparent;
   border-color: var(--app-border);
-  box-shadow: var(--shadow-dark);
 }
 
 .feature-page-shell
