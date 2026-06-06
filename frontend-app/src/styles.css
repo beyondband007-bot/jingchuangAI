@@ -13217,6 +13217,22 @@ textarea:focus-visible {
   min-height: 38px;
 }
 
+.custom-select.llm-reasoning-select {
+  width: 128px;
+  flex: 0 0 128px;
+}
+
+.custom-select.llm-reasoning-select .custom-select-menu {
+  width: 128px;
+  min-width: 128px;
+  overflow-x: hidden;
+}
+
+.custom-select.llm-reasoning-select .custom-select-menu button {
+  gap: 8px;
+  padding: 0 12px;
+}
+
 .custom-select.control-select .custom-select-menu:not(.is-floating),
 .custom-select.llm-reasoning-select .custom-select-menu:not(.is-floating) {
   top: auto;
@@ -16469,6 +16485,9 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
 .chat-view-root .chat-topbar {
   grid-template-columns: 1fr auto 1fr;
+  margin: 0 -24px 0 -24px;
+  padding: 0 32px;
+  width: calc(100% + 48px);
 }
 
 .chat-view-root .chat-topbar h1 {

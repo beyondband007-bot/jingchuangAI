@@ -3673,6 +3673,11 @@ function ChatComposerBar({
   const modelLabel = isReady
     ? selectedModel?.label || "Deepseek V4"
     : "模型加载中";
+  const visibleReasoningEfforts = options.reasoningEfforts
+    .filter((item) => item.value === "none" || item.value === "low")
+    .map((item) =>
+      item.value === "low" ? { ...item, label: "深度思考" } : item,
+    );
 
   async function handleAttachmentSelect(event) {
     const file = event.target.files?.[0];
@@ -3816,13 +3821,13 @@ function ChatComposerBar({
           </div>
         </div>
         <div className="llm-right">
-          {options.reasoningEfforts.length > 0 && (
+          {visibleReasoningEfforts.length > 0 && (
             <CustomSelect
               ariaLabel="推理强度"
               className="llm-reasoning-select"
               value={reasoningEffort}
               onChange={onReasoningEffortChange}
-              options={options.reasoningEfforts}
+              options={visibleReasoningEfforts}
             />
           )}
           <button
