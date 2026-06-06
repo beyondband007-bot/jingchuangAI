@@ -14521,6 +14521,8 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 }
 
 .studio-landing .brand {
+  display: inline-flex;
+  align-items: center;
   font-size: 1.9rem;
   font-family:
     "Zona Pro SemiBold", "Segoe UI", "PingFang SC", "Microsoft YaHei",
@@ -14613,8 +14615,33 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 }
 
 .studio-landing .nav-links .nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-width: auto;
   padding: 0 8px 0 0;
+}
+
+.studio-landing .landing-beta-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 8px;
+  color: rgba(255, 255, 255, 0.96);
+  background:
+    linear-gradient(135deg, rgba(173, 108, 252, 0.98), rgba(90, 44, 252, 0.98));
+  border: 1px solid rgba(223, 211, 255, 0.42);
+  border-radius: 999px;
+  box-shadow:
+    0 0 18px rgba(122, 82, 255, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-transform: none;
+  -webkit-text-fill-color: currentColor;
 }
 
 .studio-landing .nav-links a.active {
@@ -14703,7 +14730,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
 .studio-landing .nav-brand .brand {
   font-size: 1.7rem;
-  line-height: 1;
+  line-height: 0.82;
   white-space: nowrap;
 }
 
@@ -16249,6 +16276,21 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   font-size: clamp(1.6rem, 2.4vw, 2.68rem);
   line-height: 0.95;
   max-width: fit-content;
+}
+
+.studio-landing .footer-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  color: inherit;
+  text-decoration: none;
+}
+
+.studio-landing .footer-brand-lockup .landing-beta-badge {
+  height: 20px;
+  padding: 0 9px;
+  font-size: 0.62rem;
 }
 
 .studio-landing .footer-brand .footer-copy {
