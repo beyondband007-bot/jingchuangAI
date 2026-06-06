@@ -102,7 +102,7 @@ export function MusicGenerationView() {
       return;
     }
     if (!isInstrumental && !lyrics.trim() && !lyricsOptimizer) {
-      setNotice("请输入歌词，或开启 MiniMax 自动优化歌词。");
+      setNotice("请输入歌词，或开启自动优化歌词。");
       return;
     }
 

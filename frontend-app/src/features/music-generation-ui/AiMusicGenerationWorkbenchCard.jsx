@@ -81,7 +81,7 @@ export function AiMusicGenerationWorkbenchCard({
                 onChange={(event) => onToggleLyricsOptimizer(event.target.checked)}
                 disabled={isGenerating || isInstrumental}
               />
-              <span>MiniMax 自动优化歌词</span>
+              <span>自动优化歌词</span>
               <Info size={14} />
             </label>
             <button type="button" className="ai-music-workbench__model">模型：{model}<ChevronDown size={15} /></button>

@@ -70,7 +70,7 @@ export function MusicGenerationFaceSwapWorkbench({
       return;
     }
     if (!isInstrumental && !lyrics.trim() && !lyricsOptimizer) {
-      setNotice("请输入歌词，或开启 MiniMax 自动优化歌词。");
+      setNotice("请输入歌词，或开启自动优化歌词。");
       return;
     }
 
@@ -206,7 +206,7 @@ export function MusicGenerationFaceSwapWorkbench({
                   onChange={(event) => setLyricsOptimizer(event.target.checked)}
                   disabled={isGenerating || isInstrumental}
                 />
-                <span>MiniMax 自动优化歌词</span>
+                <span>自动优化歌词</span>
                 <Info size={14} />
               </label>
               <button type="button" className="ai-music-workbench__model">
