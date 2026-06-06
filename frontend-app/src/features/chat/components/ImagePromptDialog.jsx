@@ -340,11 +340,13 @@ export function ImagePromptDialog({
           {onRandom && (
             <button
               type="button"
+              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onRandom}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              aria-label="随机"
+              data-tooltip="随机提示词"
+              aria-label="随机提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
@@ -358,11 +360,13 @@ export function ImagePromptDialog({
           {onClear && (
             <button
               type="button"
+              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onClear}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              aria-label="清空"
+              data-tooltip="清空提示词"
+              aria-label="清空提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18" />

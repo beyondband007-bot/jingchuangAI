@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 export function VideoPromptDialog({
   ariaLabel,
@@ -27,6 +27,24 @@ export function VideoPromptDialog({
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showRatioDropdown, setShowRatioDropdown] = useState(false);
   const [showDurationDropdown, setShowDurationDropdown] = useState(false);
+  const textareaRef = useRef(null);
+  const maxPromptRows = 9;
+  const promptLineHeight = 24;
+  const promptMaxHeight = maxPromptRows * promptLineHeight;
+
+  function resizePromptTextarea() {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    const nextHeight = Math.min(textarea.scrollHeight, promptMaxHeight);
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY =
+      textarea.scrollHeight > promptMaxHeight ? "auto" : "hidden";
+  }
+
+  useEffect(() => {
+    resizePromptTextarea();
+  }, [value]);
 
   const shellStyle = useMemo(
     () => ({
@@ -113,8 +131,12 @@ export function VideoPromptDialog({
     >
       <div style={{ marginBottom: "16px" }}>
         <textarea
+          ref={textareaRef}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onChange(event.target.value);
+            window.requestAnimationFrame(resizePromptTextarea);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -132,16 +154,18 @@ export function VideoPromptDialog({
             color: "#ffffff",
             fontSize: "16px",
             fontWeight: "400",
-            lineHeight: "1.5",
+            lineHeight: `${promptLineHeight}px`,
             fontFamily: "inherit",
             minHeight: "28px",
+            maxHeight: `${promptMaxHeight}px`,
+            overflowY: "hidden",
             padding: 0
           }}
         />
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", flexWrap: "nowrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 auto", minWidth: 0, flexWrap: "nowrap" }}>
           {onAdd && (
             <button
               type="button"
@@ -165,7 +189,7 @@ export function VideoPromptDialog({
                 setShowRatioDropdown(false);
                 setShowDurationDropdown(false);
               }}
-              style={buttonBaseStyle}
+              style={{ ...buttonBaseStyle, maxWidth: "148px" }}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
             >
@@ -174,7 +198,7 @@ export function VideoPromptDialog({
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              <span>{currentModel?.label || model}</span>
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentModel?.label || model}</span>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showModelDropdown ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>
                 <path d="M3 4.5L6 7.5L9 4.5" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -314,11 +338,13 @@ export function VideoPromptDialog({
           {onRandom && (
             <button
               type="button"
+              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onRandom}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              aria-label="随机"
+              data-tooltip="随机提示词"
+              aria-label="随机提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
@@ -332,11 +358,13 @@ export function VideoPromptDialog({
           {onClear && (
             <button
               type="button"
+              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onClear}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              aria-label="清空"
+              data-tooltip="清空提示词"
+              aria-label="清空提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18" />
@@ -347,17 +375,19 @@ export function VideoPromptDialog({
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "0 0 auto", flexWrap: "nowrap", justifyContent: "flex-end" }}>
           {price && (
             <span
               style={{
-                padding: "8px 12px",
+                padding: "8px 10px",
                 color: "#f5d475",
                 background: "rgba(61, 46, 16, 0.82)",
                 border: "1px solid rgba(255, 212, 117, 0.2)",
                 borderRadius: "999px",
                 fontSize: "12px",
-                fontWeight: "900"
+                fontWeight: "900",
+                whiteSpace: "nowrap",
+                flexShrink: 0
               }}
             >
               <strong>{price}</strong>
@@ -372,7 +402,7 @@ export function VideoPromptDialog({
             style={{
               ...buttonBaseStyle,
               width: "auto",
-              minWidth: "120px",
+              minWidth: "108px",
               background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
               border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
               color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",

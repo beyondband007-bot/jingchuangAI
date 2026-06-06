@@ -5002,7 +5002,7 @@ a:hover {
 }
 
 .video-gen-view-root {
-  padding-bottom: 156px;
+  padding-bottom: 256px;
 }
 
 .video-results-feed {
@@ -10308,6 +10308,74 @@ select {
 .sowa-composer .model-select {
   color: var(--text-secondary);
   background: rgba(176, 199, 226, 0.1);
+}
+
+.prompt-icon-button--tooltip {
+  position: relative;
+}
+
+.prompt-icon-button--tooltip::before,
+.prompt-icon-button--tooltip::after {
+  position: absolute;
+  left: 50%;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(0.96);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.prompt-icon-button--tooltip::before {
+  content: attr(data-tooltip);
+  bottom: calc(100% + 10px);
+  min-width: max-content;
+  padding: 7px 10px;
+  color: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(
+    135deg,
+    rgba(42, 42, 48, 0.96),
+    rgba(26, 25, 30, 0.96)
+  );
+  border: 1px solid rgba(160, 120, 255, 0.34);
+  border-radius: 8px;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+}
+
+.prompt-icon-button--tooltip::after {
+  content: "";
+  bottom: calc(100% + 5px);
+  width: 9px;
+  height: 9px;
+  background: rgba(30, 29, 35, 0.96);
+  border-right: 1px solid rgba(160, 120, 255, 0.3);
+  border-bottom: 1px solid rgba(160, 120, 255, 0.3);
+  transform: translate(-50%, 6px) rotate(45deg) scale(0.96);
+}
+
+.prompt-icon-button--tooltip:hover::before,
+.prompt-icon-button--tooltip:hover::after,
+.prompt-icon-button--tooltip:focus-visible::before,
+.prompt-icon-button--tooltip:focus-visible::after {
+  opacity: 1;
+}
+
+.prompt-icon-button--tooltip:hover::before,
+.prompt-icon-button--tooltip:focus-visible::before {
+  transform: translate(-50%, 0) scale(1);
+}
+
+.prompt-icon-button--tooltip:hover::after,
+.prompt-icon-button--tooltip:focus-visible::after {
+  transform: translate(-50%, 0) rotate(45deg) scale(1);
 }
 
 .article-view-tabs,
