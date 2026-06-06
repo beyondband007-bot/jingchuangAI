@@ -11019,6 +11019,23 @@ select {
   border-color: var(--app-border);
 }
 
+.feature-page-shell .video-result-card .result-meta p,
+.video-result-card .result-meta p {
+  --video-prompt-line-height: 22px;
+  box-sizing: border-box;
+  display: -webkit-box;
+  height: calc(var(--video-prompt-line-height) * 2 + 20px);
+  min-height: calc(var(--video-prompt-line-height) * 2 + 20px);
+  max-height: calc(var(--video-prompt-line-height) * 2 + 20px);
+  overflow: hidden;
+  line-height: 26px;
+  padding: 6px 12px;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
 .feature-page-shell .chat-composer .composer-add,
 .feature-page-shell .chat-composer .send-button,
 .feature-page-shell .card-actions .card-action-link {
