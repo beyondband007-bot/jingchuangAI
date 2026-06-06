@@ -20,7 +20,7 @@ export async function createKieDigitalHumanTask({
 
   const taskId = result.data?.taskId;
   if (!taskId) {
-    const error = new Error("KIE digital human response missing taskId");
+    const error = new Error("digital human response missing taskId");
     error.status = 502;
     error.body = result;
     throw error;

@@ -11,6 +11,14 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
+function formatProviderLabel(value) {
+  const text = String(value || "").trim();
+  if (!text || /\bkie\b/i.test(text)) {
+    return "智能处理";
+  }
+  return text;
+}
+
 function RemoveBgCenterState({ task, isSubmitting, error, onOpenRecent }) {
   if (task?.status === "completed" && task.resultUrl) {
     return (
@@ -54,7 +62,7 @@ function RemoveBgCenterState({ task, isSubmitting, error, onOpenRecent }) {
         <Loader2 size={30} />
       </span>
       <strong>{isSubmitting ? "正在创建去背景任务" : "正在智能去除背景"}</strong>
-      <p>图片正在提交给 KIE 处理，完成后会自动回填到这里。</p>
+      <p>图片正在处理中，完成后会自动回填到这里。</p>
       <div className="watermark-center-progress remove-bg-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
@@ -83,7 +91,9 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         <div className="tag-row">
           <span className="model-tag">图片去背景</span>
           <span className="ratio-tag">透明 PNG</span>
-          <span className="quality-tag">{task.providerModel || task.model}</span>
+          <span className="quality-tag">
+            {formatProviderLabel(task.providerModel || task.model)}
+          </span>
         </div>
         <div className="time-row">
           <span>{task.time}</span>

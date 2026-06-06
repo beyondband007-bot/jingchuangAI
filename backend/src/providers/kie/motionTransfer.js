@@ -3,7 +3,7 @@ import { getKieTask, requestKie } from "./client.js";
 function extractTaskId(result) {
   const taskId = result.data?.taskId || result.taskId || "";
   if (!taskId) {
-    const error = new Error("KIE motion transfer response missing taskId");
+    const error = new Error("motion transfer response missing taskId");
     error.status = 502;
     error.body = result;
     throw error;

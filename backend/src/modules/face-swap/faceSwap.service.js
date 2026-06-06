@@ -38,8 +38,8 @@ const defaultPrompt =
 function getModelDefinitions() {
   return [
     {
-      value: "kie-face-swap",
-      label: "KIE 视频换脸",
+      value: "face-swap",
+      label: "视频换脸",
       provider: "kie",
       providerModel: config.kie.faceSwapModel,
       basePoints: config.kie.faceSwapPoints,
@@ -231,17 +231,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractFaceSwapResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE face swap result missing video URL");
+        await refundTask(id, null, null, "face swap result missing video URL");
       } else {
         await setFaceSwapTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE face swap task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "face swap task failed");
     } else {
       await setFaceSwapTaskProcessing(id);
     }
   } catch (error) {
-    await setFaceSwapTaskError(id, `query KIE face swap status failed: ${error.message}`);
+    await setFaceSwapTaskError(id, `query face swap status failed: ${error.message}`);
   }
 }
 

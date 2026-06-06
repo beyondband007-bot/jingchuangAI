@@ -342,17 +342,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractEnhanceResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE enhance result missing URL");
+        await refundTask(id, null, null, "enhance result missing URL");
       } else {
         await setEnhanceTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE enhance task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "enhance task failed");
     } else {
       await setEnhanceTaskProcessing(id);
     }
   } catch (error) {
-    await setEnhanceTaskError(id, `query KIE enhance status failed: ${error.message}`);
+    await setEnhanceTaskError(id, `query enhance status failed: ${error.message}`);
   }
 }
 

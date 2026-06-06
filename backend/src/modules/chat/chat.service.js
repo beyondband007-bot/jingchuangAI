@@ -167,7 +167,7 @@ export async function sendMessage(payload, userId) {
         content: "",
         modelKey: model,
         status: "failed",
-        errorMessage: `KIE 对话失败：${error.message}`
+        errorMessage: `对话失败：${error.message}`
       });
       await touchChatConversation(failConnection, resolvedConversationId);
       await failConnection.commit();

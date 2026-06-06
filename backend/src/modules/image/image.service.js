@@ -144,8 +144,8 @@ export async function createTask(payload, userId) {
     });
     await setImageTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
-    console.error("KIE create image task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `KIE 创建任务失败：${error.message}`);
+    console.error("create image task failed:", error.message, error.body || "");
+    await refundTask(taskId, userId, costPoints, `创建任务失败：${error.message}`);
   }
 
   return getTask(taskId, userId);
@@ -167,12 +167,12 @@ async function refreshTask(id) {
       const urls = extractResultUrls(record);
       await setImageTaskCompleted(id, urls);
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || "KIE task failed");
+      await refundTask(id, null, null, record.data?.failMsg || "创建任务失败");
     } else {
       await setImageTaskProcessing(id);
     }
   } catch (error) {
-    await setImageTaskError(id, `查询 KIE 状态失败：${error.message}`);
+    await setImageTaskError(id, `查询任务状态失败：${error.message}`);
   }
 }
 

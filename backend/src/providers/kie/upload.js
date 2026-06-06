@@ -33,7 +33,7 @@ function assertUploadSuccess(response, body) {
   const code = body?.code ?? body?.statusCode;
   const isBusinessOk = code === undefined || code === 200 || code === 0;
   if (!response.ok || !isBusinessOk) {
-    const error = new Error(body?.msg || body?.message || body?.error || `KIE file upload failed with ${response.status}`);
+    const error = new Error(body?.msg || body?.message || body?.error || `file upload failed with ${response.status}`);
     error.status = response.ok ? 502 : response.status;
     error.body = body;
     throw error;
@@ -73,7 +73,7 @@ export async function uploadFileToKie({ filePath, fileName, mimeType = "applicat
   assertUploadSuccess(response, body);
   const url = extractUploadedUrl(body);
   if (!url) {
-    const error = new Error("KIE file upload response missing URL");
+    const error = new Error("file upload response missing URL");
     error.status = 502;
     error.body = body;
     throw error;

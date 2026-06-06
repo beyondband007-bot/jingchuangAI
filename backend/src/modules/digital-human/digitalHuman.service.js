@@ -215,7 +215,7 @@ async function createProviderTask(taskId, payload) {
     getAvatarImageProviderUrl(avatar)
   ]);
 
-  console.log(`[digital-human] task ${taskId}: creating KIE ${config.kie.digitalHumanModel} task`);
+  console.log(`[digital-human] task ${taskId}: creating ${config.kie.digitalHumanModel} task`);
   const provider = await createKieDigitalHumanTask({
     model: config.kie.digitalHumanModel,
     imageUrl: avatarImageProviderUrl,
@@ -230,7 +230,7 @@ async function createProviderTask(taskId, payload) {
     avatarProviderUrl: avatarImageProviderUrl,
     audioDurationMs
   });
-  console.log(`[digital-human] task ${taskId}: KIE task ${provider.taskId} created`);
+  console.log(`[digital-human] task ${taskId}: task ${provider.taskId} created`);
 }
 
 export function getModels() {
@@ -430,17 +430,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractKieDigitalHumanResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE digital human result missing video URL");
+        await refundTask(id, null, null, "digital human result missing video URL");
       } else {
         await setDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE digital human task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "digital human task failed");
     } else {
       await setDigitalHumanTaskProcessing(id);
     }
   } catch (error) {
-    await setDigitalHumanTaskError(id, `查询 KIE 数字人状态失败：${error.message}`);
+    await setDigitalHumanTaskError(id, `查询数字人状态失败：${error.message}`);
   }
 }
 

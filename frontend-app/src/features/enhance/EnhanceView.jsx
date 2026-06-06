@@ -73,7 +73,7 @@ function EnhanceCenterState({ task, isSubmitting, error, onOpenRecent }) {
         <Loader2 size={30} />
       </span>
       <strong>{isSubmitting ? "正在创建画质增强任务" : "正在智能提升画质"}</strong>
-      <p>素材正在提交给 KIE 处理，完成后会自动回填到这里。</p>
+      <p>素材正在处理中，完成后会自动回填到这里。</p>
       <div className="watermark-center-progress enhance-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>

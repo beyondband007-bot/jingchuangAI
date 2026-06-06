@@ -4130,6 +4130,14 @@ function formatDurationMs(durationMs = 0) {
   return `${(Number(durationMs || 0) / 1000).toFixed(1)} 秒`;
 }
 
+function formatProviderLabel(value, fallback = "视频合成") {
+  const text = String(value || "").trim();
+  if (!text || /\bkie\b/i.test(text)) {
+    return fallback;
+  }
+  return text;
+}
+
 function getDigitalHumanPreviewSignature({
   text,
   voiceId,
@@ -4490,7 +4498,7 @@ function DigitalHumanTaskCard({
         <span>
           {task.voiceName} 路{" "}
           {task.driveMode === "audio" ? "音频驱动" : "文本驱动"} 路{" "}
-          {task.providerModel || "KIE Wan 2.7"}
+          {formatProviderLabel(task.providerModel)}
         </span>
         <div className="dh-progress-track">
           <i style={{ width: `${task.progress || 0}%` }} />
@@ -4518,7 +4526,7 @@ function DigitalHumanGeneratingState({ task }) {
     <div className="dh-generating-state">
       <span className="dh-spinner" aria-hidden="true" />
       <strong>正在生成口型视频</strong>
-      <p>MiniMax 已生成驱动音频，KIE 正在合成数字人口播成片。</p>
+      <p>驱动音频已生成，正在合成数字人口播成片。</p>
       <div className="dh-generation-progress">
         <i style={{ width: `${task?.progress || 0}%` }} />
       </div>
@@ -4856,7 +4864,8 @@ function DigitalHumanConfigPanel({
         />
         {selectedModel && (
           <small>
-            调用模型：{selectedModel.providerModel || selectedModel.value} ·{" "}
+            调用模型：
+            {formatProviderLabel(selectedModel.providerModel, selectedModel.value)} ·{" "}
             {selectedModel.resolution || "720p"}
           </small>
         )}
@@ -5275,7 +5284,7 @@ function DigitalHumanGenerationView({ onReturnHome }) {
                     currentPreviewTask?.status === "failed"
                       ? currentPreviewTask.error
                       : currentPreviewTask
-                        ? `任务已提交，MiniMax 生成音频后由 KIE 生成口型视频。当前进度 ${currentPreviewTask.progress || 0}%`
+                        ? `任务已提交，正在生成口型视频。当前进度 ${currentPreviewTask.progress || 0}%`
                         : "这里会展示选中形象或生成后的视频"
                   }
                 />
@@ -5297,7 +5306,10 @@ function DigitalHumanGenerationView({ onReturnHome }) {
               <div>
                 <span>接口状态</span>
                 <strong>
-                  {currentPreviewTask?.providerModel || "MiniMax + KIE"}
+                  {formatProviderLabel(
+                    currentPreviewTask?.providerModel,
+                    "音视频合成",
+                  )}
                 </strong>
               </div>
             </div>
@@ -5357,7 +5369,7 @@ const motionTransferCopy = {
   processingCreate: "正在创建动作迁移任务",
   processingGenerate: "正在生成动作迁移视频",
   processingDescription:
-    "正在上传人物图片和动作参考视频，并提交给 KIE 合成。完成后会自动回填到这里。",
+    "正在上传人物图片和动作参考视频。完成后会自动回填到这里。",
   recentEmptyTitle: "暂无动作迁移结果",
   recentEmptyDescription: "生成完成的视频会保存在这里。",
   imageTitle: "上传单人图",
@@ -5380,7 +5392,7 @@ const faceSwapCopy = {
   processingCreate: "正在创建视频换脸任务",
   processingGenerate: "正在生成换脸视频",
   processingDescription:
-    "正在上传人脸图片和目标视频，并提交给 KIE 合成。完成后会自动回填到这里。",
+    "正在上传人脸图片和目标视频。完成后会自动回填到这里。",
   recentEmptyTitle: "暂无视频换脸结果",
   recentEmptyDescription: "生成完成的换脸视频会保存在这里。",
   imageTitle: "上传人脸图",
@@ -5590,7 +5602,9 @@ function MotionTransferTaskCard({
       </div>
       <div className="motion-task-meta">
         <div className="tag-row">
-          <span className="model-tag">{task.providerModel || task.model}</span>
+          <span className="model-tag">
+            {formatProviderLabel(task.providerModel || task.model)}
+          </span>
           <span className="ratio-tag">{task.resolution}</span>
           <span className="quality-tag">
             {task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}
@@ -6300,7 +6314,7 @@ function WatermarkCenterState({ task, isSubmitting, error, onOpenRecent }) {
       <strong>
         {isSubmitting ? "正在创建去水印任务" : "正在智能去除水印"}
       </strong>
-      <p>素材正在提交给 KIE 处理，完成后会自动回填到这里。</p>
+      <p>素材正在处理中，完成后会自动回填到这里。</p>
       <div className="watermark-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
@@ -6356,7 +6370,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           </span>
           <span className="ratio-tag">{task.resolution}</span>
           <span className="quality-tag">
-            {task.providerModel || task.model}
+            {formatProviderLabel(task.providerModel || task.model, "智能处理")}
           </span>
         </div>
         <div className="time-row">

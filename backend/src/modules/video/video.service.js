@@ -111,8 +111,8 @@ export async function createTask(payload, userId) {
     });
     await setVideoTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
-    console.error("KIE create video task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `KIE 创建视频任务失败：${error.message}`);
+    console.error("create video task failed:", error.message, error.body || "");
+    await refundTask(taskId, userId, costPoints, `创建视频任务失败：${error.message}`);
   }
 
   return getTask(taskId, userId);
@@ -134,12 +134,12 @@ async function refreshTask(id) {
       const urls = extractVideoResultUrls(record, task.provider_type);
       await setVideoTaskCompleted(id, urls);
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE video task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "视频任务失败");
     } else {
       await setVideoTaskProcessing(id);
     }
   } catch (error) {
-    await setVideoTaskError(id, `查询 KIE 视频状态失败：${error.message}`);
+    await setVideoTaskError(id, `查询视频状态失败：${error.message}`);
   }
 }
 

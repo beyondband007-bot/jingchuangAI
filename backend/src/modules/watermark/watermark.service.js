@@ -238,17 +238,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractWatermarkResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE watermark removal result missing URL");
+        await refundTask(id, null, null, "watermark removal result missing URL");
       } else {
         await setWatermarkTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE watermark removal task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "watermark removal task failed");
     } else {
       await setWatermarkTaskProcessing(id);
     }
   } catch (error) {
-    await setWatermarkTaskError(id, `query KIE watermark removal status failed: ${error.message}`);
+    await setWatermarkTaskError(id, `query watermark removal status failed: ${error.message}`);
   }
 }
 

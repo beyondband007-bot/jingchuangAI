@@ -3,7 +3,7 @@ import { requestKie } from "./client.js";
 function extractTaskId(result, label) {
   const taskId = result.data?.taskId || result.taskId || "";
   if (!taskId) {
-    const error = new Error(`KIE ${label} response missing taskId`);
+    const error = new Error(`${label} response missing taskId`);
     error.status = 502;
     error.body = result;
     throw error;

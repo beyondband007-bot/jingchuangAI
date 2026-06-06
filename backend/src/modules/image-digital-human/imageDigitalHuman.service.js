@@ -149,7 +149,7 @@ async function createProviderTask(taskId, payload) {
     featureDir: "image-digital-human"
   });
 
-  console.log(`[image-digital-human] task ${taskId}: uploading portrait and audio to KIE`);
+  console.log(`[image-digital-human] task ${taskId}: uploading portrait and audio`);
   const [portraitUpload, audioUpload] = await Promise.all([
     uploadFileToKie({
       filePath: portraitFilePath,
@@ -182,7 +182,7 @@ async function createProviderTask(taskId, payload) {
     portraitProviderUrl: portraitUpload.url,
     audioDurationMs
   });
-  console.log(`[image-digital-human] task ${taskId}: KIE task ${provider.taskId} created with ${usedProviderModel}`);
+  console.log(`[image-digital-human] task ${taskId}: task ${provider.taskId} created with ${usedProviderModel}`);
 }
 
 export function getModels() {
@@ -341,17 +341,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractKieImageDigitalHumanResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE image digital human result missing video URL");
+        await refundTask(id, null, null, "image digital human result missing video URL");
       } else {
         await setImageDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE image digital human task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "image digital human task failed");
     } else {
       await setImageDigitalHumanTaskProcessing(id);
     }
   } catch (error) {
-    await setImageDigitalHumanTaskError(id, `query KIE image digital human status failed: ${error.message}`);
+    await setImageDigitalHumanTaskError(id, `query image digital human status failed: ${error.message}`);
   }
 }
 

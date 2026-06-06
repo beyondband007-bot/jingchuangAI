@@ -60,7 +60,7 @@ export async function createKieVideoTask({ model, prompt, ratio, duration }) {
 
     const taskId = result.data?.taskId;
     if (!taskId) {
-      const error = new Error("KIE Veo response missing taskId");
+      const error = new Error("Veo response missing taskId");
       error.status = 502;
       error.body = result;
       throw error;
@@ -79,7 +79,7 @@ export async function createKieVideoTask({ model, prompt, ratio, duration }) {
 
   const taskId = result.data?.taskId;
   if (!taskId) {
-    const error = new Error("KIE video response missing taskId");
+    const error = new Error("video response missing taskId");
     error.status = 502;
     error.body = result;
     throw error;

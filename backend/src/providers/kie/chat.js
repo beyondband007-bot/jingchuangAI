@@ -323,7 +323,7 @@ export async function createKieChatResponse({ model, messages, reasoningEffort }
     request.provider === "claude" ? extractClaudeText(result) :
     extractChatText(result);
   if (!text) {
-    const error = new Error("KIE chat response missing text");
+    const error = new Error("chat response missing text");
     error.status = 502;
     error.body = result;
     throw error;
@@ -359,7 +359,7 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     } catch {
       body = { raw: text };
     }
-    const error = new Error(body.msg || body.error || `KIE request failed with ${response.status}`);
+    const error = new Error(body.msg || body.error || `request failed with ${response.status}`);
     error.status = response.status || 502;
     error.body = body;
     throw error;
@@ -431,7 +431,7 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
   }
 
   if (!text.trim()) {
-    const error = new Error("KIE chat stream missing text");
+    const error = new Error("chat stream missing text");
     error.status = 502;
     error.body = finalRecord;
     throw error;

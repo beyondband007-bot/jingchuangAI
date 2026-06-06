@@ -30,7 +30,7 @@ export async function requestKie(path, options = {}) {
   }
 
   if (!response.ok || (body.code && body.code !== 200)) {
-    const error = new Error(body.msg || body.error || `KIE request failed with ${response.status}`);
+    const error = new Error(body.msg || body.error || `request failed with ${response.status}`);
     error.status = response.status || 502;
     error.body = body;
     throw error;

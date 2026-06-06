@@ -200,17 +200,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractRemoveBgResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE remove background result missing URL");
+        await refundTask(id, null, null, "remove background result missing URL");
       } else {
         await setRemoveBgTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE remove background task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "remove background task failed");
     } else {
       await setRemoveBgTaskProcessing(id);
     }
   } catch (error) {
-    await setRemoveBgTaskError(id, `query KIE remove background status failed: ${error.message}`);
+    await setRemoveBgTaskError(id, `query remove background status failed: ${error.message}`);
   }
 }
 

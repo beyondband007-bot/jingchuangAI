@@ -37,8 +37,8 @@ const defaultPrompt = "让静态人物跟随参考视频完成同款动作，保
 function getModelDefinitions() {
   return [
     {
-      value: "kie-motion-transfer",
-      label: "KIE 动作迁移",
+      value: "motion-transfer",
+      label: "动作迁移",
       provider: "kie",
       providerModel: config.kie.motionTransferModel,
       basePoints: config.kie.motionTransferPoints,
@@ -244,17 +244,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractMotionTransferResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "KIE motion transfer result missing video URL");
+        await refundTask(id, null, null, "motion transfer result missing video URL");
       } else {
         await setMotionTransferTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "KIE motion transfer task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "motion transfer task failed");
     } else {
       await setMotionTransferTaskProcessing(id);
     }
   } catch (error) {
-    await setMotionTransferTaskError(id, `query KIE motion transfer status failed: ${error.message}`);
+    await setMotionTransferTaskError(id, `query motion transfer status failed: ${error.message}`);
   }
 }
 
