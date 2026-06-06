@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   Download,
@@ -13,6 +13,8 @@ import {
   X
 } from "lucide-react";
 import { articleApi } from "./articleApi";
+import { emitCreditsUpdated } from "../../api/creditsEvents";
+import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { CustomSelect } from "../../components/CustomSelect";
 import { ViralGraphicGeneratorShowcaseCard } from "../viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 
@@ -566,14 +568,30 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
   const [viewMode, setViewMode] = useState("home");
   const [previewTask, setPreviewTask] = useState(null);
   const [showAudience, setShowAudience] = useState(false);
+  const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
+
+  function applyCredits(creditsValue) {
+    if (!creditsValue) return;
+    setCredits(creditsValue);
+    emitCreditsUpdated(creditsValue);
+  }
 
   useEffect(() => {
     let mounted = true;
     function refreshTasks() {
       articleApi.getTasks({ filter: "all" }).then((value) => {
         if (!mounted) return;
+        const nextSignature = taskStatusSignature(value);
+        const didStatusChange =
+          taskStatusSignatureRef.current &&
+          taskStatusSignatureRef.current !== nextSignature;
+        taskStatusSignatureRef.current = nextSignature;
+        articleApi.setHasRunningTasks(hasRunningTasks(value));
         setCards(value);
+        if (didStatusChange) {
+          articleApi.refreshCredits().then((nextCredits) => mounted && applyCredits(nextCredits)).catch(() => {});
+        }
       }).catch((error) => mounted && setSubmitError(error.message));
     }
 
@@ -588,7 +606,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
       }));
     }).catch((error) => mounted && setSubmitError(error.message));
 
-    articleApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+    articleApi.getCredits().then((value) => mounted && applyCredits(value)).catch(() => {});
     refreshTasks();
     const unsubscribe = articleApi.subscribe(refreshTasks);
 
@@ -610,7 +628,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
   useEffect(() => {
     if (selectedTask && (selectedTask.status === "completed" || selectedTask.status === "failed")) {
       setIsSubmitting(false);
-      articleApi.refreshCredits().then(setCredits).catch(() => {});
+      articleApi.refreshCredits().then(applyCredits).catch(() => {});
     }
   }, [selectedTask]);
 
@@ -673,7 +691,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
       });
       setCards((current) => [task, ...current.filter((item) => item.id !== task.id)]);
       setSelectedTaskId(task.id);
-      articleApi.refreshCredits().then(setCredits).catch(() => {});
+      articleApi.refreshCredits().then(applyCredits).catch(() => {});
       if (task.status === "failed") setIsSubmitting(false);
     } catch (error) {
       setSubmitError(error.message || "创建爆款图文任务失败。");
@@ -701,7 +719,7 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
       });
       setCards((current) => [created, ...current.filter((item) => item.id !== created.id)]);
       setSelectedTaskId(created.id);
-      articleApi.refreshCredits().then(setCredits).catch(() => {});
+      articleApi.refreshCredits().then(applyCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "再次生成失败。");
       setIsSubmitting(false);

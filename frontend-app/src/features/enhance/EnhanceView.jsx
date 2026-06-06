@@ -13,6 +13,8 @@ import {
   Wand2,
   X
 } from "lucide-react";
+import { emitCreditsUpdated } from "../../api/creditsEvents";
+import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { enhanceApi } from "./enhanceApi";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
@@ -334,9 +336,29 @@ export function EnhanceView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const taskStatusSignatureRef = useRef("");
+
+  function applyCredits(creditsValue) {
+    if (!creditsValue) return;
+    setCredits(creditsValue);
+    emitCreditsUpdated(creditsValue);
+  }
 
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      enhanceApi.setHasRunningTasks(hasRunningTasks(value));
+      setTasks(value);
+      if (didStatusChange) {
+        enhanceApi.getCredits().then((nextCredits) => mounted && applyCredits(nextCredits)).catch(() => {});
+      }
+    }
     async function load() {
       try {
         const [modelData, taskData, creditData] = await Promise.all([
@@ -346,16 +368,16 @@ export function EnhanceView() {
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setTasks(taskData);
-        setCredits(creditData);
+        applyTaskList(taskData);
+        applyCredits(creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || "加载增强功能失败");
       }
     }
     load();
     const unsubscribe = enhanceApi.subscribe(() => {
-      enhanceApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
-      enhanceApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+      enhanceApi.getTasks().then(applyTaskList).catch(() => {});
+      enhanceApi.getCredits().then((value) => mounted && applyCredits(value)).catch(() => {});
     });
     return () => {
       mounted = false;
@@ -382,10 +404,10 @@ export function EnhanceView() {
       const task = await enhanceApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
-      enhanceApi.getCredits().then(setCredits).catch(() => {});
+      enhanceApi.getCredits().then(applyCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建增强任务失败");
-      enhanceApi.getCredits().then(setCredits).catch(() => {});
+      enhanceApi.getCredits().then(applyCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }

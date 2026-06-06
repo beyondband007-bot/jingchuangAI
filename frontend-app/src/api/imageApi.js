@@ -1,37 +1,18 @@
-﻿import { requestJson as request } from "./request.js";
-const listeners = new Set();
-let pollTimer;
+import { requestJson as request } from "./request.js";
+import { createTaskPollingController } from "./taskPolling.js";
+const taskPolling = createTaskPollingController();
 let modelsPromise;
 let creditsPromise;
 export const imageToImageModelKey = "gpt_image_1_5_i2i";
 export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 
-function notify() {
-  listeners.forEach((listener) => listener());
-}
-
-function startPolling() {
-  if (pollTimer) return;
-  pollTimer = window.setInterval(() => {
-    notify();
-  }, 3000);
-}
-
-function stopPollingIfIdle() {
-  if (listeners.size === 0 && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-  }
-}
-
 export const imageApi = {
   subscribe(listener) {
-    listeners.add(listener);
-    startPolling();
-    return () => {
-      listeners.delete(listener);
-      stopPollingIfIdle();
-    };
+    return taskPolling.subscribe(listener);
+  },
+
+  setHasRunningTasks(value) {
+    taskPolling.setHasRunningTasks(value);
   },
 
   async getCredits() {
@@ -82,7 +63,7 @@ export const imageApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
@@ -97,13 +78,13 @@ export const imageApi = {
 
   async deleteTask(id) {
     const result = await request(`/api/image/tasks/${id}`, { method: "DELETE" });
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
   async toggleFavorite(id) {
     const task = await request(`/api/image/tasks/${id}/favorite`, { method: "POST" });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
@@ -117,7 +98,7 @@ export const imageApi = {
       count: task.count || 1,
       referenceImageUrl: task.referenceImageUrl || null
     });
-    notify();
+    taskPolling.notifyNow();
     return created;
   }
 };

@@ -1,34 +1,17 @@
-﻿import { requestJson as request } from "./request.js";
-const listeners = new Set();
-let pollTimer;
+import { requestJson as request } from "./request.js";
+import { createTaskPollingController } from "./taskPolling.js";
+const taskPolling = createTaskPollingController();
 let modelsPromise;
 let avatarsPromise;
 let voicesPromise;
 
-function notify() {
-  listeners.forEach((listener) => listener());
-}
-
-function startPolling() {
-  if (pollTimer) return;
-  pollTimer = window.setInterval(notify, 3000);
-}
-
-function stopPollingIfIdle() {
-  if (listeners.size === 0 && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-  }
-}
-
 export const digitalHumanApi = {
   subscribe(listener) {
-    listeners.add(listener);
-    startPolling();
-    return () => {
-      listeners.delete(listener);
-      stopPollingIfIdle();
-    };
+    return taskPolling.subscribe(listener);
+  },
+
+  setHasRunningTasks(value) {
+    taskPolling.setHasRunningTasks(value);
   },
 
   async getCredits() {
@@ -56,7 +39,7 @@ export const digitalHumanApi = {
       body: JSON.stringify(payload)
     });
     voicesPromise = undefined;
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
@@ -76,19 +59,19 @@ export const digitalHumanApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
   async deleteTask(id) {
     const result = await request(`/api/digital-human/tasks/${id}`, { method: "DELETE" });
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
   async regenerateTask(id) {
     const task = await request(`/api/digital-human/tasks/${id}/regenerate`, { method: "POST" });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
@@ -98,7 +81,7 @@ export const digitalHumanApi = {
       body: JSON.stringify(payload)
     });
     avatarsPromise = undefined;
-    notify();
+    taskPolling.notifyNow();
     return avatar;
   },
 
@@ -108,14 +91,14 @@ export const digitalHumanApi = {
       body: JSON.stringify(payload)
     });
     avatarsPromise = undefined;
-    notify();
+    taskPolling.notifyNow();
     return avatar;
   },
 
   async deleteAvatar(id) {
     const result = await request(`/api/digital-human/avatars/${id}`, { method: "DELETE" });
     avatarsPromise = undefined;
-    notify();
+    taskPolling.notifyNow();
     return result;
   }
 };

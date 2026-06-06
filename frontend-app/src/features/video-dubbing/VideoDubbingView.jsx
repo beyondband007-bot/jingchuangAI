@@ -13,8 +13,10 @@ import {
 } from "lucide-react";
 import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { emitCreditsUpdated } from "../../api/creditsEvents";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
+const videoDubRunningStatuses = new Set(["pending", "processing"]);
 
 function readFavoriteIds() {
   try {
@@ -266,7 +268,15 @@ export function VideoDubbingView({ authUser }) {
   const [previewTask, setPreviewTask] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => readFavoriteIds());
   const [currentStage, setCurrentStage] = useState("");
+  const currentTaskStatusRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
+
+  function refreshCredits() {
+    videoDubbingApi
+      .getCredits()
+      .then((credits) => emitCreditsUpdated(credits))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -283,6 +293,14 @@ export function VideoDubbingView({ authUser }) {
     const interval = setInterval(async () => {
       try {
         const task = await videoDubbingApi.getTask(currentTaskId);
+        const nextStatus = task.status || "";
+        if (
+          currentTaskStatusRef.current &&
+          currentTaskStatusRef.current !== nextStatus
+        ) {
+          refreshCredits();
+        }
+        currentTaskStatusRef.current = nextStatus;
         if (task.status === "completed" || task.status === "failed") {
           setCurrentTaskId(null);
           clearInterval(interval);
@@ -292,14 +310,19 @@ export function VideoDubbingView({ authUser }) {
       } catch {
         // ignore polling errors
       }
-    }, 3000);
+    }, 20000);
     return () => clearInterval(interval);
   }, [currentTaskId]);
 
   async function loadTasks() {
     try {
       const data = await videoDubbingApi.getTasks();
-      setTasks(data.tasks || data || []);
+      const items = data.tasks || data || [];
+      setTasks(items);
+      const runningTask = items.find((task) => videoDubRunningStatuses.has(task.status));
+      if (runningTask) {
+        setCurrentTaskId((current) => current || runningTask.id);
+      }
     } catch {
       // ignore
     }
@@ -353,6 +376,8 @@ export function VideoDubbingView({ authUser }) {
       });
       const taskId = taskResult.taskId || taskResult.id;
       setCurrentTaskId(taskId);
+      currentTaskStatusRef.current = taskResult.status || "pending";
+      refreshCredits();
       setCurrentStage("queued");
       setNotice("任务已创建，正在处理中…");
       setIsSubmitting(false);

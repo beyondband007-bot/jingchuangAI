@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Send, Star, Trash2, X } from "lucide-react";
+import { emitCreditsUpdated } from "../../api/creditsEvents";
+import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -292,9 +294,29 @@ export function RemoveBgView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const taskStatusSignatureRef = useRef("");
+
+  function applyCredits(creditsValue) {
+    if (!creditsValue) return;
+    setCredits(creditsValue);
+    emitCreditsUpdated(creditsValue);
+  }
 
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      removeBgApi.setHasRunningTasks(hasRunningTasks(value));
+      setTasks(value);
+      if (didStatusChange) {
+        removeBgApi.getCredits().then((nextCredits) => mounted && applyCredits(nextCredits)).catch(() => {});
+      }
+    }
     async function load() {
       try {
         const [modelData, taskData, creditData] = await Promise.all([
@@ -304,16 +326,16 @@ export function RemoveBgView() {
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setTasks(taskData);
-        setCredits(creditData);
+        applyTaskList(taskData);
+        applyCredits(creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || "加载去背景功能失败");
       }
     }
     load();
     const unsubscribe = removeBgApi.subscribe(() => {
-      removeBgApi.getTasks().then((value) => mounted && setTasks(value)).catch(() => {});
-      removeBgApi.getCredits().then((value) => mounted && setCredits(value)).catch(() => {});
+      removeBgApi.getTasks().then(applyTaskList).catch(() => {});
+      removeBgApi.getCredits().then((value) => mounted && applyCredits(value)).catch(() => {});
     });
     return () => {
       mounted = false;
@@ -340,10 +362,10 @@ export function RemoveBgView() {
       const task = await removeBgApi.createTask(payload);
       setSubmittedTaskId(task.id);
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
-      removeBgApi.getCredits().then(setCredits).catch(() => {});
+      removeBgApi.getCredits().then(applyCredits).catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建去背景任务失败");
-      removeBgApi.getCredits().then(setCredits).catch(() => {});
+      removeBgApi.getCredits().then(applyCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
     }

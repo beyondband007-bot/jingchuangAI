@@ -61,6 +61,8 @@ import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
 import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import { watermarkApi } from "./api/watermarkApi";
+import { emitCreditsUpdated, subscribeCreditsUpdated } from "./api/creditsEvents";
+import { hasRunningTasks, taskStatusSignature } from "./api/taskPolling";
 import { VoiceSynthesisView } from "./features/voice-synthesis-ui/VoiceSynthesisView";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
@@ -2659,16 +2661,47 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   const [submitError, setSubmitError] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
+  const taskStatusSignatureRef = useRef("");
 
   // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value, runningValue = value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      imageApi.setHasRunningTasks(hasRunningTasks(runningValue));
+      setCards(value);
+      if (didStatusChange) {
+        imageApi
+          .refreshCredits()
+          .then((creditsValue) =>
+            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          )
+          .catch(() => {});
+      }
+    }
     imageApi.getModels().then((value) => mounted && setOptions(value));
-    imageApi.getCredits().then((value) => mounted && setCredits(value));
-    imageApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+    imageApi
+      .getCredits()
+      .then((value) => mounted && applyCreditsUpdate(setCredits, value));
+    async function refreshTasks() {
+      const [taskData, runningTaskData] =
+        filter === "all"
+          ? [await imageApi.getTasks({ filter }), null]
+          : await Promise.all([
+              imageApi.getTasks({ filter }),
+              imageApi.getTasks({ filter: "all" }),
+            ]);
+      applyTaskList(taskData, runningTaskData || taskData);
+    }
+    refreshTasks();
 
     const unsubscribe = imageApi.subscribe(() => {
-      imageApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+      refreshTasks();
     });
 
     return () => {
@@ -2822,6 +2855,10 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
 
     try {
       const task = await imageApi.createTask(payload);
+      imageApi
+        .refreshCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
       writeImageGenerationSession({
@@ -2880,6 +2917,10 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
 
     try {
       const created = await imageApi.regenerateTask(id);
+      imageApi
+        .refreshCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
       writeImageGenerationSession({
@@ -3333,6 +3374,7 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
   const [credits, setCredits] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
 
   function requestLoginForGeneration() {
@@ -3344,12 +3386,42 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
   // 模块由外层保活挂载，此处始终订阅任务列表
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value, runningValue = value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      videoApi.setHasRunningTasks(hasRunningTasks(runningValue));
+      setCards(value);
+      if (didStatusChange) {
+        videoApi
+          .refreshCredits()
+          .then((creditsValue) =>
+            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          )
+          .catch(() => {});
+      }
+    }
     videoApi.getModels().then((value) => mounted && setOptions(value));
-    videoApi.getCredits().then((value) => mounted && setCredits(value));
-    videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+    videoApi
+      .getCredits()
+      .then((value) => mounted && applyCreditsUpdate(setCredits, value));
+    async function refreshTasks() {
+      const [taskData, runningTaskData] =
+        filter === "all"
+          ? [await videoApi.getTasks({ filter }), null]
+          : await Promise.all([
+              videoApi.getTasks({ filter }),
+              videoApi.getTasks({ filter: "all" }),
+            ]);
+      applyTaskList(taskData, runningTaskData || taskData);
+    }
+    refreshTasks();
 
     const unsubscribe = videoApi.subscribe(() => {
-      videoApi.getTasks({ filter }).then((value) => mounted && setCards(value));
+      refreshTasks();
     });
 
     return () => {
@@ -3367,6 +3439,10 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
     setIsSubmitting(true);
     try {
       await videoApi.createTask(payload);
+      videoApi
+        .refreshCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建视频生成任务失败");
     } finally {
@@ -3391,6 +3467,10 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
     setIsSubmitting(true);
     try {
       await videoApi.regenerateTask(id);
+      videoApi
+        .refreshCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
     } catch (error) {
       setSubmitError(error.message || "创建视频生成任务失败");
     } finally {
@@ -4175,6 +4255,12 @@ function formatProviderLabel(value, fallback = "视频合成") {
     return fallback;
   }
   return text;
+}
+
+function applyCreditsUpdate(setCredits, credits) {
+  if (!credits) return;
+  setCredits(credits);
+  emitCreditsUpdated(credits);
 }
 
 function getDigitalHumanPreviewSignature({
@@ -5030,10 +5116,36 @@ function DigitalHumanGenerationView({ onReturnHome }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const taskStatusSignatureRef = useRef("");
 
   // 模块由外层保活挂载，此处始终订阅数字人任务与形象
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      digitalHumanApi.setHasRunningTasks(hasRunningTasks(value));
+      setTasks(value);
+      setSelectedTask((current) => {
+        if (!current) return current;
+        return (
+          value.find((task) => String(task.id) === String(current.id)) ||
+          current
+        );
+      });
+      if (didStatusChange) {
+        digitalHumanApi
+          .getCredits()
+          .then((creditsValue) =>
+            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          )
+          .catch(() => {});
+      }
+    }
     async function load() {
       try {
         const [modelData, avatarData, voiceData, taskData, creditData] =
@@ -5048,8 +5160,8 @@ function DigitalHumanGenerationView({ onReturnHome }) {
         setOptions(modelData);
         setAvatars(avatarData);
         setVoices(voiceData.voices || []);
-        setTasks(taskData);
-        setCredits(creditData);
+        applyTaskList(taskData);
+        applyCreditsUpdate(setCredits, creditData);
         setSelectedAvatar((current) => resolveDigitalHumanAvatarSelection(current, avatarData));
       } catch (loadError) {
         if (mounted) setError(loadError.message || "加载数字人功能失败");
@@ -5059,17 +5171,7 @@ function DigitalHumanGenerationView({ onReturnHome }) {
     const unsubscribe = digitalHumanApi.subscribe(() => {
       digitalHumanApi
         .getTasks()
-        .then((value) => {
-          if (!mounted) return;
-          setTasks(value);
-          setSelectedTask((current) => {
-            if (!current) return current;
-            return (
-              value.find((task) => String(task.id) === String(current.id)) ||
-              current
-            );
-          });
-        })
+        .then(applyTaskList)
         .catch(() => {});
       digitalHumanApi
         .getAvatars()
@@ -5091,6 +5193,10 @@ function DigitalHumanGenerationView({ onReturnHome }) {
     setIsSubmitting(true);
     try {
       const task = await digitalHumanApi.createTask(payload);
+      digitalHumanApi
+        .getCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
       setSelectedTask(task);
       setTab("history");
     } catch (submitError) {
@@ -5135,6 +5241,10 @@ function DigitalHumanGenerationView({ onReturnHome }) {
 
   async function regenerateTask(id) {
     const task = await digitalHumanApi.regenerateTask(id);
+    digitalHumanApi
+      .getCredits()
+      .then((value) => applyCreditsUpdate(setCredits, value))
+      .catch(() => {});
     setSelectedTask(task);
   }
 
@@ -5505,6 +5615,7 @@ function mapImageDigitalHumanMotionTask(task) {
 
 const imageDigitalHumanMotionApi = {
   subscribe: imageDigitalHumanApi.subscribe,
+  setHasRunningTasks: imageDigitalHumanApi.setHasRunningTasks,
   getCredits: imageDigitalHumanApi.getCredits,
   getModels: imageDigitalHumanApi.getModels,
 
@@ -6011,8 +6122,15 @@ function MotionTransferView({
   const [submittedTaskId, setSubmittedTaskId] = useState(() =>
     readMotionActiveTaskId(navId),
   );
+  const taskStatusSignatureRef = useRef("");
 
-  function applyTaskData(taskData) {
+  function applyTaskData(taskData, runningTaskData = taskData) {
+    const nextSignature = taskStatusSignature(taskData);
+    const didStatusChange =
+      taskStatusSignatureRef.current &&
+      taskStatusSignatureRef.current !== nextSignature;
+    taskStatusSignatureRef.current = nextSignature;
+    api.setHasRunningTasks?.(hasRunningTasks(runningTaskData));
     setTasks(taskData);
     setSubmittedTaskId((current) => {
       if (
@@ -6023,34 +6141,53 @@ function MotionTransferView({
       if (current) writeMotionActiveTaskId(navId, null);
       return null;
     });
+    if (didStatusChange) {
+      api
+        .getCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
+    }
   }
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const [modelData, taskData, creditData] = await Promise.all([
+        const taskFilter = splitResults ? "all" : filter;
+        const [modelData, taskData, runningTaskData, creditData] = await Promise.all([
           api.getModels(),
-          api.getTasks({ filter: splitResults ? "all" : filter }),
+          api.getTasks({ filter: taskFilter }),
+          taskFilter === "all"
+            ? Promise.resolve(null)
+            : api.getTasks({ filter: "all" }),
           api.getCredits().catch(() => null),
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        applyTaskData(taskData);
-        setCredits(creditData);
+        applyTaskData(taskData, runningTaskData || taskData);
+        applyCreditsUpdate(setCredits, creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || copy.loadError);
       }
     }
     load();
     const unsubscribe = api.subscribe(() => {
-      api
-        .getTasks({ filter: splitResults ? "all" : filter })
-        .then((value) => mounted && applyTaskData(value))
+      const taskFilter = splitResults ? "all" : filter;
+      const taskRequest =
+        taskFilter === "all"
+          ? api
+              .getTasks({ filter: taskFilter })
+              .then((value) => [value, value])
+          : Promise.all([
+              api.getTasks({ filter: taskFilter }),
+              api.getTasks({ filter: "all" }),
+            ]);
+      taskRequest
+        .then(([value, runningValue]) => mounted && applyTaskData(value, runningValue))
         .catch(() => {});
       api
         .getCredits()
-        .then((value) => mounted && setCredits(value))
+        .then((value) => mounted && applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     });
     return () => {
@@ -6094,6 +6231,10 @@ function MotionTransferView({
     setSubmittedTaskId(null);
     try {
       const task = await api.createTask(payload);
+      api
+        .getCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
       setSubmittedTaskId(task.id);
       writeMotionActiveTaskId(navId, task.id);
       if (splitResults) setViewTab("home");
@@ -6687,9 +6828,28 @@ function WatermarkRemovalView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
+  const taskStatusSignatureRef = useRef("");
 
   useEffect(() => {
     let mounted = true;
+    function applyTaskList(value) {
+      if (!mounted) return;
+      const nextSignature = taskStatusSignature(value);
+      const didStatusChange =
+        taskStatusSignatureRef.current &&
+        taskStatusSignatureRef.current !== nextSignature;
+      taskStatusSignatureRef.current = nextSignature;
+      watermarkApi.setHasRunningTasks(hasRunningTasks(value));
+      setTasks(value);
+      if (didStatusChange) {
+        watermarkApi
+          .getCredits()
+          .then((creditsValue) =>
+            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          )
+          .catch(() => {});
+      }
+    }
     async function load() {
       try {
         const [modelData, taskData, creditData] = await Promise.all([
@@ -6699,8 +6859,8 @@ function WatermarkRemovalView() {
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setTasks(taskData);
-        setCredits(creditData);
+        applyTaskList(taskData);
+        applyCreditsUpdate(setCredits, creditData);
       } catch (error) {
         if (mounted) setSubmitError(error.message || "加载去水印失败");
       }
@@ -6709,11 +6869,11 @@ function WatermarkRemovalView() {
     const unsubscribe = watermarkApi.subscribe(() => {
       watermarkApi
         .getTasks()
-        .then((value) => mounted && setTasks(value))
+        .then(applyTaskList)
         .catch(() => {});
       watermarkApi
         .getCredits()
-        .then((value) => mounted && setCredits(value))
+        .then((value) => mounted && applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     });
     return () => {
@@ -6747,6 +6907,10 @@ function WatermarkRemovalView() {
     setViewTab("home");
     try {
       const task = await watermarkApi.createTask(payload);
+      watermarkApi
+        .getCredits()
+        .then((value) => applyCreditsUpdate(setCredits, value))
+        .catch(() => {});
       setSubmittedTaskId(task.id);
       setTasks((current) => [
         task,
@@ -7161,6 +7325,18 @@ function App() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeCreditsUpdated((credits) => {
+      const nextCredits = credits?.balance;
+      if (typeof nextCredits === "undefined") return;
+      setAuthUser((current) =>
+        current && !current.isGuest
+          ? { ...current, credits: nextCredits }
+          : current,
+      );
+    });
   }, []);
 
   const openHome = useCallback(() => {

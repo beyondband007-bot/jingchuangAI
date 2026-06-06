@@ -1,33 +1,16 @@
-﻿import { requestJson as request } from "../../api/request.js";
-const listeners = new Set();
-let pollTimer;
+import { requestJson as request } from "../../api/request.js";
+import { createTaskPollingController } from "../../api/taskPolling.js";
+const taskPolling = createTaskPollingController();
 let modelsPromise;
 let creditsPromise;
 
-function notify() {
-  listeners.forEach((listener) => listener());
-}
-
-function startPolling() {
-  if (pollTimer) return;
-  pollTimer = window.setInterval(notify, 3000);
-}
-
-function stopPollingIfIdle() {
-  if (listeners.size === 0 && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-  }
-}
-
 export const articleApi = {
   subscribe(listener) {
-    listeners.add(listener);
-    startPolling();
-    return () => {
-      listeners.delete(listener);
-      stopPollingIfIdle();
-    };
+    return taskPolling.subscribe(listener);
+  },
+
+  setHasRunningTasks(value) {
+    taskPolling.setHasRunningTasks(value);
   },
 
   async getCredits() {
@@ -61,19 +44,19 @@ export const articleApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
   async deleteTask(id) {
     const result = await request(`/api/article/tasks/${id}`, { method: "DELETE" });
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
   async toggleFavorite(id) {
     const task = await request(`/api/article/tasks/${id}/favorite`, { method: "POST" });
-    notify();
+    taskPolling.notifyNow();
     return task;
   }
 };

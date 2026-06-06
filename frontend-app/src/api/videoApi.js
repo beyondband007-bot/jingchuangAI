@@ -1,35 +1,16 @@
-﻿import { requestJson as request } from "./request.js";
-const listeners = new Set();
-let pollTimer;
+import { requestJson as request } from "./request.js";
+import { createTaskPollingController } from "./taskPolling.js";
+const taskPolling = createTaskPollingController();
 let modelsPromise;
 let creditsPromise;
 
-function notify() {
-  listeners.forEach((listener) => listener());
-}
-
-function startPolling() {
-  if (pollTimer) return;
-  pollTimer = window.setInterval(() => {
-    notify();
-  }, 3000);
-}
-
-function stopPollingIfIdle() {
-  if (listeners.size === 0 && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-  }
-}
-
 export const videoApi = {
   subscribe(listener) {
-    listeners.add(listener);
-    startPolling();
-    return () => {
-      listeners.delete(listener);
-      stopPollingIfIdle();
-    };
+    return taskPolling.subscribe(listener);
+  },
+
+  setHasRunningTasks(value) {
+    taskPolling.setHasRunningTasks(value);
   },
 
   async getCredits() {
@@ -63,7 +44,7 @@ export const videoApi = {
   calculateRmb({ model, duration, count = 1, models = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
     if (!selectedModel || !selectedModel.rmbPerSecond || !duration) return "";
-    return `约 ¥${(selectedModel.rmbPerSecond * Number(duration) * count).toFixed(1)}`;
+    return `约 ￥${(selectedModel.rmbPerSecond * Number(duration) * count).toFixed(1)}`;
   },
 
   getRandomPrompt() {
@@ -81,19 +62,19 @@ export const videoApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
   async deleteTask(id) {
     const result = await request(`/api/video/tasks/${id}`, { method: "DELETE" });
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
   async toggleFavorite(id) {
     const task = await request(`/api/video/tasks/${id}/favorite`, { method: "POST" });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
@@ -107,7 +88,7 @@ export const videoApi = {
       mode: task.mode || "first-frame",
       count: task.count || 1
     });
-    notify();
+    taskPolling.notifyNow();
     return created;
   }
 };

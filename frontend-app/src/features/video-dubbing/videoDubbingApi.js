@@ -30,6 +30,10 @@ export const videoDubbingApi = {
     return request("/api/video-dub/config");
   },
 
+  async getCredits() {
+    return request("/api/me/credits");
+  },
+
   async uploadVideo(file) {
     const formData = new FormData();
     formData.append("video", file);

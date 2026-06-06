@@ -1,23 +1,7 @@
-﻿import { requestJson as request } from "./request.js";
-const listeners = new Set();
-let pollTimer;
+import { requestJson as request } from "./request.js";
+import { createTaskPollingController } from "./taskPolling.js";
+const taskPolling = createTaskPollingController();
 let modelsPromise;
-
-function notify() {
-  listeners.forEach((listener) => listener());
-}
-
-function startPolling() {
-  if (pollTimer) return;
-  pollTimer = window.setInterval(notify, 3000);
-}
-
-function stopPollingIfIdle() {
-  if (listeners.size === 0 && pollTimer) {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-  }
-}
 
 async function uploadAsset(path, fieldName, file) {
   const formData = new FormData();
@@ -30,12 +14,11 @@ async function uploadAsset(path, fieldName, file) {
 
 export const faceSwapApi = {
   subscribe(listener) {
-    listeners.add(listener);
-    startPolling();
-    return () => {
-      listeners.delete(listener);
-      stopPollingIfIdle();
-    };
+    return taskPolling.subscribe(listener);
+  },
+
+  setHasRunningTasks(value) {
+    taskPolling.setHasRunningTasks(value);
   },
 
   async getCredits() {
@@ -64,19 +47,19 @@ export const faceSwapApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
-    notify();
+    taskPolling.notifyNow();
     return task;
   },
 
   async deleteTask(id) {
     const result = await request(`/api/face-swap/tasks/${id}`, { method: "DELETE" });
-    notify();
+    taskPolling.notifyNow();
     return result;
   },
 
   async toggleFavorite(id) {
     const task = await request(`/api/face-swap/tasks/${id}/favorite`, { method: "POST" });
-    notify();
+    taskPolling.notifyNow();
     return task;
   }
 };
