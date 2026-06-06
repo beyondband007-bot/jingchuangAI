@@ -58,10 +58,10 @@ import { digitalHumanApi } from "./api/digitalHumanApi";
 import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
 import { watermarkApi } from "./api/watermarkApi";
-import { VoiceSynthesisFaceSwapWorkbench } from "./features/voice-synthesis-ui/VoiceSynthesisFaceSwapWorkbench";
-import { VoiceConversionFaceSwapWorkbench } from "./features/voice-conversion-ui/VoiceConversionFaceSwapWorkbench";
+import { VoiceSynthesisView } from "./features/voice-synthesis-ui/VoiceSynthesisView";
+import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
 import { TranscribeView } from "./features/transcribe/TranscribeView";
-import { MusicGenerationFaceSwapWorkbench } from "./features/music-generation-ui/MusicGenerationFaceSwapWorkbench";
+import { MusicGenerationView } from "./features/music/MusicGenerationView";
 import { ReplicateView } from "./features/replicate/ReplicateView";
 import { ChatPromptDialog } from "./features/chat/components/ChatPromptDialog";
 import { PromptSelectField } from "./features/chat/components/PromptSelectField";
@@ -6914,29 +6914,14 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={voiceSynthesisCopy}
-            splitResults
-            WorkbenchComponent={VoiceSynthesisFaceSwapWorkbench}
-            heading="语音合成"
-          />
+          <VoiceSynthesisView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice-convert"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={voiceConversionCopy}
-            splitResults
-            WorkbenchComponent={VoiceConversionFaceSwapWorkbench}
-            heading="音色转换"
-            privacyText="您上传的内容仅用于音色转换处理，不会被用于其他用途。"
-          />
+          <VoiceConvertView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
@@ -6961,14 +6946,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={musicGenerationCopy}
-            splitResults
-            WorkbenchComponent={MusicGenerationFaceSwapWorkbench}
-            heading="AI 音乐生成"
-          />
+          <MusicGenerationView />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"

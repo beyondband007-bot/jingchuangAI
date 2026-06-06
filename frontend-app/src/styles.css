@@ -10524,13 +10524,7 @@ select {
     .coming-soon-icon
   ) {
   color: var(--text-primary);
-  background:
-    radial-gradient(
-      circle at 18% 0%,
-      rgba(122, 44, 255, 0.16),
-      transparent 28%
-    ),
-    var(--app-bg);
+  background:transparent;
   border-color: var(--app-border);
   box-shadow: var(--shadow-dark);
 }
