@@ -21,7 +21,9 @@ export function ImagePromptDialog({
   onQualityChange,
   qualityOptions,
   price,
-  referenceSlot
+  referenceSlot,
+  collapsed = false,
+  dropdownPlacement = "top"
 }) {
   const [isHovering, setIsHovering] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -82,7 +84,9 @@ export function ImagePromptDialog({
   function dropdownMenuStyle(minWidth) {
     return {
       position: "absolute",
-      bottom: "54px",
+      ...(dropdownPlacement === "bottom"
+        ? { top: "54px" }
+        : { bottom: "54px" }),
       left: 0,
       background: "rgba(40, 40, 40, 0.98)",
       borderRadius: "12px",
@@ -120,6 +124,98 @@ export function ImagePromptDialog({
   const currentModel = modelOptions.find(m => m.value === model);
   const currentRatio = ratioOptions.find(r => (r.value || r) === ratio);
   const currentQuality = qualityOptions.find(q => q.value === quality);
+
+  if (collapsed) {
+    return (
+      <div
+        className="chatbot-ui-dialog is-collapsed"
+        aria-label={ariaLabel}
+        style={{
+          ...shellStyle,
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          minHeight: "64px",
+          padding: "8px 10px 8px 12px",
+          borderRadius: "18px"
+        }}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        {onAdd && (
+          <button
+            type="button"
+            onClick={onAdd}
+            style={{ ...buttonBaseStyle, flex: "0 0 44px", width: "44px", padding: 0 }}
+            aria-label="娣诲姞"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round">
+              <line x1="10" y1="4" x2="10" y2="16" />
+              <line x1="4" y1="10" x2="16" y2="10" />
+            </svg>
+          </button>
+        )}
+
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+            window.requestAnimationFrame(resizePromptTextarea);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              if (canSubmit) onSubmit();
+            }
+          }}
+          placeholder={placeholder}
+          rows={1}
+          style={{
+            flex: "1 1 auto",
+            minWidth: 0,
+            width: "100%",
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            resize: "none",
+            color: "#ffffff",
+            fontSize: "16px",
+            fontWeight: "400",
+            lineHeight: `${promptLineHeight}px`,
+            fontFamily: "inherit",
+            minHeight: "28px",
+            maxHeight: `${promptMaxHeight}px`,
+            overflowY: "hidden",
+            padding: 0
+          }}
+        />
+
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          style={{
+            ...buttonBaseStyle,
+            flex: "0 0 auto",
+            width: "auto",
+            minWidth: "96px",
+            background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
+            border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
+            color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
+            cursor: canSubmit ? "pointer" : "not-allowed",
+            opacity: canSubmit ? 1 : 0.6
+          }}
+          aria-label="生成"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+          生成
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -419,12 +515,6 @@ export function ImagePromptDialog({
           </button>
         </div>
       </div>
-
-      {notice && (
-        <div style={{ marginTop: "12px", color: "rgba(255,255,255,0.56)", fontSize: "12px", lineHeight: 1.5 }}>
-          {notice}
-        </div>
-      )}
     </div>
   );
 }

@@ -126,21 +126,6 @@ function UploadCard({
           </span>
         )}
       </button>
-
-      <div className="face-swap-workbench__sample-title">{isPhoto ? "示例照片" : "示例视频"}</div>
-      <div className={`face-swap-workbench__samples ${isPhoto ? "is-photo" : "is-video"}`}>
-        {sampleItems.map((item, index) => (
-          <div className="face-swap-workbench__sample" key={`${type}-${index}`}>
-            <img src={isPhoto ? item : item.img} alt={`${type}-sample-${index + 1}`} />
-            {!isPhoto && (
-              <>
-                <Play className="face-swap-workbench__sample-play" size={16} />
-                <span className="face-swap-workbench__sample-time">{item.time}</span>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
     </section>
   );
 }

@@ -2045,7 +2045,17 @@ function ReferenceImageSlot({ image, isUploading, onRemove }) {
   );
 }
 
-function ComposerBar({ options, onSubmit }) {
+function ComposerBar({
+  options,
+  onSubmit,
+  placement = "sticky",
+  collapsed = false,
+  onFocus,
+  onBlur,
+  seed,
+  resetSignal = 0,
+  shellRef,
+}) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(options.models[0]?.value || "");
   const [ratio, setRatio] = useState(options.ratios[0] || "");
@@ -2054,6 +2064,19 @@ function ComposerBar({ options, onSubmit }) {
   const [isUploadingReference, setIsUploadingReference] = useState(false);
   const [notice, setNotice] = useState("");
   const referenceInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!seed) return;
+    setPrompt(seed.prompt || "");
+    setReferenceImage(seed.referenceImage || null);
+    setNotice(seed.notice || "");
+  }, [seed]);
+
+  useEffect(() => {
+    setPrompt("");
+    setReferenceImage(null);
+    setNotice("");
+  }, [resetSignal]);
 
   useEffect(() => {
     if (!model && options.models[0]) setModel(options.models[0].value);
@@ -2141,7 +2164,13 @@ function ComposerBar({ options, onSubmit }) {
   }
 
   return (
-    <div className="sowa-composer" aria-label="图片生成输入框">
+    <div
+      ref={shellRef}
+      className={`sowa-composer image-composer-shell is-${placement} ${collapsed ? "is-collapsed" : ""}`}
+      aria-label="图片生成输入框"
+      onFocus={onFocus}
+      onBlur={onBlur}
+    >
       <input
         ref={referenceInputRef}
         type="file"
@@ -2173,6 +2202,8 @@ function ComposerBar({ options, onSubmit }) {
         onQualityChange={setQuality}
         qualityOptions={options.qualities}
         price={price}
+        collapsed={collapsed}
+        dropdownPlacement={placement === "inline" ? "bottom" : "top"}
         referenceSlot={
           <ReferenceImageSlot
             image={referenceImage}
@@ -2185,8 +2216,246 @@ function ComposerBar({ options, onSubmit }) {
   );
 }
 
+function ImageGenerationWorkbench({
+  tasks,
+  historyThreads,
+  selectedTask,
+  contextTasks,
+  activeTask,
+  activePrompt,
+  submitError,
+  isSubmitting,
+  options,
+  composerSeed,
+  resetSignal,
+  onSubmit,
+  onSelect,
+  onNewContext,
+  onPreview,
+  onDownload,
+  onReference,
+  onRegenerate,
+}) {
+  const contextRef = useRef(null);
+  const contextTask = activeTask || selectedTask;
+  const threadTasks = contextTasks?.length
+    ? contextTasks
+    : contextTask
+      ? [contextTask]
+      : [];
+  const threadSignature = threadTasks
+    .map((task) => `${task.id}:${task.status}:${task.image || ""}`)
+    .join("|");
+  const hasThreadProcessing = threadTasks.some(
+    (task) => task.status === "pending" || task.status === "processing",
+  );
+  const empty = threadTasks.length === 0 && !activePrompt && !submitError;
+  const scrollContextToLatest = useCallback((behavior = "smooth") => {
+    const context = contextRef.current;
+    if (!context) return;
+    window.requestAnimationFrame(() => {
+      context.scrollTo({
+        top: context.scrollHeight,
+        behavior,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    scrollContextToLatest();
+  }, [
+    activePrompt,
+    empty,
+    isSubmitting,
+    scrollContextToLatest,
+    submitError,
+    threadSignature,
+  ]);
+
+  return (
+    <div className="image-workbench-layout">
+      <main className="image-workbench-main" aria-label="图片生成上下文工作台">
+        <div className="image-workbench-context" ref={contextRef}>
+          {empty && (
+            <div className="image-workbench-empty">
+              <span className="image-workbench-empty-icon">
+                <Sparkles size={24} />
+              </span>
+              <h2>开启新的图片创作</h2>
+              <p>输入想法，或引用历史结果继续延展画面。</p>
+            </div>
+          )}
+
+          {threadTasks.map((task) => {
+            const taskProcessing =
+              task.status === "pending" || task.status === "processing";
+            const taskFailed = task.status === "failed";
+            const taskCompleted = task.status === "completed" && task.image;
+            return (
+              <article className="image-workbench-thread-item" key={task.id}>
+                {task.prompt && (
+                  <div className="image-workbench-prompt">
+                    <p>{task.prompt}</p>
+                  </div>
+                )}
+
+                {taskProcessing && (
+                  <div className="image-workbench-status" role="status" aria-live="polite">
+                    <Loader2 size={24} />
+                    <strong>图片正在生成中</strong>
+                    <p>生成完成后会自动显示在这里。</p>
+                  </div>
+                )}
+
+                {taskFailed && (
+                  <div className="image-workbench-status is-failed" role="status">
+                    <CircleAlert size={24} />
+                    <strong>这次没有生成成功</strong>
+                    <p>{task.error || "图片生成遇到问题，请稍后重试。"}</p>
+                    <button type="button" onClick={() => onRegenerate(task.id)}>
+                      <RefreshCcw size={16} />
+                      重新生成
+                    </button>
+                  </div>
+                )}
+
+                {taskCompleted && (
+                  <div className="image-workbench-result">
+                    <button
+                      className="image-workbench-result-image"
+                      type="button"
+                      onClick={() => onPreview(task)}
+                      aria-label="查看生成图片"
+                    >
+                      <img
+                        src={task.image}
+                        alt={task.prompt}
+                        onLoad={() => scrollContextToLatest("auto")}
+                      />
+                    </button>
+                    <div className="image-workbench-result-meta">
+                      <p>以上内容由 AI 生成，本次消耗 {task.price || "积分"}</p>
+                      <div className="image-workbench-actions">
+                        <a href={task.image} download onClick={() => onDownload?.(task)}>
+                          <Download size={16} />
+                          下载
+                        </a>
+                        <button type="button" onClick={() => onReference(task)}>
+                          <Copy size={16} />
+                          引用
+                        </button>
+                        <button type="button" onClick={() => onRegenerate(task.id)}>
+                          <RefreshCcw size={16} />
+                          重新生成
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+
+          {isSubmitting && activePrompt && !threadTasks.some((task) => task.prompt === activePrompt) && (
+            <div className="image-workbench-prompt">
+              <p>{activePrompt}</p>
+            </div>
+          )}
+
+          {isSubmitting && !hasThreadProcessing && (
+            <div className="image-workbench-status" role="status" aria-live="polite">
+              <Loader2 size={26} />
+              <strong>图片正在生成中</strong>
+              <p>生成完成后会自动显示在这里。</p>
+            </div>
+          )}
+
+          {submitError && !contextTask && (
+            <div className="image-workbench-status is-failed" role="status">
+              <CircleAlert size={26} />
+              <strong>这次没有生成成功</strong>
+              <p>{submitError || "图片生成遇到问题，请稍后重试。"}</p>
+            </div>
+          )}
+        </div>
+
+        {options.models.length > 0 && (
+          <ComposerBar
+            key="image-workbench-composer"
+            options={options}
+            onSubmit={onSubmit}
+            placement="workbench"
+            collapsed={false}
+            seed={composerSeed}
+            resetSignal={resetSignal}
+          />
+        )}
+      </main>
+
+      <aside className="image-workbench-history" aria-label="图片生成历史记录">
+        <div className="image-workbench-history-head">
+          <div>
+            <span>生成</span>
+            <strong>历史记录</strong>
+          </div>
+          <button type="button" onClick={onNewContext}>
+            <Plus size={16} />
+            新创作
+          </button>
+        </div>
+        <div className="image-workbench-history-list">
+          {historyThreads.length ? (
+            historyThreads.map((thread) => {
+              const task = thread.latestTask;
+              const isSelected = thread.ids.includes(contextTask?.id);
+              const isTaskProcessing =
+                task.status === "pending" || task.status === "processing";
+              const isTaskFailed = task.status === "failed";
+              return (
+                <button
+                  className={`image-workbench-history-item ${isSelected ? "is-selected" : ""}`}
+                  key={thread.id}
+                  type="button"
+                  onClick={() => onSelect(thread.id)}
+                >
+                  <span className="image-workbench-history-thumb">
+                    {task.image && !isTaskFailed ? (
+                      <img src={task.image} alt="" />
+                    ) : isTaskProcessing ? (
+                      <Loader2 size={18} />
+                    ) : (
+                      <Image size={18} />
+                    )}
+                  </span>
+                  <span className="image-workbench-history-copy">
+                    <strong>{task.prompt || "未命名图片任务"}</strong>
+                    <small>
+                      {isTaskProcessing
+                        ? "生成中"
+                        : isTaskFailed
+                          ? "生成失败"
+                          : thread.count > 1
+                            ? `${thread.count} 条上下文 · ${task.time || "已完成"}`
+                            : task.time || task.ratio || "已完成"}
+                    </small>
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="image-workbench-history-empty">
+              <span>暂无生成记录</span>
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 const imageGenerationSessionKey = "jingchuang:image-generation-session";
+const imageGenerationThreadsKey = "jingchuang:image-generation-threads";
 
 function readImageGenerationSession() {
   try {
@@ -2214,6 +2483,115 @@ function clearImageGenerationSession() {
   } catch {
     // Ignore storage errors; the in-memory state still drives the current view.
   }
+}
+
+function readImageGenerationThreads() {
+  try {
+    const cached = window.sessionStorage.getItem(imageGenerationThreadsKey);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeImageGenerationThread(ids) {
+  const uniqueIds = [...new Set(ids.filter(Boolean))];
+  if (!uniqueIds.length) return uniqueIds;
+  try {
+    const threads = readImageGenerationThreads();
+    uniqueIds.forEach((id) => {
+      threads[id] = uniqueIds;
+    });
+    window.sessionStorage.setItem(
+      imageGenerationThreadsKey,
+      JSON.stringify(threads),
+    );
+  } catch {
+    // Ignore storage errors; the in-memory state still drives the current view.
+  }
+  return uniqueIds;
+}
+
+function getTaskReferenceUrl(task) {
+  return (
+    task?.referenceImageUrl ||
+    task?.referenceImage?.url ||
+    task?.referenceUrl ||
+    task?.sourceImageUrl ||
+    null
+  );
+}
+
+function resolveImageThreadIds(taskId, tasks) {
+  if (!taskId) return [];
+  const stored = readImageGenerationThreads();
+  const storedIds = Array.isArray(stored[taskId]) ? stored[taskId] : [];
+  const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const imageToId = new Map(
+    tasks.filter((task) => task.image).map((task) => [task.image, task.id]),
+  );
+  const related = new Set(storedIds.filter((id) => taskMap.has(id)));
+  related.add(taskId);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    tasks.forEach((task) => {
+      const referenceUrl = getTaskReferenceUrl(task);
+      const parentId = referenceUrl ? imageToId.get(referenceUrl) : null;
+      if (parentId && related.has(parentId) && !related.has(task.id)) {
+        related.add(task.id);
+        changed = true;
+      }
+      if (parentId && related.has(task.id) && !related.has(parentId)) {
+        related.add(parentId);
+        changed = true;
+      }
+    });
+  }
+
+  const ids = [...related];
+  if (storedIds.length) {
+    const storedOrder = storedIds.filter((id) => related.has(id));
+    ids.forEach((id) => {
+      if (!storedOrder.includes(id)) storedOrder.push(id);
+    });
+    return storedOrder;
+  }
+  return tasks
+    .filter((task) => ids.includes(task.id))
+    .map((task) => task.id)
+    .reverse();
+}
+
+function buildImageHistoryThreads(tasks) {
+  const stored = readImageGenerationThreads();
+  const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const visited = new Set();
+  const threads = [];
+
+  tasks.forEach((task) => {
+    if (visited.has(task.id)) return;
+    const storedIds = Array.isArray(stored[task.id]) ? stored[task.id] : [];
+    const ids = storedIds.length
+      ? storedIds.filter((id) => taskMap.has(id))
+      : resolveImageThreadIds(task.id, tasks);
+    const uniqueIds = [...new Set(ids.length ? ids : [task.id])];
+    uniqueIds.forEach((id) => visited.add(id));
+    const threadTasks = uniqueIds.map((id) => taskMap.get(id)).filter(Boolean);
+    if (!threadTasks.length) return;
+    const latestTask = [...threadTasks]
+      .reverse()
+      .find((item) => item.image || item.status !== "completed") || threadTasks[threadTasks.length - 1];
+    threads.push({
+      id: uniqueIds[uniqueIds.length - 1],
+      ids: uniqueIds,
+      latestTask,
+      count: uniqueIds.length,
+    });
+  });
+
+  return threads;
 }
 
 function ExampleCanvas() {
@@ -2636,7 +3014,12 @@ function HistoryRail({
   );
 }
 
-function ImageGenerationView({ authUser, onOpenAuth }) {
+function ImageGenerationView({
+  authUser,
+  onOpenAuth,
+  isActive = true,
+  resetSignal = 0,
+}) {
   const cachedSessionRef = useRef(null);
   if (!cachedSessionRef.current) {
     cachedSessionRef.current = readImageGenerationSession();
@@ -2655,12 +3038,26 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   const [activePrompt, setActivePrompt] = useState(
     cachedSession.activePrompt || "",
   );
+  const [contextTaskIds, setContextTaskIds] = useState(
+    Array.isArray(cachedSession.contextTaskIds)
+      ? cachedSession.contextTaskIds
+      : cachedSession.selectedTaskId
+        ? [cachedSession.selectedTaskId]
+        : [],
+  );
   const [isSubmitting, setIsSubmitting] = useState(
     Boolean(cachedSession.isSubmitting),
   );
   const [submitError, setSubmitError] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
+  const [composerSeed, setComposerSeed] = useState(null);
+  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(
+    () => window.scrollY > 240,
+  );
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const imageComposerRef = useRef(null);
+  const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
 
   // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
@@ -2710,6 +3107,60 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     };
   }, [filter]);
 
+  useEffect(() => {
+    function syncComposerThreshold() {
+      const pastThreshold = window.scrollY > 240;
+      setIsComposerPastThreshold(pastThreshold);
+      if (pastThreshold) {
+        setIsComposerFocused(false);
+      }
+    }
+
+    syncComposerThreshold();
+    window.addEventListener("scroll", syncComposerThreshold, { passive: true });
+    return () => window.removeEventListener("scroll", syncComposerThreshold);
+  }, []);
+
+  useEffect(() => {
+    setIsComposerFocused(false);
+  }, [filter]);
+
+  useEffect(() => {
+    function handleDocumentPointerDown(event) {
+      const composer = imageComposerRef.current;
+      if (!composer || composer.contains(event.target)) return;
+      setIsComposerFocused(false);
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown, true);
+    return () =>
+      document.removeEventListener(
+        "pointerdown",
+        handleDocumentPointerDown,
+        true,
+      );
+  }, []);
+
+  useEffect(() => {
+    if (isActive && !wasActiveRef.current && filter === "recent") {
+      startNewImageContext();
+    }
+    wasActiveRef.current = isActive;
+  }, [filter, isActive]);
+
+  useEffect(() => {
+    if (filter === "recent") {
+      startNewImageContext();
+      return;
+    }
+    setComposerSeed({
+      id: `reset-${resetSignal}-${Date.now()}`,
+      prompt: "",
+      referenceImage: null,
+      notice: "",
+    });
+  }, [resetSignal]);
+
   const selectedTask = useMemo(
     () => cards.find((card) => card.id === selectedTaskId) || null,
     [cards, selectedTaskId],
@@ -2724,8 +3175,14 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     activeGenerationTask?.status === "pending" ||
     activeGenerationTask?.status === "processing",
   );
-  const hasCompletedNotice = Boolean(
-    !hasActiveGeneration && submittedTask?.status === "completed",
+  const hasCompletedNotice = false;
+  const contextTasks = useMemo(() => {
+    const taskMap = new Map(cards.map((card) => [card.id, card]));
+    return contextTaskIds.map((id) => taskMap.get(id)).filter(Boolean);
+  }, [cards, contextTaskIds]);
+  const historyThreads = useMemo(
+    () => buildImageHistoryThreads(cards),
+    [cards, contextTaskIds],
   );
   const imageExampleCards = useMemo(
     () =>
@@ -2785,6 +3242,11 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
         submittedTask.status === "failed")
     ) {
       setSelectedTaskId(submittedTask.id);
+      setContextTaskIds((ids) =>
+        writeImageGenerationThread(
+          ids.includes(submittedTask.id) ? ids : [...ids, submittedTask.id],
+        ),
+      );
       setIsSubmitting(false);
     }
   }, [submittedTask]);
@@ -2795,7 +3257,13 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
   }, [submittedTask, submittedTaskId]);
 
   useEffect(() => {
-    if (!submittedTaskId && !selectedTaskId && !activePrompt && !isSubmitting) {
+    if (
+      !submittedTaskId &&
+      !selectedTaskId &&
+      !activePrompt &&
+      !isSubmitting &&
+      contextTaskIds.length === 0
+    ) {
       clearImageGenerationSession();
       return;
     }
@@ -2803,11 +3271,12 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     writeImageGenerationSession({
       submittedTaskId,
       selectedTaskId,
+      contextTaskIds,
       activePrompt,
       isSubmitting,
       updatedAt: Date.now(),
     });
-  }, [activePrompt, isSubmitting, selectedTaskId, submittedTaskId]);
+  }, [activePrompt, contextTaskIds, isSubmitting, selectedTaskId, submittedTaskId]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -2826,11 +3295,28 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     submittedTaskId || selectedTaskId || isSubmitting,
   );
   const isGuest = Boolean(authUser?.isGuest);
+  const showComposer = options.models.length > 0 && filter === "inspiration";
+  const isComposerSticky = filter === "recent" || (filter === "inspiration" && isComposerPastThreshold);
+  const isComposerCollapsed = isComposerSticky && !isComposerFocused;
+  const composerPlacement = isComposerSticky ? "sticky" : "inline";
 
   function requestLoginForGeneration() {
     setSubmitError("请先登录");
     setIsSubmitting(false);
     onOpenAuth?.("login");
+  }
+
+  function selectImageThread(id) {
+    const resolvedIds = resolveImageThreadIds(id, cards);
+    const nextIds = writeImageGenerationThread(
+      resolvedIds.length ? resolvedIds : [id],
+    );
+    setSelectedTaskId(id);
+    setContextTaskIds(nextIds);
+    setSubmittedTaskId(null);
+    setActivePrompt("");
+    setIsSubmitting(false);
+    setSubmitError("");
   }
 
   async function createTask(payload) {
@@ -2839,15 +3325,30 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
       return;
     }
 
+    const shouldStartNewThread = filter === "inspiration";
+    const baseThreadIds = shouldStartNewThread
+      ? []
+      : contextTaskIds.length > 0
+        ? contextTaskIds
+        : selectedTaskId
+          ? resolveImageThreadIds(selectedTaskId, cards)
+          : [];
+    const pendingSelectedTaskId = shouldStartNewThread ? null : selectedTaskId;
     setActivePrompt(payload.prompt);
     setSubmitError("");
     setIsSubmitting(true);
-    setSelectedTaskId(null);
+    if (shouldStartNewThread) {
+      setSelectedTaskId(null);
+      setSubmittedTaskId(null);
+      setContextTaskIds([]);
+    }
     setIsHistoryOpen(false);
     setPreviewTask(null);
+    setFilter("recent");
     writeImageGenerationSession({
       submittedTaskId: null,
-      selectedTaskId: null,
+      selectedTaskId: pendingSelectedTaskId,
+      contextTaskIds: baseThreadIds,
       activePrompt: payload.prompt,
       isSubmitting: true,
       updatedAt: Date.now(),
@@ -2861,9 +3362,15 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
         .catch(() => {});
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
+      const nextThreadIds = writeImageGenerationThread([
+        ...baseThreadIds,
+        task.id,
+      ]);
+      setContextTaskIds(nextThreadIds);
       writeImageGenerationSession({
         submittedTaskId: task.id,
         selectedTaskId: task.id,
+        contextTaskIds: nextThreadIds,
         activePrompt: task.prompt || payload.prompt,
         isSubmitting: task.status === "pending" || task.status === "processing",
         updatedAt: Date.now(),
@@ -2881,10 +3388,12 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     await imageApi.deleteTask(id);
     if (selectedTaskId === id) {
       setSelectedTaskId(null);
+      setContextTaskIds((ids) => ids.filter((taskId) => taskId !== id));
     }
     if (submittedTaskId === id) {
       setSubmittedTaskId(null);
       setActivePrompt("");
+      setContextTaskIds((ids) => ids.filter((taskId) => taskId !== id));
       clearImageGenerationSession();
     }
   }
@@ -2900,6 +3409,9 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     }
 
     const source = cards.find((card) => card.id === id);
+    const baseThreadIds = contextTaskIds.includes(id)
+      ? contextTaskIds
+      : resolveImageThreadIds(id, cards);
     if (source) {
       setActivePrompt(source.prompt);
     }
@@ -2910,6 +3422,7 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
     writeImageGenerationSession({
       submittedTaskId: null,
       selectedTaskId: id,
+      contextTaskIds: baseThreadIds,
       activePrompt: source?.prompt || activePrompt,
       isSubmitting: true,
       updatedAt: Date.now(),
@@ -2923,9 +3436,15 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
         .catch(() => {});
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
+      const nextThreadIds = writeImageGenerationThread([
+        ...baseThreadIds,
+        created.id,
+      ]);
+      setContextTaskIds(nextThreadIds);
       writeImageGenerationSession({
         submittedTaskId: created.id,
         selectedTaskId: created.id,
+        contextTaskIds: nextThreadIds,
         activePrompt: created.prompt || source?.prompt || activePrompt,
         isSubmitting:
           created.status === "pending" || created.status === "processing",
@@ -2939,17 +3458,62 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
 
   function revealGeneratedTask(task) {
     if (!task?.image) return;
-    setFilter("all");
+    setFilter("recent");
     setSelectedTaskId(task.id);
+    setContextTaskIds([task.id]);
     setPreviewTask(task);
     setSubmittedTaskId(null);
     setActivePrompt("");
     clearImageGenerationSession();
   }
 
+  function startNewImageContext() {
+    setSelectedTaskId(null);
+    setSubmittedTaskId(null);
+    setContextTaskIds([]);
+    setActivePrompt("");
+    setIsSubmitting(false);
+    setSubmitError("");
+    setPreviewTask(null);
+    setComposerSeed({
+      id: `empty-${Date.now()}`,
+      prompt: "",
+      referenceImage: null,
+      notice: "",
+    });
+    clearImageGenerationSession();
+  }
+
+  function openImageGenerationWorkbench() {
+    startNewImageContext();
+    setFilter("recent");
+  }
+
+  function referenceTask(task) {
+    if (!task?.image) return;
+    setFilter("recent");
+    setSelectedTaskId(task.id);
+    setContextTaskIds((ids) =>
+      writeImageGenerationThread(
+        ids.includes(task.id) ? ids : [...ids, task.id],
+      ),
+    );
+    setComposerSeed({
+      id: `reference-${task.id}-${Date.now()}`,
+      prompt: task.prompt || "",
+      referenceImage: {
+        url: task.image,
+        originalName: "引用结果图",
+        size: 0,
+        mimeType: "image/png",
+      },
+      notice: "已引用该图片作为参考图",
+    });
+  }
+
   return (
     <section
-      className={`image-gen-view video-gen-view-root ${hasCompletedNotice ? "has-completed-notice" : ""}`}
+      className={`image-gen-view video-gen-view-root ${filter === "recent" ? "is-generation-workbench" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
     >
       <div className="image-filter-tabs">
         <button
@@ -2961,18 +3525,11 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           灵感
         </button>
         <button
-          className={filter === "all" ? "selected" : ""}
-          onClick={() => setFilter("all")}
-          type="button"
-        >
-          全部结果
-        </button>
-        <button
           className={filter === "recent" ? "selected" : ""}
-          onClick={() => setFilter("recent")}
+          onClick={openImageGenerationWorkbench}
           type="button"
         >
-          最近生成
+          生成
         </button>
         <button
           className={filter === "favorite" ? "selected" : ""}
@@ -2986,19 +3543,54 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
-      {submitError && <div className="video-submit-error">{submitError}</div>}
-      {hasActiveGeneration && (
+      {submitError && filter !== "recent" && (
+        <div className="video-submit-error">{submitError}</div>
+      )}
+      {hasActiveGeneration && filter !== "recent" && (
         <ImageGeneratingFeedState
           prompt={activeGenerationTask?.prompt || activePrompt}
         />
       )}
-      {hasCompletedNotice && (
+      {hasCompletedNotice && filter !== "recent" && (
         <ImageCompletedNotice
           task={submittedTask}
           onReveal={revealGeneratedTask}
         />
       )}
-      {galleryItems.length ? (
+      {showComposer && (
+        <ComposerBar
+          options={options}
+          onSubmit={createTask}
+          placement={composerPlacement}
+          collapsed={isComposerCollapsed}
+          shellRef={imageComposerRef}
+          onFocus={() => setIsComposerFocused(true)}
+          resetSignal={resetSignal}
+        />
+      )}
+      {filter === "recent" ? (
+        <ImageGenerationWorkbench
+          tasks={cards}
+          historyThreads={historyThreads}
+          selectedTask={selectedTask}
+          contextTasks={contextTasks}
+          activeTask={activeGenerationTask}
+          activePrompt={activePrompt}
+          submitError={submitError}
+          isSubmitting={isSubmitting}
+          options={options}
+          composerSeed={composerSeed}
+          onSubmit={createTask}
+          resetSignal={resetSignal}
+          onSelect={(id) => {
+            selectImageThread(id);
+          }}
+          onNewContext={startNewImageContext}
+          onPreview={(task) => setPreviewTask(task)}
+          onReference={referenceTask}
+          onRegenerate={regenerateTask}
+        />
+      ) : galleryItems.length ? (
         <WaterfallGrid
           className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
           gap={6}
@@ -3022,9 +3614,6 @@ function ImageGenerationView({ authUser, onOpenAuth }) {
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
       ) : null}
-      {options.models.length > 0 && (
-        <ComposerBar options={options} onSubmit={createTask} />
-      )}
       <ImagePreviewLightbox
         task={previewTask}
         onClose={() => setPreviewTask(null)}
@@ -3259,7 +3848,7 @@ function VideoResultCard({
   );
 }
 
-function VideoComposerBar({ options, onSubmit }) {
+function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(options.models[0]?.value || "");
   const modelOptions = getVideoModelOptions(options, model);
@@ -3287,6 +3876,11 @@ function VideoComposerBar({ options, onSubmit }) {
         );
     }
   }, [duration, model, options, ratio]);
+
+  useEffect(() => {
+    setPrompt("");
+    setNotice("");
+  }, [resetSignal]);
 
   const count = 1;
   const price = videoApi.calculatePrice({
@@ -3367,7 +3961,7 @@ function VideoComposerBar({ options, onSubmit }) {
   );
 }
 
-function VideoGenerationView({ authUser, onOpenAuth }) {
+function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
   const [filter, setFilter] = useState("all");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyVideoOptions);
@@ -3481,7 +4075,7 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
 
   return (
-    <section className="image-gen-view video-gen-view-root">
+    <section className="video-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
         <button
           className={filter === "all" ? "selected" : ""}
@@ -3566,8 +4160,12 @@ function VideoGenerationView({ authUser, onOpenAuth }) {
           <div className="empty-results video-empty-results">暂无视频结果</div>
         )}
       </div>
-      {options.models.length > 0 && (
-        <VideoComposerBar options={options} onSubmit={createTask} />
+      {options.models.length > 0 && filter !== "favorite" && (
+        <VideoComposerBar
+          options={options}
+          onSubmit={createTask}
+          resetSignal={resetSignal}
+        />
       )}
     </section>
   );
@@ -7071,6 +7669,10 @@ function ImageFeaturePage({
   const isGuest = Boolean(authUser?.isGuest);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
+  const [composerResetSignals, setComposerResetSignals] = useState({
+    image: 0,
+    video: 0,
+  });
 
   useEffect(() => {
     const next =
@@ -7093,6 +7695,12 @@ function ImageFeaturePage({
         return;
       }
       const nextId = id;
+      if (nextId === "image" || nextId === "video") {
+        setComposerResetSignals((signals) => ({
+          ...signals,
+          [nextId]: signals[nextId] + 1,
+        }));
+      }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
       }
@@ -7137,14 +7745,23 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ImageGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
+          <ImageGenerationView
+            authUser={authUser}
+            isActive={activeNav === "image"}
+            onOpenAuth={onOpenAuth}
+            resetSignal={composerResetSignals.image}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VideoGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
+          <VideoGenerationView
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            resetSignal={composerResetSignals.video}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="chat"
