@@ -2062,21 +2062,30 @@ function ComposerBar({
   const [quality, setQuality] = useState(options.qualities[0]?.value || "");
   const [referenceImage, setReferenceImage] = useState(null);
   const [isUploadingReference, setIsUploadingReference] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
   const referenceInputRef = useRef(null);
+
+  function showToast(message) {
+    setToastMessage(message);
+  }
 
   useEffect(() => {
     if (!seed) return;
     setPrompt(seed.prompt || "");
     setReferenceImage(seed.referenceImage || null);
-    setNotice(seed.notice || "");
   }, [seed]);
 
   useEffect(() => {
     setPrompt("");
     setReferenceImage(null);
-    setNotice("");
+    setToastMessage("");
   }, [resetSignal]);
+
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+    const timer = window.setTimeout(() => setToastMessage(""), 2000);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
 
   useEffect(() => {
     if (!model && options.models[0]) setModel(options.models[0].value);
@@ -2098,12 +2107,10 @@ function ComposerBar({
   function clearPrompt() {
     setPrompt("");
     setReferenceImage(null);
-    setNotice("已清空提示词");
   }
 
   function fillRandomPrompt() {
     setPrompt(imageApi.getRandomPrompt());
-    setNotice("已填入随机提示词");
   }
 
   async function handleReferenceSelect(event) {
@@ -2111,7 +2118,6 @@ function ComposerBar({
     if (!file) return;
 
     setIsUploadingReference(true);
-    setNotice("");
     try {
       const uploaded = await imageApi.uploadReference(file);
       setReferenceImage({
@@ -2121,7 +2127,7 @@ function ComposerBar({
         mimeType: uploaded.mimeType || file.type,
       });
     } catch (error) {
-      setNotice(error.message || "参考图上传失败，请重试");
+      showToast(error.message || "参考图上传失败，请重试");
     } finally {
       setIsUploadingReference(false);
       event.target.value = "";
@@ -2134,19 +2140,18 @@ function ComposerBar({
 
   function removeReferenceImage() {
     setReferenceImage(null);
-    setNotice("");
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice(
+      showToast(
         isUploadingReference ? "参考图上传完成后再生成" : "请先输入图片描述",
       );
       return;
     }
 
     if (referenceImage && model !== "gpt_image_2") {
-      setNotice("当前模型暂不支持参考图，请切换 GPT Image 2");
+      showToast("当前模型暂不支持参考图，请切换 GPT Image 2");
       return;
     }
 
@@ -2158,7 +2163,6 @@ function ComposerBar({
       count,
       referenceImageUrl: referenceImage?.url || null,
     });
-    setNotice("已创建生成任务");
     setPrompt("");
     setReferenceImage(null);
   }
@@ -2184,11 +2188,11 @@ function ComposerBar({
         value={prompt}
         onChange={(value) => {
           setPrompt(value);
-          if (notice) setNotice("");
+          if (toastMessage) setToastMessage("");
         }}
         onSubmit={submitPrompt}
         canSubmit={canSubmit}
-        notice={notice}
+        notice=""
         onAdd={handleAddPrompt}
         onRandom={fillRandomPrompt}
         onClear={clearPrompt}
@@ -2212,6 +2216,11 @@ function ComposerBar({
           />
         }
       />
+      {toastMessage && (
+        <div className="image-composer-toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
@@ -2300,10 +2309,9 @@ function ImageGenerationWorkbench({
                 )}
 
                 {taskProcessing && (
-                  <div className="image-workbench-status" role="status" aria-live="polite">
-                    <Loader2 size={24} />
+                  <div className="image-workbench-status is-processing" role="status" aria-live="polite">
+                    <Loader2 size={18} />
                     <strong>图片正在生成中</strong>
-                    <p>生成完成后会自动显示在这里。</p>
                   </div>
                 )}
 
@@ -2363,10 +2371,9 @@ function ImageGenerationWorkbench({
           )}
 
           {isSubmitting && !hasThreadProcessing && (
-            <div className="image-workbench-status" role="status" aria-live="polite">
-              <Loader2 size={26} />
+            <div className="image-workbench-status is-processing" role="status" aria-live="polite">
+              <Loader2 size={18} />
               <strong>图片正在生成中</strong>
-              <p>生成完成后会自动显示在这里。</p>
             </div>
           )}
 

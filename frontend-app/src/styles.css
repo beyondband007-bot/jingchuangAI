@@ -12530,6 +12530,29 @@ section.image-gen-view .image-composer-shell.is-collapsed {
   min-height: 64px;
 }
 
+.image-composer-toast {
+  position: fixed;
+  left: calc(
+    var(--feature-sidebar-width) +
+      ((100vw - var(--feature-sidebar-width)) / 2)
+  );
+  bottom: 116px;
+  z-index: 160;
+  max-width: min(420px, calc(100vw - var(--feature-sidebar-width) - 48px));
+  padding: 11px 16px;
+  color: #fff;
+  background: rgba(30, 30, 30, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  transform: translateX(-50%);
+  backdrop-filter: blur(18px);
+  animation: chat-floating-notice-in 180ms ease-out;
+}
+
 section.image-gen-view
   .image-composer-shell.is-collapsed
   .chatbot-ui-dialog {
@@ -12666,6 +12689,18 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   text-align: center;
 }
 
+.image-workbench-status.is-processing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px 0;
+  color: var(--text-primary);
+  text-align: left;
+}
+
 .image-workbench-status svg {
   color: var(--brand-secondary);
   animation: spin 1s linear infinite;
@@ -12678,6 +12713,11 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 
 .image-workbench-status strong {
   font-size: 20px;
+}
+
+.image-workbench-status.is-processing strong {
+  font-size: 14px;
+  line-height: 1.2;
 }
 
 .image-workbench-status button,
