@@ -155,10 +155,10 @@
     .page-scroll::-webkit-scrollbar-thumb:hover { background: #9a9a9a; }
     .hero-section {
       --hero-carousel-height: 304px;
-      --hero-card-width: min(32.8%, 486px);
+      --hero-card-width: min(36.5%, 560px);
       --hero-card-height: 236px;
       --hero-card-radius: 18px;
-      --hero-side-offset: min(46.5%, 676px);
+      --hero-side-offset: min(50.5%, 840px);
       --hero-side-scale: 0.972;
       --hero-side-opacity: 0.74;
       --hero-stage-padding: 34px;
@@ -381,8 +381,8 @@
     }
     @media (max-width: 1280px) {
       .hero-section {
-        --hero-card-width: min(35.5%, 468px);
-        --hero-side-offset: min(48%, 590px);
+        --hero-card-width: min(40%, 500px);
+        --hero-side-offset: min(51%, 640px);
       }
     }
     @media (max-width: 960px) {
@@ -398,15 +398,10 @@
     @media (max-width: 640px) {
       .hero-section {
         --hero-carousel-height: 232px;
-        --hero-card-width: calc(100% - 24px);
+        --hero-card-width: min(62%, 320px);
         --hero-card-height: 176px;
+        --hero-side-offset: min(48%, 220px);
         padding: 0 8px;
-      }
-      .hero-carousel-card.is-prev,
-      .hero-carousel-card.is-next {
-        opacity: 0;
-        pointer-events: none;
-        transform: translate3d(-50%, 0, 0) scale(0.94);
       }
       .hero-carousel-arrow {
         width: 28px;
@@ -820,7 +815,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-1.jpg",
+      image: "/assets/home-top/171e02af-05d2-4377-b222-de047a479977.jpg",
       accent: "dark",
       align: "left"
     },
@@ -829,7 +824,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-2.jpg",
+      image: "/assets/home-top/3b5cad20-ed86-4978-a69c-7ae5ce43d96e.jpg",
       accent: "dark",
       align: "center"
     },
@@ -838,7 +833,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-3.jpg",
+      image: "/assets/home-top/84f833fe-2d38-42cb-b5a9-cf31390595ad.jpg",
       accent: "dark",
       align: "left"
     },
@@ -847,7 +842,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-4.jpg",
+      image: "/assets/home-top/d2eab1f3-f2f6-46e8-ae07-96101c708b93.jpg",
       accent: "dark",
       align: "center"
     },
@@ -856,7 +851,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-5.jpg",
+      image: "/assets/home-top/f6b05fb3-8338-4158-8de1-ebd074422417.jpg",
       accent: "dark",
       align: "left"
     },
@@ -865,12 +860,21 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
       subtitle: "",
       eyebrow: "",
       badge: "",
-      image: "/assets/home-top/home-top-6.jpg",
+      image: "/assets/home-top/f8f0825e-db03-4ff1-997f-f8cc2de50f60.jpg",
       accent: "dark",
       align: "left"
-    }
+    },
+    {
+      title: "",
+      subtitle: "",
+      eyebrow: "",
+      badge: "",
+      image: "/assets/home-top/f96bdd61-07cf-4148-bd0d-ec708ec3cf26.jpg",
+      accent: "dark",
+      align: "center"
+    },
   ];
-  var slides = baseSlides.concat(baseSlides, baseSlides);
+  var slides = baseSlides;
 
   var activeIndex = 0;
   var hover = false;
@@ -917,7 +921,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
     var stageWidth = stage.clientWidth || 1200;
     var isMobile = window.innerWidth <= 640;
     var isTablet = window.innerWidth <= 960;
-    var maxVisible = isMobile ? 1 : (isTablet ? 5 : 7);
+    var maxVisible = isMobile ? 3 : 5;
     var levels = Math.max(1, Math.floor(maxVisible / 2));
     var sampleCard = cards[0];
     var cardWidth = sampleCard ? sampleCard.offsetWidth || stageWidth * 0.328 : stageWidth * 0.328;
@@ -931,7 +935,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
     }
     var outerHalf = projectedWidth(levels) / 2;
     var maxCenterOffset = Math.max(0, stageWidth / 2 - outerHalf - edgeInset);
-    var offsetRatios = isTablet ? [0, 0.5, 1] : [0, 0.34, 0.68, 1];
+    var offsetRatios = isMobile ? [0, 0.82] : (isTablet ? [0, 0.58, 1] : [0, 0.52, 1]);
     cards.forEach(function (card, index) {
       var distance = signedDistance(index, activeIndex, slides.length);
       var absDistance = Math.abs(distance);
@@ -1065,5 +1069,3 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
 </script>
 </body>
 </html>
-
-
