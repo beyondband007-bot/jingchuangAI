@@ -3558,15 +3558,20 @@ function ImageGenerationView({
         />
       )}
       {showComposer && (
-        <ComposerBar
-          options={options}
-          onSubmit={createTask}
-          placement={composerPlacement}
-          collapsed={isComposerCollapsed}
-          shellRef={imageComposerRef}
-          onFocus={() => setIsComposerFocused(true)}
-          resetSignal={resetSignal}
-        />
+        <>
+          {!isComposerSticky && (
+            <div className="image-composer-heading">释放你的创作灵感</div>
+          )}
+          <ComposerBar
+            options={options}
+            onSubmit={createTask}
+            placement={composerPlacement}
+            collapsed={isComposerCollapsed}
+            shellRef={imageComposerRef}
+            onFocus={() => setIsComposerFocused(true)}
+            resetSignal={resetSignal}
+          />
+        </>
       )}
       {filter === "recent" ? (
         <ImageGenerationWorkbench
