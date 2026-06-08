@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rive Hover Demo</title>
+  <style>
+    :root {
+      --bg: #252525;
+      --panel: #2d2d2d;
+      --stroke: rgba(255, 255, 255, 0.26);
+      --front-top: #c66fff;
+      --front-mid: #a357f5;
+      --front-bottom: #7a2ed8;
+      --side-top: #595959;
+      --side-bottom: #3a3a3a;
+      --front-glow: rgba(171, 103, 255, 0.5);
+      --icon-glow: rgba(255, 255, 255, 0.92);
+      --timing: 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.035), transparent 26%),
+        linear-gradient(180deg, #222, #1e1e1e);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #fff;
+    }
+
+    .stage {
+      width: min(92vw, 920px);
+      min-height: 620px;
+      padding: 28px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #2b2b2b, #242424);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 22px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .upload-widget {
+      position: relative;
+      width: 520px;
+      height: 430px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      appearance: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .upload-widget svg {
+      overflow: visible;
+      display: block;
+    }
+
+    .card {
+      position: absolute;
+      width: 235px;
+      height: 300px;
+      transition:
+        transform var(--timing),
+        opacity var(--timing),
+        filter var(--timing);
+      will-change: transform, opacity, filter;
+    }
+
+    .card svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .fan-anchor {
+      position: absolute;
+      left: calc(50% + 15px);
+      top: 357px;
+      width: 0;
+      height: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .fan-anchor .card {
+      left: 0;
+      top: 0;
+      transform-origin: 136px 264px;
+    }
+
+    .card--left {
+      opacity: 0;
+      transform: translate(-136px, -264px) rotate(0deg);
+      filter: blur(0.1px);
+      transition-delay: 0ms;
+    }
+
+    .card--right {
+      opacity: 0;
+      transform: translate(-136px, -264px) rotate(0deg);
+      filter: blur(0.1px);
+      transition-delay: 0ms;
+    }
+
+    .card--main {
+      z-index: 3;
+      transform: translateY(22px);
+      transition-delay: 0ms;
+    }
+
+    .upload-widget:hover .card--main,
+    .upload-widget:focus-visible .card--main {
+      transform: translateY(-2px);
+    }
+
+    .upload-widget:hover .card--left,
+    .upload-widget:focus-visible .card--left {
+      opacity: 1;
+      transform: translate(-228px, -264px) rotate(-30deg);
+      transition-delay: 120ms;
+    }
+
+    .upload-widget:hover .card--right,
+    .upload-widget:focus-visible .card--right {
+      opacity: 1;
+      transform: translate(-44px, -264px) rotate(30deg);
+      transition-delay: 120ms;
+    }
+
+    .front-base {
+      opacity: 1;
+      transition: opacity var(--timing);
+    }
+
+    .front-hover {
+      opacity: 0;
+      transition: opacity var(--timing);
+    }
+
+    .file-art {
+      overflow: visible;
+      transition: opacity var(--timing), filter var(--timing), transform var(--timing);
+    }
+
+    .file-art--main-base {
+      opacity: 1;
+    }
+
+    .file-art--main-hover {
+      opacity: 0;
+    }
+
+    .file-art--side {
+      opacity: 0.72;
+      filter: grayscale(0.06) brightness(0.92);
+    }
+
+    .upload-widget:hover .front-base,
+    .upload-widget:focus-visible .front-base {
+      opacity: 0;
+    }
+
+    .upload-widget:hover .front-hover,
+    .upload-widget:focus-visible .front-hover {
+      opacity: 1;
+    }
+
+    .upload-widget:hover .file-art--main-base,
+    .upload-widget:focus-visible .file-art--main-base {
+      opacity: 0;
+    }
+
+    .upload-widget:hover .file-art--main-hover,
+    .upload-widget:focus-visible .file-art--main-hover {
+      opacity: 1;
+    }
+
+    @media (max-width: 640px) {
+      .stage {
+        min-height: 100vh;
+        width: 100vw;
+        padding: 12px;
+      }
+
+      .upload-widget {
+        width: 340px;
+        height: 320px;
+        transform: scale(0.74);
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+      <symbol id="upload-file-full" viewBox="0 0 58 74">
+        <linearGradient id="uploadDocBg" gradientUnits="userSpaceOnUse" x1="29" y1="73" x2="29" y2="1">
+          <stop offset="0" stop-color="#737373" />
+          <stop offset="1" stop-color="#404040" />
+        </linearGradient>
+        <linearGradient id="uploadDocBgHover" gradientUnits="userSpaceOnUse" x1="29" y1="73" x2="29" y2="1">
+          <stop offset="0" stop-color="#5A2CFC" />
+          <stop offset="1" stop-color="#AD6CFC" />
+        </linearGradient>
+        <linearGradient id="uploadDocInner" gradientUnits="userSpaceOnUse" x1="29" y1="24.36" x2="29" y2="48.9489">
+          <stop offset="0" stop-color="#FFFFFF" />
+          <stop offset="1" stop-color="#BDBDBD" />
+        </linearGradient>
+        <linearGradient id="uploadDocInnerHover" gradientUnits="userSpaceOnUse" x1="29" y1="24.36" x2="29" y2="48.9489">
+          <stop offset="0" stop-color="#FFFFFF" />
+          <stop offset="1" stop-color="#FFFFFF" />
+        </linearGradient>
+        <linearGradient id="uploadDocStroke" gradientUnits="userSpaceOnUse" x1="53.6318" y1="74.8505" x2="-0.1524" y2="3.9444">
+          <stop offset="0" stop-color="#B3B3B3" />
+          <stop offset="1" stop-color="#CCCCCC" />
+        </linearGradient>
+        <linearGradient id="uploadDocStrokeHover" gradientUnits="userSpaceOnUse" x1="53.6318" y1="74.8505" x2="-0.1524" y2="3.9444">
+          <stop offset="0" stop-color="#522F95" />
+          <stop offset="1" stop-color="#E1ABFF" />
+        </linearGradient>
+        <clipPath id="uploadDocBgClip">
+          <path d="M41,1H9C4.6,1,1,4.6,1,9v56c0,4.4,3.6,8,8,8h40c4.4,0,8-3.6,8-8V17L41,1z" />
+        </clipPath>
+        <filter id="uploadDocInnerEffect" x="-20%" y="-20%" width="140%" height="150%">
+          <feDropShadow dx="0" dy="1" stdDeviation="0.6" flood-color="rgba(38, 18, 74, 0.55)" />
+          <feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="rgba(255, 255, 255, 0.98)" />
+        </filter>
+        <filter id="uploadDocInsetStrokeBlur" x="-20%" y="-20%" width="140%" height="150%">
+          <feGaussianBlur stdDeviation="1.4" />
+        </filter>
+        <filter id="uploadDocBottomGlowBlur" x="-30%" y="-30%" width="160%" height="180%">
+          <feGaussianBlur stdDeviation="2.8" />
+        </filter>
+        <path fill="url(#uploadDocBg)" d="M41,1H9C4.6,1,1,4.6,1,9v56c0,4.4,3.6,8,8,8h40c4.4,0,8-3.6,8-8V17L41,1z" />
+        <g clip-path="url(#uploadDocBgClip)">
+          <ellipse
+            cx="29"
+            cy="73.5"
+            rx="25"
+            ry="6"
+            fill="#FFFFFF"
+            fill-opacity="0.24"
+            filter="url(#uploadDocBottomGlowBlur)"
+          />
+        </g>
+        <path fill="url(#uploadDocInner)" d="M40.3,28.1h-2.4v-2.4c0-0.7-0.5-1.2-1.2-1.2s-1.2,0.5-1.2,1.2v2.4h-2.4
+          c-0.7,0-1.2,0.5-1.2,1.2s0.5,1.2,1.2,1.2h2.4v2.4c0,0.7,0.5,1.2,1.2,1.2s1.2-0.5,1.2-1.2v-2.4h2.4c0.7,0,1.2-0.5,1.2-1.2
+          S41,28.1,40.3,28.1z M39.1,35.8c-0.7,0-1.2,0.5-1.2,1.2v1.3l-1.6-1.6c-1.4-1.4-3.7-1.4-5.1,0L20.8,47.1h-0.7
+          c-0.7,0-1.2-0.5-1.2-1.2V29.3c0-0.7,0.5-1.2,1.2-1.2H29c0.7,0,1.2-0.5,1.2-1.2c0-0.7-0.5-1.2-1.2-1.2h-8.9c-2,0-3.6,1.6-3.6,3.6
+          v16.7c0,2,1.6,3.6,3.6,3.6h16.7c2,0,3.6-1.6,3.6-3.6v-4.8c0,0,0,0,0,0V37C40.3,36.3,39.8,35.8,39.1,35.8z M37.9,45.9
+          c0,0.7-0.5,1.2-1.2,1.2H24.1l8.8-8.8c0.5-0.5,1.2-0.5,1.7,0l3.3,3.3V45.9z M21.3,34c0,2,1.6,3.6,3.6,3.6s3.6-1.6,3.6-3.6
+          s-1.6-3.6-3.6-3.6S21.3,32.1,21.3,34z M26,34c0,0.7-0.5,1.2-1.2,1.2c-0.7,0-1.2-0.5-1.2-1.2s0.5-1.2,1.2-1.2C25.5,32.8,26,33.4,26,34z" />
+        <path fill="url(#uploadDocStroke)" d="M41.9,0.5C41.6,0.2,41.1,0,40.7,0H40H9C4,0,0,4,0,9v56c0,5,4,9,9,9h40c5,0,9-4,9-9V18v-0.7
+          c0-0.5-0.2-0.9-0.5-1.3L41.9,0.5z M57,17H47c-3.3,0-6-2.7-6-6V1L57,17z M57,65c0,4.4-3.6,8-8,8H9c-4.4,0-8-3.6-8-8V9
+          c0-4.4,3.6-8,8-8h31v10c0,3.9,3.1,7,7,7h10V65z" />
+      </symbol>
+      <symbol id="upload-file-full-hover" viewBox="0 0 58 74">
+        <g clip-path="url(#uploadDocBgClip)">
+          <path fill="url(#uploadDocBgHover)" d="M41,1H9C4.6,1,1,4.6,1,9v56c0,4.4,3.6,8,8,8h40c4.4,0,8-3.6,8-8V17L41,1z" />
+          <ellipse
+            cx="29"
+            cy="73.5"
+            rx="25"
+            ry="6"
+            fill="#FFFFFF"
+            fill-opacity="0.42"
+            filter="url(#uploadDocBottomGlowBlur)"
+          />
+          <path
+            d="M41,1H9C4.6,1,1,4.6,1,9v56c0,4.4,3.6,8,8,8h40c4.4,0,8-3.6,8-8V17L41,1z"
+            fill="none"
+            stroke="#000000"
+            stroke-opacity="0.32"
+            stroke-width="3"
+            filter="url(#uploadDocInsetStrokeBlur)"
+          />
+        </g>
+        <path fill="url(#uploadDocBgHover)" d="M41,1V11c0,3.3,2.7,6,6,6h10L41,1z" />
+        <path filter="url(#uploadDocInnerEffect)" fill="url(#uploadDocInnerHover)" d="M40.3,28.1h-2.4v-2.4c0-0.7-0.5-1.2-1.2-1.2s-1.2,0.5-1.2,1.2v2.4h-2.4
+          c-0.7,0-1.2,0.5-1.2,1.2s0.5,1.2,1.2,1.2h2.4v2.4c0,0.7,0.5,1.2,1.2,1.2s1.2-0.5,1.2-1.2v-2.4h2.4c0.7,0,1.2-0.5,1.2-1.2
+          S41,28.1,40.3,28.1z M39.1,35.8c-0.7,0-1.2,0.5-1.2,1.2v1.3l-1.6-1.6c-1.4-1.4-3.7-1.4-5.1,0L20.8,47.1h-0.7
+          c-0.7,0-1.2-0.5-1.2-1.2V29.3c0-0.7,0.5-1.2,1.2-1.2H29c0.7,0,1.2-0.5,1.2-1.2c0-0.7-0.5-1.2-1.2-1.2h-8.9c-2,0-3.6,1.6-3.6,3.6
+          v16.7c0,2,1.6,3.6,3.6,3.6h16.7c2,0,3.6-1.6,3.6-3.6v-4.8c0,0,0,0,0,0V37C40.3,36.3,39.8,35.8,39.1,35.8z M37.9,45.9
+          c0,0.7-0.5,1.2-1.2,1.2H24.1l8.8-8.8c0.5-0.5,1.2-0.5,1.7,0l3.3,3.3V45.9z M21.3,34c0,2,1.6,3.6,3.6,3.6s3.6-1.6,3.6-3.6
+          s-1.6-3.6-3.6-3.6S21.3,32.1,21.3,34z M26,34c0,0.7-0.5,1.2-1.2,1.2c-0.7,0-1.2-0.5-1.2-1.2s0.5-1.2,1.2-1.2C25.5,32.8,26,33.4,26,34z" />
+        <path fill="url(#uploadDocStrokeHover)" d="M41.9,0.5C41.6,0.2,41.1,0,40.7,0H40H9C4,0,0,4,0,9v56c0,5,4,9,9,9h40c5,0,9-4,9-9V18v-0.7
+          c0-0.5-0.2-0.9-0.5-1.3L41.9,0.5z M57,17H47c-3.3,0-6-2.7-6-6V1L57,17z M57,65c0,4.4-3.6,8-8,8H9c-4.4,0-8-3.6-8-8V9
+          c0-4.4,3.6-8,8-8h31v10c0,3.9,3.1,7,7,7h10V65z" />
+      </symbol>
+    </defs>
+  </svg>
+  <div class="stage">
+    <button class="upload-widget" aria-label="Upload hover animation demo">
+      <div class="fan-anchor" aria-hidden="true">
+        <div class="card card--left">
+          <svg viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sideGradLeft" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#5b5b5b" />
+                <stop offset="100%" stop-color="#3b3b3b" />
+              </linearGradient>
+              <radialGradient id="sideGlowLeft" cx="50%" cy="52%" r="56%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.16)" />
+                <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+              </radialGradient>
+              <filter id="shadowLeft" x="-30%" y="-30%" width="160%" height="180%">
+                <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.34" />
+              </filter>
+            </defs>
+
+            <g filter="url(#shadowLeft)">
+              <svg class="file-art file-art--side" x="34" y="8" width="186" height="238" viewBox="0 0 58 74" aria-hidden="true">
+                <use href="#upload-file-full" />
+              </svg>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="fan-anchor" aria-hidden="true">
+        <div class="card card--right">
+          <svg viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sideGradRight" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#555555" />
+                <stop offset="100%" stop-color="#373737" />
+              </linearGradient>
+              <radialGradient id="sideGlowRight" cx="50%" cy="52%" r="56%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.14)" />
+                <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+              </radialGradient>
+              <filter id="shadowRight" x="-30%" y="-30%" width="160%" height="180%">
+                <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000" flood-opacity="0.34" />
+              </filter>
+            </defs>
+
+            <g filter="url(#shadowRight)">
+              <svg class="file-art file-art--side" x="34" y="8" width="186" height="238" viewBox="0 0 58 74" aria-hidden="true">
+                <use href="#upload-file-full" />
+              </svg>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card card--main">
+        <svg viewBox="0 0 220 280" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="frontGray" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5d5d5d" />
+              <stop offset="55%" stop-color="#4b4b4b" />
+              <stop offset="100%" stop-color="#888888" />
+            </linearGradient>
+            <linearGradient id="frontPurple" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#cb79ff" />
+              <stop offset="52%" stop-color="#9a4cf1" />
+              <stop offset="100%" stop-color="#7b2ddd" />
+            </linearGradient>
+            <radialGradient id="innerGrayGlow" cx="50%" cy="54%" r="56%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.30)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+            </radialGradient>
+            <radialGradient id="innerPurpleGlow" cx="50%" cy="54%" r="56%">
+              <stop offset="0%" stop-color="rgba(255,255,255,0.24)" />
+              <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+            </radialGradient>
+            <filter id="frontShadow" x="-35%" y="-35%" width="170%" height="200%">
+              <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#000" flood-opacity="0.35" />
+            </filter>
+            <filter id="purpleGlow" x="-50%" y="-50%" width="200%" height="220%">
+              <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#bb72ff" flood-opacity="0.55" />
+              <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#3d105f" flood-opacity="0.55" />
+            </filter>
+          </defs>
+
+          <svg class="file-art file-art--main-base" x="28" y="6" width="192" height="246" viewBox="0 0 58 74" aria-hidden="true">
+            <use href="#upload-file-full" />
+          </svg>
+
+          <svg class="file-art file-art--main-hover" x="28" y="6" width="192" height="246" viewBox="0 0 58 74" aria-hidden="true">
+            <use href="#upload-file-full-hover" />
+          </svg>
+        </svg>
+      </div>
+    </button>
+  </div>
+</body>
+</html>
