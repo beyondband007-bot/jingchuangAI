@@ -318,7 +318,7 @@ const exampleImages = caseImageFiles.map((file, index) => {
   const metadata = imageInspirationPrompts[file] || {};
   return {
     file,
-    src: `/重构/案例/${encodeURIComponent(file)}`,
+    src: `/refactor/cases/${encodeURIComponent(file)}`,
     label: `案例 ${String(index + 1).padStart(2, "0")}`,
     prompt: metadata.prompt || `案例 ${String(index + 1).padStart(2, "0")}`,
     description: metadata.description || "",
@@ -1270,7 +1270,7 @@ const AppHome = memo(function AppHome({
             ref={frameRef}
             className="original-home-frame"
             title="Facemini.com ??"
-            src="/重构/index.html"
+            src="/refactor/index.html"
             onLoad={handleFrameLoad}
           />
         </div>
@@ -1484,6 +1484,27 @@ function ComingSoon({ activeNav }) {
 }
 
 const rechargePresets = [1, 10, 30, 50, 100, 200];
+const paymentCodeTtlSeconds = 3 * 60;
+const paymentProviderOptions = [
+  { value: "alipay", label: "支付宝支付" },
+  { value: "wechat", label: "微信支付" },
+];
+
+function paymentProviderText(provider) {
+  return paymentProviderOptions.find((item) => item.value === provider)?.label || "支付宝支付";
+}
+
+function paymentProviderOrderTitle(provider) {
+  return provider === "wechat" ? "微信订单码" : "支付宝订单码";
+}
+
+function formatPaymentCountdown(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
 const finalPaymentStatuses = new Set([
   "PAID",
   "CLOSED",
@@ -1516,6 +1537,8 @@ const txTypeMap = {
   recharge: { label: "充值到账", color: "#16a34a" },
 };
 
+const transactionsPageSize = 20;
+
 function AssetsPage({ authUser, onOpenAuth }) {
   const isGuest = Boolean(authUser?.isGuest);
   const [credits, setCredits] = useState(null);
@@ -1523,13 +1546,33 @@ function AssetsPage({ authUser, onOpenAuth }) {
   const [transactions, setTransactions] = useState([]);
   const [amount, setAmount] = useState(1);
   const [activePreset, setActivePreset] = useState(1);
+  const [paymentProvider, setPaymentProvider] = useState("alipay");
   const [activeTab, setActiveTab] = useState("recharge");
+  const [transactionsPage, setTransactionsPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [paymentDialog, setPaymentDialog] = useState(null);
+  const [paymentCountdown, setPaymentCountdown] = useState(paymentCodeTtlSeconds);
 
   const points = Math.max(1, Number(amount) || 1) * 100;
+  const recentRechargeOrders = useMemo(() => {
+    const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return orders
+      .filter((order) => {
+        const createdAt = new Date(order.createdAt).getTime();
+        return Number.isFinite(createdAt) && createdAt >= oneMonthAgo;
+      })
+      .slice(0, 10);
+  }, [orders]);
+  const transactionsTotalPages = Math.max(
+    1,
+    Math.ceil(transactions.length / transactionsPageSize),
+  );
+  const visibleTransactions = useMemo(() => {
+    const start = (transactionsPage - 1) * transactionsPageSize;
+    return transactions.slice(start, start + transactionsPageSize);
+  }, [transactions, transactionsPage]);
 
   const refreshAssets = useCallback(async () => {
     if (isGuest) return;
@@ -1554,6 +1597,10 @@ function AssetsPage({ authUser, onOpenAuth }) {
   useEffect(() => {
     refreshAssets();
   }, [refreshAssets]);
+
+  useEffect(() => {
+    setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
+  }, [transactionsTotalPages]);
 
   useEffect(() => {
     if (!paymentDialog || finalPaymentStatuses.has(paymentDialog.order?.status))
@@ -1589,6 +1636,20 @@ function AssetsPage({ authUser, onOpenAuth }) {
     };
   }, [paymentDialog, refreshAssets]);
 
+  useEffect(() => {
+    if (!paymentDialog || finalPaymentStatuses.has(paymentDialog.order?.status)) return undefined;
+    setPaymentCountdown(paymentCodeTtlSeconds);
+    const openedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const nextSeconds = Math.max(0, paymentCodeTtlSeconds - Math.floor((Date.now() - openedAt) / 1000));
+      setPaymentCountdown(nextSeconds);
+      if (nextSeconds <= 0) {
+        window.clearInterval(timer);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [paymentDialog?.order?.outTradeNo, paymentDialog?.order?.status]);
+
   function selectPreset(value) {
     setActivePreset(value);
     setAmount(value);
@@ -1608,7 +1669,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
     setIsCreating(true);
     setError("");
     try {
-      const created = await paymentApi.createOrder(Number(amount));
+      const created = await paymentApi.createOrder(Number(amount), paymentProvider);
       const qrState = await paymentApi.getQrCode(
         created.order.outTradeNo,
         created.orderToken,
@@ -1617,6 +1678,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
         order: qrState.order,
         orderToken: created.orderToken,
         qrCodeDataUrl: qrState.qrCodeDataUrl,
+        provider: qrState.order?.provider || paymentProvider,
         error: "",
       });
       await refreshAssets();
@@ -1632,7 +1694,6 @@ function AssetsPage({ authUser, onOpenAuth }) {
       <header className="assets-toolbar">
         <div>
           <h1>我的资产</h1>
-          <p>管理您的积分余额、充值和交易记录</p>
         </div>
         <button
           className="assets-icon-button"
@@ -1667,26 +1728,9 @@ function AssetsPage({ authUser, onOpenAuth }) {
                 <Wallet size={18} />
                 立即充值
               </button>
-            </div>
-          </div>
-
-          <div className="assets-tabs-wrapper">
-            <div className="assets-tabs">
-              <button
-                className={`assets-tab ${activeTab === "recharge" ? "is-active" : ""}`}
-                type="button"
-                onClick={() => setActiveTab("recharge")}
-              >
-                <Wallet size={16} />
-                充值中心
-              </button>
-              <button
-                className={`assets-tab ${activeTab === "transactions" ? "is-active" : ""}`}
-                type="button"
-                onClick={() => setActiveTab("transactions")}
-              >
-                <History size={16} />
-                交易记录
+              <button type="button" onClick={() => setActiveTab("transactions")}>
+                <History size={18} />
+                收支记录
               </button>
             </div>
           </div>
@@ -1695,7 +1739,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
             <div className="assets-recharge-panel">
               <div className="assets-section-title">
                 <Wallet size={18} />
-                <strong>支付宝充值</strong>
+                <strong>在线充值</strong>
               </div>
               <div className="assets-presets">
                 {rechargePresets.map((value) => (
@@ -1721,6 +1765,22 @@ function AssetsPage({ authUser, onOpenAuth }) {
                 />
                 <em>{points} 积分</em>
               </label>
+              <div className="assets-payment-method-row">
+                <span>支付方式</span>
+                <div className="assets-payment-methods" aria-label="选择支付方式">
+                  {paymentProviderOptions.map((option) => (
+                    <button
+                      className={paymentProvider === option.value ? "is-active" : ""}
+                      key={option.value}
+                      type="button"
+                      onClick={() => setPaymentProvider(option.value)}
+                    >
+                      <Wallet size={16} />
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               {error && <div className="assets-error">{error}</div>}
               <button
                 className="assets-primary-action"
@@ -1733,7 +1793,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
                 ) : (
                   <Wallet size={18} />
                 )}
-                <span>生成支付宝付款码</span>
+                <span>立即支付</span>
               </button>
 
               <div className="assets-orders-section">
@@ -1742,15 +1802,15 @@ function AssetsPage({ authUser, onOpenAuth }) {
                   <strong>近期充值订单</strong>
                 </div>
                 <div className="assets-order-list">
-                  {orders.length ? (
-                    orders.map((order) => (
+                  {recentRechargeOrders.length ? (
+                    recentRechargeOrders.map((order) => (
                       <div
                         className={`assets-order-row status-${order.status}`}
                         key={order.outTradeNo}
                       >
                         <div>
                           <strong>{order.totalAmount} 元</strong>
-                          <span>{order.outTradeNo}</span>
+                          <span>{paymentProviderText(order.provider)} · {order.outTradeNo}</span>
                         </div>
                         <div>
                           <strong>{order.points} 积分</strong>
@@ -1759,7 +1819,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
                       </div>
                     ))
                   ) : (
-                    <div className="assets-empty-state">暂无充值订单</div>
+                    <div className="assets-empty-state">近一个月暂无充值订单</div>
                   )}
                 </div>
               </div>
@@ -1770,51 +1830,74 @@ function AssetsPage({ authUser, onOpenAuth }) {
             <div className="assets-transactions-panel">
               <div className="assets-section-title">
                 <History size={18} />
-                <strong>积分交易记录</strong>
+                <strong>收支记录</strong>
               </div>
               {transactions.length ? (
-                <div className="assets-transactions-table">
-                  <div className="assets-transactions-header">
-                    <span>时间</span>
-                    <span>类型</span>
-                    <span>变动</span>
-                    <span>余额</span>
-                    <span>备注</span>
+                <>
+                  <div className="assets-transactions-table">
+                    <div className="assets-transactions-header">
+                      <span>时间</span>
+                      <span>类型</span>
+                      <span>变动</span>
+                      <span>余额</span>
+                      <span>备注</span>
+                    </div>
+                    {visibleTransactions.map((tx) => {
+                      const typeInfo = txTypeMap[tx.type] || {
+                        label: tx.type,
+                        color: "#64748b",
+                      };
+                      const isIncome =
+                        tx.type === "recharge" ||
+                        tx.type === "refund" ||
+                        tx.type === "grant";
+                      return (
+                        <div className="assets-transaction-row" key={tx.id}>
+                          <span>
+                            {new Date(tx.createdAt).toLocaleString("zh-CN")}
+                          </span>
+                          <span style={{ color: typeInfo.color }}>
+                            {typeInfo.label}
+                          </span>
+                          <span
+                            style={{
+                              color: isIncome ? "#16a34a" : "#dc2626",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {isIncome ? "+" : ""}
+                            {tx.amount}
+                          </span>
+                          <span>{tx.balanceAfter}</span>
+                          <span title={tx.memo}>{tx.memo || "-"}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {transactions.map((tx) => {
-                    const typeInfo = txTypeMap[tx.type] || {
-                      label: tx.type,
-                      color: "#64748b",
-                    };
-                    const isIncome =
-                      tx.type === "recharge" ||
-                      tx.type === "refund" ||
-                      tx.type === "grant";
-                    return (
-                      <div className="assets-transaction-row" key={tx.id}>
-                        <span>
-                          {new Date(tx.createdAt).toLocaleString("zh-CN")}
-                        </span>
-                        <span style={{ color: typeInfo.color }}>
-                          {typeInfo.label}
-                        </span>
-                        <span
-                          style={{
-                            color: isIncome ? "#16a34a" : "#dc2626",
-                            fontWeight: 700,
-                          }}
-                        >
-                          {isIncome ? "+" : ""}
-                          {tx.amount}
-                        </span>
-                        <span>{tx.balanceAfter}</span>
-                        <span title={tx.memo}>{tx.memo || "-"}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                  <div className="assets-pagination">
+                    <span>
+                      第 {transactionsPage} / {transactionsTotalPages} 页
+                    </span>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                        disabled={transactionsPage <= 1}
+                      >
+                        上一页
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTransactionsPage((page) => Math.min(transactionsTotalPages, page + 1))}
+                        disabled={transactionsPage >= transactionsTotalPages}
+                      >
+                        下一页
+                      </button>
+                    </div>
+                  </div>
+                </>
               ) : (
-                <div className="assets-empty-state">暂无交易记录</div>
+                <div className="assets-empty-state">暂无收支记录</div>
               )}
             </div>
           )}
@@ -1826,7 +1909,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
           className="assets-payment-backdrop"
           role="dialog"
           aria-modal="true"
-          aria-label="支付宝付款码"
+          aria-label={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}二维码`}
         >
           <div className="assets-payment-dialog">
             <button
@@ -1837,32 +1920,32 @@ function AssetsPage({ authUser, onOpenAuth }) {
             >
               <X size={18} />
             </button>
-            <div className="assets-section-title">
-              {paymentDialog.order?.status === "PAID" ? (
-                <CheckCircle2 size={20} />
-              ) : (
-                <Wallet size={20} />
-              )}
+            <div className="assets-payment-dialog-head">
+              <span>{paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}</span>
               <strong>
                 {paymentDialog.order?.status === "PAID"
                   ? "充值成功"
-                  : "支付宝扫码支付"}
+                  : paymentProviderOrderTitle(paymentDialog.order?.provider || paymentDialog.provider)}
               </strong>
             </div>
             <div className="assets-qr-box">
               {paymentDialog.qrCodeDataUrl ? (
-                <img src={paymentDialog.qrCodeDataUrl} alt="支付宝充值二维码" />
+                <img src={paymentDialog.qrCodeDataUrl} alt={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}充值二维码`} />
               ) : (
                 <Loader2 size={28} className="is-spinning" />
               )}
             </div>
-            <div className="assets-dialog-meta">
-              <span>订单 {paymentDialog.order?.outTradeNo}</span>
-              <strong>
-                {paymentDialog.order?.totalAmount} 元 /{" "}
-                {paymentDialog.order?.points} 积分
-              </strong>
-              <em>{paymentStatusText(paymentDialog.order?.status)}</em>
+            <div className="assets-dialog-meta-card">
+              <span>订单号</span>
+              <strong>{paymentDialog.order?.outTradeNo}</strong>
+              <span>支付金额</span>
+              <em>¥ {Number(paymentDialog.order?.totalAmount || 0).toFixed(0)}</em>
+              <span>到账积分</span>
+              <strong>{Number(paymentDialog.order?.points || 0).toLocaleString("zh-CN")} 积分</strong>
+            </div>
+            <div className="assets-dialog-countdown">
+              <span>订单码有效期</span>
+              <strong>{formatPaymentCountdown(paymentCountdown)}</strong>
             </div>
             {paymentDialog.error && (
               <div className="assets-error">{paymentDialog.error}</div>

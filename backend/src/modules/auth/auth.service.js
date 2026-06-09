@@ -109,7 +109,7 @@ async function grantInitialCredits(userId, connection) {
   ]);
   await connection.query(
     `INSERT INTO credit_transactions (user_id, type, amount, balance_after, memo)
-     VALUES (?, 'grant', ?, ?, 'register initial credits')`,
+     VALUES (?, 'grant', ?, ?, '\u6ce8\u518c\u8d60\u9001\u79ef\u5206')`,
     [userId, REGISTER_GRANT_POINTS, REGISTER_GRANT_POINTS]
   );
 }

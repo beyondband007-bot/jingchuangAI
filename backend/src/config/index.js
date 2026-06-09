@@ -1,6 +1,24 @@
 import dotenv from "dotenv";
+import path from "path";
 
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), "..", ".env") });
+
+const projectRoot = path.resolve(process.cwd(), "..");
+
+function resolveProjectPath(value) {
+  const filePath = String(value || "").trim();
+  if (!filePath) return "";
+  return path.isAbsolute(filePath) ? filePath : path.resolve(projectRoot, filePath);
+}
+
+const publicBaseUrl = (
+  process.env.ALIPAY_PUBLIC_BASE_URL ||
+  process.env.PUBLIC_BASE_URL ||
+  process.env.MIDDLE_PLATFORM_PUBLIC_BASE_URL ||
+  process.env.WF_003_CALLBACK_BASE_URL ||
+  ""
+).replace(/\/+$/, "");
 
 export const config = {
   port: Number(process.env.PORT || 3006),
@@ -86,9 +104,20 @@ export const config = {
     env: process.env.ALIPAY_ENV || "sandbox",
     appId: process.env.ALIPAY_APP_ID || "",
     sellerId: process.env.ALIPAY_SELLER_ID || "",
-    privateKeyPath: process.env.ALIPAY_PRIVATE_KEY_PATH || "",
-    publicKeyPath: process.env.ALIPAY_PUBLIC_KEY_PATH || "",
-    publicBaseUrl: (process.env.ALIPAY_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || "").replace(/\/+$/, "")
+    privateKeyPath: resolveProjectPath(process.env.ALIPAY_PRIVATE_KEY_PATH),
+    publicKeyPath: resolveProjectPath(process.env.ALIPAY_PUBLIC_KEY_PATH),
+    publicBaseUrl
+  },
+  wechatPay: {
+    appId: process.env.WECHAT_PAY_APP_ID || "",
+    mchId: process.env.WECHAT_PAY_MCH_ID || "",
+    merchantSerialNo: process.env.WECHAT_PAY_MERCHANT_SERIAL_NO || "",
+    apiV3Key: process.env.WECHAT_PAY_API_V3_KEY || "",
+    apiV3KeyPath: resolveProjectPath(process.env.WECHAT_PAY_API_V3_KEY_PATH),
+    privateKeyPath: resolveProjectPath(process.env.WECHAT_PAY_PRIVATE_KEY_PATH),
+    platformPublicKeyPath: resolveProjectPath(process.env.WECHAT_PAY_PLATFORM_PUBLIC_KEY_PATH),
+    notifyUrl: process.env.WECHAT_PAY_NOTIFY_URL || (publicBaseUrl ? `${publicBaseUrl}/api/payment/wechatpay/notify` : ""),
+    apiBaseUrl: (process.env.WECHAT_PAY_API_BASE_URL || "https://api.mch.weixin.qq.com").replace(/\/+$/, "")
   },
   media: {
     storageDir: process.env.MEDIA_STORAGE_DIR || "storage",

@@ -14414,6 +14414,13 @@ textarea:focus-visible {
     box-shadow 160ms ease;
 }
 
+.assets-balance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .assets-balance-actions button:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(90, 44, 252, 0.3);
@@ -14466,11 +14473,19 @@ textarea:focus-visible {
 .assets-transactions-panel {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 20px 20px 12px;
   background: var(--app-surface);
   border: 1px solid var(--app-border);
   border-radius: 16px;
   box-shadow: var(--shadow-dark);
+}
+
+.assets-transactions-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 .assets-section-title {
@@ -14484,6 +14499,56 @@ textarea:focus-visible {
 
 .assets-section-title svg {
   color: var(--brand-primary);
+}
+
+.assets-payment-method-row {
+  display: grid;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.assets-payment-methods {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+}
+
+.assets-payment-methods button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.assets-payment-methods button:hover {
+  color: var(--text-primary);
+  background: var(--app-surface-raised);
+}
+
+.assets-payment-methods button.is-active {
+  color: #ffffff;
+  background: var(--brand-gradient);
+  box-shadow: 0 8px 18px rgba(93, 30, 224, 0.24);
 }
 
 /* 预设金额 */
@@ -14684,19 +14749,28 @@ textarea:focus-visible {
 .assets-transactions-table {
   display: grid;
   gap: 2px;
+  min-height: 0;
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .assets-transactions-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: grid;
   grid-template-columns: 160px 100px 80px 80px 1fr;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
+  padding: 12px 12px;
   color: var(--text-muted);
   background: var(--app-surface-muted);
-  border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
 }
 
 .assets-transaction-row {
@@ -14704,11 +14778,10 @@ textarea:focus-visible {
   grid-template-columns: 160px 100px 80px 80px 1fr;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
+  min-height: 40px;
   padding: 10px 14px;
   background: var(--app-surface);
-  border: 1px solid var(--app-border);
-  border-radius: 10px;
+  border-bottom: 1px solid var(--app-border);
   font-size: 13px;
   transition: background 160ms ease;
 }
@@ -14733,6 +14806,51 @@ textarea:focus-visible {
   color: var(--text-muted);
 }
 
+.assets-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.assets-pagination > div {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.assets-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  color: var(--text-secondary);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.assets-pagination button:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--app-surface-raised);
+  border-color: var(--brand-primary-border);
+}
+
+.assets-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 /* 支付弹窗 */
 .assets-payment-backdrop {
   position: fixed;
@@ -14747,56 +14865,132 @@ textarea:focus-visible {
 .assets-payment-dialog {
   position: relative;
   width: min(420px, 100%);
-  padding: 24px;
+  padding: 28px 24px 24px;
   color: var(--text-primary);
-  background: var(--app-surface);
+  background:
+    radial-gradient(circle at 22% 0, rgba(141, 99, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(13, 13, 15, 0.98));
   border: 1px solid var(--app-border);
-  border-radius: 16px;
-  box-shadow: var(--shadow-dark);
+  border-radius: 18px;
+  box-shadow:
+    0 30px 86px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
 .assets-dialog-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 22px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  color: var(--text-secondary);
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.assets-dialog-close:hover {
+  color: var(--text-primary);
+  background: var(--app-surface-raised);
+  border-color: var(--brand-primary-border);
+}
+
+.assets-payment-dialog-head {
+  display: grid;
+  gap: 8px;
+  margin: 0 64px 28px 0;
+}
+
+.assets-payment-dialog-head span {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.assets-payment-dialog-head strong {
+  color: var(--text-primary);
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .assets-qr-box {
   display: grid;
-  width: 252px;
-  height: 252px;
+  width: 246px;
+  height: 246px;
   place-items: center;
-  margin: 8px auto 18px;
-  background: var(--app-surface-muted);
-  border: 1px solid var(--app-border);
-  border-radius: 12px;
+  margin: 0 auto 28px;
+  background: #ffffff;
+  border: 8px solid rgba(141, 99, 255, 0.18);
+  border-radius: 18px;
+  box-shadow:
+    0 18px 46px rgba(93, 30, 224, 0.26),
+    inset 0 0 0 1px rgba(141, 99, 255, 0.34);
 }
 
 .assets-qr-box img {
-  width: 240px;
-  height: 240px;
+  width: 220px;
+  height: 220px;
 }
 
-.assets-dialog-meta {
+.assets-dialog-meta-card {
   display: grid;
-  gap: 6px;
-  text-align: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px 18px;
+  align-items: center;
+  margin: 0 0 26px;
+  padding: 18px 20px;
+  background: rgba(141, 99, 255, 0.1);
+  border: 1px solid rgba(141, 99, 255, 0.28);
+  border-radius: 12px;
 }
 
-.assets-dialog-meta span {
+.assets-dialog-meta-card span {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.assets-dialog-meta strong {
-  color: var(--text-primary);
-  font-size: 15px;
+.assets-dialog-meta-card strong {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
 }
 
-.assets-dialog-meta em {
-  color: var(--brand-primary);
-  font-weight: 700;
+.assets-dialog-meta-card em {
+  color: #a78bfa;
+  font-size: 24px;
+  font-weight: 600;
   font-style: normal;
+  line-height: 1;
+  text-align: right;
+}
+
+.assets-dialog-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assets-dialog-countdown strong {
+  color: #a78bfa;
+  font-weight: 800;
 }
 
 /* 响应式 */
@@ -14812,6 +15006,10 @@ textarea:focus-visible {
     padding: 22px 24px;
   }
 
+  .assets-balance-actions {
+    justify-content: flex-start;
+  }
+
   .assets-balance-info strong {
     font-size: 32px;
   }
@@ -14822,6 +15020,12 @@ textarea:focus-visible {
 
   .assets-transactions-header {
     display: none;
+  }
+
+  .assets-transactions-table {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .assets-transaction-row {
@@ -14871,6 +15075,16 @@ textarea:focus-visible {
 
   .assets-order-row > div:last-child {
     text-align: left;
+  }
+
+  .assets-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assets-pagination > div,
+  .assets-pagination button {
+    width: 100%;
   }
 
   .assets-transaction-row {

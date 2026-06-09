@@ -7,10 +7,10 @@ export const paymentApi = {
   listOrders() {
     return request("/api/payment/recharge-orders");
   },
-  createOrder(amount) {
+  createOrder(amount, provider = "alipay") {
     return request("/api/payment/recharge-orders", {
       method: "POST",
-      body: JSON.stringify({ amount, provider: "alipay" })
+      body: JSON.stringify({ amount, provider })
     });
   },
   getQrCode(outTradeNo, orderToken) {

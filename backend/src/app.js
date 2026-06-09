@@ -30,7 +30,12 @@ export function createApp() {
 
   app.set("trust proxy", 1);
   app.use(cors({ origin: true, credentials: true }));
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({
+    limit: "1mb",
+    verify: (req, _res, buffer) => {
+      req.rawBody = buffer;
+    }
+  }));
   app.use(express.urlencoded({ extended: false, limit: "1mb" }));
   app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));
 
@@ -49,6 +54,7 @@ export function createApp() {
 
   app.use("/api/auth", authRouter);
   app.use("/api/payment", paymentPublicRouter);
+  app.use("/api/v1", paymentPublicRouter);
   app.use("/api", attachCurrentUser);
 
   app.get("/api/me/credits", async (req, res) => {

@@ -2,10 +2,11 @@ import express from "express";
 import { sendError } from "../../shared/http.js";
 import {
   createRechargeOrder,
-  getAlipayQrCode,
+  getPaymentQrCode,
   handleAlipayNotify,
+  handleWechatPayNotify,
   listRechargeOrders,
-  syncAlipayOrder
+  syncPaymentOrder
 } from "./payment.service.js";
 
 export const paymentRouter = express.Router();
@@ -37,7 +38,7 @@ paymentRouter.post("/recharge-orders", async (req, res) => {
 
 paymentRouter.get("/recharge-orders/:outTradeNo/qrcode", async (req, res) => {
   try {
-    res.json(await getAlipayQrCode(req.user, req.params.outTradeNo, getOrderToken(req)));
+    res.json(await getPaymentQrCode(req.user, req.params.outTradeNo, getOrderToken(req)));
   } catch (error) {
     sendError(res, error);
   }
@@ -45,7 +46,7 @@ paymentRouter.get("/recharge-orders/:outTradeNo/qrcode", async (req, res) => {
 
 paymentRouter.get("/recharge-orders/:outTradeNo/sync", async (req, res) => {
   try {
-    res.json(await syncAlipayOrder(req.user, req.params.outTradeNo, getOrderToken(req)));
+    res.json(await syncPaymentOrder(req.user, req.params.outTradeNo, getOrderToken(req)));
   } catch (error) {
     sendError(res, error);
   }
@@ -57,5 +58,18 @@ paymentPublicRouter.post("/alipay/notify", async (req, res) => {
     res.type("text/plain").send(accepted ? "success" : "failure");
   } catch {
     res.type("text/plain").send("failure");
+  }
+});
+
+paymentPublicRouter.post("/wechatpay/notify", async (req, res) => {
+  try {
+    const accepted = await handleWechatPayNotify({
+      headers: req.headers,
+      rawBody: req.rawBody?.toString("utf8") || "",
+      body: req.body || {}
+    });
+    res.json(accepted ? { code: "SUCCESS", message: "成功" } : { code: "FAIL", message: "失败" });
+  } catch {
+    res.json({ code: "FAIL", message: "失败" });
   }
 });

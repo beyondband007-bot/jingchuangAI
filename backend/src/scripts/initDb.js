@@ -179,6 +179,8 @@ async function createTables() {
       qr_code_data_url MEDIUMTEXT NULL,
       alipay_trade_no VARCHAR(64) NULL,
       alipay_trade_status VARCHAR(32) NULL,
+      wechat_transaction_id VARCHAR(64) NULL,
+      wechat_trade_state VARCHAR(32) NULL,
       paid_at DATETIME NULL,
       canceled_at DATETIME NULL,
       closed_at DATETIME NULL,
@@ -207,6 +209,26 @@ async function createTables() {
       CONSTRAINT fk_payment_events_order FOREIGN KEY (order_id) REFERENCES payment_orders(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [wechatTransactionColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'payment_orders' AND COLUMN_NAME = 'wechat_transaction_id'`,
+    [config.db.database]
+  );
+  if (wechatTransactionColumns.length === 0) {
+    await pool.query("ALTER TABLE payment_orders ADD COLUMN wechat_transaction_id VARCHAR(64) NULL AFTER alipay_trade_status");
+  }
+
+  const [wechatTradeStateColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'payment_orders' AND COLUMN_NAME = 'wechat_trade_state'`,
+    [config.db.database]
+  );
+  if (wechatTradeStateColumns.length === 0) {
+    await pool.query("ALTER TABLE payment_orders ADD COLUMN wechat_trade_state VARCHAR(32) NULL AFTER wechat_transaction_id");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS image_model_prices (
@@ -914,7 +936,7 @@ async function seedDemoData() {
       ]);
       await connection.query(
         `INSERT INTO credit_transactions (user_id, type, amount, balance_after, memo)
-         VALUES (?, 'grant', ?, ?, 'demo-user initial credits')`,
+         VALUES (?, 'grant', ?, ?, '\u6f14\u793a\u8d26\u53f7\u521d\u59cb\u79ef\u5206')`,
         [userId, config.defaultDemoCredits, config.defaultDemoCredits]
       );
     }

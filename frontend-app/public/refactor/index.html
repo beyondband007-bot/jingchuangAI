@@ -48,7 +48,7 @@
     .sidebar-desktop { position: fixed; top: 0; left: 0; bottom: 0; width: 256px; background: hsl(var(--sidebar-background)); border-right: 1px solid var(--ref-border); display: flex; flex-direction: column; z-index: 30; overflow: hidden; }
     .sidebar-inner { display: flex; flex-direction: column; height: 100%; }
     .sidebar-brand { padding: 16px; border-bottom: 1px solid var(--ref-border); }
-    /* 涓?out/index 瀵煎嚭涓€鑷达細澶у彿 Zona + 浜旇壊妯悜娓愬彉 + 鑳屾櫙浣嶇Щ鍔ㄧ敾 */
+    /* 与 out/index 导出一致：大号 Zona + 五色横向渐变 + 背景位移动画 */
     .animated-gradient-text {
       position: relative;
       display: inline-flex;
@@ -413,13 +413,13 @@
     .feature-carousel-wrap.module-arc { position: relative; }
     .module-arc { position: relative; margin-bottom: 8px; }
     .module-arc-stage { position: relative; height: min(600px, 90vw); max-height: 700px; margin: 0 auto; overflow: hidden; border-radius: 20px; touch-action: pan-y; background: hsl(var(--background)); isolation: isolate; }
-    /* 搴曢儴娓愰殣锛屼笌涓嬫柟鍙嶅厜灞傞厤鍚?*/
+    /* 底部渐隐，与下方反光层配合 */
     .module-arc-stage::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 52%; pointer-events: none; z-index: 1; border-radius: inherit; background: linear-gradient(to top, hsl(var(--background)) 0%, hsl(var(--background) / 0.55) 32%, hsl(var(--background) / 0.12) 68%, transparent 100%); }
-    /* 鍦伴潰鍙嶅厜锛氬妞渾 + 杞绘ā绯婏紝妯℃嫙鍙傝€冨浘搴曢儴鍏夋枒 */
+    /* 地面反光：宽椭圆 + 轻模糊，模拟参考图底部光斑 */
     .module-arc-stage::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: min(92%, 760px); height: min(88px, 14vw); transform: translate3d(-50%, 0, 0); transform-origin: center center; z-index: 1; pointer-events: none; border-radius: 50%; background: radial-gradient(ellipse 100% 100% at 50% 0%, rgba(255,255,255,0.55) 0%, rgba(199, 185, 255, 0.42) 22%, rgba(139, 92, 246, 0.28) 48%, rgba(236, 72, 153, 0.2) 68%, transparent 82%); filter: blur(5px); opacity: 0.88; }
     .module-arc-pivot { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
     .module-arc-pivot .arc-card-shell { pointer-events: auto; }
-    /* 浠呯敱 JS 鍐?translate(-50%,0) 鍋氭按骞冲眳涓紝鍕垮啀鍐?margin-left:-鍗婂锛屽惁鍒欎笌搴曢儴 ::after 鍏夋枒涓績閿欎綅 */
+    /* 仅由 JS 写入 translate(-50%,0) 做水平居中，避免再写 margin-left，否则会与底部 ::after 光斑中心错位 */
     .arc-card-shell { position: absolute; left: 50%; bottom: 117px; width: 251px; height: 397px; margin-left: 0; opacity: 0; pointer-events: none; transform-origin: 50% 100%; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease; }
     @media (max-width: 540px) {
       .arc-wheel-zone { width: min(100%, calc(100vw - 20px)); max-width: calc(100vw - 20px); }
@@ -435,7 +435,7 @@
     @media (min-width: 900px) { .module-arc-nav.prev { left: 12px; } .module-arc-nav.next { right: 12px; } }
     .feature-card { background: hsl(var(--card)); border: 1px solid var(--ref-border); border-radius: 16px; padding: 18px 14px; cursor: pointer; transition: border-color 0.35s, box-shadow 0.35s, opacity 0.35s; text-decoration: none; display: block; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.35); }
     .feature-card.arc-card { position: relative; display: flex; flex-direction: column; height: 100%; overflow: hidden; width: 100%; border-radius: 22px; padding: 14px 14px 15px; border: 1.5px solid rgba(255,255,255,0.5); background: linear-gradient(168deg, rgba(212, 201, 255, 0.45) 0%, rgba(184, 163, 248, 0.38) 35%, rgba(155, 140, 245, 0.36) 68%, rgba(126, 107, 220, 0.42) 100%); transform-origin: center bottom; backdrop-filter: blur(28px) saturate(1.45); -webkit-backdrop-filter: blur(28px) saturate(1.45); box-shadow: 0 18px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.08) inset, inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -18px 36px rgba(0,0,0,0.12); }
-    /* 杞挱鍗″叚鑹插惊鐜細娣辩传 / 浜摑 / 娴呰柊琛ｈ崏 / 闈掔豢 / 鐝婄憵姗?/ 娲嬬孩锛堝榻愬弬鑰?UI锛?*/
+    /* 轮播卡六色循环：深紫 / 亮蓝 / 清新荧草 / 青绿 / 珊瑚橙 / 洋红（对齐参考 UI） */
     .module-arc-pivot > .arc-card-shell:nth-child(6n + 1) .feature-card.arc-card {
       background: linear-gradient(168deg, rgba(139, 92, 246, 0.82) 0%, rgba(109, 40, 217, 0.78) 38%, rgba(76, 29, 149, 0.85) 100%);
       border-color: rgba(255,255,255,0.38);
@@ -468,7 +468,7 @@
     .feature-card.arc-card:hover { border-color: rgba(255,255,255,0.95); }
     .feature-card.arc-card .feature-card-icon { width: 100%; height: 158px; border-radius: 14px; margin: 0 0 11px; display: grid; place-items: center; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     .feature-card.arc-card .feature-card-icon svg { width: 65px; height: 65px; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.2)); opacity: 0.98; }
-    /* 杞挱鍗＄敾妗嗗唴锛氬弬鑰冨浘鍚屾鏆楄壊鐜荤拑姘涘洿搴?+ PNG 鍙犲湪涓婇潰锛堝紶鏁颁笌鏂囨涓嶅彉锛?*/
+    /* 轮播卡画框内：参考图同款暗色玻璃氛围底 + PNG 叠在上面（张数与文案不变） */
     .feature-card.arc-card.arc-card--visual { padding: 11px 12px 13px; gap: 0; }
     .feature-card.arc-card.arc-card--visual .arc-card-art {
       position: relative;
@@ -770,7 +770,7 @@
 <div class="app-shell">
   <main class="main-content">
     <div class="page-scroll">
-      <section class="hero-section" aria-label="棣栭〉鎺ㄨ崘杞挱">
+      <section class="hero-section" aria-label="首页推荐轮播">
         <div class="hero-carousel-shell" id="heroCarouselRoot">
           <div class="hero-carousel-stage" id="heroCarouselStage"></div>
           <button class="hero-carousel-arrow prev" id="heroCarouselPrev" type="button" aria-label="上一张">
@@ -790,7 +790,7 @@
         <div class="case-wall-masonry"></div>
       </div><div class="case-preview" id="casePreview" aria-hidden="true">
   <div class="case-preview-dialog" role="dialog" aria-modal="true" aria-label="案例图片预览">
-    <button class="case-preview-close" id="casePreviewClose" type="button" aria-label="关闭预览">脳</button>
+    <button class="case-preview-close" id="casePreviewClose" type="button" aria-label="关闭预览">×</button>
     <img class="case-preview-image" id="casePreviewImage" src="" alt="">
     <div class="case-preview-caption" id="casePreviewCaption"></div>
   </div>
@@ -799,7 +799,7 @@
 function toggleNav(btn){document.querySelectorAll(".nav-section--collapsible .nav-item").forEach(function(b){if(b!==btn){b.classList.remove("is-open");var ch=b.nextElementSibling;if(ch&&ch.classList.contains("nav-children"))ch.classList.remove("is-open")}});btn.classList.toggle("is-open");var ch=btn.nextElementSibling;if(ch&&ch.classList.contains("nav-children"))ch.classList.toggle("is-open")}
 document.querySelectorAll(".nav-item").forEach(item=>{item.addEventListener("click",e=>{if(e.target.closest(".nav-children"))return;const ch=item.nextElementSibling;if(!ch||!ch.classList.contains("nav-children")){document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("is-active"));document.querySelectorAll(".nav-child-item").forEach(i=>i.classList.remove("is-active"));item.classList.add("is-active")}}) });
 document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListener("click",e=>{e.preventDefault();document.querySelectorAll(".nav-child-item").forEach(i=>i.classList.remove("is-active"));document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("is-active"));item.classList.add("is-active");var sec=item.closest(".nav-section");if(!sec)return;var p=sec.querySelector(".nav-item");if(p)p.classList.add("is-active")}) });
-(function(){var caseImageFiles=["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];var masonry=document.querySelector(".case-wall-masonry");if(!masonry)return;var tones=["cyan","violet","amber","rose"];var labels=["视觉生成","视频创作","数字人","音频处理"];var shuffled=caseImageFiles.map(function(file,index){return{file:file,index:index,sort:Math.random()}}).sort(function(a,b){return a.sort-b.sort}).slice(0,30);masonry.innerHTML=shuffled.map(function(item,pos){var title="案例 "+String(pos+1).padStart(2,"0");var src="案例/"+encodeURIComponent(item.file);var label=labels[pos%labels.length];return '<a class="case-wall-item" href="#" data-tone="'+tones[pos%tones.length]+'" data-cats="vision" title="'+label+' · '+title+'"><div class="case-wall-frame"><img src="'+src+'" alt="'+title+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'placeholder.svg\'"><span class="case-wall-caption">'+label+' · '+title+'</span></div></a>'}).join("")})();
+(function(){var caseImageFiles=["1.jpg","2.jpg","3.jpg","4.jpg","5.jpg","6.jpg","7.jpg","8.jpg","9.jpg","10.jpg","11.jpg","12.jpg","13.jpg","14.jpg","15.jpg","16.jpg","17.jpg","18.jpg","20.jpg","21.jpg","22.jpg","23.jpg","24.jpg","25.jpg","26.jpg","27.jpg","28.jpg","29.jpg","30.jpg","31.jpg","32.jpg","33.jpg","34.jpg","35.jpg","36.jpg","37.jpg","39.jpg","40.jpg","41.jpg","42.jpg","43.jpg","44.jpg","45.jpg","46.jpg","47.jpg","48.jpg","49.jpg","50.jpg","51.jpg","52.jpg","53.jpg","54.jpg","55.jpg","56.jpg","70.jpg","71.jpg","72.jpg","73.jpg","74.jpg","75.jpg","89.jpg","90.jpg","91.jpg","92.jpg","93.jpg","94.jpg","108.jpg","109.jpg","110.jpg","gallery-1.jpg","gallery-10.jpg","gallery-2.jpg","gallery-3.jpg","gallery-4.jpg","gallery-5.jpg","gallery-6.jpg","gallery-7.jpg","gallery-8.jpg","gallery-9.jpg","hot-1-digital-human.jpg","hot-2-music.jpg","hot-3-motion.jpg","hot-4-faceswap.jpg","hot-5-tts.jpg","hot-6-article.jpg","hot-7-watermark.jpg","thumb-ai-chat.jpg","thumb-digital-human.jpg","thumb-img-gen.jpg"];var masonry=document.querySelector(".case-wall-masonry");if(!masonry)return;var tones=["cyan","violet","amber","rose"];var labels=["视觉生成","视频创作","数字人","音频处理"];var shuffled=caseImageFiles.map(function(file,index){return{file:file,index:index,sort:Math.random()}}).sort(function(a,b){return a.sort-b.sort}).slice(0,30);masonry.innerHTML=shuffled.map(function(item,pos){var title="案例 "+String(pos+1).padStart(2,"0");var src="cases/"+encodeURIComponent(item.file);var label=labels[pos%labels.length];return '<a class="case-wall-item" href="#" data-tone="'+tones[pos%tones.length]+'" data-cats="vision" title="'+label+' · '+title+'"><div class="case-wall-frame"><img src="'+src+'" alt="'+title+'" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'placeholder.svg\'"><span class="case-wall-caption">'+label+' · '+title+'</span></div></a>'}).join("")})();
 (function(){var preview=document.getElementById("casePreview");var previewImg=document.getElementById("casePreviewImage");var previewCaption=document.getElementById("casePreviewCaption");var closeBtn=document.getElementById("casePreviewClose");function bindItems(){document.querySelectorAll(".case-wall-item").forEach(function(item){if(item.dataset.previewBound==='1')return;item.dataset.previewBound='1';item.addEventListener("click",function(event){event.preventDefault();var img=item.querySelector("img");if(!img)return;var caption=item.querySelector(".case-wall-caption");previewImg.src=img.currentSrc||img.src;previewImg.alt=img.alt||item.title||"案例图片预览";previewCaption.textContent=(caption&&caption.textContent)||item.title||"";preview.classList.add("is-open");preview.setAttribute("aria-hidden","false")})})}function closePreview(){preview.classList.remove("is-open");preview.setAttribute("aria-hidden","true");previewImg.removeAttribute("src");previewImg.alt=""}bindItems();closeBtn.addEventListener("click",closePreview);preview.addEventListener("click",function(event){if(event.target===preview)closePreview()});document.addEventListener("keydown",function(event){if(event.key==="Escape"&&preview.classList.contains("is-open"))closePreview()})})();
 (function () {
   var root = document.getElementById("heroCarouselRoot");

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import QRCode from "qrcode";
 import { getPool } from "../../db/pool.js";
+import { localizeCreditMemo } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
   buildPrecreateParams,
@@ -11,9 +12,19 @@ import {
   isAlipayConfigured,
   verifyAlipayNotify
 } from "./alipayClient.js";
+import {
+  createWechatNativeOrder,
+  decryptWechatPayResource,
+  getWechatPayAppId,
+  getWechatPayMchId,
+  isWechatPayConfigured,
+  queryWechatOrder,
+  verifyWechatPayNotify
+} from "./wechatpayClient.js";
 
 const POINTS_PER_YUAN = 100;
 const FINAL_ORDER_STATUSES = new Set(["PAID", "CANCELED", "CLOSED", "REFUNDED", "AMOUNT_MISMATCH"]);
+const SUPPORTED_PAYMENT_PROVIDERS = new Set(["alipay", "wechat"]);
 
 function hashToken(token) {
   return createHash("sha256").update(token).digest("hex");
@@ -29,6 +40,14 @@ function normalizeAmount(value) {
     throw createHttpError("充值金额不能低于 1 元，且必须为整数元", 400);
   }
   return amount;
+}
+
+function normalizeProvider(value) {
+  const provider = String(value || "alipay").trim().toLowerCase();
+  if (!SUPPORTED_PAYMENT_PROVIDERS.has(provider)) {
+    throw createHttpError("暂不支持该支付方式", 400);
+  }
+  return provider;
 }
 
 function amountsMatch(left, right) {
@@ -105,7 +124,7 @@ async function markOrderPaid(orderId, data = {}) {
 
     const [orders] = await connection.query("SELECT * FROM payment_orders WHERE id = ? FOR UPDATE", [orderId]);
     const order = orders[0];
-    if (!order) throw createHttpError("订单不存在", 404);
+    if (!order) throw createHttpError("\u8ba2\u5355\u4e0d\u5b58\u5728", 404);
     if (order.status === "PAID") {
       await connection.commit();
       return;
@@ -118,25 +137,34 @@ async function markOrderPaid(orderId, data = {}) {
     const [lockedAccounts] = await connection.query("SELECT * FROM credit_accounts WHERE user_id = ? FOR UPDATE", [order.user_id]);
     const account = lockedAccounts[0];
     const balanceAfter = Number(account.balance || 0) + Number(order.points || 0);
+    const providerLabel = order.provider === "wechat" ? "\u5fae\u4fe1\u652f\u4ed8" : "\u652f\u4ed8\u5b9d";
 
     await connection.query("UPDATE credit_accounts SET balance = ? WHERE user_id = ?", [balanceAfter, order.user_id]);
     await connection.query(
       `INSERT INTO credit_transactions (user_id, task_id, type, amount, balance_after, memo)
        VALUES (?, NULL, 'recharge', ?, ?, ?)`,
-      [order.user_id, Number(order.points || 0), balanceAfter, `支付宝充值订单 ${order.out_trade_no}`]
+      [order.user_id, Number(order.points || 0), balanceAfter, `${providerLabel}\u5145\u503c\u8ba2\u5355 ${order.out_trade_no}`]
     );
     await connection.query(
       `UPDATE payment_orders
        SET status = 'PAID',
-           status_message = '支付成功，积分已到账',
+           status_message = '\u652f\u4ed8\u6210\u529f\uff0c\u79ef\u5206\u5df2\u5230\u8d26',
            paid_at = COALESCE(paid_at, NOW()),
            last_checked_at = NOW(),
            alipay_trade_no = ?,
-           alipay_trade_status = ?
+           alipay_trade_status = ?,
+           wechat_transaction_id = ?,
+           wechat_trade_state = ?
        WHERE id = ?`,
-      [data.alipayTradeNo || order.alipay_trade_no, data.alipayTradeStatus || order.alipay_trade_status, order.id]
+      [
+        data.alipayTradeNo || order.alipay_trade_no,
+        data.alipayTradeStatus || order.alipay_trade_status,
+        data.wechatTransactionId || order.wechat_transaction_id,
+        data.wechatTradeState || order.wechat_trade_state,
+        order.id
+      ]
     );
-    await recordPaymentEvent(order.id, "alipay.paid", "alipay", data, connection);
+    await recordPaymentEvent(order.id, `${order.provider === "wechat" ? "wechatpay" : "alipay"}.paid`, order.provider, data, connection);
 
     await connection.commit();
   } catch (error) {
@@ -190,6 +218,79 @@ async function applyAlipayTradeStatus(orderId, result) {
   return findOrderById(order.id);
 }
 
+async function applyWechatPayTradeStatus(orderId, result) {
+  const order = await findOrderById(orderId);
+  if (result.out_trade_no && result.out_trade_no !== order.out_trade_no) {
+    await markAmountMismatch(order.id, "微信支付订单号不一致");
+    return findOrderById(order.id);
+  }
+  if (result.mchid && result.mchid !== getWechatPayMchId()) {
+    await markAmountMismatch(order.id, "微信支付商户号不一致");
+    return findOrderById(order.id);
+  }
+  if (result.appid && result.appid !== getWechatPayAppId()) {
+    await markAmountMismatch(order.id, "微信支付 appid 不一致");
+    return findOrderById(order.id);
+  }
+  if (result.amount?.total !== undefined && Math.round(Number(order.total_amount) * 100) !== Number(result.amount.total)) {
+    await markAmountMismatch(order.id, "微信支付金额不一致");
+    return findOrderById(order.id);
+  }
+
+  if (result.trade_state === "SUCCESS") {
+    await markOrderPaid(order.id, {
+      wechatTransactionId: result.transaction_id,
+      wechatTradeState: result.trade_state
+    });
+  } else if (["CLOSED", "REVOKED"].includes(result.trade_state)) {
+    await getPool().query(
+      `UPDATE payment_orders
+       SET status = 'CLOSED',
+           status_message = ?,
+           closed_at = COALESCE(closed_at, NOW()),
+           last_checked_at = NOW(),
+           wechat_transaction_id = ?,
+           wechat_trade_state = ?
+       WHERE id = ?`,
+      [result.trade_state_desc || "交易已关闭", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+    );
+  } else if (result.trade_state === "USERPAYING") {
+    await getPool().query(
+      `UPDATE payment_orders
+       SET status = 'SCANNED',
+           status_message = ?,
+           last_checked_at = NOW(),
+           wechat_transaction_id = ?,
+           wechat_trade_state = ?
+       WHERE id = ?`,
+      [result.trade_state_desc || "用户已扫码，等待确认支付", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+    );
+  } else if (["NOTPAY", "ACCEPT"].includes(result.trade_state)) {
+    await getPool().query(
+      `UPDATE payment_orders
+       SET status = 'WAITING_PAYMENT',
+           status_message = ?,
+           last_checked_at = NOW(),
+           wechat_transaction_id = ?,
+           wechat_trade_state = ?
+       WHERE id = ?`,
+      [result.trade_state_desc || "等待用户扫码支付", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+    );
+  } else if (result.trade_state) {
+    await getPool().query(
+      `UPDATE payment_orders
+       SET status_message = ?,
+           last_checked_at = NOW(),
+           wechat_transaction_id = ?,
+           wechat_trade_state = ?
+       WHERE id = ?`,
+      [result.trade_state_desc || result.trade_state, result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+    );
+  }
+
+  return findOrderById(order.id);
+}
+
 export async function listRechargeOrders(userId) {
   const [rows] = await getPool().query(
     `SELECT *
@@ -203,32 +304,32 @@ export async function listRechargeOrders(userId) {
 }
 
 export async function createRechargeOrder(user, input) {
-  if (user?.isGuest) throw createHttpError("请先登录后再充值", 401);
-  if (input.provider && input.provider !== "alipay") throw createHttpError("暂不支持该支付方式", 400);
+  if (user?.isGuest) throw createHttpError("????????", 401);
+  const provider = normalizeProvider(input.provider);
   const amount = normalizeAmount(input.amount);
-  if (!isAlipayConfigured()) throw createHttpError("支付宝支付未配置，请先配置后再充值", 503);
+  if (provider === "alipay" && !isAlipayConfigured()) throw createHttpError("?????????????????", 503);
+  if (provider === "wechat" && !isWechatPayConfigured()) throw createHttpError("????????????????", 503);
   const outTradeNo = generateOutTradeNo();
   const orderToken = randomBytes(24).toString("base64url");
   const points = amount * POINTS_PER_YUAN;
-  const subject = `积分充值 ${amount} 元`;
+  const subject = `???? ${amount} ?`;
 
   await getPool().query(
     `INSERT INTO payment_orders (
        user_id, out_trade_no, provider, subject, total_amount, points,
        status, status_message, client_token_hash
-     ) VALUES (?, ?, 'alipay', ?, ?, ?, 'CREATED', '订单已创建', ?)`,
-    [user.id, outTradeNo, subject, amount.toFixed(2), points, hashToken(orderToken)]
+     ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', '?????', ?)`,
+    [user.id, outTradeNo, provider, subject, amount.toFixed(2), points, hashToken(orderToken)]
   );
 
   const order = await findOrderForUser(user.id, outTradeNo);
   return { order: toClientOrder(order), orderToken };
 }
-
-export async function getAlipayQrCode(user, outTradeNo, orderToken) {
-  if (user?.isGuest) throw createHttpError("请先登录后再充值", 401);
+export async function getPaymentQrCode(user, outTradeNo, orderToken) {
+  if (user?.isGuest) throw createHttpError("????????", 401);
   const order = await findOrderForUser(user.id, outTradeNo);
   assertOrderToken(order, orderToken);
-  if (FINAL_ORDER_STATUSES.has(order.status)) throw createHttpError("订单当前状态不可支付", 400);
+  if (FINAL_ORDER_STATUSES.has(order.status)) throw createHttpError("??????????", 400);
 
   if (order.qr_code) {
     const qrCodeDataUrl = order.qr_code_data_url || await QRCode.toDataURL(order.qr_code, { margin: 1, width: 240 });
@@ -238,41 +339,93 @@ export async function getAlipayQrCode(user, outTradeNo, orderToken) {
     return { order: toClientOrder(order), qrCode: order.qr_code, qrCodeDataUrl };
   }
 
-  const result = await callAlipay(buildPrecreateParams({
-    out_trade_no: order.out_trade_no,
-    total_amount: Number(order.total_amount).toFixed(2),
-    subject: order.subject,
-    product_code: "QR_CODE_OFFLINE",
-    timeout_express: "5m",
-    goods_detail: [{
-      goods_id: "jingchuang-ai-credits",
-      goods_name: order.subject,
-      quantity: 1,
-      price: Number(order.total_amount).toFixed(2)
-    }]
-  }));
-  const qrCodeDataUrl = await QRCode.toDataURL(result.qr_code, { margin: 1, width: 240 });
+  let qrCode;
+  let eventType;
+  let eventPayload;
+  if (order.provider === "wechat") {
+    const result = await createWechatNativeOrder({
+      outTradeNo: order.out_trade_no,
+      totalAmount: Number(order.total_amount).toFixed(2),
+      subject: order.subject
+    });
+    qrCode = result.code_url;
+    eventType = "wechatpay.native";
+    eventPayload = result;
+  } else {
+    const result = await callAlipay(buildPrecreateParams({
+      out_trade_no: order.out_trade_no,
+      total_amount: Number(order.total_amount).toFixed(2),
+      subject: order.subject,
+      product_code: "QR_CODE_OFFLINE",
+      timeout_express: "5m",
+      goods_detail: [{
+        goods_id: "jingchuang-ai-credits",
+        goods_name: order.subject,
+        quantity: 1,
+        price: Number(order.total_amount).toFixed(2)
+      }]
+    }));
+    qrCode = result.qr_code;
+    eventType = "alipay.precreate";
+    eventPayload = result;
+  }
+
+  if (!qrCode) throw createHttpError("??????????", 502);
+  const qrCodeDataUrl = await QRCode.toDataURL(qrCode, { margin: 1, width: 240 });
 
   await getPool().query(
     `UPDATE payment_orders
      SET qr_code = ?,
          qr_code_data_url = ?,
          status = 'QR_READY',
-         status_message = '订单码已生成，等待支付'
+         status_message = '?????????????'
      WHERE id = ?`,
-    [result.qr_code, qrCodeDataUrl, order.id]
+    [qrCode, qrCodeDataUrl, order.id]
   );
   const updatedOrder = await findOrderForUser(user.id, outTradeNo);
-  await recordPaymentEvent(updatedOrder.id, "alipay.precreate", "alipay", result);
+  await recordPaymentEvent(updatedOrder.id, eventType, order.provider, eventPayload);
 
-  return { order: toClientOrder(updatedOrder), qrCode: result.qr_code, qrCodeDataUrl };
+  return { order: toClientOrder(updatedOrder), qrCode, qrCodeDataUrl };
 }
-
-export async function syncAlipayOrder(user, outTradeNo, orderToken) {
-  if (user?.isGuest) throw createHttpError("请先登录后再充值", 401);
+export async function syncPaymentOrder(user, outTradeNo, orderToken) {
+  if (user?.isGuest) throw createHttpError("????????", 401);
   const order = await findOrderForUser(user.id, outTradeNo);
   assertOrderToken(order, orderToken);
   if (FINAL_ORDER_STATUSES.has(order.status)) return toClientOrder(order);
+
+  if (order.provider === "wechat") {
+    let result;
+    try {
+      result = await queryWechatOrder(order.out_trade_no);
+    } catch (error) {
+      if (!String(error.message || "").includes("ORDERNOTEXIST")) throw error;
+      await getPool().query(
+        `UPDATE payment_orders
+         SET status = 'WAITING_PAYMENT',
+             status_message = '????????',
+             last_checked_at = NOW()
+         WHERE id = ?`,
+        [order.id]
+      );
+      const updatedOrder = await findOrderById(order.id);
+      if (updatedOrder.status !== order.status) {
+        await recordPaymentEvent(updatedOrder.id, "wechatpay.query", "wechat", {
+          previousStatus: order.status,
+          nextStatus: updatedOrder.status,
+          code: "ORDERNOTEXIST"
+        });
+      }
+      return toClientOrder(updatedOrder);
+    }
+
+    const updatedOrder = await applyWechatPayTradeStatus(order.id, result);
+    await recordPaymentEvent(updatedOrder.id, "wechatpay.query", "wechat", {
+      previousStatus: order.status,
+      nextStatus: updatedOrder.status,
+      ...result
+    });
+    return toClientOrder(updatedOrder);
+  }
 
   let result;
   try {
@@ -282,7 +435,7 @@ export async function syncAlipayOrder(user, outTradeNo, orderToken) {
     await getPool().query(
       `UPDATE payment_orders
        SET status = 'WAITING_PAYMENT',
-           status_message = '等待用户扫码支付',
+           status_message = '????????',
            last_checked_at = NOW()
        WHERE id = ?`,
       [order.id]
@@ -306,13 +459,13 @@ export async function syncAlipayOrder(user, outTradeNo, orderToken) {
   });
   return toClientOrder(updatedOrder);
 }
-
 export async function handleAlipayNotify(params) {
   if (!verifyAlipayNotify(params)) return false;
 
   const [rows] = await getPool().query("SELECT * FROM payment_orders WHERE out_trade_no = ? LIMIT 1", [params.out_trade_no]);
   const order = rows[0];
   if (!order) return false;
+  if (order.provider !== "alipay") return false;
 
   if (params.app_id !== getAlipayAppId()) {
     await markAmountMismatch(order.id, "支付宝通知 app_id 不一致");
@@ -338,6 +491,42 @@ export async function handleAlipayNotify(params) {
   return true;
 }
 
+export async function handleWechatPayNotify({ headers, rawBody, body }) {
+  const bodyText = rawBody || JSON.stringify(body || {});
+  if (!verifyWechatPayNotify(headers, bodyText)) return false;
+
+  const payload = body || JSON.parse(bodyText);
+  const resource = decryptWechatPayResource(payload.resource);
+  const [rows] = await getPool().query("SELECT * FROM payment_orders WHERE out_trade_no = ? LIMIT 1", [resource.out_trade_no]);
+  const order = rows[0];
+  if (!order || order.provider !== "wechat") return false;
+
+  if (resource.appid !== getWechatPayAppId()) {
+    await markAmountMismatch(order.id, "微信支付通知 appid 不一致");
+    return false;
+  }
+  if (resource.mchid !== getWechatPayMchId()) {
+    await markAmountMismatch(order.id, "微信支付通知商户号不一致");
+    return false;
+  }
+  if (resource.amount?.total !== undefined && Math.round(Number(order.total_amount) * 100) !== Number(resource.amount.total)) {
+    await markAmountMismatch(order.id, "微信支付通知金额不一致");
+    return false;
+  }
+
+  await recordPaymentEvent(order.id, "wechatpay.notify", "wechat", resource);
+  if (resource.trade_state === "SUCCESS") {
+    await markOrderPaid(order.id, {
+      wechatTransactionId: resource.transaction_id,
+      wechatTradeState: resource.trade_state
+    });
+  } else {
+    await applyWechatPayTradeStatus(order.id, resource);
+  }
+
+  return true;
+}
+
 export async function listCreditTransactions(userId) {
   const [rows] = await getPool().query(
     `SELECT id, type, amount, balance_after AS balanceAfter, memo, created_at AS createdAt
@@ -347,5 +536,5 @@ export async function listCreditTransactions(userId) {
      LIMIT 100`,
     [userId]
   );
-  return { transactions: rows };
+  return { transactions: rows.map((row) => ({ ...row, memo: localizeCreditMemo(row.memo) })) };
 }
