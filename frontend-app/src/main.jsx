@@ -82,6 +82,7 @@ import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-hum
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { DigitalHumanShowcaseCard } from "./features/digital-human/DigitalHumanShowcaseCard";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
+import imageInspirationPrompts from "./data/imageInspirationPrompts.json";
 import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
@@ -313,16 +314,24 @@ function arrangeInspirationCards(cards, columnCount = 6) {
   return arranged;
 }
 
-const exampleImages = caseImageFiles.map((file, index) => ({
-  file,
-  src: `/重构/案例/${encodeURIComponent(file)}`,
-  label: `案例 ${String(index + 1).padStart(2, "0")}`,
-  model: "图片生成",
-  ratio: "案例图",
-  quality: "精选",
-  price: "参考",
-  aspect: getInspirationAspect(file),
-}));
+const exampleImages = caseImageFiles.map((file, index) => {
+  const metadata = imageInspirationPrompts[file] || {};
+  return {
+    file,
+    src: `/重构/案例/${encodeURIComponent(file)}`,
+    label: `案例 ${String(index + 1).padStart(2, "0")}`,
+    prompt: metadata.prompt || `案例 ${String(index + 1).padStart(2, "0")}`,
+    description: metadata.description || "",
+    style: metadata.style || "",
+    mood: metadata.mood || "",
+    tags: metadata.tags || [],
+    model: "图片生成",
+    ratio: "案例图",
+    quality: "精选",
+    price: "参考",
+    aspect: getInspirationAspect(file),
+  };
+});
 
 const navItems = [
   { id: "home", label: "首页", icon: Home },
@@ -1949,7 +1958,7 @@ function ResultCard({
         )}
         {isImageGallery ? (
           <div className="gallery-title-row">
-            <p>{card.error || card.prompt}</p>
+            <p>{card.error || card.title || card.prompt}</p>
             <strong>{card.price}</strong>
           </div>
         ) : (
@@ -2004,6 +2013,27 @@ function formatReferenceImageSize(bytes = 0) {
   if (!bytes || Number.isNaN(Number(bytes))) return "";
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+async function writeClipboardText(text) {
+  const value = String(text || "").trim();
+  if (!value) return false;
+
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  }
 }
 
 function ReferenceImageSlot({ image, isUploading, onRemove }) {
@@ -2064,6 +2094,7 @@ function ComposerBar({
   const [isUploadingReference, setIsUploadingReference] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const referenceInputRef = useRef(null);
+  const previousResetSignalRef = useRef(resetSignal);
 
   function showToast(message) {
     setToastMessage(message);
@@ -2073,9 +2104,23 @@ function ComposerBar({
     if (!seed) return;
     setPrompt(seed.prompt || "");
     setReferenceImage(seed.referenceImage || null);
-  }, [seed]);
+    if (seed.model && options.models.some((item) => item.value === seed.model)) {
+      setModel(seed.model);
+    }
+    if (seed.ratio && options.ratios.includes(seed.ratio)) {
+      setRatio(seed.ratio);
+    }
+    if (
+      seed.quality &&
+      options.qualities.some((item) => item.value === seed.quality)
+    ) {
+      setQuality(seed.quality);
+    }
+  }, [options.models, options.qualities, options.ratios, seed]);
 
   useEffect(() => {
+    if (previousResetSignalRef.current === resetSignal) return;
+    previousResetSignalRef.current = resetSignal;
     setPrompt("");
     setReferenceImage(null);
     setToastMessage("");
@@ -2862,8 +2907,34 @@ function PreviewDrawer({ task, onClose }) {
   );
 }
 
-function ImagePreviewLightbox({ task, onClose }) {
+function ImagePreviewLightbox({
+  task,
+  onClose,
+  onCopyPrompt,
+  onRemix,
+  onReference,
+}) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setCopied(false);
+  }, [task?.id]);
+
+  useEffect(() => {
+    if (!task?.image) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, task?.image]);
+
   if (!task?.image) return null;
+
+  async function copyPrompt() {
+    await onCopyPrompt?.(task);
+    setCopied(true);
+  }
 
   return (
     <div
@@ -2882,20 +2953,57 @@ function ImagePreviewLightbox({ task, onClose }) {
         <div className="image-preview-toolbar">
           <div>
             <span>预览</span>
-            <strong>{task.prompt}</strong>
+            <strong>{task.title || task.prompt || "图片详情"}</strong>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭图片预览">
             <X size={18} />
           </button>
         </div>
-        <div className="image-preview-stage">
-          <img src={task.image} alt={task.prompt} />
-        </div>
-        <div className="image-preview-actions">
-          <a href={task.image} download>
-            <Download size={16} />
-            下载
-          </a>
+        <div className="image-preview-body">
+          <div className="image-preview-canvas">
+            <div className="image-preview-stage">
+              <img src={task.image} alt={task.prompt || task.title} />
+            </div>
+            <div className="image-preview-actions">
+              <a href={task.image} download>
+                <Download size={16} />
+                下载
+              </a>
+            </div>
+          </div>
+          <aside className="image-preview-details" aria-label="图片生成信息">
+            <div className="image-preview-detail-heading">
+              <div>
+                <span>图片提示词</span>
+                <strong>{task.title || "AI 图片创作"}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={copyPrompt}
+                aria-label="复制图片提示词"
+              >
+                <Copy size={16} />
+                {copied ? "已复制" : "复制"}
+              </button>
+            </div>
+            <p className="image-preview-prompt">{task.prompt}</p>
+            <div className="image-preview-tags">
+              {task.model && <span>{task.model}</span>}
+              {task.ratio && <span>{task.ratio}</span>}
+              {task.quality && <span>{task.quality}</span>}
+              {task.style && <span>{task.style}</span>}
+            </div>
+            <div className="image-preview-detail-actions">
+              <button type="button" onClick={() => onRemix?.(task)}>
+                <Sparkles size={16} />
+                做同款
+              </button>
+              <button type="button" onClick={() => onReference?.(task)}>
+                <Image size={16} />
+                用作参考图
+              </button>
+            </div>
+          </aside>
         </div>
       </div>
     </div>
@@ -3253,7 +3361,12 @@ function ImageGenerationView({
         count: 1,
         time: "示例",
         price: item.price,
-        prompt: item.label,
+        title: item.label,
+        prompt: item.prompt,
+        description: item.description,
+        style: item.style,
+        mood: item.mood,
+        tags: item.tags,
         image: item.src,
         aspect: item.aspect,
         favorite: false,
@@ -3548,6 +3661,34 @@ function ImageGenerationView({
     }
   }
 
+  async function copyTaskPrompt(task) {
+    const copied = await writeClipboardText(task?.prompt);
+    showImagePageToast(copied ? "提示词已复制" : "提示词复制失败，请重试");
+  }
+
+  function remixTask(task) {
+    if (!task?.prompt) return;
+    setPreviewTask(null);
+    setSelectedTaskId(null);
+    setSubmittedTaskId(null);
+    setContextTaskIds([]);
+    setActiveThreadId(null);
+    setActivePrompt("");
+    setIsSubmitting(false);
+    setSubmitError("");
+    setFilter("recent");
+    clearImageGenerationSession();
+    setComposerSeed({
+      id: `remix-${task.id}-${Date.now()}`,
+      prompt: task.prompt,
+      model: task.modelKey || null,
+      ratio: task.ratio,
+      quality: task.quality,
+      referenceImage: null,
+      notice: "",
+    });
+  }
+
   function revealGeneratedTask(task) {
     if (!task?.image) return;
     setFilter("recent");
@@ -3585,15 +3726,29 @@ function ImageGenerationView({
 
   function referenceTask(task) {
     if (!task?.image) return;
+    const isPersistedTask = cards.some((card) => card.id === task.id);
+    setPreviewTask(null);
+    if (!isPersistedTask) {
+      setSelectedTaskId(null);
+      setSubmittedTaskId(null);
+      setContextTaskIds([]);
+      setActiveThreadId(null);
+      setActivePrompt("");
+      setIsSubmitting(false);
+      setSubmitError("");
+      clearImageGenerationSession();
+    }
     const nextThreadId = task.threadId || activeThreadId || createImageThreadId();
     setFilter("recent");
-    setSelectedTaskId(task.id);
-    setActiveThreadId(nextThreadId);
-    setContextTaskIds((ids) =>
-      writeImageGenerationThread(
-        ids.includes(task.id) ? ids : [...ids, task.id],
-      ),
-    );
+    if (isPersistedTask) {
+      setSelectedTaskId(task.id);
+      setActiveThreadId(nextThreadId);
+      setContextTaskIds((ids) =>
+        writeImageGenerationThread(
+          ids.includes(task.id) ? ids : [...ids, task.id],
+        ),
+      );
+    }
     setComposerSeed({
       id: `reference-${task.id}-${Date.now()}`,
       prompt: "",
@@ -3605,7 +3760,6 @@ function ImageGenerationView({
       },
       notice: "",
     });
-    showImagePageToast("已引用该图片作为参考图");
   }
 
   return (
@@ -3716,6 +3870,9 @@ function ImageGenerationView({
       <ImagePreviewLightbox
         task={previewTask}
         onClose={() => setPreviewTask(null)}
+        onCopyPrompt={copyTaskPrompt}
+        onRemix={remixTask}
+        onReference={referenceTask}
       />
     </section>
   );
