@@ -2291,7 +2291,6 @@ function ImageGenerationWorkbench({
                 <Sparkles size={24} />
               </span>
               <h2>开启新的图片创作</h2>
-              <p>输入想法，或引用历史结果继续延展画面。</p>
             </div>
           )}
 
