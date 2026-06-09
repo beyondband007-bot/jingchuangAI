@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
+    "dev:lan": "set HOST=0.0.0.0&& node src/server.js",
     "start": "node src/server.js",
     "db:init": "node src/scripts/initDb.js",
     "db:check": "node src/scripts/checkDb.js"
