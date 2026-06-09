@@ -338,12 +338,11 @@ export function VideoPromptDialog({
           {onRandom && (
             <button
               type="button"
-              className="prompt-icon-button prompt-icon-button--tooltip"
+              className="prompt-icon-button"
               onClick={onRandom}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              data-tooltip="随机提示词"
               aria-label="随机提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -358,12 +357,11 @@ export function VideoPromptDialog({
           {onClear && (
             <button
               type="button"
-              className="prompt-icon-button prompt-icon-button--tooltip"
+              className="prompt-icon-button"
               onClick={onClear}
               style={buttonBaseStyle}
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
-              data-tooltip="清空提示词"
               aria-label="清空提示词"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

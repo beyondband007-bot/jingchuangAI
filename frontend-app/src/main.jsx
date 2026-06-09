@@ -2492,6 +2492,13 @@ function clearImageGenerationSession() {
   }
 }
 
+function createImageThreadId() {
+  const uuid = window.crypto?.randomUUID?.();
+  return uuid
+    ? `image-thread-${uuid}`
+    : `image-thread-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function readImageGenerationThreads() {
   try {
     const cached = window.sessionStorage.getItem(imageGenerationThreadsKey);
@@ -2529,16 +2536,40 @@ function getTaskReferenceUrl(task) {
   );
 }
 
+function getTaskThreadId(task) {
+  return typeof task?.threadId === "string" && task.threadId.trim()
+    ? task.threadId.trim()
+    : null;
+}
+
+function resolveThreadIdFromTaskIds(ids, tasks) {
+  const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  for (const id of ids) {
+    const threadId = getTaskThreadId(taskMap.get(id));
+    if (threadId) return threadId;
+  }
+  return null;
+}
+
 function resolveImageThreadIds(taskId, tasks) {
   if (!taskId) return [];
   const stored = readImageGenerationThreads();
   const storedIds = Array.isArray(stored[taskId]) ? stored[taskId] : [];
   const taskMap = new Map(tasks.map((task) => [task.id, task]));
+  const selectedTask = taskMap.get(taskId);
+  const selectedThreadId = getTaskThreadId(selectedTask);
   const imageToId = new Map(
     tasks.filter((task) => task.image).map((task) => [task.image, task.id]),
   );
   const related = new Set(storedIds.filter((id) => taskMap.has(id)));
   related.add(taskId);
+  if (selectedThreadId) {
+    tasks.forEach((task) => {
+      if (getTaskThreadId(task) === selectedThreadId) {
+        related.add(task.id);
+      }
+    });
+  }
 
   let changed = true;
   while (changed) {
@@ -2580,9 +2611,15 @@ function buildImageHistoryThreads(tasks) {
   tasks.forEach((task) => {
     if (visited.has(task.id)) return;
     const storedIds = Array.isArray(stored[task.id]) ? stored[task.id] : [];
-    const ids = storedIds.length
-      ? storedIds.filter((id) => taskMap.has(id))
-      : resolveImageThreadIds(task.id, tasks);
+    const threadId = getTaskThreadId(task);
+    const ids = threadId
+      ? tasks
+          .filter((item) => getTaskThreadId(item) === threadId)
+          .map((item) => item.id)
+          .reverse()
+      : storedIds.length
+        ? storedIds.filter((id) => taskMap.has(id))
+        : resolveImageThreadIds(task.id, tasks);
     const uniqueIds = [...new Set(ids.length ? ids : [task.id])];
     uniqueIds.forEach((id) => visited.add(id));
     const threadTasks = uniqueIds.map((id) => taskMap.get(id)).filter(Boolean);
@@ -3052,10 +3089,14 @@ function ImageGenerationView({
         ? [cachedSession.selectedTaskId]
         : [],
   );
+  const [activeThreadId, setActiveThreadId] = useState(
+    cachedSession.activeThreadId || null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(
     Boolean(cachedSession.isSubmitting),
   );
   const [submitError, setSubmitError] = useState("");
+  const [pageToastMessage, setPageToastMessage] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
   const [composerSeed, setComposerSeed] = useState(null);
@@ -3066,6 +3107,17 @@ function ImageGenerationView({
   const imageComposerRef = useRef(null);
   const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
+
+  function showImagePageToast(message) {
+    if (!message) return;
+    setPageToastMessage(message);
+  }
+
+  useEffect(() => {
+    if (!pageToastMessage) return undefined;
+    const timer = window.setTimeout(() => setPageToastMessage(""), 2000);
+    return () => window.clearTimeout(timer);
+  }, [pageToastMessage]);
 
   // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
   useEffect(() => {
@@ -3279,11 +3331,12 @@ function ImageGenerationView({
       submittedTaskId,
       selectedTaskId,
       contextTaskIds,
+      activeThreadId,
       activePrompt,
       isSubmitting,
       updatedAt: Date.now(),
     });
-  }, [activePrompt, contextTaskIds, isSubmitting, selectedTaskId, submittedTaskId]);
+  }, [activePrompt, activeThreadId, contextTaskIds, isSubmitting, selectedTaskId, submittedTaskId]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -3308,7 +3361,8 @@ function ImageGenerationView({
   const composerPlacement = isComposerSticky ? "sticky" : "inline";
 
   function requestLoginForGeneration() {
-    setSubmitError("请先登录");
+    setSubmitError("");
+    showImagePageToast("请先登录");
     setIsSubmitting(false);
     onOpenAuth?.("login");
   }
@@ -3318,8 +3372,12 @@ function ImageGenerationView({
     const nextIds = writeImageGenerationThread(
       resolvedIds.length ? resolvedIds : [id],
     );
+    const nextThreadId =
+      resolveThreadIdFromTaskIds(nextIds, cards) ||
+      getTaskThreadId(cards.find((card) => card.id === id));
     setSelectedTaskId(id);
     setContextTaskIds(nextIds);
+    setActiveThreadId(nextThreadId || null);
     setSubmittedTaskId(null);
     setActivePrompt("");
     setIsSubmitting(false);
@@ -3340,10 +3398,16 @@ function ImageGenerationView({
         : selectedTaskId
           ? resolveImageThreadIds(selectedTaskId, cards)
           : [];
+    const nextThreadId = shouldStartNewThread
+      ? createImageThreadId()
+      : activeThreadId ||
+        resolveThreadIdFromTaskIds(baseThreadIds, cards) ||
+        createImageThreadId();
     const pendingSelectedTaskId = shouldStartNewThread ? null : selectedTaskId;
     setActivePrompt(payload.prompt);
     setSubmitError("");
     setIsSubmitting(true);
+    setActiveThreadId(nextThreadId);
     if (shouldStartNewThread) {
       setSelectedTaskId(null);
       setSubmittedTaskId(null);
@@ -3356,28 +3420,36 @@ function ImageGenerationView({
       submittedTaskId: null,
       selectedTaskId: pendingSelectedTaskId,
       contextTaskIds: baseThreadIds,
+      activeThreadId: nextThreadId,
       activePrompt: payload.prompt,
       isSubmitting: true,
       updatedAt: Date.now(),
     });
 
     try {
-      const task = await imageApi.createTask(payload);
+      const task = await imageApi.createTask({
+        ...payload,
+        threadId: nextThreadId,
+        contextTaskIds: baseThreadIds,
+      });
       imageApi
         .refreshCredits()
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
       setSubmittedTaskId(task.id);
       setSelectedTaskId(task.id);
+      const persistedThreadId = task.threadId || nextThreadId;
       const nextThreadIds = writeImageGenerationThread([
         ...baseThreadIds,
         task.id,
       ]);
+      setActiveThreadId(persistedThreadId);
       setContextTaskIds(nextThreadIds);
       writeImageGenerationSession({
         submittedTaskId: task.id,
         selectedTaskId: task.id,
         contextTaskIds: nextThreadIds,
+        activeThreadId: persistedThreadId,
         activePrompt: task.prompt || payload.prompt,
         isSubmitting: task.status === "pending" || task.status === "processing",
         updatedAt: Date.now(),
@@ -3386,7 +3458,8 @@ function ImageGenerationView({
         setIsSubmitting(false);
       }
     } catch (error) {
-      setSubmitError(error.message || "创建生成任务失败");
+      setSubmitError("");
+      showImagePageToast(error.message || "创建生成任务失败");
       setIsSubmitting(false);
     }
   }
@@ -3419,46 +3492,59 @@ function ImageGenerationView({
     const baseThreadIds = contextTaskIds.includes(id)
       ? contextTaskIds
       : resolveImageThreadIds(id, cards);
+    const nextThreadId =
+      activeThreadId ||
+      resolveThreadIdFromTaskIds(baseThreadIds, cards) ||
+      createImageThreadId();
     if (source) {
       setActivePrompt(source.prompt);
     }
     setSubmitError("");
     setIsSubmitting(true);
+    setActiveThreadId(nextThreadId);
     setIsHistoryOpen(false);
     setPreviewTask(null);
     writeImageGenerationSession({
       submittedTaskId: null,
       selectedTaskId: id,
       contextTaskIds: baseThreadIds,
+      activeThreadId: nextThreadId,
       activePrompt: source?.prompt || activePrompt,
       isSubmitting: true,
       updatedAt: Date.now(),
     });
 
     try {
-      const created = await imageApi.regenerateTask(id);
+      const created = await imageApi.regenerateTask(id, {
+        threadId: nextThreadId,
+        contextTaskIds: baseThreadIds,
+      });
       imageApi
         .refreshCredits()
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
       setSubmittedTaskId(created.id);
       setSelectedTaskId(created.id);
+      const persistedThreadId = created.threadId || nextThreadId;
       const nextThreadIds = writeImageGenerationThread([
         ...baseThreadIds,
         created.id,
       ]);
+      setActiveThreadId(persistedThreadId);
       setContextTaskIds(nextThreadIds);
       writeImageGenerationSession({
         submittedTaskId: created.id,
         selectedTaskId: created.id,
         contextTaskIds: nextThreadIds,
+        activeThreadId: persistedThreadId,
         activePrompt: created.prompt || source?.prompt || activePrompt,
         isSubmitting:
           created.status === "pending" || created.status === "processing",
         updatedAt: Date.now(),
       });
     } catch (error) {
-      setSubmitError(error.message || "创建生成任务失败");
+      setSubmitError("");
+      showImagePageToast(error.message || "创建生成任务失败");
       setIsSubmitting(false);
     }
   }
@@ -3468,6 +3554,7 @@ function ImageGenerationView({
     setFilter("recent");
     setSelectedTaskId(task.id);
     setContextTaskIds([task.id]);
+    setActiveThreadId(task.threadId || null);
     setPreviewTask(task);
     setSubmittedTaskId(null);
     setActivePrompt("");
@@ -3478,6 +3565,7 @@ function ImageGenerationView({
     setSelectedTaskId(null);
     setSubmittedTaskId(null);
     setContextTaskIds([]);
+    setActiveThreadId(null);
     setActivePrompt("");
     setIsSubmitting(false);
     setSubmitError("");
@@ -3498,8 +3586,10 @@ function ImageGenerationView({
 
   function referenceTask(task) {
     if (!task?.image) return;
+    const nextThreadId = task.threadId || activeThreadId || createImageThreadId();
     setFilter("recent");
     setSelectedTaskId(task.id);
+    setActiveThreadId(nextThreadId);
     setContextTaskIds((ids) =>
       writeImageGenerationThread(
         ids.includes(task.id) ? ids : [...ids, task.id],
@@ -3507,15 +3597,16 @@ function ImageGenerationView({
     );
     setComposerSeed({
       id: `reference-${task.id}-${Date.now()}`,
-      prompt: task.prompt || "",
+      prompt: "",
       referenceImage: {
         url: task.image,
         originalName: "引用结果图",
         size: 0,
         mimeType: "image/png",
       },
-      notice: "已引用该图片作为参考图",
+      notice: "",
     });
+    showImagePageToast("已引用该图片作为参考图");
   }
 
   return (
@@ -3550,13 +3641,10 @@ function ImageGenerationView({
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
-      {submitError && filter !== "recent" && (
-        <div className="video-submit-error">{submitError}</div>
-      )}
-      {hasActiveGeneration && filter !== "recent" && (
-        <ImageGeneratingFeedState
-          prompt={activeGenerationTask?.prompt || activePrompt}
-        />
+      {pageToastMessage && (
+        <div className="image-page-toast" role="status" aria-live="polite">
+          {pageToastMessage}
+        </div>
       )}
       {hasCompletedNotice && filter !== "recent" && (
         <ImageCompletedNotice
@@ -3604,7 +3692,7 @@ function ImageGenerationView({
         />
       ) : galleryItems.length ? (
         <WaterfallGrid
-          className={`image-results-feed ${hasActiveGeneration ? "is-generating" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
+          className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
           gap={6}
           maxColumns={6}
           items={galleryItems}
@@ -3870,7 +3958,12 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
   const [duration, setDuration] = useState(
     modelOptions.model?.defaultDuration || modelOptions.durations[0] || "",
   );
-  const [notice, setNotice] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+
+  function showVideoComposerToast(message) {
+    if (!message) return;
+    setToastMessage(message);
+  }
 
   useEffect(() => {
     if (!model && options.models[0]) {
@@ -3891,8 +3984,14 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
 
   useEffect(() => {
     setPrompt("");
-    setNotice("");
+    setToastMessage("");
   }, [resetSignal]);
+
+  useEffect(() => {
+    if (!toastMessage) return undefined;
+    const timer = window.setTimeout(() => setToastMessage(""), 2000);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
 
   const count = 1;
   const price = videoApi.calculatePrice({
@@ -3911,21 +4010,21 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
 
   function clearPrompt() {
     setPrompt("");
-    setNotice("已清空提示词");
+    showVideoComposerToast("已清空提示词");
   }
 
   function fillRandomPrompt() {
     setPrompt(videoApi.getRandomPrompt());
-    setNotice("已填入随机提示词");
+    showVideoComposerToast("已填入随机提示词");
   }
 
   function handleAddPrompt() {
-    setNotice("当前视频生成暂不支持添加参考素材");
+    showVideoComposerToast("当前视频生成暂不支持添加参考素材");
   }
 
   function submitPrompt() {
     if (!canSubmit) {
-      setNotice("请先输入视频描述");
+      showVideoComposerToast("请先输入视频描述");
       return;
     }
 
@@ -3937,7 +4036,7 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
       mode: "first-frame",
       count,
     });
-    setNotice("已创建视频生成任务");
+    showVideoComposerToast("已创建视频生成任务");
     setPrompt("");
   }
 
@@ -3949,11 +4048,11 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
         value={prompt}
         onChange={(value) => {
           setPrompt(value);
-          if (notice) setNotice("");
+          if (toastMessage) setToastMessage("");
         }}
         onSubmit={submitPrompt}
         canSubmit={canSubmit}
-        notice={notice}
+        notice=""
         onAdd={handleAddPrompt}
         onRandom={fillRandomPrompt}
         onClear={clearPrompt}
@@ -3969,6 +4068,11 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
         price={price}
         rmb={rmb}
       />
+      {toastMessage && (
+        <div className="video-composer-toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
@@ -3980,11 +4084,24 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
   const [credits, setCredits] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [pageToastMessage, setPageToastMessage] = useState("");
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
 
+  function showVideoPageToast(message) {
+    if (!message) return;
+    setPageToastMessage(message);
+  }
+
+  useEffect(() => {
+    if (!pageToastMessage) return undefined;
+    const timer = window.setTimeout(() => setPageToastMessage(""), 2000);
+    return () => window.clearTimeout(timer);
+  }, [pageToastMessage]);
+
   function requestLoginForGeneration() {
-    setSubmitError("请先登录");
+    setSubmitError("");
+    showVideoPageToast("请先登录");
     setIsSubmitting(false);
     onOpenAuth?.("login");
   }
@@ -4050,7 +4167,8 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     } catch (error) {
-      setSubmitError(error.message || "创建视频生成任务失败");
+      setSubmitError("");
+      showVideoPageToast(error.message || "创建视频生成任务失败");
     } finally {
       setIsSubmitting(false);
     }
@@ -4078,7 +4196,8 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     } catch (error) {
-      setSubmitError(error.message || "创建视频生成任务失败");
+      setSubmitError("");
+      showVideoPageToast(error.message || "创建视频生成任务失败");
     } finally {
       setIsSubmitting(false);
     }
@@ -4115,7 +4234,11 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
-      {submitError && <div className="video-submit-error">{submitError}</div>}
+      {pageToastMessage && (
+        <div className="video-page-toast" role="status" aria-live="polite">
+          {pageToastMessage}
+        </div>
+      )}
       <div className="results-feed video-results-feed">
         {isSubmitting && (
           <VideoResultCard

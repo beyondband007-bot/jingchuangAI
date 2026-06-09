@@ -10218,8 +10218,8 @@ select {
 .transcribe-hero-empty .voice-hero-icon,
 .video-dub-hero-icon {
   display: grid;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   place-items: center;
   margin-bottom: 0;
   color: #fff !important;
@@ -12530,15 +12530,17 @@ section.image-gen-view .image-composer-shell.is-collapsed {
   min-height: 64px;
 }
 
-.image-composer-toast {
+.image-composer-toast,
+.image-page-toast,
+.video-composer-toast,
+.video-page-toast {
   position: fixed;
-  left: calc(
-    var(--feature-sidebar-width) +
-      ((100vw - var(--feature-sidebar-width)) / 2)
-  );
-  bottom: 116px;
+  left: 50%;
+  top: 60%;
+  bottom: auto;
   z-index: 160;
-  max-width: min(420px, calc(100vw - var(--feature-sidebar-width) - 48px));
+  width: max-content;
+  max-width: min(420px, calc(100vw - 48px));
   padding: 11px 16px;
   color: #fff;
   background: rgba(30, 30, 30, 0.94);
@@ -12549,6 +12551,8 @@ section.image-gen-view .image-composer-shell.is-collapsed {
   font-weight: 700;
   line-height: 1.45;
   transform: translateX(-50%);
+  text-align: center;
+  white-space: normal;
   backdrop-filter: blur(18px);
   animation: chat-floating-notice-in 180ms ease-out;
 }

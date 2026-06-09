@@ -134,7 +134,7 @@ export const imageApi = {
     return task;
   },
 
-  async regenerateTask(id) {
+  async regenerateTask(id, overrides = {}) {
     const task = await request(`/api/image/tasks/${id}`);
     const created = await this.createTask({
       prompt: task.prompt,
@@ -142,7 +142,8 @@ export const imageApi = {
       ratio: task.ratio,
       quality: task.quality,
       count: task.count || 1,
-      referenceImageUrl: task.referenceImageUrl || null
+      referenceImageUrl: task.referenceImageUrl || null,
+      ...overrides
     });
     taskPolling.notifyNow();
     return created;

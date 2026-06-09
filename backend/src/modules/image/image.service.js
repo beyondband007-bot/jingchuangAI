@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { getPool } from "../../db/pool.js";
 import { extractResultUrls, getKieTask, mapKieState } from "../../providers/kie/client.js";
 import { createKieImageTask } from "../../providers/kie/image.js";
@@ -8,6 +9,7 @@ import { getUserCredits } from "../../shared/userService.js";
 import { mapImageTask } from "./image.mapper.js";
 import {
   createImageTask,
+  assignImageTasksThread,
   deleteImageTask,
   findEnabledImageModels,
   findImageModelPrice,
@@ -35,6 +37,17 @@ import {
 } from "./image.options.js";
 
 const hiddenImageModelKeys = new Set([gptImage2ImageToImageModelKey, "gpt_image_1_5_i2i"]);
+
+function normalizeThreadId(value) {
+  const threadId = typeof value === "string" ? value.trim() : "";
+  if (!threadId) return `image-thread-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  return threadId.slice(0, 80);
+}
+
+function normalizeContextTaskIds(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))];
+}
 
 export async function getCredits(userId) {
   return getUserCredits(userId);
@@ -84,6 +97,8 @@ export async function getTask(id, userId) {
 export async function createTask(payload, userId) {
   const { prompt, ratio, quality, count = 1, source } = payload;
   const referenceImageUrl = typeof payload.referenceImageUrl === "string" ? payload.referenceImageUrl.trim() : "";
+  const threadId = normalizeThreadId(payload.threadId);
+  const contextTaskIds = normalizeContextTaskIds(payload.contextTaskIds);
   const requestedModel = payload.model;
   validateImagePayload({ prompt, model: requestedModel, ratio, quality, count, referenceImageUrl });
   const model = referenceImageUrl && requestedModel === gptImage2ModelKey
@@ -115,7 +130,14 @@ export async function createTask(payload, userId) {
       count: Number(count),
       costPoints,
       source,
+      threadId,
       referenceImageUrl: referenceImageUrl || null
+    });
+
+    await assignImageTasksThread(connection, {
+      userId,
+      taskIds: [...contextTaskIds, taskId],
+      threadId
     });
 
     await debitCredits(connection, {

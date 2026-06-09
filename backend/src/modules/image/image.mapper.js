@@ -13,6 +13,7 @@ export function mapImageTask(row) {
   const urls = parseJson(row.result_urls, []);
   return {
     id: row.id,
+    threadId: row.thread_id || null,
     model: row.display_name || row.model_key,
     modelKey: row.model_key,
     source: row.source || "image",

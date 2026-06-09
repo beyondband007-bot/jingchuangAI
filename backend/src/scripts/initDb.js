@@ -225,6 +225,7 @@ async function createTables() {
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
       source VARCHAR(40) NOT NULL DEFAULT 'image',
+      thread_id VARCHAR(80) NULL,
       model_key VARCHAR(80) NOT NULL,
       prompt TEXT NOT NULL,
       ratio VARCHAR(20) NOT NULL,
@@ -241,6 +242,7 @@ async function createTables() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_image_tasks_user_created (user_id, created_at),
+      INDEX idx_image_tasks_thread (user_id, thread_id, created_at),
       INDEX idx_image_tasks_source_created (source, user_id, created_at),
       INDEX idx_image_tasks_status (status),
       CONSTRAINT fk_image_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
@@ -265,6 +267,26 @@ async function createTables() {
   );
   if (sourceColumns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'image' AFTER user_id");
+  }
+
+  const [threadIdColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'thread_id'`,
+    [config.db.database]
+  );
+  if (threadIdColumns.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN thread_id VARCHAR(80) NULL AFTER source");
+  }
+
+  const [threadIdIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND INDEX_NAME = 'idx_image_tasks_thread'`,
+    [config.db.database]
+  );
+  if (threadIdIndexes.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD INDEX idx_image_tasks_thread (user_id, thread_id, created_at)");
   }
 
   const [referenceImageUrlColumns] = await pool.query(

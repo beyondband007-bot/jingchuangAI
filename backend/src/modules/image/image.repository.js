@@ -2,6 +2,7 @@ import { getPool } from "../../db/pool.js";
 import { config } from "../../config/index.js";
 
 let sourceColumnPromise;
+let threadIdColumnPromise;
 let referenceImageUrlColumnPromise;
 
 async function hasSourceColumn(connection = getPool()) {
@@ -30,6 +31,19 @@ async function hasReferenceImageUrlColumn(connection = getPool()) {
   return referenceImageUrlColumnPromise;
 }
 
+async function hasThreadIdColumn(connection = getPool()) {
+  threadIdColumnPromise ||= connection
+    .query(
+      `SELECT COLUMN_NAME
+       FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'thread_id'`,
+      [config.db.database]
+    )
+    .then(([rows]) => rows.length > 0)
+    .catch(() => false);
+  return threadIdColumnPromise;
+}
+
 export async function findEnabledImageModels(connection = getPool()) {
   const [models] = await connection.query(
     `SELECT model_key AS value, display_name AS label, base_points AS basePoints
@@ -48,9 +62,50 @@ export async function findImageModelPrice(connection, modelKey) {
   return models[0] || null;
 }
 
-export async function createImageTask(connection, { userId, modelKey, prompt, ratio, quality, count, costPoints, source, referenceImageUrl }) {
+export async function createImageTask(connection, { userId, modelKey, prompt, ratio, quality, count, costPoints, source, threadId, referenceImageUrl }) {
   const supportsSource = source && await hasSourceColumn(connection);
+  const supportsThreadId = threadId && await hasThreadIdColumn(connection);
   const supportsReferenceImageUrl = referenceImageUrl && await hasReferenceImageUrlColumn(connection);
+
+  if (supportsSource && supportsThreadId && supportsReferenceImageUrl) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, source, thread_id, reference_image_url, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, source, threadId, referenceImageUrl, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
+
+  if (supportsSource && supportsThreadId) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, source, thread_id, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, source, threadId, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
+
+  if (supportsThreadId && supportsReferenceImageUrl) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, thread_id, reference_image_url, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, threadId, referenceImageUrl, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
+
+  if (supportsThreadId) {
+    const [result] = await connection.query(
+      `INSERT INTO image_generation_tasks
+       (user_id, thread_id, model_key, prompt, ratio, quality, image_count, cost_points, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [userId, threadId, modelKey, prompt, ratio, quality, count, costPoints]
+    );
+    return result.insertId;
+  }
 
   if (supportsSource && supportsReferenceImageUrl) {
     const [result] = await connection.query(
@@ -89,6 +144,21 @@ export async function createImageTask(connection, { userId, modelKey, prompt, ra
     [userId, modelKey, prompt, ratio, quality, count, costPoints]
   );
   return result.insertId;
+}
+
+export async function assignImageTasksThread(connection, { userId, taskIds, threadId }) {
+  if (!threadId || !Array.isArray(taskIds) || taskIds.length === 0 || !(await hasThreadIdColumn(connection))) {
+    return;
+  }
+  const ids = [...new Set(taskIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0))];
+  if (!ids.length) return;
+  const placeholders = ids.map(() => "?").join(",");
+  await connection.query(
+    `UPDATE image_generation_tasks
+     SET thread_id = ?
+     WHERE user_id = ? AND id IN (${placeholders})`,
+    [threadId, userId, ...ids]
+  );
 }
 
 export async function listImageTaskRows({ userId, filter = "all", source } = {}) {
