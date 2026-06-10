@@ -5006,6 +5006,248 @@ a:hover {
   padding-bottom: 256px;
 }
 
+.video-gen-view-root .video-composer.is-inline {
+  margin: 18px 0 20px;
+  position: relative !important;
+  inset: auto !important;
+  margin: 0 auto 150px !important;
+  transform: none !important;
+  z-index: 2 !important;
+}
+
+.video-gen-view-root .video-composer.is-sticky {
+  position: fixed;
+  right: 32px;
+  bottom: 24px;
+  left: 340px;
+  z-index: 25;
+  padding: 0;
+  border-radius: 20px;
+}
+
+.video-gen-view-root .video-composer.is-sticky .chatbot-ui-dialog {
+  border-bottom-right-radius: 18px !important;
+  border-bottom-left-radius: 18px !important;
+}
+
+.video-gen-view-root .video-composer.is-collapsed .chatbot-ui-dialog {
+  padding: 12px 16px !important;
+}
+
+.video-gen-view-root .video-composer.is-collapsed {
+  min-height: 64px !important;
+}
+
+.video-gen-view-root .video-composer.is-collapsed .chatbot-ui-dialog > div:first-child {
+  margin-bottom: 8px !important;
+}
+
+.video-inspiration-grid {
+  align-items: start;
+  padding: 10px 0 42px;
+}
+
+.video-inspiration-card {
+  display: grid;
+  width: 100%;
+  gap: 9px;
+  padding: 0;
+  overflow: hidden;
+  color: #f6f6f7;
+  text-align: left;
+  background: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  break-inside: avoid;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.26);
+}
+
+.video-inspiration-card:hover {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.video-inspiration-media {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: #090909;
+  aspect-ratio: 16 / 9;
+}
+
+.video-inspiration-media img,
+.video-inspiration-media video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-inspiration-media video {
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.video-inspiration-card:hover .video-inspiration-media video,
+.video-inspiration-card:focus-visible .video-inspiration-media video {
+  opacity: 1;
+}
+
+.video-inspiration-play {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  backdrop-filter: blur(10px);
+}
+
+.video-inspiration-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+}
+
+.video-inspiration-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  border: 0;
+}
+
+.video-inspiration-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.0fr) minmax(360px, 0.9fr);
+  grid-template-rows: minmax(0, 1fr);
+  width: min(1180px, 96vw);
+  min-height: 600px;
+  height: min(720px, 92vh);
+  max-height: min(720px, 92vh);
+  overflow: hidden;
+  background: #1f2024;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+}
+
+.video-inspiration-player {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #111216;
+}
+
+.video-inspiration-player video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 720px;
+  object-fit: contain;
+  background: #050505;
+}
+
+.video-inspiration-detail {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+  gap: 22px;
+  padding: 28px 30px;
+  min-height: 0;
+  overflow-y: auto;
+  color: #f5f5f6;
+  background: #28292e;
+}
+
+.video-inspiration-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.video-inspiration-detail span,
+.video-inspiration-detail dt {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 14px;
+}
+
+.video-inspiration-detail p {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.video-inspiration-detail dl {
+  display: grid;
+  gap: 22px;
+  margin: 0;
+}
+
+.video-inspiration-detail dd {
+  margin: 8px 0 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.video-inspiration-remix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  gap: 8px;
+  min-height: 50px;
+  color: #fff;
+  background: #ef4438;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (max-width: 980px) {
+  .video-inspiration-dialog {
+    grid-template-columns: 1fr;
+  }
+
+  .video-inspiration-detail {
+    max-height: 44vh;
+  }
+
+  .video-gen-view-root .video-composer.is-sticky {
+    right: 16px;
+    left: 16px;
+  }
+}
+
 .video-results-feed {
   align-items: start;
 }
@@ -11884,7 +12126,7 @@ select {
 
 .llm-input {
   width: 100%;
-  min-height: 42px;
+  min-height: 80px;
   max-height: 160px;
   margin: 0 0 18px;
   resize: vertical;
@@ -12493,17 +12735,18 @@ section.image-gen-view .image-composer-shell {
 section.image-gen-view .image-composer-shell.is-inline {
   position: relative !important;
   inset: auto !important;
-  margin: 14px auto 80px !important;
+  margin: 0 auto 150px !important;
   transform: none !important;
   z-index: 2 !important;
 }
 
-.image-composer-heading {
+.image-composer-heading,
+.video-composer-heading {
   width: min(
     800px,
     calc(100vw - var(--feature-sidebar-width) - 48px)
   );
-  margin: 74px auto 24px;
+  margin: 120px auto 24px;
   color: var(--text-primary);
   font-size: clamp(30px, 2.15vw, 42px);
   font-weight: 500;

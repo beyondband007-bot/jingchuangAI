@@ -37,3 +37,6 @@ server-*.err.log
 .claude/
 start-dev.ps1
 STARTUP.md
+
+# Large local media assets
+frontend-app/public/assets/videoInspiration/

@@ -3448,9 +3448,7 @@ function ImageGenerationView({
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
   const [composerSeed, setComposerSeed] = useState(null);
-  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(
-    () => window.scrollY > 240,
-  );
+  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const imageComposerRef = useRef(null);
   const wasActiveRef = useRef(isActive);
@@ -4219,6 +4217,52 @@ const videoExampleCards = [
   },
 ];
 
+const videoInspirationItems = [
+  ["3a-game-style-remake-1", "3A 游戏风格重制", "电影级游戏镜头，英雄角色穿越废墟战场，镜头低角度推进，粒子火花与体积光交织，动作张力强。"],
+  ["3a-game-style-remake-2", "3A 游戏动作场景", "高规格游戏宣传片风格，主角在未来城市中高速奔跑，镜头跟随切换，霓虹灯、烟雾和金属反光细节丰富。"],
+  ["ai-3d-animation", "AI 3D 动画", "高质量 3D 动画短片，抽象能量体在深色空间中旋转展开，光线丝带形成流动轨迹，镜头平滑推进。"],
+  ["ai-3d-bleach-vs-naruto", "热血动漫对战", "日漫热血战斗风格，两名角色在破碎场景中高速交锋，刀光、冲击波、烟尘和夸张动作定格。"],
+  ["axiom-visual-concept-ad", "科技概念广告", "高端科技产品概念广告，黑色背景中产品以金属质感旋转出现，光带扫过边缘，节奏高级克制。"],
+  ["boxing-king-returns", "拳王归来", "拳击冠军从阴影中走向擂台，观众欢呼，聚光灯切换，汗水飞溅，慢动作表现力量感。"],
+  ["camera", "相机产品片", "专业相机产品广告，镜头结构分层展开，玻璃与金属材质反射清晰，黑金色调，商业质感。"],
+  ["car-ad", "汽车广告", "高端汽车在城市夜景道路疾驰，雨后地面反射霓虹，镜头从轮毂推至车身流线，速度感强。"],
+  ["car-visual-concept-ad", "汽车视觉概念片", "未来概念车从暗场灯光中驶出，车身线条被光轨勾勒，大片级运镜，科技豪华风。"],
+  ["chagee-visual-concept-ad", "茶饮视觉广告", "新中式茶饮广告，茶叶、冰块和液体在空中慢动作飞溅，清透光线，品牌视觉大片。"],
+  ["cola", "可乐广告", "冰镇可乐罐从水花与冰块中弹出，红色品牌视觉，气泡喷涌，夏日清爽商业广告。"],
+  ["costume-drama", "古装剧情", "古装人物在宫殿与灯火中缓步转身，衣袂飘动，柔和逆光，东方影视剧质感。"],
+  ["fallen-god", "坠落神明", "暗黑奇幻场景，神明从破碎天空坠落，羽翼与光尘散开，巨大尺度和史诗氛围。"],
+  ["former-king", "昔日王者", "暗黑色调，阴云密布，血色残阳，天地死寂压抑。无数锈剑从地底、古坟、废墟中疯狂破土而出，黑金色剑气撕裂长空，万剑齐鸣如鬼哭。"],
+  ["golden-pomelo-1", "金柚产品片", "金色柚子在清澈水花中旋转，果肉晶莹剔透，阳光穿透果粒，清新食品广告风格。"],
+  ["golden-pomelo-2", "金柚饮品广告", "柚子切片、气泡与冰块组合成饮品视觉，金黄色调，镜头微距推进，清爽高级。"],
+  ["isekai-demon-king", "异世界魔王", "异世界魔王登场，巨大城堡与魔法阵背景，紫黑能量涌动，镜头环绕角色，压迫感强。"],
+  ["live-action-yuelin-qiji-remake", "真人奇迹重制", "真人奇幻重制短片，角色站在神秘森林光束中，魔法粒子环绕，镜头缓慢推进。"],
+  ["massage-device", "按摩仪广告", "智能按摩设备产品广告，温暖灯光与家居场景，产品细节特写，舒适放松氛围。"],
+  ["mecha-transformation-1", "机甲变形 01", "机甲组件高速组装，金属外壳闭合，蓝色能量线点亮，镜头快速切换。"],
+  ["mecha-transformation-2", "机甲变形 02", "巨大机甲从地面站起，机械臂展开，城市废墟背景，震撼科幻大片感。"],
+  ["mecha-transformation-3", "机甲变形 03", "机甲战士在光雨中变形，装甲片层层覆盖，粒子特效和冲击波同步爆发。"],
+  ["mecha-transformation-4", "机甲变形 04", "紧凑机甲变形镜头，机械结构精密咬合，冷色调灯光，工业科幻质感。"],
+  ["medical-ultrasound-device-1", "医疗超声设备", "医疗超声设备商业展示，洁净实验室环境，屏幕数据流动，专业可信的科技医疗风。"],
+  ["smartphone-4", "手机产品片", "智能手机在黑色背景中旋转，屏幕光效流动，边框高光扫过，科技新品发布片风格。"],
+  ["tenth-freezer", "冰柜产品片", "商用冰柜产品广告，冷雾溢出，食品排列整齐，白蓝色调突出制冷能力。"],
+  ["tianmen-weihe", "天门奇景", "山河峡谷与云海之间的宏大自然场景，镜头穿越云层俯冲，东方奇观大片感。"],
+  ["wuhan-cherry-blossom-season", "武汉樱花季", "春日武汉樱花盛开，花瓣随风飘落，城市建筑与游客穿行其中，温柔浪漫纪录片质感。"],
+  ["yongyeti", "雪域巨兽", "雪山深处巨兽苏醒，冰雪飞溅，低角度镜头表现巨大体型，冷色调奇幻冒险风。"],
+  ["yuelin-qiji-3d-remake", "月林奇迹 3D", "3D 奇幻森林场景，月光洒落，角色穿过发光植物与薄雾，梦幻探索氛围。"],
+  ["zhang-xue-motorcycle-remake", "摩托车重制", "人物骑摩托车穿越雨夜街道，车灯划破水雾，镜头贴地跟拍，速度与孤独感并存。"],
+].map(([slug, title, prompt]) => ({
+  id: `video-inspiration-${slug}`,
+  slug,
+  title,
+  prompt,
+  model: "Seedance 2.0",
+  feature: "文生视频",
+  ratio: "16:9",
+  duration: 5,
+  video: `/assets/videoInspiration/${slug}.webm`,
+  preview: `/assets/videoInspiration/previews/${slug}-preview.webm`,
+  poster: `/assets/videoInspiration/posters/${slug}.jpg`,
+}));
+
 function getVideoModelOptions(options, modelKey) {
   const selectedModel =
     options.models.find((item) => item.value === modelKey) || options.models[0];
@@ -4345,7 +4389,106 @@ function VideoResultCard({
   );
 }
 
-function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
+function VideoInspirationCard({ item, onOpen }) {
+  const previewRef = useRef(null);
+
+  function playPreview() {
+    const video = previewRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  }
+
+  function stopPreview() {
+    const video = previewRef.current;
+    if (!video) return;
+    video.pause();
+    video.currentTime = 0;
+  }
+
+  return (
+    <button
+      className="video-inspiration-card"
+      type="button"
+      onClick={() => onOpen(item)}
+      onMouseEnter={playPreview}
+      onMouseLeave={stopPreview}
+      onFocus={playPreview}
+      onBlur={stopPreview}
+    >
+      <span className="video-inspiration-media">
+        <img src={item.poster} alt={item.title} loading="lazy" decoding="async" />
+        <video
+          ref={previewRef}
+          src={item.preview}
+          muted
+          playsInline
+          preload="metadata"
+        />
+        <span className="video-inspiration-play">
+          <Play size={17} fill="currentColor" />
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function VideoInspirationModal({ item, onClose, onRemix }) {
+  if (!item) return null;
+  return (
+    <div className="video-inspiration-modal" role="dialog" aria-modal="true" aria-label={`${item.title} 视频灵感`}>
+      <button className="video-inspiration-modal-backdrop" type="button" aria-label="关闭" onClick={onClose} />
+      <section className="video-inspiration-dialog">
+        <div className="video-inspiration-player">
+          <video src={item.video} poster={item.poster} controls playsInline autoPlay />
+        </div>
+        <aside className="video-inspiration-detail">
+          <button className="video-inspiration-close" type="button" onClick={onClose} aria-label="关闭">
+            <X size={18} />
+          </button>
+          <div>
+            <span>创意提示词</span>
+            <p>{item.prompt}</p>
+          </div>
+          <dl>
+            <div>
+              <dt>使用模型</dt>
+              <dd>{item.model}</dd>
+            </div>
+            <div>
+              <dt>使用功能</dt>
+              <dd>{item.feature}</dd>
+            </div>
+            <div>
+              <dt>画面比例</dt>
+              <dd>{item.ratio}</dd>
+            </div>
+          </dl>
+          <button
+            className="video-inspiration-remix"
+            type="button"
+            onClick={() => onRemix(item)}
+          >
+            <Copy size={17} />
+            做同款
+          </button>
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+function VideoComposerBar({
+  options,
+  onSubmit,
+  resetSignal = 0,
+  seed,
+  placement = "inline",
+  collapsed = false,
+  shellRef,
+  onFocus,
+  onBlur,
+}) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(options.models[0]?.value || "");
   const modelOptions = getVideoModelOptions(options, model);
@@ -4383,6 +4526,12 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
     setPrompt("");
     setToastMessage("");
   }, [resetSignal]);
+
+  useEffect(() => {
+    if (!seed) return;
+    setPrompt(seed.prompt || "");
+    setToastMessage(seed.notice || "");
+  }, [seed]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
@@ -4438,7 +4587,13 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
   }
 
   return (
-    <div className="sowa-composer video-composer" aria-label="视频生成输入框">
+    <div
+      ref={shellRef}
+      className={`sowa-composer video-composer is-${placement} ${collapsed ? "is-collapsed" : ""}`}
+      aria-label="视频生成输入框"
+      onFocus={onFocus}
+      onBlur={onBlur}
+    >
       <VideoPromptDialog
         ariaLabel="视频生成输入框"
         placeholder="请描述你想生成的视频..."
@@ -4464,6 +4619,8 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
         durationOptions={modelOptions.durations}
         price={price}
         rmb={rmb}
+        collapsed={collapsed}
+        dropdownPlacement={placement === "inline" ? "bottom" : "top"}
       />
       {toastMessage && (
         <div className="video-composer-toast" role="status" aria-live="polite">
@@ -4475,13 +4632,20 @@ function VideoComposerBar({ options, onSubmit, resetSignal = 0 }) {
 }
 
 function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("inspiration");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyVideoOptions);
   const [credits, setCredits] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [pageToastMessage, setPageToastMessage] = useState("");
+  const [selectedInspiration, setSelectedInspiration] = useState(null);
+  const [composerSeed, setComposerSeed] = useState(null);
+  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(
+    () => window.scrollY > 240,
+  );
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const videoComposerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
 
@@ -4530,8 +4694,8 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
       .then((value) => mounted && applyCreditsUpdate(setCredits, value));
     async function refreshTasks() {
       const [taskData, runningTaskData] =
-        filter === "all"
-          ? [await videoApi.getTasks({ filter }), null]
+        filter === "inspiration"
+          ? [[], await videoApi.getTasks({ filter: "all" })]
           : await Promise.all([
               videoApi.getTasks({ filter }),
               videoApi.getTasks({ filter: "all" }),
@@ -4550,6 +4714,43 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
     };
   }, [filter]);
 
+  useEffect(() => {
+    function syncComposerThreshold() {
+      const pastThreshold = filter === "inspiration" && window.scrollY > 360;
+      setIsComposerPastThreshold(pastThreshold);
+      if (pastThreshold) setIsComposerFocused(false);
+    }
+
+    syncComposerThreshold();
+    window.addEventListener("scroll", syncComposerThreshold, { passive: true });
+    return () => window.removeEventListener("scroll", syncComposerThreshold);
+  }, [filter]);
+
+  useEffect(() => {
+    if (filter !== "inspiration") return;
+    setIsComposerFocused(false);
+    setIsComposerPastThreshold(false);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0 });
+    });
+  }, [filter]);
+
+  useEffect(() => {
+    function handleDocumentPointerDown(event) {
+      const composer = videoComposerRef.current;
+      if (!composer || composer.contains(event.target)) return;
+      setIsComposerFocused(false);
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown, true);
+    return () =>
+      document.removeEventListener(
+        "pointerdown",
+        handleDocumentPointerDown,
+        true,
+      );
+  }, []);
+
   async function createTask(payload) {
     if (isGuest) {
       requestLoginForGeneration();
@@ -4559,6 +4760,7 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
     setIsSubmitting(true);
     try {
       await videoApi.createTask(payload);
+      setFilter("recent");
       videoApi
         .refreshCredits()
         .then((value) => applyCreditsUpdate(setCredits, value))
@@ -4601,16 +4803,44 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
   }
 
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
+  const isComposerSticky =
+    filter === "inspiration" && isComposerPastThreshold;
+  const isComposerCollapsed = isComposerSticky && !isComposerFocused;
+
+  function openVideoInspiration() {
+    setFilter("inspiration");
+    setIsComposerFocused(false);
+    setIsComposerPastThreshold(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function useVideoInspiration(item) {
+    setSelectedInspiration(null);
+    setFilter("inspiration");
+    setComposerSeed({
+      id: `${item.id}-${Date.now()}`,
+      prompt: item.prompt,
+      notice: "已填入同款提示词",
+    });
+    window.requestAnimationFrame(() => {
+      const top =
+        (videoComposerRef.current?.getBoundingClientRect().top || 0) +
+        window.scrollY -
+        92;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
+  }
 
   return (
     <section className="video-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
         <button
-          className={filter === "all" ? "selected" : ""}
-          onClick={() => setFilter("all")}
+          className={filter === "inspiration" ? "selected" : ""}
+          onClick={openVideoInspiration}
           type="button"
         >
-          全部结果
+          <Sparkles size={17} />
+          灵感广场
         </button>
         <button
           className={filter === "recent" ? "selected" : ""}
@@ -4636,49 +4866,59 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
           {pageToastMessage}
         </div>
       )}
-      <div className="results-feed video-results-feed">
-        {isSubmitting && (
-          <VideoResultCard
-            card={{
-              id: "submitting",
-              status: "processing",
-              model: "创建中",
-              ratio: "16:9",
-              duration: 8,
-              time: "--:--",
-              rmb: null,
-              price: "计算中",
-              prompt: "正在提交视频生成任务",
-              favorite: false,
-            }}
-            onDelete={() => {}}
-            onFavorite={() => {}}
-            onRegenerate={() => {}}
+      {options.models.length > 0 && filter === "inspiration" && (
+        <>
+          {!isComposerSticky && (
+            <div className="video-composer-heading">释放你的创作灵感</div>
+          )}
+          <VideoComposerBar
+            options={options}
+            onSubmit={createTask}
+            resetSignal={resetSignal}
+            seed={composerSeed}
+            placement={isComposerSticky ? "sticky" : "inline"}
+            collapsed={isComposerCollapsed}
+            shellRef={videoComposerRef}
+            onFocus={() => setIsComposerFocused(true)}
+            onBlur={() => {}}
           />
-        )}
-        {filter === "all" ? (
-          <>
-            {sortedCards.map((card) => (
-              <VideoResultCard
-                card={card}
-                key={card.id}
-                onDelete={deleteTask}
-                onFavorite={toggleFavorite}
-                onRegenerate={regenerateTask}
-              />
-            ))}
-            {videoExampleCards.map((card) => (
-              <VideoResultCard
-                card={card}
-                key={card.id}
-                isExample
-                onDelete={() => {}}
-                onFavorite={() => {}}
-                onRegenerate={() => {}}
-              />
-            ))}
-          </>
-        ) : sortedCards.length ? (
+        </>
+      )}
+      {filter === "inspiration" ? (
+        <WaterfallGrid
+          className="video-inspiration-grid"
+          gap={12}
+          maxColumns={4}
+          items={videoInspirationItems}
+          renderItem={(item) => (
+            <VideoInspirationCard
+              item={item}
+              onOpen={setSelectedInspiration}
+            />
+          )}
+        />
+      ) : (
+        <div className="results-feed video-results-feed">
+          {isSubmitting && filter === "recent" && (
+            <VideoResultCard
+              card={{
+                id: "submitting",
+                status: "processing",
+                model: "创建中",
+                ratio: "16:9",
+                duration: 8,
+                time: "--:--",
+                rmb: null,
+                price: "计算中",
+                prompt: "正在提交视频生成任务",
+                favorite: false,
+              }}
+              onDelete={() => {}}
+              onFavorite={() => {}}
+              onRegenerate={() => {}}
+            />
+          )}
+          {sortedCards.length ? (
           sortedCards.map((card) => (
             <VideoResultCard
               card={card}
@@ -4691,14 +4931,13 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0 }) {
         ) : (
           <div className="empty-results video-empty-results">暂无视频结果</div>
         )}
-      </div>
-      {options.models.length > 0 && filter !== "favorite" && (
-        <VideoComposerBar
-          options={options}
-          onSubmit={createTask}
-          resetSignal={resetSignal}
-        />
+        </div>
       )}
+      <VideoInspirationModal
+        item={selectedInspiration}
+        onClose={() => setSelectedInspiration(null)}
+        onRemix={useVideoInspiration}
+      />
     </section>
   );
 }
