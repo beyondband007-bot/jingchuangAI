@@ -1485,6 +1485,7 @@ function ComingSoon({ activeNav }) {
 
 const rechargePresets = [1, 10, 30, 50, 100, 200];
 const paymentCodeTtlSeconds = 3 * 60;
+const paymentResultTtlSeconds = 5;
 const paymentProviderOptions = [
   { value: "alipay", label: "支付宝支付" },
   { value: "wechat", label: "微信支付" },
@@ -1503,6 +1504,14 @@ function formatPaymentCountdown(seconds) {
   const minutes = Math.floor(safeSeconds / 60);
   const rest = safeSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function getPaymentExpiresAt(order) {
+  const expiresInSeconds = Number(order?.expiresInSeconds);
+  if (Number.isFinite(expiresInSeconds)) {
+    return Date.now() + Math.max(0, expiresInSeconds) * 1000;
+  }
+  return Date.now() + paymentCodeTtlSeconds * 1000;
 }
 
 const finalPaymentStatuses = new Set([
@@ -1530,6 +1539,54 @@ function paymentStatusText(status) {
   );
 }
 
+function paymentResultInfo(status) {
+  return (
+    {
+      PAID: {
+        tone: "success",
+        title: "支付成功",
+        message: "积分已到账，资产余额已刷新",
+        icon: CheckCircle2,
+      },
+      CLOSED: {
+        tone: "cancel",
+        title: "订单已关闭",
+        message: "订单已关闭，未产生积分变动",
+        icon: X,
+      },
+      CANCELED: {
+        tone: "cancel",
+        title: "已取消支付",
+        message: "已关闭订单码弹窗，未确认支付结果",
+        icon: X,
+      },
+      EXPIRED: {
+        tone: "cancel",
+        title: "订单码已过期",
+        message: "订单码有效期已结束，请重新发起充值",
+        icon: Timer,
+      },
+      AMOUNT_MISMATCH: {
+        tone: "danger",
+        title: "支付异常",
+        message: "订单金额校验异常，请联系管理员处理",
+        icon: CircleAlert,
+      },
+      REFUNDED: {
+        tone: "cancel",
+        title: "订单已退款",
+        message: "订单已退款，积分变动以收支记录为准",
+        icon: RefreshCcw,
+      },
+    }[status] || {
+      tone: "danger",
+      title: "支付失败",
+      message: "暂未完成支付，请稍后在充值订单中确认状态",
+      icon: CircleAlert,
+    }
+  );
+}
+
 const txTypeMap = {
   grant: { label: "系统赠送", color: "#a855f7" },
   debit: { label: "消费扣费", color: "#dc2626" },
@@ -1554,6 +1611,8 @@ function AssetsPage({ authUser, onOpenAuth }) {
   const [error, setError] = useState("");
   const [paymentDialog, setPaymentDialog] = useState(null);
   const [paymentCountdown, setPaymentCountdown] = useState(paymentCodeTtlSeconds);
+  const [paymentResultDialog, setPaymentResultDialog] = useState(null);
+  const [paymentResultCountdown, setPaymentResultCountdown] = useState(paymentResultTtlSeconds);
 
   const points = Math.max(1, Number(amount) || 1) * 100;
   const recentRechargeOrders = useMemo(() => {
@@ -1602,6 +1661,20 @@ function AssetsPage({ authUser, onOpenAuth }) {
     setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
   }, [transactionsTotalPages]);
 
+  function showPaymentResult(order, statusOverride) {
+    const isExpiredClosedOrder =
+      order?.status === "CLOSED" && String(order?.statusMessage || "").includes("超时");
+    const status = statusOverride || (isExpiredClosedOrder ? "EXPIRED" : order?.status) || "CLOSED";
+    const info = paymentResultInfo(status);
+    setPaymentDialog(null);
+    setPaymentResultCountdown(paymentResultTtlSeconds);
+    setPaymentResultDialog({
+      order,
+      status,
+      ...info,
+    });
+  }
+
   useEffect(() => {
     if (!paymentDialog || finalPaymentStatuses.has(paymentDialog.order?.status))
       return undefined;
@@ -1613,15 +1686,14 @@ function AssetsPage({ authUser, onOpenAuth }) {
           paymentDialog.orderToken,
         );
         if (!alive) return;
+        if (finalPaymentStatuses.has(order.status)) {
+          await refreshAssets();
+          if (alive) showPaymentResult(order);
+          return;
+        }
         setPaymentDialog((current) =>
           current ? { ...current, order } : current,
         );
-        if (order.status === "PAID") {
-          await refreshAssets();
-          setTimeout(() => {
-            if (alive) setPaymentDialog(null);
-          }, 1200);
-        }
       } catch (nextError) {
         if (alive)
           setPaymentDialog((current) =>
@@ -1634,21 +1706,59 @@ function AssetsPage({ authUser, onOpenAuth }) {
       alive = false;
       window.clearInterval(timer);
     };
-  }, [paymentDialog, refreshAssets]);
+  }, [
+    paymentDialog?.order?.outTradeNo,
+    paymentDialog?.orderToken,
+    paymentDialog?.order?.status,
+    refreshAssets,
+  ]);
 
   useEffect(() => {
-    if (!paymentDialog || finalPaymentStatuses.has(paymentDialog.order?.status)) return undefined;
-    setPaymentCountdown(paymentCodeTtlSeconds);
-    const openedAt = Date.now();
-    const timer = window.setInterval(() => {
-      const nextSeconds = Math.max(0, paymentCodeTtlSeconds - Math.floor((Date.now() - openedAt) / 1000));
+    if (!paymentDialog) return undefined;
+    if (finalPaymentStatuses.has(paymentDialog.order?.status)) {
+      showPaymentResult(paymentDialog.order);
+      return undefined;
+    }
+    const expiresAt = paymentDialog.expiresAt || getPaymentExpiresAt(paymentDialog.order);
+    const tick = () => {
+      const nextSeconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
       setPaymentCountdown(nextSeconds);
       if (nextSeconds <= 0) {
+        const expiredOrder = {
+          ...paymentDialog.order,
+          status: "CLOSED",
+          statusMessage: "订单已超时，未完成支付",
+        };
+        showPaymentResult(expiredOrder, "EXPIRED");
+        paymentApi
+          .syncOrder(paymentDialog.order.outTradeNo, paymentDialog.orderToken)
+          .then(refreshAssets)
+          .catch(() => {});
+      }
+    };
+    tick();
+    const timer = window.setInterval(tick, 250);
+    return () => window.clearInterval(timer);
+  }, [
+    paymentDialog?.expiresAt,
+    paymentDialog?.order?.outTradeNo,
+    paymentDialog?.order?.status,
+  ]);
+
+  useEffect(() => {
+    if (!paymentResultDialog) return undefined;
+    setPaymentResultCountdown(paymentResultTtlSeconds);
+    const openedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const nextSeconds = Math.max(0, paymentResultTtlSeconds - Math.floor((Date.now() - openedAt) / 1000));
+      setPaymentResultCountdown(nextSeconds);
+      if (nextSeconds <= 0) {
         window.clearInterval(timer);
+        setPaymentResultDialog(null);
       }
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [paymentDialog?.order?.outTradeNo, paymentDialog?.order?.status]);
+  }, [paymentResultDialog?.status, paymentResultDialog?.order?.outTradeNo]);
 
   function selectPreset(value) {
     setActivePreset(value);
@@ -1674,11 +1784,17 @@ function AssetsPage({ authUser, onOpenAuth }) {
         created.order.outTradeNo,
         created.orderToken,
       );
+      if (finalPaymentStatuses.has(qrState.order?.status)) {
+        showPaymentResult(qrState.order);
+        await refreshAssets();
+        return;
+      }
       setPaymentDialog({
         order: qrState.order,
         orderToken: created.orderToken,
         qrCodeDataUrl: qrState.qrCodeDataUrl,
         provider: qrState.order?.provider || paymentProvider,
+        expiresAt: getPaymentExpiresAt(qrState.order),
         error: "",
       });
       await refreshAssets();
@@ -1915,7 +2031,7 @@ function AssetsPage({ authUser, onOpenAuth }) {
             <button
               className="assets-dialog-close"
               type="button"
-              onClick={() => setPaymentDialog(null)}
+              onClick={() => showPaymentResult(paymentDialog.order, "CANCELED")}
               aria-label="关闭"
             >
               <X size={18} />
@@ -1950,6 +2066,48 @@ function AssetsPage({ authUser, onOpenAuth }) {
             {paymentDialog.error && (
               <div className="assets-error">{paymentDialog.error}</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {paymentResultDialog && (
+        <div
+          className="assets-payment-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={paymentResultDialog.title}
+        >
+          <div className={`assets-payment-result-dialog tone-${paymentResultDialog.tone}`}>
+            <button
+              className="assets-dialog-close"
+              type="button"
+              onClick={() => setPaymentResultDialog(null)}
+              aria-label="关闭"
+            >
+              <X size={18} />
+            </button>
+            <div className="assets-result-icon">
+              {React.createElement(paymentResultDialog.icon, { size: 30 })}
+            </div>
+            <div className="assets-payment-dialog-head">
+              <span>{paymentProviderText(paymentResultDialog.order?.provider || paymentProvider)}</span>
+              <strong>{paymentResultDialog.title}</strong>
+            </div>
+            <p className="assets-result-message">{paymentResultDialog.message}</p>
+            {paymentResultDialog.order?.outTradeNo && (
+              <div className="assets-dialog-meta-card">
+                <span>订单号</span>
+                <strong>{paymentResultDialog.order.outTradeNo}</strong>
+                <span>支付金额</span>
+                <em>¥ {Number(paymentResultDialog.order.totalAmount || 0).toFixed(0)}</em>
+                <span>订单状态</span>
+                <strong>{paymentStatusText(paymentResultDialog.status)}</strong>
+              </div>
+            )}
+            <div className="assets-dialog-countdown">
+              <span>弹窗自动关闭</span>
+              <strong>{paymentResultCountdown}s</strong>
+            </div>
           </div>
         </div>
       )}

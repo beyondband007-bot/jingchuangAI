@@ -14877,6 +14877,73 @@ textarea:focus-visible {
     0 0 0 1px rgba(255, 255, 255, 0.03) inset;
 }
 
+.assets-payment-result-dialog {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(420px, 100%);
+  padding: 30px 24px 24px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 50% 0, rgba(141, 99, 255, 0.2), transparent 38%),
+    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(13, 13, 15, 0.98));
+  border: 1px solid var(--app-border);
+  border-radius: 18px;
+  box-shadow:
+    0 30px 86px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+.assets-payment-result-dialog.tone-success {
+  border-color: rgba(34, 197, 94, 0.34);
+}
+
+.assets-payment-result-dialog.tone-danger {
+  border-color: rgba(239, 68, 68, 0.36);
+}
+
+.assets-payment-result-dialog.tone-cancel {
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.assets-result-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  margin-bottom: 18px;
+  color: #a78bfa;
+  background: rgba(141, 99, 255, 0.12);
+  border: 1px solid rgba(141, 99, 255, 0.28);
+  border-radius: 50%;
+}
+
+.assets-payment-result-dialog.tone-success .assets-result-icon {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.32);
+}
+
+.assets-payment-result-dialog.tone-danger .assets-result-icon {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.assets-payment-result-dialog .assets-payment-dialog-head {
+  margin: 0 52px 14px;
+  text-align: center;
+}
+
+.assets-result-message {
+  max-width: 310px;
+  margin: 0 0 22px;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
 .assets-dialog-close {
   position: absolute;
   top: 22px;
@@ -14956,14 +15023,14 @@ textarea:focus-visible {
 
 .assets-dialog-meta-card span {
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .assets-dialog-meta-card strong {
   min-width: 0;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-align: right;
   word-break: break-all;

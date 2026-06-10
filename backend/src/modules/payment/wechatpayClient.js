@@ -101,7 +101,7 @@ async function callWechatPay({ method, pathWithQuery, bodyObject }) {
   return data;
 }
 
-export async function createWechatNativeOrder({ outTradeNo, totalAmount, subject }) {
+export async function createWechatNativeOrder({ outTradeNo, totalAmount, subject, expireAt }) {
   const totalCents = Math.round(Number(totalAmount) * 100);
   return callWechatPay({
     method: "POST",
@@ -112,6 +112,7 @@ export async function createWechatNativeOrder({ outTradeNo, totalAmount, subject
       description: subject,
       out_trade_no: outTradeNo,
       notify_url: config.wechatPay.notifyUrl,
+      ...(expireAt ? { time_expire: expireAt } : {}),
       amount: {
         total: totalCents,
         currency: "CNY"

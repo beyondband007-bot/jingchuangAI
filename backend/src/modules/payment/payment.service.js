@@ -23,8 +23,12 @@ import {
 } from "./wechatpayClient.js";
 
 const POINTS_PER_YUAN = 100;
+const ORDER_TTL_SECONDS = 3 * 60;
+const ORDER_TTL_MS = ORDER_TTL_SECONDS * 1000;
 const FINAL_ORDER_STATUSES = new Set(["PAID", "CANCELED", "CLOSED", "REFUNDED", "AMOUNT_MISMATCH"]);
 const SUPPORTED_PAYMENT_PROVIDERS = new Set(["alipay", "wechat"]);
+const WAITING_PAYMENT_MESSAGE = "\u7b49\u5f85\u7528\u6237\u626b\u7801\u652f\u4ed8";
+const EXPIRED_MESSAGE = "\u8ba2\u5355\u5df2\u8d85\u65f6\uff0c\u672a\u5b8c\u6210\u652f\u4ed8";
 
 function hashToken(token) {
   return createHash("sha256").update(token).digest("hex");
@@ -37,7 +41,7 @@ function generateOutTradeNo() {
 function normalizeAmount(value) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount < 1) {
-    throw createHttpError("充值金额不能低于 1 元，且必须为整数元", 400);
+    throw createHttpError("\u5145\u503c\u91d1\u989d\u4e0d\u80fd\u4f4e\u4e8e 1 \u5143\uff0c\u4e14\u5fc5\u987b\u4e3a\u6574\u6570\u5143", 400);
   }
   return amount;
 }
@@ -45,7 +49,7 @@ function normalizeAmount(value) {
 function normalizeProvider(value) {
   const provider = String(value || "alipay").trim().toLowerCase();
   if (!SUPPORTED_PAYMENT_PROVIDERS.has(provider)) {
-    throw createHttpError("暂不支持该支付方式", 400);
+    throw createHttpError("\u6682\u4e0d\u652f\u6301\u8be5\u652f\u4ed8\u65b9\u5f0f", 400);
   }
   return provider;
 }
@@ -58,7 +62,27 @@ function isAlipayTradeNotExist(error) {
   return error?.subCode === "ACQ.TRADE_NOT_EXIST";
 }
 
-function toClientOrder(order) {
+async function getOrderAgeSeconds(order, connection = getPool()) {
+  const [rows] = await connection.query(
+    `SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS ageSeconds
+     FROM payment_orders
+     WHERE id = ?
+     LIMIT 1`,
+    [order.id]
+  );
+  return Number(rows[0]?.ageSeconds || 0);
+}
+
+async function getOrderExpiresInSeconds(order, connection = getPool()) {
+  const ageSeconds = await getOrderAgeSeconds(order, connection);
+  return Math.max(0, ORDER_TTL_SECONDS - ageSeconds);
+}
+
+async function isOrderExpired(order, connection = getPool()) {
+  return await getOrderAgeSeconds(order, connection) >= ORDER_TTL_SECONDS;
+}
+
+function toClientOrder(order, expiresInSeconds = null) {
   return {
     outTradeNo: order.out_trade_no,
     provider: order.provider,
@@ -70,7 +94,8 @@ function toClientOrder(order) {
     paidAt: order.paid_at,
     closedAt: order.closed_at,
     lastCheckedAt: order.last_checked_at,
-    createdAt: order.created_at
+    createdAt: order.created_at,
+    expiresInSeconds
   };
 }
 
@@ -82,19 +107,19 @@ async function findOrderForUser(userId, outTradeNo, connection = getPool()) {
      LIMIT 1`,
     [userId, outTradeNo]
   );
-  if (!rows[0]) throw createHttpError("订单不存在", 404);
+  if (!rows[0]) throw createHttpError("\u8ba2\u5355\u4e0d\u5b58\u5728", 404);
   return rows[0];
 }
 
 async function findOrderById(orderId, connection = getPool()) {
   const [rows] = await connection.query("SELECT * FROM payment_orders WHERE id = ? LIMIT 1", [orderId]);
-  if (!rows[0]) throw createHttpError("订单不存在", 404);
+  if (!rows[0]) throw createHttpError("\u8ba2\u5355\u4e0d\u5b58\u5728", 404);
   return rows[0];
 }
 
 function assertOrderToken(order, orderToken) {
   if (!orderToken || !order.client_token_hash || hashToken(orderToken) !== order.client_token_hash) {
-    throw createHttpError("订单校验失败", 403);
+    throw createHttpError("\u8ba2\u5355\u6821\u9a8c\u5931\u8d25", 403);
   }
 }
 
@@ -115,6 +140,21 @@ async function markAmountMismatch(orderId, message) {
      WHERE id = ?`,
     [message, orderId]
   );
+}
+
+async function markOrderExpired(order, connection = getPool()) {
+  if (FINAL_ORDER_STATUSES.has(order.status)) return order;
+  await connection.query(
+    `UPDATE payment_orders
+     SET status = 'CLOSED',
+         status_message = ?,
+         closed_at = COALESCE(closed_at, NOW()),
+         last_checked_at = NOW()
+     WHERE id = ? AND status NOT IN ('PAID', 'CANCELED', 'CLOSED', 'REFUNDED', 'AMOUNT_MISMATCH')`,
+    [EXPIRED_MESSAGE, order.id]
+  );
+  await recordPaymentEvent(order.id, "payment.expired", order.provider, { previousStatus: order.status }, connection);
+  return findOrderById(order.id, connection);
 }
 
 async function markOrderPaid(orderId, data = {}) {
@@ -148,7 +188,7 @@ async function markOrderPaid(orderId, data = {}) {
     await connection.query(
       `UPDATE payment_orders
        SET status = 'PAID',
-           status_message = '\u652f\u4ed8\u6210\u529f\uff0c\u79ef\u5206\u5df2\u5230\u8d26',
+           status_message = ?,
            paid_at = COALESCE(paid_at, NOW()),
            last_checked_at = NOW(),
            alipay_trade_no = ?,
@@ -157,6 +197,7 @@ async function markOrderPaid(orderId, data = {}) {
            wechat_trade_state = ?
        WHERE id = ?`,
       [
+        "\u652f\u4ed8\u6210\u529f\uff0c\u79ef\u5206\u5df2\u5230\u8d26",
         data.alipayTradeNo || order.alipay_trade_no,
         data.alipayTradeStatus || order.alipay_trade_status,
         data.wechatTransactionId || order.wechat_transaction_id,
@@ -178,11 +219,11 @@ async function markOrderPaid(orderId, data = {}) {
 async function applyAlipayTradeStatus(orderId, result) {
   const order = await findOrderById(orderId);
   if (result.out_trade_no && result.out_trade_no !== order.out_trade_no) {
-    await markAmountMismatch(order.id, "支付宝查询订单号不一致");
+    await markAmountMismatch(order.id, "\u652f\u4ed8\u5b9d\u67e5\u8be2\u8ba2\u5355\u53f7\u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
   if (result.total_amount && !amountsMatch(result.total_amount, order.total_amount)) {
-    await markAmountMismatch(order.id, "支付宝查询金额不一致");
+    await markAmountMismatch(order.id, "\u652f\u4ed8\u5b9d\u67e5\u8be2\u91d1\u989d\u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
 
@@ -195,12 +236,12 @@ async function applyAlipayTradeStatus(orderId, result) {
     await getPool().query(
       `UPDATE payment_orders
        SET status = 'CLOSED',
-           status_message = '交易已关闭',
+           status_message = ?,
            closed_at = COALESCE(closed_at, NOW()),
            last_checked_at = NOW(),
            alipay_trade_status = ?
        WHERE id = ?`,
-      [result.trade_status, order.id]
+      ["\u4ea4\u6613\u5df2\u5173\u95ed", result.trade_status, order.id]
     );
   } else if (result.trade_status === "WAIT_BUYER_PAY") {
     const scanned = Boolean(result.buyer_logon_id || result.buyer_user_id || result.buyer_open_id);
@@ -211,7 +252,7 @@ async function applyAlipayTradeStatus(orderId, result) {
            last_checked_at = NOW(),
            alipay_trade_status = ?
        WHERE id = ?`,
-      [scanned ? "SCANNED" : "WAITING_PAYMENT", scanned ? "用户已扫码，等待确认支付" : "等待用户扫码支付", result.trade_status, order.id]
+      [scanned ? "SCANNED" : "WAITING_PAYMENT", scanned ? "\u7528\u6237\u5df2\u626b\u7801\uff0c\u7b49\u5f85\u786e\u8ba4\u652f\u4ed8" : WAITING_PAYMENT_MESSAGE, result.trade_status, order.id]
     );
   }
 
@@ -221,19 +262,19 @@ async function applyAlipayTradeStatus(orderId, result) {
 async function applyWechatPayTradeStatus(orderId, result) {
   const order = await findOrderById(orderId);
   if (result.out_trade_no && result.out_trade_no !== order.out_trade_no) {
-    await markAmountMismatch(order.id, "微信支付订单号不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u8ba2\u5355\u53f7\u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
   if (result.mchid && result.mchid !== getWechatPayMchId()) {
-    await markAmountMismatch(order.id, "微信支付商户号不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u5546\u6237\u53f7\u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
   if (result.appid && result.appid !== getWechatPayAppId()) {
-    await markAmountMismatch(order.id, "微信支付 appid 不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8 appid \u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
   if (result.amount?.total !== undefined && Math.round(Number(order.total_amount) * 100) !== Number(result.amount.total)) {
-    await markAmountMismatch(order.id, "微信支付金额不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u91d1\u989d\u4e0d\u4e00\u81f4");
     return findOrderById(order.id);
   }
 
@@ -252,7 +293,7 @@ async function applyWechatPayTradeStatus(orderId, result) {
            wechat_transaction_id = ?,
            wechat_trade_state = ?
        WHERE id = ?`,
-      [result.trade_state_desc || "交易已关闭", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+      [result.trade_state_desc || "\u4ea4\u6613\u5df2\u5173\u95ed", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
     );
   } else if (result.trade_state === "USERPAYING") {
     await getPool().query(
@@ -263,7 +304,7 @@ async function applyWechatPayTradeStatus(orderId, result) {
            wechat_transaction_id = ?,
            wechat_trade_state = ?
        WHERE id = ?`,
-      [result.trade_state_desc || "用户已扫码，等待确认支付", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+      [result.trade_state_desc || "\u7528\u6237\u5df2\u626b\u7801\uff0c\u7b49\u5f85\u786e\u8ba4\u652f\u4ed8", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
     );
   } else if (["NOTPAY", "ACCEPT"].includes(result.trade_state)) {
     await getPool().query(
@@ -274,7 +315,7 @@ async function applyWechatPayTradeStatus(orderId, result) {
            wechat_transaction_id = ?,
            wechat_trade_state = ?
        WHERE id = ?`,
-      [result.trade_state_desc || "等待用户扫码支付", result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
+      [result.trade_state_desc || WAITING_PAYMENT_MESSAGE, result.transaction_id || order.wechat_transaction_id, result.trade_state, order.id]
     );
   } else if (result.trade_state) {
     await getPool().query(
@@ -304,39 +345,45 @@ export async function listRechargeOrders(userId) {
 }
 
 export async function createRechargeOrder(user, input) {
-  if (user?.isGuest) throw createHttpError("????????", 401);
+  if (user?.isGuest) throw createHttpError("\u8bf7\u5148\u767b\u5f55\u540e\u518d\u5145\u503c", 401);
   const provider = normalizeProvider(input.provider);
   const amount = normalizeAmount(input.amount);
-  if (provider === "alipay" && !isAlipayConfigured()) throw createHttpError("?????????????????", 503);
-  if (provider === "wechat" && !isWechatPayConfigured()) throw createHttpError("????????????????", 503);
+  if (provider === "alipay" && !isAlipayConfigured()) throw createHttpError("\u652f\u4ed8\u5b9d\u652f\u4ed8\u672a\u914d\u7f6e\uff0c\u8bf7\u5148\u914d\u7f6e\u540e\u518d\u5145\u503c", 503);
+  if (provider === "wechat" && !isWechatPayConfigured()) throw createHttpError("\u5fae\u4fe1\u652f\u4ed8\u672a\u914d\u7f6e\uff0c\u8bf7\u5148\u914d\u7f6e\u540e\u518d\u5145\u503c", 503);
+
   const outTradeNo = generateOutTradeNo();
   const orderToken = randomBytes(24).toString("base64url");
   const points = amount * POINTS_PER_YUAN;
-  const subject = `???? ${amount} ?`;
+  const subject = `\u79ef\u5206\u5145\u503c ${amount} \u5143`;
 
   await getPool().query(
     `INSERT INTO payment_orders (
        user_id, out_trade_no, provider, subject, total_amount, points,
        status, status_message, client_token_hash
-     ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', '?????', ?)`,
-    [user.id, outTradeNo, provider, subject, amount.toFixed(2), points, hashToken(orderToken)]
+     ) VALUES (?, ?, ?, ?, ?, ?, 'CREATED', ?, ?)`,
+    [user.id, outTradeNo, provider, subject, amount.toFixed(2), points, "\u8ba2\u5355\u5df2\u521b\u5efa", hashToken(orderToken)]
   );
 
   const order = await findOrderForUser(user.id, outTradeNo);
   return { order: toClientOrder(order), orderToken };
 }
+
 export async function getPaymentQrCode(user, outTradeNo, orderToken) {
-  if (user?.isGuest) throw createHttpError("????????", 401);
+  if (user?.isGuest) throw createHttpError("\u8bf7\u5148\u767b\u5f55\u540e\u518d\u5145\u503c", 401);
   const order = await findOrderForUser(user.id, outTradeNo);
   assertOrderToken(order, orderToken);
-  if (FINAL_ORDER_STATUSES.has(order.status)) throw createHttpError("??????????", 400);
+  if (FINAL_ORDER_STATUSES.has(order.status)) throw createHttpError("\u8ba2\u5355\u5f53\u524d\u72b6\u6001\u4e0d\u53ef\u652f\u4ed8", 400);
+  if (await isOrderExpired(order)) {
+    const expiredOrder = await markOrderExpired(order);
+    return { order: toClientOrder(expiredOrder, 0), qrCode: null, qrCodeDataUrl: null };
+  }
 
   if (order.qr_code) {
     const qrCodeDataUrl = order.qr_code_data_url || await QRCode.toDataURL(order.qr_code, { margin: 1, width: 240 });
     if (!order.qr_code_data_url) {
       await getPool().query("UPDATE payment_orders SET qr_code_data_url = ? WHERE id = ?", [qrCodeDataUrl, order.id]);
     }
-    return { order: toClientOrder(order), qrCode: order.qr_code, qrCodeDataUrl };
+    return { order: toClientOrder(order, await getOrderExpiresInSeconds(order)), qrCode: order.qr_code, qrCodeDataUrl };
   }
 
   let qrCode;
@@ -346,7 +393,8 @@ export async function getPaymentQrCode(user, outTradeNo, orderToken) {
     const result = await createWechatNativeOrder({
       outTradeNo: order.out_trade_no,
       totalAmount: Number(order.total_amount).toFixed(2),
-      subject: order.subject
+      subject: order.subject,
+      expireAt: new Date(Date.now() + ORDER_TTL_MS).toISOString()
     });
     qrCode = result.code_url;
     eventType = "wechatpay.native";
@@ -357,7 +405,7 @@ export async function getPaymentQrCode(user, outTradeNo, orderToken) {
       total_amount: Number(order.total_amount).toFixed(2),
       subject: order.subject,
       product_code: "QR_CODE_OFFLINE",
-      timeout_express: "5m",
+      timeout_express: "3m",
       goods_detail: [{
         goods_id: "jingchuang-ai-credits",
         goods_name: order.subject,
@@ -370,7 +418,7 @@ export async function getPaymentQrCode(user, outTradeNo, orderToken) {
     eventPayload = result;
   }
 
-  if (!qrCode) throw createHttpError("??????????", 502);
+  if (!qrCode) throw createHttpError("\u8ba2\u5355\u7801\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5", 502);
   const qrCodeDataUrl = await QRCode.toDataURL(qrCode, { margin: 1, width: 240 });
 
   await getPool().query(
@@ -378,20 +426,25 @@ export async function getPaymentQrCode(user, outTradeNo, orderToken) {
      SET qr_code = ?,
          qr_code_data_url = ?,
          status = 'QR_READY',
-         status_message = '?????????????'
+         status_message = ?
      WHERE id = ?`,
-    [qrCode, qrCodeDataUrl, order.id]
+    [qrCode, qrCodeDataUrl, "\u8ba2\u5355\u7801\u5df2\u751f\u6210\uff0c\u7b49\u5f85\u652f\u4ed8", order.id]
   );
   const updatedOrder = await findOrderForUser(user.id, outTradeNo);
   await recordPaymentEvent(updatedOrder.id, eventType, order.provider, eventPayload);
 
-  return { order: toClientOrder(updatedOrder), qrCode, qrCodeDataUrl };
+  return { order: toClientOrder(updatedOrder, await getOrderExpiresInSeconds(updatedOrder)), qrCode, qrCodeDataUrl };
 }
+
 export async function syncPaymentOrder(user, outTradeNo, orderToken) {
-  if (user?.isGuest) throw createHttpError("????????", 401);
+  if (user?.isGuest) throw createHttpError("\u8bf7\u5148\u767b\u5f55\u540e\u518d\u5145\u503c", 401);
   const order = await findOrderForUser(user.id, outTradeNo);
   assertOrderToken(order, orderToken);
-  if (FINAL_ORDER_STATUSES.has(order.status)) return toClientOrder(order);
+  if (FINAL_ORDER_STATUSES.has(order.status)) return toClientOrder(order, 0);
+  if (await isOrderExpired(order)) {
+    const expiredOrder = await markOrderExpired(order);
+    return toClientOrder(expiredOrder, 0);
+  }
 
   if (order.provider === "wechat") {
     let result;
@@ -402,10 +455,10 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
       await getPool().query(
         `UPDATE payment_orders
          SET status = 'WAITING_PAYMENT',
-             status_message = '????????',
+             status_message = ?,
              last_checked_at = NOW()
          WHERE id = ?`,
-        [order.id]
+        [WAITING_PAYMENT_MESSAGE, order.id]
       );
       const updatedOrder = await findOrderById(order.id);
       if (updatedOrder.status !== order.status) {
@@ -415,7 +468,7 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
           code: "ORDERNOTEXIST"
         });
       }
-      return toClientOrder(updatedOrder);
+      return toClientOrder(updatedOrder, await getOrderExpiresInSeconds(updatedOrder));
     }
 
     const updatedOrder = await applyWechatPayTradeStatus(order.id, result);
@@ -424,7 +477,7 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
       nextStatus: updatedOrder.status,
       ...result
     });
-    return toClientOrder(updatedOrder);
+    return toClientOrder(updatedOrder, await getOrderExpiresInSeconds(updatedOrder));
   }
 
   let result;
@@ -435,10 +488,10 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
     await getPool().query(
       `UPDATE payment_orders
        SET status = 'WAITING_PAYMENT',
-           status_message = '????????',
+           status_message = ?,
            last_checked_at = NOW()
        WHERE id = ?`,
-      [order.id]
+      [WAITING_PAYMENT_MESSAGE, order.id]
     );
     const updatedOrder = await findOrderById(order.id);
     if (updatedOrder.status !== order.status) {
@@ -448,7 +501,7 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
         subCode: "ACQ.TRADE_NOT_EXIST"
       });
     }
-    return toClientOrder(updatedOrder);
+    return toClientOrder(updatedOrder, await getOrderExpiresInSeconds(updatedOrder));
   }
 
   const updatedOrder = await applyAlipayTradeStatus(order.id, result);
@@ -457,26 +510,26 @@ export async function syncPaymentOrder(user, outTradeNo, orderToken) {
     nextStatus: updatedOrder.status,
     ...result
   });
-  return toClientOrder(updatedOrder);
+  return toClientOrder(updatedOrder, await getOrderExpiresInSeconds(updatedOrder));
 }
+
 export async function handleAlipayNotify(params) {
   if (!verifyAlipayNotify(params)) return false;
 
   const [rows] = await getPool().query("SELECT * FROM payment_orders WHERE out_trade_no = ? LIMIT 1", [params.out_trade_no]);
   const order = rows[0];
-  if (!order) return false;
-  if (order.provider !== "alipay") return false;
+  if (!order || order.provider !== "alipay") return false;
 
   if (params.app_id !== getAlipayAppId()) {
-    await markAmountMismatch(order.id, "支付宝通知 app_id 不一致");
+    await markAmountMismatch(order.id, "\u652f\u4ed8\u5b9d\u901a\u77e5 app_id \u4e0d\u4e00\u81f4");
     return false;
   }
   if (getAlipaySellerId() && params.seller_id !== getAlipaySellerId()) {
-    await markAmountMismatch(order.id, "支付宝通知 seller_id 不一致");
+    await markAmountMismatch(order.id, "\u652f\u4ed8\u5b9d\u901a\u77e5 seller_id \u4e0d\u4e00\u81f4");
     return false;
   }
   if (!amountsMatch(params.total_amount, order.total_amount)) {
-    await markAmountMismatch(order.id, "支付宝通知金额不一致");
+    await markAmountMismatch(order.id, "\u652f\u4ed8\u5b9d\u901a\u77e5\u91d1\u989d\u4e0d\u4e00\u81f4");
     return false;
   }
 
@@ -502,15 +555,15 @@ export async function handleWechatPayNotify({ headers, rawBody, body }) {
   if (!order || order.provider !== "wechat") return false;
 
   if (resource.appid !== getWechatPayAppId()) {
-    await markAmountMismatch(order.id, "微信支付通知 appid 不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u901a\u77e5 appid \u4e0d\u4e00\u81f4");
     return false;
   }
   if (resource.mchid !== getWechatPayMchId()) {
-    await markAmountMismatch(order.id, "微信支付通知商户号不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u901a\u77e5\u5546\u6237\u53f7\u4e0d\u4e00\u81f4");
     return false;
   }
   if (resource.amount?.total !== undefined && Math.round(Number(order.total_amount) * 100) !== Number(resource.amount.total)) {
-    await markAmountMismatch(order.id, "微信支付通知金额不一致");
+    await markAmountMismatch(order.id, "\u5fae\u4fe1\u652f\u4ed8\u901a\u77e5\u91d1\u989d\u4e0d\u4e00\u81f4");
     return false;
   }
 
