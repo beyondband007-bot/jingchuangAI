@@ -1201,7 +1201,7 @@ const AppHome = memo(function AppHome({
       if (!doc) return;
       const cards = Array.from(doc.querySelectorAll(".feature-card"));
       cards.forEach((card, index) => {
-        const route = homeFeatureRoutes[index];
+        const route = card.dataset.featureRoute || homeFeatureRoutes[index];
         if (!route || card.dataset.jcRouteBound === route) return;
         card.dataset.jcRouteBound = route;
         card.addEventListener("click", (event) => {

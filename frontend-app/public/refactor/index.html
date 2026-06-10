@@ -935,13 +935,13 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
   if (!stage || !pivot || !prev || !next) return;
 
   var cards = [
-    { title: "图片生成", desc: "一句话生成高质量图片", image: "cases/thumb-img-gen.jpg", tint: "#a78bfa" },
-    { title: "视频生成", desc: "快速创作镜头与分镜", image: "cases/gallery-3.jpg", tint: "#60a5fa" },
-    { title: "数字人", desc: "形象、声音、文案全流程驱动", image: "cases/thumb-digital-human.jpg", tint: "#22d3ee" },
-    { title: "动作迁移", desc: "参考动作驱动角色表演", image: "cases/hot-3-motion.jpg", tint: "#f472b6" },
-    { title: "AI 音乐", desc: "旋律与氛围快速生成", image: "cases/hot-2-music.jpg", tint: "#fb923c" },
-    { title: "智能抠图", desc: "主体识别与背景分离", image: "cases/gallery-6.jpg", tint: "#4ade80" },
-    { title: "画质提升", desc: "细节增强与高清修复", image: "cases/gallery-10.jpg", tint: "#facc15" }
+    { title: "图片生成", desc: "一句话生成高质量图片", image: "cases/thumb-img-gen.jpg", tint: "#a78bfa", route: "image" },
+    { title: "视频生成", desc: "快速创作镜头与分镜", image: "cases/gallery-3.jpg", tint: "#60a5fa", route: "video" },
+    { title: "数字人", desc: "形象、声音、文案全流程驱动", image: "cases/thumb-digital-human.jpg", tint: "#22d3ee", route: "digital-human" },
+    { title: "动作迁移", desc: "参考动作驱动角色表演", image: "cases/hot-3-motion.jpg", tint: "#f472b6", route: "motion" },
+    { title: "AI 音乐", desc: "旋律与氛围快速生成", image: "cases/hot-2-music.jpg", tint: "#fb923c", route: "music" },
+    { title: "智能抠图", desc: "主体识别与背景分离", image: "cases/gallery-6.jpg", tint: "#4ade80", route: "remove-bg" },
+    { title: "画质提升", desc: "细节增强与高清修复", image: "cases/gallery-10.jpg", tint: "#facc15", route: "enhance" }
   ];
   var activeIndex = 0;
   var timer = null;
@@ -959,7 +959,7 @@ document.querySelectorAll(".nav-child-item").forEach(item=>{item.addEventListene
     pivot.innerHTML = cards.map(function (card, index) {
       return '' +
         '<div class="arc-card-shell" data-index="' + index + '">' +
-          '<button class="feature-card arc-card arc-card--visual" type="button" style="--arc-tint:' + card.tint + '">' +
+          '<button class="feature-card arc-card arc-card--visual" type="button" data-feature-route="' + card.route + '" style="--arc-tint:' + card.tint + '">' +
             '<span class="arc-card-art"><img src="' + card.image + '" alt="' + card.title + '" loading="' + (index < 3 ? "eager" : "lazy") + '" decoding="async"></span>' +
             '<span class="feature-card-name">' + card.title + '</span>' +
             '<span class="feature-card-desc">' + card.desc + '</span>' +
