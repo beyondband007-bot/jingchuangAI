@@ -14,7 +14,7 @@
 ```js
 "/assets/digital-human/host-demo.mp4"
 "/assets/image/gallery-1.jpg"
-"/assets/video/demo-cover.jpg"
+"/assets/videoInspiration/demo.webm"
 ```
 
 新增功能时创建同名目录，并只在该功能代码中引用自己的目录。

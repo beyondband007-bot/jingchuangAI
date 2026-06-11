@@ -856,6 +856,10 @@ button {
 }
 
 .replicate-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   min-height: 38px;
   padding-top: 10px;
   color: #668aaa;
@@ -863,6 +867,50 @@ button {
   font-size: 13px;
   line-height: 1.5;
   text-wrap: pretty;
+}
+
+.replicate-composer-footer > span {
+  min-width: 0;
+}
+
+.replicate-submit-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: linear-gradient(90deg, #ad6cfc 0%, #5a2cfc 100%);
+  border: 1px solid #5a2cfc;
+  border-radius: 8px;
+  box-shadow: 0 14px 32px rgba(93, 30, 224, 0.28);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.replicate-submit-button:not(:disabled):hover,
+.replicate-submit-button:not(:disabled):focus-visible {
+  border-color: rgba(190, 164, 255, 0.86);
+  box-shadow: 0 18px 38px rgba(93, 30, 224, 0.36);
+  transform: translateY(-1px);
+}
+
+.replicate-submit-button:disabled {
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--app-border);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .replicate-result-panel {
@@ -1341,6 +1389,15 @@ button {
     min-height: 112px;
     grid-template-columns: 44px minmax(0, 1fr);
     padding: 14px;
+  }
+
+  .replicate-composer-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .replicate-submit-button {
+    width: 100%;
   }
 
   .replicate-upload-icon {
@@ -5995,6 +6052,8 @@ a:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 1;
+  transition: opacity 0.18s ease;
 }
 
 .dh-avatar-cover img.is-cover-loading,
@@ -14062,6 +14121,30 @@ textarea:focus-visible {
   font-size: 13px;
 }
 
+.ratio-preview-slot,
+.custom-select-trigger > .ratio-preview-slot {
+  display: inline-flex;
+  flex: 0 0 30px;
+  width: 30px;
+  min-width: 30px;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.ratio-preview-icon {
+  display: block;
+  border: 1.5px solid rgba(204, 204, 204, 0.72);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ratio-preview-icon.is-selected {
+  border-color: #8f78ff;
+  background: rgba(143, 120, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(143, 120, 255, 0.1);
+}
+
 .custom-select-trigger > svg:first-child {
   flex: 0 0 auto;
   color: #8d63ff;
@@ -14191,6 +14274,22 @@ textarea:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.custom-select-menu button > span {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.custom-select-menu button > span > span:last-child {
+  min-width: 0;
+  text-align: left;
+}
+
+.custom-select-menu button .ratio-preview-slot {
+  overflow: visible;
 }
 
 .custom-select-menu button svg {

@@ -16,7 +16,33 @@ function normalizeOption(item) {
   };
 }
 
-function measureMenuContentWidth(triggerElement, normalizedOptions) {
+function parseRatio(value) {
+  const [width = 1, height = 1] = String(value || "1:1")
+    .split(":")
+    .map((part) => Number(part) || 1);
+
+  return { width, height };
+}
+
+function RatioPreviewIcon({ ratio, selected = false }) {
+  const { width, height } = parseRatio(ratio);
+  const isPortrait = height > width;
+  const isSquare = width === height;
+
+  return (
+    <span className="ratio-preview-slot" aria-hidden="true">
+      <span
+        className={`ratio-preview-icon ${selected ? "is-selected" : ""}`}
+        style={{
+          width: isSquare ? "18px" : isPortrait ? "14px" : "22px",
+          height: isSquare ? "18px" : isPortrait ? "22px" : "14px"
+        }}
+      />
+    </span>
+  );
+}
+
+function measureMenuContentWidth(triggerElement, normalizedOptions, hasRatioIcon = false) {
   if (!triggerElement || normalizedOptions.length === 0 || typeof document === "undefined") {
     return 0;
   }
@@ -34,7 +60,7 @@ function measureMenuContentWidth(triggerElement, normalizedOptions) {
     return Math.max(maxWidth, labelWidth);
   }, 0);
 
-  return Math.ceil(widestLabel + 72);
+  return Math.ceil(widestLabel + 72 + (hasRatioIcon ? 38 : 0));
 }
 
 export function CustomSelect({
@@ -45,7 +71,8 @@ export function CustomSelect({
   className = "",
   ariaLabel,
   placeholder = "请选择",
-  disabled = false
+  disabled = false,
+  showRatioIcon = false
 }) {
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -66,7 +93,7 @@ export function CustomSelect({
       rootRef.current?.closest(".face-swap-workbench__setting--model")
     );
     const contentWidth = shouldFitContent
-      ? measureMenuContentWidth(triggerRef.current, normalizedOptions)
+      ? measureMenuContentWidth(triggerRef.current, normalizedOptions, showRatioIcon)
       : 0;
     const width = Math.min(
       window.innerWidth - 16,
@@ -128,7 +155,7 @@ export function CustomSelect({
       window.removeEventListener("resize", closeOnPageInteraction);
       window.removeEventListener("scroll", closeOnPageInteraction, true);
     };
-  }, [open, normalizedOptions.length]);
+  }, [open, normalizedOptions.length, showRatioIcon]);
 
   function pickOption(option) {
     if (disabled) return;
@@ -156,7 +183,10 @@ export function CustomSelect({
             key={option.value}
             onClick={() => pickOption(option)}
           >
-            <span>{option.label}</span>
+            <span>
+              {showRatioIcon ? <RatioPreviewIcon ratio={option.value} selected={isSelected} /> : null}
+              <span>{option.label}</span>
+            </span>
             {isSelected ? <Check size={16} /> : null}
           </button>
         );
@@ -178,6 +208,7 @@ export function CustomSelect({
         onClick={() => setOpen((current) => !current)}
       >
         {Icon ? <Icon size={16} /> : null}
+        {showRatioIcon && selectedOption ? <RatioPreviewIcon ratio={selectedOption.value} selected={open} /> : null}
         <span>{selectedOption?.label ?? placeholder}</span>
         <ChevronDown className="custom-select-chevron" size={15} />
       </button>

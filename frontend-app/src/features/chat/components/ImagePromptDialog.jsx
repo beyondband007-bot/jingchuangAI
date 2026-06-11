@@ -1,5 +1,37 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+function RatioPreviewIcon({ ratio, selected = false }) {
+  const [width = 1, height = 1] = String(ratio || "1:1")
+    .split(":")
+    .map((part) => Number(part) || 1);
+  const isPortrait = height > width;
+  const isSquare = width === height;
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-flex",
+        width: "30px",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: "0 0 30px"
+      }}
+    >
+      <span
+        style={{
+          width: isSquare ? "18px" : isPortrait ? "14px" : "22px",
+          height: isSquare ? "18px" : isPortrait ? "22px" : "14px",
+          borderRadius: "4px",
+          border: `1.5px solid ${selected ? "#8f78ff" : "rgba(204, 204, 204, 0.72)"}`,
+          background: selected ? "rgba(143, 120, 255, 0.18)" : "rgba(255, 255, 255, 0.06)",
+          boxShadow: selected ? "0 0 0 3px rgba(143, 120, 255, 0.1)" : "none"
+        }}
+      />
+    </span>
+  );
+}
+
 export function ImagePromptDialog({
   ariaLabel,
   placeholder,
@@ -391,6 +423,7 @@ export function ImagePromptDialog({
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
             >
+              <RatioPreviewIcon ratio={ratio} selected={showRatioDropdown} />
               <span>{currentRatio?.label || currentRatio || ratio}</span>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showRatioDropdown ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>
                 <path d="M3 4.5L6 7.5L9 4.5" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -399,31 +432,40 @@ export function ImagePromptDialog({
 
             {showRatioDropdown && (
               <div style={dropdownMenuStyle(150)}>
-                {ratioOptions.map((item) => (
-                  <div
-                    key={item.value || item}
-                    onClick={() => {
-                      onRatioChange(item.value || item);
+                {ratioOptions.map((item) => {
+                  const optionValue = item.value || item;
+                  const isSelected = optionValue === ratio;
+
+                  return (
+                    <div
+                      key={optionValue}
+                      onClick={() => {
+                        onRatioChange(optionValue);
                       setShowRatioDropdown(false);
                     }}
                     style={{
-                      ...dropdownItemStyle((item.value || item) === ratio ? "#8f78ff" : "#cccccc"),
-                      fontWeight: (item.value || item) === ratio ? "500" : "400",
+                      ...dropdownItemStyle(isSelected ? "#8f78ff" : "#cccccc"),
+                      fontWeight: isSelected ? "500" : "400",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between"
+                      justifyContent: "space-between",
+                      gap: "12px"
                     }}
                     onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem((item.value || item) === ratio ? "#8f78ff" : "#cccccc")}
+                    onMouseLeave={resetDropdownItem(isSelected ? "#8f78ff" : "#cccccc")}
                   >
-                    {item.label || item}
-                    {(item.value || item) === ratio && (
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
+                      <RatioPreviewIcon ratio={optionValue} selected={isSelected} />
+                      {item.label || item}
+                    </span>
+                    {isSelected && (
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                         <path d="M2.5 7L5.5 10L11.5 4" stroke="#8f78ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

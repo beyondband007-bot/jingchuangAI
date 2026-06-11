@@ -1133,7 +1133,7 @@ const videoExampleCards = [
     rmb: "约￥22.4",
     price: "2240 积分",
     prompt: "未来都市中，巨型怪兽与外骨骼机甲战士在高架桥下展开激烈战斗，建筑崩塌、火焰四起，画面具有电影级质感，冷暗色调，高速动态镜头。",
-    video: "/assets/video/视频1.mp4?v=h264",
+    video: "/assets/videoInspiration/3a-game-style-remake-1.webm",
     favorite: false
   },
   {
@@ -1147,7 +1147,7 @@ const videoExampleCards = [
     rmb: "约￥2.9",
     price: "294 积分",
     prompt: "古风仙侠男子，额间有精致花纹，一只黑蝶停在鼻尖后化作流光溢彩的金属面具覆于面部，随后在雾气弥漫的竹林中高速战斗，黑红配色，动作凌厉飘逸。",
-    video: "/assets/video/视频2.mp4",
+    video: "/assets/videoInspiration/3a-game-style-remake-2.webm",
     favorite: false
   },
   {
@@ -1161,7 +1161,7 @@ const videoExampleCards = [
     rmb: "约￥9.6",
     price: "960 积分",
     prompt: "唯美古风浪漫画面，女子眼眸中飞出一只发光的粉色蝴蝶，拖着长长的白色绸带，飞过盛开的樱花与飞檐翘角的古建筑，空中漂浮书法文字，色调柔和梦幻，粉白交织。",
-    video: "/assets/video/视频3.mp4",
+    video: "/assets/videoInspiration/ai-3d-animation.webm",
     favorite: false
   },
   {
@@ -1175,7 +1175,7 @@ const videoExampleCards = [
     rmb: "约￥6.3",
     price: "630 积分",
     prompt: "沙漠废土风格的动漫战斗，绿发女子戴着巨型头骨面具，与手持散发紫色光芒长刀的黑发男子在沙尘中激烈交锋，动作充满张力，紫黑配色，烟尘飞扬。",
-    video: "/assets/video/视频4.mp4",
+    video: "/assets/videoInspiration/ai-3d-bleach-vs-naruto.webm",
     favorite: false
   },
   {
@@ -1189,7 +1189,7 @@ const videoExampleCards = [
     rmb: "约￥3.9",
     price: "392 积分",
     prompt: "日系动画风格，身穿白衬衫校服的少年沉入深蓝色海底，阳光透过水面洒下光束，周围气泡升腾，少年伸手触碰发光水母，随后被巨大的漩涡卷入，画面静谧而神秘。",
-    video: "/assets/video/视频5.mp4",
+    video: "/assets/videoInspiration/axiom-visual-concept-ad.webm",
     favorite: false
   },
   {
@@ -1203,7 +1203,7 @@ const videoExampleCards = [
     rmb: "约￥22.4",
     price: "2240 积分",
     prompt: "东方奇幻仙侠意境，两只通体透明发光的灵鹿在瀑布溪流与雾气缭绕的山林间奔跑跳跃，足下生辉，身上带有流光拖尾，穿梭于古建筑与密林之间，氛围空灵神秘，青绿色调。",
-    video: "/assets/video/视频6.mp4",
+    video: "/assets/videoInspiration/boxing-king-returns.webm",
     favorite: false
   }
 ];
@@ -1862,18 +1862,18 @@ function getDigitalHumanPreviewSignature({ text, voiceId, speed, volume, pitch, 
 }
 
 const digitalHumanPublicPlaceholders = [
-  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" },
-  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频1.mp4?v=h264" },
-  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频2.mp4" },
-  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频3.mp4" },
-  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频4.mp4" },
-  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频5.mp4" },
-  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready", cover: "/assets/video/视频6.mp4" }
+  { id: "public-anchor-dialogue", name: "主播对话", description: "适合主播对话、讲解与短视频口播内容。", language: "中文 / 通用", status: "ready" },
+  { id: "public-product", name: "产品讲解员", description: "适合产品介绍、卖点说明与功能演示。", language: "中文 / 通用", status: "ready" },
+  { id: "public-medical", name: "健康科普官", description: "适合健康科普、知识普及与专业解读。", language: "中文 / 通用", status: "ready" },
+  { id: "public-home-lady", name: "居家知性女性", description: "适合生活方式分享、日常推荐与轻内容表达。", language: "中文 / 通用", status: "ready" },
+  { id: "public-real-estate", name: "房地产经纪人", description: "适合楼盘介绍、房产讲解与销售咨询。", language: "中文 / 通用", status: "ready" },
+  { id: "public-travel", name: "文旅推荐官", description: "适合景点推荐、路线介绍与文旅宣传。", language: "中文 / 通用", status: "ready" },
+  { id: "public-fashion-host", name: "时尚类女主播", description: "适合穿搭分享、时尚推荐与美妆内容。", language: "中文 / 通用", status: "ready" },
+  { id: "public-knowledge-host", name: "知识科普类女主播", description: "适合知识讲解、课程节选与信息梳理。", language: "中文 / 通用", status: "ready" },
+  { id: "public-executive-lady", name: "职场女高管", description: "适合商务汇报、管理观点与职业表达。", language: "中文 / 通用", status: "ready" },
+  { id: "public-business-host", name: "职场轻商务女主播", description: "适合企业宣传、职场分享与品牌内容。", language: "中文 / 通用", status: "ready" },
+  { id: "public-finance", name: "财经主播", description: "适合财经解读、市场观察与资讯播报。", language: "中文 / 通用", status: "ready" },
+  { id: "public-operations", name: "运营达人", description: "适合活动运营、增长案例与方法分享。", language: "中文 / 通用", status: "ready" }
 ];
 
 function getDigitalHumanPublicAvatars(list = []) {

@@ -349,7 +349,7 @@ export function ReplicateView({ authUser }) {
               <div className="replicate-composer-footer">
                 <span>{notice || "图片用于反推画面风格和主体细节；视频会额外分析镜头运动、节奏与动态变化。"}</span>
                 <button
-                  className="voice-generate-button"
+                  className="replicate-submit-button"
                   type="button"
                   onClick={startReplicate}
                   disabled={isAnalyzing || !selectedFile}

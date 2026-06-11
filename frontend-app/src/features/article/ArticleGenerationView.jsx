@@ -816,7 +816,13 @@ export function ArticleGenerationView({ authUser, onOpenAuth, ShowcaseCardCompon
             </label>
             <label className="article-field">
               <span>画幅</span>
-              <CustomSelect ariaLabel="画幅" value={form.aspectRatio} onChange={(value) => updateForm({ aspectRatio: value })} options={options.ratios} />
+              <CustomSelect
+                ariaLabel="画幅"
+                value={form.aspectRatio}
+                onChange={(value) => updateForm({ aspectRatio: value })}
+                options={options.ratios}
+                showRatioIcon
+              />
             </label>
           </div>
 
