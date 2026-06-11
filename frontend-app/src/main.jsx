@@ -5109,6 +5109,7 @@ function ChatComposerBar({
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const attachmentInputRef = useRef(null);
+  const modelMenuRef = useRef(null);
 
   const isReady = options.models.length > 0;
   const selectedModel =
@@ -5127,6 +5128,36 @@ function ChatComposerBar({
     .map((item) =>
       item.value === "low" ? { ...item, label: "深度思考" } : item,
     );
+
+  useEffect(() => {
+    if (!openMenu) return undefined;
+
+    function closeOnOutside(event) {
+      if (!modelMenuRef.current?.contains(event.target)) {
+        setOpenMenu(null);
+      }
+    }
+
+    function closeOnPageInteraction(event) {
+      if (!modelMenuRef.current?.contains(event.target)) {
+        setOpenMenu(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", closeOnOutside, true);
+    document.addEventListener("wheel", closeOnPageInteraction, true);
+    document.addEventListener("touchmove", closeOnPageInteraction, true);
+    window.addEventListener("resize", closeOnPageInteraction);
+    window.addEventListener("scroll", closeOnPageInteraction, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside, true);
+      document.removeEventListener("wheel", closeOnPageInteraction, true);
+      document.removeEventListener("touchmove", closeOnPageInteraction, true);
+      window.removeEventListener("resize", closeOnPageInteraction);
+      window.removeEventListener("scroll", closeOnPageInteraction, true);
+    };
+  }, [openMenu]);
 
   async function handleAttachmentSelect(event) {
     const file = event.target.files?.[0];
@@ -5236,6 +5267,7 @@ function ChatComposerBar({
             {isUploadingAttachment ? <Loader2 size={16} /> : <Plus size={16} />}
           </button>
           <div
+            ref={modelMenuRef}
             className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}
           >
             <button

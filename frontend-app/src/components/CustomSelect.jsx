@@ -51,7 +51,7 @@ export function CustomSelect({
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
-  const [menuPlacement, setMenuPlacement] = useState("bottom");
+  const [menuPlacement, setMenuPlacement] = useState("top");
   const [menuStyle, setMenuStyle] = useState(null);
   const normalizedOptions = useMemo(() => (options || []).map(normalizeOption), [options]);
   const selectedOption = normalizedOptions.find((item) => String(item.value) === String(value)) || normalizedOptions[0] || null;
@@ -74,7 +74,7 @@ export function CustomSelect({
     );
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const openUpward = spaceBelow < estimatedHeight + 12 && spaceAbove > spaceBelow;
+    const openUpward = spaceAbove >= Math.min(estimatedHeight + 12, 120) || spaceAbove >= spaceBelow;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
     const top = openUpward
       ? Math.max(8, rect.top - estimatedHeight - 8)
@@ -107,19 +107,26 @@ export function CustomSelect({
 
     updateMenuPosition();
 
-    function syncMenuPosition() {
-      updateMenuPosition();
+    function closeOnPageInteraction(event) {
+      const target = event.target;
+      const isInsideMenu = menuRef.current?.contains(target);
+
+      if (!isInsideMenu) setOpen(false);
     }
 
-    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("pointerdown", closeOnOutside, true);
     document.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("resize", syncMenuPosition);
-    window.addEventListener("scroll", syncMenuPosition, true);
+    document.addEventListener("wheel", closeOnPageInteraction, true);
+    document.addEventListener("touchmove", closeOnPageInteraction, true);
+    window.addEventListener("resize", closeOnPageInteraction);
+    window.addEventListener("scroll", closeOnPageInteraction, true);
     return () => {
-      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("pointerdown", closeOnOutside, true);
       document.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("resize", syncMenuPosition);
-      window.removeEventListener("scroll", syncMenuPosition, true);
+      document.removeEventListener("wheel", closeOnPageInteraction, true);
+      document.removeEventListener("touchmove", closeOnPageInteraction, true);
+      window.removeEventListener("resize", closeOnPageInteraction);
+      window.removeEventListener("scroll", closeOnPageInteraction, true);
     };
   }, [open, normalizedOptions.length]);
 

@@ -29,10 +29,17 @@ export function VideoPromptDialog({
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showRatioDropdown, setShowRatioDropdown] = useState(false);
   const [showDurationDropdown, setShowDurationDropdown] = useState(false);
+  const dialogRef = useRef(null);
   const textareaRef = useRef(null);
   const maxPromptRows = 9;
   const promptLineHeight = 24;
   const promptMaxHeight = maxPromptRows * promptLineHeight;
+
+  function closeDropdowns() {
+    setShowModelDropdown(false);
+    setShowRatioDropdown(false);
+    setShowDurationDropdown(false);
+  }
 
   function resizePromptTextarea() {
     const textarea = textareaRef.current;
@@ -47,6 +54,42 @@ export function VideoPromptDialog({
   useEffect(() => {
     resizePromptTextarea();
   }, [value, collapsed]);
+
+  useEffect(() => {
+    if (!showModelDropdown && !showRatioDropdown && !showDurationDropdown) {
+      return undefined;
+    }
+
+    function closeOnOutside(event) {
+      if (!dialogRef.current?.contains(event.target)) {
+        closeDropdowns();
+      }
+    }
+
+    function closeOnPageInteraction() {
+      closeDropdowns();
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") closeDropdowns();
+    }
+
+    document.addEventListener("pointerdown", closeOnOutside, true);
+    document.addEventListener("wheel", closeOnPageInteraction, true);
+    document.addEventListener("touchmove", closeOnPageInteraction, true);
+    document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnPageInteraction);
+    window.addEventListener("scroll", closeOnPageInteraction, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside, true);
+      document.removeEventListener("wheel", closeOnPageInteraction, true);
+      document.removeEventListener("touchmove", closeOnPageInteraction, true);
+      document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnPageInteraction);
+      window.removeEventListener("scroll", closeOnPageInteraction, true);
+    };
+  }, [showDurationDropdown, showModelDropdown, showRatioDropdown]);
 
   const shellStyle = useMemo(
     () => ({
@@ -128,6 +171,7 @@ export function VideoPromptDialog({
   if (collapsed) {
     return (
       <div
+        ref={dialogRef}
         className="chatbot-ui-dialog is-collapsed"
         aria-label={ariaLabel}
         style={{
@@ -218,6 +262,7 @@ export function VideoPromptDialog({
 
   return (
     <div
+      ref={dialogRef}
       className="chatbot-ui-dialog"
       aria-label={ariaLabel}
       style={shellStyle}
