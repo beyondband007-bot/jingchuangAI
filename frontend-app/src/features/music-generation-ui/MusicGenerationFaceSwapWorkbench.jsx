@@ -190,7 +190,7 @@ export function MusicGenerationFaceSwapWorkbench({
                 <textarea
                   value={lyrics}
                   onChange={(event) => setLyrics(event.target.value)}
-                  placeholder={"[Verse]\n第一段歌词...\n[Chorus]\n副歌歌词...\n[Verse 2]\n第二段歌词..."}
+                  placeholder={"请输入歌词..."}
                   disabled={isGenerating}
                 />
               </div>
