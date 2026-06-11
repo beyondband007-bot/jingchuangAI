@@ -513,11 +513,14 @@ function getRouteView() {
 }
 
 function getInitialView() {
+  const routeView = getRouteView();
+  if (routeView !== "splash") return routeView;
+
   const shouldEnterApp =
     window.sessionStorage.getItem(appEntryStorageKey) === "1";
   if (shouldEnterApp) {
     window.sessionStorage.removeItem(appEntryStorageKey);
-    return getRouteView();
+    return "home";
   }
   if (window.location.pathname !== "/" || window.location.hash) {
     window.history.replaceState(null, "", "/");
@@ -5589,110 +5592,11 @@ function getDigitalHumanPreviewSignature({
   });
 }
 
-const digitalHumanPublicPlaceholders = [
-  {
-    id: "public-anchor-dialogue",
-    name: "主播对话",
-    description: "适合主播对话、讲解与短视频口播内容。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-product",
-    name: "产品讲解员",
-    description: "适合产品介绍、卖点说明与功能演示。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-medical",
-    name: "健康科普官",
-    description: "适合健康科普、知识普及与专业解读。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-home-lady",
-    name: "居家知性女性",
-    description: "适合生活方式分享、日常推荐与轻内容表达。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-real-estate",
-    name: "房地产经纪人",
-    description: "适合楼盘介绍、房产讲解与销售咨询。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-travel",
-    name: "文旅推荐官",
-    description: "适合景点推荐、路线介绍与文旅宣传。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-fashion-host",
-    name: "时尚类女主播",
-    description: "适合穿搭分享、时尚推荐与美妆内容。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-knowledge-host",
-    name: "知识科普类女主播",
-    description: "适合知识讲解、课程节选与信息梳理。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-executive-lady",
-    name: "职场女高管",
-    description: "适合商务汇报、管理观点与职业表达。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-business-host",
-    name: "职场轻商务女主播",
-    description: "适合企业宣传、职场分享与品牌内容。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-finance",
-    name: "财经主播",
-    description: "适合财经解读、市场观察与资讯播报。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-  {
-    id: "public-operations",
-    name: "运营达人",
-    description: "适合活动运营、增长案例与方法分享。",
-    language: "中文 / 通用",
-    status: "ready",
-  },
-];
-
 function getDigitalHumanPublicAvatars(list = []) {
-  const merged = new Map();
-  digitalHumanPublicPlaceholders.forEach((item) => merged.set(item.id, item));
-  list.forEach((item) => {
-    const fallback = merged.get(item.id) || {};
-    merged.set(item.id, {
-      ...fallback,
-      ...item,
-      cover:
-        item.cover ||
-        item.assetPath ||
-        item.imagePath ||
-        item.posterPath ||
-        fallback.cover,
-    });
-  });
-  return [...merged.values()];
+  return (Array.isArray(list) ? list : []).map((item) => ({
+    ...item,
+    cover: item.cover || item.assetPath || item.imagePath || item.posterPath,
+  }));
 }
 
 function isDigitalHumanVideoCover(value) {
@@ -6664,8 +6568,12 @@ function DigitalHumanGenerationView({ onReturnHome }) {
                   ))
                 ) : (
                   <DigitalHumanEmptyMedia
-                    title="还没有自定义形象"
-                    description="点击创建形象，后续接入 MiniMax 训练接口"
+                    title={tab === "mine" ? "还没有自定义形象" : "暂无公共数字人模板"}
+                    description={
+                      tab === "mine"
+                        ? "点击创建形象，后续接入 MiniMax 训练接口"
+                        : "后台未返回可用模板，请稍后刷新或检查数字人素材配置"
+                    }
                   />
                 )}
               </div>
