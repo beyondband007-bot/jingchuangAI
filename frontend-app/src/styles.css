@@ -18028,6 +18028,11 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
   .studio-landing .features > .medo-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .studio-landing .feature-card p {
+    font-size: 0.86rem;
   }
 
   .studio-landing .feature-card h3 {
