@@ -16858,6 +16858,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   text-align: center;
   width: min(720px, calc(100vw - 50px));
   margin: 0 auto;
+  padding: 120px 0;
   display: grid;
   gap: 14px;
 }
