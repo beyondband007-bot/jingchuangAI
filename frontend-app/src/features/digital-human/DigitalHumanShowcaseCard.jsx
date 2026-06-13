@@ -6,6 +6,13 @@ function formatModeLabel(mode) {
   return mode === "audio" ? "音频驱动" : "文本驱动";
 }
 
+function getPosterPath(value) {
+  const source = String(value || "").split(/[?#]/)[0];
+  const match = source.match(/^(.+)\/([^/]+)\.(mp4|webm|mov)$/i);
+  if (!match) return "";
+  return `${match[1]}/posters/${match[2]}.jpg`;
+}
+
 export function DigitalHumanShowcaseCard({
   selectedAvatar,
   selectedAvatarIsVideo,
@@ -25,7 +32,15 @@ export function DigitalHumanShowcaseCard({
         <div className="dh-showcase-media">
           {selectedAvatar?.cover ? (
             selectedAvatarIsVideo ? (
-              <video src={selectedAvatar.cover} muted loop playsInline autoPlay preload="metadata" />
+              <video
+                src={selectedAvatar.cover}
+                poster={selectedAvatar.poster || getPosterPath(selectedAvatar.cover)}
+                muted
+                loop
+                playsInline
+                autoPlay
+                preload="metadata"
+              />
             ) : (
               <img src={selectedAvatar.cover} alt={title} />
             )

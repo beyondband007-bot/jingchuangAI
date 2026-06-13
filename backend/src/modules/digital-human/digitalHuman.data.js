@@ -33,8 +33,9 @@ export const publicAvatars = [
     description: "适合健康科普员类数字人口播、讲解与短视频内容",
     language: "中文 / 通用",
     status: "ready",
-    cover: "/assets/digital-human/健康科普员.mp4",
-    assetPath: "/assets/digital-human/健康科普员.mp4"
+    cover: "/assets/digital-human/健康科普员-safari.mp4",
+    assetPath: "/assets/digital-human/健康科普员-safari.mp4",
+    poster: "/assets/digital-human/posters/健康科普员-safari.jpg"
   },
   {
     id: "public-home-lady",

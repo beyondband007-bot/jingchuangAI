@@ -5596,12 +5596,20 @@ function getDigitalHumanPublicAvatars(list = []) {
   return (Array.isArray(list) ? list : []).map((item) => ({
     ...item,
     cover: item.cover || item.assetPath || item.imagePath || item.posterPath,
+    poster: item.poster || item.posterPath || getDigitalHumanPosterPath(item.cover || item.assetPath),
   }));
 }
 
 function isDigitalHumanVideoCover(value) {
   const source = String(value || "").split(/[?#]/)[0];
   return /\.(mp4|webm|mov)$/i.test(source);
+}
+
+function getDigitalHumanPosterPath(value) {
+  const source = String(value || "").split(/[?#]/)[0];
+  const match = source.match(/^(.+)\/([^/]+)\.(mp4|webm|mov)$/i);
+  if (!match) return "";
+  return `${match[1]}/posters/${match[2]}.jpg`;
 }
 
 function resolveDigitalHumanAvatarSelection(current, avatarData) {
@@ -5675,15 +5683,19 @@ function DigitalHumanPreloadCover({ avatar, isVideoCover }) {
         <video
           className={isLoading ? "is-cover-loading" : ""}
           src={cover}
+          poster={avatar.poster || getDigitalHumanPosterPath(cover)}
           muted
           loop
           playsInline
           preload="metadata"
+          onLoadedMetadata={() => setLoadState("ready")}
           onLoadedData={() => setLoadState("ready")}
           onCanPlay={() => setLoadState("ready")}
           onError={() => setLoadState("failed")}
           onMouseEnter={(event) => {
-            if (loadState === "ready") event.currentTarget.play();
+            if (loadState !== "failed") {
+              event.currentTarget.play().catch(() => {});
+            }
           }}
           onMouseLeave={(event) => event.currentTarget.pause()}
         />
@@ -5778,7 +5790,13 @@ function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
         </div>
         <div className="dh-avatar-preview-body">
           {isVideoCover ? (
-            <video src={avatar.cover} controls autoPlay playsInline />
+            <video
+              src={avatar.cover}
+              poster={avatar.poster || getDigitalHumanPosterPath(avatar.cover)}
+              controls
+              autoPlay
+              playsInline
+            />
           ) : avatar.cover ? (
             <img src={avatar.cover} alt={avatar.name} />
           ) : (
