@@ -1,4 +1,4 @@
-import { Renderer, Program, Mesh, Triangle, Texture } from "./vendor/ogl.mjs";
+import { Renderer, Program, Mesh, Triangle, Texture } from "./vendor/ogl.mjs?v=20260608-https-mime";
 
       const vertexShader = `#version 300 es
 in vec2 position;
