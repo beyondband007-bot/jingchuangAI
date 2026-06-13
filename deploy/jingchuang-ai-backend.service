@@ -1,0 +1,18 @@
+[Unit]
+Description=Jingchuang AI backend
+After=network.target mysql.service mysqld.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/www/AI_workbase/backend
+EnvironmentFile=-/home/www/AI_workbase/backend/.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3006
+Environment=PATH=/root/.nvm/versions/node/v22.22.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/root/.nvm/versions/node/v22.22.3/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

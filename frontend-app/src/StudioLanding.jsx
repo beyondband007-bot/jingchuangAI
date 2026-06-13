@@ -28,7 +28,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
 
     let cancelled = false;
     let cleanupBurst = null;
-    const burstModuleUrl = "/new_page/assets/prismatic-burst.js";
+    const burstModuleUrl = "/new_page/assets/prismatic-burst.js?v=20260608-https-mime";
     const importPublicModule = new Function("url", "return import(url)");
 
     importPublicModule(burstModuleUrl)

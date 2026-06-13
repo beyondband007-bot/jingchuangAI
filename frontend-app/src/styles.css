@@ -6061,6 +6061,10 @@ a:hover {
   opacity: 0;
 }
 
+.dh-avatar-cover video.is-cover-loading {
+  opacity: 1;
+}
+
 .dh-cover-skeleton {
   position: absolute;
   inset: 0;
