@@ -12,6 +12,14 @@ import {
   mapKieDigitalHumanState
 } from "../../providers/kie/digitalHuman.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import {
+  buildReferenceAudio,
+  buildReferenceImage,
+  createArkVideoGenerationTask,
+  extractArkVideoGenerationResult,
+  getArkVideoGenerationTask,
+  mapArkVideoGenerationState
+} from "../../providers/volcengine/videoGeneration.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { designMinimaxVoice } from "../../providers/minimax/voiceDesign.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
@@ -19,6 +27,12 @@ import { createHttpError } from "../../shared/http.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
+import {
+  createVirtualAssetFromLocalFile,
+  listVirtualAssets,
+  refreshVirtualAsset,
+  waitForVirtualAssetReference
+} from "./arkVirtualAssets.service.js";
 import {
   createDigitalHumanTaskRow,
   deleteDigitalHumanTaskRow,
@@ -37,7 +51,7 @@ import {
 const myAvatars = [];
 const designedVoices = [];
 const execFileAsync = promisify(execFile);
-const maxDigitalHumanAudioMs = 5 * 60 * 1000;
+const maxDigitalHumanAudioMs = 15 * 1000;
 const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 
 function nowLabel(date = new Date()) {
@@ -60,6 +74,10 @@ function getAudioDurationMs(speech, text = "") {
 
 function getKieDurationSeconds(audioDurationMs) {
   return Math.max(2, Math.min(300, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+}
+
+function getArkDurationSeconds(audioDurationMs) {
+  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
 }
 
 function isImagePath(filePath = "") {
@@ -92,8 +110,41 @@ function getVoiceById(voiceId) {
   return [...designedVoices, ...voices].find((item) => item.id === voiceId) || voices[0];
 }
 
-function getAvatarById(avatarId) {
-  return [...publicAvatars, ...myAvatars].find((item) => item.id === avatarId);
+function mapVirtualAssetToAvatar(asset) {
+  if (!asset) return null;
+  const ready = asset.status === "active";
+  return {
+    id: `ark-asset-${asset.id}`,
+    name: asset.fileName || `Ark Avatar ${asset.id}`,
+    description:
+      asset.status === "failed"
+        ? asset.error || "Ark asset failed"
+        : ready
+          ? "Ark AIGC asset is Active"
+          : "Ark AIGC asset is processing",
+    language: "AIGC / Seedance",
+    status: ready ? "ready" : asset.status === "failed" ? "failed" : "training",
+    cover: asset.localUrl,
+    provider: "ark",
+    arkAssetId: asset.id,
+    providerAssetId: asset.providerAssetId,
+    assetUri: asset.assetUri,
+    createdAt: nowLabel(asset.createdAt || new Date())
+  };
+}
+
+async function getMyAvatars() {
+  const assets = await listVirtualAssets({ feature: "digital-human" });
+  return assets.filter((asset) => asset.assetType === "Image").map(mapVirtualAssetToAvatar).filter(Boolean);
+}
+
+async function getAvatarById(avatarId) {
+  const staticAvatar = publicAvatars.find((item) => item.id === avatarId);
+  if (staticAvatar) return staticAvatar;
+
+  const match = /^ark-asset-(\d+)$/.exec(String(avatarId || ""));
+  if (!match) return null;
+  return mapVirtualAssetToAvatar(await refreshVirtualAsset(match[1]));
 }
 
 function getModelByKey(modelKey) {
@@ -204,6 +255,48 @@ async function createProviderTask(taskId, payload) {
   }
   const savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
 
+  if (avatar.provider === "ark") {
+    console.log(`[digital-human] task ${taskId}: creating Ark audio asset and Seedance task`);
+    const user = await getDemoUser();
+    const audioAsset = await createVirtualAssetFromLocalFile({
+      userId: user.id,
+      feature: "digital-human-audio",
+      localUrl: savedAudio.publicPath,
+      filePath: savedAudio.filePath,
+      originalName: savedAudio.fileName,
+      mimeType: savedAudio.mimeType,
+      sizeBytes: speech.audioBuffer.length
+    });
+    const avatarReferenceUrl = await waitForVirtualAssetReference(avatar.arkAssetId);
+    const audioReferenceUrl = await waitForVirtualAssetReference(audioAsset.id);
+    const provider = await createArkVideoGenerationTask({
+      model: config.ark.videoModel,
+      content: [
+        {
+          type: "text",
+          text: `图片1中的虚拟人像按照音频1自然开口说话，保持人物身份、五官、服装、画面主体和背景稳定。口型与音频1同步，表情自然。台词：${text}`
+        },
+        buildReferenceImage(avatarReferenceUrl),
+        buildReferenceAudio(audioReferenceUrl)
+      ],
+      resolution: config.kie.digitalHumanResolution || "720p",
+      ratio: "adaptive",
+      duration: getArkDurationSeconds(audioDurationMs),
+      generateAudio: true,
+      watermark: false
+    });
+
+    await setDigitalHumanTaskProviderStarted(taskId, {
+      providerTaskId: provider.taskId,
+      audioUrl: savedAudio.publicPath,
+      audioProviderUrl: audioReferenceUrl,
+      avatarProviderUrl: avatarReferenceUrl,
+      audioDurationMs
+    });
+    console.log(`[digital-human] task ${taskId}: Ark task ${provider.taskId} created`);
+    return;
+  }
+
   console.log(`[digital-human] task ${taskId}: uploading audio and avatar assets to KIE`);
   const [audioUpload, avatarImageProviderUrl] = await Promise.all([
     uploadFileToKie({
@@ -237,9 +330,9 @@ export function getModels() {
   return {
     models: digitalHumanModels.map((model) => ({
       ...model,
-      providerModel: config.kie.digitalHumanModel,
+      providerModel: config.ark.videoModel,
       resolution: config.kie.digitalHumanResolution,
-      configured: Boolean(config.kie.apiKey && config.minimax.apiKey)
+      configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.minimax.apiKey)
     })),
     defaults: {
       model: digitalHumanModels[0].value,
@@ -248,8 +341,8 @@ export function getModels() {
   };
 }
 
-export function getAvatars() {
-  return { public: publicAvatars, mine: myAvatars };
+export async function getAvatars() {
+  return { public: publicAvatars, mine: await getMyAvatars() };
 }
 
 export function getVoices() {
@@ -352,7 +445,7 @@ export async function createTask(payload) {
   if (!text) throw createHttpError("text is required", 400);
   if (text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
 
-  const avatar = getAvatarById(avatarId);
+  const avatar = await getAvatarById(avatarId);
   if (!avatar) throw createHttpError("avatar not found", 404);
   if (avatar.status !== "ready") throw createHttpError("avatar is not ready", 400);
 
@@ -361,7 +454,7 @@ export async function createTask(payload) {
 
   const voice = getVoiceById(voiceId);
   const costPoints = Number(model.basePoints || 30);
-  const providerModel = config.kie.digitalHumanModel;
+  const providerModel = avatar.provider === "ark" ? config.ark.videoModel : config.kie.digitalHumanModel;
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -425,17 +518,21 @@ async function refreshTask(id) {
   if (!row || !row.provider_task_id || !["pending", "processing"].includes(row.status)) return;
 
   try {
-    const record = await getKieDigitalHumanTask({ taskId: row.provider_task_id });
-    const mapped = mapKieDigitalHumanState(record);
+    const isArkTask = String(row.provider_model || "").startsWith("doubao-seedance");
+    const record = isArkTask
+      ? await getArkVideoGenerationTask({ taskId: row.provider_task_id })
+      : await getKieDigitalHumanTask({ taskId: row.provider_task_id });
+    const mapped = isArkTask ? mapArkVideoGenerationState(record) : mapKieDigitalHumanState(record);
     if (mapped === "completed") {
-      const result = extractKieDigitalHumanResult(record);
+      const result = isArkTask ? extractArkVideoGenerationResult(record) : extractKieDigitalHumanResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "digital human result missing video URL");
       } else {
         await setDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "digital human task failed");
+      const result = isArkTask ? extractArkVideoGenerationResult(record) : {};
+      await refundTask(id, null, null, result.errorMessage || record.data?.failMsg || record.data?.errorMessage || "digital human task failed");
     } else {
       await setDigitalHumanTaskProcessing(id);
     }
@@ -520,4 +617,24 @@ export function deleteAvatar(id) {
   const index = myAvatars.findIndex((item) => item.id === id);
   if (index >= 0) myAvatars.splice(index, 1);
   return { ok: index >= 0 };
+}
+
+export async function createArkAvatar(payload, file) {
+  const { name } = payload;
+  if (!name?.trim()) throw createHttpError("name is required", 400);
+  if (!file) throw createHttpError("avatar image is required", 400);
+
+  const user = await getDemoUser();
+  const asset = await createVirtualAssetFromLocalFile({
+    userId: user.id,
+    feature: "digital-human",
+    localUrl: `/media/digital-human/avatars/${file.filename}`,
+    filePath: file.path,
+    originalName: file.originalname || file.filename,
+    mimeType: file.mimetype || "image/png",
+    sizeBytes: file.size || 0
+  });
+  const avatar = mapVirtualAssetToAvatar(asset);
+  avatar.name = name.trim();
+  return avatar;
 }

@@ -1,16 +1,20 @@
 import path from "path";
+import { unlink } from "fs/promises";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
-  createKieMotionTransferTask,
-  extractMotionTransferResult,
-  getKieMotionTransferTask,
-  mapKieMotionTransferState
-} from "../../providers/kie/motionTransfer.js";
-import { uploadFileToKie } from "../../providers/kie/upload.js";
+  buildReferenceImage,
+  buildReferenceVideo,
+  createArkVideoGenerationTask,
+  extractArkVideoGenerationResult,
+  getArkVideoGenerationTask,
+  mapArkVideoGenerationState
+} from "../../providers/volcengine/videoGeneration.js";
+import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
+import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapMotionTransferAsset, mapMotionTransferTask } from "./motionTransfer.mapper.js";
 import {
   createMotionTransferAsset,
@@ -32,15 +36,16 @@ import {
   toggleMotionTransferTaskFavorite
 } from "./motionTransfer.repository.js";
 
-const defaultPrompt = "让静态人物跟随参考视频完成同款动作，保持人物身份、服饰和画面主体稳定，动作自然流畅。";
+const defaultPrompt =
+  "让图片中的虚拟角色跟随参考视频完成同款动作，保持角色身份、服装和画面主体稳定，动作自然流畅。";
 
 function getModelDefinitions() {
   return [
     {
       value: "motion-transfer",
       label: "动作迁移",
-      provider: "kie",
-      providerModel: config.kie.motionTransferModel,
+      provider: "ark",
+      providerModel: config.ark.videoModel,
       basePoints: config.kie.motionTransferPoints,
       resolution: config.kie.motionTransferResolution,
       characterOrientation: config.kie.motionTransferCharacterOrientation
@@ -64,8 +69,20 @@ function normalizeCharacterOrientation(value) {
   return orientation === "video" ? "video" : "image";
 }
 
-function getDisplayDuration(characterOrientation) {
-  return characterOrientation === "video" ? 30 : 10;
+async function getSourceVideoDuration(videoAsset) {
+  try {
+    const sourceDuration = await getVideoDuration(videoAsset.file_path);
+    if (!Number.isFinite(sourceDuration) || sourceDuration <= 0) {
+      throw createHttpError("无法读取视频时长，请更换视频后重试", 400);
+    }
+    if (sourceDuration > 15) {
+      throw createHttpError("视频时长不能超过 15 秒", 400);
+    }
+    return Math.max(2, Math.ceil(sourceDuration));
+  } catch (error) {
+    if (error.status) throw error;
+    throw createHttpError(`无法读取视频时长：${error.message}`, 400);
+  }
 }
 
 export async function getCredits() {
@@ -77,7 +94,7 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
-      configured: Boolean(config.kie.apiKey)
+      configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.media.publicBaseUrl)
     })),
     defaults: {
       model: models[0].value,
@@ -89,19 +106,28 @@ export function getModels() {
       { value: "1080p", label: "1080p" }
     ],
     characterOrientations: [
-      { value: "image", label: "图片朝向", maxSeconds: 10 },
-      { value: "video", label: "视频朝向", maxSeconds: 30 }
+      { value: "image", label: "图片朝向", maxSeconds: 15 },
+      { value: "video", label: "视频朝向", maxSeconds: 15 }
     ],
     limits: {
       maxImageBytes: 10 * 1024 * 1024,
-      maxVideoBytes: 100 * 1024 * 1024,
-      recommendedVideoSeconds: 30
+      maxVideoBytes: 50 * 1024 * 1024,
+      recommendedVideoSeconds: 15
     }
   };
 }
 
 export async function createAsset({ kind, file }) {
   if (!file) throw createHttpError(`${kind} file is required`, 400);
+
+  if (kind === "video") {
+    try {
+      await getSourceVideoDuration({ file_path: file.path });
+    } catch (error) {
+      await unlink(file.path).catch(() => {});
+      throw error;
+    }
+  }
 
   const localUrl = `/media/motion-transfer/${kind === "image" ? "images" : "videos"}/${file.filename}`;
   const connection = await getPool().getConnection();
@@ -159,7 +185,7 @@ export async function createTask(payload) {
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution);
   const characterOrientation = normalizeCharacterOrientation(payload.characterOrientation || model.characterOrientation);
-  const duration = getDisplayDuration(characterOrientation);
+  const duration = await getSourceVideoDuration(videoAsset);
   const costPoints = Number(model.basePoints || 100);
 
   const connection = await getPool().getConnection();
@@ -196,37 +222,49 @@ export async function createTask(payload) {
   connection.release();
 
   try {
-    const [imageUpload, videoUpload] = await Promise.all([
-      uploadAssetToKie(imageAsset, "motion-transfer/image"),
-      uploadAssetToKie(videoAsset, "motion-transfer/video")
+    const [imageUri, videoUri] = await Promise.all([
+      uploadAssetToArk(imageAsset, "motion-transfer-image", userId),
+      uploadAssetToArk(videoAsset, "motion-transfer-video", userId)
     ]);
-    const provider = await createKieMotionTransferTask({
+    const provider = await createArkVideoGenerationTask({
       model: model.providerModel,
-      prompt,
-      imageUrl: imageUpload.url,
-      videoUrl: videoUpload.url,
-      mode: resolution,
-      characterOrientation
+      content: [
+        {
+          type: "text",
+          text: `${prompt}\n图片1是需要保持身份和外观的虚拟形象，视频1是动作和镜头参考。请让图片1中的虚拟角色完成视频1的动作，保持背景来源于视频1，动作自然连贯。`
+        },
+        buildReferenceImage(imageUri),
+        buildReferenceVideo(videoUri)
+      ],
+      resolution,
+      ratio: "adaptive",
+      duration,
+      generateAudio: false,
+      watermark: false
     });
     await setMotionTransferTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("Create motion transfer provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `motion transfer task creation failed: ${error.message}`);
+    await refundTask(taskId, userId, costPoints, `动作迁移任务创建失败：${error.message}`);
   }
 
   return getTask(taskId);
 }
 
-async function uploadAssetToKie(asset, uploadPath) {
-  if (asset.provider_url) return { url: asset.provider_url };
-  const result = await uploadFileToKie({
+async function uploadAssetToArk(asset, feature, userId) {
+  if (asset.provider_url && String(asset.provider_url).startsWith("asset://")) return asset.provider_url;
+  const virtualAsset = await createVirtualAssetFromLocalFile({
+    userId,
+    feature,
+    localUrl: asset.local_url,
     filePath: asset.file_path,
-    fileName: asset.original_name || path.basename(asset.file_path),
+    originalName: asset.original_name || path.basename(asset.file_path),
     mimeType: asset.mime_type || "application/octet-stream",
-    uploadPath
+    sizeBytes: asset.size_bytes || 0
   });
-  await setMotionTransferAssetProviderUrl(asset.id, result.url);
-  return result;
+  const referenceUrl = await waitForVirtualAssetReference(virtualAsset.id);
+  await setMotionTransferAssetProviderUrl(asset.id, referenceUrl);
+  return referenceUrl;
 }
 
 async function refreshProcessingTasks() {
@@ -239,22 +277,23 @@ async function refreshTask(id) {
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
 
   try {
-    const record = await getKieMotionTransferTask({ taskId: task.provider_task_id });
-    const mapped = mapKieMotionTransferState(record);
+    const record = await getArkVideoGenerationTask({ taskId: task.provider_task_id });
+    const mapped = mapArkVideoGenerationState(record);
     if (mapped === "completed") {
-      const result = extractMotionTransferResult(record);
+      const result = extractArkVideoGenerationResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "motion transfer result missing video URL");
       } else {
         await setMotionTransferTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "motion transfer task failed");
+      const result = extractArkVideoGenerationResult(record);
+      await refundTask(id, null, null, result.errorMessage || "动作迁移任务失败");
     } else {
       await setMotionTransferTaskProcessing(id);
     }
   } catch (error) {
-    await setMotionTransferTaskError(id, `query motion transfer status failed: ${error.message}`);
+    await setMotionTransferTaskError(id, `查询动作迁移状态失败：${error.message}`);
   }
 }
 

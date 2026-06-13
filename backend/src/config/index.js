@@ -20,6 +20,11 @@ const publicBaseUrl = (
   ""
 ).replace(/\/+$/, "");
 
+const publicMediaBaseUrl = (
+  process.env.PUBLIC_MEDIA_BASE_URL ||
+  (publicBaseUrl ? `${publicBaseUrl}/media` : "")
+).replace(/\/+$/, "");
+
 export const config = {
   port: Number(process.env.PORT || 3006),
   host: process.env.HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1"),
@@ -67,6 +72,19 @@ export const config = {
     removeBgImageModel: process.env.KIE_REMOVE_BG_IMAGE_MODEL || "recraft/remove-background",
     removeBgImagePoints: Number(process.env.KIE_REMOVE_BG_IMAGE_POINTS || 25),
     fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
+  },
+  ark: {
+    apiKey: process.env.ARK_API_KEY || "",
+    baseUrl: (process.env.ARK_API_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3").replace(/\/+$/, ""),
+    videoModel: process.env.ARK_VIDEO_MODEL || "doubao-seedance-2-0-260128",
+    projectName: process.env.ARK_PROJECT_NAME || process.env.ARK_ASSET_PROJECT_NAME || "jingchuang",
+    accessKeyId: process.env.VOLC_ACCESS_KEY_ID || process.env.VOLC_ACCESSKEY || "",
+    secretAccessKey: process.env.VOLC_SECRET_ACCESS_KEY || process.env.VOLC_SECRETKEY || "",
+    region: process.env.VOLC_REGION || "cn-beijing",
+    openApiEndpoint: (process.env.VOLC_OPENAPI_ENDPOINT || "https://open.volcengineapi.com").replace(/\/+$/, ""),
+    virtualAssetGroupName: process.env.ARK_VIRTUAL_ASSET_GROUP_NAME || "jingchuang-ai-virtual-assets",
+    virtualAssetPollIntervalMs: Number(process.env.ARK_VIRTUAL_ASSET_POLL_INTERVAL_MS || 10000),
+    virtualAssetPollAttempts: Number(process.env.ARK_VIRTUAL_ASSET_POLL_ATTEMPTS || 18)
   },
   minimax: {
     apiKey: process.env.MINIMAX_API_KEY || "",
@@ -125,6 +143,7 @@ export const config = {
   },
   media: {
     storageDir: process.env.MEDIA_STORAGE_DIR || "storage",
-    publicAssetsDir: process.env.PUBLIC_ASSETS_DIR || "../frontend-app/public"
+    publicAssetsDir: process.env.PUBLIC_ASSETS_DIR || "../frontend-app/public",
+    publicBaseUrl: publicMediaBaseUrl
   }
 };

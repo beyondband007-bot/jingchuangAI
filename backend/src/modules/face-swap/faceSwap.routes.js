@@ -54,7 +54,7 @@ const imageUpload = makeUpload({
 
 const videoUpload = makeUpload({
   destination: videoDir,
-  maxBytes: 200 * 1024 * 1024,
+  maxBytes: 50 * 1024 * 1024,
   expectedPrefix: "video/",
   errorLabel: "video"
 });
@@ -74,7 +74,7 @@ function uploadSingle(upload, fieldName, maxLabel) {
 
 faceSwapRouter.get("/models", getFaceSwapModels);
 faceSwapRouter.post("/uploads/image", uploadSingle(imageUpload, "image", "10MB"), uploadFaceSwapImage);
-faceSwapRouter.post("/uploads/video", uploadSingle(videoUpload, "video", "200MB"), uploadFaceSwapVideo);
+faceSwapRouter.post("/uploads/video", uploadSingle(videoUpload, "video", "50MB"), uploadFaceSwapVideo);
 faceSwapRouter.get("/tasks", listFaceSwapTasks);
 faceSwapRouter.post("/tasks", createFaceSwapTask);
 faceSwapRouter.get("/tasks/:id", getFaceSwapTask);

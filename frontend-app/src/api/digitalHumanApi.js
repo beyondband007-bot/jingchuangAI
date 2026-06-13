@@ -76,9 +76,12 @@ export const digitalHumanApi = {
   },
 
   async createAvatar(payload) {
+    const formData = new FormData();
+    formData.append("name", payload.name || "");
+    if (payload.file) formData.append("avatar", payload.file);
     const avatar = await request("/api/digital-human/avatars", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: formData
     });
     avatarsPromise = undefined;
     taskPolling.notifyNow();

@@ -54,7 +54,7 @@ const imageUpload = makeUpload({
 
 const videoUpload = makeUpload({
   destination: videoDir,
-  maxBytes: 100 * 1024 * 1024,
+  maxBytes: 50 * 1024 * 1024,
   expectedPrefix: "video/",
   errorLabel: "video"
 });
@@ -74,7 +74,7 @@ function uploadSingle(upload, fieldName, maxLabel) {
 
 motionTransferRouter.get("/models", getMotionTransferModels);
 motionTransferRouter.post("/uploads/image", uploadSingle(imageUpload, "image", "10MB"), uploadMotionTransferImage);
-motionTransferRouter.post("/uploads/video", uploadSingle(videoUpload, "video", "100MB"), uploadMotionTransferVideo);
+motionTransferRouter.post("/uploads/video", uploadSingle(videoUpload, "video", "50MB"), uploadMotionTransferVideo);
 motionTransferRouter.get("/tasks", listMotionTransferTasks);
 motionTransferRouter.post("/tasks", createMotionTransferTask);
 motionTransferRouter.get("/tasks/:id", getMotionTransferTask);

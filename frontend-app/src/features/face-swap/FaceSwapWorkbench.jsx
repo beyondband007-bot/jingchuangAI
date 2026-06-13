@@ -39,6 +39,39 @@ function formatBytes(bytes) {
   return `${rounded} ${units[index]}`;
 }
 
+function normalizeSourceDuration(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "";
+  return String(Math.max(2, Math.ceil(number)));
+}
+
+function readVideoFileDuration(file) {
+  if (typeof document === "undefined" || typeof window === "undefined") return Promise.resolve("");
+
+  return new Promise((resolve) => {
+    const url = window.URL.createObjectURL(file);
+    const video = document.createElement("video");
+
+    function cleanup() {
+      window.URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = normalizeSourceDuration(video.duration);
+      cleanup();
+      resolve(duration);
+    };
+    video.onerror = () => {
+      cleanup();
+      resolve("");
+    };
+    video.src = url;
+  });
+}
+
 function UploadCard({
   type,
   title,
@@ -101,7 +134,7 @@ function UploadCard({
           <>
             <Icon size={56} />
             <strong>{isPhoto ? "点击或拖拽照片到此处上传" : "点击或拖拽视频到此处上传"}</strong>
-            <span>{isPhoto ? "建议使用正面、光线充足的照片" : "建议视频中主体清晰，时长不超过 10 分钟"}</span>
+            <span>{isPhoto ? "建议使用正面、光线充足的照片" : "建议视频中主体清晰，时长不超过 15 秒"}</span>
           </>
         )}
         {previewUrl && !isUploading && (
@@ -145,7 +178,7 @@ export function FaceSwapWorkbench({
   const [videoPreview, setVideoPreview] = useState("");
   const [model, setModel] = useState(options.defaults?.model || options.models[0]?.value || "");
   const [resolution, setResolution] = useState(options.defaults?.resolution || options.models[0]?.resolution || "720p");
-  const [duration, setDuration] = useState(String(options.defaults?.duration || options.models[0]?.duration || 5));
+  const [sourceDuration, setSourceDuration] = useState("");
   const [faceStrength, setFaceStrength] = useState(80);
   const [enhanceQuality, setEnhanceQuality] = useState(true);
   const [faceOptimize, setFaceOptimize] = useState(true);
@@ -177,18 +210,6 @@ export function FaceSwapWorkbench({
     if (!values.size) values.add("720p");
     return Array.from(values).map((value) => ({ value, label: value }));
   }, [options.defaults?.resolution, options.models]);
-
-  const durationOptions = useMemo(() => {
-    const values = new Set();
-    options.models.forEach((item) => {
-      if (item.duration) values.add(String(item.duration));
-    });
-    if (options.defaults?.duration) values.add(String(options.defaults.duration));
-    if (!values.size) ["5", "10", "15"].forEach((value) => values.add(value));
-    return Array.from(values)
-      .sort((left, right) => Number(left) - Number(right))
-      .map((value) => ({ value, label: `${value}s` }));
-  }, [options.defaults?.duration, options.models]);
 
   async function selectImage(file) {
     if (!file) return;
@@ -225,15 +246,25 @@ export function FaceSwapWorkbench({
       setNotice("视频大小不能超过 200MB");
       return;
     }
-    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
-    setVideoPreview(window.URL.createObjectURL(file));
     setVideoAsset(null);
+    setSourceDuration("");
     setUploading("video");
     setNotice("");
     try {
+      const detectedDuration = await readVideoFileDuration(file);
+      if (!detectedDuration) {
+        throw new Error("无法读取视频时长，请更换视频后重试");
+      }
+      if (Number(detectedDuration) > 15) {
+        throw new Error("视频时长不能超过 15 秒");
+      }
+      if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+      setVideoPreview(window.URL.createObjectURL(file));
+      setSourceDuration(detectedDuration);
       setVideoAsset(await api.uploadVideo(file));
     } catch (error) {
       setVideoPreview("");
+      setSourceDuration("");
       setNotice(error.message || "视频上传失败");
     } finally {
       setUploading("");
@@ -249,6 +280,7 @@ export function FaceSwapWorkbench({
 
   function clearVideo() {
     setVideoAsset(null);
+    setSourceDuration("");
     if (videoPreview) window.URL.revokeObjectURL(videoPreview);
     setVideoPreview("");
     setNotice("");
@@ -269,7 +301,7 @@ export function FaceSwapWorkbench({
       videoAssetId: videoAsset.id,
       model,
       resolution,
-      duration: Number(duration)
+      duration: Number(sourceDuration)
     });
   }
 
@@ -298,7 +330,7 @@ export function FaceSwapWorkbench({
         <UploadCard
           type="video"
           title={copy.videoTitle}
-          hint={`建议 ${options.limits?.recommendedVideoSeconds || 15} 秒内，主体清晰稳定`}
+          hint="仅支持 15 秒以内，生成时长自动跟随源视频"
           asset={videoAsset}
           previewUrl={videoPreview}
           isUploading={uploading === "video"}
@@ -345,11 +377,6 @@ export function FaceSwapWorkbench({
             <label className="face-swap-workbench__setting face-swap-workbench__setting--compact">
               <span>分辨率</span>
               <CustomSelect className="content-fit-select" ariaLabel="分辨率" value={resolution} onChange={setResolution} options={resolutionOptions} />
-            </label>
-
-            <label className="face-swap-workbench__setting face-swap-workbench__setting--duration">
-              <span>时长</span>
-              <CustomSelect className="content-fit-select" ariaLabel="时长" value={duration} onChange={setDuration} options={durationOptions} />
             </label>
 
             <label className="face-swap-workbench__toggle face-swap-workbench__toggle--top face-swap-workbench__toggle--enhance">

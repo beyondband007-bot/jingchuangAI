@@ -5885,10 +5885,10 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
       return;
     }
     if (!file) {
-      setNotice("请选择视频素材，当前只记录文件名作为占位。");
+      setNotice("请选择虚拟人像图片素材");
       return;
     }
-    onCreate({ name: name.trim(), fileName: file.name });
+    onCreate({ name: name.trim(), file });
   }
 
   return (
@@ -5897,7 +5897,7 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
         <div className="dh-modal-header">
           <div>
             <span>创建形象</span>
-            <strong>预留训练素材入口</strong>
+            <strong>上传至火山方舟虚拟资产库</strong>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭">
             关闭
@@ -5920,7 +5920,7 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="video/*"
+              accept="image/*"
               hidden
               onChange={(event) => {
                 setFile(event.target.files?.[0] || null);
@@ -5950,12 +5950,12 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
                 <X size={13} />
               </span>
             )}
-            <Video size={24} />
-            <strong>{file ? file.name : "选择数字人训练视频"}</strong>
+            <Camera size={24} />
+            <strong>{file ? file.name : "选择虚拟人像图片"}</strong>
             <span>
               {file
-                ? "素材会在真实接口接入后上传"
-                : "当前不上载文件，只保留 UI 和 API 结构"}
+                ? "提交后会上传并进入火山方舟审核"
+                : "请上传 AI / 虚拟形象图片，不要上传真人肖像"}
             </span>
           </button>
           {notice && <div className="dh-form-notice">{notice}</div>}
@@ -6716,13 +6716,13 @@ const emptyMotionTransferOptions = {
     { value: "1080p", label: "1080p" },
   ],
   characterOrientations: [
-    { value: "image", label: "图片朝向", maxSeconds: 10 },
-    { value: "video", label: "视频朝向", maxSeconds: 30 },
+    { value: "image", label: "图片朝向", maxSeconds: 15 },
+    { value: "video", label: "视频朝向", maxSeconds: 15 },
   ],
   limits: {
     maxImageBytes: 10 * 1024 * 1024,
     maxVideoBytes: 100 * 1024 * 1024,
-    recommendedVideoSeconds: 30,
+    recommendedVideoSeconds: 15,
   },
 };
 
@@ -7244,7 +7244,7 @@ function MotionTransferComposer({
         <MotionTransferUploadSlot
           kind="video"
           title={copy.videoTitle}
-          hint={`建议 ${options.limits?.recommendedVideoSeconds || 30} 秒内`}
+          hint={`建议 ${options.limits?.recommendedVideoSeconds || 15} 秒内`}
           asset={videoAsset}
           previewUrl={videoPreview}
           isUploading={uploading === "video"}

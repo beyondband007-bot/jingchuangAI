@@ -5,8 +5,12 @@ export function getDigitalHumanModels(_req, res) {
   res.json(service.getModels());
 }
 
-export function getDigitalHumanAvatars(_req, res) {
-  res.json(service.getAvatars());
+export async function getDigitalHumanAvatars(_req, res) {
+  try {
+    res.json(await service.getAvatars());
+  } catch (error) {
+    sendError(res, error);
+  }
 }
 
 export function getDigitalHumanVoices(_req, res) {
@@ -75,9 +79,9 @@ export async function regenerateDigitalHumanTask(req, res) {
   }
 }
 
-export function createDigitalHumanAvatar(req, res) {
+export async function createDigitalHumanAvatar(req, res) {
   try {
-    res.status(201).json(service.createAvatar(req.body || {}));
+    res.status(201).json(await service.createArkAvatar(req.body || {}, req.file));
   } catch (error) {
     sendError(res, error);
   }

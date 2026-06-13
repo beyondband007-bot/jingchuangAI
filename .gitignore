@@ -35,6 +35,7 @@ server-*.err.log
 
 # Local cache
 .claude/
+tmp-volc-e2e/
 start-dev.ps1
 STARTUP.md
 

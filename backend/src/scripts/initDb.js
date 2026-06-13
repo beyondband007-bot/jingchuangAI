@@ -425,6 +425,71 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS ark_virtual_asset_groups (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      feature VARCHAR(80) NOT NULL DEFAULT 'digital-human',
+      name VARCHAR(160) NOT NULL,
+      provider_group_id VARCHAR(160) NOT NULL,
+      project_name VARCHAR(120) NOT NULL DEFAULT 'jingchuang',
+      status ENUM('ready','failed') NOT NULL DEFAULT 'ready',
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_ark_group_user_project_feature (user_id, project_name, feature),
+      INDEX idx_ark_group_provider (provider_group_id),
+      CONSTRAINT fk_ark_virtual_asset_groups_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  const [arkGroupIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ark_virtual_asset_groups'
+     GROUP BY INDEX_NAME`,
+    [config.db.database]
+  );
+  const arkGroupIndexNames = new Set(arkGroupIndexes.map((row) => row.INDEX_NAME));
+  if (!arkGroupIndexNames.has("idx_ark_group_user")) {
+    await pool.query("ALTER TABLE ark_virtual_asset_groups ADD INDEX idx_ark_group_user (user_id)");
+  }
+  if (arkGroupIndexNames.has("uniq_ark_group_user_feature")) {
+    await pool.query("ALTER TABLE ark_virtual_asset_groups DROP INDEX uniq_ark_group_user_feature");
+  }
+  if (!arkGroupIndexNames.has("uniq_ark_group_user_project_feature")) {
+    await pool.query("ALTER TABLE ark_virtual_asset_groups ADD UNIQUE KEY uniq_ark_group_user_project_feature (user_id, project_name, feature)");
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS ark_virtual_assets (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      group_id BIGINT UNSIGNED NOT NULL,
+      feature VARCHAR(80) NOT NULL DEFAULT 'digital-human',
+      asset_type ENUM('Image','Video','Audio') NOT NULL,
+      local_url VARCHAR(1000) NOT NULL,
+      public_url VARCHAR(1000) NOT NULL,
+      file_path VARCHAR(1000) NULL,
+      original_name VARCHAR(255) NULL,
+      mime_type VARCHAR(160) NULL,
+      size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      source_hash CHAR(64) NULL,
+      provider_asset_id VARCHAR(160) NULL,
+      asset_uri VARCHAR(220) NULL,
+      status ENUM('processing','active','failed') NOT NULL DEFAULT 'processing',
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_ark_asset_user_feature (user_id, feature, created_at),
+      INDEX idx_ark_asset_status (status),
+      INDEX idx_ark_asset_hash (source_hash),
+      INDEX idx_ark_asset_provider (provider_asset_id),
+      CONSTRAINT fk_ark_virtual_assets_user FOREIGN KEY (user_id) REFERENCES users(id),
+      CONSTRAINT fk_ark_virtual_assets_group FOREIGN KEY (group_id) REFERENCES ark_virtual_asset_groups(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS image_digital_human_tasks (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
