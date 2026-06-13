@@ -118,6 +118,7 @@ DROP TABLE IF EXISTS `chat_model_prices`;
 CREATE TABLE `chat_model_prices`  (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `model_key` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'kie',
   `provider_model` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `display_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `points_per_kie_credit` decimal(8, 3) NOT NULL DEFAULT 4.000,
@@ -128,16 +129,22 @@ CREATE TABLE `chat_model_prices`  (
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `model_key`(`model_key` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of chat_model_prices
 -- ----------------------------
-INSERT INTO `chat_model_prices` VALUES (1, 'gpt-5-4', 'gpt-5-4', 'GPT 5.4', 4.000, 1, 1, 10, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
-INSERT INTO `chat_model_prices` VALUES (2, 'gpt-5-5', 'gpt-5-5', 'GPT 5.5', 4.000, 1, 1, 20, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
-INSERT INTO `chat_model_prices` VALUES (3, 'gemini-3-pro-openai', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, 1, 30, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
-INSERT INTO `chat_model_prices` VALUES (4, 'claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, 0, 40, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
-INSERT INTO `chat_model_prices` VALUES (5, 'gemini-2.5-flash', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, 0, 50, '2026-05-18 06:42:34', '2026-05-18 06:42:34');
+INSERT INTO `chat_model_prices` VALUES (1, 'deepseek-v4-pro', 'deepseek', 'deepseek-v4-pro', 'DeepSeek V4 Pro', 1.000, 1, 1, 5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (2, 'qwen3.6-plus', 'qwen', 'qwen3.6-plus', 'Qwen 3.6 Plus', 1.000, 1, 1, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (3, 'qwen3.7-plus', 'qwen', 'qwen3.7-plus', 'Qwen 3.7 Plus', 1.000, 1, 1, 8, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (4, 'gpt-5-4', 'kie', 'gpt-5.4-codex', 'GPT-5.4-codex', 4.000, 1, 1, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (5, 'gpt-5-5', 'kie', 'gpt-5-5', 'GPT-5.5-codex', 4.000, 1, 1, 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (6, 'gemini-3-pro', 'kie', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, 1, 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (7, 'gemini-3.1-pro-openai', 'kie', 'gemini-3.1-pro-openai', 'Gemini 3.1 pro', 4.000, 1, 1, 40, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (8, 'claude-sonnet-4-6', 'kie', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, 1, 50, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (9, 'claude-opus-4-6', 'kie', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, 1, 60, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (10, 'gemini-3-pro-openai', 'kie', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, 0, 70, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO `chat_model_prices` VALUES (11, 'gemini-2.5-flash', 'kie', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, 0, 80, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- ----------------------------
 -- Table structure for credit_accounts

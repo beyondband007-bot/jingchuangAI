@@ -76,8 +76,12 @@ export const config = {
   },
   qwen: {
     apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || "",
-    baseUrl: process.env.QWEN_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    baseUrl: process.env.QWEN_BASE_URL || "https://dashscope.aliyuncs.com/compatible-mode/v1",
     model: process.env.QWEN_MODEL || "qwen-vl-plus"
+  },
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY || "",
+    baseUrl: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com"
   },
   tencentCloud: {
     secretId: process.env.TENCENTCLOUD_SECRET_ID || "",

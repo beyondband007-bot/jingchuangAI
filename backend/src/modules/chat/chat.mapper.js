@@ -37,6 +37,7 @@ export function mapChatModel(row) {
   return {
     value: row.model_key,
     label: formatChatModelName(row.display_name),
+    provider: row.provider_type || "kie",
     providerModel: row.provider_model,
     pointsPerKieCredit: Number(row.points_per_kie_credit || 4),
     reservePoints: Number(row.reserve_points || 1)

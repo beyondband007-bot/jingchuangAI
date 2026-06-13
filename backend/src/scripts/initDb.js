@@ -712,6 +712,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS chat_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,
+      provider_type VARCHAR(32) NOT NULL DEFAULT 'kie',
       provider_model VARCHAR(120) NOT NULL,
       display_name VARCHAR(120) NOT NULL,
       points_per_kie_credit DECIMAL(8,3) NOT NULL DEFAULT 4.000,
@@ -722,6 +723,18 @@ async function createTables() {
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+  const [chatModelColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'chat_model_prices'`,
+    [config.db.database]
+  );
+  const chatModelColumnNames = new Set(chatModelColumns.map((column) => column.COLUMN_NAME));
+  if (!chatModelColumnNames.has("provider_type")) {
+    await pool.query(
+      "ALTER TABLE chat_model_prices ADD COLUMN provider_type VARCHAR(32) NOT NULL DEFAULT 'kie' AFTER model_key"
+    );
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_conversations (
@@ -1008,17 +1021,21 @@ async function seedDemoData() {
 
     await connection.query(`
       INSERT INTO chat_model_prices
-        (model_key, provider_model, display_name, points_per_kie_credit, reserve_points, enabled, sort_order)
+        (model_key, provider_type, provider_model, display_name, points_per_kie_credit, reserve_points, enabled, sort_order)
       VALUES
-        ('gpt-5-4', 'gpt-5.4-codex', 'GPT-5.4-codex', 4.000, 1, TRUE, 10),
-        ('gpt-5-5', 'gpt-5.5-codex', 'GPT-5.5-codex', 4.000, 1, TRUE, 20),
-        ('gemini-3-pro', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
-        ('gemini-3.1-pro-openai', 'gemini-3.1-pro-openai', 'Gemini 3.1 pro', 4.000, 1, TRUE, 40),
-        ('claude-sonnet-4-6', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 50),
-        ('claude-opus-4-6', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, TRUE, 60),
-        ('gemini-3-pro-openai', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, FALSE, 70),
-        ('gemini-2.5-flash', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, FALSE, 80)
+        ('deepseek-v4-pro', 'deepseek', 'deepseek-v4-pro', 'DeepSeek V4 Pro', 1.000, 1, TRUE, 5),
+        ('qwen3.6-plus', 'qwen', 'qwen3.6-plus', 'Qwen 3.6 Plus', 1.000, 1, TRUE, 7),
+        ('qwen3.7-plus', 'qwen', 'qwen3.7-plus', 'Qwen 3.7 Plus', 1.000, 1, TRUE, 8),
+        ('gpt-5-4', 'kie', 'gpt-5.4-codex', 'GPT-5.4-codex', 4.000, 1, TRUE, 10),
+        ('gpt-5-5', 'kie', 'gpt-5-5', 'GPT-5.5-codex', 4.000, 1, TRUE, 20),
+        ('gemini-3-pro', 'kie', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
+        ('gemini-3.1-pro-openai', 'kie', 'gemini-3.1-pro-openai', 'Gemini 3.1 pro', 4.000, 1, TRUE, 40),
+        ('claude-sonnet-4-6', 'kie', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 50),
+        ('claude-opus-4-6', 'kie', 'claude-opus-4-6', 'Claude Opus 4.6', 4.000, 1, TRUE, 60),
+        ('gemini-3-pro-openai', 'kie', 'gemini-3-pro-openai', 'Gemini 3 Pro', 4.000, 1, FALSE, 70),
+        ('gemini-2.5-flash', 'kie', 'gemini-2.5-flash', 'Gemini 2.5 Flash', 4.000, 1, FALSE, 80)
       ON DUPLICATE KEY UPDATE
+        provider_type = VALUES(provider_type),
         provider_model = VALUES(provider_model),
         display_name = VALUES(display_name),
         points_per_kie_credit = VALUES(points_per_kie_credit),

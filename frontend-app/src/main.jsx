@@ -4168,9 +4168,9 @@ const videoInspirationItems = [
   feature: "文生视频",
   ratio: "16:9",
   duration: 5,
-  video: `/assets/videoInspiration/${slug}.webm`,
-  preview: `/assets/videoInspiration/previews/${slug}-preview.webm`,
-  poster: `/assets/videoInspiration/posters/${slug}.jpg`,
+  video: `/assets/videoInspiration/${slug}.webm?v=20260613`,
+  preview: `/assets/videoInspiration/previews/${slug}-preview.webm?v=20260613`,
+  poster: `/assets/videoInspiration/posters/${slug}.jpg?v=20260613`,
 }));
 
 function getVideoModelOptions(options, modelKey) {
@@ -5031,7 +5031,7 @@ function ChatComposerBar({
     !isSubmitting &&
     !isUploadingAttachment;
   const modelLabel = isReady
-    ? selectedModel?.label || "Deepseek V4"
+    ? selectedModel?.label || "DeepSeek V4 Pro"
     : "模型加载中";
   const visibleReasoningEfforts = options.reasoningEfforts
     .filter((item) => item.value === "none" || item.value === "low")

@@ -351,7 +351,8 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     body: JSON.stringify(request.body)
   });
 
-  if (!response.ok) {
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  if (!response.ok || contentType.includes("application/json")) {
     const text = await response.text();
     let body;
     try {
@@ -359,10 +360,30 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     } catch {
       body = { raw: text };
     }
-    const error = new Error(body.msg || body.error || `request failed with ${response.status}`);
-    error.status = response.status || 502;
-    error.body = body;
-    throw error;
+    if (!response.ok || (body.code && body.code !== 200) || body.error) {
+      const error = new Error(body.msg || body.error?.message || body.error || `request failed with ${response.status}`);
+      error.status = response.ok ? 502 : response.status || 502;
+      error.body = body;
+      throw error;
+    }
+
+    const fullText =
+      request.provider === "gemini" ? extractOpenAiChatText(body) :
+      request.provider === "claude" ? extractClaudeText(body) :
+      extractStreamText(body);
+    if (!fullText) {
+      const error = new Error("chat stream missing text");
+      error.status = 502;
+      error.body = body;
+      throw error;
+    }
+    await onDelta(fullText);
+    return {
+      text: fullText.trim(),
+      usage: body.usage || body.data?.usage || null,
+      kieCreditsConsumed: extractKieCredits(body),
+      raw: body
+    };
   }
 
   const decoder = new TextDecoder();

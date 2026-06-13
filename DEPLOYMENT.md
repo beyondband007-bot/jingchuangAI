@@ -51,7 +51,7 @@ npm run dev
 以 `.env.production.example` 作为服务器环境变量模板。复制为 `.env` 后，至少需要配置：
 
 - `MYSQL_ROOT_PASSWORD`：改成长且随机的数据库 root 密码。
-- 供应商密钥：例如 `KIE_API_KEY`、`MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`QWEN_API_KEY`。
+- 供应商密钥：例如 `KIE_API_KEY`、`MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`QWEN_API_KEY`、`DEEPSEEK_API_KEY`。
 - `FRONTEND_BIND_ADDRESS=0.0.0.0`：服务器上如果要直接对外暴露前端服务，使用这个值。
 - `VITE_API_BASE_URL=`：保持为空表示使用同源反向代理模式。
 
@@ -109,7 +109,7 @@ docker run --rm -v jingchuang_ai_media:/data -v ${PWD}:/backup alpine sh -c "tar
 3. 复制 `.env.production.example` 为 `.env`。
 4. 如果是全新数据库，修改 `.env` 里的 `MYSQL_ROOT_PASSWORD`，不要保留默认占位值 `change_me_to_a_long_random_password`。
 5. 如果数据库卷已经初始化并且正在使用旧密码，不要直接修改 `.env` 里的 `MYSQL_ROOT_PASSWORD`，先保持和现有库一致。
-6. 填写生产密钥和密码，例如 `KIE_API_KEY`、`MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`QWEN_API_KEY`。
+6. 填写生产密钥和密码，例如 `KIE_API_KEY`、`MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`QWEN_API_KEY`、`DEEPSEEK_API_KEY`。
 7. 确认域名 `jc.getrueai.com` 已解析到服务器公网 IP。当前解析结果应为 `43.167.10.175`。
 8. 在仓库根目录执行 `bash deploy-production.sh`。
 9. 把宿主机 Nginx 站点反代到 `127.0.0.1:8088`。可直接使用仓库里的 `nginx-jc.getrueai.com.conf` 作为模板。

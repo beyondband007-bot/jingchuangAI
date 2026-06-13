@@ -4,34 +4,38 @@ import {
   createOpenAiCompatibleChatStream
 } from "../openai-compatible/chat.js";
 
-const chatTimeoutMs = Number(process.env.QWEN_CHAT_TIMEOUT_MS || 120000);
+const chatTimeoutMs = Number(process.env.DEEPSEEK_CHAT_TIMEOUT_MS || 120000);
 
 function buildReasoningBody(reasoningEffort) {
+  if (!reasoningEffort || reasoningEffort === "none") {
+    return { thinking: { type: "disabled" } };
+  }
   return {
-    enable_thinking: Boolean(reasoningEffort && reasoningEffort !== "none")
+    thinking: { type: "enabled" },
+    reasoning_effort: reasoningEffort
   };
 }
 
 function getOptions({ model, messages, reasoningEffort, onDelta }) {
   return {
-    providerName: "qwen",
-    apiKey: config.qwen.apiKey,
-    baseUrl: config.qwen.baseUrl,
+    providerName: "deepseek",
+    apiKey: config.deepseek.apiKey,
+    baseUrl: config.deepseek.baseUrl,
     timeoutMs: chatTimeoutMs,
     model,
     messages,
     reasoningEffort,
     onDelta,
-    supportsImages: true,
-    includeStreamUsage: true,
+    supportsImages: false,
+    includeStreamUsage: false,
     buildReasoningBody
   };
 }
 
-export function createQwenChatResponse(input) {
+export function createDeepSeekChatResponse(input) {
   return createOpenAiCompatibleChatResponse(getOptions(input));
 }
 
-export function createQwenChatStream(input) {
+export function createDeepSeekChatStream(input) {
   return createOpenAiCompatibleChatStream(getOptions(input));
 }

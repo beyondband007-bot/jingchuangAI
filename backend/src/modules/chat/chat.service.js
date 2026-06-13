@@ -1,7 +1,9 @@
 import { unlink } from "fs/promises";
 import { getPool } from "../../db/pool.js";
+import { createDeepSeekChatResponse, createDeepSeekChatStream } from "../../providers/deepseek/chat.js";
 import { createKieChatResponse, createKieChatStream } from "../../providers/kie/chat.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { createQwenChatResponse, createQwenChatStream } from "../../providers/qwen/chat.js";
 import { debitCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { getUserCredits } from "../../shared/userService.js";
@@ -37,7 +39,23 @@ function calculatePoints(model, kieCreditsConsumed) {
 }
 
 async function createProviderChatResponse({ model, messages, reasoningEffort }) {
+  if (model.provider_type === "deepseek") {
+    return createDeepSeekChatResponse({ model, messages, reasoningEffort });
+  }
+  if (model.provider_type === "qwen") {
+    return createQwenChatResponse({ model, messages, reasoningEffort });
+  }
   return createKieChatResponse({ model, messages, reasoningEffort });
+}
+
+async function createProviderChatStream({ model, messages, reasoningEffort, onDelta }) {
+  if (model.provider_type === "deepseek") {
+    return createDeepSeekChatStream({ model, messages, reasoningEffort, onDelta });
+  }
+  if (model.provider_type === "qwen") {
+    return createQwenChatStream({ model, messages, reasoningEffort, onDelta });
+  }
+  return createKieChatStream({ model, messages, reasoningEffort, onDelta });
 }
 
 function getAttachmentKind(file) {
@@ -322,7 +340,7 @@ async function persistAssistantMessage({ conversationId, model, modelPrice, prov
 
 export async function streamMessage(payload, userId, { onDelta }) {
   const prepared = await prepareChatMessage(payload, userId);
-  const provider = await createKieChatStream({
+  const provider = await createProviderChatStream({
     model: prepared.modelPrice,
     messages: prepared.messages,
     reasoningEffort: prepared.reasoningEffort,
