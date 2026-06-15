@@ -52,7 +52,7 @@ const myAvatars = [];
 const designedVoices = [];
 const execFileAsync = promisify(execFile);
 const maxDigitalHumanAudioMs = 15 * 1000;
-const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
+const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 
 function nowLabel(date = new Date()) {
   return formatBeijingDateTime(date);

@@ -7,11 +7,11 @@ import {
   Loader2,
   Plus,
   RefreshCcw,
-  Send,
   Star,
   Trash2,
   Wand2,
-  X
+  X,
+  Zap
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
@@ -26,33 +26,48 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function EnhanceCenterState({ task, isSubmitting, error, onOpenRecent }) {
+function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   const isVideo = task?.mediaType === "video";
 
   if (task?.status === "completed" && task.resultUrl) {
     return (
-      <section className="watermark-center-state enhance-center-state is-completed">
-        <div className={`watermark-result-stage enhance-result-stage ${isVideo ? "is-video" : ""}`}>
-          {isVideo ? (
-            <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
-          ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "画质增强结果"} />
-          )}
+      <section className="watermark-center-state enhance-center-state marketing-result-card is-completed">
+        <header className="marketing-result-head">
+          <span><CheckCircle2 size={18} />处理完成</span>
+          <p>对比清晰度变化，可下载或继续处理</p>
+        </header>
+        <div className="marketing-result-compare">
+          <figure>
+            <figcaption>原图</figcaption>
+            {isVideo ? (
+              <video src={task.sourceUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+            ) : (
+              <img src={task.sourceUrl || task.resultUrl} alt={task.sourceFileName || "原图"} />
+            )}
+          </figure>
+          <figure>
+            <figcaption>处理后</figcaption>
+            {isVideo ? (
+              <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+            ) : (
+              <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
+            )}
+          </figure>
         </div>
-        <div className="watermark-result-copy enhance-result-copy">
-          <span className="watermark-center-icon enhance-center-icon">
-            <CheckCircle2 size={24} />
-          </span>
-          <h2>画质增强完成</h2>
-          <p>{isVideo ? "视频清晰度已提升，原始节奏和声音已保留。" : "图片细节已增强，主体内容和构图保持不变。"}</p>
-          <div className="watermark-result-actions enhance-result-actions">
+        <footer className="marketing-result-footer">
+          <p>已完成本次处理，可下载结果、再次处理当前素材，或上传新素材继续</p>
+          <div className="marketing-result-actions">
+            <button type="button" onClick={onReset}>处理新素材</button>
             <a href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              下载结果
             </a>
-            <button type="button" onClick={onOpenRecent}>查看最近生成</button>
+            <button type="button" className="is-primary" onClick={() => onRepeat?.(task)}>
+              <Zap size={15} />
+              再次处理
+            </button>
           </div>
-        </div>
+        </footer>
       </section>
     );
   }
@@ -96,7 +111,7 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           isVideo ? (
             <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
           ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "画质增强结果"} />
+            <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
@@ -114,7 +129,7 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <p>{task.error || task.sourceFileName || "智能画质增强结果"}</p>
+        <p>{task.error || task.sourceFileName || "画质提升结果"}</p>
         <div className="watermark-source-row">
           <span>
             {isVideo ? <Film size={14} /> : <Image size={14} />}
@@ -180,8 +195,10 @@ function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelec
         )
       ) : (
         <>
-          <Plus size={18} />
-          <strong>{isVideo ? "+ 上传视频文件" : "+ 上传图片文件"}</strong>
+          <span className="marketing-upload-icon" aria-hidden="true">
+            <img src="/assets/marketing/upload.svg" alt="" />
+          </span>
+          <strong>{isVideo ? "上传视频文件" : "上传图片文件"}</strong>
           <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG/WebP，最大 10MB"}</span>
         </>
       )}
@@ -320,8 +337,8 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
       <div className="watermark-composer-footer enhance-composer-footer">
         <span>{notice || (mode === "video" ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音` : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}</span>
         <strong>{price}</strong>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始增强">
-          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
+          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
       </div>
     </div>
@@ -439,7 +456,7 @@ export function EnhanceView() {
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("recent");
           setSubmittedTaskId(null);
-        }}>最近生成</button>
+        }}>历史记录</button>
         <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("favorite");
           setSubmittedTaskId(null);
@@ -455,7 +472,7 @@ export function EnhanceView() {
             <span className="watermark-hero-icon enhance-hero-icon">
               <Wand2 size={36} />
             </span>
-            <h1>智能画质增强</h1>
+            <h1>画质提升</h1>
             <p>上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
           </div>
         )}
@@ -464,17 +481,17 @@ export function EnhanceView() {
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
             error={submitError}
-            onOpenRecent={() => {
-              setViewTab("recent");
+            onReset={() => {
               setSubmittedTaskId(null);
             }}
+            onRepeat={repeatTask}
           />
         )}
         {showRecentEmpty && (
           <div className="watermark-recent-empty enhance-recent-empty">
             <Wand2 size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无生成记录"}</strong>
-            <p>{viewTab === "favorite" ? "收藏后的增强结果会显示在这里。" : "增强完成的图片或视频会保存在这里。"}</p>
+            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}</strong>
+            <p>{viewTab === "favorite" ? "收藏后的提升结果会显示在这里。" : "提升完成的图片或视频会保存在这里。"}</p>
           </div>
         )}
         <div className={`watermark-results-feed enhance-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
@@ -489,7 +506,7 @@ export function EnhanceView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && (
+      {viewTab === "home" && !showCenterState && (
         <EnhanceComposer
           options={options}
           onSubmit={createTask}

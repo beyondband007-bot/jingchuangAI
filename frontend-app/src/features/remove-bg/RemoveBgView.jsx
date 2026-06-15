@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Send, Star, Trash2, X } from "lucide-react";
+import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { removeBgApi } from "./removeBgApi";
@@ -21,27 +21,38 @@ function formatProviderLabel(value) {
   return text;
 }
 
-function RemoveBgCenterState({ task, isSubmitting, error, onOpenRecent }) {
+function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   if (task?.status === "completed" && task.resultUrl) {
     return (
-      <section className="watermark-center-state remove-bg-center-state is-completed">
-        <div className="watermark-result-stage remove-bg-result-stage">
-          <img src={task.resultUrl} alt={task.sourceFileName || "去背景结果"} />
+      <section className="watermark-center-state remove-bg-center-state marketing-result-card is-completed">
+        <header className="marketing-result-head">
+          <span><CheckCircle2 size={18} />处理完成</span>
+          <p>透明背景素材已生成，可下载或继续处理</p>
+        </header>
+        <div className="marketing-result-compare">
+          <figure>
+            <figcaption>原图</figcaption>
+            <img src={task.sourceUrl || task.resultUrl} alt={task.sourceFileName || "原图"} />
+          </figure>
+          <figure className="is-transparent">
+            <figcaption>处理后</figcaption>
+            <img src={task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
+          </figure>
         </div>
-        <div className="watermark-result-copy remove-bg-result-copy">
-          <span className="watermark-center-icon remove-bg-center-icon">
-            <CheckCircle2 size={24} />
-          </span>
-          <h2>去背景完成</h2>
-          <p>已生成透明背景图片，可直接下载用于商品图、人像素材或设计合成。</p>
-          <div className="watermark-result-actions remove-bg-result-actions">
+        <footer className="marketing-result-footer">
+          <p>已完成本次处理，可下载结果、再次处理当前素材，或上传新素材继续</p>
+          <div className="marketing-result-actions">
+            <button type="button" onClick={onReset}>处理新素材</button>
             <a href={task.resultUrl} download>
               <Download size={15} />
-              下载
+              下载结果
             </a>
-            <button type="button" onClick={onOpenRecent}>查看最近生成</button>
+            <button type="button" className="is-primary" onClick={() => onRepeat?.(task)}>
+              <Zap size={15} />
+              再次处理
+            </button>
           </div>
-        </div>
+        </footer>
       </section>
     );
   }
@@ -52,8 +63,8 @@ function RemoveBgCenterState({ task, isSubmitting, error, onOpenRecent }) {
         <span className="watermark-center-icon remove-bg-center-icon">
           <Layers size={24} />
         </span>
-        <strong>这次没有去背景成功</strong>
-        <p>{error || task?.error || "去背景服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <strong>这次没有抠图成功</strong>
+        <p>{error || task?.error || "抠图服务返回了错误，积分会按任务状态自动处理。"}</p>
       </section>
     );
   }
@@ -63,7 +74,7 @@ function RemoveBgCenterState({ task, isSubmitting, error, onOpenRecent }) {
       <span className="watermark-center-spinner">
         <Loader2 size={30} />
       </span>
-      <strong>{isSubmitting ? "正在创建去背景任务" : "正在智能去除背景"}</strong>
+      <strong>{isSubmitting ? "正在创建抠图任务" : "正在智能抠图"}</strong>
       <p>图片正在处理中，完成后会自动回填到这里。</p>
       <div className="watermark-center-progress remove-bg-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
@@ -81,17 +92,17 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
     <article className={`watermark-task-card remove-bg-task-card status-${task.status}`}>
       <div className="watermark-task-preview remove-bg-task-preview">
         {task.resultUrl && !isFailed ? (
-          <img src={task.resultUrl} alt={task.sourceFileName || "去背景结果"} />
+          <img src={task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
             {isProcessing ? <Loader2 size={26} /> : <Image size={26} />}
-            <strong>{isFailed ? "去背景失败" : "去背景中"}</strong>
+            <strong>{isFailed ? "抠图失败" : "抠图中"}</strong>
           </div>
         )}
       </div>
       <div className="watermark-task-meta remove-bg-task-meta">
         <div className="tag-row">
-          <span className="model-tag">图片去背景</span>
+          <span className="model-tag">智能抠图</span>
           <span className="ratio-tag">透明 PNG</span>
           <span className="quality-tag">
             {formatProviderLabel(task.providerModel || task.model)}
@@ -101,7 +112,7 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <p>{task.error || task.sourceFileName || "智能去背景结果"}</p>
+        <p>{task.error || task.sourceFileName || "智能抠图结果"}</p>
         <div className="watermark-source-row">
           <span>
             <Image size={14} />
@@ -162,8 +173,10 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
         <img src={previewUrl} alt="上传图片预览" />
       ) : (
         <>
-          <Plus size={18} />
-          <strong>+ 上传图片文件</strong>
+          <span className="marketing-upload-icon" aria-hidden="true">
+            <img src="/assets/marketing/upload.svg" alt="" />
+          </span>
+          <strong>上传图片文件</strong>
           <span>支持 JPG/PNG/WebP，最大 10MB</span>
         </>
       )}
@@ -263,10 +276,10 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="watermark-composer remove-bg-composer" aria-label="去背景上传面板">
+    <div className="watermark-composer remove-bg-composer" aria-label="抠图上传面板">
       <div className="remove-bg-composer-title">
         <Layers size={15} />
-        图片去背景
+        图片抠图
       </div>
       <RemoveBgUploadSlot
         sourceAsset={sourceAsset}
@@ -278,8 +291,8 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
       <div className="watermark-composer-footer remove-bg-composer-footer">
         <span>{notice || "AI 将自动识别主体并输出透明背景图片"}</span>
         <strong>{price}</strong>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始去背景">
-          {isSubmitting ? <Loader2 size={18} /> : <Send size={18} />}
+        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
+          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
       </div>
     </div>
@@ -329,7 +342,7 @@ export function RemoveBgView() {
         applyTaskList(taskData);
         applyCredits(creditData);
       } catch (error) {
-        if (mounted) setSubmitError(error.message || "加载去背景功能失败");
+        if (mounted) setSubmitError(error.message || "加载抠图功能失败");
       }
     }
     load();
@@ -364,7 +377,7 @@ export function RemoveBgView() {
       setTasks((current) => [task, ...current.filter((item) => item.id !== task.id)]);
       removeBgApi.getCredits().then(applyCredits).catch(() => {});
     } catch (error) {
-      setSubmitError(error.message || "创建去背景任务失败");
+      setSubmitError(error.message || "创建抠图任务失败");
       removeBgApi.getCredits().then(applyCredits).catch(() => {});
     } finally {
       setIsSubmitting(false);
@@ -396,7 +409,7 @@ export function RemoveBgView() {
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("recent");
           setSubmittedTaskId(null);
-        }}>最近生成</button>
+        }}>历史记录</button>
         <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
           setViewTab("favorite");
           setSubmittedTaskId(null);
@@ -412,7 +425,7 @@ export function RemoveBgView() {
             <span className="watermark-hero-icon remove-bg-hero-icon">
               <Layers size={36} />
             </span>
-            <h1>智能去背景</h1>
+            <h1>智能抠图</h1>
             <p>上传图片，AI 一键抠出主体并生成透明背景素材</p>
           </div>
         )}
@@ -421,17 +434,17 @@ export function RemoveBgView() {
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
             error={submitError}
-            onOpenRecent={() => {
-              setViewTab("recent");
+            onReset={() => {
               setSubmittedTaskId(null);
             }}
+            onRepeat={repeatTask}
           />
         )}
         {showRecentEmpty && (
           <div className="watermark-recent-empty remove-bg-recent-empty">
             <Layers size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无生成记录"}</strong>
-            <p>{viewTab === "favorite" ? "收藏后的去背景结果会显示在这里。" : "去背景完成的透明图片会保存在这里。"}</p>
+            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}</strong>
+            <p>{viewTab === "favorite" ? "收藏后的抠图结果会显示在这里。" : "抠图完成的透明图片会保存在这里。"}</p>
           </div>
         )}
         <div className={`watermark-results-feed remove-bg-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
@@ -446,7 +459,7 @@ export function RemoveBgView() {
           ))}
         </div>
       </div>
-      {viewTab === "home" && (
+      {viewTab === "home" && !showCenterState && (
         <RemoveBgComposer
           options={options}
           onSubmit={createTask}

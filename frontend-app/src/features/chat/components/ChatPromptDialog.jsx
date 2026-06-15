@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Dice5, Plus, Send, Trash2 } from "lucide-react";
+import { Dice5, Plus, Trash2, Zap } from "lucide-react";
 import { PromptIconButton, PromptSendButton } from "./PromptActionButtons";
 
 export function ChatPromptDialog({
@@ -88,7 +88,7 @@ export function ChatPromptDialog({
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
           {rightControls}
           <PromptSendButton onClick={onSubmit} disabled={!canSubmit} ariaLabel="发送">
-            <Send size={18} />
+            <Zap size={18} />
           </PromptSendButton>
         </div>
       </div>

@@ -49,7 +49,7 @@ async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 }
     await sleep(intervalMs);
     task = await replicateApi.getTask(taskId);
   }
-  throw new Error("分析仍在处理中，请稍后查看最近分析");
+  throw new Error("分析仍在处理中，请稍后查看历史记录");
 }
 
 function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
@@ -99,7 +99,11 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
         }}
       />
       <span className="replicate-upload-icon">
-        {isAnalyzing ? <Loader2 size={22} /> : isImage ? <FileImage size={22} /> : <FileVideo size={22} />}
+        {isAnalyzing ? (
+          <Loader2 size={22} />
+        ) : (
+          <img src="/assets/marketing/upload.svg" alt="" />
+        )}
       </span>
       {hasFile && !isAnalyzing && (
         <span
@@ -116,7 +120,7 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
           <X size={13} />
         </span>
       )}
-      <strong>{isAnalyzing ? "正在反推提示词..." : hasFile ? fileState.name : isImage ? "+ 上传图片素材" : "+ 上传视频素材"}</strong>
+      <strong>{isAnalyzing ? "正在反推提示词..." : hasFile ? fileState.name : isImage ? "上传图片素材" : "上传视频素材"}</strong>
       <small>{hasFile ? `${isImage ? "图片" : "视频"} · ${formatBytes(fileState.size)}` : hint}</small>
     </button>
   );
@@ -273,7 +277,7 @@ export function ReplicateView({ authUser }) {
           主页
         </button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>
-          最近分析
+          历史记录
           {recentResults.length > 0 && <span className="tab-badge">{recentResults.length}</span>}
         </button>
         <button type="button" disabled>
@@ -290,7 +294,7 @@ export function ReplicateView({ authUser }) {
                 <span className="voice-hero-icon replicate-hero-icon">
                   <Sparkles size={42} />
                 </span>
-                <h1>AI 反推提示词</h1>
+                <h1>反推提示词</h1>
                 <p>上传参考图片或视频，自动理解画面主体、风格、镜头语言与细节特征，反推出可再次生成的高质量提示词。</p>
               </div>
             )}
@@ -306,12 +310,13 @@ export function ReplicateView({ authUser }) {
                     setNotice("");
                   }}
                 >
-                  继续分析
+                  处理新素材
                 </button>
                 {notice && <div className="replicate-notice">{notice}</div>}
               </div>
             )}
 
+            {!currentResult && (
             <div className="replicate-floating-composer">
               <div className="replicate-mode-toggle" aria-label="选择反推类型">
                 <button
@@ -359,13 +364,14 @@ export function ReplicateView({ authUser }) {
                 </button>
               </div>
             </div>
+            )}
           </>
         ) : (
           <div className="replicate-recent-list">
             {recentResults.length === 0 ? (
               <div className="voice-recent-empty">
                 <Upload size={28} />
-                <strong>暂无分析记录</strong>
+                <strong>暂无历史记录</strong>
                 <p>回到主页上传图片或视频开始反推。</p>
               </div>
             ) : (
