@@ -154,7 +154,12 @@ export function MusicGenerationView() {
 
   function showToast(type, message) {
     setToast({ type, message });
-    setTimeout(() => setToast(null), 2000);
+    setTimeout(() => {
+      setToast(null);
+      if (type === "success") {
+        setViewTab("recent");
+      }
+    }, 2000);
   }
 
   async function downloadMp3() {
