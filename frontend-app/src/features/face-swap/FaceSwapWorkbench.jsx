@@ -170,7 +170,8 @@ export function FaceSwapWorkbench({
   api,
   copy,
   heading = "AI 换脸工具",
-  privacyText = "您上传的内容仅用于处理，不会被用于其他用途。"
+  privacyText = "您上传的内容仅用于处理，不会被用于其他用途。",
+  onViewHistory
 }) {
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
@@ -402,25 +403,34 @@ export function FaceSwapWorkbench({
       <section className="face-swap-workbench__target-preview">
         <div className="face-swap-workbench__target-preview-header">
           <h2>{heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}</h2>
-          <button type="button">{"\u67e5\u770b\u5168\u90e8\u4f5c\u54c1 >"}</button>
+          {onViewHistory && (
+            <button type="button" onClick={onViewHistory}>
+              {"\u67e5\u770b\u5168\u90e8\u4f5c\u54c1 >"}
+            </button>
+          )}
         </div>
-        <div className="face-swap-workbench__target-preview-media">
-          <img
-            src={heading.includes("\u52a8\u4f5c") ? "/assets/motion/hot-3-motion.jpg" : "/assets/face-swap/hot-4-faceswap.jpg"}
-            alt={heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}
-          />
+        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : ""}`}>
+          {videoPreview ? (
+            <video src={videoPreview} controls playsInline preload="metadata" />
+          ) : (
+            <img
+              src={heading.includes("\u52a8\u4f5c") ? "/assets/motion/hot-3-motion.jpg" : "/assets/face-swap/hot-4-faceswap.jpg"}
+              alt={heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}
+            />
+          )}
           <span className="face-swap-workbench__target-compare-line" />
           <span className="face-swap-workbench__target-compare-handle">{"< >"}</span>
           <div className="face-swap-workbench__target-player">
             <Play size={16} fill="currentColor" />
-            <span>00:12 / 00:30</span>
+            <span>{videoPreview ? (sourceDuration ? `00:00 / 00:${String(sourceDuration).padStart(2, "0")}` : "\u5df2\u4e0a\u4f20\u89c6\u9891") : "\u8bf7\u5148\u4e0a\u4f20\u76ee\u6807\u89c6\u9891"}</span>
             <i />
-            <span>1.2x</span>
-            <span>720p</span>
+            <span>{resolution}</span>
           </div>
         </div>
         <div className="face-swap-workbench__target-draft">
-          {"\u6682\u65e0\u8349\u7a3f\uff0c\u4e0a\u4f20\u7167\u7247\u6216\u89c6\u9891\u540e\u5c06\u81ea\u52a8\u4fdd\u5b58"}
+          {videoPreview
+            ? "\u5df2\u52a0\u8f7d\u76ee\u6807\u89c6\u9891\u9884\u89c8\uff0c\u70b9\u51fb\u53f3\u4e0b\u89d2\u6309\u94ae\u5f00\u59cb\u751f\u6210"
+            : "\u6682\u65e0\u8349\u7a3f\uff0c\u4e0a\u4f20\u7167\u7247\u6216\u89c6\u9891\u540e\u5c06\u81ea\u52a8\u4fdd\u5b58"}
         </div>
       </section>
 

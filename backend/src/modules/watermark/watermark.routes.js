@@ -35,7 +35,7 @@ const sourceUpload = multer({
   fileFilter: (_req, file, callback) => {
     const mimeType = String(file.mimetype || "");
     if (!mimeType.startsWith("image/") && !mimeType.startsWith("video/")) {
-      callback(new Error("file has invalid file type"));
+      callback(new Error("文件类型不支持，请上传图片或视频"));
       return;
     }
     callback(null, true);
@@ -47,12 +47,12 @@ function uploadSource(req, res, next) {
     if (!error) {
       const mimeType = String(req.file?.mimetype || "");
       if (mimeType.startsWith("image/") && req.file.size > 10 * 1024 * 1024) {
-        return res.status(400).json({ error: "image must be 10MB or smaller" });
+        return res.status(400).json({ error: "图片需小于 10MB" });
       }
       next();
       return undefined;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "file must be 200MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "文件需小于 200MB" : error.message;
     return res.status(400).json({ error: message });
   });
 }

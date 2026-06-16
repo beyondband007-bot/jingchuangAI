@@ -118,7 +118,7 @@ export function getModels() {
 }
 
 export async function createAsset({ kind, file }) {
-  if (!file) throw createHttpError(`${kind} file is required`, 400);
+  if (!file) throw createHttpError(kind === "image" ? "请上传图片" : "请上传视频", 400);
 
   if (kind === "video") {
     try {
@@ -171,15 +171,15 @@ export async function getTask(id) {
 export async function createTask(payload) {
   const imageAssetId = String(payload.imageAssetId || "").trim();
   const videoAssetId = String(payload.videoAssetId || "").trim();
-  if (!imageAssetId) throw createHttpError("imageAssetId is required", 400);
-  if (!videoAssetId) throw createHttpError("videoAssetId is required", 400);
+  if (!imageAssetId) throw createHttpError("缺少图片素材，请重新上传", 400);
+  if (!videoAssetId) throw createHttpError("缺少视频素材，请重新上传", 400);
 
   const [imageAsset, videoAsset] = await Promise.all([
     findMotionTransferAsset(imageAssetId, "image"),
     findMotionTransferAsset(videoAssetId, "video")
   ]);
-  if (!imageAsset) throw createHttpError("image asset not found", 400);
-  if (!videoAsset) throw createHttpError("video asset not found", 400);
+  if (!imageAsset) throw createHttpError("图片素材不存在，请重新上传", 400);
+  if (!videoAsset) throw createHttpError("视频素材不存在，请重新上传", 400);
 
   const model = getModelByKey(payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
@@ -282,7 +282,7 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractArkVideoGenerationResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "motion transfer result missing video URL");
+        await refundTask(id, null, null, "动作迁移结果缺少视频链接");
       } else {
         await setMotionTransferTaskCompleted(id, result);
       }

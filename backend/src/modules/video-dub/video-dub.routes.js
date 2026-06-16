@@ -29,7 +29,7 @@ function uploadVideoSingle(req, res, next) {
     }
     const message =
       error.code === "LIMIT_FILE_SIZE"
-        ? "video file must be 2GB or smaller"
+        ? "视频文件需小于 2GB"
         : error.message;
     res.status(400).json({ error: message });
   });

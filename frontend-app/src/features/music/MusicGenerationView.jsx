@@ -71,8 +71,12 @@ export function MusicGenerationView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState("");
   const [currentResult, setCurrentResult] = useState(null);
+  const [toast, setToast] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
+  const canGenerate = isInstrumental
+    ? prompt.trim().length > 0
+    : prompt.trim().length > 0 && lyrics.trim().length > 0;
   const [playingRecentId, setPlayingRecentId] = useState("");
   const [recentProgress, setRecentProgress] = useState({});
   const [recentTimes, setRecentTimes] = useState({});
@@ -139,11 +143,23 @@ export function MusicGenerationView() {
       setCurrentResult(result);
       setRecentResults((items) => [result, ...items].slice(0, 20));
       setNotice("音乐生成完成。");
+      showToast("success", "音乐生成成功");
     } catch (error) {
       setNotice(error.message || "生成失败");
+      showToast("error", "音乐生成失败，请稍后重试");
     } finally {
       setIsGenerating(false);
     }
+  }
+
+  function showToast(type, message) {
+    setToast({ type, message });
+    setTimeout(() => {
+      setToast(null);
+      if (type === "success") {
+        setViewTab("recent");
+      }
+    }, 2000);
   }
 
   async function downloadMp3() {
@@ -195,6 +211,7 @@ export function MusicGenerationView() {
               lyricsOptimizer={lyricsOptimizer}
               model="music-2.6-free"
               isGenerating={isGenerating}
+              canGenerate={canGenerate}
               notice={notice}
               currentResult={currentResult}
               onPromptChange={setPrompt}
@@ -288,6 +305,12 @@ export function MusicGenerationView() {
           </div>
         )}
       </div>
+
+      {toast ? (
+        <div className={`music-toast music-toast--${toast.type}`}>
+          {toast.message}
+        </div>
+      ) : null}
     </section>
   );
 }

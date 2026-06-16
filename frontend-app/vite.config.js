@@ -9,6 +9,12 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     strictPort: true,
+    watch: {
+      awaitWriteFinish: {
+        stabilityThreshold: 300,
+        pollInterval: 100
+      }
+    },
     proxy: {
       "/api": {
         target: devProxyTarget,

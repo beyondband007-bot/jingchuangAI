@@ -37,7 +37,7 @@ function makeUpload({ destination, maxBytes, expectedPrefix, errorLabel }) {
     limits: { fileSize: maxBytes },
     fileFilter: (_req, file, callback) => {
       if (!String(file.mimetype || "").startsWith(expectedPrefix)) {
-        callback(new Error(`${errorLabel} has invalid file type`));
+        callback(new Error(errorLabel === "image" ? "图片格式不支持，请上传图片文件" : "视频格式不支持，请上传视频文件"));
         return;
       }
       callback(null, true);
@@ -66,7 +66,8 @@ function uploadSingle(upload, fieldName, maxLabel) {
         next();
         return;
       }
-      const message = error.code === "LIMIT_FILE_SIZE" ? `${fieldName} must be ${maxLabel} or smaller` : error.message;
+      const label = fieldName === "image" ? "图片" : "视频";
+      const message = error.code === "LIMIT_FILE_SIZE" ? `${label}需小于 ${maxLabel}` : error.message;
       res.status(400).json({ error: message });
     });
   };

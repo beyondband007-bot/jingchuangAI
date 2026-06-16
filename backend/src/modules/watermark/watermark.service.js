@@ -68,7 +68,7 @@ function inferKind(file) {
   const mimeType = String(file?.mimetype || "");
   if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
-  throw createHttpError("file must be an image or video", 400);
+  throw createHttpError("请上传图片或视频文件", 400);
 }
 
 function normalizeResolution(value, fallback) {
@@ -102,7 +102,7 @@ export function getModels() {
 }
 
 export async function createAsset({ file }) {
-  if (!file) throw createHttpError("file is required", 400);
+  if (!file) throw createHttpError("请上传文件", 400);
 
   const kind = inferKind(file);
   const localUrl = `/media/watermark/${kind === "image" ? "images" : "videos"}/${file.filename}`;
@@ -146,10 +146,10 @@ export async function getTask(id) {
 
 export async function createTask(payload) {
   const sourceAssetId = String(payload.sourceAssetId || "").trim();
-  if (!sourceAssetId) throw createHttpError("sourceAssetId is required", 400);
+  if (!sourceAssetId) throw createHttpError("缺少源素材，请重新上传", 400);
 
   const sourceAsset = await findWatermarkAsset(sourceAssetId);
-  if (!sourceAsset) throw createHttpError("source asset not found", 400);
+  if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
@@ -205,7 +205,7 @@ export async function createTask(payload) {
     await setWatermarkTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("Create watermark provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `watermark removal task creation failed: ${error.message}`);
+    await refundTask(taskId, userId, costPoints, `去水印任务创建失败：${error.message}`);
   }
 
   return getTask(taskId);
@@ -238,17 +238,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractWatermarkResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "watermark removal result missing URL");
+        await refundTask(id, null, null, "去水印结果缺少下载链接");
       } else {
         await setWatermarkTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "watermark removal task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "去水印任务失败");
     } else {
       await setWatermarkTaskProcessing(id);
     }
   } catch (error) {
-    await setWatermarkTaskError(id, `query watermark removal status failed: ${error.message}`);
+    await setWatermarkTaskError(id, `查询去水印状态失败：${error.message}`);
   }
 }
 

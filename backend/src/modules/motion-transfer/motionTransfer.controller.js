@@ -32,7 +32,7 @@ export async function listMotionTransferTasks(req, res) {
 export async function getMotionTransferTask(req, res) {
   try {
     const task = await service.getTask(req.params.id);
-    if (!task) return res.status(404).json({ error: "task not found" });
+    if (!task) return res.status(404).json({ error: "任务不存在" });
     return res.json(task);
   } catch (error) {
     return sendError(res, error);
@@ -50,7 +50,7 @@ export async function createMotionTransferTask(req, res) {
 export async function toggleMotionTransferFavorite(req, res) {
   try {
     const task = await service.toggleFavorite(req.params.id);
-    if (!task) return res.status(404).json({ error: "task not found" });
+    if (!task) return res.status(404).json({ error: "任务不存在" });
     return res.json(task);
   } catch (error) {
     return sendError(res, error);

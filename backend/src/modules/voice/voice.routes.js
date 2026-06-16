@@ -22,7 +22,7 @@ function uploadSingle(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "audio file must be 20MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "音频文件需小于 20MB" : error.message;
     res.status(400).json({ error: message });
   });
 }

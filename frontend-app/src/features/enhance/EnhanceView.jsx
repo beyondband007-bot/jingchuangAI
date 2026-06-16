@@ -121,20 +121,9 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         )}
       </div>
       <div className="watermark-task-meta enhance-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">{isVideo ? "视频画质增强" : "图片画质增强"}</span>
-          <span className="ratio-tag">{task.upscaleFactor || "2"}x</span>
-        </div>
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
-        </div>
-        <p>{task.error || task.sourceFileName || "画质提升结果"}</p>
-        <div className="watermark-source-row">
-          <span>
-            {isVideo ? <Film size={14} /> : <Image size={14} />}
-            {task.sourceFileName || "源素材"}
-          </span>
         </div>
         <div className="card-actions watermark-card-actions">
           <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">

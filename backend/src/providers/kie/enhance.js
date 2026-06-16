@@ -15,17 +15,26 @@ function normalizeUpscaleFactor(value) {
   return String(value || "2").trim() || "2";
 }
 
-export async function createKieEnhanceImageTask({ model, sourceUrl, prompt }) {
+function isUpscaleImageModel(model) {
+  const key = String(model || "").toLowerCase();
+  return key.includes("upscale") || key.includes("topaz");
+}
+
+export async function createKieEnhanceImageTask({ model, sourceUrl, prompt, upscaleFactor }) {
+  const input = isUpscaleImageModel(model)
+    ? {
+      image_url: sourceUrl,
+      upscale_factor: normalizeUpscaleFactor(upscaleFactor)
+    }
+    : {
+      prompt,
+      input_urls: [sourceUrl],
+      aspect_ratio: "auto"
+    };
+
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
-    body: JSON.stringify({
-      model,
-      input: {
-        prompt,
-        input_urls: [sourceUrl],
-        aspect_ratio: "auto"
-      }
-    })
+    body: JSON.stringify({ model, input })
   });
 
   return extractTaskId(result, "image enhance");

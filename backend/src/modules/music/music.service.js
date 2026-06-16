@@ -40,18 +40,18 @@ function mapMusicTask(row) {
 
 function assertPrompt(prompt) {
   const trimmed = normalizeString(prompt);
-  if (!trimmed) throw createHttpError("prompt is required", 400);
+  if (!trimmed) throw createHttpError("请输入提示词", 400);
   if (trimmed.length > 2000)
-    throw createHttpError("prompt must be 2000 characters or fewer", 400);
+    throw createHttpError("提示词长度不能超过 2000 个字符", 400);
   return trimmed;
 }
 
 function assertLyrics(lyrics, isInstrumental) {
   const trimmed = normalizeString(lyrics);
   if (isInstrumental) return trimmed;
-  if (!trimmed) throw createHttpError("lyrics is required for non-instrumental music", 400);
+  if (!trimmed) throw createHttpError("非纯音乐需要填写歌词", 400);
   if (trimmed.length > 3500)
-    throw createHttpError("lyrics must be 3500 characters or fewer", 400);
+    throw createHttpError("歌词长度不能超过 3500 个字符", 400);
   return trimmed;
 }
 

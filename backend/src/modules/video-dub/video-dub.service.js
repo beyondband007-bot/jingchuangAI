@@ -29,15 +29,15 @@ function getExt(fileName = "") {
 }
 
 function assertVideoFile(file) {
-  if (!file) throw createHttpError("video file is required", 400);
+  if (!file) throw createHttpError("请上传视频文件", 400);
   if (file.size > maxVideoBytes) {
-    throw createHttpError("video file must be 2GB or smaller", 400);
+    throw createHttpError("视频文件需小于 2GB", 400);
   }
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedVideoTypes.has(mimeType) && !allowedVideoExts.has(ext)) {
-    throw createHttpError("video file must be mp4, webm, mov, or avi", 400);
+    throw createHttpError("视频文件需为 mp4、webm、mov 或 avi 格式", 400);
   }
 }
 
@@ -134,19 +134,19 @@ export async function uploadVideo({ file }) {
 export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled, bgmVolume, qwenMode }) {
   const task = tasks.get(sourceAssetId);
   if (!task) {
-    throw createHttpError("source asset not found", 404);
+    throw createHttpError("源素材不存在，请重新上传", 404);
   }
 
   if (task.status !== "uploaded" && task.status !== "failed") {
-    throw createHttpError("task already in progress", 409);
+    throw createHttpError("已有进行中的任务", 409);
   }
 
   // Validate API keys before starting
   if (!config.qwen.apiKey) {
-    throw createHttpError("QWEN_API_KEY / DASHSCOPE_API_KEY not configured", 500);
+    throw createHttpError("Qwen API 未配置，请联系管理员", 500);
   }
   if (!config.minimax.apiKey) {
-    throw createHttpError("MINIMAX_API_KEY not configured", 500);
+    throw createHttpError("MiniMax API 未配置，请联系管理员", 500);
   }
 
   task.status = "queued";
@@ -163,7 +163,7 @@ export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled,
     console.error(`[VideoDub ${task.id}] Pipeline failed:`, err);
     task.status = "failed";
     task.stage = "failed";
-    task.error = err.message || "pipeline failed";
+    task.error = err.message || "处理流程失败";
   });
 
   return task;
@@ -186,10 +186,10 @@ async function processPipeline(task) {
     task.thumbnailUrl = buildFrameUrl(task.id);
   } catch (frameError) {
     console.error(`[VideoDub ${task.id}] Frame extraction failed:`, frameError.message);
-    throw new Error(`抽帧失败: ${frameError.message}`);
+    throw new Error(`视频抽帧失败：${frameError.message}`);
   }
   if (framesBase64.length === 0) {
-    throw new Error("frame extraction not implemented (FFmpeg required)");
+    throw new Error("视频抽帧功能未实现（需要 FFmpeg）");
   }
 
   // Step 2: Analyze with Qwen
@@ -203,7 +203,7 @@ async function processPipeline(task) {
     });
   } catch (qwenError) {
     console.error(`[VideoDub ${task.id}] Qwen analysis failed:`, qwenError.message);
-    throw new Error(`视频分析失败: ${qwenError.message}`);
+    throw new Error(`视频分析失败：${qwenError.message}`);
   }
 
   task.analysis = {
@@ -314,7 +314,7 @@ function buildBgmPrompt(analysis) {
 
 export function getTaskById(taskId) {
   const task = tasks.get(taskId);
-  if (!task) throw createHttpError("task not found", 404);
+  if (!task) throw createHttpError("任务不存在", 404);
   return sanitizeTask(task);
 }
 
@@ -327,7 +327,7 @@ export function getRecentTasks() {
 
 export async function deleteTask(taskId) {
   const task = tasks.get(taskId);
-  if (!task) throw createHttpError("task not found", 404);
+  if (!task) throw createHttpError("任务不存在", 404);
 
   const paths = buildStoragePaths(taskId);
   try {

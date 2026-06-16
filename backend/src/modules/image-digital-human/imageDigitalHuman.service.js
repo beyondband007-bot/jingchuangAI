@@ -141,7 +141,7 @@ async function createProviderTask(taskId, payload) {
   const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
   const audioDurationMs = getAudioDurationMs(speech, text);
   if (audioDurationMs > maxImageDigitalHumanAudioMs) {
-    throw createHttpError("audio duration exceeds 5 minutes; shorten the text and try again", 400);
+    throw createHttpError("音频时长超过 5 分钟，请缩短文本后重试", 400);
   }
   const savedAudio = await saveMinimaxSpeechAudio({
     taskId,
@@ -210,7 +210,7 @@ export function getVoices() {
 export async function previewVoice(payload) {
   const text = String(payload.previewText || payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
-  if (!text) throw createHttpError("previewText is required", 400);
+  if (!text) throw createHttpError("请输入试听文本", 400);
 
   const result = await synthesizeMinimaxSpeech({
     text,
@@ -246,7 +246,7 @@ export async function getTask(id) {
 }
 
 export async function createTask(payload, file) {
-  if (!file) throw createHttpError("portrait image is required", 400);
+  if (!file) throw createHttpError("请上传肖像图片", 400);
 
   const text = String(payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
@@ -256,11 +256,11 @@ export async function createTask(payload, file) {
   const pitch = normalizeDecimal(payload.pitch, 0);
   const emotion = normalizeEmotion(payload.emotion);
 
-  if (!text) throw createHttpError("text is required", 400);
-  if (text.length > maxTextLength) throw createHttpError(`text must be ${maxTextLength} characters or fewer`, 400);
+  if (!text) throw createHttpError("请输入文本", 400);
+  if (text.length > maxTextLength) throw createHttpError(`文本长度不能超过 ${maxTextLength} 个字符`, 400);
 
   const model = getModelByKey(modelKey);
-  if (!model || model.provider !== "kie") throw createHttpError("image digital human model not found", 400);
+  if (!model || model.provider !== "kie") throw createHttpError("图片数字人模型不存在", 400);
   const voice = getVoiceById(voiceId);
   const portraitUrl = `/media/image-digital-human/portraits/${file.filename}`;
   const costPoints = Number(model.basePoints || basePoints);
@@ -320,7 +320,7 @@ export async function createTask(payload, file) {
     });
   } catch (error) {
     console.error("Create image digital human provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `image digital human task creation failed: ${error.message}`);
+    await refundTask(taskId, userId, costPoints, `图片数字人任务创建失败：${error.message}`);
   }
 
   return getTask(taskId);
@@ -341,17 +341,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractKieImageDigitalHumanResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "image digital human result missing video URL");
+        await refundTask(id, null, null, "图片数字人结果缺少视频链接");
       } else {
         await setImageDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "image digital human task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "图片数字人任务失败");
     } else {
       await setImageDigitalHumanTaskProcessing(id);
     }
   } catch (error) {
-    await setImageDigitalHumanTaskError(id, `query image digital human status failed: ${error.message}`);
+    await setImageDigitalHumanTaskError(id, `查询图片数字人状态失败：${error.message}`);
   }
 }
 
@@ -395,7 +395,7 @@ export function deleteTask(id) {
 export async function regenerateTask(id) {
   const task = await getTask(id);
   if (!task) return null;
-  if (!task.portraitUrl) throw createHttpError("source portrait image is missing", 400);
+  if (!task.portraitUrl) throw createHttpError("源肖像图片已丢失，请重新上传", 400);
   const filePath = mediaPathToFilePath(task.portraitUrl);
   return createTask(
     {

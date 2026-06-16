@@ -54,7 +54,7 @@ function getModel(modelKey) {
 function assertImage(file) {
   const mimeType = String(file?.mimetype || "");
   if (!mimeType.startsWith("image/")) {
-    throw createHttpError("file must be an image", 400);
+    throw createHttpError("请上传图片文件", 400);
   }
 }
 
@@ -79,7 +79,7 @@ export function getModels() {
 }
 
 export async function createAsset({ file }) {
-  if (!file) throw createHttpError("file is required", 400);
+  if (!file) throw createHttpError("请上传文件", 400);
   assertImage(file);
 
   const localUrl = `/media/remove-bg/images/${file.filename}`;
@@ -122,10 +122,10 @@ export async function getTask(id) {
 
 export async function createTask(payload) {
   const sourceAssetId = String(payload.sourceAssetId || "").trim();
-  if (!sourceAssetId) throw createHttpError("sourceAssetId is required", 400);
+  if (!sourceAssetId) throw createHttpError("缺少源素材，请重新上传", 400);
 
   const sourceAsset = await findRemoveBgAsset(sourceAssetId);
-  if (!sourceAsset) throw createHttpError("source asset not found", 400);
+  if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModel(payload.model);
   const costPoints = Number(model.basePoints || 0);
@@ -167,7 +167,7 @@ export async function createTask(payload) {
     await setRemoveBgTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("Create remove background provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `remove background task creation failed: ${error.message}`);
+    await refundTask(taskId, userId, costPoints, `去背景任务创建失败：${error.message}`);
   }
 
   return getTask(taskId);
@@ -200,17 +200,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractRemoveBgResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "remove background result missing URL");
+        await refundTask(id, null, null, "去背景结果缺少下载链接");
       } else {
         await setRemoveBgTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "remove background task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "去背景任务失败");
     } else {
       await setRemoveBgTaskProcessing(id);
     }
   } catch (error) {
-    await setRemoveBgTaskError(id, `query remove background status failed: ${error.message}`);
+    await setRemoveBgTaskError(id, `查询去背景状态失败：${error.message}`);
   }
 }
 

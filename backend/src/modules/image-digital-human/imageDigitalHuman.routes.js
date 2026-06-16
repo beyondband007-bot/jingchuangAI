@@ -32,7 +32,7 @@ const upload = multer({
   },
   fileFilter: (_req, file, callback) => {
     if (!String(file.mimetype || "").startsWith("image/")) {
-      callback(new Error("portrait must be an image file"));
+      callback(new Error("肖像图片格式不支持，请上传图片文件"));
       return;
     }
     callback(null, true);
@@ -45,7 +45,7 @@ function uploadPortrait(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "portrait image must be 10MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "肖像图片需小于 10MB" : error.message;
     res.status(400).json({ error: message });
   });
 }

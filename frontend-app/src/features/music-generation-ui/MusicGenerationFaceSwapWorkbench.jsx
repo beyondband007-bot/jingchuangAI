@@ -143,16 +143,15 @@ export function MusicGenerationFaceSwapWorkbench({
       </div>
 
       <div className="face-swap-workbench__upload-grid">
+        <div className="ai-music-workbench__mode-tabs music-generation-face-swap-workbench__mode-tabs">
+          <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => setIsInstrumental(false)}>
+            带歌词
+          </button>
+          <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => setIsInstrumental(true)}>
+            纯音乐
+          </button>
+        </div>
         <section className="face-swap-workbench__upload-card music-generation-face-swap-workbench__card">
-          <div className="ai-music-workbench__mode-tabs music-generation-face-swap-workbench__mode-tabs">
-            <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => setIsInstrumental(false)}>
-              带歌词
-            </button>
-            <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => setIsInstrumental(true)}>
-              纯音乐
-            </button>
-          </div>
-
           <label className="ai-music-workbench__field-title">
             <span>1</span>
             风格 / 场景描述

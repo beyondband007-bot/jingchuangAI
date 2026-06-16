@@ -27,7 +27,7 @@ function uploadImageSingle(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "image file must be 20MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "图片文件需小于 20MB" : error.message;
     res.status(400).json({ error: message });
   });
 }
@@ -38,7 +38,7 @@ function uploadVideoSingle(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "video file must be 100MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "视频文件需小于 100MB" : error.message;
     res.status(400).json({ error: message });
   });
 }

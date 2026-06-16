@@ -29,7 +29,7 @@ export async function listImageDigitalHumanTasks(_req, res) {
 export async function getImageDigitalHumanTask(req, res) {
   try {
     const task = await service.getTask(req.params.id);
-    if (!task) return res.status(404).json({ error: "task not found" });
+    if (!task) return res.status(404).json({ error: "任务不存在" });
     return res.json(task);
   } catch (error) {
     return sendError(res, error);
@@ -55,7 +55,7 @@ export async function deleteImageDigitalHumanTask(req, res) {
 export async function regenerateImageDigitalHumanTask(req, res) {
   try {
     const task = await service.regenerateTask(req.params.id);
-    if (!task) return res.status(404).json({ error: "task not found" });
+    if (!task) return res.status(404).json({ error: "任务不存在" });
     return res.status(201).json(task);
   } catch (error) {
     return sendError(res, error);

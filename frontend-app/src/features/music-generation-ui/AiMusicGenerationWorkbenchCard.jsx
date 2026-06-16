@@ -11,6 +11,7 @@ export function AiMusicGenerationWorkbenchCard({
   lyricsOptimizer,
   model,
   isGenerating,
+  canGenerate,
   notice,
   currentResult,
   onPromptChange,
@@ -25,18 +26,17 @@ export function AiMusicGenerationWorkbenchCard({
   return (
     <section className="ai-music-workbench">
       <div className="ai-music-workbench__layout">
+        <div className="ai-music-workbench__mode-tabs">
+          <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(false)}>
+            <FileText size={15} />
+            带歌词
+          </button>
+          <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(true)}>
+            <Music size={15} />
+            纯音乐
+          </button>
+        </div>
         <section className="ai-music-workbench__card ai-music-workbench__studio">
-          <div className="ai-music-workbench__mode-tabs">
-            <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(false)}>
-              <FileText size={15} />
-              带歌词
-            </button>
-            <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(true)}>
-              <Music size={15} />
-              纯音乐
-            </button>
-          </div>
-
           <label className="ai-music-workbench__field-title">
             <span>1</span>
             风格 / 场景描述
@@ -90,12 +90,11 @@ export function AiMusicGenerationWorkbenchCard({
               <span>自动优化歌词</span>
               <Info size={14} />
             </label>
-            <button type="button" className="ai-music-workbench__model">模型：{model}<ChevronDown size={15} /></button>
-          </div>
+           </div>
 
           <div className="ai-music-workbench__submit-row">
             <p>本次生成预计消耗 <strong>30</strong> 积分</p>
-            <button className="ai-music-workbench__generate" type="button" onClick={onGenerate} disabled={isGenerating || !prompt.trim()}>
+            <button className="ai-music-workbench__generate" type="button" onClick={onGenerate} disabled={isGenerating || !canGenerate}>
               <Wand2 size={20} />
               {isGenerating ? "生成中..." : "生成音乐"}
             </button>
