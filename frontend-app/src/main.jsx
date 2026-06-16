@@ -8065,7 +8065,11 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
               />
             ) : (
               <>
-                <UploadCloud size={30} />
+                <span className="dh-avatar-upload-icon" aria-hidden="true">
+                  <UploadCloud size={30} />
+                </span>
+                <strong>创建个人形象</strong>
+                <small>上传虚拟人像图片，生成可用于口播任务的数字人资产</small>
               </>
             )}
             {!selectedAvatar && (
