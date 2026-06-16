@@ -26,6 +26,7 @@ export function mapImageTask(row) {
     prompt: row.prompt,
     referenceImageUrl: row.reference_image_url || null,
     image: urls[0] || null,
+    imageUrl: urls[urls.length - 1] || urls[0] || null,
     grid: row.image_count > 1,
     status: row.status,
     providerTaskId: row.provider_task_id || null,

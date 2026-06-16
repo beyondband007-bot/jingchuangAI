@@ -148,27 +148,18 @@ function ImageDigitalHumanShowcaseCard({
               />
             </label>
 
-            <label className="idh-showcase-field">
-              <span>音色</span>
-              <CustomSelect
-                className="idh-showcase-select custom-select-theme-dh"
-                ariaLabel="音色"
-                value={selectedVoiceValue}
-                onChange={onVoiceChange}
-                options={voiceOptions.map((item) => ({ value: item.id, label: item.name }))}
-              />
-            </label>
+            <div className="idh-showcase-field-row">
+              <label className="idh-showcase-field">
+                <span>音色</span>
+                <CustomSelect
+                  className="idh-showcase-select custom-select-theme-dh"
+                  ariaLabel="音色"
+                  value={selectedVoiceValue}
+                  onChange={onVoiceChange}
+                  options={voiceOptions.map((item) => ({ value: item.id, label: item.name }))}
+                />
+              </label>
 
-            <label className="idh-showcase-field idh-showcase-field--textarea">
-              <span>脚本内容</span>
-              <textarea value={text} maxLength={2000} onChange={(event) => onTextChange?.(event.target.value)} />
-            </label>
-
-            <div className="idh-showcase-tts-panel">
-              <div className="idh-showcase-tts-head">
-                <span>MiniMax TTS 参数</span>
-                <strong>音量、语速、音调与情绪</strong>
-              </div>
               <label className="idh-showcase-field">
                 <span>音色情绪</span>
                 <CustomSelect
@@ -179,6 +170,18 @@ function ImageDigitalHumanShowcaseCard({
                   options={ttsEmotionOptions}
                 />
               </label>
+            </div>
+
+            <label className="idh-showcase-field idh-showcase-field--textarea">
+              <span>脚本内容</span>
+              <textarea value={text} maxLength={2000} onChange={(event) => onTextChange?.(event.target.value)} />
+            </label>
+
+            <div className="idh-showcase-tts-panel">
+              <div className="idh-showcase-tts-head">
+                <span>MiniMax TTS 参数</span>
+                <strong>音量、语速、音调</strong>
+              </div>
               <div className="idh-showcase-tts-controls">
                 <div className="idh-showcase-tts-sliders">
                   <label className="idh-showcase-range-field">

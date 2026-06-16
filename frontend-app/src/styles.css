@@ -3598,6 +3598,7 @@ a:hover {
 }
 
 .example-card-preview {
+  position: relative;
   display: grid;
   overflow: hidden;
   background: #e9eef5;
@@ -3610,11 +3611,46 @@ a:hover {
   aspect-ratio: 16 / 10;
   object-fit: cover;
   background: #e9eef5;
-  transition: transform 220ms ease;
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.example-card-preview::after {
+  content: "生成同款";
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 2;
+  min-width: 126px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, 8px);
+  border-radius: 8px;
+  background: rgba(33, 31, 38, 0.72);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
 }
 
 .example-card:hover img {
   transform: scale(1.035);
+  filter: brightness(0.78);
+}
+
+.example-card:hover .example-card-preview::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.example-card:hover .example-card-tags,
+.example-card:hover .example-card-meta {
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
 }
 
 .example-card-tags,
@@ -7692,7 +7728,7 @@ a:hover {
 
 .motion-view-root {
   position: relative;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px);
   background: #fff;
 }
 
@@ -7707,7 +7743,6 @@ a:hover {
 .motion-canvas {
   position: relative;
   display: grid;
-  min-height: calc(100vh - 64px);
   padding: 64px 24px 180px;
   overflow: hidden;
   background: #fff;
@@ -8314,7 +8349,8 @@ a:hover {
 .watermark-upload-slot img,
 .watermark-upload-slot video {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 260px;
   object-fit: contain;
 }
 
@@ -12922,6 +12958,57 @@ select {
   transform: translateY(0);
 }
 
+/* Hover: keep only the “生成同款” button, like the creation-center cards. */
+.image-results-feed .result-card.is-image-gallery .result-preview {
+  position: relative;
+}
+
+.image-results-feed .result-card.is-image-gallery .result-preview::after {
+  content: "生成同款";
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 2;
+  min-width: 126px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, 8px);
+  border-radius: 8px;
+  background: rgba(33, 31, 38, 0.72);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+}
+
+.image-results-feed .result-card.is-image-gallery:hover .result-preview::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.image-results-feed .result-card.is-image-gallery:hover .result-preview img {
+  transform: scale(1.05);
+  filter: brightness(0.78);
+}
+
+.image-results-feed .result-card.is-image-gallery:hover .result-preview-hitarea {
+  opacity: 0;
+  cursor: default;
+}
+
+.image-results-feed .result-card.is-image-gallery:hover .result-card-model-tag,
+.image-results-feed .result-card.is-image-gallery:hover .result-meta,
+.image-results-feed .result-card.is-image-gallery:hover .result-reference-thumb {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+
 .image-results-feed .result-card.is-image-gallery .tag-row {
   display: none;
 }
@@ -13371,9 +13458,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 .image-workbench-history-head button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 3px;
   min-height: 36px;
-  padding: 0 11px;
+  padding: 0 12px;
   color: var(--text-primary);
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--app-border);
@@ -19518,8 +19605,10 @@ body {
 }
 
 .fm-banner-card img {
+  display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 .fm-section-block {
@@ -19571,6 +19660,7 @@ body {
 }
 
 .fm-scene-image img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -19660,6 +19750,7 @@ body {
 }
 
 .fm-image-card img {
+  display: block;
   width: 100%;
   height: auto;
   transition: transform 220ms var(--fm-ease), filter 220ms var(--fm-ease);
@@ -20466,6 +20557,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   background: var(--fm-brand-soft) !important;
   border: 1px solid #dcd4ff !important;
   color: var(--fm-brand) !important;
+  font-size: 14px !important;
   border-radius: 999px !important;
 }
 
@@ -27056,7 +27148,7 @@ textarea::placeholder {
 /* Motion family history polish: face swap, motion transfer, image digital human */
 .face-swap-view-root .motion-canvas:has(.motion-recent-empty),
 .face-swap-view-root .motion-canvas:has(.motion-results-feed.has-results) {
-  padding: 26px 40px 52px;
+  padding: 24px 24px 24px;
   background: #f6f4fb;
 }
 
@@ -27079,16 +27171,9 @@ textarea::placeholder {
   content: "";
   width: 190px;
   height: 160px;
-  background:
-    radial-gradient(circle at 78% 12%, #d9dde9 0 7px, transparent 8px),
-    radial-gradient(circle at 92% 72%, #d9dde9 0 5px, transparent 6px),
-    linear-gradient(135deg, transparent 0 55%, rgba(214, 219, 235, 0.7) 56% 100%),
-    #f8f9fd;
-  border-radius: 42% 58% 54% 46%;
-  opacity: 0.9;
-  mask:
-    radial-gradient(circle at 50% 100%, transparent 0 28px, #000 29px),
-    linear-gradient(#000, #000);
+  background: url("/assets/article/empty/kong.png") no-repeat;
+  background-size: cover;
+  margin-bottom: 6px;
 }
 
 .face-swap-view-root .motion-recent-empty svg {
@@ -27227,4 +27312,53 @@ textarea::placeholder {
   .fm-assets-transactions-view .assets-transaction-row {
     min-width: 720px;
   }
+}
+
+/* ============================================================
+   Empty-state unification: marketing & audio history pages
+   Use the same illustration style as the article empty state.
+   ============================================================ */
+.watermark-recent-empty,
+.remove-bg-recent-empty,
+.enhance-recent-empty,
+.video-dub-recent-empty,
+.voice-recent-empty {
+  gap: 12px;
+  width: min(420px, 86vw);
+  min-height: 420px;
+  padding: 30px 24px;
+  color: #282532;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.watermark-recent-empty::before,
+.remove-bg-recent-empty::before,
+.enhance-recent-empty::before,
+.video-dub-recent-empty::before,
+.voice-recent-empty::before {
+  content: "";
+  width: 180px;
+  height: 160px;
+  background: url("/assets/article/empty/kong.png") no-repeat center;
+  background-size: contain;
+}
+
+.watermark-recent-empty > svg,
+.remove-bg-recent-empty > svg,
+.enhance-recent-empty > svg,
+.video-dub-recent-empty > svg,
+.voice-recent-empty > svg {
+  display: none;
+}
+
+.watermark-recent-empty strong,
+.remove-bg-recent-empty strong,
+.enhance-recent-empty strong,
+.video-dub-recent-empty strong,
+.voice-recent-empty strong {
+  color: #282532;
+  font-size: 16px;
+  font-weight: 900;
 }

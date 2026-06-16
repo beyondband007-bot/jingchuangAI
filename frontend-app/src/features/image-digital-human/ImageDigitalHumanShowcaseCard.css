@@ -257,6 +257,12 @@
   overflow: visible;
 }
 
+.idh-showcase-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .idh-showcase-settings {
   align-content: start;
   overflow: visible;

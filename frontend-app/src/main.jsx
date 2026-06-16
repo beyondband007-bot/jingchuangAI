@@ -93,147 +93,216 @@ import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
 const caseImageFiles = [
-  "1.jpg",
-  "2.jpg",
-  "3.jpg",
-  "4.jpg",
-  "5.jpg",
-  "6.jpg",
-  "7.jpg",
-  "8.jpg",
-  "9.jpg",
-  "10.jpg",
-  "11.jpg",
-  "12.jpg",
-  "13.jpg",
-  "14.jpg",
-  "15.jpg",
-  "16.jpg",
-  "17.jpg",
-  "18.jpg",
-  "20.jpg",
-  "21.jpg",
-  "22.jpg",
-  "23.jpg",
-  "24.jpg",
-  "25.jpg",
-  "26.jpg",
-  "27.jpg",
-  "28.jpg",
-  "29.jpg",
-  "30.jpg",
-  "31.jpg",
-  "32.jpg",
-  "33.jpg",
-  "34.jpg",
-  "35.jpg",
-  "36.jpg",
-  "37.jpg",
-  "39.jpg",
-  "40.jpg",
-  "41.jpg",
-  "42.jpg",
-  "43.jpg",
-  "44.jpg",
-  "45.jpg",
-  "46.jpg",
-  "47.jpg",
-  "48.jpg",
-  "49.jpg",
-  "50.jpg",
-  "51.jpg",
-  "52.jpg",
-  "53.jpg",
-  "54.jpg",
-  "55.jpg",
-  "56.jpg",
-  "70.jpg",
-  "71.jpg",
-  "72.jpg",
-  "73.jpg",
-  "74.jpg",
-  "75.jpg",
-  "89.jpg",
-  "90.jpg",
-  "91.jpg",
-  "92.jpg",
-  "93.jpg",
-  "94.jpg",
-  "108.jpg",
-  "109.jpg",
-  "110.jpg",
-  "gallery-1.jpg",
-  "gallery-10.jpg",
-  "gallery-2.jpg",
-  "gallery-3.jpg",
-  "gallery-4.jpg",
-  "gallery-5.jpg",
-  "gallery-6.jpg",
-  "gallery-7.jpg",
-  "gallery-8.jpg",
-  "gallery-9.jpg",
-  "hot-1-digital-human.jpg",
-  "hot-2-music.jpg",
-  "hot-3-motion.jpg",
-  "hot-4-faceswap.jpg",
-  "hot-5-tts.jpg",
-  "hot-6-article.jpg",
-  "hot-7-watermark.jpg",
-  "thumb-ai-chat.jpg",
-  "thumb-digital-human.jpg",
-  "thumb-img-gen.jpg",
+  "001.webp",
+  "002.webp",
+  "003.webp",
+  "004.webp",
+  "005.webp",
+  "006.webp",
+  "007.webp",
+  "008.webp",
+  "009.webp",
+  "010.webp",
+  "011.webp",
+  "012.webp",
+  "013.webp",
+  "014.webp",
+  "015.webp",
+  "016.webp",
+  "017.webp",
+  "018.webp",
+  "019.webp",
+  "020.webp",
+  "021.webp",
+  "022.webp",
+  "023.webp",
+  "024.webp",
+  "025.webp",
+  "026.webp",
+  "027.webp",
+  "028.webp",
+  "029.webp",
+  "030.webp",
+  "031.webp",
+  "032.webp",
+  "033.webp",
+  "034.webp",
+  "035.webp",
+  "036.webp",
+  "037.webp",
+  "038.webp",
+  "039.webp",
+  "040.webp",
+  "041.webp",
+  "042.webp",
+  "043.webp",
+  "044.webp",
+  "045.webp",
+  "046.webp",
+  "047.webp",
+  "048.webp",
+  "049.webp",
+  "050.webp",
+  "051.webp",
+  "052.webp",
+  "053.webp",
+  "054.webp",
+  "055.webp",
+  "056.webp",
+  "057.webp",
+  "058.webp",
+  "059.webp",
+  "060.webp",
+  "061.webp",
+  "062.webp",
+  "063.webp",
+  "064.webp",
+  "065.webp",
+  "066.webp",
+  "067.webp",
+  "068.webp",
+  "069.webp",
+  "070.webp",
+  "071.webp",
+  "072.webp",
+  "073.webp",
+  "074.webp",
+  "075.webp",
+  "076.webp",
+  "077.webp",
+  "078.webp",
+  "079.webp",
+  "080.webp",
+  "081.webp",
+  "082.webp",
+  "083.webp",
+  "084.webp",
+  "085.webp",
+  "086.webp",
+  "087.webp",
+  "088.webp",
+  "089.webp",
+  "090.webp",
+  "091.webp",
+  "092.webp",
+  "093.webp",
+  "094.webp",
+  "095.webp",
+  "096.webp",
+  "097.webp",
+  "098.webp",
+  "099.webp",
+  "100.webp",
+  "101.webp",
+  "102.webp",
+  "103.webp",
+  "104.webp",
+  "105.webp",
+  "106.webp",
+  "107.webp",
+  "108.webp",
+  "109.webp",
+  "110.webp",
+  "111.webp",
+  "112.webp",
+  "113.webp",
+  "114.webp",
+  "115.webp",
+  "116.webp",
+  "117.webp",
+  "118.webp",
+  "119.webp",
+  "120.webp",
+  "121.webp",
+  "122.webp",
+  "123.webp",
+  "124.webp",
+  "125.webp",
+  "126.webp",
+  "127.webp",
+  "128.webp"
 ];
 const wideInspirationFiles = new Set([
-  "7.jpg",
-  "8.jpg",
-  "9.jpg",
-  "10.jpg",
-  "12.jpg",
-  "13.jpg",
-  "14.jpg",
-  "15.jpg",
-  "16.jpg",
-  "17.jpg",
-  "18.jpg",
-  "20.jpg",
-  "21.jpg",
-  "22.jpg",
-  "26.jpg",
-  "27.jpg",
-  "28.jpg",
-  "30.jpg",
-  "31.jpg",
-  "32.jpg",
-  "33.jpg",
-  "35.jpg",
-  "43.jpg",
-  "44.jpg",
-  "45.jpg",
-  "46.jpg",
-  "47.jpg",
-  "49.jpg",
-  "50.jpg",
-  "51.jpg",
-  "52.jpg",
-  "53.jpg",
-  "55.jpg",
-  "70.jpg",
-  "71.jpg",
-  "72.jpg",
-  "73.jpg",
-  "89.jpg",
-  "90.jpg",
-  "91.jpg",
-  "94.jpg",
-  "108.jpg",
-  "thumb-ai-chat.jpg",
-  "thumb-img-gen.jpg",
+  "001.webp",
+  "002.webp",
+  "010.webp",
+  "011.webp",
+  "012.webp",
+  "013.webp",
+  "014.webp",
+  "015.webp",
+  "016.webp",
+  "017.webp",
+  "018.webp",
+  "019.webp",
+  "020.webp",
+  "023.webp",
+  "024.webp",
+  "025.webp",
+  "026.webp",
+  "027.webp",
+  "028.webp",
+  "029.webp",
+  "030.webp",
+  "031.webp",
+  "032.webp",
+  "041.webp",
+  "042.webp",
+  "043.webp",
+  "044.webp",
+  "046.webp",
+  "048.webp",
+  "049.webp",
+  "050.webp",
+  "051.webp",
+  "052.webp",
+  "054.webp",
+  "055.webp",
+  "056.webp",
+  "057.webp",
+  "058.webp",
+  "059.webp",
+  "060.webp",
+  "061.webp",
+  "062.webp",
+  "070.webp",
+  "072.webp",
+  "073.webp",
+  "074.webp",
+  "075.webp",
+  "077.webp",
+  "078.webp",
+  "079.webp",
+  "083.webp",
+  "084.webp",
+  "085.webp",
+  "087.webp",
+  "088.webp",
+  "089.webp",
+  "090.webp",
+  "091.webp",
+  "092.webp",
+  "093.webp",
+  "095.webp",
+  "096.webp",
+  "097.webp",
+  "098.webp",
+  "105.webp",
+  "106.webp",
+  "107.webp",
+  "108.webp",
+  "112.webp",
+  "113.webp",
+  "114.webp",
+  "115.webp",
+  "121.webp",
+  "122.webp",
+  "123.webp",
+  "124.webp",
+  "125.webp"
 ]);
 const squareInspirationFiles = new Set([
-  "gallery-1.jpg",
-  "gallery-4.jpg",
-  "gallery-5.jpg",
-  "gallery-8.jpg",
+
 ]);
 
 function getInspirationAspect(file) {
@@ -322,9 +391,13 @@ function arrangeInspirationCards(cards, columnCount = 6) {
 
 const exampleImages = caseImageFiles.map((file, index) => {
   const metadata = imageInspirationPrompts[file] || {};
+  const baseName = file.replace(/\.[^.]+$/, "");
   return {
     file,
-    src: `/refactor/cases/${encodeURIComponent(file)}`,
+    src: `/refactor/cases/${encodeURIComponent(`${baseName}-thumb.webp`)}`,
+    fallbackSrc: `/refactor/cases/${encodeURIComponent(`${baseName}-thumb.jpg`)}`,
+    hdSrc: `/refactor/cases/${encodeURIComponent(file)}`,
+    hdFallbackSrc: `/refactor/cases/${encodeURIComponent(`${baseName}.jpg`)}`,
     label: `案例 ${String(index + 1).padStart(2, "0")}`,
     prompt: metadata.prompt || `案例 ${String(index + 1).padStart(2, "0")}`,
     description: metadata.description || "",
@@ -332,7 +405,7 @@ const exampleImages = caseImageFiles.map((file, index) => {
     mood: metadata.mood || "",
     tags: metadata.tags || [],
     model: "图片生成",
-    ratio: "案例图",
+    ratio: metadata.ratio || "案例图",
     quality: "精选",
     price: "参考",
     aspect: getInspirationAspect(file),
@@ -2016,12 +2089,14 @@ function mapAssetTasks(type, tasks = []) {
       ? task?.video || task?.resultUrl || task?.url || ""
       : "";
     const isVideo = Boolean(video) || type === "AI 视频" || type === "数字人";
+    const highRes = type === "AI 图片" ? task?.imageUrl || task?.resultUrl || preview : "";
     return {
       id: `${type}-${task.id}`,
       rawId: task.id,
       type,
       src: isVideo ? preview : preview || video,
       image: preview,
+      imageUrl: highRes,
       poster: preview || task?.poster || task?.thumbnailUrl || "",
       video,
       videoUrl: video,
@@ -2946,10 +3021,12 @@ function ResultCard({
   const isProcessing =
     card.status === "pending" || card.status === "processing";
   const isFailed = card.status === "failed";
+  const displaySrc = isImageGallery ? card.src || card.image : card.image;
+  const displayFallback = isImageGallery ? card.fallbackSrc : undefined;
   const canPreview = Boolean(
-    card.image && onPreview && !isProcessing && !isFailed,
+    displaySrc && onPreview && !isProcessing && !isFailed,
   );
-  const shouldShowPlaceholder = isProcessing || isFailed || !card.image;
+  const shouldShowPlaceholder = isProcessing || isFailed || !displaySrc;
 
   return (
     <article
@@ -2966,16 +3043,16 @@ function ResultCard({
       >
         {isProcessing && <div className="processing-state">生成中...</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
-        {!isProcessing && !isFailed && card.image ? (
+        {!isProcessing && !isFailed && displaySrc ? (
           card.grid ? (
             <>
-              <PreloadImage src={card.image} alt={card.prompt} />
+              <PreloadImage src={displaySrc} fallbackSrc={displayFallback} alt={card.prompt} />
               <PreloadImage src="/assets/image/gallery-3.jpg" alt={card.prompt} />
               <PreloadImage src="/assets/image/gallery-4.jpg" alt={card.prompt} />
               <PreloadImage src="/assets/image/gallery-5.jpg" alt={card.prompt} />
             </>
           ) : (
-            <PreloadImage src={card.image} alt={card.prompt} />
+            <PreloadImage src={displaySrc} fallbackSrc={displayFallback} alt={card.prompt} />
           )
         ) : null}
         {canPreview && isImageGallery && (
@@ -3033,8 +3110,8 @@ function ResultCard({
               >
                 <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
               </button>
-              {card.image ? (
-                <a className="card-action-link" href={card.image} download>
+              {card.image || card.hdSrc ? (
+                <a className="card-action-link" href={card.hdSrc || card.imageUrl || card.image} download>
                   <Download size={15} />
                   下载
                 </a>
@@ -3439,7 +3516,7 @@ function ImageGenerationWorkbench({
                       aria-label="查看生成图片"
                     >
                       <img
-                        src={task.image}
+                        src={task.imageUrl || task.image}
                         alt={task.prompt}
                         onLoad={() => scrollContextToLatest("auto")}
                       />
@@ -3447,7 +3524,7 @@ function ImageGenerationWorkbench({
                     <div className="image-workbench-result-meta">
                       <p>以上内容由 AI 生成，本次消耗 {task.price || "积分"}</p>
                       <div className="image-workbench-actions">
-                        <a href={task.image} download onClick={() => onDownload?.(task)}>
+                        <a href={task.imageUrl || task.image} download onClick={() => onDownload?.(task)}>
                           <Download size={16} />
                           下载
                         </a>
@@ -3863,10 +3940,10 @@ function CompletedCanvas({ task, onPreview }) {
               onClick={() => onPreview(task)}
               aria-label="查看生成图片"
             >
-              <img src={task.image} alt={task.prompt} />
+              <img src={task.imageUrl || task.image} alt={task.prompt} />
             </button>
             <div className="chat-result-actions">
-              <a href={task.image} download>
+              <a href={task.imageUrl || task.image} download>
                 <Download size={15} />
                 下载
               </a>
@@ -3940,7 +4017,8 @@ function ImageWorkspaceCanvas({
 }
 
 function PreviewDrawer({ task, onClose }) {
-  if (!task?.image) return null;
+  const previewUrl = task?.imageUrl || task?.image;
+  if (!previewUrl) return null;
 
   return (
     <aside className="preview-drawer" aria-label="生成图片预览画布">
@@ -3954,10 +4032,10 @@ function PreviewDrawer({ task, onClose }) {
         </button>
       </div>
       <div className="preview-drawer-stage">
-        <img src={task.image} alt={task.prompt} />
+        <img src={previewUrl} alt={task.prompt} />
       </div>
       <div className="preview-drawer-actions">
-        <a href={task.image} download>
+        <a href={previewUrl} download>
           <Download size={16} />
           下载
         </a>
@@ -3979,16 +4057,19 @@ function ImagePreviewLightbox({
     setCopied(false);
   }, [task?.id]);
 
+  const previewUrl = task?.hdSrc || task?.imageUrl || task?.image;
+  const fallbackUrl = task?.hdFallbackSrc;
+
   useEffect(() => {
-    if (!task?.image) return undefined;
+    if (!previewUrl) return undefined;
     function handleKeyDown(event) {
       if (event.key === "Escape") onClose();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, task?.image]);
+  }, [onClose, previewUrl]);
 
-  if (!task?.image) return null;
+  if (!previewUrl) return null;
 
   async function copyPrompt() {
     await onCopyPrompt?.(task);
@@ -4002,7 +4083,10 @@ function ImagePreviewLightbox({
         title: task.title || "AI 图片创作",
         category: "图片灵感",
         prompt: task.prompt,
-        image: task.image,
+        image: previewUrl,
+        imageUrl: previewUrl,
+        hdSrc: previewUrl,
+        hdFallbackSrc: fallbackUrl,
         ratio: task.ratio,
         model: task.model || task.modelKey || "Kling Image",
         material: "高清原图",
@@ -4024,6 +4108,8 @@ function FaceminiInspirationModal({
   onCopyPrompt,
   copied = false,
 }) {
+  const [activeSrc, setActiveSrc] = useState(null);
+
   useEffect(() => {
     if (!item) return undefined;
     function handleKeyDown(event) {
@@ -4033,10 +4119,16 @@ function FaceminiInspirationModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [item, onClose]);
 
+  useEffect(() => {
+    setActiveSrc(null);
+  }, [item?.id]);
+
   if (!item) return null;
 
   const isVideo = item.mediaType === "video" || item.video;
-  const imageSrc = item.image || item.poster || item.thumbnail || item.src;
+  const primarySrc = item.hdSrc || item.imageUrl || item.image || item.poster || item.thumbnail || item.src;
+  const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
+  const imageSrc = activeSrc || primarySrc;
   const videoSrc = item.video || item.preview || item.source;
 
   return (
@@ -4064,7 +4156,15 @@ function FaceminiInspirationModal({
               muted
             />
           ) : (
-            <img src={imageSrc} alt={item.title || "灵感图片"} />
+            <img
+              src={imageSrc}
+              alt={item.title || "灵感图片"}
+              onError={() => {
+                if (activeSrc !== fallbackSrc && fallbackSrc) {
+                  setActiveSrc(fallbackSrc);
+                }
+              }}
+            />
           )}
         </div>
         <aside className="fm-detail-info">
@@ -4116,10 +4216,12 @@ function FaceminiInspirationModal({
   );
 }
 
-function PreloadImage({ src, alt }) {
+function PreloadImage({ src, fallbackSrc, alt }) {
+  const [activeSrc, setActiveSrc] = useState(src);
   const [loadState, setLoadState] = useState(src ? "loading" : "empty");
 
   useEffect(() => {
+    setActiveSrc(src);
     if (!src) {
       setLoadState("empty");
       return undefined;
@@ -4129,29 +4231,36 @@ function PreloadImage({ src, alt }) {
     let retryTimer;
     setLoadState("loading");
 
-    const loadImage = () => {
+    const loadImage = (url) => {
       const probe = new window.Image();
       probe.decoding = "async";
       probe.onload = () => {
-        if (!cancelled) setLoadState("ready");
+        if (!cancelled) {
+          setActiveSrc(url);
+          setLoadState("ready");
+        }
       };
       probe.onerror = () => {
         if (cancelled) return;
-        setLoadState("loading");
-        retryTimer = window.setTimeout(loadImage, 2500);
+        if (url === src && fallbackSrc && fallbackSrc !== src) {
+          loadImage(fallbackSrc);
+        } else {
+          setLoadState("loading");
+          retryTimer = window.setTimeout(() => loadImage(url), 2500);
+        }
       };
-      probe.src = src;
+      probe.src = url;
     };
 
-    loadImage();
+    loadImage(src);
 
     return () => {
       cancelled = true;
       if (retryTimer) window.clearTimeout(retryTimer);
     };
-  }, [src]);
+  }, [src, fallbackSrc]);
 
-  if (!src) return null;
+  if (!activeSrc) return null;
 
   const isLoading = loadState === "loading" || loadState === "failed";
 
@@ -4165,10 +4274,16 @@ function PreloadImage({ src, alt }) {
       )}
       <img
         className={isLoading ? "is-image-loading" : ""}
-        src={src}
+        src={activeSrc}
         alt={alt}
         onLoad={() => setLoadState("ready")}
-        onError={() => setLoadState("failed")}
+        onError={() => {
+          if (activeSrc === src && fallbackSrc && fallbackSrc !== src) {
+            setActiveSrc(fallbackSrc);
+          } else {
+            setLoadState("failed");
+          }
+        }}
       />
     </span>
   );
@@ -4243,7 +4358,7 @@ function HistoryRail({
                     <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
                   </button>
                   {card.image && (
-                    <a href={card.image} download aria-label="下载图片">
+                    <a href={card.imageUrl || card.image} download aria-label="下载图片">
                       <Download size={15} />
                     </a>
                   )}
@@ -4495,6 +4610,10 @@ function ImageGenerationView({
         mood: item.mood,
         tags: item.tags,
         image: item.src,
+        src: item.src,
+        fallbackSrc: item.fallbackSrc,
+        hdSrc: item.hdSrc,
+        hdFallbackSrc: item.hdFallbackSrc,
         aspect: item.aspect,
         favorite: false,
       })),
@@ -4880,7 +4999,7 @@ function ImageGenerationView({
       id: `reference-${task.id}-${Date.now()}`,
       prompt: "",
       referenceImage: {
-        url: task.image,
+        url: task.imageUrl || task.image,
         originalName: "引用结果图",
         size: 0,
         mimeType: "image/png",
