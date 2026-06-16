@@ -5844,7 +5844,11 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
             />
           ))
         ) : (
-          <div className="empty-results video-empty-results">暂无视频结果</div>
+          <div className="video-dub-recent-empty video-empty-results">
+            <Film size={28} />
+            <strong>暂无视频结果</strong>
+            <p>生成完成的视频会保存在这里。</p>
+          </div>
         )}
         </div>
       )}

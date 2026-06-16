@@ -5478,7 +5478,9 @@ a:hover {
 
 .video-empty-results {
   display: grid;
-  min-height: 300px;
+  grid-column: 1 / -1;
+  justify-self: center;
+  min-height: 420px;
 }
 
 .video-composer {
@@ -8234,32 +8236,6 @@ a:hover {
   display: none;
 }
 
-.face-swap-view-root .motion-recent-empty {
-  justify-self: center;
-  width: min(420px, 100%);
-  min-height: 480px;
-  padding: 30px 24px;
-  color: #64748b;
-  background: #fff;
-  border: 1px dashed #d8e3ef;
-  border-radius: 8px;
-}
-
-.face-swap-view-root .motion-recent-empty svg {
-  color: #1677ff;
-}
-
-.face-swap-view-root .motion-recent-empty strong {
-  color: #172033;
-  font-size: 16px;
-}
-
-.face-swap-view-root .motion-recent-empty p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 .motion-recent-empty {
   display: grid;
   min-height: 320px;
@@ -8621,7 +8597,6 @@ a:hover {
   align-content: start;
   justify-content: start;
   gap: 20px;
-  padding-bottom: 36px;
 }
 
 .watermark-results-feed:not(.has-results) {
@@ -18368,6 +18343,13 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   overflow: hidden !important;
 }
 
+.watermark-canvas.is-list,
+.remove-bg-canvas.is-list,
+.enhance-canvas.is-list,
+.replicate-canvas.is-recent {
+  overflow-y: auto !important;
+}
+
 .watermark-hero-empty,
 .remove-bg-hero-empty,
 .enhance-hero-empty,
@@ -26485,8 +26467,10 @@ textarea::placeholder {
   grid-template-columns: minmax(360px, 34vw) minmax(520px, 1fr);
   gap: 0;
   width: 100%;
-  min-height: calc(100vh - 80px);
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
   padding: 0;
+  overflow: hidden;
   background: #ffffff;
 }
 
@@ -26500,10 +26484,10 @@ textarea::placeholder {
   align-content: start;
   width: 100%;
   max-width: none;
-  min-height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
+  min-height: 0;
+  max-height: 100%;
   margin: 0;
-  padding: 20px 20px 20px;
+  padding: 20px 20px 100px;
   overflow-y: auto;
   background: #ffffff;
   border-right: 1px solid #d8d6e3;
@@ -26648,7 +26632,9 @@ textarea::placeholder {
   display: grid;
   align-content: start;
   gap: 20px;
+  max-height: 100%;
   padding: 20px 20px 20px;
+  overflow-y: auto;
   min-width: 0;
 }
 
@@ -26753,7 +26739,7 @@ textarea::placeholder {
 
 .face-swap-workbench__target-draft {
   display: grid;
-  min-height: 292px;
+  min-height: 120px;
   place-items: center;
   color: #bbb8c8;
   background: #ffffff;
@@ -27293,49 +27279,8 @@ textarea::placeholder {
 .face-swap-view-root .motion-canvas:has(.motion-recent-empty),
 .face-swap-view-root .motion-canvas:has(.motion-results-feed.has-results) {
   padding: 24px 24px 24px;
-  background: #f6f4fb;
 }
 
-.face-swap-view-root .motion-recent-empty {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 12px;
-  width: 100%;
-  min-height: calc(100vh - 150px);
-  margin: 0;
-  color: #8e8ba3;
-  background: #ffffff;
-  border: 1px solid #dedbe8;
-  border-radius: 8px;
-  box-shadow: none;
-}
-
-.face-swap-view-root .motion-recent-empty::before {
-  content: "";
-  width: 190px;
-  height: 160px;
-  background: url("/assets/article/empty/kong.png") no-repeat;
-  background-size: cover;
-  margin-bottom: 6px;
-}
-
-.face-swap-view-root .motion-recent-empty svg {
-  display: none;
-}
-
-.face-swap-view-root .motion-recent-empty strong {
-  color: #66627a;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.face-swap-view-root .motion-recent-empty p {
-  margin: 0;
-  color: #aaa7bb;
-  font-size: 14px;
-  font-weight: 600;
-}
 
 .face-swap-view-root .motion-results-feed.has-results {
   display: grid;
@@ -27466,7 +27411,9 @@ textarea::placeholder {
 .remove-bg-recent-empty,
 .enhance-recent-empty,
 .video-dub-recent-empty,
-.voice-recent-empty {
+.voice-recent-empty,
+.motion-recent-empty,
+.face-swap-view-root .motion-recent-empty {
   gap: 12px;
   width: min(420px, 86vw);
   min-height: 420px;
@@ -27481,7 +27428,9 @@ textarea::placeholder {
 .remove-bg-recent-empty::before,
 .enhance-recent-empty::before,
 .video-dub-recent-empty::before,
-.voice-recent-empty::before {
+.voice-recent-empty::before,
+.motion-recent-empty::before,
+.face-swap-view-root .motion-recent-empty::before {
   content: "";
   width: 180px;
   height: 160px;
@@ -27493,7 +27442,9 @@ textarea::placeholder {
 .remove-bg-recent-empty > svg,
 .enhance-recent-empty > svg,
 .video-dub-recent-empty > svg,
-.voice-recent-empty > svg {
+.voice-recent-empty > svg,
+.motion-recent-empty > svg,
+.face-swap-view-root .motion-recent-empty > svg {
   display: none;
 }
 
@@ -27501,7 +27452,9 @@ textarea::placeholder {
 .remove-bg-recent-empty strong,
 .enhance-recent-empty strong,
 .video-dub-recent-empty strong,
-.voice-recent-empty strong {
+.voice-recent-empty strong,
+.motion-recent-empty strong,
+.face-swap-view-root .motion-recent-empty strong {
   color: #282532;
   font-size: 16px;
   font-weight: 900;
@@ -27626,7 +27579,9 @@ textarea::placeholder {
   color: #4b5563 !important;
 }
 
-.video-dub-recent-empty {
+.video-dub-recent-empty,
+.motion-recent-empty,
+.face-swap-view-root .motion-recent-empty {
   align-self: start !important;
   justify-self: center !important;
   min-height: auto !important;
@@ -27635,16 +27590,32 @@ textarea::placeholder {
   border: 1px dashed #d1d5e3 !important;
 }
 
-.video-dub-recent-empty svg {
+.video-dub-recent-empty svg,
+.motion-recent-empty svg,
+.face-swap-view-root .motion-recent-empty svg {
   color: #9ca3af !important;
 }
 
-.video-dub-recent-empty strong {
+.video-dub-recent-empty strong,
+.motion-recent-empty strong,
+.face-swap-view-root .motion-recent-empty strong {
   color: #374151 !important;
 }
 
-.video-dub-recent-empty p {
+.video-dub-recent-empty p,
+.motion-recent-empty p,
+.face-swap-view-root .motion-recent-empty p {
   color: #6b7280 !important;
+}
+
+/* Center motion-family empty state vertically in the canvas */
+.face-swap-view-root .motion-canvas:has(> .motion-recent-empty) {
+  place-items: center;
+  align-content: center;
+}
+
+.face-swap-view-root .motion-recent-empty {
+  align-self: center !important;
 }
 
 /* Voice-style recent panels (voice-synthesis, music, voice-convert, transcribe) */
@@ -27822,23 +27793,6 @@ textarea::placeholder {
   color: #4b5563 !important;
   background: #f3f4f6 !important;
   border-color: #e5e7eb !important;
-}
-
-.motion-recent-empty {
-  align-self: start !important;
-  justify-self: center !important;
-  min-height: auto !important;
-  color: #6b7280 !important;
-  background: #ffffff !important;
-  border: 1px dashed #d1d5e3 !important;
-}
-
-.motion-recent-empty strong {
-  color: #374151 !important;
-}
-
-.motion-recent-empty p {
-  color: #6b7280 !important;
 }
 
 .face-swap-view-root .motion-results-feed {
