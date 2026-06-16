@@ -5,7 +5,6 @@ import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
-const defaultSynthesisText = "欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
 
 function formatVoiceDuration(ms) {
@@ -78,7 +77,7 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
-  const [text, setText] = useState(defaultSynthesisText);
+  const [text, setText] = useState("");
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);

@@ -3987,7 +3987,6 @@ a:hover {
   height: 64px;
   place-items: center;
   color: #c2410c;
-  background: #fff1ed;
   border: 1px solid #ffd8c7;
   border-radius: 8px;
 }
@@ -4415,7 +4414,6 @@ a:hover {
 
 .history-failed {
   color: #c2410c;
-  background: #fff1ed;
 }
 
 .history-meta {
@@ -8153,7 +8151,6 @@ a:hover {
 
 .motion-task-placeholder.is-failed {
   color: #b42318;
-  background: #fff1ed;
 }
 
 .motion-task-meta {
@@ -8276,7 +8273,6 @@ a:hover {
 .watermark-view-root {
   position: relative;
   min-height: 100vh;
-  padding: 0 24px;
   background: #fff;
 }
 
@@ -8679,7 +8675,6 @@ a:hover {
 
 .watermark-task-placeholder.is-failed {
   color: #b42318;
-  background: #fff1ed;
 }
 
 .watermark-task-meta {
@@ -10801,7 +10796,7 @@ select {
 .remove-bg-upload-slot,
 .remove-bg-result-stage,
 .remove-bg-task-preview {
-  background: rgba(255, 255, 255, 0.06);
+  background: #f0eef7;
   border-color: var(--app-border);
 }
 
@@ -11240,6 +11235,7 @@ select {
 .idh-result-actions a,
 .preview-drawer-header button {
   color: var(--text-muted);
+  font-size: 14px !important;
   background: rgba(255, 255, 255, 0.07);
   border-color: var(--app-border);
 }
@@ -18082,7 +18078,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   position: relative !important;
   height: calc(100vh - 72px) !important;
   min-height: 0 !important;
-  padding: 0 24px !important;
+  padding: 24px 24px !important;
   overflow: hidden !important;
   background: #ffffff !important;
 }
@@ -20471,7 +20467,6 @@ body {
   color: var(--fm-brand) !important;
   border: 2px solid var(--fm-brand) !important;
   background: #fff !important;
-  box-shadow: 0 18px 34px rgba(109, 60, 255, 0.18) !important;
 }
 
 .feature-main .image-filter-tabs button svg {
@@ -26687,11 +26682,29 @@ textarea::placeholder {
   border-radius: 8px;
 }
 
-.face-swap-workbench__target-preview-media img {
+.face-swap-workbench__target-preview-media img,
+.face-swap-workbench__target-preview-media video {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+  background: #11121a;
+}
+
+.face-swap-workbench__target-preview-media.has-preview .face-swap-workbench__target-compare-line,
+.face-swap-workbench__target-preview-media.has-preview .face-swap-workbench__target-compare-handle {
+  display: none;
+}
+
+.face-swap-workbench__target-preview-media.has-preview .face-swap-workbench__target-player {
+  top: 12px;
+  right: 12px;
+  bottom: auto;
+  left: auto;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+  font-size: 12px;
 }
 
 .face-swap-workbench__target-compare-line {
@@ -27583,4 +27596,251 @@ textarea::placeholder {
   font-size: 12px !important;
   font-weight: 700 !important;
   text-align: center !important;
+}
+
+/* Recent / history panels unified visual polish */
+
+/* Video dubbing recent panel */
+.video-dub-recent-panel {
+  align-content: start !important;
+  align-items: start !important;
+  min-height: auto !important;
+  padding-top: 24px !important;
+}
+
+.video-dub-recent-card {
+  background: #ffffff !important;
+  border: 1px solid #d1d5e3 !important;
+  box-shadow: 0 4px 16px rgba(22, 20, 45, 0.08) !important;
+}
+
+.video-dub-recent-card strong,
+.video-dub-recent-info strong {
+  color: #1f2937 !important;
+  font-weight: 700 !important;
+}
+
+.video-dub-recent-info span,
+.video-dub-recent-stage span,
+.video-dub-recent-card span {
+  color: #4b5563 !important;
+}
+
+.video-dub-recent-empty {
+  align-self: start !important;
+  justify-self: center !important;
+  min-height: auto !important;
+  color: #6b7280 !important;
+  background: #ffffff !important;
+  border: 1px dashed #d1d5e3 !important;
+}
+
+.video-dub-recent-empty svg {
+  color: #9ca3af !important;
+}
+
+.video-dub-recent-empty strong {
+  color: #374151 !important;
+}
+
+.video-dub-recent-empty p {
+  color: #6b7280 !important;
+}
+
+/* Voice-style recent panels (voice-synthesis, music, voice-convert, transcribe) */
+.voice-recent-panel {
+  align-content: start !important;
+  align-items: start !important;
+  min-height: auto !important;
+  padding-top: 24px !important;
+}
+
+.voice-recent-card {
+  background: #ffffff !important;
+  border: 1px solid #d1d5e3 !important;
+  box-shadow: 0 4px 16px rgba(22, 20, 45, 0.08) !important;
+}
+
+.voice-recent-card strong {
+  color: #1f1b2e !important;
+  font-weight: 700 !important;
+}
+
+.voice-recent-card span {
+  color: #5a5668 !important;
+}
+
+.voice-recent-empty {
+  align-self: start !important;
+  justify-self: center !important;
+  min-height: auto !important;
+  color: #6b7280 !important;
+  background: #ffffff !important;
+  border: 1px dashed #d1d5e3 !important;
+  box-shadow: none !important;
+}
+
+.voice-recent-empty svg {
+  color: #9ca3af !important;
+}
+
+.voice-recent-empty strong {
+  color: #374151 !important;
+}
+
+.voice-recent-empty p {
+  color: #6b7280 !important;
+}
+
+/* Watermark-style task cards (watermark, remove-bg, enhance) */
+.watermark-results-feed,
+.remove-bg-results-feed,
+.enhance-results-feed {
+  align-content: start !important;
+  align-items: start !important;
+  padding-top: 0 !important;
+}
+
+.watermark-task-card,
+.remove-bg-task-card,
+.enhance-task-card {
+  background: #ffffff !important;
+  border: 1px solid #d1d5e3 !important;
+  box-shadow: 0 4px 16px rgba(22, 20, 45, 0.08) !important;
+}
+
+.watermark-task-meta p,
+.remove-bg-task-meta p,
+.enhance-task-meta p {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+.watermark-source-row span,
+.remove-bg-source-row span,
+.enhance-source-row span {
+  color: #4b5563 !important;
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Watermark / Enhance / Remove-bg task card action buttons: ensure icons remain visible */
+.watermark-view-root .watermark-task-card .watermark-card-actions,
+.enhance-task-card .watermark-card-actions,
+.remove-bg-task-card .watermark-card-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.watermark-view-root .watermark-task-card .watermark-card-actions .icon-circle,
+.enhance-task-card .watermark-card-actions .icon-circle,
+.remove-bg-task-card .watermark-card-actions .icon-circle {
+  flex: 0 0 34px !important;
+}
+
+.watermark-view-root .watermark-task-card .watermark-card-actions > button,
+.watermark-view-root .watermark-task-card .watermark-card-actions > .card-action-link,
+.enhance-task-card .watermark-card-actions > button,
+.enhance-task-card .watermark-card-actions > .card-action-link,
+.remove-bg-task-card .watermark-card-actions > button,
+.remove-bg-task-card .watermark-card-actions > .card-action-link {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  padding: 6px 4px !important;
+  font-size: 12px !important;
+  white-space: normal !important;
+  line-height: 1.25 !important;
+}
+
+.watermark-recent-empty,
+.remove-bg-recent-empty,
+.enhance-recent-empty {
+  align-self: start !important;
+  justify-self: center !important;
+  min-height: auto !important;
+  color: #6b7280 !important;
+  background: #ffffff !important;
+  border: 1px dashed #d1d5e3 !important;
+}
+
+.watermark-recent-empty strong,
+.remove-bg-recent-empty strong,
+.enhance-recent-empty strong {
+  color: #374151 !important;
+}
+
+.watermark-recent-empty p,
+.remove-bg-recent-empty p,
+.enhance-recent-empty p {
+  color: #6b7280 !important;
+}
+
+/* Replicate / prompt-reverse recent list */
+.replicate-recent-list {
+  align-content: start !important;
+  align-items: start !important;
+  min-height: auto !important;
+  padding-top: 24px !important;
+}
+
+.replicate-recent-card {
+  background: #ffffff !important;
+  border: 1px solid #d1d5e3 !important;
+  box-shadow: 0 4px 16px rgba(22, 20, 45, 0.08) !important;
+}
+
+.replicate-recent-card strong {
+  color: #1f2937 !important;
+}
+
+.replicate-recent-card p,
+.replicate-recent-card span {
+  color: #4b5563 !important;
+}
+
+/* Motion-style results (face-swap, motion-transfer) */
+.motion-results-feed {
+  align-content: start !important;
+  align-items: start !important;
+  margin-top: 0 !important;
+  padding-top: 24px !important;
+}
+
+.motion-task-card {
+  background: #ffffff !important;
+  border: 1px solid #d1d5e3 !important;
+  box-shadow: 0 4px 16px rgba(22, 20, 45, 0.08) !important;
+}
+
+.motion-task-meta p {
+  color: #1f2937 !important;
+  font-weight: 500 !important;
+}
+
+.motion-source-row span {
+  color: #4b5563 !important;
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+}
+
+.motion-recent-empty {
+  align-self: start !important;
+  justify-self: center !important;
+  min-height: auto !important;
+  color: #6b7280 !important;
+  background: #ffffff !important;
+  border: 1px dashed #d1d5e3 !important;
+}
+
+.motion-recent-empty strong {
+  color: #374151 !important;
+}
+
+.motion-recent-empty p {
+  color: #6b7280 !important;
+}
+
+.face-swap-view-root .motion-results-feed {
+  padding-top: 24px !important;
 }

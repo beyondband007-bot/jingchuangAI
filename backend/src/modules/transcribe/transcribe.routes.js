@@ -18,7 +18,7 @@ function uploadAudioSingle(req, res, next) {
     }
     const message =
       error.code === "LIMIT_FILE_SIZE"
-        ? "audio file must be 50MB or smaller"
+        ? "音频文件需小于 50MB"
         : error.message;
     res.status(400).json({ error: message });
   });

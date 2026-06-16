@@ -32,24 +32,24 @@ function normalizeDurationMs(value) {
 }
 
 function assertTargetAudioFile(file) {
-  if (!file) throw createHttpError("target audio file is required", 400);
-  if (file.size > maxTargetAudioBytes) throw createHttpError("target audio file must be 20MB or smaller", 400);
+  if (!file) throw createHttpError("请上传目标音频", 400);
+  if (file.size > maxTargetAudioBytes) throw createHttpError("目标音频文件需小于 20MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedTargetMimeTypes.has(mimeType) && !allowedTargetExtensions.has(ext)) {
-    throw createHttpError("target audio file must be mp3, m4a, or wav", 400);
+    throw createHttpError("目标音频文件需为 mp3、m4a 或 wav 格式", 400);
   }
 }
 
 function assertSourceAudioFile(file) {
-  if (!file) throw createHttpError("sourceAudio file is required", 400);
-  if (file.size > maxSourceAudioBytes) throw createHttpError("source audio file must be 50MB or smaller", 400);
+  if (!file) throw createHttpError("请上传源音频", 400);
+  if (file.size > maxSourceAudioBytes) throw createHttpError("源音频文件需小于 50MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedSourceMimeTypes.has(mimeType) && !allowedSourceExtensions.has(ext)) {
-    throw createHttpError("source audio file must be mp3, m4a, wav, flac, or webm", 400);
+    throw createHttpError("源音频文件需为 mp3、m4a、wav、flac 或 webm 格式", 400);
   }
 }
 
@@ -57,14 +57,14 @@ function assertTargetDuration(durationMs) {
   const duration = normalizeDurationMs(durationMs);
   if (!duration) return;
   if (duration < 10000 || duration > 5 * 60 * 1000) {
-    throw createHttpError("target audio must be between 10 seconds and 5 minutes", 400);
+    throw createHttpError("目标音频时长需在 10 秒到 5 分钟之间", 400);
   }
 }
 
 function normalizeVoiceId(value = "") {
   const voiceId = String(value || "").trim();
   if (!/^[A-Za-z][A-Za-z0-9_-]{7,255}$/.test(voiceId)) {
-    throw createHttpError("voiceId must start with a letter and be 8-256 characters of letters, numbers, - or _", 400);
+    throw createHttpError("voiceId 需以字母开头，长度为 8-256 个字符，仅支持字母、数字、- 和 _", 400);
   }
   return voiceId;
 }
@@ -266,18 +266,18 @@ export async function convert(payload, file, userId) {
 
   const sourceDurationMs = normalizeDurationMs(payload.sourceDurationMs);
   if (sourceDurationMs && (sourceDurationMs < 6000 || sourceDurationMs > 6 * 60 * 1000)) {
-    throw createHttpError("source audio must be between 6 seconds and 6 minutes", 400);
+    throw createHttpError("源音频时长需在 6 秒到 6 分钟之间", 400);
   }
 
   const preprocess = await preprocessMinimaxMusicCover({ audioBuffer: file.buffer });
   const lines = cleanFormattedLyrics(preprocess.formattedLyrics);
   if (!lines.length) {
-    throw createHttpError("MiniMax could not extract readable text from the source audio", 422);
+    throw createHttpError("无法从源音频中提取到可用的歌词文本，请更换音频后重试", 422);
   }
 
   const rhythm = buildRhythmicText({ lines, structureResult: preprocess.structureResult });
   if (rhythm.text.length > 10000) {
-    throw createHttpError("extracted source text is too long for MiniMax TTS", 400);
+    throw createHttpError("提取的文本过长，请缩短源音频或更换音频后重试", 400);
   }
 
   const cloneAudioFileId = String(payload.cloneAudioFileId || payload.file_id || "").trim();
@@ -289,7 +289,7 @@ export async function convert(payload, file, userId) {
   let voiceId = providedVoiceId;
   let demoAudio = "";
   if (!voiceId) {
-    if (!cloneAudioFileId) throw createHttpError("cloneAudioFileId or voiceId is required", 400);
+    if (!cloneAudioFileId) throw createHttpError("请上传目标音色音频或选择已有音色", 400);
     voiceId = normalizeVoiceId(payload.generatedVoiceId || payload.newVoiceId || `VoiceConvert_${Date.now()}_${randomUUID().slice(0, 8)}`);
     const clone = await createTargetVoiceClone({
       cloneAudioFileId,

@@ -60,26 +60,26 @@ function mapReplicateTask(row) {
 }
 
 function assertImageFile(file) {
-  if (!file) throw createHttpError("image file is required", 400);
+  if (!file) throw createHttpError("请上传图片", 400);
   if (file.size > maxImageBytes)
-    throw createHttpError("image file must be 20MB or smaller", 400);
+    throw createHttpError("图片文件需小于 20MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedImageTypes.has(mimeType) && !allowedImageExts.has(ext)) {
-    throw createHttpError("image file must be jpg, png, webp, or gif", 400);
+    throw createHttpError("图片文件需为 jpg、png、webp 或 gif 格式", 400);
   }
 }
 
 function assertVideoFile(file) {
-  if (!file) throw createHttpError("video file is required", 400);
+  if (!file) throw createHttpError("请上传视频", 400);
   if (file.size > maxVideoBytes)
-    throw createHttpError("video file must be 100MB or smaller", 400);
+    throw createHttpError("视频文件需小于 100MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedVideoTypes.has(mimeType) && !allowedVideoExts.has(ext)) {
-    throw createHttpError("video file must be mp4, webm, mov, or avi", 400);
+    throw createHttpError("视频文件需为 mp4、webm、mov 或 avi 格式", 400);
   }
 }
 
@@ -170,7 +170,7 @@ print("---FRAMES_END---", flush=True)
           unlink(tempVideoPath).catch(() => {});
 
           if (code !== 0) {
-            reject(new Error(`Frame extraction failed: ${stderr || "unknown error"}`));
+            reject(new Error(`视频抽帧失败：${stderr || "未知错误"}`));
             return;
           }
 
@@ -180,7 +180,7 @@ print("---FRAMES_END---", flush=True)
           const endIndex = stdout.indexOf(endMarker);
 
           if (startIndex === -1 || endIndex === -1) {
-            reject(new Error("Frame extraction output format invalid"));
+            reject(new Error("视频抽帧输出格式无效"));
             return;
           }
 
@@ -191,7 +191,7 @@ print("---FRAMES_END---", flush=True)
             .filter(Boolean);
 
           if (!framesBase64.length) {
-            reject(new Error("No frames extracted from video"));
+            reject(new Error("未能从视频中提取到画面帧"));
             return;
           }
 
@@ -223,9 +223,9 @@ export async function getReplicateTask(id, userId) {
 }
 
 function cleanAnalysisError(error) {
-  const message = String(error?.message || "Analysis failed. Please try again later.");
+  const message = String(error?.message || "分析失败，请稍后重试");
   if (/<html|<\/html>|nginx|Gateway Time-out|Bad Gateway|502|504/i.test(message)) {
-    return "Upstream vision analysis service is temporarily unavailable. Please try again later.";
+    return "视觉分析服务暂时不可用，请稍后重试";
   }
   return message;
 }
@@ -234,7 +234,7 @@ async function finishReplicateTask(taskId, result) {
   const prompt = String(result.prompt || "").trim();
   const description = String(result.description || "").trim();
   if (!prompt && !description) {
-    await failReplicateTaskRow(taskId, "Vision analysis finished without a prompt. Please try again.");
+    await failReplicateTaskRow(taskId, "视觉分析未能生成提示词，请稍后重试");
     return;
   }
 

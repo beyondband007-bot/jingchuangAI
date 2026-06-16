@@ -8770,6 +8770,11 @@ function MotionTransferView({
                   ? "您上传的内容仅用于动作迁移处理，不会被用于其他用途。"
                   : "您上传的内容仅用于换脸处理，不会被用于其他用途。")
               }
+              onViewHistory={isFaceSwapView ? () => {
+                setViewTab("recent");
+                setSubmittedTaskId(null);
+                writeMotionActiveTaskId(navId, null);
+              } : undefined}
             />
           )}
         {!useWorkbenchView && showEmptyHero && (
@@ -8970,25 +8975,9 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         )}
       </div>
       <div className="watermark-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">
-            {task.mediaType === "video" ? "视频去水印" : "图片去水印"}
-          </span>
-          <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">
-            {formatProviderLabel(task.providerModel || task.model, "智能处理")}
-          </span>
-        </div>
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
-        </div>
-        <p>{task.error || task.sourceFileName || "智能去水印结果"}</p>
-        <div className="watermark-source-row">
-          <span>
-            {isVideo ? <Film size={14} /> : <Image size={14} />}
-            {task.sourceFileName || "源素材"}
-          </span>
         </div>
         <div className="card-actions watermark-card-actions">
           <button

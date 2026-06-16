@@ -20,7 +20,7 @@ function uploadTargetSingle(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "target audio file must be 20MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "目标音频文件需小于 20MB" : error.message;
     res.status(400).json({ error: message });
   });
 }
@@ -31,7 +31,7 @@ function uploadSourceSingle(req, res, next) {
       next();
       return;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "source audio file must be 50MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "源音频文件需小于 50MB" : error.message;
     res.status(400).json({ error: message });
   });
 }

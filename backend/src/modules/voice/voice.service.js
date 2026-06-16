@@ -21,13 +21,13 @@ function getExt(fileName = "") {
 }
 
 function assertAudioFile(file) {
-  if (!file) throw createHttpError("audio file is required", 400);
-  if (file.size > maxAudioBytes) throw createHttpError("audio file must be 20MB or smaller", 400);
+  if (!file) throw createHttpError("请上传音频文件", 400);
+  if (file.size > maxAudioBytes) throw createHttpError("音频文件需小于 20MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedMimeTypes.has(mimeType) && !allowedExtensions.has(ext)) {
-    throw createHttpError("audio file must be mp3, m4a, or wav", 400);
+    throw createHttpError("音频文件需为 mp3、m4a 或 wav 格式", 400);
   }
 }
 
@@ -41,18 +41,18 @@ function assertDuration(purpose, durationMs) {
   if (!duration) return;
 
   if (purpose === "prompt_audio" && duration >= 8000) {
-    throw createHttpError("prompt audio must be shorter than 8 seconds", 400);
+    throw createHttpError("提示音频需短于 8 秒", 400);
   }
 
   if (purpose === "voice_clone" && (duration < 10000 || duration > 5 * 60 * 1000)) {
-    throw createHttpError("clone audio must be between 10 seconds and 5 minutes", 400);
+    throw createHttpError("复刻音频时长需在 10 秒到 5 分钟之间", 400);
   }
 }
 
 function normalizeVoiceId(value = "") {
   const voiceId = String(value || "").trim();
   if (!/^[A-Za-z][A-Za-z0-9_-]{7,255}$/.test(voiceId)) {
-    throw createHttpError("voiceId must start with a letter and be 8-256 characters of letters, numbers, - or _", 400);
+    throw createHttpError("voiceId 需以字母开头，长度为 8-256 个字符，仅支持字母、数字、- 和 _", 400);
   }
   return voiceId;
 }
@@ -215,12 +215,12 @@ export async function createClone(payload, userId) {
   const model = String(payload.model || config.minimax.ttsModel || "").trim();
   const name = String(payload.name || "").trim();
 
-  if (!cloneAudioFileId) throw createHttpError("cloneAudioFileId is required", 400);
+  if (!cloneAudioFileId) throw createHttpError("请上传复刻音频", 400);
   const voiceId = normalizeVoiceId(payload.voiceId || payload.voice_id);
-  if (!previewText) throw createHttpError("previewText is required", 400);
-  if (previewText.length > 1000) throw createHttpError("previewText must be 1000 characters or fewer", 400);
+  if (!previewText) throw createHttpError("请输入试听文本", 400);
+  if (previewText.length > 1000) throw createHttpError("试听文本长度不能超过 1000 个字符", 400);
   if ((promptAudioFileId && !promptText) || (!promptAudioFileId && promptText)) {
-    throw createHttpError("promptAudioFileId and promptText must be provided together", 400);
+    throw createHttpError("提示音频和提示文本需同时提供", 400);
   }
 
   await chargeVoiceGeneration({ userId, memo: "voice clone debit" });
@@ -243,9 +243,9 @@ export async function createClone(payload, userId) {
 export async function synthesize(payload, userId) {
   const text = String(payload.text || "").trim();
   const voiceId = String(payload.voiceId || payload.voice_id || "").trim();
-  if (!text) throw createHttpError("text is required", 400);
-  if (!voiceId) throw createHttpError("voiceId is required", 400);
-  if (text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
+  if (!text) throw createHttpError("请输入合成文本", 400);
+  if (!voiceId) throw createHttpError("请选择音色", 400);
+  if (text.length > 2000) throw createHttpError("合成文本长度不能超过 2000 个字符", 400);
 
   const taskId = `voice-${Date.now()}-${randomUUID().slice(0, 8)}`;
   await chargeVoiceGeneration({ userId, memo: "voice synthesis debit" });

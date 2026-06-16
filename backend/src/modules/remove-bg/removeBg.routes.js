@@ -32,7 +32,7 @@ const sourceUpload = multer({
   fileFilter: (_req, file, callback) => {
     const mimeType = String(file.mimetype || "");
     if (!mimeType.startsWith("image/")) {
-      callback(new Error("file has invalid file type"));
+      callback(new Error("文件类型不支持，请上传图片"));
       return;
     }
     callback(null, true);
@@ -45,7 +45,7 @@ function uploadSource(req, res, next) {
       next();
       return undefined;
     }
-    const message = error.code === "LIMIT_FILE_SIZE" ? "image must be 10MB or smaller" : error.message;
+    const message = error.code === "LIMIT_FILE_SIZE" ? "图片需小于 10MB" : error.message;
     return res.status(400).json({ error: message });
   });
 }

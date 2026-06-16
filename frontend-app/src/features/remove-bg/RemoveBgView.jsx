@@ -13,14 +13,6 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function formatProviderLabel(value) {
-  const text = String(value || "").trim();
-  if (!text || /\bkie\b/i.test(text)) {
-    return "智能处理";
-  }
-  return text;
-}
-
 function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   if (task?.status === "completed" && task.resultUrl) {
     return (
@@ -101,23 +93,9 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
         )}
       </div>
       <div className="watermark-task-meta remove-bg-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">智能抠图</span>
-          <span className="ratio-tag">透明 PNG</span>
-          <span className="quality-tag">
-            {formatProviderLabel(task.providerModel || task.model)}
-          </span>
-        </div>
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
-        </div>
-        <p>{task.error || task.sourceFileName || "智能抠图结果"}</p>
-        <div className="watermark-source-row">
-          <span>
-            <Image size={14} />
-            {task.sourceFileName || "源图片"}
-          </span>
         </div>
         <div className="card-actions watermark-card-actions">
           <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">

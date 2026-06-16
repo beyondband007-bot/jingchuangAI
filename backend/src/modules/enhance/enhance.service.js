@@ -85,7 +85,7 @@ function inferKind(file) {
   const mimeType = String(file?.mimetype || "");
   if (mimeType.startsWith("image/")) return "image";
   if (mimeType.startsWith("video/")) return "video";
-  throw createHttpError("file must be an image or video", 400);
+  throw createHttpError("请上传图片或视频文件", 400);
 }
 
 function normalizeUpscaleFactor(value, fallback) {
@@ -153,7 +153,7 @@ export function getModels() {
 }
 
 export async function createAsset({ file }) {
-  if (!file) throw createHttpError("file is required", 400);
+  if (!file) throw createHttpError("请上传文件", 400);
 
   const kind = inferKind(file);
   const localUrl = `/media/enhance/${kind === "image" ? "images" : "videos"}/${file.filename}`;
@@ -197,10 +197,10 @@ export async function getTask(id) {
 
 export async function createTask(payload) {
   const sourceAssetId = String(payload.sourceAssetId || "").trim();
-  if (!sourceAssetId) throw createHttpError("sourceAssetId is required", 400);
+  if (!sourceAssetId) throw createHttpError("缺少源素材，请重新上传", 400);
 
   const sourceAsset = await findEnhanceAsset(sourceAssetId);
-  if (!sourceAsset) throw createHttpError("source asset not found", 400);
+  if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const upscaleFactor = normalizeUpscaleFactor(payload.upscaleFactor, model.upscaleFactor);
@@ -242,7 +242,8 @@ export async function createTask(payload) {
       ? await createKieEnhanceImageTask({
         model: model.providerModel,
         sourceUrl: upload.url,
-        prompt: defaultImageEnhancePrompt
+        prompt: defaultImageEnhancePrompt,
+        upscaleFactor
       })
       : await createKieEnhanceVideoTask({
         model: model.providerModel,
@@ -252,7 +253,7 @@ export async function createTask(payload) {
     await setEnhanceTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("Create enhance provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `enhance task creation failed: ${error.message}`);
+    await refundTask(taskId, userId, costPoints, `画质增强任务创建失败：${error.message}`);
   }
 
   return getTask(taskId);
@@ -317,7 +318,7 @@ async function uploadEnhanceImageToKie(asset, uploadPath) {
   } catch (error) {
     const message = String(error?.stderr || error?.message || "").slice(-400);
     const wrapped = createHttpError(
-      `image format is not supported by enhancement provider; please upload JPEG, PNG, or WEBP${message ? ` (${message})` : ""}`,
+      `图片格式不支持，请上传 JPEG、PNG 或 WEBP 格式图片${message ? `（${message}）` : ""}`,
       400
     );
     wrapped.cause = error;
@@ -342,17 +343,17 @@ async function refreshTask(id) {
     if (mapped === "completed") {
       const result = extractEnhanceResult(record);
       if (!result.resultUrl) {
-        await refundTask(id, null, null, "enhance result missing URL");
+        await refundTask(id, null, null, "画质增强结果缺少下载链接");
       } else {
         await setEnhanceTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "enhance task failed");
+      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "画质增强任务失败");
     } else {
       await setEnhanceTaskProcessing(id);
     }
   } catch (error) {
-    await setEnhanceTaskError(id, `query enhance status failed: ${error.message}`);
+    await setEnhanceTaskError(id, `查询画质增强状态失败：${error.message}`);
   }
 }
 

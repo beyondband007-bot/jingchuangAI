@@ -58,15 +58,15 @@ function mapTranscribeTask(row) {
 }
 
 function assertAudioFile(file) {
-  if (!file) throw createHttpError("audio file is required", 400);
+  if (!file) throw createHttpError("请上传音频文件", 400);
   if (file.size > maxAudioBytes)
-    throw createHttpError("audio file must be 50MB or smaller", 400);
+    throw createHttpError("音频文件需小于 50MB", 400);
 
   const mimeType = String(file.mimetype || "").toLowerCase();
   const ext = getExt(file.originalname);
   if (!allowedMimeTypes.has(mimeType) && !allowedExtensions.has(ext)) {
     throw createHttpError(
-      "audio file must be mp3, m4a, wav, flac, or webm",
+      "音频文件需为 mp3、m4a、wav、flac 或 webm 格式",
       400
     );
   }
@@ -82,7 +82,7 @@ function assertDuration(durationMs) {
   if (!duration) return;
   if (duration < 6000 || duration > 6 * 60 * 1000) {
     throw createHttpError(
-      "audio duration must be between 6 seconds and 6 minutes",
+      "音频时长需在 6 秒到 6 分钟之间",
       400
     );
   }

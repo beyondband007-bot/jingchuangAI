@@ -21,7 +21,7 @@ export async function getTask(req, res) {
   try {
     const task = await service.getMusicTask(req.params.id, req.user.id);
     if (!task) {
-      res.status(404).json({ error: "music task not found" });
+      res.status(404).json({ error: "音乐任务不存在" });
       return;
     }
     res.json(task);
