@@ -15,8 +15,14 @@ import {
   resolveCurrentUser,
   verifyPassword
 } from "../../shared/userService.js";
+import {
+  ensureUserInviteCode,
+  grantInvitationRewardForNewUser,
+  normalizeInviteCode,
+  trackInvitationEvent
+} from "../invitations/invitation.service.js";
 
-const REGISTER_GRANT_POINTS = 1000;
+const REGISTER_GRANT_POINTS = 200;
 const SMS_SEND_INTERVAL_MS = 60 * 1000;
 const SMS_MAX_ATTEMPTS = 5;
 const SMS_SCENES = new Set(["register", "login", "password_reset"]);
@@ -97,6 +103,7 @@ function publicUser(user, credits) {
     displayName: user.displayName || "游客",
     phone: user.phone || null,
     email: user.email || null,
+    inviteCode: user.inviteCode || null,
     isGuest: Boolean(user.isGuest),
     credits
   };
@@ -152,9 +159,11 @@ async function createPhoneUser(phone, connection, passwordHash = null) {
     throw createHttpError("用户 ID 生成失败，请重试", 500);
   }
   await grantInitialCredits(result.insertId, connection);
+  const inviteCode = await ensureUserInviteCode(result.insertId, connection);
   return {
     id: result.insertId,
     externalId,
+    inviteCode,
     username: phone,
     displayName: phone,
     phone,
@@ -379,6 +388,7 @@ export async function registerUser(payload) {
   const phone = normalizePhone(payload?.phone);
   const code = assertSmsCode(payload?.code);
   const password = assertPassword(payload?.password);
+  const inviteCode = normalizeInviteCode(payload?.inviteCode);
   const pool = getPool();
   const connection = await pool.getConnection();
 
@@ -392,12 +402,21 @@ export async function registerUser(payload) {
     await verifySmsCode("register", phone, code, connection);
     const passwordHash = await hashPassword(password);
     const user = await createPhoneUser(phone, connection, passwordHash);
+    const inviteReward = await grantInvitationRewardForNewUser(connection, { inviteCode, inviteeUser: user });
+    if (inviteCode) {
+      await trackInvitationEvent({
+        eventType: "invite.register_success",
+        inviteCode,
+        userId: user.id,
+        payload: { rewarded: Boolean(inviteReward.granted) }
+      }, connection);
+    }
     const session = await createSession(user.id, connection);
     await connection.commit();
 
     return {
       session,
-      user: publicUser(user, REGISTER_GRANT_POINTS)
+      user: publicUser(user, inviteReward.inviteeBalance ?? REGISTER_GRANT_POINTS)
     };
   } catch (error) {
     await connection.rollback();
@@ -432,6 +451,7 @@ export async function loginUser(payload) {
 export async function loginUserWithPhoneCode(payload) {
   const phone = normalizePhone(payload?.phone);
   const code = assertSmsCode(payload?.code);
+  const inviteCode = normalizeInviteCode(payload?.inviteCode);
   const pool = getPool();
   const connection = await pool.getConnection();
 
@@ -441,10 +461,22 @@ export async function loginUserWithPhoneCode(payload) {
 
     let user = await findUserByPhone(phone, connection);
     let credits = REGISTER_GRANT_POINTS;
+    let createdUser = false;
     if (!user) {
       user = await createPhoneUser(phone, connection);
+      createdUser = true;
+      const inviteReward = await grantInvitationRewardForNewUser(connection, { inviteCode, inviteeUser: user });
+      credits = inviteReward.inviteeBalance ?? REGISTER_GRANT_POINTS;
     } else {
       credits = (await getUserCredits(user.id)).balance;
+    }
+    if (inviteCode) {
+      await trackInvitationEvent({
+        eventType: "invite.login_success",
+        inviteCode,
+        userId: user.id,
+        payload: { createdUser }
+      }, connection);
     }
 
     const session = await createSession(user.id, connection);

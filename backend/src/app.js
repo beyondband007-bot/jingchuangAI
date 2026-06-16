@@ -11,6 +11,7 @@ import { enhanceRouter } from "./modules/enhance/enhance.routes.js";
 import { faceSwapRouter } from "./modules/face-swap/faceSwap.routes.js";
 import { imageDigitalHumanRouter } from "./modules/image-digital-human/imageDigitalHuman.routes.js";
 import { imageRouter } from "./modules/image/image.routes.js";
+import { invitationRouter } from "./modules/invitations/invitation.routes.js";
 import { motionTransferRouter } from "./modules/motion-transfer/motionTransfer.routes.js";
 import { removeBgRouter } from "./modules/remove-bg/removeBg.routes.js";
 import { watermarkRouter } from "./modules/watermark/watermark.routes.js";
@@ -72,13 +73,14 @@ export function createApp() {
         return;
       }
       const { listCreditTransactions } = await import("./modules/payment/payment.service.js");
-      res.json(await listCreditTransactions(req.user.id));
+      res.json(await listCreditTransactions(req.user.id, req.query));
     } catch (error) {
       sendError(res, error);
     }
   });
 
   app.use("/api/image", imageRouter);
+  app.use("/api/invitations", invitationRouter);
   app.use("/api/article", articleRouter);
   app.use("/api/video", videoRouter);
   app.use("/api/chat", chatRouter);

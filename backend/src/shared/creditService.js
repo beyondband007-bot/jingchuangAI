@@ -25,7 +25,9 @@ const CREDIT_MEMO_TEXT = new Map([
   ["enhance generation debit", "\u753b\u8d28\u63d0\u5347\u6263\u8d39"],
   ["enhance generation refund", "\u753b\u8d28\u63d0\u5347\u9000\u6b3e"],
   ["remove background generation debit", "\u53bb\u80cc\u666f\u6263\u8d39"],
-  ["remove background generation refund", "\u53bb\u80cc\u666f\u9000\u6b3e"]
+  ["remove background generation refund", "\u53bb\u80cc\u666f\u9000\u6b3e"],
+  ["invite gift inviter reward", "\u9080\u8bf7\u6709\u793c\u5956\u52b1"],
+  ["invite gift invitee reward", "\u53d7\u9080\u6ce8\u518c\u5956\u52b1"]
 ]);
 
 export function localizeCreditMemo(memo) {

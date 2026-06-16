@@ -23,7 +23,12 @@ export const paymentApi = {
       headers: { "X-Order-Token": orderToken }
     });
   },
-  getCreditTransactions() {
-    return request("/api/me/credit-transactions");
+  getCreditTransactions(params = {}) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") searchParams.set(key, value);
+    });
+    const query = searchParams.toString();
+    return request(`/api/me/credit-transactions${query ? `?${query}` : ""}`);
   }
 };

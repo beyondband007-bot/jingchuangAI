@@ -1,5 +1,19 @@
+import { randomBytes } from "crypto";
 import { config } from "../config/index.js";
 import { getPool, getServerConnection } from "../db/pool.js";
+
+function createInviteCode() {
+  return randomBytes(5).toString("base64url").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 8);
+}
+
+async function createUniqueInviteCode(pool) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const code = createInviteCode();
+    const [rows] = await pool.query("SELECT id FROM users WHERE invite_code = ? LIMIT 1", [code]);
+    if (rows.length === 0) return code;
+  }
+  throw new Error("Failed to generate unique invite code.");
+}
 
 async function createDatabaseIfNeeded() {
   const connection = await getServerConnection();
@@ -19,6 +33,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS users (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       external_id VARCHAR(64) NOT NULL UNIQUE,
+      invite_code VARCHAR(32) NULL UNIQUE,
       username VARCHAR(64) NULL,
       phone VARCHAR(20) NULL UNIQUE,
       email VARCHAR(254) NULL UNIQUE,
@@ -38,6 +53,9 @@ async function createTables() {
   const userColumnNames = new Set(userColumns.map((column) => column.COLUMN_NAME));
   if (!userColumnNames.has("username")) {
     await pool.query("ALTER TABLE users ADD COLUMN username VARCHAR(64) NULL AFTER external_id");
+  }
+  if (!userColumnNames.has("invite_code")) {
+    await pool.query("ALTER TABLE users ADD COLUMN invite_code VARCHAR(32) NULL AFTER external_id");
   }
   if (!userColumnNames.has("phone")) {
     await pool.query("ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL AFTER username");
@@ -79,6 +97,16 @@ async function createTables() {
     await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_email (email)");
   }
 
+  const [inviteCodeIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'invite_code' AND NON_UNIQUE = 0`,
+    [config.db.database]
+  );
+  if (inviteCodeIndexes.length === 0) {
+    await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_users_invite_code (invite_code)");
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS credit_accounts (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -91,16 +119,38 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS invite_bindings (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      inviter_user_id BIGINT UNSIGNED NOT NULL,
+      invitee_user_id BIGINT UNSIGNED NOT NULL UNIQUE,
+      invite_code VARCHAR(32) NOT NULL,
+      reward_status ENUM('pending','granted','skipped') NOT NULL DEFAULT 'pending',
+      reward_points INT NOT NULL DEFAULT 200,
+      rewarded_at TIMESTAMP NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_invite_bindings_inviter (inviter_user_id, created_at),
+      INDEX idx_invite_bindings_code (invite_code),
+      CONSTRAINT fk_invite_bindings_inviter FOREIGN KEY (inviter_user_id) REFERENCES users(id),
+      CONSTRAINT fk_invite_bindings_invitee FOREIGN KEY (invitee_user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS credit_transactions (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
       task_id BIGINT UNSIGNED NULL,
-      type ENUM('grant','debit','refund','recharge') NOT NULL,
+      type ENUM('grant','debit','refund','recharge','invitegift') NOT NULL,
       amount INT NOT NULL,
       balance_after INT NOT NULL,
       memo VARCHAR(255) NULL,
+      related_user_id BIGINT UNSIGNED NULL,
+      invite_binding_id BIGINT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_credit_transactions_user_created (user_id, created_at),
+      INDEX idx_credit_transactions_type_created (type, created_at),
+      INDEX idx_credit_transactions_invite_binding (invite_binding_id),
       CONSTRAINT fk_credit_transactions_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
@@ -112,9 +162,37 @@ async function createTables() {
      LIMIT 1`,
     [config.db.database]
   );
-  if (creditTransactionTypeColumns.length && !String(creditTransactionTypeColumns[0].COLUMN_TYPE).includes("'recharge'")) {
-    await pool.query("ALTER TABLE credit_transactions MODIFY COLUMN type ENUM('grant','debit','refund','recharge') NOT NULL");
+  if (creditTransactionTypeColumns.length && !String(creditTransactionTypeColumns[0].COLUMN_TYPE).includes("'invitegift'")) {
+    await pool.query("ALTER TABLE credit_transactions MODIFY COLUMN type ENUM('grant','debit','refund','recharge','invitegift') NOT NULL");
   }
+  const [creditTransactionColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'credit_transactions'`,
+    [config.db.database]
+  );
+  const creditTransactionColumnNames = new Set(creditTransactionColumns.map((column) => column.COLUMN_NAME));
+  if (!creditTransactionColumnNames.has("related_user_id")) {
+    await pool.query("ALTER TABLE credit_transactions ADD COLUMN related_user_id BIGINT UNSIGNED NULL AFTER memo");
+  }
+  if (!creditTransactionColumnNames.has("invite_binding_id")) {
+    await pool.query("ALTER TABLE credit_transactions ADD COLUMN invite_binding_id BIGINT UNSIGNED NULL AFTER related_user_id");
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS invite_events (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      event_type VARCHAR(64) NOT NULL,
+      invite_code VARCHAR(32) NULL,
+      user_id BIGINT UNSIGNED NULL,
+      payload_json JSON NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_invite_events_type_created (event_type, created_at),
+      INDEX idx_invite_events_code_created (invite_code, created_at),
+      INDEX idx_invite_events_user_created (user_id, created_at),
+      CONSTRAINT fk_invite_events_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -1118,10 +1196,25 @@ async function seedDemoData() {
   }
 }
 
+async function backfillInviteCodes() {
+  const pool = getPool();
+  const [users] = await pool.query(
+    "SELECT id FROM users WHERE invite_code IS NULL OR invite_code = '' ORDER BY id ASC"
+  );
+  for (const user of users) {
+    const code = await createUniqueInviteCode(pool);
+    await pool.query("UPDATE users SET invite_code = ? WHERE id = ? AND (invite_code IS NULL OR invite_code = '')", [
+      code,
+      user.id
+    ]);
+  }
+}
+
 export async function initDatabase() {
   await createDatabaseIfNeeded();
   await createTables();
   await seedDemoData();
+  await backfillInviteCodes();
 }
 
 initDatabase()

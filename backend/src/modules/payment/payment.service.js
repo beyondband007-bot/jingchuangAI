@@ -580,14 +580,46 @@ export async function handleWechatPayNotify({ headers, rawBody, body }) {
   return true;
 }
 
-export async function listCreditTransactions(userId) {
-  const [rows] = await getPool().query(
-    `SELECT id, type, amount, balance_after AS balanceAfter, memo, created_at AS createdAt
-     FROM credit_transactions
-     WHERE user_id = ?
-     ORDER BY created_at DESC
-     LIMIT 100`,
-    [userId]
+export async function listCreditTransactions(userId, options = {}) {
+  const page = Math.max(1, Number.parseInt(options.page || "1", 10) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number.parseInt(options.pageSize || "20", 10) || 20));
+  const type = String(options.type || "all").trim().toLowerCase();
+  const keyword = String(options.keyword || "").trim();
+  const where = ["user_id = ?"];
+  const params = [userId];
+
+  if (type && type !== "all") {
+    where.push("type = ?");
+    params.push(type);
+  }
+  if (keyword) {
+    where.push("(memo LIKE ? OR type LIKE ?)");
+    params.push(`%${keyword}%`, `%${keyword}%`);
+  }
+
+  const whereSql = where.join(" AND ");
+  const [[countRow]] = await getPool().query(
+    `SELECT COUNT(*) AS total FROM credit_transactions WHERE ${whereSql}`,
+    params
   );
-  return { transactions: rows.map((row) => ({ ...row, memo: localizeCreditMemo(row.memo) })) };
+  const total = Number(countRow?.total || 0);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const offset = (safePage - 1) * pageSize;
+  const [rows] = await getPool().query(
+    `SELECT id, type, amount, balance_after AS balanceAfter, memo,
+       related_user_id AS relatedUserId, invite_binding_id AS inviteBindingId, created_at AS createdAt
+     FROM credit_transactions
+     WHERE ${whereSql}
+     ORDER BY created_at DESC, id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, pageSize, offset]
+  );
+  return {
+    transactions: rows.map((row) => ({ ...row, memo: localizeCreditMemo(row.memo) })),
+    page: safePage,
+    pageSize,
+    total,
+    totalPages
+  };
 }

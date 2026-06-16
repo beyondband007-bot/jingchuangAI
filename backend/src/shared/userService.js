@@ -20,7 +20,7 @@ export function getCurrentExternalId() {
 
 export async function findUserByExternalId(externalId, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, username, phone, email
      FROM users
      WHERE external_id = ?
      LIMIT 1`,
@@ -31,7 +31,7 @@ export async function findUserByExternalId(externalId, connection = getPool()) {
 
 export async function findUserByUsername(username, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, username, phone, email,
        password_hash AS passwordHash
      FROM users
      WHERE username = ?
@@ -43,7 +43,7 @@ export async function findUserByUsername(username, connection = getPool()) {
 
 export async function findUserByPhone(phone, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, username, phone, email,
        password_hash AS passwordHash
      FROM users
      WHERE phone = ?
@@ -55,7 +55,7 @@ export async function findUserByPhone(phone, connection = getPool()) {
 
 export async function findUserByLoginIdentifier(identifier, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email,
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, username, phone, email,
        password_hash AS passwordHash
      FROM users
      WHERE username = ? OR phone = ? OR LOWER(email) = ?
@@ -67,7 +67,7 @@ export async function findUserByLoginIdentifier(identifier, connection = getPool
 
 export async function findUserById(userId, connection = getPool()) {
   const [rows] = await connection.query(
-    `SELECT id, external_id AS externalId, display_name AS displayName, username, phone, email
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, username, phone, email
      FROM users
      WHERE id = ?
      LIMIT 1`,
@@ -84,6 +84,7 @@ export async function getDemoUser(connection) {
       external_id: currentUser.externalId,
       externalId: currentUser.externalId,
       displayName: currentUser.displayName,
+      inviteCode: currentUser.inviteCode,
       username: currentUser.username,
       phone: currentUser.phone,
       email: currentUser.email
@@ -163,7 +164,7 @@ export async function findUserBySessionToken(token, connection = getPool()) {
   if (!token) return null;
   const tokenHash = hashToken(token);
   const [rows] = await connection.query(
-    `SELECT u.id, u.external_id AS externalId, u.display_name AS displayName, u.username, u.phone, u.email,
+    `SELECT u.id, u.external_id AS externalId, u.invite_code AS inviteCode, u.display_name AS displayName, u.username, u.phone, u.email,
        s.id AS sessionId
      FROM auth_sessions s
      INNER JOIN users u ON u.id = s.user_id
@@ -197,6 +198,7 @@ export async function resolveCurrentUser(req) {
       username: sessionUser.username,
       phone: sessionUser.phone,
       email: sessionUser.email,
+      inviteCode: sessionUser.inviteCode,
       isGuest: false
     };
   }
@@ -212,6 +214,7 @@ export async function resolveCurrentUser(req) {
     username: user.username,
     phone: user.phone,
     email: user.email,
+    inviteCode: user.inviteCode,
     isGuest: true
   };
 }

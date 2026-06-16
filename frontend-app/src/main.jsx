@@ -58,6 +58,7 @@ import {
 } from "lucide-react";
 import { authApi } from "./api/authApi";
 import { paymentApi } from "./api/paymentApi";
+import { invitationApi } from "./api/invitationApi";
 import { imageApi } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
 import { chatApi } from "./api/chatApi";
@@ -417,6 +418,68 @@ const homeFeatureRoutes = [
 ];
 
 const faceminiAsset = (path) => `/assets/facemini/${path}`;
+const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
+const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
+const registerGrantPoints = 200;
+const inviteRewardPoints = 200;
+
+function normalizeInviteCode(value) {
+  return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 32);
+}
+
+function readInviteCodeFromLocation() {
+  const candidates = [];
+  try {
+    candidates.push(new URLSearchParams(window.location.search).get("invite"));
+    const hash = window.location.hash || "";
+    const queryIndex = hash.indexOf("?");
+    if (queryIndex >= 0) {
+      candidates.push(new URLSearchParams(hash.slice(queryIndex + 1)).get("invite"));
+    }
+  } catch {
+    // Ignore malformed URLs; invitation capture is best-effort.
+  }
+  return normalizeInviteCode(candidates.find(Boolean));
+}
+
+function captureInviteCodeFromLocation() {
+  const inviteCode = readInviteCodeFromLocation();
+  if (inviteCode) {
+    try {
+      window.localStorage.setItem(pendingInviteCodeStorageKey, inviteCode);
+    } catch {
+      // Local storage can be unavailable in restricted browser contexts.
+    }
+  }
+  return inviteCode;
+}
+
+function getPendingInviteCode() {
+  try {
+    return normalizeInviteCode(window.localStorage.getItem(pendingInviteCodeStorageKey));
+  } catch {
+    return "";
+  }
+}
+
+function clearPendingInviteCode() {
+  try {
+    window.localStorage.removeItem(pendingInviteCodeStorageKey);
+  } catch {
+    // Local storage can be unavailable in restricted browser contexts.
+  }
+}
+
+function captureInviteCodeForCurrentLocation() {
+  const inviteCode = captureInviteCodeFromLocation();
+  if (inviteCode) {
+    invitationApi.track("invite.link_visit", inviteCode, {
+      path: window.location.pathname,
+      hash: window.location.hash,
+    });
+  }
+  return inviteCode;
+}
 
 function BrandWordmark({ compact = false }) {
   return (
@@ -595,85 +658,85 @@ function takePendingGenerationSeed(target) {
 }
 
 function getRouteView() {
-  const hashView = window.location.hash.replace(/^#\/?/, "");
+  const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   if (appNavIdSet.has(hashView)) return hashView;
-  if (window.location.pathname === "/chat" || window.location.hash === "#/chat")
+  if (window.location.pathname === "/chat" || hashView === "chat")
     return "chat";
-  if (window.location.pathname === "/home" || window.location.hash === "#/home")
+  if (window.location.pathname === "/home" || hashView === "home")
     return "home";
   if (
     window.location.pathname === "/image-digital-human" ||
-    window.location.hash === "#/image-digital-human"
+    hashView === "image-digital-human"
   )
     return "image-digital-human";
   if (
     window.location.pathname === "/digital-human" ||
-    window.location.hash === "#/digital-human"
+    hashView === "digital-human"
   )
     return "digital-human";
   if (
     window.location.pathname === "/motion-transfer" ||
-    window.location.hash === "#/motion"
+    hashView === "motion"
   )
     return "motion";
   if (
     window.location.pathname === "/face-swap" ||
-    window.location.hash === "#/face-swap"
+    hashView === "face-swap"
   )
     return "face-swap";
   if (
     window.location.pathname === "/watermark" ||
-    window.location.hash === "#/watermark"
+    hashView === "watermark"
   )
     return "watermark";
   if (
     window.location.pathname === "/voice-conversion" ||
-    window.location.hash === "#/voice-convert"
+    hashView === "voice-convert"
   )
     return "voice-convert";
   if (
     window.location.pathname === "/transcribe" ||
-    window.location.hash === "#/transcribe"
+    hashView === "transcribe"
   )
     return "transcribe";
   if (
     window.location.pathname === "/article" ||
-    window.location.hash === "#/article"
+    hashView === "article"
   )
     return "article";
   if (
     window.location.pathname === "/music" ||
-    window.location.hash === "#/music"
+    hashView === "music"
   )
     return "music";
   if (
     window.location.pathname === "/replicate" ||
-    window.location.hash === "#/replicate"
+    hashView === "replicate"
   )
     return "replicate";
   if (
     window.location.pathname === "/enhance" ||
-    window.location.hash === "#/enhance"
+    hashView === "enhance"
   )
     return "enhance";
   if (
     window.location.pathname === "/remove-bg" ||
-    window.location.hash === "#/remove-bg"
+    hashView === "remove-bg"
   )
     return "remove-bg";
   if (
     window.location.pathname === "/voice" ||
-    window.location.hash === "#/voice"
+    hashView === "voice"
   )
     return "voice";
   if (
     window.location.pathname === "/video" ||
-    window.location.hash === "#/video"
+    hashView === "video"
   )
     return "video";
   if (
     window.location.pathname === "/image" ||
-    window.location.hash === "#/image"
+    hashView === "image"
   )
     return "image";
   return "splash";
@@ -925,6 +988,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
           phone: phone.trim(),
           code: smsCode.trim(),
           password,
+          inviteCode: getPendingInviteCode(),
         });
         onSuccess(result.user);
       } catch (submitError) {
@@ -941,6 +1005,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         ? await authApi.loginWithPhoneCode({
             phone: phone.trim(),
             code: smsCode.trim(),
+            inviteCode: getPendingInviteCode(),
           })
         : await authApi.login({
             identifier: identifier.trim(),
@@ -962,7 +1027,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
 
   function getDescription() {
     if (renderMode === "register")
-      return "使用手机号完成验证，注册后立即获得 1000 积分。";
+      return "使用手机号完成验证，注册后立即获得 200 积分。";
     if (renderMode === "forgot")
       return "通过手机号验证码验证身份，然后设置新密码。";
     if (isPasswordLogin) return "可使用手机号、邮箱或用户名登录。";
@@ -1894,9 +1959,18 @@ const txTypeMap = {
   debit: { label: "消费扣费", color: "#dc2626" },
   refund: { label: "积分退回", color: "#2563eb" },
   recharge: { label: "充值到账", color: "#16a34a" },
+  invitegift: { label: "邀请有礼", color: "#16a34a" },
 };
 
 const transactionsPageSize = 20;
+const transactionFilterOptions = [
+  ["all", "全部"],
+  ["invitegift", "邀请有礼"],
+  ["recharge", "充值"],
+  ["grant", "注册赠送"],
+  ["debit", "消费"],
+  ["refund", "退款"],
+];
 const articleImageSource = "article";
 const articlePromptMarker = "爆款图文设计";
 
@@ -1983,6 +2057,15 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   const [paymentProvider, setPaymentProvider] = useState("alipay");
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
+  const [transactionFilter, setTransactionFilter] = useState("all");
+  const [transactionKeyword, setTransactionKeyword] = useState("");
+  const [transactionSearch, setTransactionSearch] = useState("");
+  const [transactionMeta, setTransactionMeta] = useState({
+    page: 1,
+    pageSize: transactionsPageSize,
+    total: 0,
+    totalPages: 1,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
@@ -2001,14 +2084,8 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       })
       .slice(0, 10);
   }, [orders]);
-  const transactionsTotalPages = Math.max(
-    1,
-    Math.ceil(transactions.length / transactionsPageSize),
-  );
-  const visibleTransactions = useMemo(() => {
-    const start = (transactionsPage - 1) * transactionsPageSize;
-    return transactions.slice(start, start + transactionsPageSize);
-  }, [transactions, transactionsPage]);
+  const transactionsTotalPages = transactionMeta.totalPages || 1;
+  const visibleTransactions = transactions;
 
   const refreshAssets = useCallback(async () => {
     if (isGuest) return;
@@ -2026,7 +2103,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       ] = await Promise.all([
         paymentApi.getCredits(),
         paymentApi.listOrders(),
-        paymentApi.getCreditTransactions(),
+        paymentApi.getCreditTransactions({
+          type: transactionFilter,
+          page: transactionsPage,
+          pageSize: transactionsPageSize,
+          keyword: transactionSearch,
+        }),
         imageApi.getTasks({ filter: "all" }).catch(() => []),
         videoApi.getTasks({ filter: "all" }).catch(() => []),
         digitalHumanApi.getTasks().catch(() => []),
@@ -2035,6 +2117,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       setCredits(creditsState);
       setOrders(orderState.orders || []);
       setTransactions(txState.transactions || []);
+      setTransactionMeta({
+        page: txState.page || 1,
+        pageSize: txState.pageSize || transactionsPageSize,
+        total: txState.total || 0,
+        totalPages: txState.totalPages || 1,
+      });
       const articleImageTasks = imageTasks.filter(isArticleImageTask);
       const regularImageTasks = imageTasks.filter((task) => !isArticleImageTask(task));
       setUserAssets([
@@ -2049,7 +2137,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isGuest]);
+  }, [isGuest, transactionFilter, transactionSearch, transactionsPage]);
 
   useEffect(() => {
     refreshAssets();
@@ -2058,6 +2146,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   useEffect(() => {
     setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
   }, [transactionsTotalPages]);
+
+  useEffect(() => {
+    setTransactionsPage(1);
+  }, [transactionFilter, transactionSearch]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -2243,6 +2335,17 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setActiveAssetTab(tab);
   }
 
+  function selectTransactionFilter(nextFilter) {
+    setTransactionFilter(nextFilter);
+    setTransactionsPage(1);
+  }
+
+  function submitTransactionSearch(event) {
+    event.preventDefault();
+    setTransactionSearch(transactionKeyword.trim());
+    setTransactionsPage(1);
+  }
+
   async function deleteAsset(item) {
     if (!item) return;
     if (item.type === "AI 图片") await imageApi.deleteTask(item.rawId);
@@ -2305,96 +2408,209 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     return (
       <section className="assets-view-root fm-assets-gallery-view">
         <div className="fm-assets-inner">
-          <h2>我的资产</h2>
-          <div className="fm-assets-tabs" aria-label="资产分类">
-            {assetGalleryTabs.map((tab) => (
+          <div className="fm-assets-headline">
+            <h2>我的资产</h2>
+            <div className="fm-assets-mode-tabs" aria-label="资产视图">
               <button
-                key={tab}
                 type="button"
-                className={tab === activeAssetTab ? "is-active" : ""}
-                onClick={() => selectAssetTab(tab)}
+                className={activeTab !== "transactions" ? "is-active" : ""}
+                onClick={() => setActiveTab("assets")}
               >
-                {tab}
+                作品资产
               </button>
-            ))}
+              <button
+                type="button"
+                className={activeTab === "transactions" ? "is-active" : ""}
+                onClick={() => setActiveTab("transactions")}
+              >
+                账单明细
+              </button>
+            </div>
           </div>
-          {assetGalleryCards.length ? (
-            <div className="fm-assets-grid">
-              {assetGalleryCards.map((card) => (
-                <article className="fm-asset-card" key={card.id} onClick={() => setPreviewAsset(card)}>
-                  {card.isVideo && card.video ? (
-                    <video
-                      src={card.video}
-                      poster={card.poster || undefined}
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : card.src ? (
-                    <img src={card.src} alt={card.title} loading="lazy" />
-                  ) : (
-                    <div className="fm-asset-placeholder">
-                      {card.isVideo ? <Video size={28} /> : <Image size={28} />}
+
+          {activeTab === "transactions" ? (
+            <div className="fm-assets-transactions-view">
+              <div className="fm-transaction-toolbar">
+                <div className="fm-transaction-filters" aria-label="账单分类">
+                  {transactionFilterOptions.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className={transactionFilter === value ? "is-active" : ""}
+                      onClick={() => selectTransactionFilter(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <form className="fm-transaction-search" onSubmit={submitTransactionSearch}>
+                  <Search size={16} />
+                  <input
+                    value={transactionKeyword}
+                    onChange={(event) => setTransactionKeyword(event.target.value)}
+                    placeholder="搜索备注或类型"
+                  />
+                  <button type="submit">查询</button>
+                </form>
+              </div>
+              {visibleTransactions.length ? (
+                <>
+                  <div className="assets-transactions-table fm-transactions-table">
+                    <div className="assets-transactions-header">
+                      <span>时间</span>
+                      <span>类型</span>
+                      <span>变动</span>
+                      <span>余额</span>
+                      <span>备注</span>
                     </div>
-                  )}
-                  <span>{card.type}</span>
-                  {card.isVideo && (
-                    <button type="button" aria-label="播放">
-                      <Play size={16} fill="currentColor" />
-                    </button>
-                  )}
-                  <div className="fm-asset-hover-actions">
-                    <button
-                      type="button"
-                      aria-label="删除"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        deleteAsset(card);
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    {card.video || card.image ? (
-                      <a
-                        href={card.video || card.image}
-                        download
-                        aria-label="下载"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <Download size={16} />
-                      </a>
-                    ) : (
-                      <button type="button" aria-label="下载" disabled>
-                        <Download size={16} />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      aria-label="收藏"
-                      className={card.favorite ? "is-favorite" : ""}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        toggleAssetFavorite(card);
-                      }}
-                    >
-                      <Star size={16} fill={card.favorite ? "currentColor" : "none"} />
-                    </button>
+                    {visibleTransactions.map((tx) => {
+                      const typeInfo = txTypeMap[tx.type] || {
+                        label: tx.type,
+                        color: "#64748b",
+                      };
+                      const isIncome = Number(tx.amount || 0) > 0;
+                      return (
+                        <div className="assets-transaction-row" key={tx.id}>
+                          <span>{new Date(tx.createdAt).toLocaleString("zh-CN")}</span>
+                          <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                          <span
+                            style={{
+                              color: isIncome ? "#16a34a" : "#dc2626",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {isIncome ? "+" : ""}
+                            {tx.amount}
+                          </span>
+                          <span>{tx.balanceAfter}</span>
+                          <span title={tx.memo}>{tx.memo || "-"}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                </article>
-              ))}
+                  <div className="assets-pagination">
+                    <span>
+                      第 {transactionMeta.page || transactionsPage} / {transactionsTotalPages} 页 · 共 {transactionMeta.total || 0} 条
+                    </span>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                        disabled={transactionsPage <= 1 || isLoading}
+                      >
+                        上一页
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTransactionsPage((page) => Math.min(transactionsTotalPages, page + 1))}
+                        disabled={transactionsPage >= transactionsTotalPages || isLoading}
+                      >
+                        下一页
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="fm-assets-empty-state">
+                  <History size={34} />
+                  <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
+                  <p>{transactionFilter === "invitegift" ? "邀请奖励到账后会显示在这里" : "暂无符合条件的积分变动"}</p>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="fm-assets-empty-state">
-              <Wallet size={34} />
-              <strong>{isLoading ? "正在加载作品" : "暂无作品"}</strong>
-              <p>
-                {activeAssetTab === "全部"
-                  ? "你的生成作品会显示在这里"
-                  : `暂无${activeAssetTab}作品`}
-              </p>
-            </div>
+            <>
+              <div className="fm-assets-tabs" aria-label="资产分类">
+                {assetGalleryTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={tab === activeAssetTab ? "is-active" : ""}
+                    onClick={() => selectAssetTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              {assetGalleryCards.length ? (
+                <div className="fm-assets-grid">
+                  {assetGalleryCards.map((card) => (
+                    <article className="fm-asset-card" key={card.id} onClick={() => setPreviewAsset(card)}>
+                      {card.isVideo && card.video ? (
+                        <video
+                          src={card.video}
+                          poster={card.poster || undefined}
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : card.src ? (
+                        <img src={card.src} alt={card.title} loading="lazy" />
+                      ) : (
+                        <div className="fm-asset-placeholder">
+                          {card.isVideo ? <Video size={28} /> : <Image size={28} />}
+                        </div>
+                      )}
+                      <span>{card.type}</span>
+                      {card.isVideo && (
+                        <button type="button" aria-label="播放">
+                          <Play size={16} fill="currentColor" />
+                        </button>
+                      )}
+                      <div className="fm-asset-hover-actions">
+                        <button
+                          type="button"
+                          aria-label="删除"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            deleteAsset(card);
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        {card.video || card.image ? (
+                          <a
+                            href={card.video || card.image}
+                            download
+                            aria-label="下载"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <Download size={16} />
+                          </a>
+                        ) : (
+                          <button type="button" aria-label="下载" disabled>
+                            <Download size={16} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          aria-label="收藏"
+                          className={card.favorite ? "is-favorite" : ""}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleAssetFavorite(card);
+                          }}
+                        >
+                          <Star size={16} fill={card.favorite ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="fm-assets-empty-state">
+                  <Wallet size={34} />
+                  <strong>{isLoading ? "正在加载作品" : "暂无作品"}</strong>
+                  <p>
+                    {activeAssetTab === "全部"
+                      ? "你的生成作品会显示在这里"
+                      : `暂无${activeAssetTab}作品`}
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
         <FaceminiInspirationModal
@@ -9151,14 +9367,56 @@ function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   );
 }
 
-function InviteGiftDialog({ onClose }) {
+function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
   const [copied, setCopied] = useState(false);
+  const [inviteProfile, setInviteProfile] = useState(null);
+  const [inviteError, setInviteError] = useState("");
+  const isGuest = !authUser || authUser.isGuest;
+
+  useEffect(() => {
+    invitationApi.track("invite.popup_exposure", authUser?.inviteCode || getPendingInviteCode(), {
+      loggedIn: !isGuest,
+    });
+  }, [authUser?.inviteCode, isGuest]);
+
+  useEffect(() => {
+    if (isGuest) return undefined;
+    let mounted = true;
+    invitationApi
+      .me()
+      .then((profile) => {
+        if (mounted) {
+          setInviteProfile(profile);
+          setInviteError("");
+        }
+      })
+      .catch((error) => {
+        if (mounted) setInviteError(error.message || "专属邀请链接加载失败");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [isGuest]);
 
   async function copyInviteLink() {
+    if (isGuest) {
+      onOpenAuth?.("register");
+      return;
+    }
+    const inviteLink = inviteProfile?.inviteLink;
+    if (!inviteLink) {
+      setInviteError("专属邀请链接加载中，请稍后再试");
+      return;
+    }
     const ok = await writeClipboardText(
-      `${window.location.origin}${window.location.pathname}#/home?invite=facemini`,
+      inviteLink,
     );
     setCopied(ok);
+    if (ok) {
+      invitationApi.track("invite.copy_success", inviteProfile.inviteCode, {
+        source: "topbar_dialog",
+      });
+    }
   }
 
   return (
@@ -9192,11 +9450,11 @@ function InviteGiftDialog({ onClose }) {
           <small>积分可抵扣 <span>AI 生图、视频生成、数字人、爆款图文</span> 等全部创作额度</small>
           <button className="fm-invite-copy" type="button" onClick={copyInviteLink}>
             <Copy size={20} />
-            一键复制专属邀请链接
+            {isGuest ? "登录后生成专属邀请链接" : "一键复制专属邀请链接"}
           </button>
           <em className="fm-invite-success">
             <CheckCircle2 size={16} />
-            {copied ? "邀请链接已复制，快去分享好友吧！" : "复制后分享给好友，完成注册即可到账"}
+            {inviteError || (copied ? "邀请链接已复制，快去分享好友吧！" : "复制后分享给好友，完成注册即可到账")}
           </em>
         </section>
         <div className="fm-invite-info-grid">
@@ -9235,6 +9493,8 @@ function WorkbenchTopbar({
   const credits = authUser && !authUser.isGuest ? authUser.credits : null;
   const [showInvite, setShowInvite] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [displayCredits, setDisplayCredits] = useState(credits);
+  const [creditDelta, setCreditDelta] = useState(null);
   const profileMenuRef = useRef(null);
   const showDigitalHumanTabs = ["digital-human", "image-digital-human"].includes(activeNav);
   const showArticleTabs = activeNav === "article";
@@ -9242,6 +9502,37 @@ function WorkbenchTopbar({
   useEffect(() => {
     setShowProfileMenu(false);
   }, [activeNav]);
+
+  function flashCreditDelta(amount) {
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    setCreditDelta(amount);
+    window.setTimeout(() => setCreditDelta(null), 1800);
+  }
+
+  useEffect(() => {
+    if (typeof credits !== "number") {
+      setDisplayCredits(credits);
+      return;
+    }
+    setDisplayCredits((current) => {
+      if (typeof current === "number" && credits > current) {
+        flashCreditDelta(credits - current);
+      }
+      return credits;
+    });
+  }, [credits]);
+
+  useEffect(() => {
+    try {
+      const pendingBonus = Number(window.sessionStorage.getItem(pendingInviteBonusStorageKey) || 0);
+      if (pendingBonus > 0) {
+        flashCreditDelta(pendingBonus);
+        window.sessionStorage.removeItem(pendingInviteBonusStorageKey);
+      }
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+  }, []);
 
   useEffect(() => {
     if (!showProfileMenu) return undefined;
@@ -9273,6 +9564,14 @@ function WorkbenchTopbar({
     }));
     onNavChange?.("assets");
     setShowProfileMenu(false);
+  }
+
+  function openInviteDialog() {
+    invitationApi.track("invite.entry_click", authUser?.inviteCode || getPendingInviteCode(), {
+      activeNav,
+      loggedIn: Boolean(authUser && !authUser.isGuest),
+    });
+    setShowInvite(true);
   }
 
   return (
@@ -9321,7 +9620,7 @@ function WorkbenchTopbar({
           <button
             className="fm-top-invite"
             type="button"
-            onClick={() => setShowInvite(true)}
+            onClick={openInviteDialog}
           >
             <Gift size={17} />
             邀请有礼
@@ -9330,9 +9629,10 @@ function WorkbenchTopbar({
             <Sparkles size={17} />
             灵感库
           </button>
-          <button type="button">
+          <button className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`} type="button">
             <Zap size={17} />
-            {credits ?? 666}
+            {displayCredits ?? 666}
+            {creditDelta && <span className="fm-credit-delta">+{creditDelta}</span>}
           </button>
           <button className="fm-top-bell" type="button" aria-label="通知">
             <Bell size={21} />
@@ -9376,7 +9676,13 @@ function WorkbenchTopbar({
           )}
         </div>
       </header>
-      {showInvite && <InviteGiftDialog onClose={() => setShowInvite(false)} />}
+      {showInvite && (
+        <InviteGiftDialog
+          authUser={authUser}
+          onClose={() => setShowInvite(false)}
+          onOpenAuth={onOpenAuth}
+        />
+      )}
     </>
   );
 }
@@ -9670,9 +9976,20 @@ function App() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const onPopState = () => setView(getRouteView());
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    captureInviteCodeForCurrentLocation();
+  }, []);
+
+  useEffect(() => {
+    const onLocationChange = () => {
+      captureInviteCodeForCurrentLocation();
+      setView(getRouteView());
+    };
+    window.addEventListener("hashchange", onLocationChange);
+    window.addEventListener("popstate", onLocationChange);
+    return () => {
+      window.removeEventListener("hashchange", onLocationChange);
+      window.removeEventListener("popstate", onLocationChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -9707,6 +10024,32 @@ function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!authUser || authUser.isGuest) return undefined;
+    let alive = true;
+    const refreshCredits = () => {
+      paymentApi
+        .getCredits()
+        .then((credits) => {
+          if (alive) emitCreditsUpdated(credits);
+        })
+        .catch(() => {});
+    };
+    const interval = window.setInterval(refreshCredits, 30000);
+    const onFocus = () => refreshCredits();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshCredits();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [authUser?.id, authUser?.isGuest]);
+
   const openHome = useCallback(() => {
     setView("home");
   }, []);
@@ -9729,6 +10072,17 @@ function App() {
   }, []);
 
   const finishAuth = useCallback((user) => {
+    const hadInviteCode = Boolean(getPendingInviteCode());
+    const returnedCredits = Number(user?.credits || 0);
+    if (hadInviteCode && returnedCredits >= registerGrantPoints + inviteRewardPoints) {
+      try {
+        window.sessionStorage.setItem(pendingInviteBonusStorageKey, String(inviteRewardPoints));
+      } catch {
+        // Session storage can be unavailable in restricted browser contexts.
+      }
+    }
+    clearPendingInviteCode();
+    emitCreditsUpdated({ userId: user?.id, balance: user?.credits });
     setAuthUser(user);
     setAuthDrawerMode(null);
     window.sessionStorage.setItem(appEntryStorageKey, "1");
