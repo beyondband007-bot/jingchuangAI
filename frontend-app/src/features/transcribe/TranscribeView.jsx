@@ -100,7 +100,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
         </span>
       )}
       <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Upload size={18} />}</span>
-      <strong>{hasFile ? fileState.fileName : "+ 上传音频文件"}</strong>
+      <strong>{hasFile ? fileState.fileName : <><span className="upload-plus">+</span>上传音频文件</>}</strong>
       <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6 秒到 6 分钟"}</small>
     </button>
   );

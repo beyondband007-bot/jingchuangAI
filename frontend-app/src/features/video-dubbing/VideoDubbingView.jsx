@@ -109,7 +109,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
       <span className="video-dub-upload-icon">
         {isUploading ? <Loader2 size={20} /> : <Upload size={20} />}
       </span>
-      <strong>{hasFile ? fileState.fileName : "+ 上传视频文件"}</strong>
+      <strong>{hasFile ? fileState.fileName : <><span className="upload-plus">+</span>上传视频文件</>}</strong>
       <small>
         {hasFile
           ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}`

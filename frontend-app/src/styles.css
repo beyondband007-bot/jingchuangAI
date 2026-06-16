@@ -245,6 +245,11 @@ button {
   white-space: nowrap;
 }
 
+.upload-plus {
+  display: inline-block;
+  margin-right: 4px;
+}
+
 .voice-upload-slot small {
   margin-top: 3px;
   color: #7fa1bf;
@@ -25078,6 +25083,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border: 0 !important;
   border-radius: 999px !important;
   box-shadow: none !important;
+  font-size: 14px !important;
 }
 
 [data-feature-module="chat"] .chat-new-conversation-button {
@@ -25086,9 +25092,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 [data-feature-module="chat"] .chat-history-rail {
-  width: 196px !important;
-  margin-top: 12px !important;
-  padding: 16px !important;
+  width: 256px !important;
+  margin-top: 0 !important;
+  padding: 6px !important;
   color: #282532 !important;
   background: #ffffff !important;
   border: 1px solid #dedbe8 !important;
@@ -25923,7 +25929,22 @@ textarea::placeholder {
 }
 
 .voice-synthesis-workspace__dropzone-icon,
-.voice-conversion-workbench__upload-icon,
+.voice-conversion-workbench__upload-icon {
+  display: grid !important;
+  width: 72px !important;
+  height: 72px !important;
+  place-items: center;
+  color: #fff !important;
+  background: #c4c0d4 !important;
+  border-radius: 50% !important;
+}
+
+.voice-synthesis-workspace__dropzone-icon svg,
+.voice-conversion-workbench__upload-icon svg {
+  width: 32px !important;
+  height: 32px !important;
+}
+
 .voice-upload-icon,
 .video-dub-upload-icon {
   display: grid !important;
