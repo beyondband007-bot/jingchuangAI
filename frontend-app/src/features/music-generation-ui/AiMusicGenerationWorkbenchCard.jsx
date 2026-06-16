@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronDown, FileAudio, FileText, Info, Wand2 } from "lucide-react";
+import { ChevronDown, FileAudio, FileText, Info, Music, Wand2 } from "lucide-react";
 import "./aiMusicGenerationWorkbenchCard.css";
 
 const styleTags = ["流行", "电子", "嘻哈", "古典", "国风", "轻音乐", "摇滚", "爵士"];
@@ -27,8 +27,14 @@ export function AiMusicGenerationWorkbenchCard({
       <div className="ai-music-workbench__layout">
         <section className="ai-music-workbench__card ai-music-workbench__studio">
           <div className="ai-music-workbench__mode-tabs">
-            <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(false)}>带歌词</button>
-            <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(true)}>纯音乐</button>
+            <button type="button" className={!isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(false)}>
+              <FileText size={15} />
+              带歌词
+            </button>
+            <button type="button" className={isInstrumental ? "is-active" : ""} onClick={() => onToggleInstrumental(true)}>
+              <Music size={15} />
+              纯音乐
+            </button>
           </div>
 
           <label className="ai-music-workbench__field-title">
