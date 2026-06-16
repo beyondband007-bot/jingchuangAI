@@ -1,4 +1,4 @@
-﻿﻿* {
+﻿* {
   box-sizing: border-box;
 }
 
@@ -24921,6 +24921,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 [data-feature-module="chat"] .chat-view-root {
+  --chat-composer-clearance: 254px;
   display: grid !important;
   grid-template-rows: minmax(0, 1fr) !important;
   height: calc(100vh - 80px) !important;
@@ -24959,14 +24960,19 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   right: 0 !important;
   bottom: 0 !important;
   z-index: 4 !important;
-  height: 245px !important;
+  height: var(--chat-composer-clearance) !important;
   pointer-events: none !important;
   background: #ffffff !important;
 }
 
 [data-feature-module="chat"] .chat-main-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: var(--chat-composer-clearance) !important;
+  left: 0 !important;
   min-height: 0 !important;
-  height: 100% !important;
+  height: auto !important;
   overflow-y: auto !important;
   color: #282532 !important;
   background: #ffffff !important;
@@ -24974,7 +24980,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 
 [data-feature-module="chat"] .chat-conversation-thread {
   width: min(760px, calc(100% - 64px)) !important;
-  padding: 12px 0 256px !important;
+  padding: 12px 0 24px !important;
 }
 
 [data-feature-module="chat"] .chat-empty-state {
