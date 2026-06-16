@@ -19768,7 +19768,8 @@ body {
   border-radius: 999px;
   color: #9694a4;
   background: transparent;
-  font-size: 17px;
+  font-size: 14px !important;
+  border: 1px solid #dddddd;
   font-weight: 600;
 }
 
@@ -20421,7 +20422,7 @@ body {
   padding: 0 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 24px !important;
+  gap: 12px !important;
   overflow: visible !important;
   border: 0 !important;
   background: transparent !important;
@@ -20441,7 +20442,7 @@ body {
   background: transparent !important;
   color: #9694a4 !important;
   box-shadow: none !important;
-  font-size: 17px !important;
+  font-size: 16px !important;
   font-weight: 700 !important;
 }
 
@@ -27615,6 +27616,45 @@ textarea::placeholder {
 }
 
 .face-swap-view-root .motion-recent-empty {
+  align-self: center !important;
+}
+
+/* Empty-state layout: prevent scroll and center vertically in viewport */
+.motion-view-root.face-swap-view-root:has(> .motion-canvas > .motion-recent-empty) {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px) !important;
+}
+
+.motion-view-root.face-swap-view-root:has(> .motion-canvas > .motion-recent-empty) .motion-filter-tabs {
+  flex: 0 0 auto;
+}
+
+.motion-view-root.face-swap-view-root:has(> .motion-canvas > .motion-recent-empty) .motion-canvas {
+  flex: 1;
+  min-height: 0 !important;
+}
+
+.video-gen-view-root:has(> .video-results-feed > .video-dub-recent-empty.video-empty-results) {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px) !important;
+  padding-bottom: 0 !important;
+}
+
+.video-gen-view-root:has(> .video-results-feed > .video-dub-recent-empty.video-empty-results) .image-filter-tabs {
+  flex: 0 0 auto;
+}
+
+.video-gen-view-root:has(> .video-results-feed > .video-dub-recent-empty.video-empty-results) .video-results-feed {
+  flex: 1;
+  min-height: 0 !important;
+  place-items: center;
+  align-content: center;
+  margin-top: 0 !important;
+}
+
+.video-results-feed > .video-dub-recent-empty.video-empty-results {
   align-self: center !important;
 }
 
