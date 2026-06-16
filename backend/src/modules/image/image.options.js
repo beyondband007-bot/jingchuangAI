@@ -3,8 +3,7 @@ import { createHttpError } from "../../shared/http.js";
 export const imageRatioOptions = ["1:1", "3:4", "4:3", "9:16", "16:9"];
 export const imageQualityOptions = [
   { value: "1K", multiplier: 0.8 },
-  { value: "2K", multiplier: 1 },
-  { value: "4K", multiplier: 1.65 }
+  { value: "2K", multiplier: 1 }
 ];
 export const imageCountOptions = [1];
 export const gptImage2ModelKey = "gpt_image_2";
