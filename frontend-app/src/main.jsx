@@ -7380,7 +7380,7 @@ function DigitalHumanConfigPanel({
         />
         <CustomSelect
           className="custom-select-theme-dh dh-emotion-select"
-          ariaLabel="音色情绪"
+          ariaLabel="情绪"
           value={ttsEmotion}
           onChange={(value) => {
             if (value !== ttsEmotion) resetVoicePreview();

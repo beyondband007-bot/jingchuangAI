@@ -228,7 +228,7 @@ export function ImageDigitalHumanFaceSwapWorkbench({
               </button>
             </div>
 
-            <label className="idh-showcase-field">
+            <label className="idh-showcase-field idh-showcase-field--model">
               <span>模型</span>
               <CustomSelect
                 className="idh-showcase-select custom-select-theme-dh"
@@ -239,16 +239,28 @@ export function ImageDigitalHumanFaceSwapWorkbench({
               />
             </label>
 
-            <label className="idh-showcase-field">
-              <span>音色</span>
-              <CustomSelect
-                className="idh-showcase-select custom-select-theme-dh"
-                ariaLabel="音色"
-                value={voiceId}
-                onChange={setVoiceId}
-                options={voices.map((item) => ({ value: item.id, label: item.name }))}
-              />
-            </label>
+            <div className="idh-showcase-field-row">
+              <label className="idh-showcase-field">
+                <span>音色</span>
+                <CustomSelect
+                  className="idh-showcase-select custom-select-theme-dh"
+                  ariaLabel="音色"
+                  value={voiceId}
+                  onChange={setVoiceId}
+                  options={voices.map((item) => ({ value: item.id, label: item.name }))}
+                />
+              </label>
+              <label className="idh-showcase-field">
+                <span>情绪</span>
+                <CustomSelect
+                  className="idh-showcase-select custom-select-theme-dh"
+                  ariaLabel="情绪"
+                  value={emotion}
+                  onChange={setEmotion}
+                  options={ttsEmotionOptions}
+                />
+              </label>
+            </div>
 
             <label className="idh-showcase-field idh-showcase-field--textarea">
               <span>脚本内容</span>
@@ -258,18 +270,8 @@ export function ImageDigitalHumanFaceSwapWorkbench({
             <div className="idh-showcase-tts-panel">
               <div className="idh-showcase-tts-head">
                 <span>MiniMax TTS 参数</span>
-                <strong>音量、语速、音调与情绪</strong>
+                <strong>音量、语速、音调</strong>
               </div>
-              <label className="idh-showcase-field">
-                <span>音色情绪</span>
-                <CustomSelect
-                  className="idh-showcase-select custom-select-theme-dh"
-                  ariaLabel="音色情绪"
-                  value={emotion}
-                  onChange={setEmotion}
-                  options={ttsEmotionOptions}
-                />
-              </label>
               <div className="idh-showcase-tts-controls">
                 <div className="idh-showcase-tts-sliders">
                   <label className="idh-showcase-range-field">

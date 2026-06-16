@@ -161,10 +161,10 @@ function ImageDigitalHumanShowcaseCard({
               </label>
 
               <label className="idh-showcase-field">
-                <span>音色情绪</span>
+                <span>情绪</span>
                 <CustomSelect
                   className="idh-showcase-select custom-select-theme-dh"
-                  ariaLabel="音色情绪"
+                  ariaLabel="情绪"
                   value={emotion}
                   onChange={onEmotionChange}
                   options={ttsEmotionOptions}

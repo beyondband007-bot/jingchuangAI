@@ -26906,7 +26906,7 @@ textarea::placeholder {
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-steps,
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-drive-tabs,
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-tts-head,
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:nth-of-type(3),
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field--textarea,
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-range-field:nth-of-type(2),
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-range-field:nth-of-type(3) {
   display: none;
@@ -26918,14 +26918,17 @@ textarea::placeholder {
   gap: 14px;
 }
 
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:first-of-type {
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field--model {
   order: 4;
   grid-column: 1 / -1;
 }
 
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:nth-of-type(2) {
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field-row {
   order: 3;
-  grid-column: 1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-field--textarea {
@@ -26984,22 +26987,19 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:nth-of-type(2) {
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field--model {
   display: grid !important;
   grid-template-columns: 1fr;
   align-items: start;
   gap: 8px;
 }
 
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:first-of-type {
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field-row > .idh-showcase-field {
   display: grid !important;
   grid-template-columns: 1fr;
   align-items: start;
   gap: 8px;
-}
-
-.face-swap-view-root .image-digital-human-workbench .idh-showcase-field:nth-of-type(2)::before {
-  display: none;
+  min-width: 0;
 }
 
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-select .custom-select-trigger,

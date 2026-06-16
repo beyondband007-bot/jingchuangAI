@@ -2301,7 +2301,7 @@ function DigitalHumanConfigPanel({ options, voices, selectedAvatar, onSubmit, is
             <strong>音量、语速、音调与情绪</strong>
           </div>
           <label className="dh-field">
-            <span>音色情绪</span>
+            <span>情绪</span>
             <select value={ttsEmotion} onChange={(event) => setTtsEmotion(event.target.value)}>
               {ttsEmotionOptions.map((item) => <option key={item.value || "auto"} value={item.value}>{item.label}</option>)}
             </select>
