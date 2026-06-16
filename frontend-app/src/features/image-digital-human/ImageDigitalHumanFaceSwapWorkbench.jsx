@@ -251,10 +251,10 @@ export function ImageDigitalHumanFaceSwapWorkbench({
                 />
               </label>
               <label className="idh-showcase-field">
-                <span>情绪</span>
+                <span>音色情绪</span>
                 <CustomSelect
                   className="idh-showcase-select custom-select-theme-dh"
-                  ariaLabel="情绪"
+                  ariaLabel="音色情绪"
                   value={emotion}
                   onChange={setEmotion}
                   options={ttsEmotionOptions}
