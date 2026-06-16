@@ -87,10 +87,13 @@ export function AiMusicGenerationWorkbenchCard({
             <button type="button" className="ai-music-workbench__model">模型：{model}<ChevronDown size={15} /></button>
           </div>
 
-          <button className="ai-music-workbench__generate" type="button" onClick={onGenerate} disabled={isGenerating || !prompt.trim()}>
-            <Wand2 size={20} />
-            {isGenerating ? "生成中..." : "生成音乐"}
-          </button>
+          <div className="ai-music-workbench__submit-row">
+            <p>本次生成预计消耗 <strong>30</strong> 积分</p>
+            <button className="ai-music-workbench__generate" type="button" onClick={onGenerate} disabled={isGenerating || !prompt.trim()}>
+              <Wand2 size={20} />
+              {isGenerating ? "生成中..." : "生成音乐"}
+            </button>
+          </div>
 
           {notice ? <div className="ai-music-workbench__notice">{notice}</div> : null}
 

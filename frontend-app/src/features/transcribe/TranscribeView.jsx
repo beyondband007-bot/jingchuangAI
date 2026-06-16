@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
+import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
@@ -99,7 +99,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
           <X size={13} />
         </span>
       )}
-      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Plus size={18} />}</span>
+      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Upload size={18} />}</span>
       <strong>{hasFile ? fileState.fileName : "+ 上传音频文件"}</strong>
       <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6 秒到 6 分钟"}</small>
     </button>
@@ -260,7 +260,7 @@ export function TranscribeView({ authUser }) {
     <section className="voice-conversion-view-root transcribe-view-root">
       <div className="image-filter-tabs voice-filter-tabs">
         <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
@@ -333,7 +333,7 @@ export function TranscribeView({ authUser }) {
               <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
             </div>
             <div className="voice-composer-footer">
-              <span>{notice || "建议上传 6 秒到 6 分钟的清晰音频。"}</span>
+              <strong className="audio-credit-hint">本次生成预计消耗 <em>30</em> 积分</strong>
               <div className="voice-actions">
                 {result && (
                   <button className="voice-download" type="button" onClick={() => downloadText(result)}>

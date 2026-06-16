@@ -288,7 +288,7 @@ export function ImageDigitalHumanFaceSwapWorkbench({
                 <div className="idh-showcase-tts-action">
                   <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={previewVoice} disabled={isPreviewingVoice}>
                     {isPreviewingVoice ? <Loader2 size={18} className="image-digital-human-workbench__spinner" /> : <Wand2 size={18} />}
-                    生成语音
+                    {"\u751f\u6210\u6570\u5b57\u4eba\u89c6\u9891"}
                   </button>
                 </div>
               </div>
@@ -296,6 +296,19 @@ export function ImageDigitalHumanFaceSwapWorkbench({
           </div>
         </section>
       </div>
+
+      <section className="image-digital-human-workbench__preview">
+        <div className="image-digital-human-workbench__preview-header">
+          <h2>{"\u5f00\u542f\u4f60\u7684\u56fe\u7247\u6570\u5b57\u4eba"}</h2>
+          <p>{"\u4e0a\u4f20\u6b63\u9762\u6e05\u6670\u4eba\u50cf\u7167\u7247\uff0c\u586b\u5199\u53e3\u64ad\u6587\u6848\uff0c\u4e00\u952e\u751f\u6210\u5bf9\u53e3\u578b\u64ad\u62a5\u77ed\u89c6\u9891"}</p>
+        </div>
+        <div className="image-digital-human-workbench__preview-media">
+          <img src="/assets/digital-human/posters/时尚类女主播.jpg" alt={"\u56fe\u7247\u6570\u5b57\u4eba\u9884\u89c8"} />
+        </div>
+        <div className="image-digital-human-workbench__draft">
+          {"\u6682\u65e0\u8349\u7a3f\uff0c\u7f16\u8f91\u5f62\u8c61\u6216\u914d\u97f3\u540e\u5c06\u81ea\u52a8\u4fdd\u5b58"}
+        </div>
+      </section>
 
       {notice ? <div className="face-swap-workbench__notice">{notice}</div> : null}
 

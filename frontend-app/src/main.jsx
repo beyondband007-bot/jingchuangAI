@@ -8289,7 +8289,7 @@ function MotionTransferView({
   const submittedTask =
     tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
-  const useWorkbenchView = isFaceSwapView || navId === "motion";
+  const useWorkbenchView = isFaceSwapView || navId === "motion" || navId === "image-digital-human";
   const showCenterState = isSubmitting || submitError || submittedTask;
   const showEmptyHero = splitResults
     ? viewTab === "home" && !showCenterState
@@ -8365,7 +8365,7 @@ function MotionTransferView({
 
   return (
     <section
-      className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""}`}
+      className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""} ${navId === "image-digital-human" ? "image-digital-human-view-root" : ""}`}
     >
       <div className="image-filter-tabs motion-filter-tabs">
         {splitResults ? (

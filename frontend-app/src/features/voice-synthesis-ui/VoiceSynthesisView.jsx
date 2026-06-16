@@ -315,10 +315,10 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
   }
 
   return (
-    <section className="voice-conversion-view-root">
+    <section className="voice-conversion-view-root voice-synthesis-view-root">
       <div className="image-filter-tabs voice-filter-tabs">
         <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>首页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏

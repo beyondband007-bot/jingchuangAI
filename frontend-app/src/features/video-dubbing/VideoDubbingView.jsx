@@ -7,6 +7,7 @@ import {
   Play,
   Star,
   Trash2,
+  Upload,
   Video,
   Volume2,
   X
@@ -106,7 +107,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
         </span>
       )}
       <span className="video-dub-upload-icon">
-        {isUploading ? <Loader2 size={20} /> : <Video size={20} />}
+        {isUploading ? <Loader2 size={20} /> : <Upload size={20} />}
       </span>
       <strong>{hasFile ? fileState.fileName : "+ 上传视频文件"}</strong>
       <small>
@@ -446,7 +447,7 @@ export function VideoDubbingView({ authUser }) {
           主页
         </button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>
-          最近生成
+          历史记录
         </button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
@@ -501,7 +502,7 @@ export function VideoDubbingView({ authUser }) {
             </div>
 
             <div className="voice-composer-footer">
-              <span>{notice || "上传视频后点击开始配音，系统将自动分析视频内容并生成配音和背景音乐"}</span>
+              <strong className="audio-credit-hint">本次生成预计消耗 <em>30</em> 积分</strong>
               <div className="voice-actions">
                 <button
                   className="voice-generate-button"

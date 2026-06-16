@@ -371,10 +371,6 @@
   gap: 6px;
 }
 
-.voice-conversion-workbench__advanced-field + .voice-conversion-workbench__advanced-field {
-  margin-top: 14px;
-}
-
 .voice-conversion-workbench__advanced-field > span {
   color: #8f9ab8;
   font-size: 12px;

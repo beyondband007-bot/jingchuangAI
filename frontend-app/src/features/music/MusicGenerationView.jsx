@@ -60,7 +60,7 @@ async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {
     await sleep(intervalMs);
     task = await musicApi.getTask(taskId);
   }
-  throw new Error("音乐仍在生成中，请稍后到最近生成里查看。");
+  throw new Error("音乐仍在生成中，请稍后到历史记录里查看。");
 }
 
 export function MusicGenerationView() {
@@ -173,7 +173,7 @@ export function MusicGenerationView() {
     <section className="voice-conversion-view-root music-generation-view">
       <div className="image-filter-tabs voice-filter-tabs">
         <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>最近生成</button>
+        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
         <button type="button" disabled>
           <Star size={17} fill="#f8d545" color="#161616" />
           收藏
@@ -184,8 +184,8 @@ export function MusicGenerationView() {
         {viewTab === "home" ? (
           <>
             <div className="voice-hero-empty music-hero-empty">
-              <h1>AI 音乐生成</h1>
-              <p>输入风格描述和歌词，AI 为你快速创作专属音乐。</p>
+              <h1>音乐生成</h1>
+              <p>上传目标音色并输入文本，一键生成专属语音</p>
             </div>
 
             <AiMusicGenerationWorkbenchCard

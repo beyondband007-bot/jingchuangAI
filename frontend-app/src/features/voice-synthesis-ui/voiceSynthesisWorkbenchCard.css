@@ -42,7 +42,7 @@
 
 .voice-synthesis-workspace__panel,
 .voice-synthesis-workspace__footer {
-  padding: 24px;
+  padding: 20px;
   background: linear-gradient(180deg, rgba(28, 32, 46, 0.94), rgba(18, 21, 31, 0.94));
   border: 1px solid rgba(183, 194, 235, 0.12);
   border-radius: 24px;
@@ -149,9 +149,9 @@
 .voice-synthesis-workspace__footer-actions button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 3px;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 5px 6px;
   color: #f5f7ff;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(196, 207, 249, 0.14);
@@ -201,7 +201,7 @@
 .voice-synthesis-workspace__text-tools {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   margin-top: 10px;
 }
 
@@ -214,12 +214,12 @@
 .voice-synthesis-workspace__sliders {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 8px;
 }
 
 .voice-synthesis-workspace__slider {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .voice-synthesis-workspace__slider-header,
@@ -260,7 +260,7 @@
   gap: 8px;
   width: 100%;
   min-height: 42px;
-  margin-top: 30px !important;
+  margin-top: 24px !important;
   border-radius: 8px;
 }
 

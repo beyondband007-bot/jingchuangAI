@@ -353,14 +353,15 @@ export function ReplicateView({ authUser }) {
 
               <div className="replicate-composer-footer">
                 <span>{notice || "图片用于反推画面风格和主体细节；视频会额外分析镜头运动、节奏与动态变化。"}</span>
+                <strong>{mode === "video" ? 100 : 25} 积分</strong>
                 <button
-                  className="replicate-submit-button"
+                  className="send-button"
                   type="button"
                   onClick={startReplicate}
                   disabled={isAnalyzing || !selectedFile}
+                  aria-label="开始反推"
                 >
                   {isAnalyzing ? <Loader2 size={16} /> : <Sparkles size={16} />}
-                  开始反推
                 </button>
               </div>
             </div>

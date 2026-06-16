@@ -399,6 +399,31 @@ export function FaceSwapWorkbench({
         </div>
       </section>
 
+      <section className="face-swap-workbench__target-preview">
+        <div className="face-swap-workbench__target-preview-header">
+          <h2>{heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}</h2>
+          <button type="button">{"\u67e5\u770b\u5168\u90e8\u4f5c\u54c1 >"}</button>
+        </div>
+        <div className="face-swap-workbench__target-preview-media">
+          <img
+            src={heading.includes("\u52a8\u4f5c") ? "/assets/motion/hot-3-motion.jpg" : "/assets/face-swap/hot-4-faceswap.jpg"}
+            alt={heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}
+          />
+          <span className="face-swap-workbench__target-compare-line" />
+          <span className="face-swap-workbench__target-compare-handle">{"< >"}</span>
+          <div className="face-swap-workbench__target-player">
+            <Play size={16} fill="currentColor" />
+            <span>00:12 / 00:30</span>
+            <i />
+            <span>1.2x</span>
+            <span>720p</span>
+          </div>
+        </div>
+        <div className="face-swap-workbench__target-draft">
+          {"\u6682\u65e0\u8349\u7a3f\uff0c\u4e0a\u4f20\u7167\u7247\u6216\u89c6\u9891\u540e\u5c06\u81ea\u52a8\u4fdd\u5b58"}
+        </div>
+      </section>
+
       {notice && <div className="face-swap-workbench__notice">{notice}</div>}
 
       <div className="face-swap-workbench__privacy">
