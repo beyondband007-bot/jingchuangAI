@@ -19,6 +19,7 @@ import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
+const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
 
 const platformTabs = ["小红书种草", "抖音封面", "视频号封面", "公众号头图", "更多"];
 const COPY_TEMPLATE_PLACEHOLDER = "请选择文案模板";
@@ -114,6 +115,19 @@ const defaultForm = {
   imageCount: 1,
   quality: "2K"
 };
+
+function takePendingArticleSeed() {
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_GENERATION_SEED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.target !== "article") return null;
+    window.sessionStorage.removeItem(PENDING_GENERATION_SEED_KEY);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 function pickDefaultModel(models) {
   return (
@@ -316,7 +330,8 @@ export function ArticleGenerationView({
   authUser,
   onOpenAuth,
   mode = "home",
-  onModeChange
+  onModeChange,
+  isActive = true
 }) {
   const [form, setForm] = useState(defaultForm);
   const [options, setOptions] = useState({ models: [], ratios: [], qualities: [], counts: [] });
@@ -343,6 +358,23 @@ export function ArticleGenerationView({
     setCredits(creditsValue);
     emitCreditsUpdated(creditsValue);
   }
+
+  useEffect(() => {
+    if (!isActive) return;
+    const pendingSeed = takePendingArticleSeed();
+    if (!pendingSeed) return;
+    setForm((current) => ({
+      ...current,
+      topic: pendingSeed.prompt || current.topic,
+      keyword: pendingSeed.title || current.keyword,
+    }));
+    setDraftCopy(null);
+    setStep(2);
+    setSelectedTaskId(null);
+    setPreviewTask(null);
+    onModeChange?.("home");
+    if (pendingSeed.notice) showToast(pendingSeed.notice);
+  }, [isActive, onModeChange]);
 
   useEffect(() => {
     let mounted = true;

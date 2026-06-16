@@ -7,6 +7,8 @@
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   CircleAlert,
   Bell,
@@ -496,6 +498,16 @@ const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
 const registerGrantPoints = 200;
 const inviteRewardPoints = 200;
 
+function buildClientInviteLink(inviteCode) {
+  const code = String(inviteCode || "").trim();
+  if (!code) return "";
+  const origin =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "http://127.0.0.1:8088";
+  return `${origin}/#/home?invite=${encodeURIComponent(code)}`;
+}
+
 function normalizeInviteCode(value) {
   return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 32);
 }
@@ -686,13 +698,165 @@ const fmImageInspirations = [
 }));
 
 const fmCreationScenes = [
-  ["自媒体创作", "脚本、种草、朋友圈文案一键生成", "huaban-6384921628", ["小红书", "抖音", "朋友圈"], "chat"],
-  ["电商美工", "主图、海报、详情页视觉快速出图", "huaban-6823396722", ["淘宝", "京东", "拼多多"], "image"],
-  ["虚拟主播", "数字人口播，横竖屏自由切换", "huaban-6810189037", ["抖音", "淘宝直播", "视频号"], "digital-human"],
-  ["带货文案", "标题、标语、带货话术智能撰写", "huaban-6907897240", ["淘宝", "抖音", "小红书"], "article"],
-  ["品牌宣传", "海报文案物料，一站式制作", "huaban-6744389287", ["公众号", "抖音", "私域"], "image"],
-  ["母婴种草", "育儿干货、好物测评、宝宝素材", "huaban-6781282455", ["小红书", "抖音", "宝宝树"], "image"],
+  ["自媒体创作", "脚本、种草、朋友圈文案一键生成", "huaban-6384921628", ["小红书", "抖音", "朋友圈"], "article", "进入爆款图文"],
+  ["电商美工", "主图、海报、详情页视觉快速出图", "huaban-7156636947", ["淘宝", "京东", "拼多多"], "image", "进入图片生成"],
+  ["虚拟主播", "数字人口播，横竖屏自由切换", "huaban-7147202189", ["抖音", "淘宝直播", "视频号"], "digital-human", "进入数字人"],
+  ["文案带货", "标题、标语、带货话术智能撰写", "huaban-6907897240", ["淘宝", "抖音", "小红书"], "article", "进入爆款图文"],
+  ["品牌宣传", "海报文案物料，一站式制作", "huaban-6781282455", ["公众号", "抖音", "私域"], "article", "进入爆款图文"],
+  ["母婴种草", "育儿干货、好物测评、宝宝素材", "huaban-6823396722", ["小红书", "抖音", "宝宝树"], "article", "进入爆款图文"],
 ];
+
+const fmInspirationCategoryRouteMap = {
+  图片灵感: { feature: "image", target: "image", model: "Kling Image" },
+  视频灵感: { feature: "video", target: "video", model: "Kling Video" },
+  数字人形象: { feature: "digital-human", target: "digital-human", model: "Digital Human" },
+  爆款图文: { feature: "article", target: "article", model: "AI 图文" },
+};
+
+const fmInspirationLibraryTabs = ["全部", "图片模板", "视频模板", "图文模板", "数字人", "口播模板"];
+
+const fmInspirationLibraryItems = [
+  { title: "电商主图", icon: "🛍️", tab: "图片模板", route: "image" },
+  { title: "赛博海报", icon: "🌃", tab: "图片模板", route: "image" },
+  { title: "插画头像", icon: "🎨", tab: "图片模板", route: "image" },
+  { title: "3D 产品", icon: "✨", tab: "图片模板", route: "image" },
+  { title: "国潮美食", icon: "🍜", tab: "图片模板", route: "image" },
+  { title: "品牌 IP", icon: "🐱", tab: "图片模板", route: "image" },
+  { title: "人像写真", icon: "👤", tab: "图片模板", route: "image" },
+  { title: "节日海报", icon: "🎉", tab: "图片模板", route: "image" },
+  { title: "短视频口播", icon: "🎤", tab: "视频模板", route: "video" },
+  { title: "产品种草", icon: "🌿", tab: "视频模板", route: "video" },
+  { title: "漫剧片段", icon: "🎭", tab: "视频模板", route: "video" },
+  { title: "蝶舞", icon: "🦋", tab: "视频模板", route: "video" },
+  { title: "趣味短剧", icon: "🐱", tab: "视频模板", route: "video" },
+  { title: "城市延时", icon: "🌃", tab: "视频模板", route: "video" },
+  { title: "产品旋转", icon: "📦", tab: "视频模板", route: "video" },
+  { title: "口播带货", icon: "🛒", tab: "视频模板", route: "video" },
+  { title: "口播脚本", icon: "🎬", tab: "图文模板", route: "article" },
+  { title: "小红书种草", icon: "🌿", tab: "图文模板", route: "article" },
+  { title: "朋友圈文案", icon: "💭", tab: "图文模板", route: "article" },
+  { title: "产品标题", icon: "🏷️", tab: "图文模板", route: "article" },
+  { title: "海报标语", icon: "📋", tab: "图文模板", route: "article" },
+  { title: "文慧", icon: "👩‍🏫", tab: "数字人", route: "digital-human" },
+  { title: "晓雯", icon: "🧕", tab: "数字人", route: "digital-human" },
+  { title: "欣悦", icon: "🎤", tab: "数字人", route: "digital-human" },
+  { title: "明悦", icon: "📺", tab: "数字人", route: "digital-human" },
+  { title: "婉婷", icon: "🎧", tab: "数字人", route: "digital-human" },
+  { title: "美娜", icon: "📖", tab: "数字人", route: "digital-human" },
+  { title: "直播主播", icon: "🎙️", tab: "数字人", route: "digital-human" },
+  { title: "职场精英", icon: "👔", tab: "数字人", route: "digital-human" },
+  { title: "时尚达人", icon: "✨", tab: "数字人", route: "digital-human" },
+  { title: "卡通男孩", icon: "👱‍♂️", tab: "数字人", route: "digital-human" },
+  { title: "短视频口播", icon: "🎤", tab: "口播模板", route: "digital-human" },
+  { title: "产品种草", icon: "🛍️", tab: "口播模板", route: "digital-human" },
+  { title: "新闻播报", icon: "📺", tab: "口播模板", route: "digital-human" },
+  { title: "知识科普", icon: "📚", tab: "口播模板", route: "digital-human" },
+  { title: "职场汇报", icon: "👔", tab: "口播模板", route: "digital-human" },
+  { title: "课堂讲解", icon: "🎓", tab: "口播模板", route: "digital-human" },
+  { title: "品牌宣传", icon: "🏢", tab: "口播模板", route: "digital-human" },
+  { title: "节日祝福", icon: "🎉", tab: "口播模板", route: "digital-human" },
+  { title: "活动邀约", icon: "📣", tab: "口播模板", route: "digital-human" },
+  { title: "客服应答", icon: "💬", tab: "口播模板", route: "digital-human" },
+];
+
+function getFaceminiInspirationRoute(item) {
+  return (
+    fmInspirationCategoryRouteMap[item?.category] ||
+    fmInspirationCategoryRouteMap["图片灵感"]
+  );
+}
+
+function InspirationLibraryDrawer({
+  open,
+  activeTab,
+  onTabChange,
+  onClose,
+  onOpenFeature,
+}) {
+  const [keyword, setKeyword] = useState("");
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  const filteredItems = useMemo(() => {
+    const query = keyword.trim().toLowerCase();
+    return fmInspirationLibraryItems.filter((item) => {
+      const matchesTab = activeTab === "全部" || item.tab === activeTab;
+      const matchesKeyword =
+        !query ||
+        item.title.toLowerCase().includes(query) ||
+        item.tab.toLowerCase().includes(query);
+      return matchesTab && matchesKeyword;
+    });
+  }, [activeTab, keyword]);
+
+  if (!open) return null;
+
+  function selectItem(item) {
+    onClose?.();
+    onOpenFeature?.(item.route);
+  }
+
+  return (
+    <div className="fm-library-drawer-shell" role="dialog" aria-modal="true" aria-label="灵感库">
+      <button className="fm-library-drawer-mask" type="button" aria-label="关闭灵感库" onClick={onClose} />
+      <aside className="fm-library-drawer">
+        <header className="fm-library-head">
+          <div className="fm-library-title">
+            <Sparkles size={18} />
+            <h2>灵感库</h2>
+          </div>
+          <button className="fm-library-close" type="button" aria-label="关闭灵感库" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </header>
+        <nav className="fm-library-tabs" aria-label="灵感库分类">
+          {fmInspirationLibraryTabs.map((tab) => (
+            <button
+              className={activeTab === tab ? "is-active" : ""}
+              type="button"
+              key={tab}
+              onClick={() => onTabChange(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+        <label className="fm-library-search">
+          <Search size={16} />
+          <input
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            placeholder="搜索模板名称、风格、场景..."
+          />
+        </label>
+        <div className="fm-library-grid">
+          {filteredItems.map((item) => (
+            <button className="fm-library-card" type="button" key={`${item.tab}-${item.title}`} onClick={() => selectItem(item)}>
+              <span className="fm-library-icon" aria-hidden="true">{item.icon}</span>
+              <span>{item.title}</span>
+            </button>
+          ))}
+        </div>
+        {!filteredItems.length && (
+          <div className="fm-library-empty">
+            <Sparkles size={24} />
+            <strong>暂无匹配模板</strong>
+            <p>换个关键词或分类试试</p>
+          </div>
+        )}
+      </aside>
+    </div>
+  );
+}
 
 const appEntryStorageKey = "jingchuang:enter-app";
 const pendingGenerationSeedKey = "facemini:pending-generation-seed";
@@ -812,7 +976,7 @@ function getRouteView() {
     hashView === "image"
   )
     return "image";
-  return "splash";
+  return "home";
 }
 
 function getInitialView() {
@@ -1498,6 +1662,8 @@ const AppHome = memo(function AppHome({
   onOpenAuth,
   onLogout,
 }) {
+  const isGuest = !authUser || authUser.isGuest;
+
   return (
       <main className="home-feature-main fm-home-page">
         <nav className="fm-home-nav" aria-label="首页导航">
@@ -1509,14 +1675,16 @@ const AppHome = memo(function AppHome({
             <a href="#modules">关于产品</a>
             <a href="#footer">探索我们</a>
           </div>
-          <div className="fm-home-actions">
-            <button type="button" onClick={() => onOpenAuth("login")}>
-              登录
-            </button>
-            <button className="fm-primary" type="button" onClick={() => onOpenAuth("register")}>
-              注册
-            </button>
-          </div>
+          {isGuest && (
+            <div className="fm-home-actions">
+              <button type="button" onClick={() => onOpenAuth("login")}>
+                登录
+              </button>
+              <button className="fm-primary" type="button" onClick={() => onOpenAuth("register")}>
+                注册
+              </button>
+            </div>
+          )}
         </nav>
         <section className="fm-hero-section">
           <h1>千面创想 一面即达</h1>
@@ -1595,14 +1763,22 @@ const AppHome = memo(function AppHome({
   );
 });
 
-function CreationCenterView({ onOpenFeature }) {
+function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const [activeTab, setActiveTab] = useState("图片灵感");
   const [bannerIndex, setBannerIndex] = useState(0);
   const [isBannerSliding, setIsBannerSliding] = useState(false);
   const [modalItem, setModalItem] = useState(null);
   const heroBanners = [
-    faceminiAsset("creation/banners/home-top-slider-1.jpg"),
-    faceminiAsset("creation/banners/home-top-slider-2.png"),
+    {
+      image: faceminiAsset("creation/banners/home-top-slider-1.jpg"),
+      action: "invite",
+      label: "打开邀请有礼",
+    },
+    {
+      image: faceminiAsset("creation/banners/home-top-slider-2.png"),
+      action: "image",
+      label: "打开图片视频生成",
+    },
   ];
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
   const filteredImages =
@@ -1626,27 +1802,35 @@ function CreationCenterView({ onOpenFeature }) {
   }, [advanceHeroBanner]);
 
   function openInspiration(item) {
+    const route = getFaceminiInspirationRoute(item);
     setModalItem({
       ...item,
       image: item.source || item.thumbnail,
       material: "高清原图",
-      model: "Kling Image",
+      model: route.model,
     });
   }
 
   function remixInspiration(item) {
+    const route = getFaceminiInspirationRoute(item);
     writePendingGenerationSeed({
-      target: "image",
+      target: route.target,
+      title: item.title,
+      category: item.category,
       prompt: item.prompt,
       notice: "已填入同款提示词",
     });
     setModalItem(null);
-    onOpenFeature("image");
+    onOpenFeature(route.feature);
   }
 
   function referenceInspiration(item) {
+    const route = getFaceminiInspirationRoute(item);
     writePendingGenerationSeed({
-      target: "image",
+      target: route.target,
+      title: item.title,
+      category: item.category,
+      prompt: item.prompt,
       referenceImage: {
         url: item.image || item.source || item.thumbnail,
         originalName: `${item.title || "参考图"}.png`,
@@ -1656,17 +1840,26 @@ function CreationCenterView({ onOpenFeature }) {
       notice: "已添加为参考图",
     });
     setModalItem(null);
-    onOpenFeature("image");
+    onOpenFeature(route.feature);
+  }
+
+  function handleHeroBannerClick() {
+    const activeBanner = heroBanners[bannerIndex];
+    if (activeBanner?.action === "invite") {
+      onOpenInvite?.();
+      return;
+    }
+    onOpenFeature(activeBanner?.action || "image");
   }
 
   return (
     <section className="fm-work-page fm-creation-page">
       <div className="fm-banner-row">
         <div className="fm-banner-card fm-banner-large">
-          <button className="fm-banner-main-hit" type="button" onClick={() => onOpenFeature("image")} aria-label="打开图片生成">
+          <button className="fm-banner-main-hit" type="button" onClick={handleHeroBannerClick} aria-label={heroBanners[bannerIndex]?.label || "打开图片生成"}>
             <span className={`fm-hero-banner-stage ${isBannerSliding ? "is-sliding" : ""}`}>
-              <img src={heroBanners[bannerIndex]} alt="" />
-              <img src={heroBanners[nextBannerIndex]} alt="" />
+              <img src={heroBanners[bannerIndex].image} alt="" />
+              <img src={heroBanners[nextBannerIndex].image} alt="" />
             </span>
           </button>
           <button className="fm-banner-arrow is-left" type="button" onClick={advanceHeroBanner} aria-label="上一张">
@@ -1679,20 +1872,21 @@ function CreationCenterView({ onOpenFeature }) {
         <button className="fm-banner-card" type="button" onClick={() => onOpenFeature("image")}>
           <img src={faceminiAsset("creation/banners/banner-01.png")} alt="" />
         </button>
-        <button className="fm-banner-card" type="button" onClick={() => onOpenFeature("video")}>
+        <button className="fm-banner-card" type="button" onClick={() => onOpenFeature("digital-human")}>
           <img src={faceminiAsset("creation/banners/banner-02.png")} alt="" />
         </button>
       </div>
       <section className="fm-section-block">
         <h2>场景化创作入口</h2>
         <div className="fm-scene-grid">
-          {fmCreationScenes.map(([title, desc, image, tags, route]) => (
+          {fmCreationScenes.map(([title, desc, image, tags, route, cta]) => (
             <button className="fm-scene-card" type="button" key={title} onClick={() => onOpenFeature(route)}>
               <div className="fm-scene-image">
                 <img src={faceminiAsset(`inspirations/image/thumbs/${image}.webp`)} alt="" />
-                <h3>{title}</h3>
+                <span className="fm-scene-entry">{cta}</span>
               </div>
               <div className="fm-scene-body">
+                <h3>{title}</h3>
                 <p>{desc}</p>
                 <div className="fm-scene-tags">
                   {tags.map((tag) => <span key={tag}>{tag}</span>)}
@@ -1705,7 +1899,7 @@ function CreationCenterView({ onOpenFeature }) {
       <section className="fm-section-block">
         <div className="fm-section-title-row">
           <h2>灵感广场</h2>
-          <button type="button" onClick={() => onOpenFeature("image")}>查看更多</button>
+          <button type="button" onClick={() => onOpenLibrary?.("图片模板")}>查看更多</button>
         </div>
         <div className="fm-pill-tabs">
           {categories.map((tab) => (
@@ -3353,6 +3547,7 @@ function ComposerBar({
       ref={shellRef}
       className={`sowa-composer image-composer-shell is-${placement} ${collapsed ? "is-collapsed" : ""}`}
       aria-label="图片生成输入框"
+      onPointerDown={onFocus}
       onFocus={onFocus}
       onBlur={onBlur}
     >
@@ -5881,7 +6076,11 @@ function formatChatAttachmentSize(bytes = 0) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function ChatAttachmentList({ attachments = [], onRemove, isStatic = false }) {
+function ChatAttachmentList({
+  attachments = [],
+  onRemove,
+  isStatic = false,
+}) {
   if (!attachments.length) return null;
 
   return (
@@ -5935,10 +6134,116 @@ function appendChatStreamChunk(current = "", chunk = "") {
   return `${current}${chunk}`;
 }
 
+function ChatMarkdown({ content }) {
+  return (
+    <div className="chat-markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ node, ...props }) => (
+            <a {...props} target="_blank" rel="noreferrer" />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+
+function markdownToPlainText(markdown = "") {
+  return String(markdown || "")
+    .replace(/```[\s\S]*?```/g, (block) =>
+      block.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, ""),
+    )
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/[*_~]{1,3}/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function ChatCopyActions({ content }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [copiedMode, setCopiedMode] = useState("");
+  const wrapRef = useRef(null);
+  const plainText = useMemo(() => markdownToPlainText(content), [content]);
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!wrapRef.current?.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  async function copyContent(mode = "plain") {
+    const copied = await writeClipboardText(mode === "markdown" ? content : plainText);
+    if (!copied) return;
+    setCopiedMode(mode);
+    setIsMenuOpen(false);
+    window.setTimeout(() => {
+      setCopiedMode((current) => (current === mode ? "" : current));
+    }, 1600);
+  }
+
+  return (
+    <div className="chat-copy-actions" ref={wrapRef}>
+      <button
+        className={`chat-copy-icon ${copiedMode ? "is-copied" : ""}`}
+        type="button"
+        onClick={() => copyContent("plain")}
+        aria-label={copiedMode ? "已复制回复内容" : "复制回复内容"}
+        title={copiedMode ? "已复制" : "复制"}
+      >
+        {copiedMode ? <CheckCircle2 size={15} /> : <Copy size={15} />}
+      </button>
+      <button
+        className={`chat-copy-chevron ${isMenuOpen ? "is-open" : ""}`}
+        type="button"
+        onClick={() => setIsMenuOpen((value) => !value)}
+        aria-label="展开复制选项"
+        aria-expanded={isMenuOpen}
+      >
+        <ChevronDown size={14} />
+      </button>
+      {isMenuOpen && (
+        <div className="chat-copy-menu" role="menu">
+          <button type="button" role="menuitem" onClick={() => copyContent("markdown")}>
+            复制为Markdown
+          </button>
+          <button type="button" role="menuitem" onClick={() => copyContent("plain")}>
+            复制
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ChatCanvas({ messages, isSubmitting, error }) {
   const hasStreamingMessage = messages.some(
     (message) => message.status === "streaming",
   );
+
   if (!messages.length && !isSubmitting && !error) {
     return (
       <div className="chat-main-canvas">
@@ -5971,8 +6276,12 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                 </>
               ) : (
                 <>
-                  {message.content ||
-                    (message.status === "streaming" ? "正在思考..." : "")}
+                  {message.role === "assistant" && message.content ? (
+                    <ChatMarkdown content={message.content} />
+                  ) : (
+                    message.content ||
+                    (message.status === "streaming" ? "正在思考..." : "")
+                  )}
                   <ChatAttachmentList
                     attachments={message.attachments || []}
                     isStatic
@@ -5982,6 +6291,11 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                       {message.price || `${message.points} 积分`}
                     </small>
                   )}
+                  {message.role === "assistant" &&
+                    message.status === "completed" &&
+                    message.content?.trim() && (
+                      <ChatCopyActions content={message.content} />
+                    )}
                 </>
               )}
             </div>
@@ -6160,81 +6474,83 @@ function ChatComposerBar({
         }}
         placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
       />
-      <ChatAttachmentList
-        attachments={attachments}
-        onRemove={removeAttachment}
-      />
-      <div className="llm-toolbar">
-        <div className="llm-left">
-          <button
-            className="llm-square"
-            type="button"
-            disabled={
-              !isReady ||
-              isSubmitting ||
-              isUploadingAttachment ||
-              attachments.length >= 5
-            }
-            onClick={() => attachmentInputRef.current?.click()}
-            aria-label="上传附件"
-            title="上传附件"
-          >
-            {isUploadingAttachment ? <Loader2 size={16} /> : <Plus size={16} />}
-          </button>
-          <div
-            ref={modelMenuRef}
-            className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}
-          >
+      <div className="llm-composer-footer">
+        <div className="llm-toolbar">
+          <div className="llm-left">
             <button
-              className="llm-select"
+              className="llm-square"
               type="button"
-              disabled={!isReady}
-              onClick={() =>
-                setOpenMenu((current) => (current === "model" ? null : "model"))
+              disabled={
+                !isReady ||
+                isSubmitting ||
+                isUploadingAttachment ||
+                attachments.length >= 5
               }
+              onClick={() => attachmentInputRef.current?.click()}
+              aria-label="上传附件"
+              title="上传附件"
             >
-              <span>{modelLabel}</span>
-              <ChevronDown size={16} />
+              {isUploadingAttachment ? <Loader2 size={16} /> : <Plus size={16} />}
             </button>
-            <div className="llm-menu">
-              {options.models.map((item) => (
-                <button
-                  type="button"
-                  key={item.value}
-                  className={item.value === model ? "is-selected" : ""}
-                  onClick={() => {
-                    if (item.value !== model) {
-                      onModelSwitchNotice?.();
-                    }
-                    onModelChange(item.value);
-                    setOpenMenu(null);
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <ChatAttachmentList
+              attachments={attachments}
+              onRemove={removeAttachment}
+            />
+            <div
+              ref={modelMenuRef}
+              className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}
+            >
+              <button
+                className="llm-select"
+                type="button"
+                disabled={!isReady}
+                onClick={() =>
+                  setOpenMenu((current) => (current === "model" ? null : "model"))
+                }
+              >
+                <span>{modelLabel}</span>
+                <ChevronDown size={16} />
+              </button>
+              <div className="llm-menu">
+                {options.models.map((item) => (
+                  <button
+                    type="button"
+                    key={item.value}
+                    className={item.value === model ? "is-selected" : ""}
+                    onClick={() => {
+                      if (item.value !== model) {
+                        onModelSwitchNotice?.();
+                      }
+                      onModelChange(item.value);
+                      setOpenMenu(null);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="llm-right">
-          {visibleReasoningEfforts.length > 0 && (
-            <CustomSelect
-              ariaLabel="推理强度"
-              className="llm-reasoning-select"
-              value={reasoningEffort}
-              onChange={onReasoningEffortChange}
-              options={visibleReasoningEfforts}
-            />
-          )}
-          <button
-            className="llm-round primary"
-            type="button"
-            disabled={!canSubmit}
-            onClick={submitPrompt}
-            aria-label="发送"
-          >
-            {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
-          </button>
+          <div className="llm-right">
+            {visibleReasoningEfforts.length > 0 && (
+              <CustomSelect
+                ariaLabel="推理强度"
+                className="llm-reasoning-select"
+                value={reasoningEffort}
+                onChange={onReasoningEffortChange}
+                options={visibleReasoningEfforts}
+              />
+            )}
+            <button
+              className="llm-round primary"
+              type="button"
+              disabled={!canSubmit}
+              onClick={submitPrompt}
+              aria-label="发送"
+            >
+              {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+            </button>
+          </div>
         </div>
       </div>
       {notice && <div className="composer-notice warning">{notice}</div>}
@@ -7131,6 +7447,7 @@ function DigitalHumanConfigPanel({
   options,
   voices,
   selectedAvatar,
+  seed,
   onSubmit,
   isSubmitting,
 }) {
@@ -7167,6 +7484,14 @@ function DigitalHumanConfigPanel({
       if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!seed) return;
+    setDriveMode("text");
+    resetVoicePreview();
+    setText(seed.prompt || "");
+    setNotice(seed.notice || "");
+  }, [seed]);
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
@@ -7438,7 +7763,7 @@ function DigitalHumanConfigPanel({
   );
 }
 
-function DigitalHumanGenerationView({ onReturnHome, onOpenFeature }) {
+function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = true }) {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -7453,7 +7778,21 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [favoriteTaskIds, setFavoriteTaskIds] = useState(() => new Set());
+  const [composerSeed, setComposerSeed] = useState(null);
   const taskStatusSignatureRef = useRef("");
+
+  useEffect(() => {
+    if (!isActive) return;
+    const pendingSeed = takePendingGenerationSeed("digital-human");
+    if (!pendingSeed) return;
+    setSelectedTask(null);
+    setRightMode("preview");
+    setComposerSeed({
+      id: `pending-digital-human-${Date.now()}`,
+      prompt: pendingSeed.prompt || "",
+      notice: pendingSeed.notice || "",
+    });
+  }, [isActive]);
 
   // 模块由外层保活挂载，此处始终订阅数字人任务与形象
   useEffect(() => {
@@ -7743,6 +8082,7 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature }) {
             options={options}
             voices={voices}
             selectedAvatar={selectedAvatar}
+            seed={composerSeed}
             onSubmit={createTask}
             isSubmitting={isSubmitting}
           />
@@ -9490,6 +9830,7 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
   const [copied, setCopied] = useState(false);
   const [inviteProfile, setInviteProfile] = useState(null);
   const [inviteError, setInviteError] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const isGuest = !authUser || authUser.isGuest;
 
   useEffect(() => {
@@ -9517,29 +9858,69 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
     };
   }, [isGuest]);
 
+  useEffect(() => {
+    setCopied(false);
+  }, [authUser?.id, authUser?.inviteCode, inviteProfile?.inviteLink]);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const inviteLink = inviteProfile?.inviteLink || buildClientInviteLink(inviteProfile?.inviteCode || authUser?.inviteCode);
+  const canCopyInviteLink = !isGuest && Boolean(inviteLink);
+  const toggleInviteDetails = () => setDetailsOpen((value) => !value);
+
   async function copyInviteLink() {
     if (isGuest) {
       onOpenAuth?.("register");
       return;
     }
-    const inviteLink = inviteProfile?.inviteLink;
     if (!inviteLink) {
       setInviteError("专属邀请链接加载中，请稍后再试");
       return;
     }
+    setInviteError("");
     const ok = await writeClipboardText(
       inviteLink,
     );
     setCopied(ok);
+    if (!ok) {
+      setInviteError("复制失败，请重试");
+      return;
+    }
     if (ok) {
-      invitationApi.track("invite.copy_success", inviteProfile.inviteCode, {
+      invitationApi.track("invite.copy_success", inviteProfile?.inviteCode || authUser?.inviteCode, {
         source: "topbar_dialog",
       });
     }
   }
 
   return (
-    <div className="fm-invite-backdrop" role="dialog" aria-modal="true">
+    <div
+      className="fm-invite-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
       <div className="fm-invite-dialog">
         <button
           className="fm-invite-close"
@@ -9567,30 +9948,68 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
             </div>
           </div>
           <small>积分可抵扣 <span>AI 生图、视频生成、数字人、爆款图文</span> 等全部创作额度</small>
-          <button className="fm-invite-copy" type="button" onClick={copyInviteLink}>
+          <button
+            className="fm-invite-copy"
+            type="button"
+            onClick={copyInviteLink}
+            aria-label={isGuest ? "登录后生成专属邀请链接" : "点击复制专属邀请链接"}
+            title={isGuest ? "登录后生成专属邀请链接" : canCopyInviteLink ? inviteLink : "专属邀请链接加载中"}
+          >
             <Copy size={20} />
-            {isGuest ? "登录后生成专属邀请链接" : "一键复制专属邀请链接"}
+            {isGuest ? "登录后生成专属邀请链接" : copied ? "邀请链接已复制" : "点击复制专属邀请链接"}
           </button>
           <em className="fm-invite-success">
             <CheckCircle2 size={16} />
             {inviteError || (copied ? "邀请链接已复制，快去分享好友吧！" : "复制后分享给好友，完成注册即可到账")}
           </em>
         </section>
-        <div className="fm-invite-info-grid">
-          <section>
-            <h3><CircleAlert size={20} />活动规则 <ChevronDown size={18} /></h3>
-            <ol>
-              <li>仅限已注册 Facemini 老用户参与活动，每位新注册用户仅能绑定一位邀请人。</li>
-              <li>好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。</li>
-              <li>积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。</li>
-              <li>严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。</li>
-            </ol>
+        <div className={`fm-invite-info-grid ${detailsOpen ? "is-open" : ""}`}>
+          <section className={detailsOpen ? "is-open" : ""}>
+            <h3
+              role="button"
+              tabIndex={0}
+              onClick={toggleInviteDetails}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleInviteDetails();
+                }
+              }}
+              aria-expanded={detailsOpen}
+            >
+              <span className="fm-invite-section-title"><CircleAlert size={20} />活动规则</span>
+              <ChevronDown size={18} className="fm-invite-chevron" />
+            </h3>
+            <div className="fm-invite-section-body">
+              <ol>
+                <li>仅限已注册 Facemini 老用户参与活动，每位新注册用户仅能绑定一位邀请人。</li>
+                <li>好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。</li>
+                <li>积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。</li>
+                <li>严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。</li>
+              </ol>
+            </div>
           </section>
-          <section>
-            <h3><CircleAlert size={20} />FAQ 常见问题 <ChevronDown size={18} /></h3>
-            <p><strong>Q：积分多久到账？</strong><br />A：好友完成注册并登录账号后，积分实时自动发放。</p>
-            <p><strong>Q：积分能用来做什么？</strong><br />A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。</p>
-            <p><strong>Q：同一个好友可以多次领取奖励吗？</strong><br />A：新用户仅首次注册可触发一次双向奖励。</p>
+          <section className={detailsOpen ? "is-open" : ""}>
+            <h3
+              role="button"
+              tabIndex={0}
+              onClick={toggleInviteDetails}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  toggleInviteDetails();
+                }
+              }}
+              aria-expanded={detailsOpen}
+            >
+              <span className="fm-invite-section-title"><CircleAlert size={20} />FAQ 常见问题</span>
+              <ChevronDown size={18} className="fm-invite-chevron" />
+            </h3>
+            <div className="fm-invite-section-body">
+              <p><strong>Q：积分多久到账？</strong><br />A：好友完成注册并登录账号后，积分实时自动发放。</p>
+              <p><strong>Q：积分能用来做什么？</strong><br />A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。</p>
+              <p><strong>Q：同一个好友可以多次领取奖励吗？</strong><br />A：新用户仅首次注册可触发一次双向奖励。</p>
+            </div>
           </section>
         </div>
       </div>
@@ -9604,13 +10023,14 @@ function WorkbenchTopbar({
   onNavChange,
   onLogout,
   onOpenAuth,
+  onOpenInvite,
+  onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
   const credits = authUser && !authUser.isGuest ? authUser.credits : null;
-  const [showInvite, setShowInvite] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
@@ -9685,14 +10105,6 @@ function WorkbenchTopbar({
     setShowProfileMenu(false);
   }
 
-  function openInviteDialog() {
-    invitationApi.track("invite.entry_click", authUser?.inviteCode || getPendingInviteCode(), {
-      activeNav,
-      loggedIn: Boolean(authUser && !authUser.isGuest),
-    });
-    setShowInvite(true);
-  }
-
   return (
     <>
       <header className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}>
@@ -9739,12 +10151,12 @@ function WorkbenchTopbar({
           <button
             className="fm-top-invite"
             type="button"
-            onClick={openInviteDialog}
+            onClick={onOpenInvite}
           >
             <Gift size={17} />
             邀请有礼
           </button>
-          <button type="button">
+          <button type="button" onClick={() => onOpenLibrary?.("全部")}>
             <Sparkles size={17} />
             灵感库
           </button>
@@ -9795,13 +10207,6 @@ function WorkbenchTopbar({
           )}
         </div>
       </header>
-      {showInvite && (
-        <InviteGiftDialog
-          authUser={authUser}
-          onClose={() => setShowInvite(false)}
-          onOpenAuth={onOpenAuth}
-        />
-      )}
     </>
   );
 }
@@ -9820,6 +10225,9 @@ function ImageFeaturePage({
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
+  const [showInvite, setShowInvite] = useState(false);
+  const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
+  const [inspirationLibraryTab, setInspirationLibraryTab] = useState("全部");
   const [composerResetSignals, setComposerResetSignals] = useState({
     image: 0,
     video: 0,
@@ -9841,7 +10249,7 @@ function ImageFeaturePage({
   const handleNavChange = useCallback(
     (id) => {
       if (id === "home") {
-        window.history.pushState(null, "", "#/home");
+        window.history.pushState(null, "", "/");
         onOpenHome();
         return;
       }
@@ -9859,6 +10267,19 @@ function ImageFeaturePage({
     },
     [onOpenHome],
   );
+
+  const openInviteDialog = useCallback(() => {
+    invitationApi.track("invite.entry_click", authUser?.inviteCode || getPendingInviteCode(), {
+      activeNav,
+      loggedIn: Boolean(authUser && !authUser.isGuest),
+    });
+    setShowInvite(true);
+  }, [activeNav, authUser]);
+
+  const openInspirationLibrary = useCallback((tab = "全部") => {
+    setInspirationLibraryTab(fmInspirationLibraryTabs.includes(tab) ? tab : "全部");
+    setShowInspirationLibrary(true);
+  }, []);
 
   return (
     <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>
@@ -9890,6 +10311,8 @@ function ImageFeaturePage({
           onNavChange={handleNavChange}
           onLogout={onLogout}
           onOpenAuth={onOpenAuth}
+          onOpenInvite={openInviteDialog}
+          onOpenLibrary={openInspirationLibrary}
           articleMode={articleMode}
           onArticleModeChange={setArticleMode}
         />
@@ -9898,7 +10321,11 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <CreationCenterView onOpenFeature={handleNavChange} />
+          <CreationCenterView
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            onOpenLibrary={openInspirationLibrary}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="assets"
@@ -9950,6 +10377,7 @@ function ImageFeaturePage({
           <DigitalHumanGenerationView
             onReturnHome={() => handleNavChange("home")}
             onOpenFeature={handleNavChange}
+            isActive={activeNav === "digital-human"}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -10011,6 +10439,7 @@ function ImageFeaturePage({
             onOpenAuth={onOpenAuth}
             mode={articleMode}
             onModeChange={setArticleMode}
+            isActive={activeNav === "article"}
             ShowcaseCardComponent={ViralGraphicGeneratorShowcaseCard}
           />
         </FeatureModuleKeepAlive>
@@ -10083,6 +10512,20 @@ function ImageFeaturePage({
           "video-voice",
         ].includes(activeNav) && <ComingSoon activeNav={activeNav} />}
       </main>
+      <InspirationLibraryDrawer
+        open={showInspirationLibrary}
+        activeTab={inspirationLibraryTab}
+        onTabChange={setInspirationLibraryTab}
+        onClose={() => setShowInspirationLibrary(false)}
+        onOpenFeature={handleNavChange}
+      />
+      {showInvite && (
+        <InviteGiftDialog
+          authUser={authUser}
+          onClose={() => setShowInvite(false)}
+          onOpenAuth={onOpenAuth}
+        />
+      )}
     </div>
   );
 }
@@ -10181,12 +10624,12 @@ function App() {
 
   const openLanding = useCallback(() => {
     window.history.pushState(null, "", "/");
-    setView("splash");
+    setView("home");
   }, []);
 
   const enterAppHome = useCallback(() => {
     window.sessionStorage.setItem(appEntryStorageKey, "1");
-    window.history.pushState(null, "", "#/home");
+    window.history.pushState(null, "", "/");
     setView("home");
   }, []);
 
@@ -10205,7 +10648,7 @@ function App() {
     setAuthUser(user);
     setAuthDrawerMode(null);
     window.sessionStorage.setItem(appEntryStorageKey, "1");
-    window.history.pushState(null, "", "#/home");
+    window.history.pushState(null, "", "/");
     window.location.reload();
   }, []);
 
