@@ -27507,11 +27507,11 @@ textarea::placeholder {
   height: auto !important;
   min-height: 96px !important;
   gap: 7px !important;
-  padding: 18px !important;
+  padding: 54.5px !important;
   margin: 0 !important;
   color: #4b5563 !important;
-  background: #f3f4f8 !important;
-  border: 1px dashed #d1d5e3 !important;
+  background: #f5f3fb !important;
+  border: 1px dashed #c9c5d6 !important;
   border-radius: 8px !important;
   text-align: center !important;
   box-shadow: none !important;
@@ -27522,9 +27522,7 @@ textarea::placeholder {
 .replicate-upload-slot.drag-over,
 .transcribe-upload-slot:hover,
 .video-dub-upload-slot:hover {
-  background: #edeef4 !important;
-  border-color: #b8bdd0 !important;
-  box-shadow: none !important;
+  box-shadow: 0 0px 28px rgba(93, 30, 224, 0.2) !important;
   transform: none !important;
 }
 

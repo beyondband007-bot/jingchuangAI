@@ -30,6 +30,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
+  position: relative;
 }
 
 .ai-music-workbench__card {
@@ -118,6 +119,7 @@
 .ai-music-workbench__style-box {
   display: grid;
   gap: 10px;
+  position: relative;
 }
 
 .ai-music-workbench__style-box em {
@@ -125,6 +127,9 @@
   color: #8f96a8;
   font-style: normal;
   font-size: 12px;
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
 }
 
 .ai-music-workbench__lyric-box textarea {
