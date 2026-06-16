@@ -5054,7 +5054,7 @@ function ImageGenerationView({
       {showComposer && (
         <>
           {!isComposerSticky && (
-            <div className="image-composer-heading">释放你的创作灵感</div>
+            <div className="image-composer-heading">图片生成</div>
           )}
           <ComposerBar
             options={options}
@@ -5784,7 +5784,7 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
       {options.models.length > 0 && filter === "inspiration" && (
         <>
           {!isComposerSticky && (
-            <div className="video-composer-heading">释放你的创作灵感</div>
+            <div className="video-composer-heading">视频生成</div>
           )}
           <VideoComposerBar
             options={options}
@@ -5943,7 +5943,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
     return (
       <div className="chat-main-canvas">
         <div className="chat-empty-state llm-empty-state">
-          <h1>释放你的创作灵感</h1>
+          <h1>Hi，我是Facemini，来跟我聊聊天吧</h1>
         </div>
       </div>
     );

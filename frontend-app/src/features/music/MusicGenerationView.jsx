@@ -185,7 +185,7 @@ export function MusicGenerationView() {
           <>
             <div className="voice-hero-empty music-hero-empty">
               <h1>音乐生成</h1>
-              <p>上传目标音色并输入文本，一键生成专属语音</p>
+              <p>输入风格与歌词，一键生成专属音乐</p>
             </div>
 
             <AiMusicGenerationWorkbenchCard

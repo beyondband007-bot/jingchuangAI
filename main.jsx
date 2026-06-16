@@ -1518,7 +1518,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
     return (
       <div className="chat-main-canvas">
         <div className="chat-empty-state llm-empty-state">
-          <h1>释放你的创作灵感</h1>
+          <h1>Hi，我是Facemini，来跟我聊聊天吧</h1>
         </div>
       </div>
     );

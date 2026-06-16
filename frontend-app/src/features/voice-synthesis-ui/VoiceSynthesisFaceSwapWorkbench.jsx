@@ -31,7 +31,7 @@ export function VoiceSynthesisFaceSwapWorkbench({
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
-  const [text, setText] = useState("欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。");
+  const [text, setText] = useState("");
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
@@ -187,7 +187,7 @@ export function VoiceSynthesisFaceSwapWorkbench({
                 className="voice-synthesis-workspace__textarea"
                 value={text}
                 onChange={(event) => setText(event.target.value)}
-                placeholder="请输入或粘贴需要合成的文本内容..."
+                placeholder="欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。"
                 maxLength={2000}
               />
 

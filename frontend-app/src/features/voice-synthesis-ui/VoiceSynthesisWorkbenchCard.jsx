@@ -107,9 +107,9 @@ export function VoiceSynthesisWorkbenchCard({
 
                 <textarea
                   className="voice-synthesis-workspace__textarea"
-                  value={text}
+                  value=""
                   onChange={(event) => onTextChange(event.target.value)}
-                  placeholder="请输入或粘贴需要合成的文本内容..."
+                  placeholder="欢迎使用 Facemini AI 语音合成，现在开始生成属于你的专属声音。"
                   maxLength={2000}
                 />
 
