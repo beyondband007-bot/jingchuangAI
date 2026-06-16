@@ -11254,7 +11254,7 @@ select {
 .idh-result-actions a:hover,
 .preview-drawer-header button:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  background: #6d3cff;
   border-color: var(--app-border-strong);
 }
 
@@ -27492,4 +27492,97 @@ textarea::placeholder {
   color: #282532;
   font-size: 16px;
   font-weight: 900;
+}
+
+/* Upload slots: replicate / transcribe / video-dub aligned with watermark upload style */
+.replicate-upload-slot,
+.transcribe-upload-slot,
+.video-dub-upload-slot {
+  display: grid !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  align-content: center !important;
+  justify-items: center !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 96px !important;
+  gap: 7px !important;
+  padding: 18px !important;
+  margin: 0 !important;
+  color: #174a7c !important;
+  background: #f8fbff !important;
+  border: 1px dashed #bfd4ea !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.replicate-upload-slot:hover,
+.replicate-upload-slot.drag-over,
+.transcribe-upload-slot:hover,
+.video-dub-upload-slot:hover {
+  background: #f4f9ff !important;
+  border-color: #7bb8f4 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.replicate-upload-slot.has-file,
+.transcribe-upload-slot.has-file,
+.video-dub-upload-slot.has-file {
+  background: #fff !important;
+  border-style: dashed !important;
+}
+
+.replicate-upload-icon,
+.transcribe-upload-slot .voice-upload-icon,
+.video-dub-upload-icon {
+  width: 56px !important;
+  height: 56px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  grid-row: auto !important;
+  color: #fff !important;
+  background: #c9c5d6 !important;
+  border-radius: 999px !important;
+}
+
+.replicate-upload-icon img,
+.replicate-upload-icon svg,
+.transcribe-upload-slot .voice-upload-icon svg,
+.video-dub-upload-icon svg {
+  width: 28px !important;
+  height: 28px !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+.replicate-upload-slot .upload-plus,
+.transcribe-upload-slot .upload-plus,
+.video-dub-upload-slot .upload-plus {
+  display: none !important;
+}
+
+.replicate-upload-slot strong,
+.transcribe-upload-slot strong,
+.video-dub-upload-slot strong {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  color: #24496f !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.replicate-upload-slot small,
+.transcribe-upload-slot small,
+.video-dub-upload-slot small {
+  margin: 0 !important;
+  color: #5f7d9a !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-align: center !important;
 }
