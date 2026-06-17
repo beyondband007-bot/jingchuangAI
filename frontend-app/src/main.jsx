@@ -7542,6 +7542,14 @@ function formatProviderLabel(value, fallback = "视频合成") {
   return text;
 }
 
+function cleanDisplayName(value, fallback = "素材文件") {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  const suspiciousCount = (text.match(/[�锟�]/g) || []).length;
+  if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
+  return text;
+}
+
 function applyCreditsUpdate(setCredits, credits) {
   if (!credits) return;
   setCredits(credits);
@@ -9320,11 +9328,11 @@ function MotionTransferTaskCard({
         <div className="motion-source-row">
           <span>
             <Image size={14} />
-            {task.imageFileName || copy.imageFallback}
+            {cleanDisplayName(task.imageFileName, copy.imageFallback)}
           </span>
           <span>
             <Film size={14} />
-            {task.videoFileName || copy.videoFallback}
+            {cleanDisplayName(task.videoFileName, copy.videoFallback)}
           </span>
         </div>
         <div className="card-actions motion-card-actions">
@@ -9424,7 +9432,10 @@ function MotionTransferUploadSlot({
       )}
       {asset && (
         <small>
-          {asset.fileName} · {formatBytes(asset.sizeBytes)}
+          {cleanDisplayName(
+            asset.fileName,
+            kind === "image" ? "图片素材" : "视频素材",
+          )} · {formatBytes(asset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -9443,6 +9454,7 @@ function MotionTransferComposer({
   isSubmitting,
   api = motionTransferApi,
   copy = motionTransferCopy,
+  isActive = true,
 }) {
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
@@ -9459,6 +9471,20 @@ function MotionTransferComposer({
   );
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
+  const activeRef = useRef(isActive);
+
+  useEffect(() => {
+    activeRef.current = isActive;
+    if (isActive) return;
+    setImageAsset(null);
+    setVideoAsset(null);
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setImagePreview("");
+    setVideoPreview("");
+    setNotice("");
+    setUploading("");
+  }, [isActive, imagePreview, videoPreview]);
 
   useEffect(() => {
     if (!model && (options.defaults?.model || options.models[0]?.value)) {
@@ -9499,12 +9525,14 @@ function MotionTransferComposer({
     setNotice("");
     try {
       const uploadedAsset = await api.uploadImage(file);
+      if (!activeRef.current) return;
       setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
+      if (!activeRef.current) return;
       setImagePreview("");
       setNotice(error.message || "图片上传失败");
     } finally {
-      setUploading("");
+      if (activeRef.current) setUploading("");
     }
   }
 
@@ -9525,12 +9553,14 @@ function MotionTransferComposer({
     setNotice("");
     try {
       const uploadedAsset = await api.uploadVideo(file);
+      if (!activeRef.current) return;
       setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
+      if (!activeRef.current) return;
       setVideoPreview("");
       setNotice(error.message || "视频上传失败");
     } finally {
-      setUploading("");
+      if (activeRef.current) setUploading("");
     }
   }
 
@@ -9665,6 +9695,7 @@ function MotionTransferView({
   WorkbenchComponent = FaceSwapWorkbench,
   heading,
   privacyText,
+  isActive = true,
 }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -9917,6 +9948,7 @@ function MotionTransferView({
                     }
                   : undefined
               }
+              isActive={isActive}
             />
           )}
         {!useWorkbenchView && showEmptyHero && (
@@ -9974,6 +10006,7 @@ function MotionTransferView({
           isSubmitting={isSubmitting}
           api={api}
           copy={copy}
+          isActive={isActive}
         />
       )}
     </section>
@@ -10261,7 +10294,7 @@ function WatermarkUploadSlot({
       )}
       {sourceAsset && (
         <small>
-          {sourceAsset.fileName} 路 {formatBytes(sourceAsset.sizeBytes)}
+          {cleanDisplayName(sourceAsset.fileName, isVideo ? "视频素材" : "图片素材")} · {formatBytes(sourceAsset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -10286,13 +10319,25 @@ function WatermarkComposer({
   isSubmitting,
   authUser,
   onOpenAuth,
+  isActive = true,
 }) {
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
+  const activeRef = useRef(isActive);
   const isGuest = Boolean(authUser?.isGuest);
+
+  useEffect(() => {
+    activeRef.current = isActive;
+    if (isActive) return;
+    setSourceAsset(null);
+    if (previewUrl) window.URL.revokeObjectURL(previewUrl);
+    setPreviewUrl("");
+    setNotice("");
+    setUploading(false);
+  }, [isActive, previewUrl]);
 
   useEffect(() => {
     return () => {
@@ -10360,13 +10405,16 @@ function WatermarkComposer({
     setUploading(true);
     setNotice("");
     try {
-      setSourceAsset(await watermarkApi.uploadSource(file));
+      const uploaded = await watermarkApi.uploadSource(file);
+      if (!activeRef.current) return;
+      setSourceAsset(uploaded);
       setNotice("素材上传完成");
     } catch (error) {
+      if (!activeRef.current) return;
       setPreviewUrl("");
       setNotice(error.message || "素材上传失败");
     } finally {
-      setUploading(false);
+      if (activeRef.current) setUploading(false);
     }
   }
 
@@ -10443,7 +10491,7 @@ function WatermarkComposer({
   );
 }
 
-function WatermarkRemovalView({ authUser, onOpenAuth }) {
+function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -10663,6 +10711,7 @@ function WatermarkRemovalView({ authUser, onOpenAuth }) {
           isSubmitting={isSubmitting}
           authUser={authUser}
           onOpenAuth={onOpenAuth}
+          isActive={isActive}
         />
       )}
     </section>
@@ -11377,6 +11426,7 @@ function ImageFeaturePage({
             splitResults
             WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
             heading="图片数字人生成"
+            isActive={activeNav === "image-digital-human"}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -11384,14 +11434,18 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView splitResults />
+          <MotionTransferView splitResults isActive={activeNav === "motion"} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="watermark"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <WatermarkRemovalView authUser={authUser} onOpenAuth={onOpenAuth} />
+          <WatermarkRemovalView
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            isActive={activeNav === "watermark"}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice"
@@ -11473,6 +11527,7 @@ function ImageFeaturePage({
             api={faceSwapApi}
             copy={faceSwapCopy}
             splitResults
+            isActive={activeNav === "face-swap"}
           />
         </FeatureModuleKeepAlive>
         {![

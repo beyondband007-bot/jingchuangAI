@@ -244,7 +244,6 @@ export async function createTask(payload) {
       ],
       resolution,
       ratio: "adaptive",
-      duration,
       generateAudio: false,
       watermark: false
     });

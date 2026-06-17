@@ -220,7 +220,6 @@ export async function createTask(payload) {
       model: model.providerModel,
       resolution,
       ratio: "adaptive",
-      duration,
       generateAudio: false,
       watermark: false,
       content: [

@@ -46,6 +46,14 @@ function normalizeSourceDuration(value) {
   return String(Math.max(2, Math.ceil(number)));
 }
 
+function cleanDisplayName(value, fallback = "素材文件") {
+  const text = String(value || "").trim();
+  if (!text) return fallback;
+  const suspiciousCount = (text.match(/[�锟�]/g) || []).length;
+  if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
+  return text;
+}
+
 function readVideoFileDuration(file) {
   if (typeof document === "undefined" || typeof window === "undefined") return Promise.resolve("");
 
@@ -152,7 +160,7 @@ function UploadCard({
             <X size={14} />
           </span>
         )}
-        {asset && <small>{asset.fileName} · {formatBytes(asset.sizeBytes)}</small>}
+        {asset && <small>{cleanDisplayName(asset.fileName, isPhoto ? "image asset" : "video asset")} · {formatBytes(asset.sizeBytes)}</small>}
         {isUploading && (
           <span className="face-swap-workbench__uploading">
             <Loader2 size={14} />
@@ -206,7 +214,8 @@ export function FaceSwapWorkbench({
   copy,
   heading = "AI 换脸工具",
   privacyText = "您上传的内容仅用于处理，不会被用于其他用途。",
-  onViewHistory
+  onViewHistory,
+  isActive = true
 }) {
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
@@ -221,6 +230,21 @@ export function FaceSwapWorkbench({
   const [notice, setNotice] = useState("");
   const [validationDialog, setValidationDialog] = useState("");
   const [uploading, setUploading] = useState("");
+  const activeRef = useRef(isActive);
+
+  useEffect(() => {
+    activeRef.current = isActive;
+    if (isActive) return;
+    setImageAsset(null);
+    setVideoAsset(null);
+    setSourceDuration("");
+    if (imagePreview) window.URL.revokeObjectURL(imagePreview);
+    if (videoPreview) window.URL.revokeObjectURL(videoPreview);
+    setImagePreview("");
+    setVideoPreview("");
+    setNotice("");
+    setUploading("");
+  }, [isActive, imagePreview, videoPreview]);
 
   useEffect(() => {
     if (!model && (options.defaults?.model || options.models[0]?.value)) {
@@ -265,12 +289,14 @@ export function FaceSwapWorkbench({
     setNotice("");
     try {
       const uploadedAsset = await api.uploadImage(file);
+      if (!activeRef.current) return;
       setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
+      if (!activeRef.current) return;
       setImagePreview("");
       setNotice(error.message || "图片上传失败");
     } finally {
-      setUploading("");
+      if (activeRef.current) setUploading("");
     }
   }
 
@@ -300,13 +326,15 @@ export function FaceSwapWorkbench({
       setVideoPreview(window.URL.createObjectURL(file));
       setSourceDuration(detectedDuration);
       const uploadedAsset = await api.uploadVideo(file);
+      if (!activeRef.current) return;
       setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
+      if (!activeRef.current) return;
       setVideoPreview("");
       setSourceDuration("");
       setNotice(error.message || "视频上传失败");
     } finally {
-      setUploading("");
+      if (activeRef.current) setUploading("");
     }
   }
 
@@ -340,8 +368,7 @@ export function FaceSwapWorkbench({
       imageAssetId: imageAsset.id,
       videoAssetId: videoAsset.id,
       model,
-      resolution,
-      duration: Number(sourceDuration)
+      resolution
     });
   }
 

@@ -68,21 +68,25 @@ export async function createArkVideoGenerationTask({
   content,
   resolution = "720p",
   ratio = "adaptive",
-  duration = 5,
+  duration,
   generateAudio = false,
   watermark = false
 }) {
+  const payload = {
+    model,
+    content,
+    resolution,
+    ratio,
+    generate_audio: Boolean(generateAudio),
+    watermark: Boolean(watermark)
+  };
+  if (Number.isFinite(Number(duration))) {
+    payload.duration = Number(duration);
+  }
+
   const result = await requestArk("/contents/generations/tasks", {
     method: "POST",
-    body: JSON.stringify({
-      model,
-      content,
-      resolution,
-      ratio,
-      duration,
-      generate_audio: Boolean(generateAudio),
-      watermark: Boolean(watermark)
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!result.id) {
