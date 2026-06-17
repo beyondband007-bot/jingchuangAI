@@ -311,11 +311,11 @@ export function FaceSwapWorkbench({
   function submit() {
     if (!requireAuth()) return;
     if (!imageAsset) {
-      setNotice(copy.imageRequired);
+      showToast(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice(copy.videoRequired);
+      showToast(copy.videoRequired);
       return;
     }
     setNotice("");

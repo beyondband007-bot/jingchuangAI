@@ -4,7 +4,7 @@ export async function findEnabledVideoModels(connection = getPool()) {
   const [models] = await connection.query(
     `SELECT *
      FROM video_model_prices
-     WHERE enabled = TRUE
+     WHERE enabled = TRUE AND model_key = 'kling_3_std'
      ORDER BY sort_order ASC, id ASC`
   );
   return models;

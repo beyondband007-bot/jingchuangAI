@@ -6559,6 +6559,7 @@ function ChatComposerBar({
         </div>
       </div>
       {notice && <div className="composer-notice warning">{notice}</div>}
+      {toastMessage && <div className="fm-floating-toast" role="alert">{toastMessage}</div>}
     </div>
   );
 }
@@ -8512,6 +8513,7 @@ function MotionTransferTaskCard({
   onFavorite,
   onRepeat,
   copy = motionTransferCopy,
+  hideDetails = false,
 }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
@@ -8536,30 +8538,36 @@ function MotionTransferTaskCard({
         )}
       </div>
       <div className="motion-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">
-            {formatProviderLabel(task.providerModel || task.model)}
-          </span>
-          <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">
-            {task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}
-          </span>
-        </div>
+        {!hideDetails && (
+          <div className="tag-row">
+            <span className="model-tag">
+              {formatProviderLabel(task.providerModel || task.model)}
+            </span>
+            <span className="ratio-tag">{task.resolution}</span>
+            <span className="quality-tag">
+              {task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}
+            </span>
+          </div>
+        )}
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <p>{task.error || task.prompt}</p>
-        <div className="motion-source-row">
-          <span>
-            <Image size={14} />
-            {task.imageFileName || copy.imageFallback}
-          </span>
-          <span>
-            <Film size={14} />
-            {task.videoFileName || copy.videoFallback}
-          </span>
-        </div>
+        {!hideDetails && (
+          <>
+            <p>{task.error || task.prompt}</p>
+            <div className="motion-source-row">
+              <span>
+                <Image size={14} />
+                {task.imageFileName || copy.imageFallback}
+              </span>
+              <span>
+                <Film size={14} />
+                {task.videoFileName || copy.videoFallback}
+              </span>
+            </div>
+          </>
+        )}
         <div className="card-actions motion-card-actions">
           <button
             className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
@@ -8803,11 +8811,11 @@ function MotionTransferComposer({
     if (!requireAuth()) return;
     if (!requireConfigured()) return;
     if (!imageAsset) {
-      setNotice(copy.imageRequired);
+      showToast(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice(copy.videoRequired);
+      showToast(copy.videoRequired);
       return;
     }
     setNotice("");
@@ -8933,6 +8941,15 @@ function MotionTransferView({
     readMotionActiveTaskId(navId),
   );
   const taskStatusSignatureRef = useRef("");
+  const isGuest = Boolean(authUser?.isGuest);
+  const { message: motionToastMessage, showToast: showMotionToast } = useToast();
+
+  function requireAuth() {
+    if (!isGuest) return true;
+    showMotionToast("请先登录");
+    onOpenAuth?.("login");
+    return false;
+  }
 
   function applyTaskData(taskData, runningTaskData = taskData) {
     const nextSignature = taskStatusSignature(taskData);
@@ -9013,6 +9030,7 @@ function MotionTransferView({
   const submittedTask =
     tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
+  const hideHistoryDetails = navId === "motion" || navId === "face-swap";
   const useWorkbenchView = isFaceSwapView || navId === "motion" || navId === "image-digital-human";
   const showCenterState = isSubmitting || submitError || submittedTask;
   const showEmptyHero = splitResults
@@ -9212,6 +9230,7 @@ function MotionTransferView({
                 onFavorite={toggleFavorite}
                 onRepeat={repeatTask}
                 copy={copy}
+                hideDetails={hideHistoryDetails}
               />
             ))}
           </div>
@@ -9227,6 +9246,9 @@ function MotionTransferView({
           authUser={authUser}
           onOpenAuth={onOpenAuth}
         />
+      )}
+      {motionToastMessage && (
+        <div className="fm-floating-toast" role="alert">{motionToastMessage}</div>
       )}
     </section>
   );

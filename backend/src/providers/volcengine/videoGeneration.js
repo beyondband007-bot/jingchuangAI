@@ -13,6 +13,49 @@ function extractArkRequestId(message = "") {
   return match?.[1] || "";
 }
 
+function parseDurationList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => Number(item.trim()))
+    .filter((item) => Number.isFinite(item) && item > 0)
+    .sort((a, b) => a - b);
+}
+
+function getSupportedDurations(model = "") {
+  const configured = parseDurationList(process.env.ARK_VIDEO_SUPPORTED_DURATIONS);
+  if (configured.length) return configured;
+
+  if (String(model || "").includes("doubao-seedance-2-0")) {
+    return [4, 5, 6, 8, 10, 15];
+  }
+
+  return [];
+}
+
+export function normalizeArkVideoDuration({ model = config.ark.videoModel, duration = 5 } = {}) {
+  const requested = Math.ceil(Number(duration) || 0);
+  const supportedDurations = getSupportedDurations(model);
+
+  if (!supportedDurations.length) {
+    return Math.max(1, requested || 5);
+  }
+
+  return supportedDurations.find((item) => item >= requested) || supportedDurations[supportedDurations.length - 1];
+}
+
+function usesReferenceVideo(content = []) {
+  return Array.isArray(content)
+    ? content.some((item) => item?.type === "video_url" || item?.role === "reference_video")
+    : false;
+}
+
+function shouldSendDuration({ model, content }) {
+  if (String(model || "").includes("doubao-seedance-2-0") && usesReferenceVideo(content)) {
+    return false;
+  }
+  return true;
+}
+
 export function normalizeArkVideoErrorMessage(body = {}) {
   const code = String(body?.error?.code || body?.code || "");
   const message = String(body?.error?.message || body?.message || body?.error || "");
@@ -72,17 +115,23 @@ export async function createArkVideoGenerationTask({
   generateAudio = false,
   watermark = false
 }) {
+  const normalizedDuration = normalizeArkVideoDuration({ model, duration });
+  const requestBody = {
+    model,
+    content,
+    resolution,
+    ratio,
+    generate_audio: Boolean(generateAudio),
+    watermark: Boolean(watermark)
+  };
+
+  if (shouldSendDuration({ model, content })) {
+    requestBody.duration = normalizedDuration;
+  }
+
   const result = await requestArk("/contents/generations/tasks", {
     method: "POST",
-    body: JSON.stringify({
-      model,
-      content,
-      resolution,
-      ratio,
-      duration,
-      generate_audio: Boolean(generateAudio),
-      watermark: Boolean(watermark)
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!result.id) {

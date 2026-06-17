@@ -27544,7 +27544,7 @@ textarea::placeholder {
 }
 
 .face-swap-view-root .face-swap-workbench__settings-body::before {
-  content: "预计消耗 30 积分";
+  content: "预计消耗 100 积分";
   flex: 1;
   color: #9a99b2;
   font-size: 15px;
@@ -27770,7 +27770,7 @@ textarea::placeholder {
 }
 
 .motion-view-root:not(.face-swap-view-root) .motion-composer-footer .price-pill::before {
-  content: "预计消耗 30 积分";
+  content: "预计消耗 100 积分";
   color: #9a99b2;
   font-size: 15px;
   font-weight: 700;
