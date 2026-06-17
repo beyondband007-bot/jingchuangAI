@@ -2151,8 +2151,8 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const heroBanners = [
     {
       image: faceminiAsset("creation/banners/home-top-slider-1.jpg"),
-      action: "invite",
-      label: "打开邀请有礼",
+      action: "chat",
+      label: "打开大模型",
     },
     {
       image: faceminiAsset("creation/banners/home-top-slider-2.png"),

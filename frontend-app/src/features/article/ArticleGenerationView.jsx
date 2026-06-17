@@ -1053,26 +1053,6 @@ export function ArticleGenerationView({
               <h2>
                 <span>步骤 3 ·</span> 配图配置
               </h2>
-              <div className="article-visual-config">
-                <ArticleVisualOptionGroup
-                  title="内容类型"
-                  options={contentTypes}
-                  value={form.contentType}
-                  onChange={(contentType) => updateForm({ contentType })}
-                />
-                <ArticleVisualOptionGroup
-                  title="视觉风格"
-                  options={visualStyles}
-                  value={form.visualStyle}
-                  onChange={(visualStyle) => updateForm({ visualStyle })}
-                />
-                <ArticleVisualOptionGroup
-                  title="布局方式"
-                  options={layoutStyles}
-                  value={form.layoutStyle}
-                  onChange={(layoutStyle) => updateForm({ layoutStyle })}
-                />
-              </div>
               <div className="article-choice-row is-ratio">
                 <strong>尺寸比例</strong>
                 {ratios.map((item) => (
