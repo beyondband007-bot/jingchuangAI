@@ -400,6 +400,30 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS article_generation_packages (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      thread_id VARCHAR(80) NOT NULL,
+      title VARCHAR(240) NOT NULL,
+      body MEDIUMTEXT NOT NULL,
+      tags_json JSON NULL,
+      image_prompt_plan_json JSON NULL,
+      image_task_ids_json JSON NULL,
+      model_key VARCHAR(80) NOT NULL,
+      ratio VARCHAR(20) NOT NULL,
+      quality VARCHAR(20) NOT NULL,
+      status ENUM('pending','processing','partial_completed','completed','failed') NOT NULL DEFAULT 'pending',
+      favorite BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_article_packages_user_created (user_id, created_at),
+      INDEX idx_article_packages_thread (user_id, thread_id),
+      INDEX idx_article_packages_status (status),
+      CONSTRAINT fk_article_packages_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS video_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,

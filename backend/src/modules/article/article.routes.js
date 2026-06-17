@@ -1,7 +1,10 @@
 import { Router } from "express";
 import {
+  createArticleCopyDraft,
+  createArticlePackage,
   createArticleTask,
   deleteArticleTask,
+  getArticlePackage,
   getArticleModels,
   getArticleTask,
   listArticleTasks,
@@ -11,6 +14,9 @@ import {
 export const articleRouter = Router();
 
 articleRouter.get("/models", getArticleModels);
+articleRouter.post("/copy-draft", createArticleCopyDraft);
+articleRouter.post("/packages", createArticlePackage);
+articleRouter.get("/packages/:id", getArticlePackage);
 articleRouter.get("/tasks", listArticleTasks);
 articleRouter.post("/tasks", createArticleTask);
 articleRouter.get("/tasks/:id", getArticleTask);
