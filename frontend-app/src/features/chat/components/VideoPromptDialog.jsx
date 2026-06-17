@@ -604,13 +604,13 @@ export function VideoPromptDialog({
         </div>
       </div>
 
+      {referenceSlot}
+
       {notice && (
         <div style={{ marginTop: "12px", color: "rgba(255,255,255,0.56)", fontSize: "12px", lineHeight: 1.5 }}>
           {notice}
         </div>
       )}
-
-      {referenceSlot}
     </div>
   );
 }
