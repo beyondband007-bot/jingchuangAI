@@ -1,5 +1,6 @@
 import { access, mkdir } from "fs/promises";
 import { execFile } from "child_process";
+import { createHash } from "crypto";
 import path from "path";
 import { promisify } from "util";
 import ffmpeg from "@ffmpeg-installer/ffmpeg";
@@ -213,7 +214,7 @@ async function assertFileExists(filePath, message) {
 async function getVideoPosterPath(filePath) {
   const outputDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatar-frames");
   await mkdir(outputDir, { recursive: true });
-  const safeName = Buffer.from(filePath).toString("base64url").slice(0, 80);
+  const safeName = createHash("sha256").update(filePath).digest("hex");
   const outputPath = path.join(outputDir, `${safeName}.jpg`);
 
   try {

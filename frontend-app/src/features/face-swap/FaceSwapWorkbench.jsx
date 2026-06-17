@@ -431,23 +431,23 @@ export function FaceSwapWorkbench({
             </button>
           )}
         </div>
-        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : ""}`}>
+        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : "is-empty"}`}>
           {videoPreview ? (
             <video src={videoPreview} controls playsInline preload="metadata" />
           ) : (
-            <img
-              src={heading.includes("\u52a8\u4f5c") ? "/assets/motion/hot-3-motion.jpg" : "/assets/face-swap/hot-4-faceswap.jpg"}
-              alt={heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}
-            />
+            <div className="face-swap-workbench__target-empty">
+              <Video size={28} />
+              <span>请上传目标视频</span>
+            </div>
           )}
-          <span className="face-swap-workbench__target-compare-line" />
-          <span className="face-swap-workbench__target-compare-handle">{"< >"}</span>
-          <div className="face-swap-workbench__target-player">
-            <Play size={16} fill="currentColor" />
-            <span>{videoPreview ? (sourceDuration ? `00:00 / 00:${String(sourceDuration).padStart(2, "0")}` : "\u5df2\u4e0a\u4f20\u89c6\u9891") : "\u8bf7\u5148\u4e0a\u4f20\u76ee\u6807\u89c6\u9891"}</span>
-            <i />
-            <span>{resolution}</span>
-          </div>
+          {videoPreview && (
+            <div className="face-swap-workbench__target-player">
+              <Play size={16} fill="currentColor" />
+              <span>{sourceDuration ? `00:00 / 00:${String(sourceDuration).padStart(2, "0")}` : "\u5df2\u4e0a\u4f20\u89c6\u9891"}</span>
+              <i />
+              <span>{resolution}</span>
+            </div>
+          )}
         </div>
         <div className="face-swap-workbench__target-draft">
           {videoPreview

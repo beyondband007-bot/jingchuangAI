@@ -8975,7 +8975,7 @@ a:hover {
 .remove-bg-hero-icon,
 .remove-bg-center-icon {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
+  background: #f0eef7;
 }
 
 .remove-bg-hero-empty h1,
@@ -11483,7 +11483,6 @@ select {
 .chat-inline-error,
 .chat-bubble.failed {
   color: var(--danger);
-  background: var(--danger-soft);
   border-color: var(--danger-border);
 }
 
@@ -11571,7 +11570,7 @@ select {
     .video-dub-progress-bar
   ) {
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.06);
+  background: #f0eef7;
   border-color: var(--app-border);
 }
 
@@ -23877,6 +23876,24 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   background: #f6f3ff !important;
 }
 
+.fm-profile-dropdown button.fm-profile-logout {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between !important;
+  gap: 16px;
+}
+
+.fm-profile-dropdown button.fm-profile-logout span {
+  height: auto;
+  margin: 0;
+  background: transparent;
+}
+
+.fm-profile-dropdown button.fm-profile-logout svg {
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
 .fm-profile-dropdown span {
   display: block;
   height: 1px;
@@ -27607,7 +27624,7 @@ textarea::placeholder {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #11121a;
+  background: #f3f1f8;
   border-radius: 8px;
 }
 
@@ -27618,6 +27635,26 @@ textarea::placeholder {
   display: block;
   object-fit: contain;
   background: #11121a;
+}
+
+.face-swap-workbench__target-preview-media.is-empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #d8d4e3;
+  background: #f7f5fb;
+}
+
+.face-swap-workbench__target-empty {
+  display: inline-grid;
+  justify-items: center;
+  gap: 10px;
+  color: #aaa5ba;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.face-swap-workbench__target-empty svg {
+  color: #b8cee9;
 }
 
 .face-swap-workbench__target-preview-media.has-preview .face-swap-workbench__target-compare-line,
@@ -27783,9 +27820,8 @@ textarea::placeholder {
   align-self: start;
   margin: 104px 40px 0;
   aspect-ratio: 16 / 9;
-  background:
-    linear-gradient(to bottom, transparent 72%, rgba(0, 0, 0, 0.62)),
-    url("/assets/motion/hot-3-motion.jpg") center / cover;
+  background: #f7f5fb;
+  border: 1px dashed #d8d4e3;
   border-radius: 8px;
 }
 

@@ -1,4 +1,4 @@
-﻿﻿import React, {
+import React, {
   memo,
   useCallback,
   useEffect,
@@ -896,6 +896,33 @@ function takePendingGenerationSeed(target) {
   }
 }
 
+function getPendingSeedReferenceImage(item, fallbackName = "参考图") {
+  const url =
+    item?.hdSrc ||
+    item?.imageUrl ||
+    item?.image ||
+    item?.source ||
+    item?.src ||
+    item?.poster ||
+    item?.thumbnail ||
+    item?.posterUrl;
+  if (!url) return null;
+  return {
+    url,
+    originalName: `${item?.title || fallbackName}.png`,
+    size: Number(item?.size || item?.sizeBytes || 0),
+    mimeType: item?.mimeType || "image/png",
+  };
+}
+
+function getAssetGenerationTarget(item) {
+  if (item?.type === "AI 图片") return "image";
+  if (item?.type === "AI 视频") return "video";
+  if (item?.type === "数字人") return "digital-human";
+  if (item?.type === "爆款图文") return "article";
+  return item?.isVideo ? "video" : "image";
+}
+
 function getRouteView() {
   const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   if (appNavIdSet.has(hashView)) return hashView;
@@ -1783,10 +1810,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     },
   ];
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
-  const filteredImages =
-    activeTab === "图片灵感"
-      ? fmImageInspirations
-      : fmImageInspirations.filter((item) => item.category === activeTab);
+  const filteredImages = fmImageInspirations.filter((item) => item.category === activeTab);
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
   const advanceHeroBanner = useCallback(() => {
@@ -1815,11 +1839,14 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
 
   function remixInspiration(item) {
     const route = getFaceminiInspirationRoute(item);
+    const referenceImage =
+      route.target === "image" ? getPendingSeedReferenceImage(item) : null;
     writePendingGenerationSeed({
       target: route.target,
       title: item.title,
       category: item.category,
       prompt: item.prompt,
+      referenceImage,
       notice: "已填入同款提示词",
     });
     setModalItem(null);
@@ -1828,17 +1855,13 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
 
   function referenceInspiration(item) {
     const route = getFaceminiInspirationRoute(item);
+    const referenceImage = getPendingSeedReferenceImage(item);
     writePendingGenerationSeed({
       target: route.target,
       title: item.title,
       category: item.category,
       prompt: item.prompt,
-      referenceImage: {
-        url: item.image || item.source || item.thumbnail,
-        originalName: `${item.title || "参考图"}.png`,
-        size: 0,
-        mimeType: "image/png",
-      },
+      referenceImage,
       notice: "已添加为参考图",
     });
     setModalItem(null);
@@ -2649,10 +2672,13 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }
 
   function remixAsset(item) {
-    const target = item.isVideo ? "video" : "image";
+    const target = getAssetGenerationTarget(item);
+    const referenceImage =
+      target === "image" ? getPendingSeedReferenceImage(item) : null;
     writePendingGenerationSeed({
       target,
       prompt: item.prompt || item.title,
+      referenceImage,
       notice: "已填入同款提示词",
     });
     setPreviewAsset(null);
@@ -2660,18 +2686,16 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }
 
   function referenceAsset(item) {
+    const target = getAssetGenerationTarget(item);
+    const referenceImage = getPendingSeedReferenceImage(item);
     writePendingGenerationSeed({
-      target: "image",
-      referenceImage: {
-        url: item.image || item.src || item.poster,
-        originalName: `${item.title || "参考图"}.png`,
-        size: 0,
-        mimeType: "image/png",
-      },
+      target,
+      prompt: item.prompt || item.title,
+      referenceImage: target === "image" ? referenceImage : null,
       notice: "已添加为参考图",
     });
     setPreviewAsset(null);
-    onOpenFeature?.("image");
+    onOpenFeature?.(target);
   }
 
   if (true) {
@@ -4653,7 +4677,7 @@ function ImageGenerationView({
     setActivePrompt("");
     setIsSubmitting(false);
     setSubmitError("");
-    setFilter("inspiration");
+    setFilter("recent");
     clearImageGenerationSession();
     setComposerSeed({
       id: `pending-image-${Date.now()}`,
@@ -5259,6 +5283,7 @@ function ImageGenerationView({
             collapsed={isComposerCollapsed}
             shellRef={imageComposerRef}
             onFocus={() => setIsComposerFocused(true)}
+            seed={composerSeed}
             resetSignal={resetSignal}
           />
         </>
@@ -7500,6 +7525,12 @@ function DigitalHumanConfigPanel({
     setNotice(seed.notice || "");
   }, [seed]);
 
+  useEffect(() => {
+    if (!audioFile && driveMode === "audio") {
+      setDriveMode("text");
+    }
+  }, [audioFile, driveMode]);
+
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
   const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
@@ -7516,6 +7547,12 @@ function DigitalHumanConfigPanel({
     voicePreviewInfo?.signature === currentPreviewSignature;
   const currentAudioTooLong =
     isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+  const generateBlockedByAudioLength = !ttsDisabled && currentAudioTooLong;
+  const generateTitle = ttsDisabled
+    ? "生成数字人视频"
+    : isPreviewCurrent
+      ? "生成数字人视频"
+      : "请先试听音色";
 
   function showToast(message) {
     setToastMessage(message);
@@ -7530,6 +7567,22 @@ function DigitalHumanConfigPanel({
     setVoicePreviewUrl("");
     setVoicePreviewInfo(null);
     setNotice("");
+  }
+
+  function selectAudioFile(file) {
+    if (!file) return;
+    resetVoicePreview();
+    setAudioFile(file);
+    setDriveMode("audio");
+  }
+
+  function clearAudioFile() {
+    resetVoicePreview();
+    setAudioFile(null);
+    setDriveMode("text");
+    if (audioInputRef.current) {
+      audioInputRef.current.value = "";
+    }
   }
 
   async function previewVoice() {
@@ -7621,9 +7674,7 @@ function DigitalHumanConfigPanel({
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0] || null;
-          setAudioFile(file);
-          if (file) setDriveMode("audio");
-          event.target.value = "";
+          selectAudioFile(file);
         }}
       />
       {driveMode === "text" ? (
@@ -7651,13 +7702,13 @@ function DigitalHumanConfigPanel({
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setAudioFile(null);
+                clearAudioFile();
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   event.stopPropagation();
-                  setAudioFile(null);
+                  clearAudioFile();
                 }
               }}
             >
@@ -7739,8 +7790,8 @@ function DigitalHumanConfigPanel({
           className="dh-generate-button"
           type="button"
           onClick={submit}
-          disabled={isSubmitting || currentAudioTooLong}
-          title={isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          disabled={isSubmitting || generateBlockedByAudioLength}
+          title={generateTitle}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
           <span>生成</span>
@@ -9891,14 +9942,13 @@ function WatermarkRemovalView({ authUser, onOpenAuth }) {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
-function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
-  if (!visitedIds.has(id)) return null;
+/** Only mount the active feature so leaving a sidebar item resets local drafts. */
+function FeatureModuleKeepAlive({ id, activeNav, children }) {
+  if (activeNav !== id) return null;
   return (
     <div
       className="feature-module-keepalive"
-      style={{ display: activeNav === id ? "contents" : "none" }}
-      aria-hidden={activeNav !== id}
+      style={{ display: "contents" }}
       data-feature-module={id}
     >
       {children}
@@ -10270,11 +10320,12 @@ function WorkbenchTopbar({
                   <button type="button" role="menuitem" onClick={() => openAssets("全部", "transactions")}>账单明细</button>
                   <button type="button" role="menuitem" onClick={() => setShowProfileMenu(false)}>账号设置</button>
                   <span aria-hidden="true" />
-                  <button type="button" role="menuitem" onClick={() => {
+                  <button className="fm-profile-logout" type="button" role="menuitem" onClick={() => {
                     setShowProfileMenu(false);
                     onLogout?.();
                   }}>
-                    退出登录
+                    <span>退出登录</span>
+                    <LogOut size={16} aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -10304,27 +10355,15 @@ function ImageFeaturePage({
   const isGuest = Boolean(authUser?.isGuest);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
-  const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
   const [inspirationLibraryTab, setInspirationLibraryTab] = useState("全部");
-  const [composerResetSignals, setComposerResetSignals] = useState({
-    image: 0,
-    video: 0,
-  });
 
   useEffect(() => {
     const next =
       initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
     setActiveNav(next);
-    setVisitedIds((prev) => new Set(prev).add(next));
   }, [initialNav]);
-
-  useEffect(() => {
-    if (featureNavIdSet.has(activeNav)) {
-      setVisitedIds((prev) => new Set(prev).add(activeNav));
-    }
-  }, [activeNav]);
 
   const handleNavChange = useCallback(
     (id) => {
@@ -10334,12 +10373,6 @@ function ImageFeaturePage({
         return;
       }
       const nextId = id;
-      if (nextId === "image" || nextId === "video") {
-        setComposerResetSignals((signals) => ({
-          ...signals,
-          [nextId]: signals[nextId] + 1,
-        }));
-      }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
       }
@@ -10399,7 +10432,6 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="creation"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <CreationCenterView
             onOpenFeature={handleNavChange}
@@ -10410,7 +10442,6 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="assets"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <AssetsPage
             authUser={authUser}
@@ -10421,38 +10452,32 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="image"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <ImageGenerationView
             authUser={authUser}
             isActive={activeNav === "image"}
             onOpenAuth={onOpenAuth}
-            resetSignal={composerResetSignals.image}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <VideoGenerationView
             authUser={authUser}
             onOpenAuth={onOpenAuth}
-            resetSignal={composerResetSignals.video}
             isActive={activeNav === "video"}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="chat"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <ChatGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="digital-human"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <DigitalHumanGenerationView
             onReturnHome={() => handleNavChange("home")}
@@ -10465,7 +10490,6 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="image-digital-human"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <MotionTransferView
             navId="image-digital-human"
@@ -10481,7 +10505,6 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="motion"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <MotionTransferView
             splitResults
@@ -10492,35 +10515,30 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="watermark"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <WatermarkRemovalView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <VoiceSynthesisView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice-convert"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <VoiceConvertView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <TranscribeView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <ArticleGenerationView
             authUser={authUser}
@@ -10534,42 +10552,36 @@ function ImageFeaturePage({
         <FeatureModuleKeepAlive
           id="music"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <MusicGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <ReplicateView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="enhance"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <EnhanceView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="remove-bg"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <RemoveBgView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video-voice"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <VideoDubbingView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="face-swap"
           activeNav={activeNav}
-          visitedIds={visitedIds}
         >
           <MotionTransferView
             navId="face-swap"

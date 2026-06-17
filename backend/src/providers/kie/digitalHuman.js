@@ -11,7 +11,7 @@ export async function createKieDigitalHumanTask({
     body: JSON.stringify({
       model,
       input: {
-        reference_image: [imageUrl],
+        image_url: imageUrl,
         audio_url: audioUrl,
         prompt
       }

@@ -100,6 +100,12 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
     onOpenAuth?.("login");
   }
 
+  function requireAuthForGeneration() {
+    if (!isGuest) return true;
+    requestLoginForGeneration();
+    return false;
+  }
+
   useEffect(() => {
     let mounted = true;
     voiceApi.getConfig().then((data) => {
