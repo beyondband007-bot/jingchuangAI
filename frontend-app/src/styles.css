@@ -25520,7 +25520,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   align-content: center !important;
   min-height: 302px !important;
   width: 100% !important;
-  padding: 32px 28px !important;
+  padding: 16px 16px !important;
   color: #282532 !important;
   background: #f6f5fb !important;
   border: 1px dashed #d2cedf !important;
@@ -25567,8 +25567,13 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   border-radius: 8px !important;
+}
+
+[data-feature-module="digital-human"] .dh-avatar-upload-zone img,
+[data-feature-module="digital-human"] .dh-avatar-upload-zone video {
+  background: #ffffff !important;
 }
 
 [data-feature-module="digital-human"] .dh-avatar-upload-icon {
@@ -31079,4 +31084,33 @@ textarea::placeholder {
     p {
     font-size: 14px !important;
   }
+}
+
+/* Final digital-human preview fill override. Keep at EOF so legacy module CSS cannot win. */
+[data-feature-module="digital-human"] .dh-avatar-preview-stage {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+[data-feature-module="digital-human"] .dh-preview-script {
+  display: none !important;
+}
+
+[data-feature-module="digital-human"] .dh-video-shell {
+  align-self: stretch !important;
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+[data-feature-module="digital-human"] .dh-video-shell img,
+[data-feature-module="digital-human"] .dh-video-shell video {
+  min-height: 0 !important;
+  width: auto !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
 }

@@ -1,6 +1,6 @@
 import { access, mkdir } from "fs/promises";
 import { execFile } from "child_process";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import path from "path";
 import { promisify } from "util";
 import ffmpeg from "@ffmpeg-installer/ffmpeg";
@@ -208,11 +208,27 @@ async function assertFileExists(filePath, message) {
   }
 }
 
+async function fileExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function getCompanionPosterPath(filePath) {
+  const parsed = path.parse(filePath);
+  const posterPath = path.join(parsed.dir, "posters", `${parsed.name}.jpg`);
+  return (await fileExists(posterPath)) ? posterPath : "";
+}
+
 async function getVideoPosterPath(filePath) {
   const outputDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatar-frames");
   await mkdir(outputDir, { recursive: true });
-  const safeName = Buffer.from(filePath).toString("base64url").slice(0, 80);
-  const outputPath = path.join(outputDir, `${safeName}.jpg`);
+  const fileHash = createHash("sha256").update(path.resolve(filePath)).digest("hex").slice(0, 16);
+  const safeBaseName = path.basename(filePath, path.extname(filePath)).replace(/[^\p{L}\p{N}._-]+/gu, "-").slice(0, 48);
+  const outputPath = path.join(outputDir, `${safeBaseName || "avatar"}-${fileHash}.jpg`);
 
   try {
     await access(outputPath);
@@ -236,14 +252,18 @@ async function getVideoPosterPath(filePath) {
 
 async function getAvatarImageProviderUrl(avatar) {
   if (avatar.providerImageUrl) return avatar.providerImageUrl;
-  const assetPath = avatar.imagePath || avatar.posterPath || avatar.assetPath || avatar.cover;
+  const assetPath = avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
   if (!assetPath) {
     throw createHttpError("selected avatar does not have an image asset", 400);
   }
 
   const filePath = resolvePublicAssetPath(assetPath);
   await assertFileExists(filePath, `avatar asset not found: ${assetPath}`);
-  const imagePath = isImagePath(filePath) ? filePath : isVideoPath(filePath) ? await getVideoPosterPath(filePath) : "";
+  const imagePath = isImagePath(filePath)
+    ? filePath
+    : isVideoPath(filePath)
+      ? (await getCompanionPosterPath(filePath)) || (await getVideoPosterPath(filePath))
+      : "";
   if (!imagePath) {
     throw createHttpError("selected avatar asset must be an image or video", 400);
   }

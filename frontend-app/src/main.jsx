@@ -894,6 +894,37 @@ const fmImageInspirations = [
   ratio: formatFaceminiImageRatio(id),
 }));
 
+const fmDigitalHumanInspirations = [
+  ["public-anchor-dialogue", "主播对话"],
+  ["public-product", "产品讲解员"],
+  ["public-medical", "健康科普员", "健康科普员-safari"],
+  ["public-home-lady", "居家知性女性"],
+  ["public-real-estate", "房地产经纪人"],
+  ["public-travel", "文旅推荐官"],
+  ["public-fashion-host", "时尚类女主播"],
+  ["public-knowledge-host", "知识科普类女主播"],
+  ["public-executive-lady", "职场女高管"],
+  ["public-business-host", "职场轻商务女主播"],
+  ["public-finance", "财经主播"],
+  ["public-operations", "运营达人"],
+].map(([avatarId, title, assetName]) => {
+  const fileName = assetName || title;
+  return {
+    id: `digital-human-${avatarId}`,
+    avatarId,
+    title,
+    category: "数字人形象",
+    prompt: `今天也是充满希望的一天`,
+    thumbnail: `/assets/digital-human/posters/${fileName}.jpg`,
+    poster: `/assets/digital-human/posters/${fileName}.jpg`,
+    source: `/assets/digital-human/${fileName}.mp4`,
+    videoSrc: `/assets/digital-human/${fileName}.mp4`,
+    ratio: "3s",
+    model: "kling-ai-avatar-pro",
+    material: "视频封面",
+  };
+});
+
 const fmCreationScenes = [
   [
     "自媒体创作",
@@ -1024,6 +1055,7 @@ function getFaceminiInspirationRoute(item) {
 function resolveFaceminiInspirationImageUrl(item) {
   if (!item) return "";
   return (
+    item.videoSrc ||
     item.hdSrc ||
     item.imageUrl ||
     item.image ||
@@ -2141,6 +2173,8 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const filteredImages =
     activeTab === "图片灵感"
       ? fmImageGenerationInspirations
+      : activeTab === "数字人形象"
+        ? fmDigitalHumanInspirations
       : fmImageInspirations.filter((item) => item.category === activeTab);
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
@@ -2163,8 +2197,9 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     setModalItem({
       ...item,
       image: resolveFaceminiInspirationImageUrl(item),
-      material: "高清原图",
-      model: route.model,
+      material:
+        item.material || (item.category === "数字人形象" ? "视频封面" : "高清原图"),
+      model: item.model || route.model,
     });
   }
 
@@ -2179,6 +2214,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
       target: route.target,
       title: item.title,
       category: item.category,
+      avatarId: item.avatarId || null,
       ...launchSeed,
     });
     setModalItem(null);
@@ -4663,8 +4699,9 @@ function FaceminiInspirationModal({
 
   if (!item) return null;
 
-  const isVideo = item.mediaType === "video" || item.video;
+  const isVideo = item.mediaType === "video" || item.video || item.videoSrc;
   const primarySrc =
+    item.videoSrc ||
     item.hdSrc ||
     item.imageUrl ||
     item.image ||
@@ -4673,7 +4710,7 @@ function FaceminiInspirationModal({
     item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
-  const videoSrc = item.video || item.preview || item.source;
+  const videoSrc = item.videoSrc || item.video || item.preview || item.source;
 
   return (
     <div
@@ -8566,6 +8603,13 @@ function DigitalHumanGenerationView({
     if (!pendingSeed) return;
     setSelectedTask(null);
     setRightMode("preview");
+    if (pendingSeed.avatarId) {
+      setSelectedAvatar((current) => ({
+        ...(current || {}),
+        id: pendingSeed.avatarId,
+        name: pendingSeed.title || current?.name || "",
+      }));
+    }
     setComposerSeed({
       id: `pending-digital-human-${Date.now()}`,
       prompt: pendingSeed.prompt || "",
@@ -8943,13 +8987,6 @@ function DigitalHumanGenerationView({
                   复制
                 </button>
               </div>
-            </div>
-            <div className="dh-preview-script">
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-              <br />
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-              <br />
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
             </div>
             <div className="dh-video-shell">
               {currentPreviewTask?.resultUrl ? (
