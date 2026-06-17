@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, Mic, Music, Play, Star, Trash2 } from "lucide-react";
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { voiceConvertApi } from "./voiceConvertApi";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
@@ -72,11 +73,16 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceConvertView() {
+export function VoiceConvertView({ authUser, onOpenAuth }) {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
   const [speed, setSpeed] = useState(1);
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
@@ -111,6 +117,7 @@ export function VoiceConvertView() {
   }, []);
 
   async function uploadTargetFile(file) {
+    if (!requireAuth()) return;
     setNotice("");
     setUploading("target");
     try {
@@ -155,6 +162,7 @@ export function VoiceConvertView() {
   }
 
   async function pickSourceFile(file) {
+    if (!requireAuth()) return;
     setNotice("");
     try {
       if (file.size > 50 * 1024 * 1024) throw new Error("源音频需小于 50MB。");
@@ -177,6 +185,7 @@ export function VoiceConvertView() {
   }
 
   async function convertVoice() {
+    if (!requireAuth()) return;
     if (!targetAudio?.fileId) {
       setNotice("请先上传目标音色。");
       return;

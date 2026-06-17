@@ -22,6 +22,20 @@ import {
 } from "../../providers/volcengine/videoGeneration.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { designMinimaxVoice } from "../../providers/minimax/voiceDesign.js";
+import { getVideoDuration } from "../../providers/ffmpeg/video.js";
+
+async function getUploadedAudioDurationMs(audioPath) {
+  const seconds = await getVideoDuration(audioPath);
+  return Math.max(0, Math.round(Number(seconds || 0) * 1000));
+}
+
+function resolveUploadedAudio(file) {
+  if (!file) return null;
+  const fileName = file.filename;
+  const filePath = file.path;
+  const publicPath = `/media/digital-human/audio/${fileName}`;
+  return { fileName, filePath, publicPath, mimeType: file.mimetype || "audio/mpeg", sizeBytes: file.size || 0 };
+}
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
@@ -246,14 +260,25 @@ async function getAvatarImageProviderUrl(avatar) {
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, avatar } = payload;
-  console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
-  const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
-  const audioDurationMs = getAudioDurationMs(speech, text);
-  if (audioDurationMs > maxDigitalHumanAudioMs) {
-    throw createHttpError("音频时长超过 5 分钟，请缩短文本或切片后分段生成", 400);
+  const { text, voiceId, speed, volume, pitch, emotion, avatar, audioFile } = payload;
+  let savedAudio;
+  let audioDurationMs;
+  if (audioFile) {
+    console.log(`[digital-human] task ${taskId}: using uploaded audio`);
+    savedAudio = audioFile;
+    audioDurationMs = await getUploadedAudioDurationMs(audioFile.filePath);
+    if (audioDurationMs > maxDigitalHumanAudioMs) {
+      throw createHttpError("上传音频时长超过 5 分钟，请缩短音频或切片后分段生成", 400);
+    }
+  } else {
+    console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
+    const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
+    audioDurationMs = getAudioDurationMs(speech, text);
+    if (audioDurationMs > maxDigitalHumanAudioMs) {
+      throw createHttpError("音频时长超过 5 分钟，请缩短文本或切片后分段生成", 400);
+    }
+    savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
   }
-  const savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
 
   if (avatar.provider === "ark") {
     console.log(`[digital-human] task ${taskId}: creating Ark audio asset and Seedance task`);
@@ -429,7 +454,7 @@ export async function getTask(id) {
   return row ? mapTask(row) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, file) {
   const avatarId = String(payload.avatarId || "").trim();
   const driveMode = String(payload.driveMode || "text");
   const text = String(payload.text || "").trim();
@@ -439,10 +464,11 @@ export async function createTask(payload) {
   const volume = normalizeVolume(payload.volume);
   const pitch = normalizeDecimal(payload.pitch, 0);
   const emotion = normalizeEmotion(payload.emotion);
+  const uploadedAudio = resolveUploadedAudio(file);
 
   if (!avatarId) throw createHttpError("avatarId is required", 400);
-  if (driveMode !== "text") throw createHttpError("audio drive is not available in this version", 501);
-  if (!text) throw createHttpError("text is required", 400);
+  if (driveMode === "audio" && !uploadedAudio) throw createHttpError("请上传音频文件", 400);
+  if (driveMode !== "audio" && !text) throw createHttpError("text is required", 400);
   if (text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
 
   const avatar = await getAvatarById(avatarId);
@@ -499,7 +525,7 @@ export async function createTask(payload) {
   connection.release();
 
   try {
-    await createProviderTask(taskId, { text, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model });
+    await createProviderTask(taskId, { text, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model, audioFile: uploadedAudio });
   } catch (error) {
     console.error("Create digital human provider task failed:", error.message, error.body || "");
     await refundTask(taskId, userId, costPoints, `数字人任务创建失败：${error.message}`);

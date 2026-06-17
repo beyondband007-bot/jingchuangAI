@@ -81,6 +81,8 @@ import { PromptSelectField } from "./features/chat/components/PromptSelectField"
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
 import { CustomSelect } from "./components/CustomSelect";
+import { useToast } from "./hooks/useToast";
+import { useRequireAuth } from "./hooks/useRequireAuth";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
@@ -7460,6 +7462,7 @@ function DigitalHumanConfigPanel({
   const [driveMode, setDriveMode] = useState("text");
   const [text, setText] = useState("");
   const [audioFile, setAudioFile] = useState(null);
+  const ttsDisabled = Boolean(audioFile);
   const [model, setModel] = useState(
     options.defaults?.model || options.models[0]?.value || "",
   );
@@ -7572,11 +7575,11 @@ function DigitalHumanConfigPanel({
       setNotice("请上传音频文件");
       return;
     }
-    if (!voicePreviewInfo || !isPreviewCurrent) {
+    if (!ttsDisabled && (!voicePreviewInfo || !isPreviewCurrent)) {
       showToast("请先试听音色");
       return;
     }
-    if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
+    if (!ttsDisabled && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
       showToast("当前音频超过 15 秒，请缩短文本或切片后分段生成");
       return;
     }
@@ -7587,6 +7590,7 @@ function DigitalHumanConfigPanel({
       driveMode,
       text,
       audioName: audioFile?.name || "",
+      audioFile: audioFile || undefined,
       voiceId,
       model,
       speed: ttsSpeed,
@@ -7622,12 +7626,13 @@ function DigitalHumanConfigPanel({
         }}
       />
       {driveMode === "text" ? (
-        <label className="dh-field dh-script-field">
+        <label className={`dh-field dh-script-field ${ttsDisabled ? "is-disabled" : ""}`}>
           <textarea
             value={text}
             maxLength={200}
             onChange={(event) => setText(event.target.value)}
             placeholder={defaultDigitalHumanScript}
+            disabled={ttsDisabled}
           />
           <small>
             {text.length} / 200
@@ -7667,12 +7672,13 @@ function DigitalHumanConfigPanel({
           </span>
         </div>
       )}
-      <div className="dh-voice-chip-grid">
+      <div className={`dh-voice-chip-grid ${ttsDisabled ? "is-disabled" : ""}`}>
         {voices.slice(0, 9).map((item) => (
           <button
             key={item.id}
             type="button"
             className={item.id === voiceId ? "is-active" : ""}
+            disabled={ttsDisabled}
             onClick={() => {
               if (item.id !== voiceId) resetVoicePreview();
               setVoiceId(item.id);
@@ -7682,13 +7688,14 @@ function DigitalHumanConfigPanel({
           </button>
         ))}
       </div>
-      <div className="dh-speed-chip-row">
+      <div className={`dh-speed-chip-row ${ttsDisabled ? "is-disabled" : ""}`}>
         <span>语速</span>
         {[0.8, 1.0, 1.2, 1.35, 1.5, 1.75, 2.0].map((value) => (
           <button
             key={value}
             type="button"
             className={ttsSpeed === value ? "is-active" : ""}
+            disabled={ttsDisabled}
             onClick={() => {
               if (ttsSpeed !== value) resetVoicePreview();
               setTtsSpeed(value);
@@ -7715,12 +7722,14 @@ function DigitalHumanConfigPanel({
             setTtsEmotion(value);
           }}
           options={ttsEmotionOptions}
+          disabled={ttsDisabled}
         />
         <button
           className="dh-preview-voice-button"
           type="button"
           onClick={previewVoice}
-          disabled={isDesigningVoice}
+          disabled={ttsDisabled || isDesigningVoice}
+          title={ttsDisabled ? "已上传音频，无需试听" : "试听音色"}
         >
           {isDesigningVoice ? <Loader2 size={14} /> : <Mic size={14} />}
           试听音色
@@ -7766,7 +7775,7 @@ function DigitalHumanConfigPanel({
   );
 }
 
-function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = true }) {
+function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = true, authUser, onOpenAuth }) {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -7783,6 +7792,11 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
   const [favoriteTaskIds, setFavoriteTaskIds] = useState(() => new Set());
   const [composerSeed, setComposerSeed] = useState(null);
   const taskStatusSignatureRef = useRef("");
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setError("请先登录"),
+  });
 
   useEffect(() => {
     if (!isActive) return;
@@ -7868,6 +7882,7 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
   }, []);
 
   async function createTask(payload) {
+    if (!requireAuth()) return;
     setError("");
     setIsSubmitting(true);
     try {
@@ -7887,6 +7902,7 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
   }
 
   async function createAvatar(payload) {
+    if (!requireAuth()) return;
     setIsSubmitting(true);
     try {
       const avatar = await digitalHumanApi.createAvatar(payload);
@@ -7921,6 +7937,7 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
   }
 
   async function regenerateTask(id) {
+    if (!requireAuth()) return;
     const task = await digitalHumanApi.regenerateTask(id);
     digitalHumanApi
       .getCredits()
@@ -8659,7 +8676,11 @@ function MotionTransferComposer({
   isSubmitting,
   api = motionTransferApi,
   copy = motionTransferCopy,
+  authUser,
+  onOpenAuth,
 }) {
+  const isGuest = Boolean(authUser?.isGuest);
+  const { message: toastMessage, showToast } = useToast();
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -8695,11 +8716,26 @@ function MotionTransferComposer({
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
+  const isConfigured = selectedModel?.configured !== false;
   const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
+  const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting && isConfigured;
+
+  function requireAuth() {
+    if (!isGuest) return true;
+    showToast("请先登录");
+    onOpenAuth?.("login");
+    return false;
+  }
+
+  function requireConfigured() {
+    if (isConfigured) return true;
+    showToast("当前模型未配置，暂不可用");
+    return false;
+  }
 
   async function selectImage(file) {
     if (!file) return;
+    if (!requireAuth()) return;
     if (!file.type.startsWith("image/")) {
       setNotice("请上传图片文件");
       return;
@@ -8725,6 +8761,7 @@ function MotionTransferComposer({
 
   async function selectVideo(file) {
     if (!file) return;
+    if (!requireAuth()) return;
     if (!file.type.startsWith("video/")) {
       setNotice("请上传视频文件");
       return;
@@ -8763,6 +8800,8 @@ function MotionTransferComposer({
   }
 
   function submit() {
+    if (!requireAuth()) return;
+    if (!requireConfigured()) return;
     if (!imageAsset) {
       setNotice(copy.imageRequired);
       return;
@@ -8839,6 +8878,7 @@ function MotionTransferComposer({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
+          title={isConfigured ? copy.submitLabel : "当前模型未配置，暂不可用"}
           aria-label={copy.submitLabel}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
@@ -8879,6 +8919,8 @@ function MotionTransferView({
   WorkbenchComponent = FaceSwapWorkbench,
   heading,
   privacyText,
+  authUser,
+  onOpenAuth,
 }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyMotionTransferOptions);
@@ -8994,6 +9036,7 @@ function MotionTransferView({
     : !showEmptyHero && !showCenterState && visibleTasks.length === 0;
 
   async function createTask(payload) {
+    if (!requireAuth()) return;
     setSubmitError("");
     setIsSubmitting(true);
     setSubmittedTaskId(null);
@@ -9122,6 +9165,8 @@ function MotionTransferView({
                 setSubmittedTaskId(null);
                 writeMotionActiveTaskId(navId, null);
               } : undefined}
+              authUser={authUser}
+              onOpenAuth={onOpenAuth}
             />
           )}
         {!useWorkbenchView && showEmptyHero && (
@@ -9179,6 +9224,8 @@ function MotionTransferView({
           isSubmitting={isSubmitting}
           api={api}
           copy={copy}
+          authUser={authUser}
+          onOpenAuth={onOpenAuth}
         />
       )}
     </section>
@@ -9445,7 +9492,7 @@ function WatermarkUploadSlot({
   );
 }
 
-function WatermarkComposer({ options, onSubmit, isSubmitting }) {
+function WatermarkComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth }) {
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -9482,7 +9529,14 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
     setNotice("");
   }
 
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
+
   async function selectSource(file) {
+    if (!requireAuth()) return;
     if (!file) return;
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
@@ -9522,6 +9576,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   }
 
   function submit() {
+    if (!requireAuth()) return;
     if (!sourceAsset) {
       setNotice(mode === "image" ? "请先上传图片文件" : "请先上传视频文件");
       return;
@@ -9584,7 +9639,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-function WatermarkRemovalView() {
+function WatermarkRemovalView({ authUser, onOpenAuth }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -9593,6 +9648,11 @@ function WatermarkRemovalView() {
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
   const taskStatusSignatureRef = useRef("");
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setSubmitError("请先登录"),
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -9801,6 +9861,8 @@ function WatermarkRemovalView() {
           options={options}
           onSubmit={createTask}
           isSubmitting={isSubmitting}
+          authUser={authUser}
+          onOpenAuth={onOpenAuth}
         />
       )}
     </section>
@@ -10374,6 +10436,8 @@ function ImageFeaturePage({
             onReturnHome={() => handleNavChange("home")}
             onOpenFeature={handleNavChange}
             isActive={activeNav === "digital-human"}
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -10388,6 +10452,8 @@ function ImageFeaturePage({
             splitResults
             WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
             heading="图片数字人生成"
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -10395,14 +10461,18 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView splitResults />
+          <MotionTransferView
+            splitResults
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="watermark"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <WatermarkRemovalView />
+          <WatermarkRemovalView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice"
@@ -10416,14 +10486,14 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceConvertView />
+          <VoiceConvertView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView authUser={authUser} />
+          <TranscribeView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -10444,35 +10514,35 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MusicGenerationView />
+          <MusicGenerationView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ReplicateView authUser={authUser} />
+          <ReplicateView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="enhance"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <EnhanceView />
+          <EnhanceView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="remove-bg"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <RemoveBgView />
+          <RemoveBgView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video-voice"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VideoDubbingView authUser={authUser} />
+          <VideoDubbingView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="face-swap"
@@ -10484,6 +10554,8 @@ function ImageFeaturePage({
             api={faceSwapApi}
             copy={faceSwapCopy}
             splitResults
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
           />
         </FeatureModuleKeepAlive>
         {![
@@ -10644,8 +10716,6 @@ function App() {
     setAuthUser(user);
     setAuthDrawerMode(null);
     window.sessionStorage.setItem(appEntryStorageKey, "1");
-    window.history.pushState(null, "", "/");
-    window.location.reload();
   }, []);
 
   const requestLogout = useCallback(() => {

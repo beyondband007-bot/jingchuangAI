@@ -22,7 +22,9 @@ import {
 export const digitalHumanRouter = Router();
 
 const avatarDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatars");
+const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio");
 mkdirSync(avatarDir, { recursive: true });
+mkdirSync(audioDir, { recursive: true });
 
 const avatarUpload = multer({
   storage: multer.diskStorage({
@@ -53,6 +55,35 @@ function uploadAvatar(req, res, next) {
   });
 }
 
+const audioUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, audioDir),
+    filename: (_req, file, callback) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".wav";
+      callback(null, `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`);
+    }
+  }),
+  limits: { fileSize: 30 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    if (!String(file.mimetype || "").startsWith("audio/")) {
+      callback(new Error("audio must be an audio file"));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
+function uploadAudio(req, res, next) {
+  audioUpload.single("audio")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+    const message = error.code === "LIMIT_FILE_SIZE" ? "audio file must be 30MB or smaller" : error.message;
+    res.status(400).json({ error: message });
+  });
+}
+
 digitalHumanRouter.get("/models", getDigitalHumanModels);
 digitalHumanRouter.get("/avatars", getDigitalHumanAvatars);
 digitalHumanRouter.post("/avatars", uploadAvatar, createDigitalHumanAvatar);
@@ -62,7 +93,7 @@ digitalHumanRouter.get("/voices", getDigitalHumanVoices);
 digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
 digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);
-digitalHumanRouter.post("/tasks", createDigitalHumanTask);
+digitalHumanRouter.post("/tasks", uploadAudio, createDigitalHumanTask);
 digitalHumanRouter.get("/tasks/:id", getDigitalHumanTask);
 digitalHumanRouter.post("/tasks/:id/regenerate", regenerateDigitalHumanTask);
 digitalHumanRouter.delete("/tasks/:id", deleteDigitalHumanTask);

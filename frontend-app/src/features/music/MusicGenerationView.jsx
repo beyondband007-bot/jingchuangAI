@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Download, Loader2, Music, Pause, Play, Star } from "lucide-react";
 import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
 import { musicApi } from "./musicApi";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
@@ -63,13 +64,18 @@ async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {
   throw new Error("音乐仍在生成中，请稍后到历史记录里查看。");
 }
 
-export function MusicGenerationView() {
+export function MusicGenerationView({ authUser, onOpenAuth }) {
   const [prompt, setPrompt] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
   const [lyricsOptimizer, setLyricsOptimizer] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState("");
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
   const [currentResult, setCurrentResult] = useState(null);
   const [toast, setToast] = useState(null);
   const [viewTab, setViewTab] = useState("home");
@@ -101,6 +107,7 @@ export function MusicGenerationView() {
   }, [recentResults]);
 
   async function generate() {
+    if (!requireAuth()) return;
     if (!prompt.trim()) {
       setNotice("请输入风格描述。");
       return;

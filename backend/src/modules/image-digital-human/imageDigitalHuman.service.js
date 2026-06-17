@@ -1,5 +1,19 @@
 import path from "path";
 import { config } from "../../config/index.js";
+import { getVideoDuration } from "../../providers/ffmpeg/video.js";
+
+async function getUploadedAudioDurationMs(audioPath) {
+  const seconds = await getVideoDuration(audioPath);
+  return Math.max(0, Math.round(Number(seconds || 0) * 1000));
+}
+
+function resolveUploadedAudio(file) {
+  if (!file) return null;
+  const fileName = file.filename;
+  const filePath = file.path;
+  const publicPath = `/media/image-digital-human/audio/${fileName}`;
+  return { fileName, filePath, publicPath, mimeType: file.mimetype || "audio/mpeg", sizeBytes: file.size || 0 };
+}
 import {
   createKieSpeechToVideoTask,
   extractKieImageDigitalHumanResult,
@@ -135,19 +149,30 @@ function mediaPathToFilePath(mediaPath = "") {
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, portraitFilePath, portraitFileName, portraitMimeType, model } = payload;
+  const { text, voiceId, speed, volume, pitch, emotion, portraitFilePath, portraitFileName, portraitMimeType, model, audioFile } = payload;
 
-  console.log(`[image-digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
-  const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
-  const audioDurationMs = getAudioDurationMs(speech, text);
-  if (audioDurationMs > maxImageDigitalHumanAudioMs) {
-    throw createHttpError("音频时长超过 5 分钟，请缩短文本后重试", 400);
+  let savedAudio;
+  let audioDurationMs;
+  if (audioFile) {
+    console.log(`[image-digital-human] task ${taskId}: using uploaded audio`);
+    savedAudio = audioFile;
+    audioDurationMs = await getUploadedAudioDurationMs(audioFile.filePath);
+    if (audioDurationMs > maxImageDigitalHumanAudioMs) {
+      throw createHttpError("上传音频时长超过 5 分钟，请缩短音频后重试", 400);
+    }
+  } else {
+    console.log(`[image-digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
+    const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
+    audioDurationMs = getAudioDurationMs(speech, text);
+    if (audioDurationMs > maxImageDigitalHumanAudioMs) {
+      throw createHttpError("音频时长超过 5 分钟，请缩短文本后重试", 400);
+    }
+    savedAudio = await saveMinimaxSpeechAudio({
+      taskId,
+      audioBuffer: speech.audioBuffer,
+      featureDir: "image-digital-human"
+    });
   }
-  const savedAudio = await saveMinimaxSpeechAudio({
-    taskId,
-    audioBuffer: speech.audioBuffer,
-    featureDir: "image-digital-human"
-  });
 
   console.log(`[image-digital-human] task ${taskId}: uploading portrait and audio`);
   const [portraitUpload, audioUpload] = await Promise.all([
@@ -245,9 +270,10 @@ export async function getTask(id) {
   return row ? mapTask(row) : null;
 }
 
-export async function createTask(payload, file) {
-  if (!file) throw createHttpError("请上传肖像图片", 400);
+export async function createTask(payload, portraitFile, audioFile) {
+  if (!portraitFile) throw createHttpError("请上传肖像图片", 400);
 
+  const driveMode = String(payload.driveMode || "text");
   const text = String(payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
   const modelKey = String(payload.model || getModelDefinitions()[0].value).trim();
@@ -255,14 +281,16 @@ export async function createTask(payload, file) {
   const volume = normalizeVolume(payload.volume);
   const pitch = normalizeDecimal(payload.pitch, 0);
   const emotion = normalizeEmotion(payload.emotion);
+  const uploadedAudio = resolveUploadedAudio(audioFile);
 
-  if (!text) throw createHttpError("请输入文本", 400);
+  if (driveMode === "audio" && !uploadedAudio) throw createHttpError("请上传音频文件", 400);
+  if (driveMode !== "audio" && !text) throw createHttpError("请输入文本", 400);
   if (text.length > maxTextLength) throw createHttpError(`文本长度不能超过 ${maxTextLength} 个字符`, 400);
 
   const model = getModelByKey(modelKey);
   if (!model || model.provider !== "kie") throw createHttpError("图片数字人模型不存在", 400);
   const voice = getVoiceById(voiceId);
-  const portraitUrl = `/media/image-digital-human/portraits/${file.filename}`;
+  const portraitUrl = `/media/image-digital-human/portraits/${portraitFile.filename}`;
   const costPoints = Number(model.basePoints || basePoints);
 
   const connection = await getPool().getConnection();
@@ -313,10 +341,11 @@ export async function createTask(payload, file) {
       volume,
       pitch,
       emotion,
-      portraitFilePath: file.path,
-      portraitFileName: file.originalname || file.filename,
-      portraitMimeType: file.mimetype || "image/png",
-      model
+      portraitFilePath: portraitFile.path,
+      portraitFileName: portraitFile.originalname || portraitFile.filename,
+      portraitMimeType: portraitFile.mimetype || "image/png",
+      model,
+      audioFile: uploadedAudio
     });
   } catch (error) {
     console.error("Create image digital human provider task failed:", error.message, error.body || "");

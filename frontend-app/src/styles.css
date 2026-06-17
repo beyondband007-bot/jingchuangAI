@@ -11545,69 +11545,6 @@ select {
 }
 
 /* Deep cleanup for legacy light blocks in feature modules. */
-.feature-page-shell
-  :is(
-    .video-result-card,
-    .video-empty-results,
-    .video-composer,
-    .chat-main-canvas,
-    .chat-empty-state,
-    .chat-message-bubble,
-    .chat-message-bubble.is-loading,
-    .chat-history-rail,
-    .chat-history-item,
-    .chat-composer,
-    .dh-selected-template,
-    .dh-pipeline-card,
-    .dh-voice-note,
-    .dh-minimax-options,
-    .dh-duration-check,
-    .dh-avatar-card,
-    .dh-task-card,
-    .dh-create-card,
-    .dh-avatar-cover,
-    .dh-task-preview,
-    .dh-empty-media,
-    .dh-empty-media-icon,
-    .dh-avatar-badge,
-    .dh-preview-details div,
-    .dh-generating-state,
-    .dh-settings-group,
-    .dh-audio-upload,
-    .dh-upload-zone,
-    .dh-command-library button,
-    .dh-modal,
-    .dh-avatar-preview-modal,
-    .dh-avatar-preview-body,
-    .dh-modal-header,
-    .dh-modal-footer,
-    .motion-canvas,
-    .motion-composer,
-    .motion-upload-slot,
-    .motion-center-state,
-    .motion-result-player,
-    .motion-task-card,
-    .motion-task-preview,
-    .motion-task-placeholder,
-    .motion-recent-empty,
-    .face-swap-view-root .motion-canvas,
-    .face-swap-view-root .motion-task-card,
-    .video-dub-canvas,
-    .video-dub-upload-slot,
-    .video-dub-recent-card,
-    .video-dub-recent-empty,
-    .video-dub-recent-stage,
-    .video-dub-player-dialog,
-    .video-dub-player-head,
-    .video-dub-floating-composer,
-    .skeleton-composer,
-    .coming-soon-panel,
-    .coming-soon-icon
-  ) {
-  color: var(--text-primary);
-  background:transparent;
-  border-color: var(--app-border);
-}
 
 .feature-page-shell
   :is(
@@ -11813,24 +11750,6 @@ select {
     .video-dub-floating-composer .voice-composer-footer > span
   ) {
   color: var(--text-muted);
-}
-
-.feature-page-shell
-  :is(
-    .video-submit-error,
-    .chat-message-avatar.is-error,
-    .chat-message-bubble.is-error,
-    .chat-inline-error,
-    .dh-duration-check.is-warning,
-    .dh-form-notice,
-    .motion-center-state.is-failed,
-    .motion-task-placeholder.is-failed,
-    .motion-task-card.status-failed,
-    .video-dub-recent-overlay.is-failed
-  ) {
-  color: var(--danger);
-  background: var(--danger-soft);
-  border-color: var(--danger-border);
 }
 
 .feature-page-shell
@@ -13455,6 +13374,10 @@ section.image-gen-view .image-prompt-dialog {
   min-height: 152px !important;
   overflow: hidden !important;
   transform: translateZ(0);
+}
+
+section.image-gen-view .image-prompt-dialog.is-expanded {
+  overflow: visible !important;
   transition:
     min-height 300ms cubic-bezier(0.22, 1, 0.36, 1),
     padding 300ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -13551,7 +13474,8 @@ section.image-gen-view .image-prompt-dialog.is-collapsed .image-prompt-controls-
 .image-composer-toast,
 .image-page-toast,
 .video-composer-toast,
-.video-page-toast {
+.video-page-toast,
+.fm-floating-toast {
   position: fixed;
   left: 50%;
   top: 60%;
@@ -13573,6 +13497,11 @@ section.image-gen-view .image-prompt-dialog.is-collapsed .image-prompt-controls-
   white-space: normal;
   backdrop-filter: blur(18px);
   animation: chat-floating-notice-in 180ms ease-out;
+}
+
+.fm-floating-toast {
+  top: 96px;
+  border-radius: 999px;
 }
 
 section.image-gen-view
@@ -21538,7 +21467,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 .fm-assets-transactions-view {
   display: grid;
   gap: 16px;
-  padding: 18px;
+  padding: 18px 18px 24px;
   border: 1px solid #e5e2ef;
   border-radius: 16px;
   background: #fbfaff;
@@ -25168,6 +25097,18 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border-radius: 12px !important;
 }
 
+[data-feature-module="digital-human"] .dh-voice-chip-grid.is-disabled,
+[data-feature-module="digital-human"] .dh-speed-chip-row.is-disabled,
+[data-feature-module="digital-human"] .dh-field.is-disabled {
+  opacity: 0.55 !important;
+  pointer-events: none !important;
+}
+
+[data-feature-module="digital-human"] .dh-voice-chip-grid.is-disabled button,
+[data-feature-module="digital-human"] .dh-speed-chip-row.is-disabled button {
+  cursor: not-allowed !important;
+}
+
 [data-feature-module="digital-human"] .dh-speed-chip-row,
 [data-feature-module="digital-human"] .dh-inline-controls {
   display: flex !important;
@@ -27543,11 +27484,21 @@ textarea::placeholder {
 
 .face-swap-view-root .face-swap-workbench__drop-zone svg,
 .face-swap-view-root .face-swap-workbench__drop-zone.is-video svg {
-  width: 74px;
-  height: 74px;
-  padding: 17px;
+  width: 72px;
+  height: 72px;
+  padding: 16px;
   color: #ffffff;
-  background: #c8c5d7;
+  background: #c4c0d4 !important;
+  border-radius: 999px;
+}
+
+.face-swap-view-root .face-swap-workbench__drop-zone .face-swap-workbench__clear-button svg,
+.face-swap-view-root .face-swap-workbench__drop-zone.is-video .face-swap-workbench__clear-button svg {
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  color: #ffffff;
+  background: transparent !important;
   border-radius: 999px;
 }
 
@@ -28164,6 +28115,35 @@ textarea::placeholder {
 
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-range-field input {
   accent-color: #6b3dff;
+}
+
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-range-field.is-disabled,
+.face-swap-view-root .image-digital-human-workbench .idh-showcase-field.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.face-swap-view-root .image-digital-human-workbench .idh-audio-upload.is-compact {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  place-items: center;
+  padding: 14px;
+  color: #17141e;
+  background: #f6f5fb;
+  border: 1px dashed #d2cedf;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.face-swap-view-root .image-digital-human-workbench .idh-audio-upload.is-compact strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.face-swap-view-root .image-digital-human-workbench .idh-audio-upload.is-compact span {
+  font-size: 12px;
+  color: #777284;
 }
 
 .face-swap-view-root .image-digital-human-workbench .idh-showcase-tts-action {

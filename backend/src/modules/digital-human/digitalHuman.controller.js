@@ -55,7 +55,7 @@ export async function getDigitalHumanTask(req, res) {
 
 export async function createDigitalHumanTask(req, res) {
   try {
-    res.status(201).json(await service.createTask(req.body || {}));
+    res.status(201).json(await service.createTask(req.body || {}, req.file));
   } catch (error) {
     sendError(res, error);
   }

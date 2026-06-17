@@ -38,7 +38,9 @@ export async function getImageDigitalHumanTask(req, res) {
 
 export async function createImageDigitalHumanTask(req, res) {
   try {
-    res.status(201).json(await service.createTask(req.body || {}, req.file));
+    const portraitFile = req.files?.portrait?.[0] || req.file;
+    const audioFile = req.files?.audio?.[0];
+    res.status(201).json(await service.createTask(req.body || {}, portraitFile, audioFile));
   } catch (error) {
     sendError(res, error);
   }

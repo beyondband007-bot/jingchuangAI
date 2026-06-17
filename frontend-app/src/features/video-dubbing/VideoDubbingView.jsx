@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
@@ -257,7 +258,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
   );
 }
 
-export function VideoDubbingView({ authUser }) {
+export function VideoDubbingView({ authUser, onOpenAuth }) {
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -271,6 +272,11 @@ export function VideoDubbingView({ authUser }) {
   const [currentStage, setCurrentStage] = useState("");
   const currentTaskStatusRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
 
   function refreshCredits() {
     videoDubbingApi
@@ -330,6 +336,7 @@ export function VideoDubbingView({ authUser }) {
   }
 
   async function pickVideoFile(file) {
+    if (!requireAuth()) return;
     setNotice("");
     try {
       if (file.size > 2 * 1024 * 1024 * 1024) {
@@ -349,10 +356,7 @@ export function VideoDubbingView({ authUser }) {
   }
 
   async function submitDub() {
-    if (isGuest) {
-      setNotice("积分不够，请充值");
-      return;
-    }
+    if (!requireAuth()) return;
 
     if (!videoFile?.file) {
       setNotice("请先上传视频文件");

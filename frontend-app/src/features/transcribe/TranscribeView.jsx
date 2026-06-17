@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
@@ -138,7 +139,7 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   );
 }
 
-export function TranscribeView({ authUser }) {
+export function TranscribeView({ authUser, onOpenAuth }) {
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -146,6 +147,11 @@ export function TranscribeView({ authUser }) {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const isGuest = Boolean(authUser?.isGuest);
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
 
   useEffect(() => {
     try {
@@ -166,6 +172,7 @@ export function TranscribeView({ authUser }) {
   }, []);
 
   async function pickAudioFile(file) {
+    if (!requireAuth()) return;
     setNotice("");
     setResult(null);
     try {
@@ -192,10 +199,7 @@ export function TranscribeView({ authUser }) {
   }
 
   async function submitTranscribe() {
-    if (isGuest) {
-      setNotice("积分不够，请充值");
-      return;
-    }
+    if (!requireAuth()) return;
 
     if (!audioFile?.file) {
       setNotice("请先上传音频文件");

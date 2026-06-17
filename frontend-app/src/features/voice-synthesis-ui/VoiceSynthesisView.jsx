@@ -130,6 +130,7 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
   }, []);
 
   async function uploadFile(file) {
+    if (!requireAuthForGeneration()) return;
     setNotice("");
     setUploading("clone");
     try {

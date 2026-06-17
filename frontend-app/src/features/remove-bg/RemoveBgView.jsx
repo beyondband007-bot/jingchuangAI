@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -190,7 +191,7 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
   );
 }
 
-function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
+function RemoveBgComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth }) {
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [notice, setNotice] = useState("");
@@ -207,7 +208,14 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
   const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setNotice("请先登录"),
+  });
+
   async function selectSource(file) {
+    if (!requireAuth()) return;
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setNotice("请上传图片文件");
@@ -242,6 +250,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   }
 
   function submit() {
+    if (!requireAuth()) return;
     if (!sourceAsset) {
       setNotice("请先上传图片文件");
       return;
@@ -277,7 +286,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function RemoveBgView() {
+export function RemoveBgView({ authUser, onOpenAuth }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [credits, setCredits] = useState(null);
@@ -286,6 +295,11 @@ export function RemoveBgView() {
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
   const taskStatusSignatureRef = useRef("");
+  const requireAuth = useRequireAuth({
+    authUser,
+    onOpenAuth,
+    onDeny: () => setSubmitError("请先登录"),
+  });
 
   function applyCredits(creditsValue) {
     if (!creditsValue) return;
@@ -345,6 +359,7 @@ export function RemoveBgView() {
   const showRecentEmpty = (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0;
 
   async function createTask(payload) {
+    if (!requireAuth()) return;
     setSubmitError("");
     setIsSubmitting(true);
     setSubmittedTaskId(null);
@@ -442,6 +457,8 @@ export function RemoveBgView() {
           options={options}
           onSubmit={createTask}
           isSubmitting={isSubmitting}
+          authUser={authUser}
+          onOpenAuth={onOpenAuth}
         />
       )}
     </section>
