@@ -4694,6 +4694,7 @@ a:hover {
   color: #0069d9;
   background: #e9f3ff;
   border: 1px solid #b7d8ff;
+  display: none;
 }
 
 .ratio-tag {
@@ -5444,10 +5445,9 @@ a:hover {
   color: #0f4f7d;
   width: 64px;
   height: 64px;
-  padding: 18px 16px 18px 20px;
+  padding: 18px 18px 18px 18px;
   background: #d9efff;
   border-radius: 50%;
-  filter: drop-shadow(0 9px 13px rgba(20, 55, 90, 0.25));
 }
 
 .video-result-card.status-processing .video-placeholder svg {
@@ -11946,13 +11946,6 @@ select {
 .feature-page-shell .result-meta p,
 .feature-page-shell .card-actions .card-action-link {
   color: var(--text-primary);
-  background:
-    radial-gradient(
-      circle at 18% 0%,
-      rgba(122, 44, 255, 0.16),
-      transparent 28%
-    ),
-    var(--app-bg);
   border-color: var(--app-border);
 }
 
