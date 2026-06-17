@@ -30,6 +30,24 @@ export async function findWatermarkAsset(id, kind) {
   return rows[0] || null;
 }
 
+export async function findWatermarkAssetForUser(id, userId, kind) {
+  const params = [userId, id];
+  let kindClause = "";
+  if (kind) {
+    kindClause = " AND kind = ?";
+    params.push(kind);
+  }
+
+  const [rows] = await getPool().query(
+    `SELECT *
+     FROM watermark_assets
+     WHERE user_id = ? AND id = ?${kindClause}
+     LIMIT 1`,
+    params
+  );
+  return rows[0] || null;
+}
+
 export async function setWatermarkAssetProviderUrl(id, providerUrl) {
   await getPool().query("UPDATE watermark_assets SET provider_url = ? WHERE id = ?", [providerUrl, id]);
 }

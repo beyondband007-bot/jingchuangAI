@@ -17,7 +17,7 @@ import {
   createRemoveBgTask,
   deleteRemoveBgTask,
   findRefreshableRemoveBgTasks,
-  findRemoveBgAsset,
+  findRemoveBgAssetForUser,
   findRemoveBgTaskRow,
   findRemoveBgTaskStatus,
   listRemoveBgTaskRows,
@@ -78,18 +78,20 @@ export function getModels() {
   };
 }
 
-export async function createAsset({ file }) {
+export async function createAsset({ file, user: requestUser } = {}) {
   if (!file) throw createHttpError("请上传文件", 400);
   assertImage(file);
 
   const localUrl = `/media/remove-bg/images/${file.filename}`;
   const connection = await getPool().getConnection();
   let assetId;
+  let userId;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
+    const user = requestUser?.id ? requestUser : await getDemoUser(connection);
+    userId = user.id;
     assetId = await createRemoveBgAsset(connection, {
-      userId: user.id,
+      userId,
       localUrl,
       filePath: file.path,
       storedName: file.filename,
@@ -105,7 +107,7 @@ export async function createAsset({ file }) {
     connection.release();
   }
 
-  return mapRemoveBgAsset(await findRemoveBgAsset(assetId));
+  return mapRemoveBgAsset(await findRemoveBgAssetForUser(assetId, userId));
 }
 
 export async function listTasks({ filter = "all" } = {}) {
@@ -120,11 +122,14 @@ export async function getTask(id) {
   return row ? mapRemoveBgTask(row) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, requestUser = null) {
   const sourceAssetId = String(payload.sourceAssetId || "").trim();
   if (!sourceAssetId) throw createHttpError("缺少源素材，请重新上传", 400);
 
-  const sourceAsset = await findRemoveBgAsset(sourceAssetId);
+  const requestUserId = requestUser?.id;
+  const sourceAsset = requestUserId
+    ? await findRemoveBgAssetForUser(sourceAssetId, requestUserId)
+    : await findRemoveBgAssetForUser(sourceAssetId, (await getDemoUser()).id);
   if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModel(payload.model);
@@ -135,7 +140,7 @@ export async function createTask(payload) {
   let taskId;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
+    const user = requestUser?.id ? requestUser : await getDemoUser(connection);
     userId = user.id;
     taskId = await createRemoveBgTask(connection, {
       userId,

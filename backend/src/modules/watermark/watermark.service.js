@@ -18,7 +18,7 @@ import {
   createWatermarkTask,
   deleteWatermarkTask,
   findRefreshableWatermarkTasks,
-  findWatermarkAsset,
+  findWatermarkAssetForUser,
   findWatermarkTaskRow,
   findWatermarkTaskStatus,
   listWatermarkTaskRows,
@@ -101,18 +101,20 @@ export function getModels() {
   };
 }
 
-export async function createAsset({ file }) {
+export async function createAsset({ file, user: requestUser } = {}) {
   if (!file) throw createHttpError("请上传文件", 400);
 
   const kind = inferKind(file);
   const localUrl = `/media/watermark/${kind === "image" ? "images" : "videos"}/${file.filename}`;
   const connection = await getPool().getConnection();
   let assetId;
+  let userId;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
+    const user = requestUser?.id ? requestUser : await getDemoUser(connection);
+    userId = user.id;
     assetId = await createWatermarkAsset(connection, {
-      userId: user.id,
+      userId,
       kind,
       localUrl,
       filePath: file.path,
@@ -129,7 +131,7 @@ export async function createAsset({ file }) {
     connection.release();
   }
 
-  return mapWatermarkAsset(await findWatermarkAsset(assetId, kind));
+  return mapWatermarkAsset(await findWatermarkAssetForUser(assetId, userId, kind));
 }
 
 export async function listTasks({ filter = "all" } = {}) {
@@ -144,11 +146,14 @@ export async function getTask(id) {
   return row ? mapWatermarkTask(row) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, requestUser = null) {
   const sourceAssetId = String(payload.sourceAssetId || "").trim();
   if (!sourceAssetId) throw createHttpError("缺少源素材，请重新上传", 400);
 
-  const sourceAsset = await findWatermarkAsset(sourceAssetId);
+  const requestUserId = requestUser?.id;
+  const sourceAsset = requestUserId
+    ? await findWatermarkAssetForUser(sourceAssetId, requestUserId)
+    : await findWatermarkAssetForUser(sourceAssetId, (await getDemoUser()).id);
   if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
@@ -161,7 +166,7 @@ export async function createTask(payload) {
   let taskId;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
+    const user = requestUser?.id ? requestUser : await getDemoUser(connection);
     userId = user.id;
     taskId = await createWatermarkTask(connection, {
       userId,

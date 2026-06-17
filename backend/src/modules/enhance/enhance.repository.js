@@ -30,6 +30,24 @@ export async function findEnhanceAsset(id, kind) {
   return rows[0] || null;
 }
 
+export async function findEnhanceAssetForUser(id, userId, kind) {
+  const params = [userId, id];
+  let kindClause = "";
+  if (kind) {
+    kindClause = " AND kind = ?";
+    params.push(kind);
+  }
+
+  const [rows] = await getPool().query(
+    `SELECT *
+     FROM enhance_assets
+     WHERE user_id = ? AND id = ?${kindClause}
+     LIMIT 1`,
+    params
+  );
+  return rows[0] || null;
+}
+
 export async function setEnhanceAssetProviderUrl(id, providerUrl) {
   await getPool().query("UPDATE enhance_assets SET provider_url = ? WHERE id = ?", [providerUrl, id]);
 }

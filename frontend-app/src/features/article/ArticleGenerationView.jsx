@@ -28,7 +28,6 @@ const platformTabs = [
   "抖音封面",
   "视频号封面",
   "公众号头图",
-  "更多",
 ];
 const COPY_TEMPLATE_PLACEHOLDER = "请选择文案模板";
 const copyTemplatesByPlatform = {
@@ -1291,46 +1290,51 @@ export function ArticleGenerationView({
                   }
                 />
               </label>
-              <div className="article-tag-editor">
-                {(draftCopy.tags || []).map((tag) => (
-                  <button
-                    type="button"
-                    key={tag}
-                    onClick={() =>
-                      updateDraft({
-                        tags: draftCopy.tags.filter((item) => item !== tag),
-                      })
-                    }
-                  >
-                    #{tag} <X size={13} />
-                  </button>
-                ))}
-                <input
-                  placeholder="输入标签后回车，如：敏感肌"
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "Enter" &&
-                      event.currentTarget.value.trim()
-                    ) {
-                      event.preventDefault();
-                      updateDraft({
-                        tags: [
-                          ...(draftCopy.tags || []),
-                          event.currentTarget.value.trim(),
-                        ],
-                      });
-                      event.currentTarget.value = "";
-                    }
-                  }}
-                />
+              <div className="article-tag-section">
+                <span>标签</span>
+                <div className="article-tag-editor">
+                  {(draftCopy.tags || []).map((tag) => (
+                    <button
+                      type="button"
+                      key={tag}
+                      onClick={() =>
+                        updateDraft({
+                          tags: draftCopy.tags.filter((item) => item !== tag),
+                        })
+                      }
+                    >
+                      #{tag} <X size={13} />
+                    </button>
+                  ))}
+                  <input
+                    placeholder="输入标签后回车，如：敏感肌"
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" &&
+                        event.currentTarget.value.trim()
+                      ) {
+                        event.preventDefault();
+                        updateDraft({
+                          tags: [
+                            ...(draftCopy.tags || []),
+                            event.currentTarget.value.trim(),
+                          ],
+                        });
+                        event.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                </div>
               </div>
-              <button
-                className="article-confirm-copy"
-                type="button"
-                onClick={confirmDraft}
-              >
-                确认文案无误，下一步配置配图
-              </button>
+              <div className="article-copy-actions">
+                <button
+                  className="article-confirm-copy"
+                  type="button"
+                  onClick={confirmDraft}
+                >
+                  确认文案无误，下一步配置配图
+                </button>
+              </div>
             </div>
           ) : (
             <div className="article-image-result">
@@ -1465,7 +1469,6 @@ export function ArticleGenerationView({
               <strong>快捷图文模板</strong>
               <p>成套图文模板，一键填充文案+预设配图风格</p>
             </div>
-            <button type="button">查看更多</button>
           </header>
           <div className="article-quick-rail">
             {quickTemplates.map((item) => (

@@ -7,7 +7,7 @@ export function getRemoveBgModels(_req, res) {
 
 export async function uploadRemoveBgSource(req, res) {
   try {
-    res.status(201).json(await service.createAsset({ file: req.file }));
+    res.status(201).json(await service.createAsset({ file: req.file, user: req.user }));
   } catch (error) {
     sendError(res, error);
   }
@@ -33,7 +33,7 @@ export async function getRemoveBgTask(req, res) {
 
 export async function createRemoveBgTask(req, res) {
   try {
-    res.status(201).json(await service.createTask(req.body || {}));
+    res.status(201).json(await service.createTask(req.body || {}, req.user));
   } catch (error) {
     sendError(res, error);
   }

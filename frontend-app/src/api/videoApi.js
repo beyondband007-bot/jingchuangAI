@@ -1,6 +1,7 @@
 import { requestJson as request } from "./request.js";
 import { createTaskPollingController } from "./taskPolling.js";
 const taskPolling = createTaskPollingController();
+const FORCED_VIDEO_MODEL = "kling_3_std";
 let modelsPromise;
 let creditsPromise;
 
@@ -99,7 +100,10 @@ export const videoApi = {
   async createTask(payload) {
     const task = await request("/api/video/tasks", {
       method: "POST",
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        ...payload,
+        model: FORCED_VIDEO_MODEL
+      })
     });
     taskPolling.notifyNow();
     return task;
@@ -121,7 +125,7 @@ export const videoApi = {
     const task = await request(`/api/video/tasks/${id}`);
     const created = await this.createTask({
       prompt: task.prompt,
-      model: task.modelKey,
+      model: FORCED_VIDEO_MODEL,
       ratio: task.ratio,
       duration: task.duration,
       mode: task.mode || "first-frame",

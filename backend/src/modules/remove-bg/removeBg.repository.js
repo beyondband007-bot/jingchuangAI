@@ -23,6 +23,17 @@ export async function findRemoveBgAsset(id) {
   return rows[0] || null;
 }
 
+export async function findRemoveBgAssetForUser(id, userId) {
+  const [rows] = await getPool().query(
+    `SELECT *
+     FROM remove_bg_assets
+     WHERE user_id = ? AND id = ?
+     LIMIT 1`,
+    [userId, id]
+  );
+  return rows[0] || null;
+}
+
 export async function setRemoveBgAssetProviderUrl(id, providerUrl) {
   await getPool().query("UPDATE remove_bg_assets SET provider_url = ? WHERE id = ?", [providerUrl, id]);
 }
