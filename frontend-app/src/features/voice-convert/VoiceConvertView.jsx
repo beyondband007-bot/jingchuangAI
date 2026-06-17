@@ -3,6 +3,7 @@ import { CheckCircle2, Download, Loader2, Mic, Music, Play, Star, Trash2 } from 
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { normalizeUploadFileName, stripFileExtension } from "../../utils/fileName";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 const maxTargetAudioBytes = 20 * 1024 * 1024;
@@ -68,7 +69,12 @@ async function downloadVoiceFile({ audioDataUrl, audioUrl, fileName }) {
 
 function loadRecentResults() {
   try {
-    return JSON.parse(window.localStorage.getItem(voiceConvertRecentStorageKey) || "[]");
+    const items = JSON.parse(window.localStorage.getItem(voiceConvertRecentStorageKey) || "[]");
+    return items.map((item) => ({
+      ...item,
+      title: normalizeUploadFileName(item.title || ""),
+      voiceName: normalizeUploadFileName(item.voiceName || ""),
+    }));
   } catch {
     return [];
   }
@@ -174,7 +180,7 @@ export function VoiceConvertView({ resetSignal = 0 }) {
       if (uploadVersion !== targetUploadVersionRef.current) return;
       setTargetAudio({
         ...result,
-        fileName: file.name,
+        fileName: normalizeUploadFileName(file.name),
         size: file.size,
         durationMs
       });
@@ -220,7 +226,7 @@ export function VoiceConvertView({ resetSignal = 0 }) {
       }
       setSourceAudio({
         file,
-        fileName: file.name,
+        fileName: normalizeUploadFileName(file.name),
         size: file.size,
         durationMs
       });
@@ -250,7 +256,7 @@ export function VoiceConvertView({ resetSignal = 0 }) {
         sourceAudio: sourceAudio.file,
         cloneAudioFileId: targetAudio.fileId,
         generatedVoiceId: makeVoiceId(),
-        name: targetAudio.fileName ? targetAudio.fileName.replace(/\.[^.]+$/, "") : "目标音色",
+        name: targetAudio.fileName ? stripFileExtension(targetAudio.fileName) : "目标音色",
         sourceDurationMs: sourceAudio.durationMs,
         speed,
         volume,
@@ -262,10 +268,12 @@ export function VoiceConvertView({ resetSignal = 0 }) {
       setResultAudio(result.audioDataUrl);
       setResultUrl(result.audioUrl || "");
       setResultFileName(fileName);
+      const voiceLabel = result.voice?.name || stripFileExtension(targetAudio.fileName) || "目标音色";
+      const sourceLabel = stripFileExtension(sourceAudio.fileName);
       setRecentResults((items) => [{
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: sourceAudio.fileName ? sourceAudio.fileName.replace(/\.[^.]+$/, "") : "音色转换结果",
-        voiceName: result.voice?.name || "目标音色",
+        title: sourceLabel || voiceLabel || "音色转换结果",
+        voiceName: voiceLabel,
         audioUrl: result.audioUrl || "",
         audioDataUrl: result.audioDataUrl || "",
         fileName,

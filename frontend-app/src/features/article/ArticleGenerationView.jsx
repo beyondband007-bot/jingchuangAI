@@ -916,7 +916,10 @@ export function ArticleGenerationView({
               const taskImages = getArticleImages(task);
               return (
                 <article className={`article-history-card status-${task.status}`} key={task.id}>
-                  <button type="button" onClick={() => setPreviewTask(task)}>
+                  <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)}>
+                    <span className={`article-history-status-badge status-${task.status}`}>
+                      {task.status === "failed" ? "生成失败" : task.status === "completed" ? "已完成" : "生成中"}
+                    </span>
                     {taskImages.length ? (
                       <span className={`article-history-image-stack count-${Math.min(taskImages.length, 4)}`}>
                         {taskImages.slice(0, 4).map((item, index) => (
@@ -935,11 +938,11 @@ export function ArticleGenerationView({
                       </span>
                     )}
                   </button>
-                  <div>
+                  <div className="article-history-meta">
                     <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
                     <p>{taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} · {task.time}</p>
-                    <div>
-                      <button type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
+                    <div className="article-history-actions">
+                      <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
                         <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />
                       </button>
                       <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成">
