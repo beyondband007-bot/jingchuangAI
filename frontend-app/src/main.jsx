@@ -1899,7 +1899,6 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
       <section className="fm-section-block">
         <div className="fm-section-title-row">
           <h2>灵感广场</h2>
-          <button type="button" onClick={() => onOpenLibrary?.("图片模板")}>查看更多</button>
         </div>
         <div className="fm-pill-tabs">
           {categories.map((tab) => (
