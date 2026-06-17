@@ -9311,29 +9311,9 @@ function MotionTransferTaskCard({
         )}
       </div>
       <div className="motion-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">
-            {formatProviderLabel(task.providerModel || task.model)}
-          </span>
-          <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">
-            {task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}
-          </span>
-        </div>
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
-        </div>
-        <p>{task.error || task.prompt}</p>
-        <div className="motion-source-row">
-          <span>
-            <Image size={14} />
-            {cleanDisplayName(task.imageFileName, copy.imageFallback)}
-          </span>
-          <span>
-            <Film size={14} />
-            {cleanDisplayName(task.videoFileName, copy.videoFallback)}
-          </span>
         </div>
         <div className="card-actions motion-card-actions">
           <button
@@ -9448,6 +9428,35 @@ function MotionTransferUploadSlot({
   );
 }
 
+function MotionValidationDialog({ message, onClose }) {
+  if (!message) return null;
+
+  return (
+    <div className="face-swap-workbench__dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="face-swap-workbench__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="motion-validation-title"
+        aria-describedby="motion-validation-desc"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button className="face-swap-workbench__dialog-close" type="button" aria-label="关闭提示" onClick={onClose}>
+          <X size={18} />
+        </button>
+        <div className="face-swap-workbench__dialog-icon">
+          <CircleAlert size={24} />
+        </div>
+        <div className="face-swap-workbench__dialog-copy">
+          <h2 id="motion-validation-title">素材还未上传完整</h2>
+          <p id="motion-validation-desc">{message}</p>
+          <span>请先补充必需素材，再开始生成。</span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function MotionTransferComposer({
   options,
   onSubmit,
@@ -9472,6 +9481,16 @@ function MotionTransferComposer({
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
   const activeRef = useRef(isActive);
+  const noticeTimerRef = useRef(null);
+
+  function showTemporaryNotice(message) {
+    setNotice(message);
+    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice("");
+      noticeTimerRef.current = null;
+    }, 2000);
+  }
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -9498,6 +9517,7 @@ function MotionTransferComposer({
 
   useEffect(() => {
     return () => {
+      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
       if (imagePreview) window.URL.revokeObjectURL(imagePreview);
       if (videoPreview) window.URL.revokeObjectURL(videoPreview);
     };
@@ -9580,11 +9600,11 @@ function MotionTransferComposer({
 
   function submit() {
     if (!imageAsset) {
-      setNotice(copy.imageRequired);
+      showTemporaryNotice(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice(copy.videoRequired);
+      showTemporaryNotice(copy.videoRequired);
       return;
     }
     setNotice("");
@@ -9654,7 +9674,7 @@ function MotionTransferComposer({
           className="send-button"
           type="button"
           onClick={submit}
-          disabled={!canSubmit}
+          disabled={Boolean(uploading) || isSubmitting}
           aria-label={copy.submitLabel}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
