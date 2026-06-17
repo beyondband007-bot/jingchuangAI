@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertCircle,
   Clock3,
   ImagePlus,
   Loader2,
@@ -163,6 +164,40 @@ function UploadCard({
   );
 }
 
+function ValidationDialog({ message, onClose }) {
+  if (!message) return null;
+
+  return (
+    <div className="face-swap-workbench__dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="face-swap-workbench__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="face-swap-validation-title"
+        aria-describedby="face-swap-validation-desc"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button className="face-swap-workbench__dialog-close" type="button" aria-label="关闭提示" onClick={onClose}>
+          <X size={18} />
+        </button>
+        <div className="face-swap-workbench__dialog-icon">
+          <AlertCircle size={24} />
+        </div>
+        <div className="face-swap-workbench__dialog-copy">
+          <h2 id="face-swap-validation-title">素材还未上传完整</h2>
+          <p id="face-swap-validation-desc">{message}</p>
+          <span>请先补充必需素材，再生成换脸视频。</span>
+        </div>
+        <div className="face-swap-workbench__dialog-actions">
+          <button type="button" onClick={onClose}>
+            我知道了
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function FaceSwapWorkbench({
   options,
   onSubmit,
@@ -184,6 +219,7 @@ export function FaceSwapWorkbench({
   const [enhanceQuality, setEnhanceQuality] = useState(true);
   const [faceOptimize, setFaceOptimize] = useState(true);
   const [notice, setNotice] = useState("");
+  const [validationDialog, setValidationDialog] = useState("");
   const [uploading, setUploading] = useState("");
 
   useEffect(() => {
@@ -228,7 +264,8 @@ export function FaceSwapWorkbench({
     setUploading("image");
     setNotice("");
     try {
-      setImageAsset(await api.uploadImage(file));
+      const uploadedAsset = await api.uploadImage(file);
+      setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       setImagePreview("");
       setNotice(error.message || "图片上传失败");
@@ -262,7 +299,8 @@ export function FaceSwapWorkbench({
       if (videoPreview) window.URL.revokeObjectURL(videoPreview);
       setVideoPreview(window.URL.createObjectURL(file));
       setSourceDuration(detectedDuration);
-      setVideoAsset(await api.uploadVideo(file));
+      const uploadedAsset = await api.uploadVideo(file);
+      setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       setVideoPreview("");
       setSourceDuration("");
@@ -289,13 +327,14 @@ export function FaceSwapWorkbench({
 
   function submit() {
     if (!imageAsset) {
-      setNotice(copy.imageRequired);
+      setValidationDialog(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice(copy.videoRequired);
+      setValidationDialog(copy.videoRequired);
       return;
     }
+    setValidationDialog("");
     setNotice("");
     onSubmit({
       imageAssetId: imageAsset.id,
@@ -435,6 +474,8 @@ export function FaceSwapWorkbench({
       </section>
 
       {notice && <div className="face-swap-workbench__notice">{notice}</div>}
+
+      <ValidationDialog message={validationDialog} onClose={() => setValidationDialog("")} />
 
       <div className="face-swap-workbench__privacy">
         <LockKeyhole size={16} />

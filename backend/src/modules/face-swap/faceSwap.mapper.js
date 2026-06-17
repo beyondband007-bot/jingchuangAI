@@ -1,11 +1,17 @@
 import { formatBeijingClock } from "../../shared/time.js";
+import { decodeMojibakeFileName } from "../../shared/fileName.js";
+
+function displayFileName(value, fallback = "") {
+  return decodeMojibakeFileName(value || fallback);
+}
+
 export function mapFaceSwapAsset(row) {
   if (!row) return null;
   return {
     id: String(row.id),
     kind: row.kind,
     localUrl: row.local_url,
-    fileName: row.original_name || row.stored_name,
+    fileName: displayFileName(row.original_name, row.stored_name),
     mimeType: row.mime_type,
     sizeBytes: Number(row.size_bytes || 0),
     providerUrl: row.provider_url || "",
@@ -26,8 +32,8 @@ export function mapFaceSwapTask(row) {
     videoAssetId: String(row.video_asset_id),
     imageUrl: row.image_local_url || "",
     motionVideoUrl: row.video_local_url || "",
-    imageFileName: row.image_original_name || "",
-    videoFileName: row.video_original_name || "",
+    imageFileName: displayFileName(row.image_original_name),
+    videoFileName: displayFileName(row.video_original_name),
     status,
     progress: row.status === "completed" ? 100 : row.status === "failed" ? 0 : row.provider_task_id ? 68 : 24,
     resultUrl: row.result_url || "",

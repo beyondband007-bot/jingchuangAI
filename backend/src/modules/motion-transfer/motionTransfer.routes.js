@@ -3,6 +3,7 @@ import path from "path";
 import { Router } from "express";
 import multer from "multer";
 import { config } from "../../config/index.js";
+import { normalizeUploadOriginalName } from "../../shared/fileName.js";
 import {
   createMotionTransferTask,
   deleteMotionTransferTask,
@@ -63,6 +64,7 @@ function uploadSingle(upload, fieldName, maxLabel) {
   return (req, res, next) => {
     upload.single(fieldName)(req, res, (error) => {
       if (!error) {
+        normalizeUploadOriginalName(req.file);
         next();
         return;
       }

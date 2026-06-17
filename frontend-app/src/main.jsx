@@ -9498,7 +9498,8 @@ function MotionTransferComposer({
     setUploading("image");
     setNotice("");
     try {
-      setImageAsset(await api.uploadImage(file));
+      const uploadedAsset = await api.uploadImage(file);
+      setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       setImagePreview("");
       setNotice(error.message || "图片上传失败");
@@ -9523,7 +9524,8 @@ function MotionTransferComposer({
     setUploading("video");
     setNotice("");
     try {
-      setVideoAsset(await api.uploadVideo(file));
+      const uploadedAsset = await api.uploadVideo(file);
+      setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       setVideoPreview("");
       setNotice(error.message || "视频上传失败");
