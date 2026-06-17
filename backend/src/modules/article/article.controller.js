@@ -1,5 +1,15 @@
 import { requireLoggedIn, sendError } from "../../shared/http.js";
-import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite } from "./article.service.js";
+import {
+  createCopyDraft,
+  createPackage,
+  createTask,
+  deleteTask,
+  getModels,
+  getPackage,
+  getTask,
+  listTasks,
+  toggleFavorite
+} from "./article.service.js";
 
 export async function getArticleModels(_req, res) {
   try {
@@ -12,6 +22,37 @@ export async function getArticleModels(_req, res) {
 export async function listArticleTasks(req, res) {
   try {
     res.json(await listTasks({ userId: req.user.id, filter: req.query.filter || "all" }));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function createArticleCopyDraft(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await createCopyDraft(req.body || {}));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function createArticlePackage(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.status(201).json(await createPackage(req.body || {}, req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function getArticlePackage(req, res) {
+  try {
+    const item = await getPackage(req.params.id, req.user.id);
+    if (!item) {
+      res.status(404).json({ error: "package not found" });
+      return;
+    }
+    res.json(item);
   } catch (error) {
     sendError(res, error);
   }

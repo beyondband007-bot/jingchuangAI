@@ -1,4 +1,4 @@
-export const RUNNING_TASK_STATUSES = new Set(["pending", "processing"]);
+export const RUNNING_TASK_STATUSES = new Set(["pending", "processing", "partial_completed"]);
 export const TASK_POLL_INTERVAL_MS = 20000;
 
 export function hasRunningTasks(tasks = []) {

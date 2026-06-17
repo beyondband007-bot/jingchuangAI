@@ -222,7 +222,7 @@ export async function setImageTaskProviderTaskId(id, providerTaskId) {
 }
 
 export async function setImageTaskCompleted(id, urls) {
-  await getPool().query("UPDATE image_generation_tasks SET status = 'completed', result_urls = ? WHERE id = ?", [
+  await getPool().query("UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, error_message = NULL WHERE id = ?", [
     JSON.stringify(urls),
     id
   ]);

@@ -3,6 +3,8 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   Copy,
   Download,
@@ -54,53 +56,59 @@ const fallbackModelOptions = [
 
 const quickTemplates = [
   {
-    id: "olive-list",
-    title: "美妆种草 · 清新粉物合集",
-    image: "/assets/article/cases/4d71c971-4df1-46ec-a9b2-98b7093b82e3.png",
-    topic: "夏日清爽护肤好物推荐，敏感肌也能用的宝藏单品合集",
-    keyword: "敏感肌,夏日护肤,好物",
-    tone: "种草口语风",
+    id: "single-product-review",
+    title: "《单品测评种草》",
+    image: "/assets/article/quick-templates/template-1.png",
+    copyTemplate: "测评种草模板",
+    topic: "平价单品真实实测分享，突出产品质地、使用感受、外观细节与性价比，适合早八人、学生党日常种草测评，输出小红书吸睛标题 + 闺蜜安利式短种草正文，附带实用避坑小贴士与垂直好物话题标签",
+    keyword: "平价单品,真实实测,质地,使用感受,性价比",
+    tone: "种草口语风"
   },
   {
-    id: "phone-review",
-    title: "数码测评 · 科技风",
-    image: "/assets/article/cases/9ce3dbb3-7e70-440f-a9e7-35aee1272b2b.png",
-    topic: "真实使用感受、优缺点对比，适合学生党的轻薄手机测评",
-    keyword: "学生党,手机测评,轻薄",
-    tone: "干货测评风",
+    id: "mom-baby-review",
+    title: "《母婴好物实测》",
+    image: "/assets/article/quick-templates/template-2.png",
+    copyTemplate: "测评种草模板",
+    topic: "宝妈自用母婴好物真实测评，重点突出材质安全、带娃减负、使用便捷性，温柔真实分享风格，适配新手宝妈种草笔记，附带母婴选购避坑提醒与母婴垂直话题标签",
+    keyword: "母婴好物,材质安全,带娃减负,使用便捷,新手宝妈",
+    tone: "温柔分享风"
   },
   {
-    id: "mom-goodies",
-    title: "母婴好物 · 治愈插画",
-    image: "/assets/article/cases/f447afdb-cb73-47b6-bd56-e8ea68330c8b.png",
-    topic: "新手妈妈必备清单，少踩坑的宝宝护理好物",
-    keyword: "新手妈妈,宝宝护理,清单",
-    tone: "温柔分享风",
+    id: "sensitive-skin-list",
+    title: "《敏感肌护肤合集》",
+    image: "/assets/article/quick-templates/template-3.jpg",
+    copyTemplate: "清单攻略模板",
+    topic: "换季敏感肌全套护肤好物合集，分别讲解每款护肤品补水、舒缓、修护屏障核心功效，干货清单式排版，分享长期维稳护肤心得，附带护肤叠加避坑指南与护肤赛道话题标签",
+    keyword: "敏感肌,换季护肤,补水舒缓,修护屏障,护肤清单",
+    tone: "干货测评风"
   },
   {
-    id: "food-store",
-    title: "美食探店 · 氛围感",
-    image: "/assets/article/cases/5d0ff241-1da3-45d9-a545-c635cbcb6687.png",
-    topic: "周末小店打卡，真实体验和必点菜单推荐",
-    keyword: "探店,周末,必点菜单",
-    tone: "种草口语风",
+    id: "kitchen-appliance-list",
+    title: "《厨房小家电合集》",
+    image: "/assets/article/quick-templates/template-4.png",
+    copyTemplate: "清单攻略模板",
+    topic: "小户型租房党厨房小家电全套合集，突出机身小巧不占地、操作简单易清洗、三餐多场景适配，生活化接地气种草，附带家电保养清洁小贴士与家居好物话题标签",
+    keyword: "厨房小家电,小户型,租房党,易清洗,家居好物",
+    tone: "种草口语风"
   },
   {
-    id: "travel-guide",
-    title: "旅行攻略 · 治愈风",
-    image: "/assets/article/cases/59aa7376-c8b3-4fa9-9fbc-697b69e56d3f.png",
-    topic: "周末短途旅行路线亮点整理，适合拍照和放松",
-    keyword: "旅行攻略,周末,路线",
-    tone: "温柔分享风",
+    id: "digital-accessory-review",
+    title: "《平价数码配件测评》",
+    image: "/assets/article/quick-templates/template-5.png",
+    copyTemplate: "测评种草模板",
+    topic: "高性价比手机、电脑数码配件单品实测，突出续航、质感、实用功能，对比百元平替与大牌差异，学生党、打工人刚需，附带数码选购避坑提醒",
+    keyword: "数码配件,高性价比,续航,质感,百元平替",
+    tone: "干货测评风"
   },
   {
-    id: "618-poster",
-    title: "节日海报 · 国潮红金",
-    image: "/assets/article/cases/df965abb-4354-43a1-94cc-b6d7a06d9b3c.png",
-    topic: "618 活动主视觉，突出限时优惠和爆款福利",
-    keyword: "618,优惠,爆款",
-    tone: "简洁硬广风",
-  },
+    id: "pet-care-list",
+    title: "《猫狗宠物养护好物》",
+    image: "/assets/article/quick-templates/template-6.png",
+    copyTemplate: "清单攻略模板",
+    topic: "新手养猫养狗全套养护好物清单，侧重安全无刺激、清洁省力，分喂食、洗护、玩具类单品讲解，真实养宠实测分享，附带宠物用品选购避坑贴士",
+    keyword: "宠物养护,新手养宠,安全无刺激,清洁省力,宠物用品",
+    tone: "温柔分享风"
+  }
 ];
 
 const visualStyles = [
@@ -370,9 +378,35 @@ function LegacyArticlePreview({ task, onClose }) {
   );
 }
 
+function getArticleImages(task) {
+  if (!task) return [];
+  if (task.imageTasks?.length) {
+    return task.imageTasks
+      .map((item, index) => ({
+        id: item.id || `${task.id}-image-${index}`,
+        image: item.imageUrl || item.image,
+        title: item.segmentTitle || item.title || `配图 ${index + 1}`,
+        status: item.status
+      }))
+      .filter((item) => item.image);
+  }
+  if (task.images?.length) {
+    return task.images
+      .map((image, index) => ({
+        id: `${task.id}-image-${index}`,
+        image,
+        title: `配图 ${index + 1}`,
+        status: task.status
+      }))
+      .filter((item) => item.image);
+  }
+  return task.image ? [{ id: task.id, image: task.image, title: "配图 1", status: task.status }] : [];
+}
+
 function ArticlePreview({ task, onClose }) {
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef(null);
+  const images = getArticleImages(task);
   const prompt = task?.prompt || "暂无提示词";
 
   useEffect(() => {
@@ -380,7 +414,7 @@ function ArticlePreview({ task, onClose }) {
   }, [task?.id]);
 
   useEffect(() => {
-    if (!task?.image) return undefined;
+    if (!images.length) return undefined;
     function handleKeyDown(event) {
       if (event.key === "Escape") onClose();
     }
@@ -391,7 +425,7 @@ function ArticlePreview({ task, onClose }) {
         window.clearTimeout(copiedTimerRef.current);
       }
     };
-  }, [onClose, task?.image]);
+  }, [onClose, images.length]);
 
   async function copyPrompt() {
     try {
@@ -414,7 +448,7 @@ function ArticlePreview({ task, onClose }) {
     copiedTimerRef.current = window.setTimeout(() => setCopied(false), 1600);
   }
 
-  if (!task?.image) return null;
+  if (!images.length) return null;
 
   return (
     <div
@@ -431,7 +465,13 @@ function ArticlePreview({ task, onClose }) {
       />
       <section className="fm-detail-modal article-detail-modal">
         <div className="fm-detail-media article-detail-media">
-          <img src={task.image} alt={task.title || "爆款图文生成结果"} />
+          <div className="article-detail-image-grid">
+            {images.map((item, index) => (
+              <figure key={item.id}>
+                <img src={item.image} alt={item.title || `爆款图文生成结果 ${index + 1}`} />
+              </figure>
+            ))}
+          </div>
         </div>
         <aside className="fm-detail-info article-detail-info">
           <button
@@ -443,7 +483,7 @@ function ArticlePreview({ task, onClose }) {
             <X size={20} />
           </button>
           <p className="fm-detail-eyebrow">爆款图文</p>
-          <h2>{task.title || prompt}</h2>
+          <h2>{task.copy?.title || task.title || prompt}</h2>
           <label>提示词</label>
           <p className="fm-detail-prompt article-detail-prompt">{prompt}</p>
           <button className="fm-detail-copy" type="button" onClick={copyPrompt}>
@@ -461,14 +501,16 @@ function ArticlePreview({ task, onClose }) {
             </div>
             <div>
               <dt>素材</dt>
-              <dd>{task.quality || "高清原图"}</dd>
+              <dd>{images.length} 张 · {task.quality || "高清原图"}</dd>
             </div>
           </dl>
           <div className="fm-detail-actions article-detail-actions">
-            <a href={task.image} download>
-              <Download size={16} />
-              下载图片
-            </a>
+            {images.map((item, index) => (
+              <a href={item.image} download key={item.id}>
+                <Download size={16} />
+                下载第 {index + 1} 张
+              </a>
+            ))}
           </div>
         </aside>
       </section>
@@ -494,9 +536,13 @@ export function ArticleGenerationView({
   const [credits, setCredits] = useState(null);
   const [cards, setCards] = useState([]);
   const [draftCopy, setDraftCopy] = useState(null);
+  const [imagePromptPlan, setImagePromptPlan] = useState(null);
+  const [resultViewMode, setResultViewMode] = useState("full");
+  const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [step, setStep] = useState(2);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [previewTask, setPreviewTask] = useState(null);
+  const [isDraftSubmitting, setIsDraftSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
@@ -524,6 +570,7 @@ export function ArticleGenerationView({
       keyword: pendingSeed.title || current.keyword,
     }));
     setDraftCopy(null);
+    setImagePromptPlan(null);
     setStep(2);
     setSelectedTaskId(null);
     setPreviewTask(null);
@@ -612,6 +659,8 @@ export function ArticleGenerationView({
     () => cards.find((card) => card.id === selectedTaskId) || null,
     [cards, selectedTaskId],
   );
+  const selectedImages = getArticleImages(selectedTask);
+  const selectedCompletedImages = selectedImages.filter((item) => item.image);
   const isGenerating =
     isSubmitting ||
     selectedTask?.status === "pending" ||
@@ -619,10 +668,8 @@ export function ArticleGenerationView({
   const historyCards = cards;
   const isCopyTemplatePlaceholder = !form.copyTemplate;
   const displayStep = isCopyTemplatePlaceholder && step < 3 ? 1 : step;
-  const copyTemplates =
-    copyTemplatesByPlatform[form.platform] || copyTemplatesByPlatform["更多"];
-  const hasCompletedArticle =
-    selectedTask?.status === "completed" && Boolean(selectedTask?.image);
+  const copyTemplates = copyTemplatesByPlatform[form.platform] || copyTemplatesByPlatform["更多"];
+  const hasCompletedArticle = selectedCompletedImages.length > 0 && ["completed", "partial_completed"].includes(selectedTask?.status);
   const hasFailedArticle = selectedTask?.status === "failed";
   const modelOptions = options.models.length
     ? options.models
@@ -630,34 +677,35 @@ export function ArticleGenerationView({
   const selectedModelOption =
     modelOptions.find((item) => item.value === model) || modelOptions[0];
   const previewImages = useMemo(() => {
-    const completed = cards
-      .filter((card) => card.status === "completed" && card.image)
-      .slice(0, 4);
-    return completed.length
-      ? completed
-      : quickTemplates.slice(0, 4).map((item, index) => ({
-          id: `placeholder-${item.id}`,
-          image: item.image,
-          title: `配图 ${index + 1}`,
-        }));
-  }, [cards]);
+    if (selectedCompletedImages.length) return selectedCompletedImages;
+    const completed = cards.filter((card) => card.status === "completed" && card.image).slice(0, 4);
+    return completed.length ? completed : quickTemplates.slice(0, 4).map((item, index) => ({
+      id: `placeholder-${item.id}`,
+      image: item.image,
+      title: `配图 ${index + 1}`
+    }));
+  }, [cards, selectedCompletedImages]);
+  const currentPreviewImage = previewImages[Math.min(activePreviewIndex, Math.max(previewImages.length - 1, 0))] || null;
 
   useEffect(() => {
-    if (
-      selectedTask &&
-      (selectedTask.status === "completed" || selectedTask.status === "failed")
-    ) {
+    setActivePreviewIndex((current) => Math.min(current, Math.max(previewImages.length - 1, 0)));
+  }, [previewImages.length]);
+
+  useEffect(() => {
+    if (selectedTask && (selectedTask.status === "completed" || selectedTask.status === "failed" || selectedTask.status === "partial_completed")) {
       setIsSubmitting(false);
-      if (selectedTask.status === "completed") setStep(4);
-      articleApi
-        .refreshCredits()
-        .then(applyCredits)
-        .catch(() => {});
+      if (selectedTask.status === "completed" || selectedTask.status === "partial_completed") setStep(4);
+      if (selectedTask.copy && !draftCopy) setDraftCopy(selectedTask.copy);
+      if (selectedTask.imagePromptPlan && !imagePromptPlan) setImagePromptPlan(selectedTask.imagePromptPlan);
+      articleApi.refreshCredits().then(applyCredits).catch(() => {});
     }
-  }, [selectedTask]);
+  }, [selectedTask, draftCopy, imagePromptPlan]);
 
   function updateForm(patch) {
     setForm((current) => ({ ...current, ...patch }));
+    if ("visualStyle" in patch || "ratio" in patch || "imageCount" in patch) {
+      setImagePromptPlan(null);
+    }
     setSubmitError("");
   }
 
@@ -673,6 +721,7 @@ export function ArticleGenerationView({
   function changePlatform(platform) {
     setForm((current) => ({ ...current, platform, copyTemplate: "" }));
     setDraftCopy(null);
+    setImagePromptPlan(null);
     setStep(2);
     setSubmitError("");
     setIsTemplateOpen(false);
@@ -682,20 +731,26 @@ export function ArticleGenerationView({
     setForm((current) => ({
       ...current,
       platform: "小红书种草",
-      copyTemplate: "完整图文模板",
+      copyTemplate: template.copyTemplate || "完整图文模板",
       topic: template.topic,
       keyword: template.keyword,
       tone: template.tone || current.tone,
       ratio: "3:4",
     }));
     setDraftCopy(null);
+    setImagePromptPlan(null);
     setStep(2);
     setSelectedTaskId(null);
     setPreviewTask(null);
     onModeChange?.("home");
   }
 
-  function generateDraft() {
+  async function generateDraft() {
+    if (isGuest) {
+      showToast("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
     if (!form.copyTemplate) {
       showToast("请先选择文案模板");
       return;
@@ -704,17 +759,36 @@ export function ArticleGenerationView({
       showToast("请先输入创作主题");
       return;
     }
-    const nextDraft = buildDraftCopy(form);
-    setDraftCopy(nextDraft);
-    setStep(2);
     setSubmitError("");
+    setIsDraftSubmitting(true);
+    setPreviewTask(null);
+    try {
+      const result = await articleApi.createCopyDraft({
+        platform: form.platform,
+        copyTemplate: form.copyTemplate,
+        wordCount: form.wordCount,
+        tone: form.tone,
+        copyExpectation: form.tone,
+        topic: form.topic,
+        keyword: form.keyword,
+        keywords: form.keyword,
+        imageCount: form.imageCount,
+        ratio: form.ratio,
+        visualStyle: form.visualStyle
+      });
+      setDraftCopy(result.copy);
+      setImagePromptPlan(result.imagePromptPlan);
+      setStep(2);
+    } catch (error) {
+      showToast(error.message || "生成标题正文失败");
+    } finally {
+      setIsDraftSubmitting(false);
+    }
   }
 
   function updateDraft(patch) {
-    setDraftCopy((current) => ({
-      ...(current || buildDraftCopy(form)),
-      ...patch,
-    }));
+    setDraftCopy((current) => ({ ...(current || buildDraftCopy(form)), ...patch }));
+    setImagePromptPlan(null);
   }
 
   function confirmDraft() {
@@ -741,25 +815,31 @@ export function ArticleGenerationView({
     setSubmitError("");
     setIsSubmitting(true);
     setPreviewTask(null);
+    setResultViewMode("full");
+    setActivePreviewIndex(0);
 
     try {
-      const task = await articleApi.createTask({
-        prompt: buildArticlePrompt(form, nextDraft),
+      const item = await articleApi.createPackage({
+        copy: nextDraft,
+        imagePromptPlan,
+        platform: form.platform,
+        copyTemplate: form.copyTemplate,
+        wordCount: form.wordCount,
+        tone: form.tone,
+        topic: form.topic,
+        keyword: form.keyword,
+        keywords: form.keyword,
+        visualStyle: form.visualStyle,
         model: selectedModel,
         ratio: form.ratio,
         quality: form.quality,
-        count: form.imageCount,
+        imageCount: form.imageCount
       });
-      setCards((current) => [
-        task,
-        ...current.filter((item) => item.id !== task.id),
-      ]);
-      setSelectedTaskId(task.id);
-      articleApi
-        .refreshCredits()
-        .then(applyCredits)
-        .catch(() => {});
-      if (task.status === "failed") setIsSubmitting(false);
+      setCards((current) => [item, ...current.filter((card) => card.id !== item.id)]);
+      setSelectedTaskId(item.id);
+      setImagePromptPlan(item.imagePromptPlan || imagePromptPlan);
+      articleApi.refreshCredits().then(applyCredits).catch(() => {});
+      if (item.status === "failed") setIsSubmitting(false);
     } catch (error) {
       showToast(formatArticleError(error));
       setIsSubmitting(false);
@@ -770,6 +850,12 @@ export function ArticleGenerationView({
     if (isGuest) {
       showToast("请先登录");
       onOpenAuth?.("login");
+      return;
+    }
+    if (task?.type === "package" || task?.packageId) {
+      if (task.copy) setDraftCopy(task.copy);
+      if (task.imagePromptPlan) setImagePromptPlan(task.imagePromptPlan);
+      await submitGeneration();
       return;
     }
     setSubmitError("");
@@ -827,65 +913,47 @@ export function ArticleGenerationView({
             )}
           </div>
           <div className="article-history-grid">
-            {historyCards.map((task) => (
-              <article
-                className={`article-history-card status-${task.status}`}
-                key={task.id}
-              >
-                <button type="button" onClick={() => setPreviewTask(task)}>
-                  {task.image ? (
-                    <img src={task.image} alt="爆款图文历史结果" />
-                  ) : task.status === "failed" ? (
-                    <span className="article-history-failed">
-                      <CircleAlert size={28} />
-                      生成失败
-                    </span>
-                  ) : (
-                    <span className="article-history-loading">
-                      <Loader2 size={26} className="is-spinning" />
-                      生成中
-                    </span>
-                  )}
-                </button>
-                <div>
-                  <strong>{task.model || "爆款图文"}</strong>
-                  <p>
-                    {task.ratio} · {task.quality} · {task.time}
-                  </p>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleFavorite(task.id)}
-                      aria-label="收藏"
-                    >
-                      <Star
-                        size={15}
-                        fill={task.favorite ? "#f8d545" : "none"}
-                      />
-                    </button>
-                    {task.image && (
-                      <a href={task.image} download aria-label="下载">
-                        <Download size={15} />
-                      </a>
+            {historyCards.map((task) => {
+              const taskImages = getArticleImages(task);
+              return (
+                <article className={`article-history-card status-${task.status}`} key={task.id}>
+                  <button type="button" onClick={() => setPreviewTask(task)}>
+                    {taskImages.length ? (
+                      <span className={`article-history-image-stack count-${Math.min(taskImages.length, 4)}`}>
+                        {taskImages.slice(0, 4).map((item, index) => (
+                          <img src={item.image} alt={`爆款图文历史结果 ${index + 1}`} key={item.id} />
+                        ))}
+                      </span>
+                    ) : task.status === "failed" ? (
+                      <span className="article-history-failed">
+                        <CircleAlert size={28} />
+                        生成失败
+                      </span>
+                    ) : (
+                      <span className="article-history-loading">
+                        <Loader2 size={26} className="is-spinning" />
+                        生成中
+                      </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => regenerateTask(task)}
-                      aria-label="重新生成"
-                    >
-                      <RefreshCcw size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteTask(task.id)}
-                      aria-label="删除"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                  </button>
+                  <div>
+                    <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
+                    <p>{taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} · {task.time}</p>
+                    <div>
+                      <button type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
+                        <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />
+                      </button>
+                      <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成">
+                        <RefreshCcw size={15} />
+                      </button>
+                      <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除">
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
             {!historyCards.length && (
               <div className="article-history-empty">
                 <img src="/assets/article/empty/kong.png" alt="" />
@@ -1042,9 +1110,9 @@ export function ArticleGenerationView({
                   }
                   placeholder="填入商品/卖点关键词，逗号分隔"
                 />
-                <button type="button" onClick={generateDraft}>
-                  <Sparkles size={17} />
-                  生成标题 & 正文
+                <button type="button" onClick={generateDraft} disabled={isDraftSubmitting}>
+                  {isDraftSubmitting ? <Loader2 size={17} className="is-spinning" /> : <Sparkles size={17} />}
+                  {isDraftSubmitting ? "生成中" : "生成标题 & 正文"}
                 </button>
               </div>
             </>
@@ -1167,7 +1235,13 @@ export function ArticleGenerationView({
               {form.platform} · {form.ratio}
             </span>
           </header>
-          {isGenerating ? (
+          {isDraftSubmitting ? (
+            <div className="article-result-empty">
+              <Loader2 size={58} className="is-spinning" />
+              <h2>正在生成标题正文</h2>
+              <p>DeepSeek 正在根据场景、模板、字数和卖点整理文案草案</p>
+            </div>
+          ) : isGenerating ? (
             <div className="article-result-empty">
               <Loader2 size={58} className="is-spinning" />
               <h2>正在生成配图</h2>
@@ -1260,25 +1334,20 @@ export function ArticleGenerationView({
             </div>
           ) : (
             <div className="article-image-result">
-              <div className="article-copy-compact">
-                <label>
-                  <span>标题</span>
-                  <input
-                    value={draftCopy?.title || ""}
-                    onChange={(event) =>
-                      updateDraft({ title: event.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  <span>正文</span>
-                  <textarea
-                    value={draftCopy?.body || ""}
-                    onChange={(event) =>
-                      updateDraft({ body: event.target.value })
-                    }
-                  />
-                </label>
+              <div className="article-result-mode-tabs" aria-label="图文展示模式">
+                {[
+                  ["full", "全文模式"],
+                  ["grid", "平铺展示"]
+                ].map(([value, label]) => (
+                  <button
+                    className={resultViewMode === value ? "is-active" : ""}
+                    type="button"
+                    key={value}
+                    onClick={() => setResultViewMode(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               {hasFailedArticle && (
                 <div className="article-generation-failed" role="alert">
@@ -1303,48 +1372,85 @@ export function ArticleGenerationView({
               )}
               {hasCompletedArticle && (
                 <>
-                  <div className="article-preview-strip">
-                    <strong>
-                      配图预览{" "}
-                      <small>（按顺序：封面图、细节图、场景图…）</small>
-                    </strong>
-                    <div>
-                      {previewImages.map((item) => (
-                        <figure key={item.id}>
-                          <img
-                            src={item.image}
-                            alt={item.title || "配图预览"}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              selectedTask && regenerateTask(selectedTask)
-                            }
-                            disabled={!selectedTask}
-                          >
-                            重新生成
-                          </button>
-                        </figure>
-                      ))}
+                  {resultViewMode === "full" && (
+                    <article className="article-full-layout">
+                      <div className="article-full-carousel">
+                        {currentPreviewImage?.image ? (
+                          <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
+                        ) : (
+                          <span className="article-image-pending">生成中</span>
+                        )}
+                        {previewImages.length > 1 && (
+                          <>
+                            <button
+                              className="article-carousel-nav is-prev"
+                              type="button"
+                              aria-label="上一张"
+                              onClick={() => setActivePreviewIndex((current) => (current - 1 + previewImages.length) % previewImages.length)}
+                            >
+                              <ChevronLeft size={24} />
+                            </button>
+                            <button
+                              className="article-carousel-nav is-next"
+                              type="button"
+                              aria-label="下一张"
+                              onClick={() => setActivePreviewIndex((current) => (current + 1) % previewImages.length)}
+                            >
+                              <ChevronRight size={24} />
+                            </button>
+                          </>
+                        )}
+                        <div className="article-carousel-dots" aria-label="配图切换">
+                          {previewImages.map((item, index) => (
+                            <button
+                              className={index === activePreviewIndex ? "is-active" : ""}
+                              type="button"
+                              key={item.id}
+                              aria-label={`第 ${index + 1} 张`}
+                              onClick={() => setActivePreviewIndex(index)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="article-full-copy">
+                        <h2>{draftCopy?.title}</h2>
+                        {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
+                          <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                        ))}
+                        <div>
+                          {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                        </div>
+                      </div>
+                    </article>
+                  )}
+                  {resultViewMode === "grid" && (
+                    <div className="article-preview-strip is-grid">
+                      <div>
+                        {previewImages.map((item) => (
+                          <figure key={item.id}>
+                            {item.image ? (
+                              <img src={item.image} alt={item.title || "配图预览"} />
+                            ) : (
+                              <span className="article-image-pending">
+                                {item.status === "failed" ? "生成失败" : "生成中"}
+                              </span>
+                            )}
+                          </figure>
+                        ))}
+                      </div>
+                      <article className="article-grid-copy">
+                        <h2>{draftCopy?.title}</h2>
+                        {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
+                          <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                        ))}
+                        <div>
+                          {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                        </div>
+                      </article>
                     </div>
-                  </div>
+                  )}
                   <footer>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        selectedTask && setPreviewTask(selectedTask)
-                      }
-                    >
-                      预览图文
-                    </button>
-                    <button type="button" disabled>
-                      微调排版
-                    </button>
-                    <button type="button">保存</button>
-                    <button type="button" className="is-primary">
-                      <Sparkles size={16} />
-                      生成数字人口播视频
-                    </button>
+                    <button type="button" onClick={() => selectedTask && setPreviewTask(selectedTask)}>预览图文</button>
                   </footer>
                 </>
               )}
