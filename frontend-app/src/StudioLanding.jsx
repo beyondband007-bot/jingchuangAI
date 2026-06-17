@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef } from "react";
 import studioLandingHtml from "./StudioLandingContent";
 
-export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterApp }) {
+export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterApp, onEnterCreation }) {
   const rootRef = useRef(null);
 
   const handleClick = useCallback((event) => {
@@ -9,7 +9,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     if (!actionTarget || !rootRef.current?.contains(actionTarget)) return;
 
     const action = actionTarget.dataset.studioAction;
-    if (action === "login" || action === "register" || action === "enter") {
+    if (action === "login" || action === "register" || action === "enter" || action === "creation") {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -17,7 +17,8 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     if (action === "login") onOpenAuth("login");
     if (action === "register") onOpenAuth("register");
     if (action === "enter") onEnterApp();
-  }, [onEnterApp, onOpenAuth]);
+    if (action === "creation") onEnterCreation?.();
+  }, [onEnterApp, onEnterCreation, onOpenAuth]);
 
   useEffect(() => {
     const root = rootRef.current;

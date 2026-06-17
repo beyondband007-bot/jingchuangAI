@@ -1,4 +1,4 @@
-﻿﻿import React, {
+﻿import React, {
   memo,
   useCallback,
   useEffect,
@@ -69,7 +69,10 @@ import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
 import { imageDigitalHumanApi } from "./api/imageDigitalHumanApi";
 import { watermarkApi } from "./api/watermarkApi";
-import { emitCreditsUpdated, subscribeCreditsUpdated } from "./api/creditsEvents";
+import {
+  emitCreditsUpdated,
+  subscribeCreditsUpdated,
+} from "./api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "./api/taskPolling";
 import { VoiceSynthesisView } from "./features/voice-synthesis-ui/VoiceSynthesisView";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
@@ -222,7 +225,7 @@ const caseImageFiles = [
   "125.webp",
   "126.webp",
   "127.webp",
-  "128.webp"
+  "128.webp",
 ];
 const wideInspirationFiles = new Set([
   "001.webp",
@@ -301,11 +304,9 @@ const wideInspirationFiles = new Set([
   "122.webp",
   "123.webp",
   "124.webp",
-  "125.webp"
+  "125.webp",
 ]);
-const squareInspirationFiles = new Set([
-
-]);
+const squareInspirationFiles = new Set([]);
 
 function getInspirationAspect(file) {
   if (wideInspirationFiles.has(file)) return "wide";
@@ -414,6 +415,26 @@ const exampleImages = caseImageFiles.map((file, index) => {
   };
 });
 
+function summarizeInspirationTitle(text, fallback = "AI 图片案例") {
+  const normalized = String(text || "").trim();
+  if (!normalized) return fallback;
+  return normalized.length > 20 ? `${normalized.slice(0, 20)}…` : normalized;
+}
+
+const fmImageGenerationInspirations = exampleImages.map((item, index) => ({
+  id: `image-gen-${caseImageFiles[index] || index}`,
+  title: summarizeInspirationTitle(item.description || item.prompt, item.label),
+  category: "图片灵感",
+  prompt: item.prompt,
+  thumbnail: item.src,
+  fallbackThumbnail: item.fallbackSrc,
+  source: item.hdSrc || item.src,
+  fallbackSource: item.hdFallbackSrc || item.hdSrc || item.src,
+  ratio: item.ratio,
+  model: item.model || "图片生成",
+  material: "高清原图",
+}));
+
 const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "creation", label: "创作中心", icon: Sparkles },
@@ -438,7 +459,6 @@ const navItems = [
 ];
 
 const navSections = [
-  { type: "item", id: "home" },
   { type: "item", id: "creation" },
   { type: "item", id: "chat" },
   {
@@ -455,12 +475,7 @@ const navSections = [
     id: "marketing",
     label: "营销工具",
     icon: Send,
-    children: [
-      "watermark",
-      "remove-bg",
-      "enhance",
-      "replicate",
-    ],
+    children: ["watermark", "remove-bg", "enhance", "replicate"],
   },
   {
     type: "group",
@@ -509,7 +524,11 @@ function buildClientInviteLink(inviteCode) {
 }
 
 function normalizeInviteCode(value) {
-  return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 32);
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 32);
 }
 
 function readInviteCodeFromLocation() {
@@ -519,7 +538,9 @@ function readInviteCodeFromLocation() {
     const hash = window.location.hash || "";
     const queryIndex = hash.indexOf("?");
     if (queryIndex >= 0) {
-      candidates.push(new URLSearchParams(hash.slice(queryIndex + 1)).get("invite"));
+      candidates.push(
+        new URLSearchParams(hash.slice(queryIndex + 1)).get("invite"),
+      );
     }
   } catch {
     // Ignore malformed URLs; invitation capture is best-effort.
@@ -541,7 +562,9 @@ function captureInviteCodeFromLocation() {
 
 function getPendingInviteCode() {
   try {
-    return normalizeInviteCode(window.localStorage.getItem(pendingInviteCodeStorageKey));
+    return normalizeInviteCode(
+      window.localStorage.getItem(pendingInviteCodeStorageKey),
+    );
   } catch {
     return "";
   }
@@ -576,19 +599,67 @@ function BrandWordmark({ compact = false }) {
 }
 
 const fmHomeFeatures = [
-  ["强大的模型支持", "接入主流大模型能力，支持多模态灵感、提示词和内容生成。", "home-icons/01.svg"],
-  ["多模态创作能力", "覆盖文本、图片、视频、音频等内容形态，快速组合成完整工作流。", "home-icons/02.svg"],
-  ["数字人内容生产", "面向口播、带货和知识讲解场景，提升内容生产效率。", "home-icons/03.svg"],
-  ["智能营销工作流", "从灵感、生成到二次处理，串联常用营销工具。", "home-icons/04.svg"],
-  ["稳定安全的服务体验", "为企业级权限、积分和任务体系保留清晰架构。", "home-icons/05.svg"],
-  ["清晰可控的资产管理", "作品、提示词和灵感素材在同一套界面中沉淀。", "home-icons/06.svg"],
+  [
+    "强大的模型支持",
+    "接入主流大模型能力，支持多模态灵感、提示词和内容生成。",
+    "home-icons/01.svg",
+  ],
+  [
+    "多模态创作能力",
+    "覆盖文本、图片、视频、音频等内容形态，快速组合成完整工作流。",
+    "home-icons/02.svg",
+  ],
+  [
+    "数字人内容生产",
+    "面向口播、带货和知识讲解场景，提升内容生产效率。",
+    "home-icons/03.svg",
+  ],
+  [
+    "智能营销工作流",
+    "从灵感、生成到二次处理，串联常用营销工具。",
+    "home-icons/04.svg",
+  ],
+  [
+    "稳定安全的服务体验",
+    "为企业级权限、积分和任务体系保留清晰架构。",
+    "home-icons/05.svg",
+  ],
+  [
+    "清晰可控的资产管理",
+    "作品、提示词和灵感素材在同一套界面中沉淀。",
+    "home-icons/06.svg",
+  ],
 ];
 
 const fmHomeModules = [
-  ["企业级AI智能体", "深度结合业务场景，构建更高效的AI协作体验。", "home/01.png", "home-icons/07.svg", "chat"],
-  ["垂类行业AI落地", "面向行业需求，提供可复用的AI应用能力。", "home/02.png", "home-icons/08.svg", "creation"],
-  ["AI漫剧内容生产", "提升内容创作效率，助力多样化视觉内容快速生成。", "home/03.png", "home-icons/09.svg", "video"],
-  ["通用性营销工具", "聚焦增长与传播需求，帮助品牌提升内容转化。", "home/04.png", "home-icons/10.svg", "article"],
+  [
+    "企业级AI智能体",
+    "深度结合业务场景，构建更高效的AI协作体验。",
+    "home/01.png",
+    "home-icons/07.svg",
+    "chat",
+  ],
+  [
+    "垂类行业AI落地",
+    "面向行业需求，提供可复用的AI应用能力。",
+    "home/02.png",
+    "home-icons/08.svg",
+    "creation",
+  ],
+  [
+    "AI漫剧内容生产",
+    "提升内容创作效率，助力多样化视觉内容快速生成。",
+    "home/03.png",
+    "home-icons/09.svg",
+    "video",
+  ],
+  [
+    "通用性营销工具",
+    "聚焦增长与传播需求，帮助品牌提升内容转化。",
+    "home/04.png",
+    "home-icons/10.svg",
+    "article",
+  ],
 ];
 
 const fmImageOriginalExtension = {
@@ -597,7 +668,8 @@ const fmImageOriginalExtension = {
   "huaban-6929323331": "jpg",
 };
 
-const getFaceminiImageOriginalFile = (id) => `${id}.${fmImageOriginalExtension[id] || "png"}`;
+const getFaceminiImageOriginalFile = (id) =>
+  `${id}.${fmImageOriginalExtension[id] || "png"}`;
 
 const fmImageDimensions = {
   "huaban-6006882171": [816, 1456],
@@ -654,7 +726,10 @@ function formatFaceminiImageRatio(id) {
   if (!width || !height) return "高清原图";
   const aspect = width / height;
   const nearest = fmCommonAspectRatios
-    .map(([label, value]) => ({ label, diff: Math.abs(aspect - value) / value }))
+    .map(([label, value]) => ({
+      label,
+      diff: Math.abs(aspect - value) / value,
+    }))
     .sort((a, b) => a.diff - b.diff)[0];
   if (nearest && nearest.diff <= 0.025) return nearest.label;
   const divisor = getGreatestCommonDivisor(width, height);
@@ -662,58 +737,238 @@ function formatFaceminiImageRatio(id) {
 }
 
 const fmImageInspirations = [
-  ["huaban-6006882171", "阳台落日独处", "图片灵感", "傍晚城市阳台视角，一位女孩坐在绿植旁看向夕阳，天空云层被暖金色日落照亮，生活方式摄影，宁静治愈氛围，细腻自然光。"],
-  ["huaban-6337337122", "奢侈品手机静物", "爆款图文", "银色手机从黑色菱格链条包中露出，背景是热带绿植和金黄色光影，高端奢侈品广告构图，浅景深，商业静物摄影。"],
-  ["huaban-6366433900", "都市动漫情侣", "图片灵感", "精致动漫情侣半身像，黑色礼服与暖色室内灯光，男生回眸、女生靠近镜头，浪漫都市氛围，细腻线稿，高级插画质感。"],
-  ["huaban-6384921628", "自媒体橙色街景", "爆款图文", "明亮橙粉色商业街插画，礼盒购物车、冰淇淋、热带树和促销小店，适合自媒体种草封面，轻快节日氛围，3D卡通质感。"],
-  ["huaban-6485103869", "手机概念广告", "爆款图文", "黑色智能手机竖立在红色岩石星球表面，碎石飞散，夕阳和深色天空形成强烈对比，科技产品广告大片，超现实商业摄影。"],
-  ["huaban-6524298886", "带货女主播", "数字人形象", "年轻女性主播坐在直播间展示商品，背景有服装板和课程屏幕，柔和棚拍光，清爽美妆带货风格，真实口播人物形象。"],
-  ["huaban-6553923406", "产品测评直播", "视频灵感", "镜头前的产品测评直播场景，前景相机和麦克风清晰可见，女性拿着护肤品讲解，室内暖光，真实自媒体拍摄氛围。"],
-  ["huaban-6611068022", "蓝焰动漫角色", "图片灵感", "深色动漫少年从蓝色火焰和碎片中伸手，强透视构图，高对比冷光，粒子飞散，暗黑幻想插画，电影级冲击力。"],
-  ["huaban-6624334273", "促销购物车海报", "爆款图文", "粉橙渐变促销海报，购物车装满优惠券、礼盒、金币和购物袋，漂浮的折扣元素，明亮电商大促视觉，适合商品活动封面。"],
-  ["huaban-6699919842", "彩光动漫头像", "图片灵感", "柔和彩色碎光洒在动漫少年脸上，蓝色眼睛，水彩与玻璃反光质感，清透梦幻氛围，精致二次元头像插画。"],
-  ["huaban-6703441531", "新闻口播主播", "数字人形象", "女性主持人站在新闻演播室，手持麦克风面对镜头微笑，背景有新闻屏幕，职业口播形象，清晰棚拍光，媒体报道风格。"],
-  ["huaban-6735284749", "商场购物场景", "视频灵感", "高端商场中女性拎着多只购物袋行走，暖色天花灯和玻璃橱窗反射，商业生活方式摄影，适合消费场景短视频。"],
-  ["huaban-6738588563", "未来感人像", "图片灵感", "未来感女性头像，透明发光护目镜，银白短发，浅蓝背景，皮肤高光通透，科技时尚人像，干净高级的AI视觉风格。"],
-  ["huaban-6744389287", "品牌宣传口播", "数字人形象", "戴眼镜的女性讲师在书架和补光灯前展示书本，真实直播间环境，品牌宣传和知识分享口播风格，温和专业。"],
-  ["huaban-6781282455", "紫色护肤品广告", "爆款图文", "紫色护肤精华瓶置于黑色岩石和水面上，紫色液体飞溅，深色高级背景，化妆品商业广告，强烈质感和品牌视觉。"],
-  ["huaban-6810189037", "虚拟主播购物车", "数字人形象", "卡通玩具和零食超市场景，男孩推着购物车穿过彩色货架，独角兽和玩偶漂浮，虚拟主播与带货场景结合，欢乐3D动画风。"],
-  ["huaban-6823396722", "母婴生活方式", "视频灵感", "明亮洗衣房内母亲陪伴宝宝，洗衣机、婴儿座椅和柔和居家光线，母婴产品种草视频场景，温馨真实。"],
-  ["huaban-6854630930", "活动现场直播", "视频灵感", "年轻女性站在人群和环形补光灯前做直播，现场观众围绕，真实活动记录氛围，适合达人探店、发布会和短视频封面。"],
-  ["huaban-6907897240", "商务会议协作", "爆款图文", "明亮会议室中团队围坐讨论方案，白板图表、笔记本电脑和自然窗光，企业品牌宣传、带货文案和商务协作场景。"],
-  ["huaban-6929323331", "咖啡馆生活方式", "视频灵感", "阳光穿过绿植洒进咖啡馆，女性在吧台制作饮品，咖啡机和温暖木质空间，真实生活方式摄影，适合探店短视频。"],
-  ["huaban-7047676154", "古风手部特写", "图片灵感", "古风人物手部特写，红线缠绕指尖，华丽织物与金色粒子光效，浅景深，东方幻想氛围，适合仙侠视觉海报。"],
-  ["huaban-7118167125", "舞台演出瞬间", "视频灵感", "霓虹舞台上的二次元歌手演出，动感姿态，黄色丝带与聚光灯穿插，音乐现场视觉海报，活力充沛。"],
-  ["huaban-7147202189", "虚拟主播直播间", "数字人形象", "蓝粉色电竞直播间，猫耳二次元虚拟主播拿着饮品坐在麦克风前，桌面设备丰富，横竖屏口播场景，赛博可爱风。"],
-  ["huaban-7156636947", "料理机产品摄影", "爆款图文", "厨房台面上的料理机产品摄影，水果、玻璃杯和暖色自然光，干净家居商业广告，适合电商主图和详情页视觉。"],
+  [
+    "huaban-6006882171",
+    "阳台落日独处",
+    "图片灵感",
+    "傍晚城市阳台视角，一位女孩坐在绿植旁看向夕阳，天空云层被暖金色日落照亮，生活方式摄影，宁静治愈氛围，细腻自然光。",
+  ],
+  [
+    "huaban-6337337122",
+    "奢侈品手机静物",
+    "爆款图文",
+    "银色手机从黑色菱格链条包中露出，背景是热带绿植和金黄色光影，高端奢侈品广告构图，浅景深，商业静物摄影。",
+  ],
+  [
+    "huaban-6366433900",
+    "都市动漫情侣",
+    "图片灵感",
+    "精致动漫情侣半身像，黑色礼服与暖色室内灯光，男生回眸、女生靠近镜头，浪漫都市氛围，细腻线稿，高级插画质感。",
+  ],
+  [
+    "huaban-6384921628",
+    "自媒体橙色街景",
+    "爆款图文",
+    "明亮橙粉色商业街插画，礼盒购物车、冰淇淋、热带树和促销小店，适合自媒体种草封面，轻快节日氛围，3D卡通质感。",
+  ],
+  [
+    "huaban-6485103869",
+    "手机概念广告",
+    "爆款图文",
+    "黑色智能手机竖立在红色岩石星球表面，碎石飞散，夕阳和深色天空形成强烈对比，科技产品广告大片，超现实商业摄影。",
+  ],
+  [
+    "huaban-6524298886",
+    "带货女主播",
+    "数字人形象",
+    "年轻女性主播坐在直播间展示商品，背景有服装板和课程屏幕，柔和棚拍光，清爽美妆带货风格，真实口播人物形象。",
+  ],
+  [
+    "huaban-6553923406",
+    "产品测评直播",
+    "视频灵感",
+    "镜头前的产品测评直播场景，前景相机和麦克风清晰可见，女性拿着护肤品讲解，室内暖光，真实自媒体拍摄氛围。",
+  ],
+  [
+    "huaban-6611068022",
+    "蓝焰动漫角色",
+    "图片灵感",
+    "深色动漫少年从蓝色火焰和碎片中伸手，强透视构图，高对比冷光，粒子飞散，暗黑幻想插画，电影级冲击力。",
+  ],
+  [
+    "huaban-6624334273",
+    "促销购物车海报",
+    "爆款图文",
+    "粉橙渐变促销海报，购物车装满优惠券、礼盒、金币和购物袋，漂浮的折扣元素，明亮电商大促视觉，适合商品活动封面。",
+  ],
+  [
+    "huaban-6699919842",
+    "彩光动漫头像",
+    "图片灵感",
+    "柔和彩色碎光洒在动漫少年脸上，蓝色眼睛，水彩与玻璃反光质感，清透梦幻氛围，精致二次元头像插画。",
+  ],
+  [
+    "huaban-6703441531",
+    "新闻口播主播",
+    "数字人形象",
+    "女性主持人站在新闻演播室，手持麦克风面对镜头微笑，背景有新闻屏幕，职业口播形象，清晰棚拍光，媒体报道风格。",
+  ],
+  [
+    "huaban-6735284749",
+    "商场购物场景",
+    "视频灵感",
+    "高端商场中女性拎着多只购物袋行走，暖色天花灯和玻璃橱窗反射，商业生活方式摄影，适合消费场景短视频。",
+  ],
+  [
+    "huaban-6738588563",
+    "未来感人像",
+    "图片灵感",
+    "未来感女性头像，透明发光护目镜，银白短发，浅蓝背景，皮肤高光通透，科技时尚人像，干净高级的AI视觉风格。",
+  ],
+  [
+    "huaban-6744389287",
+    "品牌宣传口播",
+    "数字人形象",
+    "戴眼镜的女性讲师在书架和补光灯前展示书本，真实直播间环境，品牌宣传和知识分享口播风格，温和专业。",
+  ],
+  [
+    "huaban-6781282455",
+    "紫色护肤品广告",
+    "爆款图文",
+    "紫色护肤精华瓶置于黑色岩石和水面上，紫色液体飞溅，深色高级背景，化妆品商业广告，强烈质感和品牌视觉。",
+  ],
+  [
+    "huaban-6810189037",
+    "虚拟主播购物车",
+    "数字人形象",
+    "卡通玩具和零食超市场景，男孩推着购物车穿过彩色货架，独角兽和玩偶漂浮，虚拟主播与带货场景结合，欢乐3D动画风。",
+  ],
+  [
+    "huaban-6823396722",
+    "母婴生活方式",
+    "视频灵感",
+    "明亮洗衣房内母亲陪伴宝宝，洗衣机、婴儿座椅和柔和居家光线，母婴产品种草视频场景，温馨真实。",
+  ],
+  [
+    "huaban-6854630930",
+    "活动现场直播",
+    "视频灵感",
+    "年轻女性站在人群和环形补光灯前做直播，现场观众围绕，真实活动记录氛围，适合达人探店、发布会和短视频封面。",
+  ],
+  [
+    "huaban-6907897240",
+    "商务会议协作",
+    "爆款图文",
+    "明亮会议室中团队围坐讨论方案，白板图表、笔记本电脑和自然窗光，企业品牌宣传、带货文案和商务协作场景。",
+  ],
+  [
+    "huaban-6929323331",
+    "咖啡馆生活方式",
+    "视频灵感",
+    "阳光穿过绿植洒进咖啡馆，女性在吧台制作饮品，咖啡机和温暖木质空间，真实生活方式摄影，适合探店短视频。",
+  ],
+  [
+    "huaban-7047676154",
+    "古风手部特写",
+    "图片灵感",
+    "古风人物手部特写，红线缠绕指尖，华丽织物与金色粒子光效，浅景深，东方幻想氛围，适合仙侠视觉海报。",
+  ],
+  [
+    "huaban-7118167125",
+    "舞台演出瞬间",
+    "视频灵感",
+    "霓虹舞台上的二次元歌手演出，动感姿态，黄色丝带与聚光灯穿插，音乐现场视觉海报，活力充沛。",
+  ],
+  [
+    "huaban-7147202189",
+    "虚拟主播直播间",
+    "数字人形象",
+    "蓝粉色电竞直播间，猫耳二次元虚拟主播拿着饮品坐在麦克风前，桌面设备丰富，横竖屏口播场景，赛博可爱风。",
+  ],
+  [
+    "huaban-7156636947",
+    "料理机产品摄影",
+    "爆款图文",
+    "厨房台面上的料理机产品摄影，水果、玻璃杯和暖色自然光，干净家居商业广告，适合电商主图和详情页视觉。",
+  ],
 ].map(([id, title, category, prompt], index) => ({
   id,
   title,
   category,
   prompt,
   thumbnail: faceminiAsset(`inspirations/image/thumbs/${id}.webp`),
-  source: faceminiAsset(`inspirations/image/originals/${getFaceminiImageOriginalFile(id)}`),
+  source: faceminiAsset(
+    `inspirations/image/originals/${getFaceminiImageOriginalFile(id)}`,
+  ),
   dimensions: fmImageDimensions[id],
   ratio: formatFaceminiImageRatio(id),
 }));
 
 const fmCreationScenes = [
-  ["自媒体创作", "脚本、种草、朋友圈文案一键生成", "huaban-6384921628", ["小红书", "抖音", "朋友圈"], "article", "进入爆款图文"],
-  ["电商美工", "主图、海报、详情页视觉快速出图", "huaban-7156636947", ["淘宝", "京东", "拼多多"], "image", "进入图片生成"],
-  ["虚拟主播", "数字人口播，横竖屏自由切换", "huaban-7147202189", ["抖音", "淘宝直播", "视频号"], "digital-human", "进入数字人"],
-  ["文案带货", "标题、标语、带货话术智能撰写", "huaban-6907897240", ["淘宝", "抖音", "小红书"], "article", "进入爆款图文"],
-  ["品牌宣传", "海报文案物料，一站式制作", "huaban-6781282455", ["公众号", "抖音", "私域"], "article", "进入爆款图文"],
-  ["母婴种草", "育儿干货、好物测评、宝宝素材", "huaban-6823396722", ["小红书", "抖音", "宝宝树"], "article", "进入爆款图文"],
+  [
+    "自媒体创作",
+    "脚本、种草、朋友圈文案一键生成",
+    "creation/scenes/self-media.png",
+    ["小红书", "抖音", "朋友圈"],
+    "article",
+    "进入爆款图文",
+  ],
+  [
+    "电商美工",
+    "主图、海报、详情页视觉快速出图",
+    "creation/scenes/ecommerce-design.png",
+    ["淘宝", "京东", "拼多多"],
+    "image",
+    "进入图片生成",
+  ],
+  [
+    "虚拟主播",
+    "数字人口播，横竖屏自由切换",
+    "creation/scenes/virtual-anchor.png",
+    ["抖音", "淘宝直播", "视频号"],
+    "digital-human",
+    "进入数字人",
+  ],
+  [
+    "文案带货",
+    "标题、标语、带货话术智能撰写",
+    "creation/scenes/copy-selling.png",
+    ["淘宝", "抖音", "小红书"],
+    "article",
+    "进入爆款图文",
+  ],
+  [
+    "品牌宣传",
+    "海报文案物料，一站式制作",
+    "creation/scenes/brand-promo.png",
+    ["公众号", "抖音", "品牌私域"],
+    "article",
+    "进入爆款图文",
+  ],
+  [
+    "母婴种草",
+    "育儿干货、好物测评、宝宝文案",
+    "creation/scenes/mom-baby.png",
+    ["小红书", "抖音", "宝宝树"],
+    "article",
+    "进入爆款图文",
+  ],
 ];
+
+const getCreationSceneImage = (image) =>
+  image.includes("/")
+    ? faceminiAsset(image)
+    : faceminiAsset(`inspirations/image/thumbs/${image}.webp`);
 
 const fmInspirationCategoryRouteMap = {
   图片灵感: { feature: "image", target: "image", model: "Kling Image" },
   视频灵感: { feature: "video", target: "video", model: "Kling Video" },
-  数字人形象: { feature: "digital-human", target: "digital-human", model: "Digital Human" },
+  数字人形象: {
+    feature: "digital-human",
+    target: "digital-human",
+    model: "Digital Human",
+  },
   爆款图文: { feature: "article", target: "article", model: "AI 图文" },
 };
 
-const fmInspirationLibraryTabs = ["全部", "图片模板", "视频模板", "图文模板", "数字人", "口播模板"];
+const fmInspirationLibraryTabs = [
+  "全部",
+  "图片模板",
+  "视频模板",
+  "图文模板",
+  "数字人",
+  "口播模板",
+];
 
 const fmInspirationLibraryItems = [
   { title: "电商主图", icon: "🛍️", tab: "图片模板", route: "image" },
@@ -766,6 +1021,20 @@ function getFaceminiInspirationRoute(item) {
   );
 }
 
+function resolveFaceminiInspirationImageUrl(item) {
+  if (!item) return "";
+  return (
+    item.hdSrc ||
+    item.imageUrl ||
+    item.image ||
+    item.source ||
+    item.poster ||
+    item.thumbnail ||
+    item.src ||
+    ""
+  );
+}
+
 function InspirationLibraryDrawer({
   open,
   activeTab,
@@ -806,15 +1075,30 @@ function InspirationLibraryDrawer({
   }
 
   return (
-    <div className="fm-library-drawer-shell" role="dialog" aria-modal="true" aria-label="灵感库">
-      <button className="fm-library-drawer-mask" type="button" aria-label="关闭灵感库" onClick={onClose} />
+    <div
+      className="fm-library-drawer-shell"
+      role="dialog"
+      aria-modal="true"
+      aria-label="灵感库"
+    >
+      <button
+        className="fm-library-drawer-mask"
+        type="button"
+        aria-label="关闭灵感库"
+        onClick={onClose}
+      />
       <aside className="fm-library-drawer">
         <header className="fm-library-head">
           <div className="fm-library-title">
             <Sparkles size={18} />
             <h2>灵感库</h2>
           </div>
-          <button className="fm-library-close" type="button" aria-label="关闭灵感库" onClick={onClose}>
+          <button
+            className="fm-library-close"
+            type="button"
+            aria-label="关闭灵感库"
+            onClick={onClose}
+          >
             <X size={18} />
           </button>
         </header>
@@ -840,8 +1124,15 @@ function InspirationLibraryDrawer({
         </label>
         <div className="fm-library-grid">
           {filteredItems.map((item) => (
-            <button className="fm-library-card" type="button" key={`${item.tab}-${item.title}`} onClick={() => selectItem(item)}>
-              <span className="fm-library-icon" aria-hidden="true">{item.icon}</span>
+            <button
+              className="fm-library-card"
+              type="button"
+              key={`${item.tab}-${item.title}`}
+              onClick={() => selectItem(item)}
+            >
+              <span className="fm-library-icon" aria-hidden="true">
+                {item.icon}
+              </span>
               <span>{item.title}</span>
             </button>
           ))}
@@ -870,28 +1161,97 @@ const featureNavIds = navItems
 const featureNavIdSet = new Set(featureNavIds);
 const appNavIdSet = new Set(navItems.map((item) => item.id));
 
+const pendingGenerationSeedMemory = {
+  image: null,
+  video: null,
+  "digital-human": null,
+  article: null,
+};
+
 function writePendingGenerationSeed(seed) {
+  const normalized = { ...seed, createdAt: Date.now() };
+  if (seed?.target) {
+    pendingGenerationSeedMemory[seed.target] = normalized;
+  }
   try {
     window.sessionStorage.setItem(
       pendingGenerationSeedKey,
-      JSON.stringify({ ...seed, createdAt: Date.now() }),
+      JSON.stringify(normalized),
     );
   } catch {
     // Session storage can be unavailable in restricted browser contexts.
   }
 }
 
-function takePendingGenerationSeed(target) {
+function peekPendingGenerationSeed(target) {
+  if (pendingGenerationSeedMemory[target]) {
+    return pendingGenerationSeedMemory[target];
+  }
   try {
     const raw = window.sessionStorage.getItem(pendingGenerationSeedKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (parsed?.target !== target) return null;
-    window.sessionStorage.removeItem(pendingGenerationSeedKey);
-    return parsed;
+    return parsed?.target === target ? parsed : null;
   } catch {
     return null;
   }
+}
+
+function clearPendingGenerationSeed(target) {
+  if (target) {
+    pendingGenerationSeedMemory[target] = null;
+  }
+  try {
+    const raw = window.sessionStorage.getItem(pendingGenerationSeedKey);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!target || parsed?.target === target) {
+      window.sessionStorage.removeItem(pendingGenerationSeedKey);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function takePendingGenerationSeed(target) {
+  const pendingSeed = peekPendingGenerationSeed(target);
+  if (!pendingSeed) return null;
+  clearPendingGenerationSeed(target);
+  return pendingSeed;
+}
+
+function hasPendingGenerationSeed(target) {
+  return Boolean(peekPendingGenerationSeed(target));
+}
+
+function buildImageComposerSeedFromPending(pendingSeed) {
+  if (!pendingSeed) return null;
+  const prompt = pendingSeed.prompt || "";
+  const referenceImage = pendingSeed.referenceImage?.url
+    ? pendingSeed.referenceImage
+    : null;
+  if (!prompt && !referenceImage) return null;
+  return {
+    id: `pending-image-${pendingSeed.createdAt || Date.now()}`,
+    prompt,
+    referenceImage,
+    model: pendingSeed.model || null,
+    ratio: pendingSeed.ratio || null,
+    quality: pendingSeed.quality || null,
+    notice: pendingSeed.notice || "",
+  };
+}
+
+function buildImageLaunchSeedPayload(seed = {}) {
+  return {
+    prompt: seed.prompt || "",
+    referenceImage: seed.referenceImage || null,
+    model: seed.model || null,
+    ratio: seed.ratio || null,
+    quality: seed.quality || null,
+    notice: seed.notice || "",
+    createdAt: Date.now(),
+  };
 }
 
 function getRouteView() {
@@ -911,70 +1271,34 @@ function getRouteView() {
     hashView === "digital-human"
   )
     return "digital-human";
-  if (
-    window.location.pathname === "/motion-transfer" ||
-    hashView === "motion"
-  )
+  if (window.location.pathname === "/motion-transfer" || hashView === "motion")
     return "motion";
-  if (
-    window.location.pathname === "/face-swap" ||
-    hashView === "face-swap"
-  )
+  if (window.location.pathname === "/face-swap" || hashView === "face-swap")
     return "face-swap";
-  if (
-    window.location.pathname === "/watermark" ||
-    hashView === "watermark"
-  )
+  if (window.location.pathname === "/watermark" || hashView === "watermark")
     return "watermark";
   if (
     window.location.pathname === "/voice-conversion" ||
     hashView === "voice-convert"
   )
     return "voice-convert";
-  if (
-    window.location.pathname === "/transcribe" ||
-    hashView === "transcribe"
-  )
+  if (window.location.pathname === "/transcribe" || hashView === "transcribe")
     return "transcribe";
-  if (
-    window.location.pathname === "/article" ||
-    hashView === "article"
-  )
+  if (window.location.pathname === "/article" || hashView === "article")
     return "article";
-  if (
-    window.location.pathname === "/music" ||
-    hashView === "music"
-  )
+  if (window.location.pathname === "/music" || hashView === "music")
     return "music";
-  if (
-    window.location.pathname === "/replicate" ||
-    hashView === "replicate"
-  )
+  if (window.location.pathname === "/replicate" || hashView === "replicate")
     return "replicate";
-  if (
-    window.location.pathname === "/enhance" ||
-    hashView === "enhance"
-  )
+  if (window.location.pathname === "/enhance" || hashView === "enhance")
     return "enhance";
-  if (
-    window.location.pathname === "/remove-bg" ||
-    hashView === "remove-bg"
-  )
+  if (window.location.pathname === "/remove-bg" || hashView === "remove-bg")
     return "remove-bg";
-  if (
-    window.location.pathname === "/voice" ||
-    hashView === "voice"
-  )
+  if (window.location.pathname === "/voice" || hashView === "voice")
     return "voice";
-  if (
-    window.location.pathname === "/video" ||
-    hashView === "video"
-  )
+  if (window.location.pathname === "/video" || hashView === "video")
     return "video";
-  if (
-    window.location.pathname === "/image" ||
-    hashView === "image"
-  )
+  if (window.location.pathname === "/image" || hashView === "image")
     return "image";
   return "home";
 }
@@ -1106,7 +1430,11 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
 
   async function runTencentCaptcha() {
     const captchaConfig = await authApi.captchaConfig();
-    if (captchaConfig.provider !== "tencent" || !captchaConfig.enabled || !captchaConfig.appId) {
+    if (
+      captchaConfig.provider !== "tencent" ||
+      !captchaConfig.enabled ||
+      !captchaConfig.appId
+    ) {
       throw new Error("验证码服务未配置完整");
     }
     await loadTencentCaptchaScript();
@@ -1119,7 +1447,11 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         const captcha = new window.TencentCaptcha(
           String(captchaConfig.appId),
           (result) => {
-            if (Number(result?.ret) === 0 && result?.ticket && result?.randstr) {
+            if (
+              Number(result?.ret) === 0 &&
+              result?.ticket &&
+              result?.randstr
+            ) {
               resolve({
                 provider: "tencent",
                 ticket: result.ticket,
@@ -1386,7 +1718,11 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         <p>{getDescription()}</p>
         <form className="auth-form" onSubmit={submit}>
           {isLogin && (
-            <div className="auth-method-tabs" role="tablist" aria-label="登录方式">
+            <div
+              className="auth-method-tabs"
+              role="tablist"
+              aria-label="登录方式"
+            >
               <button
                 type="button"
                 className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
@@ -1665,101 +2001,145 @@ const AppHome = memo(function AppHome({
   const isGuest = !authUser || authUser.isGuest;
 
   return (
-      <main className="home-feature-main fm-home-page">
-        <nav className="fm-home-nav" aria-label="首页导航">
-          <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
-            <BrandWordmark />
+    <main className="home-feature-main fm-home-page">
+      <nav className="fm-home-nav" aria-label="首页导航">
+        <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
+          <BrandWordmark />
+        </button>
+        <div>
+          <a href="#why">关于我们</a>
+          <a href="#modules">关于产品</a>
+          <a href="#footer">探索我们</a>
+        </div>
+        <div className="fm-home-actions">
+          <button
+            className="fm-primary fm-home-enter-creation"
+            type="button"
+            onClick={() => onOpenFeature("creation")}
+          >
+            进入创作中心
           </button>
-          <div>
-            <a href="#why">关于我们</a>
-            <a href="#modules">关于产品</a>
-            <a href="#footer">探索我们</a>
-          </div>
           {isGuest && (
-            <div className="fm-home-actions">
+            <>
               <button type="button" onClick={() => onOpenAuth("login")}>
                 登录
               </button>
-              <button className="fm-primary" type="button" onClick={() => onOpenAuth("register")}>
+              <button
+                className="fm-primary"
+                type="button"
+                onClick={() => onOpenAuth("register")}
+              >
                 注册
               </button>
-            </div>
+            </>
           )}
-        </nav>
-        <section className="fm-hero-section">
-          <h1>千面创想 一面即达</h1>
-          <p>Facemini，让未来的工作方式，提前发生</p>
-          <button className="fm-primary fm-hero-cta" type="button" onClick={() => onOpenFeature("creation")}>
-            开始探索
-          </button>
-          <div className="fm-metrics">
-            {[
-              ["10M+", "AI能力日调用量"],
-              ["99.99%", "平台稳定可用性"],
-              ["50ms", "平均响应延迟"],
-              ["500+", "企业客户与个人"],
-            ].map(([value, label]) => (
-              <div key={value}>
-                <strong>{value}</strong>
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="fm-home-section" id="why">
-          <h2>为什么选择Facemini</h2>
-          <p>一站式解决AI应用开发的所有挑战，让您专注于产品创新</p>
-          <div className="fm-feature-grid">
-            {fmHomeFeatures.map(([title, body, icon]) => (
-              <button className="fm-feature-card" type="button" key={title} onClick={() => onOpenFeature("creation")}>
-                <span className="fm-svg-icon"><img src={faceminiAsset(icon)} alt="" /></span>
+        </div>
+      </nav>
+      <section className="fm-hero-section">
+        <h1>千面创想 一面即达</h1>
+        <p>Facemini，让未来的工作方式，提前发生</p>
+        <button
+          className="fm-primary fm-hero-cta"
+          type="button"
+          onClick={() => onOpenFeature("creation")}
+        >
+          开始探索
+        </button>
+        <div className="fm-metrics">
+          {[
+            ["10M+", "AI能力日调用量"],
+            ["99.99%", "平台稳定可用性"],
+            ["50ms", "平均响应延迟"],
+            ["500+", "企业客户与个人"],
+          ].map(([value, label]) => (
+            <div key={value}>
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="fm-home-section" id="why">
+        <h2>为什么选择Facemini</h2>
+        <p>一站式解决AI应用开发的所有挑战，让您专注于产品创新</p>
+        <div className="fm-feature-grid">
+          {fmHomeFeatures.map(([title, body, icon]) => (
+            <button
+              className="fm-feature-card"
+              type="button"
+              key={title}
+              onClick={() => onOpenFeature("creation")}
+            >
+              <span className="fm-svg-icon">
+                <img src={faceminiAsset(icon)} alt="" />
+              </span>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="fm-home-section fm-module-section" id="modules">
+        <h2>Facemini能做什么</h2>
+        <p>聚焦AI应用落地，助力企业与内容业务高效增长</p>
+        <div className="fm-module-list">
+          {fmHomeModules.map(([title, desc, image, icon, route]) => (
+            <button
+              className="fm-module-row"
+              type="button"
+              key={title}
+              onClick={() => onOpenFeature(route)}
+            >
+              <img src={faceminiAsset(image)} alt="" />
+              <div>
+                <span className="fm-svg-icon">
+                  <img src={faceminiAsset(icon)} alt="" />
+                </span>
                 <h3>{title}</h3>
-                <p>{body}</p>
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="fm-home-section fm-module-section" id="modules">
-          <h2>Facemini能做什么</h2>
-          <p>聚焦AI应用落地，助力企业与内容业务高效增长</p>
-          <div className="fm-module-list">
-            {fmHomeModules.map(([title, desc, image, icon, route]) => (
-              <button className="fm-module-row" type="button" key={title} onClick={() => onOpenFeature(route)}>
-                <img src={faceminiAsset(image)} alt="" />
-                <div>
-                  <span className="fm-svg-icon"><img src={faceminiAsset(icon)} alt="" /></span>
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
-                  <ul>
-                    <li>模板化配置，快速启动应用</li>
-                    <li>统一素材资产，便于复用沉淀</li>
-                  </ul>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-        <section className="fm-final-cta">
-          <h2>准备好开启你的AI创意之旅了吗？</h2>
-          <p>立即体验Facemini的强大能力</p>
-          <button className="fm-primary" type="button" onClick={() => onOpenFeature("creation")}>
-            开始探索
-          </button>
-          <div className="fm-footer-brand-block">
-            <BrandWordmark />
-            <p>AI 驱动的创意工具平台，面向企业营销、数字内容与个人创作场景。</p>
-          </div>
-        </section>
-        <footer className="fm-home-footer" id="footer">
-          <div className="fm-footer-links">
-            <a>关于我们</a>
-            <a>关于产品</a>
-            <a>探索我们</a>
-            <a>帮助中心</a>
-          </div>
-          <p>© 2026 Facemini All rights reserved. <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">鄂ICP备2021002927号-3</a></p>
-        </footer>
-      </main>
+                <p>{desc}</p>
+                <ul>
+                  <li>模板化配置，快速启动应用</li>
+                  <li>统一素材资产，便于复用沉淀</li>
+                </ul>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section className="fm-final-cta">
+        <h2>准备好开启你的AI创意之旅了吗？</h2>
+        <p>立即体验Facemini的强大能力</p>
+        <button
+          className="fm-primary"
+          type="button"
+          onClick={() => onOpenFeature("creation")}
+        >
+          开始探索
+        </button>
+        <div className="fm-footer-brand-block">
+          <BrandWordmark />
+          <p>AI 驱动的创意工具平台，面向企业营销、数字内容与个人创作场景。</p>
+        </div>
+      </section>
+      <footer className="fm-home-footer" id="footer">
+        <div className="fm-footer-links">
+          <a>关于我们</a>
+          <a>关于产品</a>
+          <a>探索我们</a>
+          <a>帮助中心</a>
+        </div>
+        <p>
+          © 2026 Facemini All rights reserved.{" "}
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            鄂ICP备2021002927号-3
+          </a>
+        </p>
+      </footer>
+    </main>
   );
 });
 
@@ -1783,7 +2163,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
   const filteredImages =
     activeTab === "图片灵感"
-      ? fmImageInspirations
+      ? fmImageGenerationInspirations
       : fmImageInspirations.filter((item) => item.category === activeTab);
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
@@ -1805,7 +2185,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     const route = getFaceminiInspirationRoute(item);
     setModalItem({
       ...item,
-      image: item.source || item.thumbnail,
+      image: resolveFaceminiInspirationImageUrl(item),
       material: "高清原图",
       model: route.model,
     });
@@ -1813,34 +2193,44 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
 
   function remixInspiration(item) {
     const route = getFaceminiInspirationRoute(item);
+    const launchSeed = buildImageLaunchSeedPayload({
+      prompt: item.prompt,
+      ratio: item.ratio || null,
+      notice: "已填入同款提示词",
+    });
     writePendingGenerationSeed({
       target: route.target,
       title: item.title,
       category: item.category,
-      prompt: item.prompt,
-      notice: "已填入同款提示词",
+      ...launchSeed,
     });
     setModalItem(null);
-    onOpenFeature(route.feature);
+    onOpenFeature(route.feature, launchSeed);
   }
 
   function referenceInspiration(item) {
-    const route = getFaceminiInspirationRoute(item);
-    writePendingGenerationSeed({
-      target: route.target,
-      title: item.title,
-      category: item.category,
-      prompt: item.prompt,
-      referenceImage: {
-        url: item.image || item.source || item.thumbnail,
-        originalName: `${item.title || "参考图"}.png`,
-        size: 0,
-        mimeType: "image/png",
-      },
+    const imageUrl = resolveFaceminiInspirationImageUrl(item);
+    const launchSeed = buildImageLaunchSeedPayload({
+      prompt: item.prompt || "",
+      referenceImage: imageUrl
+        ? {
+            url: imageUrl,
+            originalName: `${item.title || "参考图"}.png`,
+            size: 0,
+            mimeType: "image/png",
+          }
+        : null,
+      model: "gpt_image_2",
       notice: "已添加为参考图",
     });
+    writePendingGenerationSeed({
+      target: "image",
+      title: item.title,
+      category: item.category,
+      ...launchSeed,
+    });
     setModalItem(null);
-    onOpenFeature(route.feature);
+    onOpenFeature("image", launchSeed);
   }
 
   function handleHeroBannerClick() {
@@ -1856,40 +2246,71 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     <section className="fm-work-page fm-creation-page">
       <div className="fm-banner-row">
         <div className="fm-banner-card fm-banner-large">
-          <button className="fm-banner-main-hit" type="button" onClick={handleHeroBannerClick} aria-label={heroBanners[bannerIndex]?.label || "打开图片生成"}>
-            <span className={`fm-hero-banner-stage ${isBannerSliding ? "is-sliding" : ""}`}>
+          <button
+            className="fm-banner-main-hit"
+            type="button"
+            onClick={handleHeroBannerClick}
+            aria-label={heroBanners[bannerIndex]?.label || "打开图片生成"}
+          >
+            <span
+              className={`fm-hero-banner-stage ${isBannerSliding ? "is-sliding" : ""}`}
+            >
               <img src={heroBanners[bannerIndex].image} alt="" />
               <img src={heroBanners[nextBannerIndex].image} alt="" />
             </span>
           </button>
-          <button className="fm-banner-arrow is-left" type="button" onClick={advanceHeroBanner} aria-label="上一张">
+          <button
+            className="fm-banner-arrow is-left"
+            type="button"
+            onClick={advanceHeroBanner}
+            aria-label="上一张"
+          >
             <ChevronDown size={20} />
           </button>
-          <button className="fm-banner-arrow is-right" type="button" onClick={advanceHeroBanner} aria-label="下一张">
+          <button
+            className="fm-banner-arrow is-right"
+            type="button"
+            onClick={advanceHeroBanner}
+            aria-label="下一张"
+          >
             <ChevronDown size={20} />
           </button>
         </div>
-        <button className="fm-banner-card" type="button" onClick={() => onOpenFeature("image")}>
+        <button
+          className="fm-banner-card"
+          type="button"
+          onClick={() => onOpenFeature("image")}
+        >
           <img src={faceminiAsset("creation/banners/banner-01.png")} alt="" />
         </button>
-        <button className="fm-banner-card" type="button" onClick={() => onOpenFeature("digital-human")}>
+        <button
+          className="fm-banner-card"
+          type="button"
+          onClick={() => onOpenFeature("digital-human")}
+        >
           <img src={faceminiAsset("creation/banners/banner-02.png")} alt="" />
         </button>
       </div>
       <section className="fm-section-block">
         <h2>场景化创作入口</h2>
         <div className="fm-scene-grid">
-          {fmCreationScenes.map(([title, desc, image, tags, route, cta]) => (
-            <button className="fm-scene-card" type="button" key={title} onClick={() => onOpenFeature(route)}>
+          {fmCreationScenes.map(([title, desc, image, tags, route]) => (
+            <button
+              className="fm-scene-card"
+              type="button"
+              key={title}
+              onClick={() => onOpenFeature(route)}
+            >
               <div className="fm-scene-image">
-                <img src={faceminiAsset(`inspirations/image/thumbs/${image}.webp`)} alt="" />
-                <span className="fm-scene-entry">{cta}</span>
+                <img src={getCreationSceneImage(image)} alt="" />
               </div>
               <div className="fm-scene-body">
                 <h3>{title}</h3>
                 <p>{desc}</p>
                 <div className="fm-scene-tags">
-                  {tags.map((tag) => <span key={tag}>{tag}</span>)}
+                  {tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
                 </div>
               </div>
             </button>
@@ -1897,22 +2318,52 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
         </div>
       </section>
       <section className="fm-section-block">
-        <div className="fm-section-title-row">
+        <div className="fm-section-title-row fm-inspiration-title-row">
           <h2>灵感广场</h2>
-        </div>
-        <div className="fm-pill-tabs">
-          {categories.map((tab) => (
-            <button className={tab === activeTab ? "active" : ""} type="button" key={tab} onClick={() => setActiveTab(tab)}>
-              {tab}
-            </button>
-          ))}
+          <div className="fm-pill-tabs fm-inspiration-tabs">
+            {categories.map((tab) => (
+              <button
+                className={tab === activeTab ? "active" : ""}
+                type="button"
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="fm-masonry">
           {filteredImages.map((item) => (
-            <button className="fm-image-card" type="button" key={item.id} onClick={() => openInspiration(item)}>
-              <img src={item.thumbnail} alt={item.title} loading="lazy" />
-              <span>生成同款</span>
-            </button>
+            <div className="fm-image-card" key={item.id}>
+              <button
+                className="fm-image-card-hit"
+                type="button"
+                onClick={() => openInspiration(item)}
+                aria-label={item.title}
+              >
+                <img
+                  src={item.thumbnail}
+                  alt={item.title}
+                  loading="lazy"
+                  onError={(event) => {
+                    if (
+                      item.fallbackThumbnail &&
+                      event.currentTarget.src !== item.fallbackThumbnail
+                    ) {
+                      event.currentTarget.src = item.fallbackThumbnail;
+                    }
+                  }}
+                />
+              </button>
+              <button
+                className="fm-image-card-remix"
+                type="button"
+                onClick={() => remixInspiration(item)}
+              >
+                生成同款
+              </button>
+            </div>
           ))}
         </div>
       </section>
@@ -1963,7 +2414,9 @@ const FeatureSidebar = memo(function FeatureSidebar({
     setOpenGroups((current) => ({ ...current, [id]: !current[id] }));
   }, []);
 
-  const sidebarSections = navSections.filter((section) => section.id !== "assets");
+  const sidebarSections = navSections.filter(
+    (section) => section.id !== "assets",
+  );
   const assetsItem = getNavItem("assets");
   const AssetsIcon = assetsItem?.icon;
 
@@ -2125,7 +2578,10 @@ const paymentProviderOptions = [
 ];
 
 function paymentProviderText(provider) {
-  return paymentProviderOptions.find((item) => item.value === provider)?.label || "支付宝支付";
+  return (
+    paymentProviderOptions.find((item) => item.value === provider)?.label ||
+    "支付宝支付"
+  );
 }
 
 function paymentProviderOrderTitle(provider) {
@@ -2241,7 +2697,10 @@ const articleImageSource = "article";
 const articlePromptMarker = "爆款图文设计";
 
 function isArticleImageTask(task) {
-  return task?.source === articleImageSource || String(task?.prompt || "").includes(articlePromptMarker);
+  return (
+    task?.source === articleImageSource ||
+    String(task?.prompt || "").includes(articlePromptMarker)
+  );
 }
 
 function getAssetTaskTime(task) {
@@ -2260,17 +2719,35 @@ function getAssetTaskTitle(type, task) {
     {
       "AI 图片": "AI 图片作品",
       "AI 视频": "AI 视频作品",
-      "数字人": "数字人作品",
-      "爆款图文": "爆款图文作品",
+      数字人: "数字人作品",
+      爆款图文: "爆款图文作品",
     }[type] ||
     "作品"
   );
 }
 
 function getAssetTaskPreview(type, task) {
-  if (type === "AI 图片") return task?.image || task?.imageUrl || task?.resultUrl || task?.thumbnailUrl || "";
-  if (type === "AI 视频") return task?.poster || task?.thumbnailUrl || task?.image || task?.cover || "";
-  if (type === "数字人") return task?.thumbnailUrl || task?.poster || task?.portraitUrl || task?.imageUrl || task?.cover || "";
+  if (type === "AI 图片")
+    return (
+      task?.image ||
+      task?.imageUrl ||
+      task?.resultUrl ||
+      task?.thumbnailUrl ||
+      ""
+    );
+  if (type === "AI 视频")
+    return (
+      task?.poster || task?.thumbnailUrl || task?.image || task?.cover || ""
+    );
+  if (type === "数字人")
+    return (
+      task?.thumbnailUrl ||
+      task?.poster ||
+      task?.portraitUrl ||
+      task?.imageUrl ||
+      task?.cover ||
+      ""
+    );
   return task?.image || task?.thumbnailUrl || task?.cover || "";
 }
 
@@ -2278,11 +2755,13 @@ function mapAssetTasks(type, tasks = []) {
   const source = Array.isArray(tasks) ? tasks : [];
   return source.map((task) => {
     const preview = getAssetTaskPreview(type, task);
-    const video = type === "AI 视频" || type === "数字人"
-      ? task?.video || task?.resultUrl || task?.url || ""
-      : "";
+    const video =
+      type === "AI 视频" || type === "数字人"
+        ? task?.video || task?.resultUrl || task?.url || ""
+        : "";
     const isVideo = Boolean(video) || type === "AI 视频" || type === "数字人";
-    const highRes = type === "AI 图片" ? task?.imageUrl || task?.resultUrl || preview : "";
+    const highRes =
+      type === "AI 图片" ? task?.imageUrl || task?.resultUrl || preview : "";
     return {
       id: `${type}-${task.id}`,
       rawId: task.id,
@@ -2294,11 +2773,15 @@ function mapAssetTasks(type, tasks = []) {
       video,
       videoUrl: video,
       posterUrl: preview || task?.poster || task?.thumbnailUrl || "",
-      prompt: task.prompt || task.text || task.error || getAssetTaskTitle(type, task),
+      prompt:
+        task.prompt || task.text || task.error || getAssetTaskTitle(type, task),
       title: getAssetTaskTitle(type, task),
       category: type,
       model: task.model || task.modelKey || task.providerModel || "",
-      ratio: task.ratio || task.resolution || (task.duration ? `${task.duration}s` : ""),
+      ratio:
+        task.ratio ||
+        task.resolution ||
+        (task.duration ? `${task.duration}s` : ""),
       isVideo,
       favorite: Boolean(task.favorite),
       status: task.status || "",
@@ -2338,9 +2821,13 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState("");
   const [paymentDialog, setPaymentDialog] = useState(null);
-  const [paymentCountdown, setPaymentCountdown] = useState(paymentCodeTtlSeconds);
+  const [paymentCountdown, setPaymentCountdown] = useState(
+    paymentCodeTtlSeconds,
+  );
   const [paymentResultDialog, setPaymentResultDialog] = useState(null);
-  const [paymentResultCountdown, setPaymentResultCountdown] = useState(paymentResultTtlSeconds);
+  const [paymentResultCountdown, setPaymentResultCountdown] = useState(
+    paymentResultTtlSeconds,
+  );
 
   const points = Math.max(1, Number(amount) || 1) * 100;
   const recentRechargeOrders = useMemo(() => {
@@ -2392,14 +2879,18 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
         totalPages: txState.totalPages || 1,
       });
       const articleImageTasks = imageTasks.filter(isArticleImageTask);
-      const regularImageTasks = imageTasks.filter((task) => !isArticleImageTask(task));
-      setUserAssets([
-        ...mapAssetTasks("AI 图片", regularImageTasks),
-        ...mapAssetTasks("AI 视频", videoTasks),
-        ...mapAssetTasks("数字人", digitalHumanTasks),
-        ...mapAssetTasks("数字人", imageDigitalHumanTasks),
-        ...mapAssetTasks("爆款图文", articleImageTasks),
-      ].sort((a, b) => b.sortTime - a.sortTime));
+      const regularImageTasks = imageTasks.filter(
+        (task) => !isArticleImageTask(task),
+      );
+      setUserAssets(
+        [
+          ...mapAssetTasks("AI 图片", regularImageTasks),
+          ...mapAssetTasks("AI 视频", videoTasks),
+          ...mapAssetTasks("数字人", digitalHumanTasks),
+          ...mapAssetTasks("数字人", imageDigitalHumanTasks),
+          ...mapAssetTasks("爆款图文", articleImageTasks),
+        ].sort((a, b) => b.sortTime - a.sortTime),
+      );
     } catch (nextError) {
       setError(nextError.message || "资产信息加载失败");
     } finally {
@@ -2421,8 +2912,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
-      order?.status === "CLOSED" && String(order?.statusMessage || "").includes("超时");
-    const status = statusOverride || (isExpiredClosedOrder ? "EXPIRED" : order?.status) || "CLOSED";
+      order?.status === "CLOSED" &&
+      String(order?.statusMessage || "").includes("超时");
+    const status =
+      statusOverride ||
+      (isExpiredClosedOrder ? "EXPIRED" : order?.status) ||
+      "CLOSED";
     const info = paymentResultInfo(status);
     setPaymentDialog(null);
     setPaymentResultCountdown(paymentResultTtlSeconds);
@@ -2477,9 +2972,13 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       showPaymentResult(paymentDialog.order);
       return undefined;
     }
-    const expiresAt = paymentDialog.expiresAt || getPaymentExpiresAt(paymentDialog.order);
+    const expiresAt =
+      paymentDialog.expiresAt || getPaymentExpiresAt(paymentDialog.order);
     const tick = () => {
-      const nextSeconds = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      const nextSeconds = Math.max(
+        0,
+        Math.ceil((expiresAt - Date.now()) / 1000),
+      );
       setPaymentCountdown(nextSeconds);
       if (nextSeconds <= 0) {
         const expiredOrder = {
@@ -2508,7 +3007,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setPaymentResultCountdown(paymentResultTtlSeconds);
     const openedAt = Date.now();
     const timer = window.setInterval(() => {
-      const nextSeconds = Math.max(0, paymentResultTtlSeconds - Math.floor((Date.now() - openedAt) / 1000));
+      const nextSeconds = Math.max(
+        0,
+        paymentResultTtlSeconds - Math.floor((Date.now() - openedAt) / 1000),
+      );
       setPaymentResultCountdown(nextSeconds);
       if (nextSeconds <= 0) {
         window.clearInterval(timer);
@@ -2537,7 +3039,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setIsCreating(true);
     setError("");
     try {
-      const created = await paymentApi.createOrder(Number(amount), paymentProvider);
+      const created = await paymentApi.createOrder(
+        Number(amount),
+        paymentProvider,
+      );
       const qrState = await paymentApi.getQrCode(
         created.order.outTradeNo,
         created.orderToken,
@@ -2564,15 +3069,18 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }
 
   const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
-  const assetGalleryCards = activeAssetTab === "全部"
-    ? userAssets
-    : userAssets.filter((item) => item.type === activeAssetTab);
+  const assetGalleryCards =
+    activeAssetTab === "全部"
+      ? userAssets
+      : userAssets.filter((item) => item.type === activeAssetTab);
   const [previewAsset, setPreviewAsset] = useState(null);
 
   useEffect(() => {
     if (!assetGalleryTabs.includes(activeAssetTab)) setActiveAssetTab("全部");
     try {
-      const nextSubTab = window.sessionStorage.getItem("facemini:assets-subtab");
+      const nextSubTab = window.sessionStorage.getItem(
+        "facemini:assets-subtab",
+      );
       if (nextSubTab === "transactions" || nextSubTab === "recharge") {
         setActiveTab(nextSubTab);
       }
@@ -2595,7 +3103,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       // Session storage can be unavailable in restricted browser contexts.
     }
     return () => {
-      window.removeEventListener("facemini-assets-tab-change", handleAssetTabChange);
+      window.removeEventListener(
+        "facemini-assets-tab-change",
+        handleAssetTabChange,
+      );
     };
   }, []);
 
@@ -2638,7 +3149,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     if (item.type === "数字人" || item.type === "爆款图文") {
       setUserAssets((current) =>
         current.map((asset) =>
-          asset.id === item.id ? { ...asset, favorite: !asset.favorite } : asset,
+          asset.id === item.id
+            ? { ...asset, favorite: !asset.favorite }
+            : asset,
         ),
       );
       return;
@@ -2711,11 +3224,16 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                     </button>
                   ))}
                 </div>
-                <form className="fm-transaction-search" onSubmit={submitTransactionSearch}>
+                <form
+                  className="fm-transaction-search"
+                  onSubmit={submitTransactionSearch}
+                >
                   <Search size={16} />
                   <input
                     value={transactionKeyword}
-                    onChange={(event) => setTransactionKeyword(event.target.value)}
+                    onChange={(event) =>
+                      setTransactionKeyword(event.target.value)
+                    }
                     placeholder="搜索备注或类型"
                   />
                   <button type="submit">查询</button>
@@ -2739,8 +3257,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                       const isIncome = Number(tx.amount || 0) > 0;
                       return (
                         <div className="assets-transaction-row" key={tx.id}>
-                          <span>{new Date(tx.createdAt).toLocaleString("zh-CN")}</span>
-                          <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                          <span>
+                            {new Date(tx.createdAt).toLocaleString("zh-CN")}
+                          </span>
+                          <span style={{ color: typeInfo.color }}>
+                            {typeInfo.label}
+                          </span>
                           <span
                             style={{
                               color: isIncome ? "#16a34a" : "#dc2626",
@@ -2758,20 +3280,31 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                   </div>
                   <div className="assets-pagination">
                     <span>
-                      第 {transactionMeta.page || transactionsPage} / {transactionsTotalPages} 页 · 共 {transactionMeta.total || 0} 条
+                      第 {transactionMeta.page || transactionsPage} /{" "}
+                      {transactionsTotalPages} 页 · 共{" "}
+                      {transactionMeta.total || 0} 条
                     </span>
                     <div>
                       <button
                         type="button"
-                        onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                        onClick={() =>
+                          setTransactionsPage((page) => Math.max(1, page - 1))
+                        }
                         disabled={transactionsPage <= 1 || isLoading}
                       >
                         上一页
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTransactionsPage((page) => Math.min(transactionsTotalPages, page + 1))}
-                        disabled={transactionsPage >= transactionsTotalPages || isLoading}
+                        onClick={() =>
+                          setTransactionsPage((page) =>
+                            Math.min(transactionsTotalPages, page + 1),
+                          )
+                        }
+                        disabled={
+                          transactionsPage >= transactionsTotalPages ||
+                          isLoading
+                        }
                       >
                         下一页
                       </button>
@@ -2782,7 +3315,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                 <div className="fm-assets-empty-state">
                   <History size={34} />
                   <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
-                  <p>{transactionFilter === "invitegift" ? "邀请奖励到账后会显示在这里" : "暂无符合条件的积分变动"}</p>
+                  <p>
+                    {transactionFilter === "invitegift"
+                      ? "邀请奖励到账后会显示在这里"
+                      : "暂无符合条件的积分变动"}
+                  </p>
                 </div>
               )}
             </div>
@@ -2803,7 +3340,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
               {assetGalleryCards.length ? (
                 <div className="fm-assets-grid">
                   {assetGalleryCards.map((card) => (
-                    <article className="fm-asset-card" key={card.id} onClick={() => setPreviewAsset(card)}>
+                    <article
+                      className="fm-asset-card"
+                      key={card.id}
+                      onClick={() => setPreviewAsset(card)}
+                    >
                       {card.isVideo && card.video ? (
                         <video
                           src={card.video}
@@ -2816,7 +3357,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                         <img src={card.src} alt={card.title} loading="lazy" />
                       ) : (
                         <div className="fm-asset-placeholder">
-                          {card.isVideo ? <Video size={28} /> : <Image size={28} />}
+                          {card.isVideo ? (
+                            <Video size={28} />
+                          ) : (
+                            <Image size={28} />
+                          )}
                         </div>
                       )}
                       <span>{card.type}</span>
@@ -2861,7 +3406,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                             toggleAssetFavorite(card);
                           }}
                         >
-                          <Star size={16} fill={card.favorite ? "currentColor" : "none"} />
+                          <Star
+                            size={16}
+                            fill={card.favorite ? "currentColor" : "none"}
+                          />
                         </button>
                       </div>
                     </article>
@@ -2930,7 +3478,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                 <Wallet size={18} />
                 立即充值
               </button>
-              <button type="button" onClick={() => setActiveTab("transactions")}>
+              <button
+                type="button"
+                onClick={() => setActiveTab("transactions")}
+              >
                 <History size={18} />
                 收支记录
               </button>
@@ -2969,10 +3520,15 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
               </label>
               <div className="assets-payment-method-row">
                 <span>支付方式</span>
-                <div className="assets-payment-methods" aria-label="选择支付方式">
+                <div
+                  className="assets-payment-methods"
+                  aria-label="选择支付方式"
+                >
                   {paymentProviderOptions.map((option) => (
                     <button
-                      className={paymentProvider === option.value ? "is-active" : ""}
+                      className={
+                        paymentProvider === option.value ? "is-active" : ""
+                      }
                       key={option.value}
                       type="button"
                       onClick={() => setPaymentProvider(option.value)}
@@ -3012,7 +3568,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                       >
                         <div>
                           <strong>{order.totalAmount} 元</strong>
-                          <span>{paymentProviderText(order.provider)} · {order.outTradeNo}</span>
+                          <span>
+                            {paymentProviderText(order.provider)} ·{" "}
+                            {order.outTradeNo}
+                          </span>
                         </div>
                         <div>
                           <strong>{order.points} 积分</strong>
@@ -3021,7 +3580,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                       </div>
                     ))
                   ) : (
-                    <div className="assets-empty-state">近一个月暂无充值订单</div>
+                    <div className="assets-empty-state">
+                      近一个月暂无充值订单
+                    </div>
                   )}
                 </div>
               </div>
@@ -3083,14 +3644,20 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                     <div>
                       <button
                         type="button"
-                        onClick={() => setTransactionsPage((page) => Math.max(1, page - 1))}
+                        onClick={() =>
+                          setTransactionsPage((page) => Math.max(1, page - 1))
+                        }
                         disabled={transactionsPage <= 1}
                       >
                         上一页
                       </button>
                       <button
                         type="button"
-                        onClick={() => setTransactionsPage((page) => Math.min(transactionsTotalPages, page + 1))}
+                        onClick={() =>
+                          setTransactionsPage((page) =>
+                            Math.min(transactionsTotalPages, page + 1),
+                          )
+                        }
                         disabled={transactionsPage >= transactionsTotalPages}
                       >
                         下一页
@@ -3123,16 +3690,25 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
               <X size={18} />
             </button>
             <div className="assets-payment-dialog-head">
-              <span>{paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}</span>
+              <span>
+                {paymentProviderText(
+                  paymentDialog.order?.provider || paymentDialog.provider,
+                )}
+              </span>
               <strong>
                 {paymentDialog.order?.status === "PAID"
                   ? "充值成功"
-                  : paymentProviderOrderTitle(paymentDialog.order?.provider || paymentDialog.provider)}
+                  : paymentProviderOrderTitle(
+                      paymentDialog.order?.provider || paymentDialog.provider,
+                    )}
               </strong>
             </div>
             <div className="assets-qr-box">
               {paymentDialog.qrCodeDataUrl ? (
-                <img src={paymentDialog.qrCodeDataUrl} alt={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}充值二维码`} />
+                <img
+                  src={paymentDialog.qrCodeDataUrl}
+                  alt={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}充值二维码`}
+                />
               ) : (
                 <Loader2 size={28} className="is-spinning" />
               )}
@@ -3141,9 +3717,16 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
               <span>订单号</span>
               <strong>{paymentDialog.order?.outTradeNo}</strong>
               <span>支付金额</span>
-              <em>¥ {Number(paymentDialog.order?.totalAmount || 0).toFixed(0)}</em>
+              <em>
+                ¥ {Number(paymentDialog.order?.totalAmount || 0).toFixed(0)}
+              </em>
               <span>到账积分</span>
-              <strong>{Number(paymentDialog.order?.points || 0).toLocaleString("zh-CN")} 积分</strong>
+              <strong>
+                {Number(paymentDialog.order?.points || 0).toLocaleString(
+                  "zh-CN",
+                )}{" "}
+                积分
+              </strong>
             </div>
             <div className="assets-dialog-countdown">
               <span>订单码有效期</span>
@@ -3163,7 +3746,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
           aria-modal="true"
           aria-label={paymentResultDialog.title}
         >
-          <div className={`assets-payment-result-dialog tone-${paymentResultDialog.tone}`}>
+          <div
+            className={`assets-payment-result-dialog tone-${paymentResultDialog.tone}`}
+          >
             <button
               className="assets-dialog-close"
               type="button"
@@ -3176,16 +3761,27 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
               {React.createElement(paymentResultDialog.icon, { size: 30 })}
             </div>
             <div className="assets-payment-dialog-head">
-              <span>{paymentProviderText(paymentResultDialog.order?.provider || paymentProvider)}</span>
+              <span>
+                {paymentProviderText(
+                  paymentResultDialog.order?.provider || paymentProvider,
+                )}
+              </span>
               <strong>{paymentResultDialog.title}</strong>
             </div>
-            <p className="assets-result-message">{paymentResultDialog.message}</p>
+            <p className="assets-result-message">
+              {paymentResultDialog.message}
+            </p>
             {paymentResultDialog.order?.outTradeNo && (
               <div className="assets-dialog-meta-card">
                 <span>订单号</span>
                 <strong>{paymentResultDialog.order.outTradeNo}</strong>
                 <span>支付金额</span>
-                <em>¥ {Number(paymentResultDialog.order.totalAmount || 0).toFixed(0)}</em>
+                <em>
+                  ¥{" "}
+                  {Number(paymentResultDialog.order.totalAmount || 0).toFixed(
+                    0,
+                  )}
+                </em>
                 <span>订单状态</span>
                 <strong>{paymentStatusText(paymentResultDialog.status)}</strong>
               </div>
@@ -3239,13 +3835,30 @@ function ResultCard({
         {!isProcessing && !isFailed && displaySrc ? (
           card.grid ? (
             <>
-              <PreloadImage src={displaySrc} fallbackSrc={displayFallback} alt={card.prompt} />
-              <PreloadImage src="/assets/image/gallery-3.jpg" alt={card.prompt} />
-              <PreloadImage src="/assets/image/gallery-4.jpg" alt={card.prompt} />
-              <PreloadImage src="/assets/image/gallery-5.jpg" alt={card.prompt} />
+              <PreloadImage
+                src={displaySrc}
+                fallbackSrc={displayFallback}
+                alt={card.prompt}
+              />
+              <PreloadImage
+                src="/assets/image/gallery-3.jpg"
+                alt={card.prompt}
+              />
+              <PreloadImage
+                src="/assets/image/gallery-4.jpg"
+                alt={card.prompt}
+              />
+              <PreloadImage
+                src="/assets/image/gallery-5.jpg"
+                alt={card.prompt}
+              />
             </>
           ) : (
-            <PreloadImage src={displaySrc} fallbackSrc={displayFallback} alt={card.prompt} />
+            <PreloadImage
+              src={displaySrc}
+              fallbackSrc={displayFallback}
+              alt={card.prompt}
+            />
           )
         ) : null}
         {canPreview && isImageGallery && (
@@ -3304,7 +3917,11 @@ function ResultCard({
                 <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
               </button>
               {card.image || card.hdSrc ? (
-                <a className="card-action-link" href={card.hdSrc || card.imageUrl || card.image} download>
+                <a
+                  className="card-action-link"
+                  href={card.hdSrc || card.imageUrl || card.image}
+                  download
+                >
                   <Download size={15} />
                   下载
                 </a>
@@ -3414,6 +4031,7 @@ function ComposerBar({
   seed,
   resetSignal = 0,
   shellRef,
+  onSeedApplied,
 }) {
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState(options.models[0]?.value || "");
@@ -3432,8 +4050,11 @@ function ComposerBar({
   useEffect(() => {
     if (!seed) return;
     setPrompt(seed.prompt || "");
-    setReferenceImage(seed.referenceImage || null);
-    if (seed.model && options.models.some((item) => item.value === seed.model)) {
+    setReferenceImage(seed.referenceImage?.url ? seed.referenceImage : null);
+    if (
+      seed.model &&
+      options.models.some((item) => item.value === seed.model)
+    ) {
       setModel(seed.model);
     }
     if (seed.ratio && options.ratios.includes(seed.ratio)) {
@@ -3445,15 +4066,20 @@ function ComposerBar({
     ) {
       setQuality(seed.quality);
     }
-  }, [options.models, options.qualities, options.ratios, seed]);
+    if (seed.notice) {
+      showToast(seed.notice);
+    }
+    onSeedApplied?.(seed);
+  }, [onSeedApplied, options.models, options.qualities, options.ratios, seed]);
 
   useEffect(() => {
     if (previousResetSignalRef.current === resetSignal) return;
     previousResetSignalRef.current = resetSignal;
+    if (seed?.prompt || seed?.referenceImage?.url) return;
     setPrompt("");
     setReferenceImage(null);
     setToastMessage("");
-  }, [resetSignal]);
+  }, [resetSignal, seed]);
 
   useEffect(() => {
     if (!toastMessage) return undefined;
@@ -3612,6 +4238,7 @@ function ImageGenerationWorkbench({
   options,
   composerSeed,
   resetSignal,
+  onSeedApplied,
   onSubmit,
   onSelect,
   onNewContext,
@@ -3683,14 +4310,21 @@ function ImageGenerationWorkbench({
                 )}
 
                 {taskProcessing && (
-                  <div className="image-workbench-status is-processing" role="status" aria-live="polite">
+                  <div
+                    className="image-workbench-status is-processing"
+                    role="status"
+                    aria-live="polite"
+                  >
                     <Loader2 size={18} />
                     <strong>图片正在生成中</strong>
                   </div>
                 )}
 
                 {taskFailed && (
-                  <div className="image-workbench-status is-failed" role="status">
+                  <div
+                    className="image-workbench-status is-failed"
+                    role="status"
+                  >
                     <CircleAlert size={24} />
                     <strong>这次没有生成成功</strong>
                     <p>{task.error || "图片生成遇到问题，请稍后重试。"}</p>
@@ -3718,7 +4352,11 @@ function ImageGenerationWorkbench({
                     <div className="image-workbench-result-meta">
                       <p>以上内容由 AI 生成，本次消耗 {task.price || "积分"}</p>
                       <div className="image-workbench-actions">
-                        <a href={task.imageUrl || task.image} download onClick={() => onDownload?.(task)}>
+                        <a
+                          href={task.imageUrl || task.image}
+                          download
+                          onClick={() => onDownload?.(task)}
+                        >
                           <Download size={16} />
                           下载
                         </a>
@@ -3726,7 +4364,10 @@ function ImageGenerationWorkbench({
                           <Copy size={16} />
                           引用
                         </button>
-                        <button type="button" onClick={() => onRegenerate(task.id)}>
+                        <button
+                          type="button"
+                          onClick={() => onRegenerate(task.id)}
+                        >
                           <RefreshCcw size={16} />
                           重新生成
                         </button>
@@ -3738,14 +4379,20 @@ function ImageGenerationWorkbench({
             );
           })}
 
-          {isSubmitting && activePrompt && !threadTasks.some((task) => task.prompt === activePrompt) && (
-            <div className="image-workbench-prompt">
-              <p>{activePrompt}</p>
-            </div>
-          )}
+          {isSubmitting &&
+            activePrompt &&
+            !threadTasks.some((task) => task.prompt === activePrompt) && (
+              <div className="image-workbench-prompt">
+                <p>{activePrompt}</p>
+              </div>
+            )}
 
           {isSubmitting && !hasThreadProcessing && (
-            <div className="image-workbench-status is-processing" role="status" aria-live="polite">
+            <div
+              className="image-workbench-status is-processing"
+              role="status"
+              aria-live="polite"
+            >
               <Loader2 size={18} />
               <strong>图片正在生成中</strong>
             </div>
@@ -3762,13 +4409,14 @@ function ImageGenerationWorkbench({
 
         {options.models.length > 0 && (
           <ComposerBar
-            key="image-workbench-composer"
+            key={composerSeed?.id || "image-workbench-composer"}
             options={options}
             onSubmit={onSubmit}
             placement="workbench"
             collapsed={false}
             seed={composerSeed}
             resetSignal={resetSignal}
+            onSeedApplied={onSeedApplied}
           />
         )}
       </main>
@@ -3998,9 +4646,11 @@ function buildImageHistoryThreads(tasks) {
     uniqueIds.forEach((id) => visited.add(id));
     const threadTasks = uniqueIds.map((id) => taskMap.get(id)).filter(Boolean);
     if (!threadTasks.length) return;
-    const latestTask = [...threadTasks]
-      .reverse()
-      .find((item) => item.image || item.status !== "completed") || threadTasks[threadTasks.length - 1];
+    const latestTask =
+      [...threadTasks]
+        .reverse()
+        .find((item) => item.image || item.status !== "completed") ||
+      threadTasks[threadTasks.length - 1];
     threads.push({
       id: uniqueIds[uniqueIds.length - 1],
       ids: uniqueIds,
@@ -4320,7 +4970,13 @@ function FaceminiInspirationModal({
   if (!item) return null;
 
   const isVideo = item.mediaType === "video" || item.video;
-  const primarySrc = item.hdSrc || item.imageUrl || item.image || item.poster || item.thumbnail || item.src;
+  const primarySrc =
+    item.hdSrc ||
+    item.imageUrl ||
+    item.image ||
+    item.poster ||
+    item.thumbnail ||
+    item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
   const videoSrc = item.video || item.preview || item.source;
@@ -4370,12 +5026,18 @@ function FaceminiInspirationModal({
           >
             <X size={20} />
           </button>
-          <p className="fm-detail-eyebrow">{item.category || item.type || "图片灵感"}</p>
+          <p className="fm-detail-eyebrow">
+            {item.category || item.type || "图片灵感"}
+          </p>
           <h2>{item.title || "灵感详情"}</h2>
           <label>提示词</label>
           <p className="fm-detail-prompt">{item.prompt || "暂无提示词"}</p>
           {onCopyPrompt && (
-            <button className="fm-detail-copy" type="button" onClick={onCopyPrompt}>
+            <button
+              className="fm-detail-copy"
+              type="button"
+              onClick={onCopyPrompt}
+            >
               <Copy size={15} />
               {copied ? "已复制" : "复制提示词"}
             </button>
@@ -4552,7 +5214,11 @@ function HistoryRail({
                     <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
                   </button>
                   {card.image && (
-                    <a href={card.imageUrl || card.image} download aria-label="下载图片">
+                    <a
+                      href={card.imageUrl || card.image}
+                      download
+                      aria-label="下载图片"
+                    >
                       <Download size={15} />
                     </a>
                   )}
@@ -4585,13 +5251,18 @@ function ImageGenerationView({
   onOpenAuth,
   isActive = true,
   resetSignal = 0,
+  launchSeed = null,
+  onLaunchSeedConsumed,
 }) {
   const cachedSessionRef = useRef(null);
   if (!cachedSessionRef.current) {
     cachedSessionRef.current = readImageGenerationSession();
   }
   const cachedSession = cachedSessionRef.current;
-  const [filter, setFilter] = useState("inspiration");
+  const initialPendingImageSeed = peekPendingGenerationSeed("image");
+  const [filter, setFilter] = useState(() =>
+    initialPendingImageSeed ? "recent" : "inspiration",
+  );
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
@@ -4621,7 +5292,9 @@ function ImageGenerationView({
   const [pageToastMessage, setPageToastMessage] = useState("");
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [previewTask, setPreviewTask] = useState(null);
-  const [composerSeed, setComposerSeed] = useState(null);
+  const [composerSeed, setComposerSeed] = useState(() =>
+    buildImageComposerSeedFromPending(initialPendingImageSeed),
+  );
   const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(false);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const imageComposerRef = useRef(null);
@@ -4639,10 +5312,16 @@ function ImageGenerationView({
     return () => window.clearTimeout(timer);
   }, [pageToastMessage]);
 
-  useEffect(() => {
-    if (!isActive) return;
-    const pendingSeed = takePendingGenerationSeed("image");
-    if (!pendingSeed) return;
+  const applyComposerSeedApplied = useCallback(() => {
+    clearPendingGenerationSeed("image");
+    onLaunchSeedConsumed?.();
+  }, [onLaunchSeedConsumed]);
+
+  const applyImageComposerSeed = useCallback((rawSeed) => {
+    const nextSeed = rawSeed?.id
+      ? rawSeed
+      : buildImageComposerSeedFromPending(rawSeed);
+    if (!nextSeed?.prompt && !nextSeed?.referenceImage?.url) return;
     setPreviewTask(null);
     setSelectedTaskId(null);
     setSubmittedTaskId(null);
@@ -4651,15 +5330,28 @@ function ImageGenerationView({
     setActivePrompt("");
     setIsSubmitting(false);
     setSubmitError("");
-    setFilter("inspiration");
+    setFilter("recent");
     clearImageGenerationSession();
-    setComposerSeed({
-      id: `pending-image-${Date.now()}`,
-      prompt: pendingSeed.prompt || "",
-      referenceImage: pendingSeed.referenceImage || null,
-      notice: pendingSeed.notice || "",
-    });
-  }, [isActive]);
+    setComposerSeed(nextSeed);
+  }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    if (launchSeed) {
+      applyImageComposerSeed({
+        id: `launch-image-${launchSeed.createdAt || Date.now()}`,
+        prompt: launchSeed.prompt || "",
+        referenceImage: launchSeed.referenceImage || null,
+        model: launchSeed.model || null,
+        ratio: launchSeed.ratio || null,
+        quality: launchSeed.quality || null,
+        notice: launchSeed.notice || "",
+      });
+      return;
+    }
+    const pendingSeed = peekPendingGenerationSeed("image");
+    if (pendingSeed) applyImageComposerSeed(pendingSeed);
+  }, [applyImageComposerSeed, isActive, launchSeed]);
 
   // 常驻挂载：切换侧栏其它模块时不卸载，避免生成中状态与列表缓存丢失
   useEffect(() => {
@@ -4677,8 +5369,9 @@ function ImageGenerationView({
       if (didStatusChange) {
         imageApi
           .refreshCredits()
-          .then((creditsValue) =>
-            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          .then(
+            (creditsValue) =>
+              mounted && applyCreditsUpdate(setCredits, creditsValue),
           )
           .catch(() => {});
       }
@@ -4743,14 +5436,26 @@ function ImageGenerationView({
       );
   }, []);
 
+  const previousImageResetSignalRef = useRef(resetSignal);
   useEffect(() => {
     if (isActive && !wasActiveRef.current && filter === "recent") {
-      startNewImageContext();
+      if (
+        !hasPendingGenerationSeed("image") &&
+        !launchSeed?.prompt &&
+        !launchSeed?.referenceImage?.url &&
+        !composerSeed?.prompt &&
+        !composerSeed?.referenceImage?.url
+      ) {
+        startNewImageContext();
+      }
     }
     wasActiveRef.current = isActive;
-  }, [filter, isActive]);
+  }, [composerSeed, filter, isActive, launchSeed]);
 
   useEffect(() => {
+    if (previousImageResetSignalRef.current === resetSignal) return;
+    previousImageResetSignalRef.current = resetSignal;
+    if (hasPendingGenerationSeed("image")) return;
     if (filter === "recent") {
       startNewImageContext();
       return;
@@ -4761,7 +5466,7 @@ function ImageGenerationView({
       referenceImage: null,
       notice: "",
     });
-  }, [resetSignal]);
+  }, [filter, resetSignal]);
 
   const selectedTask = useMemo(
     () => cards.find((card) => card.id === selectedTaskId) || null,
@@ -4888,7 +5593,14 @@ function ImageGenerationView({
       isSubmitting,
       updatedAt: Date.now(),
     });
-  }, [activePrompt, activeThreadId, contextTaskIds, isSubmitting, selectedTaskId, submittedTaskId]);
+  }, [
+    activePrompt,
+    activeThreadId,
+    contextTaskIds,
+    isSubmitting,
+    selectedTaskId,
+    submittedTaskId,
+  ]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -4908,7 +5620,9 @@ function ImageGenerationView({
   );
   const isGuest = Boolean(authUser?.isGuest);
   const showComposer = options.models.length > 0 && filter === "inspiration";
-  const isComposerSticky = filter === "recent" || (filter === "inspiration" && isComposerPastThreshold);
+  const isComposerSticky =
+    filter === "recent" ||
+    (filter === "inspiration" && isComposerPastThreshold);
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
   const composerPlacement = isComposerSticky ? "sticky" : "inline";
 
@@ -5178,7 +5892,8 @@ function ImageGenerationView({
       setSubmitError("");
       clearImageGenerationSession();
     }
-    const nextThreadId = task.threadId || activeThreadId || createImageThreadId();
+    const nextThreadId =
+      task.threadId || activeThreadId || createImageThreadId();
     setFilter("recent");
     if (isPersistedTask) {
       setSelectedTaskId(task.id);
@@ -5251,6 +5966,7 @@ function ImageGenerationView({
             <div className="image-composer-heading">图片生成</div>
           )}
           <ComposerBar
+            key={composerSeed?.id || "image-inspiration-composer"}
             options={options}
             onSubmit={createTask}
             placement={composerPlacement}
@@ -5258,6 +5974,8 @@ function ImageGenerationView({
             shellRef={imageComposerRef}
             onFocus={() => setIsComposerFocused(true)}
             resetSignal={resetSignal}
+            seed={composerSeed}
+            onSeedApplied={applyComposerSeedApplied}
           />
         </>
       )}
@@ -5275,6 +5993,7 @@ function ImageGenerationView({
           composerSeed={composerSeed}
           onSubmit={createTask}
           resetSignal={resetSignal}
+          onSeedApplied={applyComposerSeedApplied}
           onSelect={(id) => {
             selectImageThread(id);
           }}
@@ -5327,37 +6046,161 @@ const emptyVideoOptions = {
 };
 
 const videoInspirationItems = [
-  ["3a-game-style-remake-1", "3A 游戏风格重制", "电影级游戏镜头，英雄角色穿越废墟战场，镜头低角度推进，粒子火花与体积光交织，动作张力强。"],
-  ["3a-game-style-remake-2", "3A 游戏动作场景", "高规格游戏宣传片风格，主角在未来城市中高速奔跑，镜头跟随切换，霓虹灯、烟雾和金属反光细节丰富。"],
-  ["ai-3d-animation", "AI 3D 动画", "高质量 3D 动画短片，抽象能量体在深色空间中旋转展开，光线丝带形成流动轨迹，镜头平滑推进。"],
-  ["ai-3d-bleach-vs-naruto", "热血动漫对战", "日漫热血战斗风格，两名角色在破碎场景中高速交锋，刀光、冲击波、烟尘和夸张动作定格。"],
-  ["axiom-visual-concept-ad", "科技概念广告", "高端科技产品概念广告，黑色背景中产品以金属质感旋转出现，光带扫过边缘，节奏高级克制。"],
-  ["boxing-king-returns", "拳王归来", "拳击冠军从阴影中走向擂台，观众欢呼，聚光灯切换，汗水飞溅，慢动作表现力量感。"],
-  ["camera", "相机产品片", "专业相机产品广告，镜头结构分层展开，玻璃与金属材质反射清晰，黑金色调，商业质感。"],
-  ["car-ad", "汽车广告", "高端汽车在城市夜景道路疾驰，雨后地面反射霓虹，镜头从轮毂推至车身流线，速度感强。"],
-  ["car-visual-concept-ad", "汽车视觉概念片", "未来概念车从暗场灯光中驶出，车身线条被光轨勾勒，大片级运镜，科技豪华风。"],
-  ["chagee-visual-concept-ad", "茶饮视觉广告", "新中式茶饮广告，茶叶、冰块和液体在空中慢动作飞溅，清透光线，品牌视觉大片。"],
-  ["cola", "可乐广告", "冰镇可乐罐从水花与冰块中弹出，红色品牌视觉，气泡喷涌，夏日清爽商业广告。"],
-  ["costume-drama", "古装剧情", "古装人物在宫殿与灯火中缓步转身，衣袂飘动，柔和逆光，东方影视剧质感。"],
-  ["fallen-god", "坠落神明", "暗黑奇幻场景，神明从破碎天空坠落，羽翼与光尘散开，巨大尺度和史诗氛围。"],
-  ["former-king", "昔日王者", "暗黑色调，阴云密布，血色残阳，天地死寂压抑。无数锈剑从地底、古坟、废墟中疯狂破土而出，黑金色剑气撕裂长空，万剑齐鸣如鬼哭。"],
-  ["golden-pomelo-1", "金柚产品片", "金色柚子在清澈水花中旋转，果肉晶莹剔透，阳光穿透果粒，清新食品广告风格。"],
-  ["golden-pomelo-2", "金柚饮品广告", "柚子切片、气泡与冰块组合成饮品视觉，金黄色调，镜头微距推进，清爽高级。"],
-  ["isekai-demon-king", "异世界魔王", "异世界魔王登场，巨大城堡与魔法阵背景，紫黑能量涌动，镜头环绕角色，压迫感强。"],
-  ["live-action-yuelin-qiji-remake", "真人奇迹重制", "真人奇幻重制短片，角色站在神秘森林光束中，魔法粒子环绕，镜头缓慢推进。"],
-  ["massage-device", "按摩仪广告", "智能按摩设备产品广告，温暖灯光与家居场景，产品细节特写，舒适放松氛围。"],
-  ["mecha-transformation-1", "机甲变形 01", "机甲组件高速组装，金属外壳闭合，蓝色能量线点亮，镜头快速切换。"],
-  ["mecha-transformation-2", "机甲变形 02", "巨大机甲从地面站起，机械臂展开，城市废墟背景，震撼科幻大片感。"],
-  ["mecha-transformation-3", "机甲变形 03", "机甲战士在光雨中变形，装甲片层层覆盖，粒子特效和冲击波同步爆发。"],
-  ["mecha-transformation-4", "机甲变形 04", "紧凑机甲变形镜头，机械结构精密咬合，冷色调灯光，工业科幻质感。"],
-  ["medical-ultrasound-device-1", "医疗超声设备", "医疗超声设备商业展示，洁净实验室环境，屏幕数据流动，专业可信的科技医疗风。"],
-  ["smartphone-4", "手机产品片", "智能手机在黑色背景中旋转，屏幕光效流动，边框高光扫过，科技新品发布片风格。"],
-  ["tenth-freezer", "冰柜产品片", "商用冰柜产品广告，冷雾溢出，食品排列整齐，白蓝色调突出制冷能力。"],
-  ["tianmen-weihe", "天门奇景", "山河峡谷与云海之间的宏大自然场景，镜头穿越云层俯冲，东方奇观大片感。"],
-  ["wuhan-cherry-blossom-season", "武汉樱花季", "春日武汉樱花盛开，花瓣随风飘落，城市建筑与游客穿行其中，温柔浪漫纪录片质感。"],
-  ["yongyeti", "雪域巨兽", "雪山深处巨兽苏醒，冰雪飞溅，低角度镜头表现巨大体型，冷色调奇幻冒险风。"],
-  ["yuelin-qiji-3d-remake", "月林奇迹 3D", "3D 奇幻森林场景，月光洒落，角色穿过发光植物与薄雾，梦幻探索氛围。"],
-  ["zhang-xue-motorcycle-remake", "摩托车重制", "人物骑摩托车穿越雨夜街道，车灯划破水雾，镜头贴地跟拍，速度与孤独感并存。"],
+  [
+    "3a-game-style-remake-1",
+    "3A 游戏风格重制",
+    "电影级游戏镜头，英雄角色穿越废墟战场，镜头低角度推进，粒子火花与体积光交织，动作张力强。",
+  ],
+  [
+    "3a-game-style-remake-2",
+    "3A 游戏动作场景",
+    "高规格游戏宣传片风格，主角在未来城市中高速奔跑，镜头跟随切换，霓虹灯、烟雾和金属反光细节丰富。",
+  ],
+  [
+    "ai-3d-animation",
+    "AI 3D 动画",
+    "高质量 3D 动画短片，抽象能量体在深色空间中旋转展开，光线丝带形成流动轨迹，镜头平滑推进。",
+  ],
+  [
+    "ai-3d-bleach-vs-naruto",
+    "热血动漫对战",
+    "日漫热血战斗风格，两名角色在破碎场景中高速交锋，刀光、冲击波、烟尘和夸张动作定格。",
+  ],
+  [
+    "axiom-visual-concept-ad",
+    "科技概念广告",
+    "高端科技产品概念广告，黑色背景中产品以金属质感旋转出现，光带扫过边缘，节奏高级克制。",
+  ],
+  [
+    "boxing-king-returns",
+    "拳王归来",
+    "拳击冠军从阴影中走向擂台，观众欢呼，聚光灯切换，汗水飞溅，慢动作表现力量感。",
+  ],
+  [
+    "camera",
+    "相机产品片",
+    "专业相机产品广告，镜头结构分层展开，玻璃与金属材质反射清晰，黑金色调，商业质感。",
+  ],
+  [
+    "car-ad",
+    "汽车广告",
+    "高端汽车在城市夜景道路疾驰，雨后地面反射霓虹，镜头从轮毂推至车身流线，速度感强。",
+  ],
+  [
+    "car-visual-concept-ad",
+    "汽车视觉概念片",
+    "未来概念车从暗场灯光中驶出，车身线条被光轨勾勒，大片级运镜，科技豪华风。",
+  ],
+  [
+    "chagee-visual-concept-ad",
+    "茶饮视觉广告",
+    "新中式茶饮广告，茶叶、冰块和液体在空中慢动作飞溅，清透光线，品牌视觉大片。",
+  ],
+  [
+    "cola",
+    "可乐广告",
+    "冰镇可乐罐从水花与冰块中弹出，红色品牌视觉，气泡喷涌，夏日清爽商业广告。",
+  ],
+  [
+    "costume-drama",
+    "古装剧情",
+    "古装人物在宫殿与灯火中缓步转身，衣袂飘动，柔和逆光，东方影视剧质感。",
+  ],
+  [
+    "fallen-god",
+    "坠落神明",
+    "暗黑奇幻场景，神明从破碎天空坠落，羽翼与光尘散开，巨大尺度和史诗氛围。",
+  ],
+  [
+    "former-king",
+    "昔日王者",
+    "暗黑色调，阴云密布，血色残阳，天地死寂压抑。无数锈剑从地底、古坟、废墟中疯狂破土而出，黑金色剑气撕裂长空，万剑齐鸣如鬼哭。",
+  ],
+  [
+    "golden-pomelo-1",
+    "金柚产品片",
+    "金色柚子在清澈水花中旋转，果肉晶莹剔透，阳光穿透果粒，清新食品广告风格。",
+  ],
+  [
+    "golden-pomelo-2",
+    "金柚饮品广告",
+    "柚子切片、气泡与冰块组合成饮品视觉，金黄色调，镜头微距推进，清爽高级。",
+  ],
+  [
+    "isekai-demon-king",
+    "异世界魔王",
+    "异世界魔王登场，巨大城堡与魔法阵背景，紫黑能量涌动，镜头环绕角色，压迫感强。",
+  ],
+  [
+    "live-action-yuelin-qiji-remake",
+    "真人奇迹重制",
+    "真人奇幻重制短片，角色站在神秘森林光束中，魔法粒子环绕，镜头缓慢推进。",
+  ],
+  [
+    "massage-device",
+    "按摩仪广告",
+    "智能按摩设备产品广告，温暖灯光与家居场景，产品细节特写，舒适放松氛围。",
+  ],
+  [
+    "mecha-transformation-1",
+    "机甲变形 01",
+    "机甲组件高速组装，金属外壳闭合，蓝色能量线点亮，镜头快速切换。",
+  ],
+  [
+    "mecha-transformation-2",
+    "机甲变形 02",
+    "巨大机甲从地面站起，机械臂展开，城市废墟背景，震撼科幻大片感。",
+  ],
+  [
+    "mecha-transformation-3",
+    "机甲变形 03",
+    "机甲战士在光雨中变形，装甲片层层覆盖，粒子特效和冲击波同步爆发。",
+  ],
+  [
+    "mecha-transformation-4",
+    "机甲变形 04",
+    "紧凑机甲变形镜头，机械结构精密咬合，冷色调灯光，工业科幻质感。",
+  ],
+  [
+    "medical-ultrasound-device-1",
+    "医疗超声设备",
+    "医疗超声设备商业展示，洁净实验室环境，屏幕数据流动，专业可信的科技医疗风。",
+  ],
+  [
+    "smartphone-4",
+    "手机产品片",
+    "智能手机在黑色背景中旋转，屏幕光效流动，边框高光扫过，科技新品发布片风格。",
+  ],
+  [
+    "tenth-freezer",
+    "冰柜产品片",
+    "商用冰柜产品广告，冷雾溢出，食品排列整齐，白蓝色调突出制冷能力。",
+  ],
+  [
+    "tianmen-weihe",
+    "天门奇景",
+    "山河峡谷与云海之间的宏大自然场景，镜头穿越云层俯冲，东方奇观大片感。",
+  ],
+  [
+    "wuhan-cherry-blossom-season",
+    "武汉樱花季",
+    "春日武汉樱花盛开，花瓣随风飘落，城市建筑与游客穿行其中，温柔浪漫纪录片质感。",
+  ],
+  [
+    "yongyeti",
+    "雪域巨兽",
+    "雪山深处巨兽苏醒，冰雪飞溅，低角度镜头表现巨大体型，冷色调奇幻冒险风。",
+  ],
+  [
+    "yuelin-qiji-3d-remake",
+    "月林奇迹 3D",
+    "3D 奇幻森林场景，月光洒落，角色穿过发光植物与薄雾，梦幻探索氛围。",
+  ],
+  [
+    "zhang-xue-motorcycle-remake",
+    "摩托车重制",
+    "人物骑摩托车穿越雨夜街道，车灯划破水雾，镜头贴地跟拍，速度与孤独感并存。",
+  ],
 ].map(([slug, title, prompt]) => ({
   id: `video-inspiration-${slug}`,
   slug,
@@ -5388,10 +6231,7 @@ function getVideoModelOptions(options, modelKey) {
 
 function getVideoTaskTimestamp(task) {
   const value =
-    task?.createdAt ||
-    task?.created_at ||
-    task?.updatedAt ||
-    task?.updated_at;
+    task?.createdAt || task?.created_at || task?.updatedAt || task?.updated_at;
   const timestamp = value ? new Date(value).getTime() : NaN;
   if (Number.isFinite(timestamp)) return timestamp;
   return Number(task?.id) || 0;
@@ -5526,7 +6366,12 @@ function VideoInspirationCard({ item, onOpen }) {
       onBlur={stopPreview}
     >
       <span className="video-inspiration-media">
-        <img src={item.poster} alt={item.title} loading="lazy" decoding="async" />
+        <img
+          src={item.poster}
+          alt={item.title}
+          loading="lazy"
+          decoding="async"
+        />
         <video
           ref={previewRef}
           src={item.preview}
@@ -5727,7 +6572,12 @@ function VideoComposerBar({
   );
 }
 
-function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive = true }) {
+function VideoGenerationView({
+  authUser,
+  onOpenAuth,
+  resetSignal = 0,
+  isActive = true,
+}) {
   const [filter, setFilter] = useState("inspiration");
   const [cards, setCards] = useState([]);
   const [options, setOptions] = useState(emptyVideoOptions);
@@ -5791,8 +6641,9 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
       if (didStatusChange) {
         videoApi
           .refreshCredits()
-          .then((creditsValue) =>
-            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          .then(
+            (creditsValue) =>
+              mounted && applyCreditsUpdate(setCredits, creditsValue),
           )
           .catch(() => {});
       }
@@ -5912,8 +6763,7 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
   }
 
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
-  const isComposerSticky =
-    filter === "inspiration" && isComposerPastThreshold;
+  const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
 
   function openVideoInspiration() {
@@ -6000,10 +6850,7 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
           maxColumns={4}
           items={videoInspirationItems}
           renderItem={(item) => (
-            <VideoInspirationCard
-              item={item}
-              onOpen={setSelectedInspiration}
-            />
+            <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
           )}
         />
       ) : (
@@ -6028,22 +6875,22 @@ function VideoGenerationView({ authUser, onOpenAuth, resetSignal = 0, isActive =
             />
           )}
           {sortedCards.length ? (
-          sortedCards.map((card) => (
-            <VideoResultCard
-              card={card}
-              key={card.id}
-              onDelete={deleteTask}
-              onFavorite={toggleFavorite}
-              onRegenerate={regenerateTask}
-            />
-          ))
-        ) : (
-          <div className="video-dub-recent-empty video-empty-results">
-            <Film size={28} />
-            <strong>暂无视频结果</strong>
-            <p>生成完成的视频会保存在这里。</p>
-          </div>
-        )}
+            sortedCards.map((card) => (
+              <VideoResultCard
+                card={card}
+                key={card.id}
+                onDelete={deleteTask}
+                onFavorite={toggleFavorite}
+                onRegenerate={regenerateTask}
+              />
+            ))
+          ) : (
+            <div className="video-dub-recent-empty video-empty-results">
+              <Film size={28} />
+              <strong>暂无视频结果</strong>
+              <p>生成完成的视频会保存在这里。</p>
+            </div>
+          )}
         </div>
       )}
       <VideoInspirationModal
@@ -6079,11 +6926,7 @@ function formatChatAttachmentSize(bytes = 0) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function ChatAttachmentList({
-  attachments = [],
-  onRemove,
-  isStatic = false,
-}) {
+function ChatAttachmentList({ attachments = [], onRemove, isStatic = false }) {
   if (!attachments.length) return null;
 
   return (
@@ -6199,7 +7042,9 @@ function ChatCopyActions({ content }) {
   }, [isMenuOpen]);
 
   async function copyContent(mode = "plain") {
-    const copied = await writeClipboardText(mode === "markdown" ? content : plainText);
+    const copied = await writeClipboardText(
+      mode === "markdown" ? content : plainText,
+    );
     if (!copied) return;
     setCopiedMode(mode);
     setIsMenuOpen(false);
@@ -6230,10 +7075,18 @@ function ChatCopyActions({ content }) {
       </button>
       {isMenuOpen && (
         <div className="chat-copy-menu" role="menu">
-          <button type="button" role="menuitem" onClick={() => copyContent("markdown")}>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => copyContent("markdown")}
+          >
             复制为Markdown
           </button>
-          <button type="button" role="menuitem" onClick={() => copyContent("plain")}>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => copyContent("plain")}
+          >
             复制
           </button>
         </div>
@@ -6493,7 +7346,11 @@ function ChatComposerBar({
               aria-label="上传附件"
               title="上传附件"
             >
-              {isUploadingAttachment ? <Loader2 size={16} /> : <Plus size={16} />}
+              {isUploadingAttachment ? (
+                <Loader2 size={16} />
+              ) : (
+                <Plus size={16} />
+              )}
             </button>
             <ChatAttachmentList
               attachments={attachments}
@@ -6508,7 +7365,9 @@ function ChatComposerBar({
                 type="button"
                 disabled={!isReady}
                 onClick={() =>
-                  setOpenMenu((current) => (current === "model" ? null : "model"))
+                  setOpenMenu((current) =>
+                    current === "model" ? null : "model",
+                  )
                 }
               >
                 <span>{modelLabel}</span>
@@ -6920,7 +7779,10 @@ function getDigitalHumanPublicAvatars(list = []) {
   return (Array.isArray(list) ? list : []).map((item) => ({
     ...item,
     cover: item.cover || item.assetPath || item.imagePath || item.posterPath,
-    poster: item.poster || item.posterPath || getDigitalHumanPosterPath(item.cover || item.assetPath),
+    poster:
+      item.poster ||
+      item.posterPath ||
+      getDigitalHumanPosterPath(item.cover || item.assetPath),
   }));
 }
 
@@ -6940,7 +7802,9 @@ function resolveDigitalHumanAvatarSelection(current, avatarData) {
   const allAvatars = getDigitalHumanPublicAvatars(avatarData.public);
   const myAvatars = Array.isArray(avatarData.mine) ? avatarData.mine : [];
   const matchedAvatar = current?.id
-    ? [...allAvatars, ...myAvatars].find((item) => String(item.id) === String(current.id))
+    ? [...allAvatars, ...myAvatars].find(
+        (item) => String(item.id) === String(current.id),
+      )
     : null;
   if (matchedAvatar) return matchedAvatar;
   if (current) return current;
@@ -7219,7 +8083,15 @@ function DigitalHumanTaskCard({
   );
 }
 
-function DigitalHumanLibraryCard({ avatar, selected, mine, onSelect, onPreview, onRename, onDelete }) {
+function DigitalHumanLibraryCard({
+  avatar,
+  selected,
+  mine,
+  onSelect,
+  onPreview,
+  onRename,
+  onDelete,
+}) {
   const isTraining = avatar.status === "training";
   const isVideoCover = isDigitalHumanVideoCover(avatar.cover);
   return (
@@ -7233,7 +8105,11 @@ function DigitalHumanLibraryCard({ avatar, selected, mine, onSelect, onPreview, 
         aria-label={`使用 ${avatar.name}`}
       >
         <DigitalHumanPreloadCover avatar={avatar} isVideoCover={isVideoCover} />
-        <span>{isTraining ? "AI生成中" : avatar.category || avatar.language || "数字人"}</span>
+        <span>
+          {isTraining
+            ? "AI生成中"
+            : avatar.category || avatar.language || "数字人"}
+        </span>
       </button>
       <div className="dh-library-card-meta">
         <strong>{avatar.name}</strong>
@@ -7271,13 +8147,19 @@ function DigitalHumanLibraryPanel({
   onCreate,
 }) {
   const isMine = mode === "my-library";
-  const list = isMine ? avatars.mine : getDigitalHumanPublicAvatars(avatars.public);
+  const list = isMine
+    ? avatars.mine
+    : getDigitalHumanPublicAvatars(avatars.public);
   return (
     <main className={`dh-library-stage ${isMine ? "is-mine" : "is-official"}`}>
       <header className="dh-library-stage-head">
         <div>
           <h2>形象库</h2>
-          <div className="dh-library-source-tabs" role="tablist" aria-label="形象库来源">
+          <div
+            className="dh-library-source-tabs"
+            role="tablist"
+            aria-label="形象库来源"
+          >
             <button
               type="button"
               className={!isMine ? "is-active" : ""}
@@ -7294,13 +8176,22 @@ function DigitalHumanLibraryPanel({
             </button>
           </div>
         </div>
-        <button className="dh-library-close" type="button" onClick={onClose} aria-label="关闭形象库">
+        <button
+          className="dh-library-close"
+          type="button"
+          onClick={onClose}
+          aria-label="关闭形象库"
+        >
           <X size={26} />
         </button>
       </header>
       <div className="dh-library-grid">
         {isMine && (
-          <button className="dh-my-avatar-create" type="button" onClick={onCreate}>
+          <button
+            className="dh-my-avatar-create"
+            type="button"
+            onClick={onCreate}
+          >
             <Plus size={44} />
             <strong>创建我的形象</strong>
           </button>
@@ -7629,9 +8520,7 @@ function DigitalHumanConfigPanel({
             onChange={(event) => setText(event.target.value)}
             placeholder={defaultDigitalHumanScript}
           />
-          <small>
-            {text.length} / 200
-          </small>
+          <small>{text.length} / 200</small>
         </label>
       ) : (
         <div className="dh-audio-upload is-compact">
@@ -7742,10 +8631,16 @@ function DigitalHumanConfigPanel({
         </div>
       )}
       {voicePreviewUrl && isPreviewCurrent ? (
-        <div className={`dh-voice-preview-panel ${currentAudioTooLong ? "is-warning" : ""}`}>
+        <div
+          className={`dh-voice-preview-panel ${currentAudioTooLong ? "is-warning" : ""}`}
+        >
           <audio className="dh-voice-preview" src={voicePreviewUrl} controls />
           <div className="dh-voice-preview-meta">
-            <span>{selectedVoice ? `${selectedVoice.description || selectedVoice.name}` : ""}</span>
+            <span>
+              {selectedVoice
+                ? `${selectedVoice.description || selectedVoice.name}`
+                : ""}
+            </span>
             <strong>
               当前音频 {formatDurationMs(voicePreviewInfo.durationMs)}
               {currentAudioTooLong
@@ -7757,7 +8652,9 @@ function DigitalHumanConfigPanel({
       ) : (
         <div className="dh-duration-check">
           <span>
-            {selectedVoice ? `${selectedVoice.description || selectedVoice.name}` : ""}
+            {selectedVoice
+              ? `${selectedVoice.description || selectedVoice.name}`
+              : ""}
           </span>
         </div>
       )}
@@ -7766,7 +8663,11 @@ function DigitalHumanConfigPanel({
   );
 }
 
-function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = true }) {
+function DigitalHumanGenerationView({
+  onReturnHome,
+  onOpenFeature,
+  isActive = true,
+}) {
   const [tab, setTab] = useState("public");
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [tasks, setTasks] = useState([]);
@@ -7819,8 +8720,9 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
       if (didStatusChange) {
         digitalHumanApi
           .getCredits()
-          .then((creditsValue) =>
-            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          .then(
+            (creditsValue) =>
+              mounted && applyCreditsUpdate(setCredits, creditsValue),
           )
           .catch(() => {});
       }
@@ -7841,7 +8743,9 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
         setVoices(voiceData.voices || []);
         applyTaskList(taskData);
         applyCreditsUpdate(setCredits, creditData);
-        setSelectedAvatar((current) => resolveDigitalHumanAvatarSelection(current, avatarData));
+        setSelectedAvatar((current) =>
+          resolveDigitalHumanAvatarSelection(current, avatarData),
+        );
       } catch (loadError) {
         if (mounted) setError(loadError.message || "加载数字人功能失败");
       }
@@ -7857,7 +8761,9 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
         .then((value) => mounted && setAvatars(value))
         .then((value) => {
           if (!mounted || !value) return;
-          setSelectedAvatar((current) => resolveDigitalHumanAvatarSelection(current, value));
+          setSelectedAvatar((current) =>
+            resolveDigitalHumanAvatarSelection(current, value),
+          );
         })
         .catch(() => {});
     });
@@ -7936,20 +8842,25 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    window.dispatchEvent(new CustomEvent("facemini-assets-tab-change", {
-      detail: { tab: "数字人" },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("facemini-assets-tab-change", {
+        detail: { tab: "数字人" },
+      }),
+    );
     onOpenFeature?.("assets");
   }
 
   const currentPreviewTask = selectedTask;
   const previewAvatarMedia = selectedAvatar || null;
-  const selectedAvatarIsVideoCover = isDigitalHumanVideoCover(selectedAvatar?.cover);
+  const selectedAvatarIsVideoCover = isDigitalHumanVideoCover(
+    selectedAvatar?.cover,
+  );
   const isPreviewProcessing =
     currentPreviewTask &&
     !["completed", "failed"].includes(currentPreviewTask.status);
   const canUsePreviewTaskActions =
-    Boolean(currentPreviewTask?.resultUrl) && currentPreviewTask?.status === "completed";
+    Boolean(currentPreviewTask?.resultUrl) &&
+    currentPreviewTask?.status === "completed";
   const isCurrentTaskFavorite = currentPreviewTask
     ? favoriteTaskIds.has(String(currentPreviewTask.id))
     : false;
@@ -7986,7 +8897,9 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
               <button
                 className="dh-avatar-agent-thumb"
                 type="button"
-                onClick={() => selectedAvatar && setPreviewAvatar(selectedAvatar)}
+                onClick={() =>
+                  selectedAvatar && setPreviewAvatar(selectedAvatar)
+                }
                 aria-label="当前形象预览"
               >
                 {selectedAvatar?.cover ? (
@@ -8000,7 +8913,9 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
               <p>{selectedAvatar?.name || "选择形象"}</p>
               <div>
                 <button
-                  className={rightMode === "official-library" ? "is-active" : ""}
+                  className={
+                    rightMode === "official-library" ? "is-active" : ""
+                  }
                   type="button"
                   onClick={() => {
                     setTab("public");
@@ -8095,149 +9010,171 @@ function DigitalHumanGenerationView({ onReturnHome, onOpenFeature, isActive = tr
           />
         </section>
         {currentPreviewTask || rightMode === "preview" ? (
-              <main className="dh-preview-stage dh-avatar-preview-stage">
-                <div className="dh-preview-header">
-                  <div>
-                    <span>{currentPreviewTask ? "生成预览" : "数字人"}</span>
-                    <strong>
-                      {currentPreviewTask?.avatarName ||
-                        previewAvatarMedia?.name ||
-                        "开启你的图片数字人"}
-                    </strong>
-                  </div>
-                  <div className="dh-preview-header-actions">
-                    {currentPreviewTask && (
-                      <button
-                        className="dh-preview-back"
-                        type="button"
-                        onClick={() => setSelectedTask(null)}
-                      >
-                        <Layers size={14} />返回
-                      </button>
-                    )}
-                    {currentPreviewTask && (
-                      <small>
-                        {currentPreviewTask.status === "failed"
-                          ? "失败"
-                          : currentPreviewTask.status === "completed"
-                            ? "完成"
-                            : `生成中 ${currentPreviewTask.progress || 0}%`}
-                      </small>
-                    )}
-                    <button type="button" aria-label="编辑"><SquarePen size={14} />编辑</button>
-                    <button type="button" aria-label="撤销"><RefreshCcw size={14} />撤销</button>
-                    <button type="button" aria-label="复制"><Copy size={14} />复制</button>
-                  </div>
-                </div>
-                <div className="dh-preview-script">
-                  [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-                  <br />
-                  [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-                  <br />
-                  [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-                </div>
-                <div className="dh-video-shell">
-                  {currentPreviewTask?.resultUrl ? (
-                    <video src={currentPreviewTask.resultUrl} controls />
-                  ) : isPreviewProcessing ? (
-                    <DigitalHumanGeneratingState task={currentPreviewTask} />
-                  ) : currentPreviewTask ? (
-                    <DigitalHumanEmptyMedia
-                      icon={Film}
-                      title={
-                        currentPreviewTask.status === "failed"
-                          ? "生成失败"
-                          : "视频结果待返回"
-                      }
-                      description={
-                        currentPreviewTask.status === "failed"
-                          ? currentPreviewTask.error
-                          : "任务完成后没有返回视频地址，请稍后刷新或重新生成"
-                      }
-                    />
-                  ) : previewAvatarMedia?.cover ? (
-                    isDigitalHumanVideoCover(previewAvatarMedia.cover) ? (
-                    <video
-                      src={previewAvatarMedia.cover}
-                      poster={previewAvatarMedia.poster || getDigitalHumanPosterPath(previewAvatarMedia.cover)}
-                      controls
-                      playsInline
-                    />
-                    ) : (
-                    <img src={previewAvatarMedia.cover} alt={previewAvatarMedia.name} />
-                    )
+          <main className="dh-preview-stage dh-avatar-preview-stage">
+            <div className="dh-preview-header">
+              <div>
+                <span>{currentPreviewTask ? "生成预览" : "数字人"}</span>
+                <strong>
+                  {currentPreviewTask?.avatarName ||
+                    previewAvatarMedia?.name ||
+                    "开启你的图片数字人"}
+                </strong>
+              </div>
+              <div className="dh-preview-header-actions">
+                {currentPreviewTask && (
+                  <button
+                    className="dh-preview-back"
+                    type="button"
+                    onClick={() => setSelectedTask(null)}
+                  >
+                    <Layers size={14} />
+                    返回
+                  </button>
+                )}
+                {currentPreviewTask && (
+                  <small>
+                    {currentPreviewTask.status === "failed"
+                      ? "失败"
+                      : currentPreviewTask.status === "completed"
+                        ? "完成"
+                        : `生成中 ${currentPreviewTask.progress || 0}%`}
+                  </small>
+                )}
+                <button type="button" aria-label="编辑">
+                  <SquarePen size={14} />
+                  编辑
+                </button>
+                <button type="button" aria-label="撤销">
+                  <RefreshCcw size={14} />
+                  撤销
+                </button>
+                <button type="button" aria-label="复制">
+                  <Copy size={14} />
+                  复制
+                </button>
+              </div>
+            </div>
+            <div className="dh-preview-script">
+              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
+              <br />
+              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
+              <br />
+              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
+            </div>
+            <div className="dh-video-shell">
+              {currentPreviewTask?.resultUrl ? (
+                <video src={currentPreviewTask.resultUrl} controls />
+              ) : isPreviewProcessing ? (
+                <DigitalHumanGeneratingState task={currentPreviewTask} />
+              ) : currentPreviewTask ? (
+                <DigitalHumanEmptyMedia
+                  icon={Film}
+                  title={
+                    currentPreviewTask.status === "failed"
+                      ? "生成失败"
+                      : "视频结果待返回"
+                  }
+                  description={
+                    currentPreviewTask.status === "failed"
+                      ? currentPreviewTask.error
+                      : "任务完成后没有返回视频地址，请稍后刷新或重新生成"
+                  }
+                />
+              ) : previewAvatarMedia?.cover ? (
+                isDigitalHumanVideoCover(previewAvatarMedia.cover) ? (
+                  <video
+                    src={previewAvatarMedia.cover}
+                    poster={
+                      previewAvatarMedia.poster ||
+                      getDigitalHumanPosterPath(previewAvatarMedia.cover)
+                    }
+                    controls
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={previewAvatarMedia.cover}
+                    alt={previewAvatarMedia.name}
+                  />
+                )
+              ) : (
+                <DigitalHumanEmptyMedia
+                  icon={Bot}
+                  title="尚未生成数字人视频"
+                  description=""
+                />
+              )}
+              {currentPreviewTask && (
+                <div
+                  className="dh-preview-task-actions"
+                  aria-label="生成结果操作"
+                >
+                  <button
+                    type="button"
+                    data-tooltip="重新生成"
+                    onClick={() => regenerateTask(currentPreviewTask.id)}
+                    disabled={!canUsePreviewTaskActions}
+                  >
+                    <RefreshCcw size={18} />
+                  </button>
+                  {canUsePreviewTaskActions ? (
+                    <a
+                      href={currentPreviewTask.resultUrl}
+                      download
+                      target="_blank"
+                      rel="noreferrer"
+                      data-tooltip="下载"
+                    >
+                      <Download size={18} />
+                    </a>
                   ) : (
-                    <DigitalHumanEmptyMedia
-                      icon={Bot}
-                      title="尚未生成数字人视频"
-                      description=""
+                    <button type="button" data-tooltip="下载" disabled>
+                      <Download size={18} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    data-tooltip="删除"
+                    onClick={() => deleteTask(currentPreviewTask.id)}
+                    disabled={!canUsePreviewTaskActions}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    data-tooltip="收藏"
+                    className={isCurrentTaskFavorite ? "is-active" : ""}
+                    onClick={() => toggleTaskFavorite(currentPreviewTask.id)}
+                    disabled={!canUsePreviewTaskActions}
+                  >
+                    <Star
+                      size={18}
+                      fill={isCurrentTaskFavorite ? "currentColor" : "none"}
                     />
-                  )}
-                  {currentPreviewTask && (
-                    <div className="dh-preview-task-actions" aria-label="生成结果操作">
-                      <button
-                        type="button"
-                        data-tooltip="重新生成"
-                        onClick={() => regenerateTask(currentPreviewTask.id)}
-                        disabled={!canUsePreviewTaskActions}
-                      >
-                        <RefreshCcw size={18} />
-                      </button>
-                      {canUsePreviewTaskActions ? (
-                        <a
-                          href={currentPreviewTask.resultUrl}
-                          download
-                          target="_blank"
-                          rel="noreferrer"
-                          data-tooltip="下载"
-                        >
-                          <Download size={18} />
-                        </a>
-                      ) : (
-                        <button type="button" data-tooltip="下载" disabled>
-                          <Download size={18} />
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        data-tooltip="删除"
-                        onClick={() => deleteTask(currentPreviewTask.id)}
-                        disabled={!canUsePreviewTaskActions}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      <button
-                        type="button"
-                        data-tooltip="收藏"
-                        className={isCurrentTaskFavorite ? "is-active" : ""}
-                        onClick={() => toggleTaskFavorite(currentPreviewTask.id)}
-                        disabled={!canUsePreviewTaskActions}
-                      >
-                        <Star size={18} fill={isCurrentTaskFavorite ? "currentColor" : "none"} />
-                      </button>
-                    </div>
-                  )}
+                  </button>
                 </div>
-                <div className="dh-draft-box">
-                  暂无草稿，编辑形象或配音后将自动保存
-                </div>
-              </main>
+              )}
+            </div>
+            <div className="dh-draft-box">
+              暂无草稿，编辑形象或配音后将自动保存
+            </div>
+          </main>
         ) : (
-            <DigitalHumanLibraryPanel
-              mode={rightMode}
-              avatars={avatars}
-              selectedAvatar={selectedAvatar}
-              onClose={() => setRightMode("preview")}
-              onModeChange={(mode) => {
-                setRightMode(mode);
-                setTab(mode === "my-library" ? "mine" : "public");
-              }}
-              onSelect={setSelectedAvatar}
-              onPreview={setPreviewAvatar}
-              onRename={renameAvatar}
-              onDelete={deleteAvatar}
-              onCreate={() => setIsCreateOpen(true)}
-            />
+          <DigitalHumanLibraryPanel
+            mode={rightMode}
+            avatars={avatars}
+            selectedAvatar={selectedAvatar}
+            onClose={() => setRightMode("preview")}
+            onModeChange={(mode) => {
+              setRightMode(mode);
+              setTab(mode === "my-library" ? "mine" : "public");
+            }}
+            onSelect={setSelectedAvatar}
+            onPreview={setPreviewAvatar}
+            onRename={renameAvatar}
+            onDelete={deleteAvatar}
+            onCreate={() => setIsCreateOpen(true)}
+          />
         )}
       </div>
       {isCreateOpen && (
@@ -8308,8 +9245,7 @@ const faceSwapCopy = {
   completedTitle: "视频换脸已完成",
   processingCreate: "正在创建视频换脸任务",
   processingGenerate: "正在生成换脸视频",
-  processingDescription:
-    "正在上传人脸图片和目标视频。完成后会自动回填到这里。",
+  processingDescription: "正在上传人脸图片和目标视频。完成后会自动回填到这里。",
   recentEmptyTitle: "暂无视频换脸结果",
   recentEmptyDescription: "生成完成的换脸视频会保存在这里。",
   imageTitle: "上传人脸图",
@@ -8328,7 +9264,8 @@ const faceSwapCopy = {
 const imageDigitalHumanCopy = {
   ...faceSwapCopy,
   emptyTitle: "开启你的图片数字人",
-  emptyDescription: "上传人物正面图，配置脚本与音色，快速生成口型自然的视频内容",
+  emptyDescription:
+    "上传人物正面图，配置脚本与音色，快速生成口型自然的视频内容",
   completedTitle: "图片数字人已完成",
   processingCreate: "正在创建图片数字人任务",
   processingGenerate: "正在生成数字人视频",
@@ -8922,14 +9859,15 @@ function MotionTransferView({
     async function load() {
       try {
         const taskFilter = splitResults ? "all" : filter;
-        const [modelData, taskData, runningTaskData, creditData] = await Promise.all([
-          api.getModels(),
-          api.getTasks({ filter: taskFilter }),
-          taskFilter === "all"
-            ? Promise.resolve(null)
-            : api.getTasks({ filter: "all" }),
-          api.getCredits().catch(() => null),
-        ]);
+        const [modelData, taskData, runningTaskData, creditData] =
+          await Promise.all([
+            api.getModels(),
+            api.getTasks({ filter: taskFilter }),
+            taskFilter === "all"
+              ? Promise.resolve(null)
+              : api.getTasks({ filter: "all" }),
+            api.getCredits().catch(() => null),
+          ]);
         if (!mounted) return;
         setOptions(modelData);
         applyTaskData(taskData, runningTaskData || taskData);
@@ -8943,15 +9881,16 @@ function MotionTransferView({
       const taskFilter = splitResults ? "all" : filter;
       const taskRequest =
         taskFilter === "all"
-          ? api
-              .getTasks({ filter: taskFilter })
-              .then((value) => [value, value])
+          ? api.getTasks({ filter: taskFilter }).then((value) => [value, value])
           : Promise.all([
               api.getTasks({ filter: taskFilter }),
               api.getTasks({ filter: "all" }),
             ]);
       taskRequest
-        .then(([value, runningValue]) => mounted && applyTaskData(value, runningValue))
+        .then(
+          ([value, runningValue]) =>
+            mounted && applyTaskData(value, runningValue),
+        )
         .catch(() => {});
       api
         .getCredits()
@@ -8971,7 +9910,8 @@ function MotionTransferView({
   const submittedTask =
     tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
-  const useWorkbenchView = isFaceSwapView || navId === "motion" || navId === "image-digital-human";
+  const useWorkbenchView =
+    isFaceSwapView || navId === "motion" || navId === "image-digital-human";
   const showCenterState = isSubmitting || submitError || submittedTask;
   const showEmptyHero = splitResults
     ? viewTab === "home" && !showCenterState
@@ -9110,18 +10050,24 @@ function MotionTransferView({
               isSubmitting={isSubmitting}
               api={api}
               copy={copy}
-              heading={heading || (navId === "motion" ? "AI 动作迁移" : "AI 换脸工具")}
+              heading={
+                heading || (navId === "motion" ? "AI 动作迁移" : "AI 换脸工具")
+              }
               privacyText={
                 privacyText ||
                 (navId === "motion"
                   ? "您上传的内容仅用于动作迁移处理，不会被用于其他用途。"
                   : "您上传的内容仅用于换脸处理，不会被用于其他用途。")
               }
-              onViewHistory={isFaceSwapView ? () => {
-                setViewTab("recent");
-                setSubmittedTaskId(null);
-                writeMotionActiveTaskId(navId, null);
-              } : undefined}
+              onViewHistory={
+                isFaceSwapView
+                  ? () => {
+                      setViewTab("recent");
+                      setSubmittedTaskId(null);
+                      writeMotionActiveTaskId(navId, null);
+                    }
+                  : undefined
+              }
             />
           )}
         {!useWorkbenchView && showEmptyHero && (
@@ -9200,42 +10146,73 @@ const emptyWatermarkOptions = {
   },
 };
 
-function WatermarkCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
+function WatermarkCenterState({
+  task,
+  isSubmitting,
+  error,
+  onReset,
+  onRepeat,
+}) {
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
     return (
       <section className="watermark-center-state marketing-result-card is-completed">
         <header className="marketing-result-head">
-          <span><CheckCircle2 size={18} />处理完成</span>
+          <span>
+            <CheckCircle2 size={18} />
+            处理完成
+          </span>
           <p>对比效果如下，可下载或继续处理</p>
         </header>
         <div className="marketing-result-compare">
           <figure>
             <figcaption>原图</figcaption>
             {isVideo ? (
-              <video src={task.sourceUrl} controls playsInline poster={task.thumbnailUrl || task.sourceUrl} />
+              <video
+                src={task.sourceUrl}
+                controls
+                playsInline
+                poster={task.thumbnailUrl || task.sourceUrl}
+              />
             ) : (
-              <img src={task.sourceUrl || task.resultUrl} alt={task.sourceFileName || "原图"} />
+              <img
+                src={task.sourceUrl || task.resultUrl}
+                alt={task.sourceFileName || "原图"}
+              />
             )}
           </figure>
           <figure>
             <figcaption>处理后</figcaption>
             {isVideo ? (
-              <video src={task.resultUrl} controls playsInline poster={task.thumbnailUrl || task.sourceUrl} />
+              <video
+                src={task.resultUrl}
+                controls
+                playsInline
+                poster={task.thumbnailUrl || task.sourceUrl}
+              />
             ) : (
-              <img src={task.resultUrl} alt={task.sourceFileName || "去水印结果"} />
+              <img
+                src={task.resultUrl}
+                alt={task.sourceFileName || "去水印结果"}
+              />
             )}
           </figure>
         </div>
         <footer className="marketing-result-footer">
           <p>已完成本次处理，可下载结果、再次处理当前素材，或上传新素材继续</p>
           <div className="marketing-result-actions">
-            <button type="button" onClick={onReset}>处理新素材</button>
+            <button type="button" onClick={onReset}>
+              处理新素材
+            </button>
             <a href={task.resultUrl} download>
               <Download size={15} />
               下载结果
             </a>
-            <button type="button" className="is-primary" onClick={() => onRepeat?.(task)}>
+            <button
+              type="button"
+              className="is-primary"
+              onClick={() => onRepeat?.(task)}
+            >
               <Zap size={15} />
               再次处理
             </button>
@@ -9365,8 +10342,10 @@ function WatermarkUploadSlot({
   sourceAsset,
   previewUrl,
   isUploading,
+  disabled = false,
   onSelect,
   onClear,
+  onRequireAuth,
 }) {
   const inputRef = useRef(null);
   const isVideo = mode === "video";
@@ -9379,7 +10358,14 @@ function WatermarkUploadSlot({
     <button
       className={`watermark-upload-slot ${previewUrl ? "has-preview" : ""}`}
       type="button"
-      onClick={() => inputRef.current?.click()}
+      onClick={() => {
+        if (disabled) {
+          onRequireAuth?.();
+          return;
+        }
+        inputRef.current?.click();
+      }}
+      disabled={disabled}
     >
       <input
         ref={inputRef}
@@ -9445,12 +10431,19 @@ function WatermarkUploadSlot({
   );
 }
 
-function WatermarkComposer({ options, onSubmit, isSubmitting }) {
+function WatermarkComposer({
+  options,
+  onSubmit,
+  isSubmitting,
+  authUser,
+  onOpenAuth,
+}) {
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
+  const isGuest = Boolean(authUser?.isGuest);
 
   useEffect(() => {
     return () => {
@@ -9465,7 +10458,9 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
       ? options.defaults?.videoResolution || "720p"
       : options.defaults?.imageResolution || "2K";
   const price = `${selectedModel?.basePoints || 0} 积分`;
-  const canSubmit = Boolean(sourceAsset && !uploading && !isSubmitting);
+  const canSubmit = Boolean(
+    !isGuest && sourceAsset && !uploading && !isSubmitting,
+  );
 
   function changeMode(nextMode) {
     setMode(nextMode);
@@ -9483,6 +10478,11 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   }
 
   async function selectSource(file) {
+    if (isGuest) {
+      setNotice("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
     if (!file) return;
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
@@ -9522,6 +10522,11 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   }
 
   function submit() {
+    if (isGuest) {
+      setNotice("请先登录");
+      onOpenAuth?.("login");
+      return;
+    }
     if (!sourceAsset) {
       setNotice(mode === "image" ? "请先上传图片文件" : "请先上传视频文件");
       return;
@@ -9559,8 +10564,13 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
         sourceAsset={sourceAsset}
         previewUrl={previewUrl}
         isUploading={uploading}
+        disabled={isGuest}
         onSelect={selectSource}
         onClear={clearSource}
+        onRequireAuth={() => {
+          setNotice("请先登录");
+          onOpenAuth?.("login");
+        }}
       />
       <div className="watermark-composer-footer">
         <span>
@@ -9584,7 +10594,7 @@ function WatermarkComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-function WatermarkRemovalView() {
+function WatermarkRemovalView({ authUser, onOpenAuth }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -9608,8 +10618,9 @@ function WatermarkRemovalView() {
       if (didStatusChange) {
         watermarkApi
           .getCredits()
-          .then((creditsValue) =>
-            mounted && applyCreditsUpdate(setCredits, creditsValue),
+          .then(
+            (creditsValue) =>
+              mounted && applyCreditsUpdate(setCredits, creditsValue),
           )
           .catch(() => {});
       }
@@ -9801,6 +10812,8 @@ function WatermarkRemovalView() {
           options={options}
           onSubmit={createTask}
           isSubmitting={isSubmitting}
+          authUser={authUser}
+          onOpenAuth={onOpenAuth}
         />
       )}
     </section>
@@ -9830,9 +10843,13 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
   const isGuest = !authUser || authUser.isGuest;
 
   useEffect(() => {
-    invitationApi.track("invite.popup_exposure", authUser?.inviteCode || getPendingInviteCode(), {
-      loggedIn: !isGuest,
-    });
+    invitationApi.track(
+      "invite.popup_exposure",
+      authUser?.inviteCode || getPendingInviteCode(),
+      {
+        loggedIn: !isGuest,
+      },
+    );
   }, [authUser?.inviteCode, isGuest]);
 
   useEffect(() => {
@@ -9879,7 +10896,9 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const inviteLink = inviteProfile?.inviteLink || buildClientInviteLink(inviteProfile?.inviteCode || authUser?.inviteCode);
+  const inviteLink =
+    inviteProfile?.inviteLink ||
+    buildClientInviteLink(inviteProfile?.inviteCode || authUser?.inviteCode);
   const canCopyInviteLink = !isGuest && Boolean(inviteLink);
   const toggleInviteDetails = () => setDetailsOpen((value) => !value);
 
@@ -9893,18 +10912,20 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
       return;
     }
     setInviteError("");
-    const ok = await writeClipboardText(
-      inviteLink,
-    );
+    const ok = await writeClipboardText(inviteLink);
     setCopied(ok);
     if (!ok) {
       setInviteError("复制失败，请重试");
       return;
     }
     if (ok) {
-      invitationApi.track("invite.copy_success", inviteProfile?.inviteCode || authUser?.inviteCode, {
-        source: "topbar_dialog",
-      });
+      invitationApi.track(
+        "invite.copy_success",
+        inviteProfile?.inviteCode || authUser?.inviteCode,
+        {
+          source: "topbar_dialog",
+        },
+      );
     }
   }
 
@@ -9929,34 +10950,61 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
         <div className="fm-invite-hero"></div>
         <section className="fm-invite-reward-card">
           <h2>邀请好友完成新用户注册</h2>
-          <p>邀请人&被邀请人双方各自动到账 <Zap size={22} fill="currentColor" />200 积分</p>
+          <p>
+            邀请人&被邀请人双方各自动到账 <Zap size={22} fill="currentColor" />
+            200 积分
+          </p>
           <div className="fm-invite-points-row">
             <div>
               <UserRound size={34} />
               <span>你获得</span>
-              <strong><Zap size={16} fill="currentColor" />200</strong>
+              <strong>
+                <Zap size={16} fill="currentColor" />
+                200
+              </strong>
             </div>
             <b>200</b>
             <div>
               <span>好友获得</span>
-              <strong><Zap size={16} fill="currentColor" />200</strong>
+              <strong>
+                <Zap size={16} fill="currentColor" />
+                200
+              </strong>
               <UserRound size={34} />
             </div>
           </div>
-          <small>积分可抵扣 <span>AI 生图、视频生成、数字人、爆款图文</span> 等全部创作额度</small>
+          <small>
+            积分可抵扣 <span>AI 生图、视频生成、数字人、爆款图文</span>{" "}
+            等全部创作额度
+          </small>
           <button
             className="fm-invite-copy"
             type="button"
             onClick={copyInviteLink}
-            aria-label={isGuest ? "登录后生成专属邀请链接" : "点击复制专属邀请链接"}
-            title={isGuest ? "登录后生成专属邀请链接" : canCopyInviteLink ? inviteLink : "专属邀请链接加载中"}
+            aria-label={
+              isGuest ? "登录后生成专属邀请链接" : "点击复制专属邀请链接"
+            }
+            title={
+              isGuest
+                ? "登录后生成专属邀请链接"
+                : canCopyInviteLink
+                  ? inviteLink
+                  : "专属邀请链接加载中"
+            }
           >
             <Copy size={20} />
-            {isGuest ? "登录后生成专属邀请链接" : copied ? "邀请链接已复制" : "点击复制专属邀请链接"}
+            {isGuest
+              ? "登录后生成专属邀请链接"
+              : copied
+                ? "邀请链接已复制"
+                : "点击复制专属邀请链接"}
           </button>
           <em className="fm-invite-success">
             <CheckCircle2 size={16} />
-            {inviteError || (copied ? "邀请链接已复制，快去分享好友吧！" : "复制后分享给好友，完成注册即可到账")}
+            {inviteError ||
+              (copied
+                ? "邀请链接已复制，快去分享好友吧！"
+                : "复制后分享给好友，完成注册即可到账")}
           </em>
         </section>
         <div className={`fm-invite-info-grid ${detailsOpen ? "is-open" : ""}`}>
@@ -9973,15 +11021,27 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
               }}
               aria-expanded={detailsOpen}
             >
-              <span className="fm-invite-section-title"><CircleAlert size={20} />活动规则</span>
+              <span className="fm-invite-section-title">
+                <CircleAlert size={20} />
+                活动规则
+              </span>
               <ChevronDown size={18} className="fm-invite-chevron" />
             </h3>
             <div className="fm-invite-section-body">
               <ol>
-                <li>仅限已注册 Facemini 老用户参与活动，每位新注册用户仅能绑定一位邀请人。</li>
-                <li>好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。</li>
-                <li>积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。</li>
-                <li>严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。</li>
+                <li>
+                  仅限已注册 Facemini
+                  老用户参与活动，每位新注册用户仅能绑定一位邀请人。
+                </li>
+                <li>
+                  好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。
+                </li>
+                <li>
+                  积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。
+                </li>
+                <li>
+                  严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。
+                </li>
               </ol>
             </div>
           </section>
@@ -9998,13 +11058,28 @@ function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
               }}
               aria-expanded={detailsOpen}
             >
-              <span className="fm-invite-section-title"><CircleAlert size={20} />FAQ 常见问题</span>
+              <span className="fm-invite-section-title">
+                <CircleAlert size={20} />
+                FAQ 常见问题
+              </span>
               <ChevronDown size={18} className="fm-invite-chevron" />
             </h3>
             <div className="fm-invite-section-body">
-              <p><strong>Q：积分多久到账？</strong><br />A：好友完成注册并登录账号后，积分实时自动发放。</p>
-              <p><strong>Q：积分能用来做什么？</strong><br />A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。</p>
-              <p><strong>Q：同一个好友可以多次领取奖励吗？</strong><br />A：新用户仅首次注册可触发一次双向奖励。</p>
+              <p>
+                <strong>Q：积分多久到账？</strong>
+                <br />
+                A：好友完成注册并登录账号后，积分实时自动发放。
+              </p>
+              <p>
+                <strong>Q：积分能用来做什么？</strong>
+                <br />
+                A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。
+              </p>
+              <p>
+                <strong>Q：同一个好友可以多次领取奖励吗？</strong>
+                <br />
+                A：新用户仅首次注册可触发一次双向奖励。
+              </p>
             </div>
           </section>
         </div>
@@ -10031,7 +11106,10 @@ function WorkbenchTopbar({
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
   const profileMenuRef = useRef(null);
-  const showDigitalHumanTabs = ["digital-human", "image-digital-human"].includes(activeNav);
+  const showDigitalHumanTabs = [
+    "digital-human",
+    "image-digital-human",
+  ].includes(activeNav);
   const showArticleTabs = activeNav === "article";
 
   useEffect(() => {
@@ -10059,7 +11137,9 @@ function WorkbenchTopbar({
 
   useEffect(() => {
     try {
-      const pendingBonus = Number(window.sessionStorage.getItem(pendingInviteBonusStorageKey) || 0);
+      const pendingBonus = Number(
+        window.sessionStorage.getItem(pendingInviteBonusStorageKey) || 0,
+      );
       if (pendingBonus > 0) {
         flashCreditDelta(pendingBonus);
         window.sessionStorage.removeItem(pendingInviteBonusStorageKey);
@@ -10090,20 +11170,25 @@ function WorkbenchTopbar({
   function openAssets(tab = "全部", subTab = "") {
     try {
       window.sessionStorage.setItem(assetGalleryTabStorageKey, tab);
-      if (subTab) window.sessionStorage.setItem("facemini:assets-subtab", subTab);
+      if (subTab)
+        window.sessionStorage.setItem("facemini:assets-subtab", subTab);
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    window.dispatchEvent(new CustomEvent("facemini-assets-tab-change", {
-      detail: { tab, subTab },
-    }));
+    window.dispatchEvent(
+      new CustomEvent("facemini-assets-tab-change", {
+        detail: { tab, subTab },
+      }),
+    );
     onNavChange?.("assets");
     setShowProfileMenu(false);
   }
 
   return (
     <>
-      <header className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}>
+      <header
+        className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}
+      >
         <div className="fm-topbar-title-row">
           {!showArticleTabs && <h1>{title}</h1>}
           {showDigitalHumanTabs && (
@@ -10117,7 +11202,9 @@ function WorkbenchTopbar({
               </button>
               <button
                 type="button"
-                className={activeNav === "image-digital-human" ? "is-active" : ""}
+                className={
+                  activeNav === "image-digital-human" ? "is-active" : ""
+                }
                 onClick={() => onNavChange("image-digital-human")}
               >
                 图片数字人
@@ -10125,7 +11212,10 @@ function WorkbenchTopbar({
             </div>
           )}
           {showArticleTabs && (
-            <div className="fm-digital-tabs fm-article-top-tabs" aria-label="爆款图文类型">
+            <div
+              className="fm-digital-tabs fm-article-top-tabs"
+              aria-label="爆款图文类型"
+            >
               <button
                 type="button"
                 className={articleMode === "home" ? "is-active" : ""}
@@ -10152,14 +11242,15 @@ function WorkbenchTopbar({
             <Gift size={17} />
             邀请有礼
           </button>
-          <button type="button" onClick={() => onOpenLibrary?.("全部")}>
-            <Sparkles size={17} />
-            灵感库
-          </button>
-          <button className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`} type="button">
+          <button
+            className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
+            type="button"
+          >
             <Zap size={17} />
             {displayCredits ?? 666}
-            {creditDelta && <span className="fm-credit-delta">+{creditDelta}</span>}
+            {creditDelta && (
+              <span className="fm-credit-delta">+{creditDelta}</span>
+            )}
           </button>
           <button className="fm-top-bell" type="button" aria-label="通知">
             <Bell size={21} />
@@ -10175,28 +11266,48 @@ function WorkbenchTopbar({
               >
                 <img
                   className="fm-top-avatar"
-                  src={faceminiAsset("inspirations/image/thumbs/huaban-6703441531.webp")}
+                  src={faceminiAsset(
+                    "inspirations/image/thumbs/huaban-6703441531.webp",
+                  )}
                   alt=""
                 />
               </button>
               {showProfileMenu && (
                 <div className="fm-profile-dropdown" role="menu">
-                  <button type="button" role="menuitem" onClick={() => setShowProfileMenu(false)}>个人中心</button>
-                  <button type="button" role="menuitem" onClick={() => openAssets("全部")}>我的资产</button>
-                  <button type="button" role="menuitem" onClick={() => openAssets("全部", "transactions")}>账单明细</button>
-                  <button type="button" role="menuitem" onClick={() => setShowProfileMenu(false)}>账号设置</button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => openAssets("全部")}
+                  >
+                    我的资产
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => openAssets("全部", "transactions")}
+                  >
+                    账单明细
+                  </button>
                   <span aria-hidden="true" />
-                  <button type="button" role="menuitem" onClick={() => {
-                    setShowProfileMenu(false);
-                    onLogout?.();
-                  }}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      onLogout?.();
+                    }}
+                  >
                     退出登录
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <button className="fm-login-entry" type="button" onClick={() => onOpenAuth?.("login")}>
+            <button
+              className="fm-login-entry"
+              type="button"
+              onClick={() => onOpenAuth?.("login")}
+            >
               <LogIn size={16} />
               登录
             </button>
@@ -10228,6 +11339,7 @@ function ImageFeaturePage({
     image: 0,
     video: 0,
   });
+  const [imageLaunchSeed, setImageLaunchSeed] = useState(null);
 
   useEffect(() => {
     const next =
@@ -10251,10 +11363,12 @@ function ImageFeaturePage({
       }
       const nextId = id;
       if (nextId === "image" || nextId === "video") {
-        setComposerResetSignals((signals) => ({
-          ...signals,
-          [nextId]: signals[nextId] + 1,
-        }));
+        if (!hasPendingGenerationSeed(nextId)) {
+          setComposerResetSignals((signals) => ({
+            ...signals,
+            [nextId]: signals[nextId] + 1,
+          }));
+        }
       }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
@@ -10264,16 +11378,40 @@ function ImageFeaturePage({
     [onOpenHome],
   );
 
+  const handleOpenFeature = useCallback(
+    (id, launchSeed) => {
+      if (id === "image") {
+        const payload = buildImageLaunchSeedPayload(
+          launchSeed || peekPendingGenerationSeed("image") || {},
+        );
+        if (payload.prompt || payload.referenceImage?.url) {
+          writePendingGenerationSeed({ target: "image", ...payload });
+          setImageLaunchSeed(payload);
+        } else {
+          setImageLaunchSeed(null);
+        }
+      }
+      handleNavChange(id);
+    },
+    [handleNavChange],
+  );
+
   const openInviteDialog = useCallback(() => {
-    invitationApi.track("invite.entry_click", authUser?.inviteCode || getPendingInviteCode(), {
-      activeNav,
-      loggedIn: Boolean(authUser && !authUser.isGuest),
-    });
+    invitationApi.track(
+      "invite.entry_click",
+      authUser?.inviteCode || getPendingInviteCode(),
+      {
+        activeNav,
+        loggedIn: Boolean(authUser && !authUser.isGuest),
+      },
+    );
     setShowInvite(true);
   }, [activeNav, authUser]);
 
   const openInspirationLibrary = useCallback((tab = "全部") => {
-    setInspirationLibraryTab(fmInspirationLibraryTabs.includes(tab) ? tab : "全部");
+    setInspirationLibraryTab(
+      fmInspirationLibraryTabs.includes(tab) ? tab : "全部",
+    );
     setShowInspirationLibrary(true);
   }, []);
 
@@ -10318,7 +11456,7 @@ function ImageFeaturePage({
           visitedIds={visitedIds}
         >
           <CreationCenterView
-            onOpenFeature={handleNavChange}
+            onOpenFeature={handleOpenFeature}
             onOpenInvite={openInviteDialog}
             onOpenLibrary={openInspirationLibrary}
           />
@@ -10344,6 +11482,8 @@ function ImageFeaturePage({
             isActive={activeNav === "image"}
             onOpenAuth={onOpenAuth}
             resetSignal={composerResetSignals.image}
+            launchSeed={imageLaunchSeed}
+            onLaunchSeedConsumed={() => setImageLaunchSeed(null)}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -10402,7 +11542,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <WatermarkRemovalView />
+          <WatermarkRemovalView authUser={authUser} onOpenAuth={onOpenAuth} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice"
@@ -10629,12 +11769,24 @@ function App() {
     setView("home");
   }, []);
 
+  const enterCreationCenter = useCallback(() => {
+    window.sessionStorage.setItem(appEntryStorageKey, "1");
+    window.history.pushState(null, "", "#/creation");
+    setView("creation");
+  }, []);
+
   const finishAuth = useCallback((user) => {
     const hadInviteCode = Boolean(getPendingInviteCode());
     const returnedCredits = Number(user?.credits || 0);
-    if (hadInviteCode && returnedCredits >= registerGrantPoints + inviteRewardPoints) {
+    if (
+      hadInviteCode &&
+      returnedCredits >= registerGrantPoints + inviteRewardPoints
+    ) {
       try {
-        window.sessionStorage.setItem(pendingInviteBonusStorageKey, String(inviteRewardPoints));
+        window.sessionStorage.setItem(
+          pendingInviteBonusStorageKey,
+          String(inviteRewardPoints),
+        );
       } catch {
         // Session storage can be unavailable in restricted browser contexts.
       }
@@ -10695,7 +11847,11 @@ function App() {
     }
 
     return (
-      <StudioLanding onOpenAuth={setAuthDrawerMode} onEnterApp={enterAppHome} />
+      <StudioLanding
+        onOpenAuth={setAuthDrawerMode}
+        onEnterApp={enterAppHome}
+        onEnterCreation={enterCreationCenter}
+      />
     );
   })();
 

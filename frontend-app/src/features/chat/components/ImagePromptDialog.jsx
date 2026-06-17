@@ -15,7 +15,7 @@ function RatioPreviewIcon({ ratio, selected = false }) {
         width: "30px",
         alignItems: "center",
         justifyContent: "center",
-        flex: "0 0 30px"
+        flex: "0 0 30px",
       }}
     >
       <span
@@ -24,8 +24,10 @@ function RatioPreviewIcon({ ratio, selected = false }) {
           height: isSquare ? "18px" : isPortrait ? "22px" : "14px",
           borderRadius: "4px",
           border: `1.5px solid ${selected ? "#8f78ff" : "rgba(204, 204, 204, 0.72)"}`,
-          background: selected ? "rgba(143, 120, 255, 0.18)" : "rgba(255, 255, 255, 0.06)",
-          boxShadow: selected ? "0 0 0 3px rgba(143, 120, 255, 0.1)" : "none"
+          background: selected
+            ? "rgba(143, 120, 255, 0.18)"
+            : "rgba(255, 255, 255, 0.06)",
+          boxShadow: selected ? "0 0 0 3px rgba(143, 120, 255, 0.1)" : "none",
         }}
       />
     </span>
@@ -55,7 +57,7 @@ export function ImagePromptDialog({
   price,
   referenceSlot,
   collapsed = false,
-  dropdownPlacement = "top"
+  dropdownPlacement = "top",
 }) {
   const [isHovering, setIsHovering] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
@@ -131,16 +133,20 @@ export function ImagePromptDialog({
     () => ({
       width: "100%",
       position: "relative",
-      background: "linear-gradient(135deg, rgba(35, 35, 35, 0.78) 0%, rgba(28, 28, 28, 0.88) 100%)",
+      background:
+        "linear-gradient(135deg, rgba(35, 35, 35, 0.78) 0%, rgba(28, 28, 28, 0.88) 100%)",
       borderRadius: "24px",
-      border: isHovering ? "1px solid rgba(255, 255, 255, 0.38)" : "1px solid rgba(255, 255, 255, 0.08)",
+      border: isHovering
+        ? "1px solid rgba(255, 255, 255, 0.38)"
+        : "1px solid rgba(255, 255, 255, 0.08)",
       padding: "20px 24px",
-      boxShadow: "0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+      boxShadow:
+        "0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
-      transition: "border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1)"
+      transition: "border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1)",
     }),
-    [isHovering]
+    [isHovering],
   );
 
   const buttonBaseStyle = {
@@ -157,7 +163,7 @@ export function ImagePromptDialog({
     transition: "all 0.2s ease",
     color: "#cccccc",
     fontSize: "13px",
-    fontWeight: "500"
+    fontWeight: "500",
   };
 
   function dropdownMenuStyle(minWidth) {
@@ -175,7 +181,7 @@ export function ImagePromptDialog({
       boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
       backdropFilter: "blur(20px)",
       animation: "fadeIn 0.15s ease",
-      zIndex: 5
+      zIndex: 120,
     };
   }
 
@@ -186,7 +192,7 @@ export function ImagePromptDialog({
       cursor: "pointer",
       color,
       fontSize: "14px",
-      transition: "all 0.15s ease"
+      transition: "all 0.15s ease",
     };
   }
 
@@ -195,14 +201,14 @@ export function ImagePromptDialog({
   }
 
   function resetDropdownItem(color) {
-    return function(event) {
+    return function (event) {
       event.currentTarget.style.background = "transparent";
     };
   }
 
-  const currentModel = modelOptions.find(m => m.value === model);
-  const currentRatio = ratioOptions.find(r => (r.value || r) === ratio);
-  const currentQuality = qualityOptions.find(q => q.value === quality);
+  const currentModel = modelOptions.find((m) => m.value === model);
+  const currentRatio = ratioOptions.find((r) => (r.value || r) === ratio);
+  const currentQuality = qualityOptions.find((q) => q.value === quality);
   const dialogClassName = `chatbot-ui-dialog image-prompt-dialog ${
     collapsed ? "is-collapsed" : "is-expanded"
   }`;
@@ -225,24 +231,28 @@ export function ImagePromptDialog({
     minHeight: "28px",
     maxHeight: `${promptMaxHeight}px`,
     overflowY: "hidden",
-    padding: 0
+    padding: 0,
   };
   const compactAddButtonStyle = {
     ...buttonBaseStyle,
     flex: "0 0 44px",
     width: "44px",
-    padding: 0
+    padding: 0,
   };
   const compactSubmitStyle = {
     ...buttonBaseStyle,
     flex: "0 0 auto",
     width: "auto",
     minWidth: "96px",
-    background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
-    border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
+    background: canSubmit
+      ? buttonBaseStyle.background
+      : "rgba(55, 55, 55, 0.5)",
+    border: canSubmit
+      ? buttonBaseStyle.border
+      : "1px solid rgba(255, 255, 255, 0.04)",
     color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
     cursor: canSubmit ? "pointer" : "not-allowed",
-    opacity: canSubmit ? 1 : 0.6
+    opacity: canSubmit ? 1 : 0.6,
   };
 
   return (
@@ -263,7 +273,15 @@ export function ImagePromptDialog({
             style={compactAddButtonStyle}
             aria-label="添加"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="#999999"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
               <line x1="10" y1="4" x2="10" y2="16" />
               <line x1="4" y1="10" x2="16" y2="10" />
             </svg>
@@ -294,7 +312,16 @@ export function ImagePromptDialog({
           style={compactSubmitStyle}
           aria-label="生成"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           生成
@@ -303,8 +330,24 @@ export function ImagePromptDialog({
 
       <div className="image-prompt-reference-region">{referenceSlot}</div>
 
-      <div className="image-prompt-controls-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+      <div
+        className="image-prompt-controls-row"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
           {onAdd && (
             <button
               type="button"
@@ -312,7 +355,15 @@ export function ImagePromptDialog({
               style={buttonBaseStyle}
               aria-label="添加"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="#999999"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
                 <line x1="10" y1="4" x2="10" y2="16" />
                 <line x1="4" y1="10" x2="16" y2="10" />
               </svg>
@@ -329,17 +380,45 @@ export function ImagePromptDialog({
                 setShowQualityDropdown(false);
               }}
               style={buttonBaseStyle}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
+              }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8f78ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#8f78ff"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
               <span>{currentModel?.label || model}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showModelDropdown ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{
+                  transform: showModelDropdown ? "rotate(180deg)" : "rotate(0)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <path
+                  d="M3 4.5L6 7.5L9 4.5"
+                  stroke="#888888"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
 
@@ -353,19 +432,34 @@ export function ImagePromptDialog({
                       setShowModelDropdown(false);
                     }}
                     style={{
-                      ...dropdownItemStyle(item.value === model ? "#8f78ff" : "#cccccc"),
+                      ...dropdownItemStyle(
+                        item.value === model ? "#8f78ff" : "#cccccc",
+                      ),
                       fontWeight: item.value === model ? "500" : "400",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between"
+                      justifyContent: "space-between",
                     }}
                     onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem(item.value === model ? "#8f78ff" : "#cccccc")}
+                    onMouseLeave={resetDropdownItem(
+                      item.value === model ? "#8f78ff" : "#cccccc",
+                    )}
                   >
                     {item.label}
                     {item.value === model && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2.5 7L5.5 10L11.5 4" stroke="#8f78ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M2.5 7L5.5 10L11.5 4"
+                          stroke="#8f78ff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </div>
@@ -384,13 +478,32 @@ export function ImagePromptDialog({
                 setShowQualityDropdown(false);
               }}
               style={buttonBaseStyle}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
+              }}
             >
               <RatioPreviewIcon ratio={ratio} selected={showRatioDropdown} />
               <span>{currentRatio?.label || currentRatio || ratio}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showRatioDropdown ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{
+                  transform: showRatioDropdown ? "rotate(180deg)" : "rotate(0)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <path
+                  d="M3 4.5L6 7.5L9 4.5"
+                  stroke="#888888"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
 
@@ -405,29 +518,53 @@ export function ImagePromptDialog({
                       key={optionValue}
                       onClick={() => {
                         onRatioChange(optionValue);
-                      setShowRatioDropdown(false);
-                    }}
-                    style={{
-                      ...dropdownItemStyle(isSelected ? "#8f78ff" : "#cccccc"),
-                      fontWeight: isSelected ? "500" : "400",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "12px"
-                    }}
-                    onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem(isSelected ? "#8f78ff" : "#cccccc")}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-                      <RatioPreviewIcon ratio={optionValue} selected={isSelected} />
-                      {item.label || item}
-                    </span>
-                    {isSelected && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2.5 7L5.5 10L11.5 4" stroke="#8f78ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </div>
+                        setShowRatioDropdown(false);
+                      }}
+                      style={{
+                        ...dropdownItemStyle(
+                          isSelected ? "#8f78ff" : "#cccccc",
+                        ),
+                        fontWeight: isSelected ? "500" : "400",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                      }}
+                      onMouseEnter={highlightDropdownItem}
+                      onMouseLeave={resetDropdownItem(
+                        isSelected ? "#8f78ff" : "#cccccc",
+                      )}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "10px",
+                        }}
+                      >
+                        <RatioPreviewIcon
+                          ratio={optionValue}
+                          selected={isSelected}
+                        />
+                        {item.label || item}
+                      </span>
+                      {isSelected && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                        >
+                          <path
+                            d="M2.5 7L5.5 10L11.5 4"
+                            stroke="#8f78ff"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -444,12 +581,35 @@ export function ImagePromptDialog({
                 setShowRatioDropdown(false);
               }}
               style={buttonBaseStyle}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
+              }}
             >
-              <span>{currentQuality?.label || currentQuality?.value || quality}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showQualityDropdown ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s ease" }}>
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="#888888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <span>
+                {currentQuality?.label || currentQuality?.value || quality}
+              </span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{
+                  transform: showQualityDropdown
+                    ? "rotate(180deg)"
+                    : "rotate(0)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <path
+                  d="M3 4.5L6 7.5L9 4.5"
+                  stroke="#888888"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
 
@@ -463,19 +623,34 @@ export function ImagePromptDialog({
                       setShowQualityDropdown(false);
                     }}
                     style={{
-                      ...dropdownItemStyle(item.value === quality ? "#8f78ff" : "#cccccc"),
+                      ...dropdownItemStyle(
+                        item.value === quality ? "#8f78ff" : "#cccccc",
+                      ),
                       fontWeight: item.value === quality ? "500" : "400",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between"
+                      justifyContent: "space-between",
                     }}
                     onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem(item.value === quality ? "#8f78ff" : "#cccccc")}
+                    onMouseLeave={resetDropdownItem(
+                      item.value === quality ? "#8f78ff" : "#cccccc",
+                    )}
                   >
                     {item.label || item.value}
                     {item.value === quality && (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M2.5 7L5.5 10L11.5 4" stroke="#8f78ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 14 14"
+                        fill="none"
+                      >
+                        <path
+                          d="M2.5 7L5.5 10L11.5 4"
+                          stroke="#8f78ff"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
                       </svg>
                     )}
                   </div>
@@ -490,12 +665,25 @@ export function ImagePromptDialog({
               className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onRandom}
               style={buttonBaseStyle}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
+              }}
               data-tooltip="随机提示词"
               aria-label="随机提示词"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#999999"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <rect x="1" y="3" width="15" height="13" rx="2" ry="2" />
                 <path d="m16 8-4 4-4-4" />
                 <circle cx="5.5" cy="18.5" r="2.5" />
@@ -510,12 +698,25 @@ export function ImagePromptDialog({
               className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onClear}
               style={buttonBaseStyle}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)"; }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
+              }}
               data-tooltip="清空提示词"
               aria-label="清空提示词"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#999999"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M3 6h18" />
                 <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
@@ -524,7 +725,15 @@ export function ImagePromptDialog({
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            flexWrap: "wrap",
+            justifyContent: "flex-end",
+          }}
+        >
           {price && (
             <span
               style={{
@@ -534,7 +743,7 @@ export function ImagePromptDialog({
                 border: "1px solid rgba(255, 212, 117, 0.2)",
                 borderRadius: "999px",
                 fontSize: "12px",
-                fontWeight: "900"
+                fontWeight: "900",
               }}
             >
               {price}
@@ -549,17 +758,30 @@ export function ImagePromptDialog({
               ...buttonBaseStyle,
               width: "auto",
               minWidth: "120px",
-              background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
-              border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
+              background: canSubmit
+                ? buttonBaseStyle.background
+                : "rgba(55, 55, 55, 0.5)",
+              border: canSubmit
+                ? buttonBaseStyle.border
+                : "1px solid rgba(255, 255, 255, 0.04)",
               color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
               fontSize: buttonBaseStyle.fontSize,
               fontWeight: buttonBaseStyle.fontWeight,
               cursor: canSubmit ? "pointer" : "not-allowed",
-              opacity: canSubmit ? 1 : 0.6
+              opacity: canSubmit ? 1 : 0.6,
             }}
             aria-label="生成"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
             生成
