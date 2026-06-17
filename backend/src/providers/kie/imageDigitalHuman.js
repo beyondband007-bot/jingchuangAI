@@ -15,7 +15,8 @@ export async function createKieSpeechToVideoTask({
   model,
   prompt,
   imageUrl,
-  audioUrl
+  audioUrl,
+  resolution
 }) {
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",
@@ -23,7 +24,9 @@ export async function createKieSpeechToVideoTask({
       model,
       input: {
         image_url: imageUrl,
+        reference_image: [imageUrl],
         audio_url: audioUrl,
+        ...(resolution ? { resolution } : {}),
         prompt
       }
     })

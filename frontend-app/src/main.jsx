@@ -9259,8 +9259,9 @@ const imageDigitalHumanMotionApi = {
     return mapped;
   },
 
-  async createTask() {
-    throw new Error("请在主页提交图片数字人任务");
+  async createTask(payload) {
+    const task = await imageDigitalHumanApi.createTask(payload);
+    return mapImageDigitalHumanMotionTask(task);
   },
 
   async deleteTask(id) {

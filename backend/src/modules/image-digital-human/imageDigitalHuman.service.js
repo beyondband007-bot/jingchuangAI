@@ -171,7 +171,8 @@ async function createProviderTask(taskId, payload) {
     model: usedProviderModel,
     prompt: klingAvatarPrompt,
     imageUrl: portraitUpload.url,
-    audioUrl: audioUpload.url
+    audioUrl: audioUpload.url,
+    resolution: model.resolution
   });
 
   await setImageDigitalHumanTaskProviderStarted(taskId, {
@@ -320,10 +321,22 @@ export async function createTask(payload, file) {
     });
   } catch (error) {
     console.error("Create image digital human provider task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `图片数字人任务创建失败：${error.message}`);
+    await refundTask(taskId, userId, costPoints, `图片数字人上游服务创建失败：${formatProviderErrorMessage(error)}`);
   }
 
   return getTask(taskId);
+}
+
+function formatProviderErrorMessage(error) {
+  const message = String(error?.message || "").trim();
+  const providerMessage = String(error?.body?.msg || error?.body?.error || "").trim();
+  const rawMessage = providerMessage || message;
+
+  if (/deduction of points failed|insufficient balance|balance insufficient|insufficient quota|quota/i.test(rawMessage)) {
+    return "KIE 账号额度扣减失败，请检查 KIE 后台余额或套餐额度";
+  }
+
+  return rawMessage || "服务商未返回具体原因";
 }
 
 async function refreshProcessingTasks() {

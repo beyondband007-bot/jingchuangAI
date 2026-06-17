@@ -25,10 +25,13 @@ const ttsEmotionOptions = [
 
 export function ImageDigitalHumanFaceSwapWorkbench({
   copy,
+  onSubmit,
+  isSubmitting = false,
   heading = "图片数字人生成",
 }) {
   const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
   const [voices, setVoices] = useState([]);
+  const [portraitFile, setPortraitFile] = useState(null);
   const [portraitPreview, setPortraitPreview] = useState("");
   const [driveMode, setDriveMode] = useState(emptyImageDigitalHumanOptions.defaults.driveMode);
   const [model, setModel] = useState("");
@@ -96,6 +99,7 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     if (portraitPreview.startsWith("blob:")) {
       window.URL.revokeObjectURL(portraitPreview);
     }
+    setPortraitFile(file);
     setPortraitPreview(window.URL.createObjectURL(file));
     setNotice("");
   }
@@ -104,6 +108,7 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     if (portraitPreview.startsWith("blob:")) {
       window.URL.revokeObjectURL(portraitPreview);
     }
+    setPortraitFile(null);
     setPortraitPreview("");
     setNotice("");
   }
@@ -134,6 +139,37 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     } finally {
       setIsPreviewingVoice(false);
     }
+  }
+
+  function submit() {
+    if (!portraitFile) {
+      setNotice("请先上传人物正面图");
+      return;
+    }
+    if (!text.trim()) {
+      setNotice("请先填写脚本内容");
+      return;
+    }
+    if (!voiceId) {
+      setNotice("请先选择音色");
+      return;
+    }
+    if (!model) {
+      setNotice("请先选择模型");
+      return;
+    }
+
+    setNotice("");
+    onSubmit?.({
+      portrait: portraitFile,
+      text: text.trim(),
+      voiceId,
+      model,
+      speed,
+      volume,
+      pitch,
+      emotion,
+    });
   }
 
   return (
@@ -288,8 +324,8 @@ export function ImageDigitalHumanFaceSwapWorkbench({
                   </label>
                 </div>
                 <div className="idh-showcase-tts-action">
-                  <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={previewVoice} disabled={isPreviewingVoice}>
-                    {isPreviewingVoice ? <Loader2 size={18} className="image-digital-human-workbench__spinner" /> : <Wand2 size={18} />}
+                  <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={submit} disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 size={18} className="image-digital-human-workbench__spinner" /> : <Wand2 size={18} />}
                     {"\u751f\u6210\u6570\u5b57\u4eba\u89c6\u9891"}
                   </button>
                 </div>
