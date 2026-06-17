@@ -90,7 +90,6 @@ import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
-import { ImageDigitalHumanFaceSwapWorkbench } from "./features/image-digital-human/ImageDigitalHumanFaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import imageInspirationPrompts from "./data/imageInspirationPrompts.json";
@@ -443,7 +442,6 @@ const navItems = [
   { id: "video", label: "视频生成", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
   { id: "digital-human", label: "数字人形象", icon: UserRound },
-  { id: "image-digital-human", label: "图片数字人", icon: Camera },
   { id: "motion", label: "动作迁移", icon: Sparkles },
   { id: "face-swap", label: "视频换脸", icon: Scissors },
   { id: "voice", label: "语音合成", icon: Mic },
@@ -492,7 +490,6 @@ const homeFeatureRoutes = [
   "video",
   "chat",
   "digital-human",
-  "image-digital-human",
   "motion",
   "face-swap",
   "voice",
@@ -1297,7 +1294,7 @@ function getRouteView() {
     window.location.pathname === "/image-digital-human" ||
     hashView === "image-digital-human"
   )
-    return "image-digital-human";
+    return "digital-human";
   if (
     window.location.pathname === "/digital-human" ||
     hashView === "digital-human"
@@ -11098,10 +11095,7 @@ function WorkbenchTopbar({
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
   const profileMenuRef = useRef(null);
-  const showDigitalHumanTabs = [
-    "digital-human",
-    "image-digital-human",
-  ].includes(activeNav);
+  const showDigitalHumanTabs = activeNav === "digital-human";
   const showArticleTabs = activeNav === "article";
 
   useEffect(() => {
@@ -11191,15 +11185,6 @@ function WorkbenchTopbar({
                 onClick={() => onNavChange("digital-human")}
               >
                 数字人形象
-              </button>
-              <button
-                type="button"
-                className={
-                  activeNav === "image-digital-human" ? "is-active" : ""
-                }
-                onClick={() => onNavChange("image-digital-human")}
-              >
-                图片数字人
               </button>
             </div>
           )}
@@ -11509,21 +11494,6 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
-          id="image-digital-human"
-          activeNav={activeNav}
-          visitedIds={visitedIds}
-        >
-          <MotionTransferView
-            navId="image-digital-human"
-            api={imageDigitalHumanMotionApi}
-            copy={imageDigitalHumanCopy}
-            splitResults
-            WorkbenchComponent={ImageDigitalHumanFaceSwapWorkbench}
-            heading="图片数字人生成"
-            isActive={activeNav === "image-digital-human"}
-          />
-        </FeatureModuleKeepAlive>
-        <FeatureModuleKeepAlive
           id="motion"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -11631,7 +11601,6 @@ function ImageFeaturePage({
           "video",
           "chat",
           "digital-human",
-          "image-digital-human",
           "motion",
           "face-swap",
           "watermark",
