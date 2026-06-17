@@ -901,7 +901,7 @@ const fmCreationScenes = [
     "creation/scenes/self-media.png",
     ["小红书", "抖音", "朋友圈"],
     "article",
-    "进入爆款图文",
+    "进入自媒体文案",
   ],
   [
     "电商美工",
@@ -917,7 +917,7 @@ const fmCreationScenes = [
     "creation/scenes/virtual-anchor.png",
     ["抖音", "淘宝直播", "视频号"],
     "digital-human",
-    "进入数字人",
+    "进入数字人形象",
   ],
   [
     "文案带货",
@@ -925,7 +925,7 @@ const fmCreationScenes = [
     "creation/scenes/copy-selling.png",
     ["淘宝", "抖音", "小红书"],
     "article",
-    "进入爆款图文",
+    "进入带货文案",
   ],
   [
     "品牌宣传",
@@ -933,7 +933,7 @@ const fmCreationScenes = [
     "creation/scenes/brand-promo.png",
     ["公众号", "抖音", "品牌私域"],
     "article",
-    "进入爆款图文",
+    "进入品牌宣传",
   ],
   [
     "母婴种草",
@@ -941,7 +941,7 @@ const fmCreationScenes = [
     "creation/scenes/mom-baby.png",
     ["小红书", "抖音", "宝宝树"],
     "article",
-    "进入爆款图文",
+    "进入母婴种草",
   ],
 ];
 
@@ -2011,29 +2011,6 @@ const AppHome = memo(function AppHome({
           <a href="#modules">关于产品</a>
           <a href="#footer">探索我们</a>
         </div>
-        <div className="fm-home-actions">
-          <button
-            className="fm-primary fm-home-enter-creation"
-            type="button"
-            onClick={() => onOpenFeature("creation")}
-          >
-            进入创作中心
-          </button>
-          {isGuest && (
-            <>
-              <button type="button" onClick={() => onOpenAuth("login")}>
-                登录
-              </button>
-              <button
-                className="fm-primary"
-                type="button"
-                onClick={() => onOpenAuth("register")}
-              >
-                注册
-              </button>
-            </>
-          )}
-        </div>
       </nav>
       <section className="fm-hero-section">
         <h1>千面创想 一面即达</h1>
@@ -2156,8 +2133,8 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     },
     {
       image: faceminiAsset("creation/banners/home-top-slider-2.png"),
-      action: "image",
-      label: "打开图片视频生成",
+      action: "invite",
+      label: "打开邀请有礼",
     },
   ];
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
@@ -2250,7 +2227,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
             className="fm-banner-main-hit"
             type="button"
             onClick={handleHeroBannerClick}
-            aria-label={heroBanners[bannerIndex]?.label || "打开图片生成"}
+            aria-label={heroBanners[bannerIndex]?.label || "打开创作功能"}
           >
             <span
               className={`fm-hero-banner-stage ${isBannerSliding ? "is-sliding" : ""}`}
@@ -2294,27 +2271,30 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
       <section className="fm-section-block">
         <h2>场景化创作入口</h2>
         <div className="fm-scene-grid">
-          {fmCreationScenes.map(([title, desc, image, tags, route]) => (
-            <button
-              className="fm-scene-card"
-              type="button"
-              key={title}
-              onClick={() => onOpenFeature(route)}
-            >
-              <div className="fm-scene-image">
-                <img src={getCreationSceneImage(image)} alt="" />
-              </div>
-              <div className="fm-scene-body">
-                <h3>{title}</h3>
-                <p>{desc}</p>
-                <div className="fm-scene-tags">
-                  {tags.map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
+          {fmCreationScenes.map(
+            ([title, desc, image, tags, route, entryLabel]) => (
+              <button
+                className="fm-scene-card"
+                type="button"
+                key={title}
+                onClick={() => onOpenFeature(route)}
+              >
+                <div className="fm-scene-image">
+                  <img src={getCreationSceneImage(image)} alt="" />
+                  <span className="fm-scene-entry">{entryLabel}</span>
                 </div>
-              </div>
-            </button>
-          ))}
+                <div className="fm-scene-body">
+                  <h3>{title}</h3>
+                  <p>{desc}</p>
+                  <div className="fm-scene-tags">
+                    {tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </button>
+            ),
+          )}
         </div>
       </section>
       <section className="fm-section-block">
@@ -7104,7 +7084,7 @@ function ChatCanvas({ messages, isSubmitting, error }) {
     return (
       <div className="chat-main-canvas">
         <div className="chat-empty-state llm-empty-state">
-          <h1>Hi，我是Facemini，来跟我聊聊天吧</h1>
+          <h1>Hi，我是 Facemini，你的 AI 创作助手</h1>
         </div>
       </div>
     );
@@ -7328,7 +7308,11 @@ function ChatComposerBar({
             submitPrompt();
           }
         }}
-        placeholder={isReady ? "请告诉我您的想法......" : "正在加载对话模型..."}
+        placeholder={
+          isReady
+            ? "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
+            : "正在加载对话模型..."
+        }
       />
       <div className="llm-composer-footer">
         <div className="llm-toolbar">

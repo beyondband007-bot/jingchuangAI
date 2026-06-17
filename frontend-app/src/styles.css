@@ -29215,27 +29215,23 @@ textarea::placeholder {
 
 .fm-creation-page .fm-scene-entry {
   position: absolute !important;
-  left: 14px !important;
-  right: 14px !important;
-  bottom: 13px !important;
+  left: 50% !important;
+  bottom: 12px !important;
   z-index: 2 !important;
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: flex-start !important;
+  justify-content: center !important;
+  max-width: calc(100% - 20px) !important;
+  padding: 0 !important;
   color: #ffffff !important;
-  font-size: 13px !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
   line-height: 1.2 !important;
   letter-spacing: 0 !important;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.28) !important;
-}
-
-.fm-creation-page .fm-scene-entry::after {
-  content: "›" !important;
-  margin-left: 6px !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
-  transform: translateY(-1px) !important;
+  white-space: nowrap !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+  transform: translateX(-50%) !important;
+  pointer-events: none !important;
 }
 
 .fm-creation-page .fm-scene-body {
