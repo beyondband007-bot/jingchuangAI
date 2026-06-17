@@ -6,6 +6,7 @@ import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
+const maxCloneAudioBytes = 20 * 1024 * 1024;
 
 function formatVoiceDuration(ms) {
   const seconds = Math.round(Number(ms || 0) / 1000);
@@ -73,7 +74,7 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceSynthesisView({ authUser, onOpenAuth }) {
+export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
@@ -92,8 +93,20 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
+  const [toast, setToast] = useState(null);
   const recentAudioRefs = useRef({});
+  const toastTimerRef = useRef(null);
+  const uploadVersionRef = useRef(0);
   const isGuest = Boolean(authUser?.isGuest);
+
+  function showToast(type, message) {
+    setToast({ type, message });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }
 
   function requestLoginForGeneration() {
     setNotice("请先登录");
@@ -129,16 +142,53 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!resetSignal) return;
+    uploadVersionRef.current += 1;
+    Object.values(recentAudioRefs.current).forEach((audio) => audio?.pause?.());
+    setCloneAudio(null);
+    setUploading("");
+    setNotice("");
+    setText("");
+    setSpeed(1);
+    setVolume(1);
+    setPitch(0);
+    setIsCloning(false);
+    setIsSynthesizing(false);
+    setCurrentVoice(null);
+    setDemoAudio("");
+    setResultAudio("");
+    setResultUrl("");
+    setResultFileName("voice-synthesis.mp3");
+    setViewTab("home");
+    setPlayingRecentId("");
+    setToast(null);
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, [resetSignal]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
   async function uploadFile(file) {
+    const uploadVersion = uploadVersionRef.current + 1;
+    uploadVersionRef.current = uploadVersion;
     setNotice("");
     setUploading("clone");
     try {
+      if (file.size > maxCloneAudioBytes) {
+        throw new Error("音频文件需小于 20MB");
+      }
       const durationMs = await readAudioDuration(file);
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
         throw new Error("目标音色音频需在 10 秒到 5 分钟之间，支持 mp3、m4a、wav。");
       }
 
       const result = await voiceApi.uploadCloneAudio(file, durationMs);
+      if (uploadVersion !== uploadVersionRef.current) return;
       setCloneAudio({
         ...result,
         fileName: file.name,
@@ -151,9 +201,10 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
       setResultUrl("");
       setNotice("目标音色上传完成。");
     } catch (error) {
+      if (uploadVersion !== uploadVersionRef.current) return;
       setNotice(error.message || "上传音色失败");
     } finally {
-      setUploading("");
+      if (uploadVersion === uploadVersionRef.current) setUploading("");
     }
   }
 
@@ -242,8 +293,10 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
         createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
+      showToast("success", "语音生成成功");
       setNotice("语音生成完成。");
     } catch (error) {
+      showToast("error", "语音生成失败，请稍后重试");
       setNotice(error.message || "语音生成失败");
     } finally {
       setIsSynthesizing(false);
@@ -440,6 +493,11 @@ export function VoiceSynthesisView({ authUser, onOpenAuth }) {
           </div>
         )}
       </div>
+      {toast ? (
+        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      ) : null}
     </section>
   );
 }

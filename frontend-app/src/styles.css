@@ -5602,6 +5602,8 @@ a:hover {
 }
 
 .chat-message-row {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -5646,6 +5648,7 @@ a:hover {
 
 .chat-copy-actions {
   position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 1px;
@@ -5695,7 +5698,7 @@ a:hover {
   position: absolute;
   left: 0;
   bottom: calc(100% + 8px);
-  z-index: 20;
+  z-index: 80;
   display: grid;
   min-width: 132px;
   padding: 6px;
@@ -24501,7 +24504,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 
 [data-feature-module="article"] .article-submit-row.is-copy {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 184px;
+  grid-template-columns: minmax(0, 1fr) 196px;
   gap: 18px;
   margin-top: auto;
   align-items: center !important;
@@ -25287,7 +25290,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   }
 
   [data-feature-module="article"] .article-submit-row.is-copy {
-    grid-template-columns: minmax(0, 1fr) 150px !important;
+    grid-template-columns: minmax(0, 1fr) 162px !important;
     gap: 10px !important;
   }
 
@@ -26532,7 +26535,21 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   box-shadow: none !important;
 }
 
+[data-feature-module="chat"] .chat-message-row {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+[data-feature-module="chat"] .chat-message-row:has(.chat-copy-actions.is-menu-open) {
+  z-index: 30 !important;
+}
+
+[data-feature-module="chat"] .chat-message-bubble:has(.chat-copy-actions.is-menu-open) {
+  overflow: visible !important;
+}
+
 [data-feature-module="chat"] .chat-copy-actions {
+  z-index: 31 !important;
   color: #8c879b !important;
 }
 
@@ -26556,6 +26573,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 [data-feature-module="chat"] .chat-copy-menu {
+  z-index: 40 !important;
   min-width: 132px !important;
   color: #282532 !important;
   background: #ffffff !important;
@@ -30626,7 +30644,7 @@ textarea::placeholder {
   }
 
   [data-feature-module="article"] .article-submit-row.is-copy {
-    grid-template-columns: minmax(0, 1fr) 168px;
+    grid-template-columns: minmax(0, 1fr) 180px;
     gap: 12px;
   }
 
@@ -31082,7 +31100,7 @@ textarea::placeholder {
   [data-feature-module="article"]
     .article-view-root.article-popular-workbench
     .article-submit-row.is-copy {
-    grid-template-columns: minmax(0, 1fr) 130px !important;
+    grid-template-columns: minmax(0, 1fr) 142px !important;
     gap: 8px !important;
   }
 

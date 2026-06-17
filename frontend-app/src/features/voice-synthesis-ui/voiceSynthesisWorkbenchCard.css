@@ -97,8 +97,14 @@
   background: radial-gradient(circle at center, rgba(144, 78, 255, 0.16), rgba(66, 38, 122, 0.1));
   border: 1.5px dashed rgba(178, 86, 255, 0.56);
   border-radius: 16px;
+  font: inherit;
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, filter 180ms ease;
+}
+
+.voice-synthesis-workspace__dropzone:disabled {
+  cursor: wait;
+  opacity: 0.86;
 }
 
 .voice-synthesis-workspace__dropzone:hover {

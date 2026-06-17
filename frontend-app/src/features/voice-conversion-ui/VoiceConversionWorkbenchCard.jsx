@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Download, FileAudio, Mic2, Play } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
 import "./voiceConversionWorkbenchCard.css";
@@ -38,6 +38,12 @@ function UploadBox({
   onClear,
   tone = "default",
 }) {
+  const inputRef = useRef(null);
+
+  function pickFile(file) {
+    if (file && !isUploading) onPick(file);
+  }
+
   function clearFile(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -45,20 +51,31 @@ function UploadBox({
   }
 
   return (
-    <label
+    <button
       className={`voice-conversion-workbench__upload-box ${
         tone === "video" ? "is-video" : ""
       } ${fileState ? "has-file" : ""}`}
+      type="button"
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(event) => {
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pickFile(event.dataTransfer.files?.[0]);
+      }}
+      disabled={isUploading}
     >
       <input
+        ref={inputRef}
         type="file"
         accept={accept}
-        hidden
         disabled={isUploading}
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
-          if (file) onPick(file);
+          pickFile(file);
         }}
       />
       <div className="voice-conversion-workbench__upload-icon">
@@ -76,16 +93,20 @@ function UploadBox({
           : note}
       </span>
       {fileState ? (
-        <button
-          type="button"
+        <span
+          role="button"
+          tabIndex={0}
           className="voice-conversion-workbench__upload-clear"
           aria-label="清除已上传音频"
           onClick={clearFile}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") clearFile(event);
+          }}
         >
           ×
-        </button>
+        </span>
       ) : null}
-    </label>
+    </button>
   );
 }
 

@@ -68,6 +68,10 @@ function makeDownloadName(prefix = "video-dub", ext = "mp4") {
 function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function pickFile(file) {
+    if (file && !isUploading) onPick(file);
+  }
+
   function clearFile(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -79,6 +83,14 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
       className={`video-dub-upload-slot ${hasFile ? "has-file" : ""}`}
       type="button"
       onClick={() => inputRef.current?.click()}
+      onDragOver={(event) => {
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pickFile(event.dataTransfer.files?.[0]);
+      }}
       disabled={isUploading}
     >
       <input
@@ -88,7 +100,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
-          if (file) onPick(file);
+          pickFile(file);
         }}
       />
       {hasFile && !isUploading && (
@@ -257,7 +269,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
   );
 }
 
-export function VideoDubbingView({ authUser }) {
+export function VideoDubbingView({ authUser, resetSignal = 0 }) {
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -269,8 +281,19 @@ export function VideoDubbingView({ authUser }) {
   const [previewTask, setPreviewTask] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => readFavoriteIds());
   const [currentStage, setCurrentStage] = useState("");
+  const [toast, setToast] = useState(null);
   const currentTaskStatusRef = useRef("");
+  const toastTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
+
+  function showToast(type, message) {
+    setToast({ type, message });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }
 
   function refreshCredits() {
     videoDubbingApi
@@ -286,6 +309,26 @@ export function VideoDubbingView({ authUser }) {
     }).catch(() => {});
     loadTasks();
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!resetSignal) return;
+    setVideoFile(null);
+    setNotice("");
+    setIsUploading(false);
+    setIsSubmitting(false);
+    setViewTab("home");
+    setPreviewTask(null);
+    setCurrentStage("");
+    setToast(null);
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, [resetSignal]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
   }, []);
 
   // Poll current task stage/progress
@@ -305,6 +348,11 @@ export function VideoDubbingView({ authUser }) {
         if (task.status === "completed" || task.status === "failed") {
           setCurrentTaskId(null);
           clearInterval(interval);
+          if (task.status === "completed") {
+            showToast("success", "视频配音生成成功");
+          } else {
+            showToast("error", "视频配音生成失败，请稍后重试");
+          }
         }
         setCurrentStage(task.stage || task.status || "");
         setTasks((prev) => prev.map((t) => (t.id === currentTaskId ? { ...t, ...task } : t)));
@@ -531,6 +579,11 @@ export function VideoDubbingView({ authUser }) {
           </div>
         </div>
       )}
+      {toast ? (
+        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      ) : null}
     </section>
   );
 }

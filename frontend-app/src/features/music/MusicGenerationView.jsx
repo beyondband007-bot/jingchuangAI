@@ -63,7 +63,7 @@ async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {
   throw new Error("音乐仍在生成中，请稍后到历史记录里查看。");
 }
 
-export function MusicGenerationView() {
+export function MusicGenerationView({ resetSignal = 0 }) {
   const [prompt, setPrompt] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
@@ -81,6 +81,7 @@ export function MusicGenerationView() {
   const [recentProgress, setRecentProgress] = useState({});
   const [recentTimes, setRecentTimes] = useState({});
   const recentAudioRefs = useRef({});
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -99,6 +100,31 @@ export function MusicGenerationView() {
       // Recent history is optional.
     }
   }, [recentResults]);
+
+  useEffect(() => {
+    if (!resetSignal) return;
+    Object.values(recentAudioRefs.current).forEach((audio) => audio?.pause?.());
+    setPrompt("");
+    setLyrics("");
+    setIsInstrumental(false);
+    setLyricsOptimizer(false);
+    setIsGenerating(false);
+    setNotice("");
+    setCurrentResult(null);
+    setToast(null);
+    setViewTab("home");
+    setPlayingRecentId("");
+    setRecentProgress({});
+    setRecentTimes({});
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, [resetSignal]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
 
   async function generate() {
     if (!prompt.trim()) {
@@ -154,8 +180,10 @@ export function MusicGenerationView() {
 
   function showToast(type, message) {
     setToast({ type, message });
-    setTimeout(() => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
       setToast(null);
+      toastTimerRef.current = null;
       if (type === "success") {
         setViewTab("recent");
       }

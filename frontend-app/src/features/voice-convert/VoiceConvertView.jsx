@@ -5,6 +5,8 @@ import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
+const maxTargetAudioBytes = 20 * 1024 * 1024;
+const maxSourceAudioBytes = 50 * 1024 * 1024;
 
 function formatVoiceDuration(ms) {
   const seconds = Math.round(Number(ms || 0) / 1000);
@@ -72,7 +74,7 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceConvertView() {
+export function VoiceConvertView({ resetSignal = 0 }) {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
   const [uploading, setUploading] = useState("");
@@ -89,7 +91,20 @@ export function VoiceConvertView() {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
+  const [toast, setToast] = useState(null);
   const recentAudioRefs = useRef({});
+  const toastTimerRef = useRef(null);
+  const targetUploadVersionRef = useRef(0);
+  const sourcePickVersionRef = useRef(0);
+
+  function showToast(type, message) {
+    setToast({ type, message });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }
 
   useEffect(() => {
     try {
@@ -110,16 +125,53 @@ export function VoiceConvertView() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!resetSignal) return;
+    targetUploadVersionRef.current += 1;
+    sourcePickVersionRef.current += 1;
+    Object.values(recentAudioRefs.current).forEach((audio) => audio?.pause?.());
+    setTargetAudio(null);
+    setSourceAudio(null);
+    setUploading("");
+    setNotice("");
+    setSpeed(1);
+    setVolume(1);
+    setPitch(0);
+    setIsConverting(false);
+    setCurrentVoice(null);
+    setDemoAudio("");
+    setResultAudio("");
+    setResultUrl("");
+    setResultFileName("voice-convert.mp3");
+    setViewTab("home");
+    setPlayingRecentId("");
+    setToast(null);
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, [resetSignal]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+  }, []);
+
   async function uploadTargetFile(file) {
+    const uploadVersion = targetUploadVersionRef.current + 1;
+    targetUploadVersionRef.current = uploadVersion;
     setNotice("");
     setUploading("target");
     try {
+      if (file.size > maxTargetAudioBytes) {
+        throw new Error("目标音色文件需小于 20MB");
+      }
       const durationMs = await readAudioDuration(file);
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
         throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav。");
       }
 
       const result = await voiceConvertApi.uploadTargetAudio(file, durationMs);
+      if (uploadVersion !== targetUploadVersionRef.current) return;
       setTargetAudio({
         ...result,
         fileName: file.name,
@@ -132,9 +184,10 @@ export function VoiceConvertView() {
       setResultUrl("");
       setNotice("目标音色上传完成。");
     } catch (error) {
+      if (uploadVersion !== targetUploadVersionRef.current) return;
       setNotice(error.message || "目标音色上传失败");
     } finally {
-      setUploading("");
+      if (uploadVersion === targetUploadVersionRef.current) setUploading("");
     }
   }
 
@@ -155,10 +208,13 @@ export function VoiceConvertView() {
   }
 
   async function pickSourceFile(file) {
+    const pickVersion = sourcePickVersionRef.current + 1;
+    sourcePickVersionRef.current = pickVersion;
     setNotice("");
     try {
-      if (file.size > 50 * 1024 * 1024) throw new Error("源音频需小于 50MB。");
+      if (file.size > maxSourceAudioBytes) throw new Error("源音频文件需小于 50MB");
       const durationMs = await readAudioDuration(file);
+      if (pickVersion !== sourcePickVersionRef.current) return;
       if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
         throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm。");
       }
@@ -172,6 +228,7 @@ export function VoiceConvertView() {
       setResultUrl("");
       setNotice("源音频已选择。");
     } catch (error) {
+      if (pickVersion !== sourcePickVersionRef.current) return;
       setNotice(error.message || "源音频选择失败");
     }
   }
@@ -215,8 +272,10 @@ export function VoiceConvertView() {
         createdAt: formatBeijingDateTime()
       }, ...items].slice(0, 20));
       setViewTab("home");
+      showToast("success", "音色转换成功");
       setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速。" : "转换完成。");
     } catch (error) {
+      showToast("error", "音色转换失败，请稍后重试");
       setNotice(error.message || "音色转换失败");
     } finally {
       setIsConverting(false);
@@ -361,6 +420,11 @@ export function VoiceConvertView() {
           </div>
         )}
       </div>
+      {toast ? (
+        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      ) : null}
     </section>
   );
 }

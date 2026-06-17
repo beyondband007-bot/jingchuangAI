@@ -66,6 +66,10 @@ function downloadBlob({ content, fileName, type }) {
 function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  function pickFile(file) {
+    if (file && !isUploading) onPick(file);
+  }
+
   function clearFile(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -73,7 +77,20 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
   }
 
   return (
-    <button className={`voice-upload-slot transcribe-upload-slot ${hasFile ? "has-file" : ""}`} type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}>
+    <button
+      className={`voice-upload-slot transcribe-upload-slot ${hasFile ? "has-file" : ""}`}
+      type="button"
+      onClick={() => inputRef.current?.click()}
+      onDragOver={(event) => {
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pickFile(event.dataTransfer.files?.[0]);
+      }}
+      disabled={isUploading}
+    >
       <input
         ref={inputRef}
         type="file"
@@ -81,7 +98,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
-          if (file) onPick(file);
+          pickFile(file);
         }}
       />
       {hasFile && !isUploading && (
@@ -138,14 +155,25 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   );
 }
 
-export function TranscribeView({ authUser }) {
+export function TranscribeView({ authUser, resetSignal = 0 }) {
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [result, setResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
+  const [toast, setToast] = useState(null);
+  const toastTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
+
+  function showToast(type, message) {
+    setToast({ type, message });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }
 
   useEffect(() => {
     try {
@@ -163,6 +191,24 @@ export function TranscribeView({ authUser }) {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!resetSignal) return;
+    setAudioFile(null);
+    setNotice("");
+    setIsTranscribing(false);
+    setResult(null);
+    setViewTab("home");
+    setToast(null);
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+  }, [resetSignal]);
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
   }, []);
 
   async function pickAudioFile(file) {
@@ -219,8 +265,10 @@ export function TranscribeView({ authUser }) {
       };
       setResult(nextResult);
       setRecentResults((items) => [nextResult, ...items].slice(0, 20));
+      showToast("success", "转录成功");
       setNotice("转录完成");
     } catch (error) {
+      showToast("error", "转录失败，请稍后重试");
       setNotice(error.message || "转录失败");
     } finally {
       setIsTranscribing(false);
@@ -349,6 +397,11 @@ export function TranscribeView({ authUser }) {
           </div>
         )}
       </div>
+      {toast ? (
+        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
+          {toast.message}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Clipboard, Mic2, SmilePlus, Trash2, Upload, Wand2 } from "lucide-react";
 import "./voiceSynthesisWorkbenchCard.css";
 
@@ -41,6 +41,19 @@ export function VoiceSynthesisWorkbenchCard({
   onGenerate,
   onDownloadResult
 }) {
+  const cloneInputRef = useRef(null);
+  const hasCloneAudio = Boolean(cloneAudio);
+
+  function pickCloneFile(file) {
+    if (file && !uploading) onPickCloneAudio(file);
+  }
+
+  function handleCloneDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    pickCloneFile(event.dataTransfer.files?.[0]);
+  }
+
   return (
     <section className="voice-synthesis-workspace">
       <div className="voice-synthesis-workspace__layout">
@@ -54,14 +67,24 @@ export function VoiceSynthesisWorkbenchCard({
               </div>
 
               <div className="voice-synthesis-workspace__upload-grid">
-                <label className={`voice-synthesis-workspace__dropzone ${cloneAudio ? "has-file" : ""}`}>
+                <button
+                  className={`voice-synthesis-workspace__dropzone ${hasCloneAudio ? "has-file" : ""}`}
+                  type="button"
+                  onClick={() => cloneInputRef.current?.click()}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDrop={handleCloneDrop}
+                  disabled={uploading}
+                >
                   <input
+                    ref={cloneInputRef}
                     type="file"
                     accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
                     onChange={(event) => {
                       const file = event.target.files?.[0];
                       event.target.value = "";
-                      if (file) onPickCloneAudio(file);
+                      pickCloneFile(file);
                     }}
                     disabled={uploading}
                   />
@@ -72,19 +95,27 @@ export function VoiceSynthesisWorkbenchCard({
                   <p>{cloneAudio ? `时长 ${Math.max(1, Math.round((cloneAudio.durationMs || 0) / 1000))} 秒` : "支持 mp3、m4a、wav，建议 10 秒到 5 分钟"}</p>
                   <div className="voice-synthesis-workspace__dropzone-actions">
                     {cloneAudio && (
-                      <button
-                        type="button"
+                      <span
+                        role="button"
+                        tabIndex={0}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
                           onClearCloneAudio();
                         }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onClearCloneAudio();
+                          }
+                        }}
                       >
                         清除音频
-                      </button>
+                      </span>
                     )}
                   </div>
-                </label>
+                </button>
 
                 <aside className="voice-synthesis-workspace__requirements">
                   <h3>音色要求</h3>

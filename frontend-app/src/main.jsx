@@ -6853,7 +6853,10 @@ function ChatCopyActions({ content }) {
   }
 
   return (
-    <div className="chat-copy-actions" ref={wrapRef}>
+    <div
+      className={`chat-copy-actions ${isMenuOpen ? "is-menu-open" : ""}`}
+      ref={wrapRef}
+    >
       <button
         className={`chat-copy-icon ${copiedMode ? "is-copied" : ""}`}
         type="button"
@@ -11316,6 +11319,13 @@ function ImageFeaturePage({
     image: 0,
     video: 0,
   });
+  const [audioResetSignals, setAudioResetSignals] = useState({
+    voice: 0,
+    music: 0,
+    "voice-convert": 0,
+    transcribe: 0,
+    "video-voice": 0,
+  });
   const [imageLaunchSeed, setImageLaunchSeed] = useState(null);
 
   useEffect(() => {
@@ -11350,9 +11360,17 @@ function ImageFeaturePage({
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
       }
-      setActiveNav((current) => (current === nextId ? current : nextId));
+      setActiveNav((current) => {
+        if (current !== nextId && Object.prototype.hasOwnProperty.call(audioResetSignals, current)) {
+          setAudioResetSignals((signals) => ({
+            ...signals,
+            [current]: signals[current] + 1,
+          }));
+        }
+        return current === nextId ? current : nextId;
+      });
     },
-    [onOpenHome],
+    [audioResetSignals, onOpenHome],
   );
 
   const handleOpenFeature = useCallback(
@@ -11516,21 +11534,25 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceSynthesisView authUser={authUser} onOpenAuth={onOpenAuth} />
+          <VoiceSynthesisView
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            resetSignal={audioResetSignals.voice}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="voice-convert"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceConvertView />
+          <VoiceConvertView resetSignal={audioResetSignals["voice-convert"]} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView authUser={authUser} />
+          <TranscribeView authUser={authUser} resetSignal={audioResetSignals.transcribe} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -11551,7 +11573,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MusicGenerationView />
+          <MusicGenerationView resetSignal={audioResetSignals.music} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"
@@ -11579,7 +11601,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VideoDubbingView authUser={authUser} />
+          <VideoDubbingView
+            authUser={authUser}
+            resetSignal={audioResetSignals["video-voice"]}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="face-swap"
