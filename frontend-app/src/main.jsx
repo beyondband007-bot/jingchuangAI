@@ -8054,15 +8054,15 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   }
 
   return (
-    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="dh-modal">
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true" onMouseDown={onClose}>
+      <div className="dh-modal" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dh-modal-header">
           <div>
             <span>创建形象</span>
-            <strong>上传至火山方舟虚拟资产库</strong>
+            <strong>上传形象图</strong>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭">
-            关闭
+          <button className="dh-modal-close-button" type="button" onClick={onClose} aria-label="关闭">
+            <X size={18} />
           </button>
         </div>
         <div className="dh-modal-body">
@@ -8123,10 +8123,10 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
           {notice && <div className="dh-form-notice">{notice}</div>}
         </div>
         <div className="dh-modal-footer">
-          <button type="button" onClick={onClose}>
+          <button className="dh-modal-secondary-button" type="button" onClick={onClose}>
             取消
           </button>
-          <button type="button" onClick={submit} disabled={isSubmitting}>
+          <button className="dh-modal-primary-button" type="button" onClick={submit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
             创建形象
           </button>
@@ -8136,6 +8136,21 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   );
 }
 
+function DigitalHumanFloatingToast({ message }) {
+  if (!message) return null;
+  return (
+    <div className="dh-floating-toast" role="alert">
+      {message}
+    </div>
+  );
+}
+
+function getDigitalHumanErrorToast(error, fallback) {
+  const message = error?.message || String(error || "");
+  if (/voice id not exist/i.test(message)) return "音色不存在，请重新选择音色";
+  return fallback;
+}
+
 function DigitalHumanConfigPanel({
   options,
   voices,
@@ -8143,6 +8158,7 @@ function DigitalHumanConfigPanel({
   seed,
   onSubmit,
   isSubmitting,
+  onToast,
 }) {
   const audioInputRef = useRef(null);
   const defaultDigitalHumanScript =
@@ -8209,6 +8225,10 @@ function DigitalHumanConfigPanel({
       : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
   function showToast(message) {
+    if (onToast) {
+      onToast(message);
+      return;
+    }
     setToastMessage(message);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => {
@@ -8252,7 +8272,8 @@ function DigitalHumanConfigPanel({
       });
       setNotice("");
     } catch (error) {
-      setNotice(error.message || "音色试听失败");
+      setNotice("");
+      showToast(getDigitalHumanErrorToast(error, "音色试听失败"));
     } finally {
       setIsDesigningVoice(false);
     }
@@ -8284,7 +8305,8 @@ function DigitalHumanConfigPanel({
       resetVoicePreview();
       showToast("驱动音频已上传");
     } catch (error) {
-      setNotice(error.message || "音频上传失败，请重试");
+      setNotice("");
+      showToast(getDigitalHumanErrorToast(error, "音频上传失败，请重试"));
     } finally {
       setIsUploadingAudio(false);
     }
@@ -8478,11 +8500,7 @@ function DigitalHumanConfigPanel({
           <span>生成</span>
         </button>
       </div>
-      {toastMessage && (
-        <div className="dh-floating-toast" role="alert">
-          {toastMessage}
-        </div>
-      )}
+      <DigitalHumanFloatingToast message={toastMessage} />
       {voicePreviewUrl && isPreviewCurrent ? (
         <div
           className={`dh-voice-preview-panel ${currentAudioTooLong ? "is-warning" : ""}`}
@@ -8536,9 +8554,11 @@ function DigitalHumanGenerationView({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
   const [favoriteTaskIds, setFavoriteTaskIds] = useState(() => new Set());
   const [composerSeed, setComposerSeed] = useState(null);
   const taskStatusSignatureRef = useRef("");
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isActive) return;
@@ -8552,6 +8572,21 @@ function DigitalHumanGenerationView({
       notice: pendingSeed.notice || "",
     });
   }, [isActive]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  function showToast(message) {
+    setToastMessage(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage("");
+      toastTimerRef.current = null;
+    }, 2000);
+  }
 
   // 模块由外层保活挂载，此处始终订阅数字人任务与形象
   useEffect(() => {
@@ -8641,7 +8676,8 @@ function DigitalHumanGenerationView({
       setRightMode("preview");
       setTab("history");
     } catch (submitError) {
-      setError(submitError.message || "创建数字人任务失败");
+      setError("");
+      showToast(getDigitalHumanErrorToast(submitError, "数字人视频创建失败"));
     } finally {
       setIsSubmitting(false);
     }
@@ -8656,7 +8692,9 @@ function DigitalHumanGenerationView({
       setRightMode("my-library");
       setIsCreateOpen(false);
     } catch (submitError) {
-      setError(submitError.message || "创建形象失败");
+      setError("");
+      setIsCreateOpen(false);
+      showToast("个人形象创建失败");
     } finally {
       setIsSubmitting(false);
     }
@@ -8793,10 +8831,6 @@ function DigitalHumanGenerationView({
                   <UserRound size={16} />
                   个人形象
                 </button>
-                <button type="button" onClick={() => setIsCreateOpen(true)}>
-                  <Sparkles size={16} />
-                  AI 生图
-                </button>
               </div>
             </div>
           </div>
@@ -8862,6 +8896,7 @@ function DigitalHumanGenerationView({
             seed={composerSeed}
             onSubmit={createTask}
             isSubmitting={isSubmitting}
+            onToast={showToast}
           />
         </section>
         {currentPreviewTask || rightMode === "preview" ? (
@@ -9045,6 +9080,7 @@ function DigitalHumanGenerationView({
           onClose={() => setPreviewAvatar(null)}
         />
       )}
+      <DigitalHumanFloatingToast message={toastMessage} />
     </section>
   );
 }
