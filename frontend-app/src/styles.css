@@ -28321,8 +28321,8 @@ textarea::placeholder {
   border-radius: 999px;
 }
 
-.face-swap-view-root .face-swap-workbench__clear-button svg,
-.face-swap-view-root .face-swap-workbench__clear-button svg {
+.face-swap-view-root .face-swap-workbench__drop-zone .face-swap-workbench__clear-button svg,
+.face-swap-view-root .face-swap-workbench__drop-zone.is-video .face-swap-workbench__clear-button svg {
   width: 32px;
   height: 32px;
   padding: 6px;
@@ -28594,6 +28594,33 @@ textarea::placeholder {
   padding: 17px;
   color: #ffffff;
   background: #c8c5d7;
+  border-radius: 999px;
+}
+
+.motion-view-root:not(.face-swap-view-root)
+  .motion-upload-slot
+  .upload-clear-button {
+  top: 12px;
+  right: 12px;
+  left: auto;
+  width: 30px;
+  height: 30px;
+  color: #f3f5ff;
+  background: rgba(11, 13, 20, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  backdrop-filter: blur(14px);
+}
+
+.motion-view-root:not(.face-swap-view-root)
+  .motion-upload-slot
+  .upload-clear-button
+  svg {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  color: #ffffff;
+  background: transparent;
   border-radius: 999px;
 }
 
@@ -30970,6 +30997,35 @@ textarea::placeholder {
   border-radius: 50% !important;
   border: 1px solid rgba(36, 33, 45, 0.08) !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Final override: motion upload clear buttons should stay as compact corner controls. */
+.motion-view-root .motion-upload-slot .upload-clear-button {
+  top: 12px !important;
+  right: 12px !important;
+  left: auto !important;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  padding: 0 !important;
+  color: #f3f5ff !important;
+  background: rgba(11, 13, 20, 0.74) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(14px);
+}
+
+.motion-view-root .motion-upload-slot .upload-clear-button svg {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  padding: 0 !important;
+  color: #ffffff !important;
+  background: transparent !important;
+  border-radius: 0 !important;
 }
 
 
