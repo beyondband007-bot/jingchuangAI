@@ -46,6 +46,8 @@ export function mapVideoTask(row) {
     status: row.status,
     providerTaskId: row.provider_task_id || null,
     favorite: Boolean(row.favorite),
-    error: row.error_message || null
+    error: row.error_message || null,
+    referenceImageUrl: row.reference_image_url || null,
+    referenceVideoUrl: row.reference_video_url || null
   };
 }

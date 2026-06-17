@@ -1,5 +1,14 @@
 import { requireLoggedIn, sendError } from "../../shared/http.js";
-import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite } from "./video.service.js";
+import {
+  createTask,
+  deleteTask,
+  getModels,
+  getTask,
+  listTasks,
+  toggleFavorite,
+  uploadReferenceImage,
+  uploadReferenceVideo
+} from "./video.service.js";
 
 export async function getVideoModels(_req, res) {
   try {
@@ -22,6 +31,22 @@ export async function createVideoTask(req, res) {
     requireLoggedIn(req.user);
     const task = await createTask(req.body, req.user.id);
     res.status(201).json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadVideoReferenceImage(req, res) {
+  try {
+    res.status(201).json(await uploadReferenceImage({ file: req.file }));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadVideoReferenceVideo(req, res) {
+  try {
+    res.status(201).json(await uploadReferenceVideo({ file: req.file }));
   } catch (error) {
     sendError(res, error);
   }

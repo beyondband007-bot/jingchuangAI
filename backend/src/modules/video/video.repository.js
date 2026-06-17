@@ -18,12 +18,12 @@ export async function findVideoModelPrice(connection, modelKey) {
   return models[0] || null;
 }
 
-export async function createVideoTask(connection, { userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost }) {
+export async function createVideoTask(connection, { userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl, referenceVideoUrl }) {
   const [result] = await connection.query(
     `INSERT INTO video_generation_tasks
-     (user_id, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost]
+     (user_id, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost, reference_image_url, reference_video_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl || null, referenceVideoUrl || null]
   );
   return result.insertId;
 }

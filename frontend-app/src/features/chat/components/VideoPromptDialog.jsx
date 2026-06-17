@@ -54,6 +54,7 @@ export function VideoPromptDialog({
   durationOptions,
   price,
   rmb,
+  referenceSlot,
   collapsed = false,
   dropdownPlacement = "top"
 }) {
@@ -608,6 +609,8 @@ export function VideoPromptDialog({
           {notice}
         </div>
       )}
+
+      {referenceSlot}
     </div>
   );
 }

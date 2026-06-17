@@ -26,7 +26,7 @@ export function calculateVideoPoints(model, duration, count = 1) {
   return Math.ceil(total * Number(count));
 }
 
-export function validateVideoPayload({ prompt, model, ratio, duration, count }) {
+export function validateVideoPayload({ prompt, model, ratio, duration, count, referenceImageUrl, referenceVideoUrl }) {
   if (!prompt || !prompt.trim()) {
     throw createHttpError("prompt is required", 400);
   }
@@ -38,5 +38,8 @@ export function validateVideoPayload({ prompt, model, ratio, duration, count }) 
   }
   if (!videoCountOptions.includes(Number(count))) {
     throw createHttpError("invalid generation count", 400);
+  }
+  if (referenceImageUrl && referenceVideoUrl) {
+    throw createHttpError("cannot provide both reference image and reference video", 400);
   }
 }

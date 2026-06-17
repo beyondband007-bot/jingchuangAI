@@ -3645,6 +3645,57 @@ function ReferenceImageSlot({ image, isUploading, onRemove }) {
   );
 }
 
+function ReferenceMediaSlot({ image, video, isUploading, onRemoveImage, onRemoveVideo }) {
+  const media = image || video;
+  const isVideo = Boolean(video);
+  if (!media && !isUploading) return null;
+
+  if (isUploading) {
+    return (
+      <div className="image-reference-slot">
+        <div className="image-reference-card is-uploading">
+          <span className="image-reference-preview">
+            <Loader2 size={16} className="is-spinning" />
+          </span>
+          <span className="image-reference-meta">
+            <strong>参考素材上传中</strong>
+            <small>上传完成后自动用于生成</small>
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="image-reference-slot">
+      <div className="image-reference-card">
+        <span className="image-reference-preview">
+          {isVideo ? (
+            <Film size={16} />
+          ) : media?.url ? (
+            <img src={media.url} alt="" />
+          ) : (
+            <Image size={16} />
+          )}
+        </span>
+        <span className="image-reference-meta">
+          <strong title={media?.originalName || (isVideo ? "参考视频" : "参考图")}>
+            {media?.originalName || (isVideo ? "参考视频" : "参考图")}
+          </strong>
+          <small>{isVideo ? "视频参考素材" : formatReferenceImageSize(media?.size)}</small>
+        </span>
+        <button
+          type="button"
+          onClick={isVideo ? onRemoveVideo : onRemoveImage}
+          aria-label={isVideo ? "移除参考视频" : "移除参考图"}
+        >
+          <X size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ComposerBar({
   options,
   onSubmit,
@@ -4109,6 +4160,25 @@ function ImageGenerationWorkbench({
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 const imageGenerationSessionKey = "jingchuang:image-generation-session";
 const imageGenerationThreadsKey = "jingchuang:image-generation-threads";
+
+function normalizeImageOptions(value) {
+  return {
+    ...emptyOptions,
+    ...(value && typeof value === "object" && !Array.isArray(value) ? value : {}),
+    models: Array.isArray(value?.models) ? value.models : [],
+    ratios: Array.isArray(value?.ratios) ? value.ratios : [],
+    qualities: Array.isArray(value?.qualities) ? value.qualities : [],
+    counts: Array.isArray(value?.counts) ? value.counts : [],
+  };
+}
+
+function normalizeTaskList(value) {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.tasks)) return value.tasks;
+  if (Array.isArray(value?.items)) return value.items;
+  if (Array.isArray(value?.data)) return value.data;
+  return [];
+}
 
 function readImageGenerationSession() {
   try {
@@ -4982,13 +5052,15 @@ function ImageGenerationView({
     let mounted = true;
     function applyTaskList(value, runningValue = value) {
       if (!mounted) return;
-      const visibleTasks = value.filter((task) => !isArticleImageTask(task));
+      const tasks = normalizeTaskList(value);
+      const runningTasks = normalizeTaskList(runningValue);
+      const visibleTasks = tasks.filter((task) => !isArticleImageTask(task));
       const nextSignature = taskStatusSignature(visibleTasks);
       const didStatusChange =
         taskStatusSignatureRef.current &&
         taskStatusSignatureRef.current !== nextSignature;
       taskStatusSignatureRef.current = nextSignature;
-      imageApi.setHasRunningTasks(hasRunningTasks(runningValue));
+      imageApi.setHasRunningTasks(hasRunningTasks(runningTasks));
       setCards(visibleTasks);
       if (didStatusChange) {
         imageApi
@@ -5000,7 +5072,10 @@ function ImageGenerationView({
           .catch(() => {});
       }
     }
-    imageApi.getModels().then((value) => mounted && setOptions(value));
+    imageApi
+      .getModels()
+      .then((value) => mounted && setOptions(normalizeImageOptions(value)))
+      .catch(() => mounted && setOptions(emptyOptions));
     imageApi
       .getCredits()
       .then((value) => mounted && applyCreditsUpdate(setCredits, value));
@@ -5243,7 +5318,10 @@ function ImageGenerationView({
     submittedTaskId || selectedTaskId || isSubmitting,
   );
   const isGuest = Boolean(authUser?.isGuest);
-  const showComposer = options.models.length > 0 && filter === "inspiration";
+  const showComposer =
+    Array.isArray(options.models) &&
+    options.models.length > 0 &&
+    filter === "inspiration";
   const isComposerSticky =
     filter === "recent" ||
     (filter === "inspiration" && isComposerPastThreshold);
@@ -6063,7 +6141,11 @@ function VideoComposerBar({
   const [duration, setDuration] = useState(
     modelOptions.model?.defaultDuration || modelOptions.durations[0] || "",
   );
+  const [referenceImage, setReferenceImage] = useState(null);
+  const [referenceVideo, setReferenceVideo] = useState(null);
+  const [isUploadingReference, setIsUploadingReference] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const referenceInputRef = useRef(null);
 
   function showVideoComposerToast(message) {
     if (!message) return;
@@ -6089,12 +6171,16 @@ function VideoComposerBar({
 
   useEffect(() => {
     setPrompt("");
+    setReferenceImage(null);
+    setReferenceVideo(null);
     setToastMessage("");
   }, [resetSignal]);
 
   useEffect(() => {
     if (!seed) return;
     setPrompt(seed.prompt || "");
+    setReferenceImage(seed.referenceImage || null);
+    setReferenceVideo(seed.referenceVideo || null);
     setToastMessage(seed.notice || "");
   }, [seed]);
 
@@ -6117,10 +6203,12 @@ function VideoComposerBar({
     count,
     models: options.models,
   });
-  const canSubmit = prompt.trim().length > 0 && model && ratio && duration;
+  const canSubmit = prompt.trim().length > 0 && model && ratio && duration && !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
+    setReferenceImage(null);
+    setReferenceVideo(null);
     showVideoComposerToast("已清空提示词");
   }
 
@@ -6130,7 +6218,34 @@ function VideoComposerBar({
   }
 
   function handleAddPrompt() {
-    showVideoComposerToast("当前视频生成暂不支持添加参考素材");
+    referenceInputRef.current?.click();
+  }
+
+  async function handleReferenceSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingReference(true);
+    try {
+      if (String(file.type || "").startsWith("image/")) {
+        const uploaded = await videoApi.uploadReferenceImage(file);
+        setReferenceImage(uploaded);
+        setReferenceVideo(null);
+        showVideoComposerToast("参考图片已添加");
+      } else if (String(file.type || "").startsWith("video/")) {
+        const uploaded = await videoApi.uploadReferenceVideo(file);
+        setReferenceVideo(uploaded);
+        setReferenceImage(null);
+        showVideoComposerToast("参考视频已添加");
+      } else {
+        showVideoComposerToast("仅支持图片或视频文件");
+      }
+    } catch (error) {
+      showVideoComposerToast(error.message || "素材上传失败，请重试");
+    } finally {
+      setIsUploadingReference(false);
+      event.target.value = "";
+    }
   }
 
   function submitPrompt() {
@@ -6146,9 +6261,13 @@ function VideoComposerBar({
       duration: Number(duration),
       mode: "first-frame",
       count,
+      referenceImageUrl: referenceImage?.url || null,
+      referenceVideoUrl: referenceVideo?.url || null,
     });
     showVideoComposerToast("已创建视频生成任务");
     setPrompt("");
+    setReferenceImage(null);
+    setReferenceVideo(null);
   }
 
   return (
@@ -6159,6 +6278,13 @@ function VideoComposerBar({
       onFocus={onFocus}
       onBlur={onBlur}
     >
+      <input
+        ref={referenceInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,video/x-msvideo"
+        hidden
+        onChange={handleReferenceSelect}
+      />
       <VideoPromptDialog
         ariaLabel="视频生成输入框"
         placeholder="请描述你想生成的视频..."
@@ -6184,6 +6310,21 @@ function VideoComposerBar({
         durationOptions={modelOptions.durations}
         price={price}
         rmb={rmb}
+        referenceSlot={
+          <ReferenceMediaSlot
+            image={referenceImage}
+            video={referenceVideo}
+            isUploading={isUploadingReference}
+            onRemoveImage={() => {
+              setReferenceImage(null);
+              showVideoComposerToast("已移除参考图片");
+            }}
+            onRemoveVideo={() => {
+              setReferenceVideo(null);
+              showVideoComposerToast("已移除参考视频");
+            }}
+          />
+        }
         collapsed={collapsed}
         dropdownPlacement={placement === "inline" ? "bottom" : "top"}
       />
@@ -7371,6 +7512,28 @@ function formatDurationMs(durationMs = 0) {
   return `${(Number(durationMs || 0) / 1000).toFixed(1)} 秒`;
 }
 
+function readLocalAudioDurationMs(file) {
+  return new Promise((resolve) => {
+    if (!file) {
+      resolve(0);
+      return;
+    }
+    const audio = document.createElement("audio");
+    const objectUrl = window.URL.createObjectURL(file);
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      const durationMs = Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0;
+      window.URL.revokeObjectURL(objectUrl);
+      resolve(durationMs);
+    };
+    audio.onerror = () => {
+      window.URL.revokeObjectURL(objectUrl);
+      resolve(0);
+    };
+    audio.src = objectUrl;
+  });
+}
+
 function formatProviderLabel(value, fallback = "视频合成") {
   const text = String(value || "").trim();
   if (!text || /\bkie\b/i.test(text)) {
@@ -7988,6 +8151,7 @@ function DigitalHumanConfigPanel({
   const [ttsPitch, setTtsPitch] = useState(0);
   const [ttsEmotion, setTtsEmotion] = useState("");
   const [isDesigningVoice, setIsDesigningVoice] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
   const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
   const [notice, setNotice] = useState("");
@@ -8010,6 +8174,7 @@ function DigitalHumanConfigPanel({
   useEffect(() => {
     if (!seed) return;
     setDriveMode("text");
+    setAudioFile(null);
     resetVoicePreview();
     setText(seed.prompt || "");
     setNotice(seed.notice || "");
@@ -8029,8 +8194,11 @@ function DigitalHumanConfigPanel({
   });
   const isPreviewCurrent =
     voicePreviewInfo?.signature === currentPreviewSignature;
+  const isAudioDrive = driveMode === "audio" && Boolean(audioFile);
   const currentAudioTooLong =
-    isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+    isAudioDrive
+      ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
+      : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
   function showToast(message) {
     setToastMessage(message);
@@ -8048,6 +8216,10 @@ function DigitalHumanConfigPanel({
   }
 
   async function previewVoice() {
+    if (isAudioDrive) {
+      showToast("上传音频会直接用于生成");
+      return;
+    }
     if (!text.trim()) {
       showToast("请输入用于试听的文本脚本");
       return;
@@ -8078,6 +8250,38 @@ function DigitalHumanConfigPanel({
     }
   }
 
+  async function handleAudioSelect(event) {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+
+    setIsUploadingAudio(true);
+    setNotice("");
+    try {
+      const durationMs = await readLocalAudioDurationMs(file);
+      if (durationMs > digitalHumanMaxAudioMs) {
+        setAudioFile(null);
+        setDriveMode("text");
+        showToast("当前音频超过 15 秒，请切片后上传");
+        return;
+      }
+      const uploaded = await digitalHumanApi.uploadAudio(file, { durationMs });
+      setAudioFile({
+        ...uploaded,
+        name: uploaded.originalName || uploaded.name || file.name,
+        durationMs
+      });
+      setDriveMode("audio");
+      setText("");
+      resetVoicePreview();
+      showToast("驱动音频已上传");
+    } catch (error) {
+      setNotice(error.message || "音频上传失败，请重试");
+    } finally {
+      setIsUploadingAudio(false);
+    }
+  }
+
   function submit() {
     if (!selectedAvatar) {
       showToast("请先选择数字人形象");
@@ -8091,11 +8295,15 @@ function DigitalHumanConfigPanel({
       setNotice("请上传音频文件");
       return;
     }
-    if (!voicePreviewInfo || !isPreviewCurrent) {
+    if (isAudioDrive && !audioFile.audioFileId && !audioFile.id) {
+      setNotice("音频尚未上传完成");
+      return;
+    }
+    if (!isAudioDrive && (!voicePreviewInfo || !isPreviewCurrent)) {
       showToast("请先试听音色");
       return;
     }
-    if (voicePreviewInfo.durationMs > digitalHumanMaxAudioMs) {
+    if (currentAudioTooLong) {
       showToast("当前音频超过 15 秒，请缩短文本或切片后分段生成");
       return;
     }
@@ -8106,6 +8314,8 @@ function DigitalHumanConfigPanel({
       driveMode,
       text,
       audioName: audioFile?.name || "",
+      audioFileId: audioFile?.audioFileId || audioFile?.id || "",
+      audioDurationMs: audioFile?.durationMs || 0,
       voiceId,
       model,
       speed: ttsSpeed,
@@ -8122,9 +8332,10 @@ function DigitalHumanConfigPanel({
         <button
           type="button"
           onClick={() => audioInputRef.current?.click()}
+          disabled={isUploadingAudio}
           title="上传音频"
         >
-          <UploadCloud size={15} />
+          {isUploadingAudio ? <Loader2 size={15} /> : <UploadCloud size={15} />}
           上传音频
         </button>
       </div>
@@ -8133,12 +8344,7 @@ function DigitalHumanConfigPanel({
         type="file"
         accept="audio/*"
         hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0] || null;
-          setAudioFile(file);
-          if (file) setDriveMode("audio");
-          event.target.value = "";
-        }}
+        onChange={handleAudioSelect}
       />
       {driveMode === "text" ? (
         <label className="dh-field dh-script-field">
@@ -8163,12 +8369,16 @@ function DigitalHumanConfigPanel({
                 event.preventDefault();
                 event.stopPropagation();
                 setAudioFile(null);
+                setDriveMode("text");
+                resetVoicePreview();
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
                   event.stopPropagation();
                   setAudioFile(null);
+                  setDriveMode("text");
+                  resetVoicePreview();
                 }
               }}
             >
@@ -8179,8 +8389,8 @@ function DigitalHumanConfigPanel({
           <strong>{audioFile ? audioFile.name : "上传驱动音频"}</strong>
           <span>
             {audioFile
-              ? "已选择，真实接口接入后上传"
-              : "限制 3 分钟以内，当前为占位"}
+              ? `将直接使用该音频生成${audioFile.durationMs ? `，${formatDurationMs(audioFile.durationMs)}` : ""}`
+              : "限制 15 秒以内，支持常见音频格式"}
           </span>
         </div>
       )}
@@ -8190,7 +8400,9 @@ function DigitalHumanConfigPanel({
             key={item.id}
             type="button"
             className={item.id === voiceId ? "is-active" : ""}
+            disabled={isAudioDrive}
             onClick={() => {
+              if (isAudioDrive) return;
               if (item.id !== voiceId) resetVoicePreview();
               setVoiceId(item.id);
             }}
@@ -8206,7 +8418,9 @@ function DigitalHumanConfigPanel({
             key={value}
             type="button"
             className={ttsSpeed === value ? "is-active" : ""}
+            disabled={isAudioDrive}
             onClick={() => {
+              if (isAudioDrive) return;
               if (ttsSpeed !== value) resetVoicePreview();
               setTtsSpeed(value);
             }}
@@ -8220,6 +8434,7 @@ function DigitalHumanConfigPanel({
           className="custom-select-theme-dh"
           ariaLabel="成片模型"
           value={model}
+          disabled={isAudioDrive}
           onChange={setModel}
           options={options.models}
         />
@@ -8227,7 +8442,9 @@ function DigitalHumanConfigPanel({
           className="custom-select-theme-dh dh-emotion-select"
           ariaLabel="情绪"
           value={ttsEmotion}
+          disabled={isAudioDrive}
           onChange={(value) => {
+            if (isAudioDrive) return;
             if (value !== ttsEmotion) resetVoicePreview();
             setTtsEmotion(value);
           }}
@@ -8237,7 +8454,7 @@ function DigitalHumanConfigPanel({
           className="dh-preview-voice-button"
           type="button"
           onClick={previewVoice}
-          disabled={isDesigningVoice}
+          disabled={isDesigningVoice || isAudioDrive}
         >
           {isDesigningVoice ? <Loader2 size={14} /> : <Mic size={14} />}
           试听音色
@@ -8246,8 +8463,8 @@ function DigitalHumanConfigPanel({
           className="dh-generate-button"
           type="button"
           onClick={submit}
-          disabled={isSubmitting || currentAudioTooLong}
-          title={isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          disabled={isSubmitting || isUploadingAudio || currentAudioTooLong}
+          title={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
           <span>生成</span>
@@ -8280,9 +8497,11 @@ function DigitalHumanConfigPanel({
       ) : (
         <div className="dh-duration-check">
           <span>
-            {selectedVoice
-              ? `${selectedVoice.description || selectedVoice.name}`
-              : ""}
+            {isAudioDrive
+              ? `已使用上传音频${audioFile?.durationMs ? `，${formatDurationMs(audioFile.durationMs)}` : ""}`
+              : selectedVoice
+                ? `${selectedVoice.description || selectedVoice.name}`
+                : ""}
           </span>
         </div>
       )}
@@ -11424,8 +11643,6 @@ function App() {
     setAuthUser(user);
     setAuthDrawerMode(null);
     window.sessionStorage.setItem(appEntryStorageKey, "1");
-    window.history.pushState(null, "", "/");
-    window.location.reload();
   }, []);
 
   const requestLogout = useCallback(() => {

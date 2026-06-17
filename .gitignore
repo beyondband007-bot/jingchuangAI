@@ -42,6 +42,3 @@ STARTUP.md
 
 # Large local media assets
 frontend-app/public/assets/videoInspiration/
-
-# Local frontend dev proxy config
-frontend-app/vite.config.js

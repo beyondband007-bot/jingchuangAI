@@ -49,12 +49,9 @@ export async function requestJson(path, options = {}) {
     try {
       body = JSON.parse(text);
     } catch {
-      if (!response.ok) {
-        const error = new Error(cleanApiErrorMessage({ message: text, status: response.status }));
-        error.status = response.status;
-        throw error;
-      }
-      return text;
+      const error = new Error(cleanApiErrorMessage({ message: text, status: response.status }));
+      error.status = response.status;
+      throw error;
     }
   }
 

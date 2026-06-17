@@ -1,5 +1,6 @@
 import { access, mkdir } from "fs/promises";
 import { execFile } from "child_process";
+import { randomUUID } from "crypto";
 import path from "path";
 import { promisify } from "util";
 import ffmpeg from "@ffmpeg-installer/ffmpeg";
@@ -50,6 +51,7 @@ import {
 
 const myAvatars = [];
 const designedVoices = [];
+const uploadedDriveAudios = new Map();
 const execFileAsync = promisify(execFile);
 const maxDigitalHumanAudioMs = 15 * 1000;
 const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
@@ -78,6 +80,16 @@ function getKieDurationSeconds(audioDurationMs) {
 
 function getArkDurationSeconds(audioDurationMs) {
   return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+}
+
+function normalizeUploadedAudioDurationMs(value) {
+  const durationMs = Math.round(Number(value || 0));
+  return Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0;
+}
+
+function getUploadedDriveAudio(audioFileId) {
+  const id = String(audioFileId || "").trim();
+  return id ? uploadedDriveAudios.get(id) : null;
 }
 
 function isImagePath(filePath = "") {
@@ -246,15 +258,31 @@ async function getAvatarImageProviderUrl(avatar) {
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, avatar } = payload;
-  console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
-  const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
-  const audioDurationMs = getAudioDurationMs(speech, text);
+  const { text, voiceId, speed, volume, pitch, emotion, avatar, uploadedAudio } = payload;
+  let savedAudio;
+  let audioDurationMs;
+  let audioSizeBytes;
+
+  if (uploadedAudio) {
+    console.log(`[digital-human] task ${taskId}: using uploaded drive audio ${uploadedAudio.id}`);
+    savedAudio = {
+      fileName: path.basename(uploadedAudio.filePath),
+      filePath: uploadedAudio.filePath,
+      publicPath: uploadedAudio.localUrl,
+      mimeType: uploadedAudio.mimeType || "audio/mpeg"
+    };
+    audioDurationMs = normalizeUploadedAudioDurationMs(uploadedAudio.durationMs) || estimateSeconds(text) * 1000;
+    audioSizeBytes = Number(uploadedAudio.sizeBytes || 0);
+  } else {
+    console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
+    const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
+    audioDurationMs = getAudioDurationMs(speech, text);
+    savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
+    audioSizeBytes = speech.audioBuffer.length;
+  }
   if (audioDurationMs > maxDigitalHumanAudioMs) {
     throw createHttpError("音频时长超过 5 分钟，请缩短文本或切片后分段生成", 400);
   }
-  const savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
-
   if (avatar.provider === "ark") {
     console.log(`[digital-human] task ${taskId}: creating Ark audio asset and Seedance task`);
     const user = await getDemoUser();
@@ -265,7 +293,7 @@ async function createProviderTask(taskId, payload) {
       filePath: savedAudio.filePath,
       originalName: savedAudio.fileName,
       mimeType: savedAudio.mimeType,
-      sizeBytes: speech.audioBuffer.length
+      sizeBytes: audioSizeBytes
     });
     const avatarReferenceUrl = await waitForVirtualAssetReference(avatar.arkAssetId);
     const audioReferenceUrl = await waitForVirtualAssetReference(audioAsset.id);
@@ -417,6 +445,36 @@ export async function previewVoice(payload) {
   };
 }
 
+export async function uploadDriveAudio(payload, file) {
+  if (!file) throw createHttpError("audio file is required", 400);
+  const id = `dh-audio-${randomUUID()}`;
+  const originalName = file.originalname || file.filename || "uploaded-audio";
+  const localUrl = `/media/digital-human/audio-uploads/${file.filename}`;
+  const durationMs = normalizeUploadedAudioDurationMs(payload.durationMs || payload.duration_ms);
+  const audio = {
+    id,
+    filePath: file.path,
+    localUrl,
+    originalName,
+    mimeType: file.mimetype || "audio/mpeg",
+    sizeBytes: file.size || 0,
+    durationMs,
+    createdAt: new Date()
+  };
+  uploadedDriveAudios.set(id, audio);
+
+  return {
+    id,
+    audioFileId: id,
+    url: localUrl,
+    originalName,
+    name: originalName,
+    mimeType: audio.mimeType,
+    size: audio.sizeBytes,
+    durationMs
+  };
+}
+
 export async function listTasks() {
   await refreshProcessingTasks();
   const rows = await listDigitalHumanTaskRows();
@@ -433,6 +491,8 @@ export async function createTask(payload) {
   const avatarId = String(payload.avatarId || "").trim();
   const driveMode = String(payload.driveMode || "text");
   const text = String(payload.text || "").trim();
+  const audioFileId = String(payload.audioFileId || payload.audio_file_id || "").trim();
+  const audioName = String(payload.audioName || payload.audio_name || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
   const modelKey = String(payload.model || digitalHumanModels[0].value).trim();
   const speed = normalizeDecimal(payload.speed, 1);
@@ -441,9 +501,11 @@ export async function createTask(payload) {
   const emotion = normalizeEmotion(payload.emotion);
 
   if (!avatarId) throw createHttpError("avatarId is required", 400);
-  if (driveMode !== "text") throw createHttpError("audio drive is not available in this version", 501);
-  if (!text) throw createHttpError("text is required", 400);
-  if (text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
+  if (!["text", "audio"].includes(driveMode)) throw createHttpError("driveMode is invalid", 400);
+  const uploadedAudio = driveMode === "audio" ? getUploadedDriveAudio(audioFileId) : null;
+  if (driveMode === "audio" && !uploadedAudio) throw createHttpError("audio file is required", 400);
+  if (driveMode === "text" && !text) throw createHttpError("text is required", 400);
+  if (driveMode === "text" && text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
 
   const avatar = await getAvatarById(avatarId);
   if (!avatar) throw createHttpError("avatar not found", 404);
@@ -452,7 +514,10 @@ export async function createTask(payload) {
   const model = getModelByKey(modelKey);
   if (!model || model.provider !== "kie") throw createHttpError("digital human model not found", 400);
 
-  const voice = getVoiceById(voiceId);
+  const voice = driveMode === "audio"
+    ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
+    : getVoiceById(voiceId);
+  const taskText = driveMode === "audio" ? audioName || uploadedAudio.originalName || "用户上传音频" : text;
   const costPoints = Number(model.basePoints || 30);
   const providerModel = avatar.provider === "ark" ? config.ark.videoModel : config.kie.digitalHumanModel;
 
@@ -472,7 +537,7 @@ export async function createTask(payload) {
       modelKey: model.value,
       providerModel,
       driveMode,
-      text,
+      text: taskText,
       voiceId: voice.id,
       voiceName: voice.name,
       speed,
@@ -499,7 +564,7 @@ export async function createTask(payload) {
   connection.release();
 
   try {
-    await createProviderTask(taskId, { text, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model });
+    await createProviderTask(taskId, { text: taskText, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model, uploadedAudio });
   } catch (error) {
     console.error("Create digital human provider task failed:", error.message, error.body || "");
     await refundTask(taskId, userId, costPoints, `数字人任务创建失败：${error.message}`);

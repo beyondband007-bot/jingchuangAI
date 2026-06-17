@@ -32,6 +32,24 @@ export const videoApi = {
     return request(`/api/video/tasks?filter=${encodeURIComponent(filter)}`);
   },
 
+  async uploadReferenceImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/video/uploads/reference-image", {
+      method: "POST",
+      body: formData
+    });
+  },
+
+  async uploadReferenceVideo(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/video/uploads/reference-video", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   calculatePrice({ model, duration, count = 1, models = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
     if (!selectedModel || !duration) return "0 积分";
@@ -107,7 +125,9 @@ export const videoApi = {
       ratio: task.ratio,
       duration: task.duration,
       mode: task.mode || "first-frame",
-      count: task.count || 1
+      count: task.count || 1,
+      referenceImageUrl: task.referenceImageUrl || null,
+      referenceVideoUrl: task.referenceVideoUrl || null
     });
     taskPolling.notifyNow();
     return created;

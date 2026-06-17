@@ -16,13 +16,16 @@ import {
   listDigitalHumanTasks,
   previewDigitalHumanVoice,
   regenerateDigitalHumanTask,
+  uploadDigitalHumanAudio,
   updateDigitalHumanAvatar
 } from "./digitalHuman.controller.js";
 
 export const digitalHumanRouter = Router();
 
 const avatarDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatars");
+const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio-uploads");
 mkdirSync(avatarDir, { recursive: true });
+mkdirSync(audioDir, { recursive: true });
 
 const avatarUpload = multer({
   storage: multer.diskStorage({
@@ -42,6 +45,26 @@ const avatarUpload = multer({
   }
 });
 
+const audioUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, audioDir),
+    filename: (_req, file, callback) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".mp3";
+      callback(null, `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`);
+    }
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    const mime = String(file.mimetype || "");
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (!mime.startsWith("audio/") && ![".mp3", ".m4a", ".wav", ".aac", ".ogg", ".webm"].includes(ext)) {
+      callback(new Error("audio must be an audio file"));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
 function uploadAvatar(req, res, next) {
   avatarUpload.single("avatar")(req, res, (error) => {
     if (!error) {
@@ -49,6 +72,17 @@ function uploadAvatar(req, res, next) {
       return;
     }
     const message = error.code === "LIMIT_FILE_SIZE" ? "avatar image must be 30MB or smaller" : error.message;
+    res.status(400).json({ error: message });
+  });
+}
+
+function uploadAudio(req, res, next) {
+  audioUpload.single("audio")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+    const message = error.code === "LIMIT_FILE_SIZE" ? "audio file must be 50MB or smaller" : error.message;
     res.status(400).json({ error: message });
   });
 }
@@ -61,6 +95,7 @@ digitalHumanRouter.delete("/avatars/:id", deleteDigitalHumanAvatar);
 digitalHumanRouter.get("/voices", getDigitalHumanVoices);
 digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
 digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
+digitalHumanRouter.post("/uploads/audio", uploadAudio, uploadDigitalHumanAudio);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);
 digitalHumanRouter.post("/tasks", createDigitalHumanTask);
 digitalHumanRouter.get("/tasks/:id", getDigitalHumanTask);

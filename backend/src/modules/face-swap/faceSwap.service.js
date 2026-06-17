@@ -74,6 +74,11 @@ async function getSourceVideoDuration(videoAsset) {
   }
 }
 
+function getProviderDuration(model) {
+  const duration = Number(model?.duration || config.kie.faceSwapDuration || 5);
+  return duration === 10 ? 10 : 5;
+}
+
 function normalizeResolution(value) {
   const resolution = String(value || "").trim();
   return resolution || config.kie.faceSwapResolution;
@@ -170,7 +175,8 @@ export async function createTask(payload) {
   const model = getModelByKey(payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution);
-  const duration = await getSourceVideoDuration(videoAsset);
+  await getSourceVideoDuration(videoAsset);
+  const duration = getProviderDuration(model);
   const costPoints = Number(model.basePoints || 100);
 
   const connection = await getPool().getConnection();

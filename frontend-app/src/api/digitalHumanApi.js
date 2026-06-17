@@ -50,6 +50,16 @@ export const digitalHumanApi = {
     });
   },
 
+  async uploadAudio(file, { durationMs } = {}) {
+    const formData = new FormData();
+    formData.append("audio", file);
+    if (durationMs) formData.append("durationMs", String(durationMs));
+    return request("/api/digital-human/uploads/audio", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   async getTasks() {
     return request("/api/digital-human/tasks");
   },

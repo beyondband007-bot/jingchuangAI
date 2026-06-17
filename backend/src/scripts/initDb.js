@@ -459,6 +459,8 @@ async function createTables() {
       rmb_cost DECIMAL(10,2) NULL,
       status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
       provider_task_id VARCHAR(160) NULL,
+      reference_image_url TEXT NULL,
+      reference_video_url TEXT NULL,
       result_urls JSON NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
@@ -470,6 +472,26 @@ async function createTables() {
       CONSTRAINT fk_video_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [videoRefImageColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'reference_image_url'`,
+    [config.db.database]
+  );
+  if (videoRefImageColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_image_url TEXT NULL AFTER provider_task_id");
+  }
+
+  const [videoRefVideoColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'reference_video_url'`,
+    [config.db.database]
+  );
+  if (videoRefVideoColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_video_url TEXT NULL AFTER reference_image_url");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS digital_human_tasks (
