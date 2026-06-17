@@ -235,7 +235,10 @@ async function getDeepSeekCopyModel() {
 }
 
 function isArticleTask(task) {
-  return task?.source === ARTICLE_SOURCE || task?.prompt?.includes(ARTICLE_PROMPT_MARKER);
+  return (
+    task?.source === ARTICLE_SOURCE ||
+    task?.prompt?.includes(ARTICLE_PROMPT_MARKER)
+  )
 }
 
 function ensureArticleSource(task) {
@@ -368,8 +371,8 @@ export async function listTasks({ userId, filter = "all" } = {}) {
 }
 
 export async function getTask(id, userId) {
-  const task = await getImageTask(id, userId);
-  return isArticleTask(task) ? ensureArticleSource(task) : null;
+  const task = await getImageTask(id, userId)
+  return isArticleTask(task) ? ensureArticleSource(task) : null
 }
 
 export async function createTask(payload, userId) {

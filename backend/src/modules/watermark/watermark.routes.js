@@ -45,6 +45,9 @@ const sourceUpload = multer({
 function uploadSource(req, res, next) {
   sourceUpload.single("file")(req, res, (error) => {
     if (!error) {
+      if (req.file?.originalname) {
+        req.file.originalname = Buffer.from(req.file.originalname, "latin1").toString("utf8");
+      }
       const mimeType = String(req.file?.mimetype || "");
       if (mimeType.startsWith("image/") && req.file.size > 10 * 1024 * 1024) {
         return res.status(400).json({ error: "图片需小于 10MB" });

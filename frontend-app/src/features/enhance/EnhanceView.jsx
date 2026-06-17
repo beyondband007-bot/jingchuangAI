@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
-import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { enhanceApi } from "./enhanceApi";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
@@ -224,7 +223,7 @@ function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelec
   );
 }
 
-function EnhanceComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth }) {
+function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -258,14 +257,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth
     setNotice("");
   }
 
-  const requireAuth = useRequireAuth({
-    authUser,
-    onOpenAuth,
-    onDeny: () => setNotice("请先登录"),
-  });
-
   async function selectSource(file) {
-    if (!requireAuth()) return;
     if (!file) return;
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
@@ -299,7 +291,6 @@ function EnhanceComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth
   }
 
   function submit() {
-    if (!requireAuth()) return;
     if (!sourceAsset) {
       setNotice(mode === "image" ? "请先上传图片文件" : "请先上传视频文件");
       return;
@@ -343,7 +334,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting, authUser, onOpenAuth
   );
 }
 
-export function EnhanceView({ authUser, onOpenAuth }) {
+export function EnhanceView() {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [credits, setCredits] = useState(null);
@@ -352,11 +343,6 @@ export function EnhanceView({ authUser, onOpenAuth }) {
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
   const taskStatusSignatureRef = useRef("");
-  const requireAuth = useRequireAuth({
-    authUser,
-    onOpenAuth,
-    onDeny: () => setSubmitError("请先登录"),
-  });
 
   function applyCredits(creditsValue) {
     if (!creditsValue) return;
@@ -416,7 +402,6 @@ export function EnhanceView({ authUser, onOpenAuth }) {
   const showRecentEmpty = (viewTab === "recent" || viewTab === "favorite") && !showCenterState && visibleTasks.length === 0;
 
   async function createTask(payload) {
-    if (!requireAuth()) return;
     setSubmitError("");
     setIsSubmitting(true);
     setSubmittedTaskId(null);
@@ -515,8 +500,6 @@ export function EnhanceView({ authUser, onOpenAuth }) {
           options={options}
           onSubmit={createTask}
           isSubmitting={isSubmitting}
-          authUser={authUser}
-          onOpenAuth={onOpenAuth}
         />
       )}
     </section>

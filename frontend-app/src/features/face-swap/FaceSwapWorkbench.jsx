@@ -11,7 +11,6 @@ import {
   X
 } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
-import { useToast } from "../../hooks/useToast";
 import "./FaceSwapWorkbench.css";
 
 const faceSamples = [
@@ -172,12 +171,8 @@ export function FaceSwapWorkbench({
   copy,
   heading = "AI 换脸工具",
   privacyText = "您上传的内容仅用于处理，不会被用于其他用途。",
-  onViewHistory,
-  authUser,
-  onOpenAuth,
+  onViewHistory
 }) {
-  const isGuest = Boolean(authUser?.isGuest);
-  const { message: toastMessage, showToast } = useToast();
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -205,7 +200,6 @@ export function FaceSwapWorkbench({
   }, [imagePreview, videoPreview]);
 
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0] || null;
-  const isConfigured = selectedModel?.configured !== false;
   const price = `${selectedModel?.basePoints || 0} 积分`;
 
   const resolutionOptions = useMemo(() => {
@@ -218,22 +212,8 @@ export function FaceSwapWorkbench({
     return Array.from(values).map((value) => ({ value, label: value }));
   }, [options.defaults?.resolution, options.models]);
 
-  function requireAuth() {
-    if (!isGuest) return true;
-    showToast("请先登录");
-    onOpenAuth?.("login");
-    return false;
-  }
-
-  function requireConfigured() {
-    if (isConfigured) return true;
-    showToast("当前模型未配置，暂不可用");
-    return false;
-  }
-
   async function selectImage(file) {
     if (!file) return;
-    if (!requireAuth()) return;
     if (!file.type.startsWith("image/")) {
       setNotice("请上传图片文件");
       return;
@@ -259,7 +239,6 @@ export function FaceSwapWorkbench({
 
   async function selectVideo(file) {
     if (!file) return;
-    if (!requireAuth()) return;
     if (!file.type.startsWith("video/")) {
       setNotice("请上传视频文件");
       return;
@@ -309,7 +288,6 @@ export function FaceSwapWorkbench({
   }
 
   function submit() {
-    if (!requireAuth()) return;
     if (!imageAsset) {
       setNotice(copy.imageRequired);
       return;
@@ -457,7 +435,6 @@ export function FaceSwapWorkbench({
       </section>
 
       {notice && <div className="face-swap-workbench__notice">{notice}</div>}
-      {toastMessage && <div className="fm-floating-toast" role="alert">{toastMessage}</div>}
 
       <div className="face-swap-workbench__privacy">
         <LockKeyhole size={16} />

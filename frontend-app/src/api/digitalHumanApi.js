@@ -55,29 +55,9 @@ export const digitalHumanApi = {
   },
 
   async createTask(payload) {
-    let body;
-    const headers = {};
-    if (payload.audioFile instanceof File) {
-      body = new FormData();
-      body.append("avatarId", payload.avatarId || "");
-      body.append("avatarName", payload.avatarName || "");
-      body.append("driveMode", payload.driveMode || "text");
-      body.append("text", payload.text || "");
-      body.append("voiceId", payload.voiceId || "");
-      body.append("model", payload.model || "");
-      body.append("speed", String(payload.speed ?? 1));
-      body.append("volume", String(payload.volume ?? 1));
-      body.append("pitch", String(payload.pitch ?? 0));
-      body.append("emotion", payload.emotion || "");
-      body.append("audio", payload.audioFile);
-    } else {
-      body = JSON.stringify(payload);
-      headers["Content-Type"] = "application/json";
-    }
     const task = await request("/api/digital-human/tasks", {
       method: "POST",
-      body,
-      headers
+      body: JSON.stringify(payload)
     });
     taskPolling.notifyNow();
     return task;

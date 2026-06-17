@@ -14,7 +14,7 @@ import {
   Sparkles,
   Star,
   Trash2,
-  X
+  X,
 } from "lucide-react";
 import { articleApi } from "./articleApi";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
@@ -23,14 +23,25 @@ import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
 
-const platformTabs = ["小红书种草", "抖音封面", "视频号封面", "公众号头图", "更多"];
+const platformTabs = [
+  "小红书种草",
+  "抖音封面",
+  "视频号封面",
+  "公众号头图",
+  "更多",
+];
 const COPY_TEMPLATE_PLACEHOLDER = "请选择文案模板";
 const copyTemplatesByPlatform = {
-  "小红书种草": ["完整图文模板", "测评种草模板", "清单攻略模板", "教程拆解模板"],
-  "抖音封面": ["短视频钩子标题模板", "带货痛点标题", "短视频口播脚本", "3 秒开头文案"],
-  "视频号封面": ["观点金句封面", "直播预告封面", "知识栏目标题", "人物访谈封面"],
-  "公众号头图": ["深度文章头图", "活动推文头图", "品牌资讯头图", "干货合集头图"],
-  "更多": ["朋友圈海报文案", "商品详情长图", "B 站封面标题", "知乎图文摘要"]
+  小红书种草: ["完整图文模板", "测评种草模板", "清单攻略模板", "教程拆解模板"],
+  抖音封面: [
+    "短视频钩子标题模板",
+    "带货痛点标题",
+    "短视频口播脚本",
+    "3 秒开头文案",
+  ],
+  视频号封面: ["观点金句封面", "直播预告封面", "知识栏目标题", "人物访谈封面"],
+  公众号头图: ["深度文章头图", "活动推文头图", "品牌资讯头图", "干货合集头图"],
+  更多: ["朋友圈海报文案", "商品详情长图", "B 站封面标题", "知乎图文摘要"],
 };
 const wordCounts = ["短文案", "适中", "长笔记"];
 const copyTones = ["种草口语风", "干货测评风", "温柔分享风", "简洁硬广风"];
@@ -40,7 +51,7 @@ const fallbackModelOptions = [
   { value: "nano_banana2", label: "Nano Banana 2" },
   { value: "nano_banana_pro", label: "Nano Banana Pro" },
   { value: "gpt_image_2", label: "GPT Image 2" },
-  { value: "seedream_45", label: "Seedream 4.5" }
+  { value: "seedream_45", label: "Seedream 4.5" },
 ];
 
 const quickTemplates = [
@@ -101,14 +112,112 @@ const quickTemplates = [
 ];
 
 const visualStyles = [
-  { id: "fresh", label: "清新", image: "/assets/article/template-thumbs/清新.png" },
-  { id: "cute", label: "可爱", image: "/assets/article/template-thumbs/可爱.png" },
-  { id: "minimal", label: "极简", image: "/assets/article/template-thumbs/极简.png" },
-  { id: "bold", label: "大胆", image: "/assets/article/template-thumbs/大胆.png" },
-  { id: "handdrawn", label: "手绘笔记", image: "/assets/article/template-thumbs/手绘.png" },
-  { id: "retro", label: "复古", image: "/assets/article/template-thumbs/复古.png" },
-  { id: "notion", label: "Notion 风", image: "/assets/article/template-thumbs/Notion.png" },
-  { id: "blackboard", label: "黑板风", image: "/assets/article/template-thumbs/黑板.png" }
+  {
+    id: "fresh",
+    label: "清新",
+    image: "/assets/article/template-thumbs/清新.png",
+  },
+  {
+    id: "cute",
+    label: "可爱",
+    image: "/assets/article/template-thumbs/可爱.png",
+  },
+  {
+    id: "minimal",
+    label: "极简",
+    image: "/assets/article/template-thumbs/极简.png",
+  },
+  {
+    id: "bold",
+    label: "大胆",
+    image: "/assets/article/template-thumbs/大胆.png",
+  },
+  {
+    id: "handdrawn",
+    label: "手绘笔记",
+    image: "/assets/article/template-thumbs/手绘.png",
+  },
+  {
+    id: "retro",
+    label: "复古",
+    image: "/assets/article/template-thumbs/复古.png",
+  },
+  {
+    id: "notion",
+    label: "Notion 风",
+    image: "/assets/article/template-thumbs/Notion.png",
+  },
+  {
+    id: "blackboard",
+    label: "黑板风",
+    image: "/assets/article/template-thumbs/黑板.png",
+  },
+];
+
+const contentTypes = [
+  {
+    id: "xiaohongshu-cover",
+    label: "小红书封面",
+    image: "/assets/article/template-thumbs/小红书封面.png",
+  },
+  {
+    id: "knowledge-card",
+    label: "知识卡片",
+    image: "/assets/article/template-thumbs/知识卡片.png",
+  },
+  {
+    id: "quote-poster",
+    label: "金句海报",
+    image: "/assets/article/template-thumbs/金句海报.png",
+  },
+  {
+    id: "tutorial",
+    label: "步骤教程图",
+    image: "/assets/article/template-thumbs/步骤教程.png",
+  },
+  {
+    id: "product-card",
+    label: "产品卖点图",
+    image: "/assets/article/template-thumbs/产品卖点.png",
+  },
+  {
+    id: "comparison",
+    label: "对比分析图",
+    image: "/assets/article/template-thumbs/对比分析.png",
+  },
+];
+
+const layoutStyles = [
+  {
+    id: "balanced",
+    label: "均衡",
+    image: "/assets/article/template-thumbs/均衡.png",
+  },
+  {
+    id: "spacious",
+    label: "留白",
+    image: "/assets/article/template-thumbs/留白.png",
+  },
+  {
+    id: "dense",
+    label: "密集",
+    image: "/assets/article/template-thumbs/密集.png",
+  },
+  {
+    id: "list",
+    label: "列表",
+    image: "/assets/article/template-thumbs/列表.png",
+  },
+  {
+    id: "contrast",
+    label: "对比",
+    image: "/assets/article/template-thumbs/对比.png",
+  },
+  {
+    id: "flow",
+    label: "流程",
+    image: "/assets/article/template-thumbs/流程.png",
+  },
 ];
 
 const defaultForm = {
@@ -118,10 +227,12 @@ const defaultForm = {
   wordCount: "短文案",
   tone: "种草口语风",
   keyword: "",
+  contentType: "xiaohongshu-cover",
   visualStyle: "fresh",
+  layoutStyle: "balanced",
   ratio: "3:4",
   imageCount: 1,
-  quality: "2K"
+  quality: "2K",
 };
 
 function takePendingArticleSeed() {
@@ -156,7 +267,8 @@ function formatArticleError(error, fallback = "创建爆款图文任务失败") 
 }
 
 function buildDraftCopy(form) {
-  const topic = form.topic.trim() || "夏日清爽护肤好物推荐，敏感肌也能用的宝藏单品合集";
+  const topic =
+    form.topic.trim() || "夏日清爽护肤好物推荐，敏感肌也能用的宝藏单品合集";
   const title =
     form.tone === "干货测评风"
       ? `${topic.slice(0, 24)}，真实使用感受、优缺点对比、适合人群与避坑点`
@@ -165,7 +277,7 @@ function buildDraftCopy(form) {
     topic,
     "真的被惊艳到了！质地清爽不黏腻，使用门槛低，日常场景里也很好坚持。",
     "我会从核心卖点、适合人群、使用感受和避坑提醒几个角度拆开讲，让大家快速判断值不值得入手。",
-    "有问题欢迎评论区聊聊，也可以先收藏起来，下次需要的时候直接照着选。"
+    "有问题欢迎评论区聊聊，也可以先收藏起来，下次需要的时候直接照着选。",
   ].join("\n\n");
   const tags = (form.keyword || "种草,好物,分享")
     .split(/[,，\s]+/)
@@ -183,10 +295,12 @@ function buildArticlePrompt(form, draftCopy) {
     `标题：${draftCopy.title}。`,
     `正文：${draftCopy.body}。`,
     `标签：${draftCopy.tags.map((tag) => `#${tag}`).join(" ")}。`,
-    `视觉画风：${visualStyles.find((item) => item.id === form.visualStyle)?.label || "清新种草风"}。`,
+    `内容类型：${contentTypes.find((item) => item.id === form.contentType)?.label || "小红书封面"}。`,
+    `视觉风格：${visualStyles.find((item) => item.id === form.visualStyle)?.label || "清新"}。`,
+    `布局方式：${layoutStyles.find((item) => item.id === form.layoutStyle)?.label || "均衡"}。`,
     `尺寸比例：${form.ratio}。`,
     "画面必须使用中文排版，文字清晰可读，不能乱码，不能出现水印、二维码或无关品牌标志。",
-    "整体像成熟的小红书图文封面与配图，信息层级清楚，适合用户直接发布。"
+    "整体像成熟的小红书图文封面与配图，信息层级清楚，适合用户直接发布。",
   ].join("\n");
 }
 
@@ -199,6 +313,42 @@ function RatioIcon({ ratio }) {
       className={`article-ratio-icon ${isPortrait ? "is-portrait" : ""} ${isWide ? "is-wide" : ""}`}
       aria-hidden="true"
     />
+  );
+}
+
+function ArticleVisualOptionGroup({
+  title,
+  options,
+  value,
+  onChange,
+  variant = "image",
+}) {
+  return (
+    <div className="article-field article-visual-field">
+      <span>{title}</span>
+      <div
+        className={`article-visual-option-grid ${variant === "palette" ? "is-palette" : ""}`}
+      >
+        {options.map((item) => (
+          <button
+            className={value === item.id ? "is-selected" : ""}
+            type="button"
+            key={item.id}
+            onClick={() => onChange(item.id)}
+          >
+            {variant === "palette" ? (
+              <span
+                className="article-visual-color"
+                style={{ background: item.swatch }}
+              />
+            ) : (
+              <img src={item.image} alt="" />
+            )}
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -373,10 +523,15 @@ export function ArticleGenerationView({
   onOpenAuth,
   mode = "home",
   onModeChange,
-  isActive = true
+  isActive = true,
 }) {
   const [form, setForm] = useState(defaultForm);
-  const [options, setOptions] = useState({ models: [], ratios: [], qualities: [], counts: [] });
+  const [options, setOptions] = useState({
+    models: [],
+    ratios: [],
+    qualities: [],
+    counts: [],
+  });
   const [model, setModel] = useState("");
   const [credits, setCredits] = useState(null);
   const [cards, setCards] = useState([]);
@@ -426,33 +581,51 @@ export function ArticleGenerationView({
   useEffect(() => {
     let mounted = true;
     function refreshTasks() {
-      articleApi.getTasks({ filter: "all" }).then((value) => {
-        if (!mounted) return;
-        const nextSignature = taskStatusSignature(value);
-        const didStatusChange =
-          taskStatusSignatureRef.current &&
-          taskStatusSignatureRef.current !== nextSignature;
-        taskStatusSignatureRef.current = nextSignature;
-        articleApi.setHasRunningTasks(hasRunningTasks(value));
-        setCards(value);
-        if (didStatusChange) {
-          articleApi.refreshCredits().then((nextCredits) => mounted && applyCredits(nextCredits)).catch(() => {});
-        }
-      }).catch((error) => mounted && setSubmitError(error.message));
+      articleApi
+        .getTasks({ filter: "all" })
+        .then((value) => {
+          if (!mounted) return;
+          const nextSignature = taskStatusSignature(value);
+          const didStatusChange =
+            taskStatusSignatureRef.current &&
+            taskStatusSignatureRef.current !== nextSignature;
+          taskStatusSignatureRef.current = nextSignature;
+          articleApi.setHasRunningTasks(hasRunningTasks(value));
+          setCards(value);
+          if (didStatusChange) {
+            articleApi
+              .refreshCredits()
+              .then((nextCredits) => mounted && applyCredits(nextCredits))
+              .catch(() => {});
+          }
+        })
+        .catch((error) => mounted && setSubmitError(error.message));
     }
 
-    articleApi.getModels().then((value) => {
-      if (!mounted) return;
-      setOptions(value);
-      setModel((current) => current || pickDefaultModel(value.models));
-      setForm((current) => ({
-        ...current,
-        ratio: value.ratios.includes(current.ratio) ? current.ratio : value.ratios[0] || current.ratio,
-        quality: value.qualities.some((item) => item.value === current.quality) ? current.quality : value.qualities[0]?.value || current.quality
-      }));
-    }).catch((error) => mounted && setSubmitError(error.message));
+    articleApi
+      .getModels()
+      .then((value) => {
+        if (!mounted) return;
+        setOptions(value);
+        setModel(pickDefaultModel(value.models));
+        setForm((current) => ({
+          ...current,
+          ratio: value.ratios.includes(current.ratio)
+            ? current.ratio
+            : value.ratios[0] || current.ratio,
+          quality: value.qualities.some(
+            (item) => item.value === current.quality,
+          )
+            ? current.quality
+            : value.qualities[0]?.value || current.quality,
+        }));
+      })
+      .catch((error) => mounted && setSubmitError(error.message));
 
-    articleApi.getCredits().then((value) => mounted && applyCredits(value)).catch(() => {});
+    articleApi
+      .getCredits()
+      .then((value) => mounted && applyCredits(value))
+      .catch(() => {});
     refreshTasks();
     const unsubscribe = articleApi.subscribe(refreshTasks);
     return () => {
@@ -472,7 +645,8 @@ export function ArticleGenerationView({
     }
 
     document.addEventListener("mousedown", closeFloatingSelects);
-    return () => document.removeEventListener("mousedown", closeFloatingSelects);
+    return () =>
+      document.removeEventListener("mousedown", closeFloatingSelects);
   }, []);
 
   useEffect(() => {
@@ -483,7 +657,7 @@ export function ArticleGenerationView({
 
   const selectedTask = useMemo(
     () => cards.find((card) => card.id === selectedTaskId) || null,
-    [cards, selectedTaskId]
+    [cards, selectedTaskId],
   );
   const selectedImages = getArticleImages(selectedTask);
   const selectedCompletedImages = selectedImages.filter((item) => item.image);
@@ -497,8 +671,11 @@ export function ArticleGenerationView({
   const copyTemplates = copyTemplatesByPlatform[form.platform] || copyTemplatesByPlatform["更多"];
   const hasCompletedArticle = selectedCompletedImages.length > 0 && ["completed", "partial_completed"].includes(selectedTask?.status);
   const hasFailedArticle = selectedTask?.status === "failed";
-  const modelOptions = options.models.length ? options.models : fallbackModelOptions;
-  const selectedModelOption = modelOptions.find((item) => item.value === model) || modelOptions[0];
+  const modelOptions = options.models.length
+    ? options.models
+    : fallbackModelOptions;
+  const selectedModelOption =
+    modelOptions.find((item) => item.value === model) || modelOptions[0];
   const previewImages = useMemo(() => {
     if (selectedCompletedImages.length) return selectedCompletedImages;
     const completed = cards.filter((card) => card.status === "completed" && card.image).slice(0, 4);
@@ -558,7 +735,7 @@ export function ArticleGenerationView({
       topic: template.topic,
       keyword: template.keyword,
       tone: template.tone || current.tone,
-      ratio: "3:4"
+      ratio: "3:4",
     }));
     setDraftCopy(null);
     setImagePromptPlan(null);
@@ -686,15 +863,23 @@ export function ArticleGenerationView({
     setPreviewTask(null);
     try {
       const created = await articleApi.createTask({
-        prompt: task.prompt || buildArticlePrompt(form, draftCopy || buildDraftCopy(form)),
+        prompt:
+          task.prompt ||
+          buildArticlePrompt(form, draftCopy || buildDraftCopy(form)),
         model: task.modelKey || model || pickDefaultModel(options.models),
         ratio: task.ratio || form.ratio,
         quality: task.quality || form.quality,
-        count: 1
+        count: 1,
       });
-      setCards((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+      setCards((current) => [
+        created,
+        ...current.filter((item) => item.id !== created.id),
+      ]);
       setSelectedTaskId(created.id);
-      articleApi.refreshCredits().then(applyCredits).catch(() => {});
+      articleApi
+        .refreshCredits()
+        .then(applyCredits)
+        .catch(() => {});
     } catch (error) {
       showToast(formatArticleError(error, "重新生成失败"));
       setIsSubmitting(false);
@@ -709,7 +894,9 @@ export function ArticleGenerationView({
 
   async function toggleFavorite(id) {
     const updated = await articleApi.toggleFavorite(id);
-    setCards((current) => current.map((item) => (item.id === id ? updated : item)));
+    setCards((current) =>
+      current.map((item) => (item.id === id ? updated : item)),
+    );
   }
 
   if (mode === "history") {
@@ -721,7 +908,9 @@ export function ArticleGenerationView({
               <span>历史图文</span>
               <h2>最近生成</h2>
             </div>
-            {credits && <span className="credits-chip">积分 {credits.balance}</span>}
+            {credits && (
+              <span className="credits-chip">积分 {credits.balance}</span>
+            )}
           </div>
           <div className="article-history-grid">
             {historyCards.map((task) => {
@@ -773,7 +962,10 @@ export function ArticleGenerationView({
             )}
           </div>
         </section>
-        <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
+        <ArticlePreview
+          task={previewTask}
+          onClose={() => setPreviewTask(null)}
+        />
       </section>
     );
   }
@@ -785,13 +977,18 @@ export function ArticleGenerationView({
           ["1", "选择场景与模板"],
           ["2", "填写创作主题与文案参数"],
           ["3", "配置配图风格与规格"],
-          ["4", "生成并预览最终图文"]
+          ["4", "生成并预览最终图文"],
         ].map(([number, label], index) => {
           const currentStep = index + 1;
           const done = displayStep > currentStep;
-          const active = displayStep === currentStep || (displayStep === 2 && currentStep <= 2);
+          const active =
+            displayStep === currentStep ||
+            (displayStep === 2 && currentStep <= 2);
           return (
-            <div className={`${done ? "is-done" : ""} ${active || done ? "is-active" : ""}`} key={label}>
+            <div
+              className={`${done ? "is-done" : ""} ${active || done ? "is-active" : ""}`}
+              key={label}
+            >
               <span>{done ? <CheckCircle2 size={24} /> : number}</span>
               <p>{label}</p>
             </div>
@@ -803,7 +1000,9 @@ export function ArticleGenerationView({
         <aside className="article-form-panel">
           {step < 3 ? (
             <>
-              <h2><span>步骤 1 ·</span> 场景与模板</h2>
+              <h2>
+                <span>步骤 1 ·</span> 场景与模板
+              </h2>
               <div className="fm-popular-platform-tabs" aria-label="平台类型">
                 {platformTabs.map((item) => (
                   <button
@@ -818,7 +1017,10 @@ export function ArticleGenerationView({
               </div>
               <label className="fm-popular-template-select">
                 <span>文案模板</span>
-                <span className={`fm-popular-template-wrap ${isTemplateOpen ? "is-open" : ""}`} ref={templateSelectRef}>
+                <span
+                  className={`fm-popular-template-wrap ${isTemplateOpen ? "is-open" : ""}`}
+                  ref={templateSelectRef}
+                >
                   <button
                     className="fm-popular-template-trigger"
                     type="button"
@@ -827,14 +1029,22 @@ export function ArticleGenerationView({
                     onClick={() => setIsTemplateOpen((value) => !value)}
                   >
                     <Layers size={17} />
-                    <span>{form.copyTemplate || COPY_TEMPLATE_PLACEHOLDER}</span>
+                    <span>
+                      {form.copyTemplate || COPY_TEMPLATE_PLACEHOLDER}
+                    </span>
                     <ChevronDown size={16} />
                   </button>
                   {isTemplateOpen && (
-                    <div className="fm-popular-template-menu" role="listbox" aria-label="文案模板">
+                    <div
+                      className="fm-popular-template-menu"
+                      role="listbox"
+                      aria-label="文案模板"
+                    >
                       {copyTemplates.map((item) => (
                         <button
-                          className={form.copyTemplate === item ? "is-selected" : ""}
+                          className={
+                            form.copyTemplate === item ? "is-selected" : ""
+                          }
                           type="button"
                           key={item}
                           role="option"
@@ -852,20 +1062,29 @@ export function ArticleGenerationView({
                   )}
                 </span>
               </label>
-              <h2><span>步骤 2 ·</span> 文案配置</h2>
+              <h2>
+                <span>步骤 2 ·</span> 文案配置
+              </h2>
               <label className="article-field">
                 <span>创作主题</span>
                 <em>{form.topic.length}/500</em>
                 <textarea
                   value={form.topic}
-                  onChange={(event) => updateForm({ topic: event.target.value.slice(0, 500) })}
+                  onChange={(event) =>
+                    updateForm({ topic: event.target.value.slice(0, 500) })
+                  }
                   placeholder="电商爆款标题，突出核心卖点与优惠信息，吸引点击，适合直播带货场景"
                 />
               </label>
               <div className="article-choice-row">
                 <strong>期望字数</strong>
                 {wordCounts.map((item) => (
-                  <button className={form.wordCount === item ? "is-selected" : ""} type="button" key={item} onClick={() => updateForm({ wordCount: item })}>
+                  <button
+                    className={form.wordCount === item ? "is-selected" : ""}
+                    type="button"
+                    key={item}
+                    onClick={() => updateForm({ wordCount: item })}
+                  >
                     {item}
                   </button>
                 ))}
@@ -873,7 +1092,12 @@ export function ArticleGenerationView({
               <div className="article-choice-row">
                 <strong>文案语气</strong>
                 {copyTones.map((item) => (
-                  <button className={form.tone === item ? "is-selected" : ""} type="button" key={item} onClick={() => updateForm({ tone: item })}>
+                  <button
+                    className={form.tone === item ? "is-selected" : ""}
+                    type="button"
+                    key={item}
+                    onClick={() => updateForm({ tone: item })}
+                  >
                     {item}
                   </button>
                 ))}
@@ -881,7 +1105,9 @@ export function ArticleGenerationView({
               <div className="article-submit-row is-copy">
                 <input
                   value={form.keyword}
-                  onChange={(event) => updateForm({ keyword: event.target.value })}
+                  onChange={(event) =>
+                    updateForm({ keyword: event.target.value })
+                  }
                   placeholder="填入商品/卖点关键词，逗号分隔"
                 />
                 <button type="button" onClick={generateDraft} disabled={isDraftSubmitting}>
@@ -892,27 +1118,18 @@ export function ArticleGenerationView({
             </>
           ) : (
             <>
-              <h2><span>步骤 3 ·</span> 配图配置</h2>
-              <div className="article-field">
-                <span>视觉画风</span>
-                <div className="article-style-grid">
-                  {visualStyles.map((item) => (
-                    <button
-                      className={form.visualStyle === item.id ? "is-selected" : ""}
-                      type="button"
-                      key={item.id}
-                      onClick={() => updateForm({ visualStyle: item.id })}
-                    >
-                      <img src={item.image} alt="" />
-                      <strong>{item.label}</strong>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <h2>
+                <span>步骤 3 ·</span> 配图配置
+              </h2>
               <div className="article-choice-row is-ratio">
                 <strong>尺寸比例</strong>
                 {ratios.map((item) => (
-                  <button className={form.ratio === item ? "is-selected" : ""} type="button" key={item} onClick={() => updateForm({ ratio: item })}>
+                  <button
+                    className={form.ratio === item ? "is-selected" : ""}
+                    type="button"
+                    key={item}
+                    onClick={() => updateForm({ ratio: item })}
+                  >
                     <RatioIcon ratio={item} />
                     {item}
                   </button>
@@ -921,14 +1138,22 @@ export function ArticleGenerationView({
               <div className="article-choice-row">
                 <strong>配图数量</strong>
                 {imageCounts.map((item) => (
-                  <button className={form.imageCount === item ? "is-selected" : ""} type="button" key={item} onClick={() => updateForm({ imageCount: item })}>
+                  <button
+                    className={form.imageCount === item ? "is-selected" : ""}
+                    type="button"
+                    key={item}
+                    onClick={() => updateForm({ imageCount: item })}
+                  >
                     {item}
                   </button>
                 ))}
               </div>
               <div className="article-model-select-row">
                 <strong>模型选项</strong>
-                <span className={`fm-popular-template-wrap article-model-select ${isModelOpen ? "is-open" : ""}`} ref={modelSelectRef}>
+                <span
+                  className={`fm-popular-template-wrap article-model-select ${isModelOpen ? "is-open" : ""}`}
+                  ref={modelSelectRef}
+                >
                   <button
                     className="fm-popular-template-trigger"
                     type="button"
@@ -937,11 +1162,19 @@ export function ArticleGenerationView({
                     onClick={() => setIsModelOpen((value) => !value)}
                   >
                     <Layers size={17} />
-                    <span>{selectedModelOption?.label || selectedModelOption?.value || "请选择模型"}</span>
+                    <span>
+                      {selectedModelOption?.label ||
+                        selectedModelOption?.value ||
+                        "请选择模型"}
+                    </span>
                     <ChevronDown size={16} />
                   </button>
                   {isModelOpen && (
-                    <div className="fm-popular-template-menu" role="listbox" aria-label="模型选项">
+                    <div
+                      className="fm-popular-template-menu"
+                      role="listbox"
+                      aria-label="模型选项"
+                    >
                       {modelOptions.map((item) => (
                         <button
                           className={model === item.value ? "is-selected" : ""}
@@ -963,13 +1196,29 @@ export function ArticleGenerationView({
                 </span>
               </div>
               <div className="article-step-action-row">
-                <p className="article-credit-hint">预计消耗 <strong>{Math.max(30, form.imageCount * 30)}</strong> 积分</p>
+                <p className="article-credit-hint">
+                  预计消耗 <strong>{Math.max(30, form.imageCount * 30)}</strong>{" "}
+                  积分
+                </p>
                 <div className="article-step-buttons">
-                  <button className="article-back-step" type="button" onClick={() => setStep(2)}>
+                  <button
+                    className="article-back-step"
+                    type="button"
+                    onClick={() => setStep(2)}
+                  >
                     上一步
                   </button>
-                  <button className="article-generate-full" type="button" onClick={submitGeneration} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 size={17} className="is-spinning" /> : <Sparkles size={17} />}
+                  <button
+                    className="article-generate-full"
+                    type="button"
+                    onClick={submitGeneration}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? (
+                      <Loader2 size={17} className="is-spinning" />
+                    ) : (
+                      <Sparkles size={17} />
+                    )}
                     {isGenerating ? "生成中" : "生成完整图文"}
                   </button>
                 </div>
@@ -982,7 +1231,9 @@ export function ArticleGenerationView({
         <main className="article-result-card">
           <header>
             <strong>生成结果</strong>
-            <span>{form.platform} · {form.ratio}</span>
+            <span>
+              {form.platform} · {form.ratio}
+            </span>
           </header>
           {isDraftSubmitting ? (
             <div className="article-result-empty">
@@ -1000,28 +1251,56 @@ export function ArticleGenerationView({
             <div className="article-result-empty">
               <Sparkles size={92} />
               <h2>尚未生成图文</h2>
-              <p>按步骤选择场景与模板，先生成标题正文，再配置配图生成完整图文</p>
+              <p>
+                按步骤选择场景与模板，先生成标题正文，再配置配图生成完整图文
+              </p>
               <div>
-                <button type="button" onClick={() => document.querySelector(".article-field textarea")?.focus()}>去输入主题</button>
-                <button type="button" onClick={() => applyQuickTemplate(quickTemplates[0])}>选择快捷模板</button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document.querySelector(".article-field textarea")?.focus()
+                  }
+                >
+                  去输入主题
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyQuickTemplate(quickTemplates[0])}
+                >
+                  选择快捷模板
+                </button>
               </div>
             </div>
           ) : step < 3 ? (
             <div className="article-copy-result">
               <label>
                 <span>标题</span>
-                <input value={draftCopy.title} onChange={(event) => updateDraft({ title: event.target.value })} />
+                <input
+                  value={draftCopy.title}
+                  onChange={(event) =>
+                    updateDraft({ title: event.target.value })
+                  }
+                />
               </label>
               <label>
                 <span>正文</span>
-                <textarea value={draftCopy.body} onChange={(event) => updateDraft({ body: event.target.value })} />
+                <textarea
+                  value={draftCopy.body}
+                  onChange={(event) =>
+                    updateDraft({ body: event.target.value })
+                  }
+                />
               </label>
               <div className="article-tag-editor">
                 {(draftCopy.tags || []).map((tag) => (
                   <button
                     type="button"
                     key={tag}
-                    onClick={() => updateDraft({ tags: draftCopy.tags.filter((item) => item !== tag) })}
+                    onClick={() =>
+                      updateDraft({
+                        tags: draftCopy.tags.filter((item) => item !== tag),
+                      })
+                    }
                   >
                     #{tag} <X size={13} />
                   </button>
@@ -1029,15 +1308,27 @@ export function ArticleGenerationView({
                 <input
                   placeholder="输入标签后回车，如：敏感肌"
                   onKeyDown={(event) => {
-                    if (event.key === "Enter" && event.currentTarget.value.trim()) {
+                    if (
+                      event.key === "Enter" &&
+                      event.currentTarget.value.trim()
+                    ) {
                       event.preventDefault();
-                      updateDraft({ tags: [...(draftCopy.tags || []), event.currentTarget.value.trim()] });
+                      updateDraft({
+                        tags: [
+                          ...(draftCopy.tags || []),
+                          event.currentTarget.value.trim(),
+                        ],
+                      });
                       event.currentTarget.value = "";
                     }
                   }}
                 />
               </div>
-              <button className="article-confirm-copy" type="button" onClick={confirmDraft}>
+              <button
+                className="article-confirm-copy"
+                type="button"
+                onClick={confirmDraft}
+              >
                 确认文案无误，下一步配置配图
               </button>
             </div>
@@ -1063,9 +1354,17 @@ export function ArticleGenerationView({
                   <CircleAlert size={26} />
                   <div>
                     <strong>图片生成失败</strong>
-                    <p>{formatArticleError(selectedTask?.error || submitError, "本次生成没有成功，请调整模型、比例或稍后重试。")}</p>
+                    <p>
+                      {formatArticleError(
+                        selectedTask?.error || submitError,
+                        "本次生成没有成功，请调整模型、比例或稍后重试。",
+                      )}
+                    </p>
                   </div>
-                  <button type="button" onClick={() => regenerateTask(selectedTask)}>
+                  <button
+                    type="button"
+                    onClick={() => regenerateTask(selectedTask)}
+                  >
                     <RefreshCcw size={15} />
                     重新生成
                   </button>
@@ -1160,23 +1459,29 @@ export function ArticleGenerationView({
         </main>
       </div>
 
-      <section className="article-quick-section">
-        <header>
-          <div>
-            <strong>快捷图文模板</strong>
-            <p>成套图文模板，一键填充文案+预设配图风格</p>
+      {step < 3 && (
+        <section className="article-quick-section">
+          <header>
+            <div>
+              <strong>快捷图文模板</strong>
+              <p>成套图文模板，一键填充文案+预设配图风格</p>
+            </div>
+            <button type="button">查看更多</button>
+          </header>
+          <div className="article-quick-rail">
+            {quickTemplates.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => applyQuickTemplate(item)}
+              >
+                <img src={item.image} alt="" />
+                <span>{item.title}</span>
+              </button>
+            ))}
           </div>
-          <button type="button">查看更多</button>
-        </header>
-        <div className="article-quick-rail">
-          {quickTemplates.map((item) => (
-            <button type="button" key={item.id} onClick={() => applyQuickTemplate(item)}>
-              <img src={item.image} alt="" />
-              <span>{item.title}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+        </section>
+      )}
 
       <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
       {toastMessage && (

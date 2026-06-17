@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ImagePlus, Loader2, LockKeyhole, Mic, Wand2, X } from "lucide-react";
+import { ImagePlus, Loader2, LockKeyhole, Wand2, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { CustomSelect } from "../../components/CustomSelect";
-import { useToast } from "../../hooks/useToast";
 import "../face-swap/FaceSwapWorkbench.css";
 import "./ImageDigitalHumanShowcaseCard.css";
 import "./ImageDigitalHumanFaceSwapWorkbench.css";
@@ -27,18 +26,10 @@ const ttsEmotionOptions = [
 export function ImageDigitalHumanFaceSwapWorkbench({
   copy,
   heading = "图片数字人生成",
-  authUser,
-  onOpenAuth,
-  onSubmit,
-  isSubmitting,
 }) {
-  const isGuest = Boolean(authUser?.isGuest);
-  const { message: toastMessage, showToast } = useToast();
   const [options, setOptions] = useState(emptyImageDigitalHumanOptions);
   const [voices, setVoices] = useState([]);
   const [portraitPreview, setPortraitPreview] = useState("");
-  const [portraitFile, setPortraitFile] = useState(null);
-  const [audioFile, setAudioFile] = useState(null);
   const [driveMode, setDriveMode] = useState(emptyImageDigitalHumanOptions.defaults.driveMode);
   const [model, setModel] = useState("");
   const [voiceId, setVoiceId] = useState("");
@@ -49,8 +40,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
   const [pitch, setPitch] = useState(0);
   const [notice, setNotice] = useState("");
   const [isPreviewingVoice, setIsPreviewingVoice] = useState(false);
-  const ttsDisabled = Boolean(audioFile);
-  const audioInputRef = React.useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -94,16 +83,8 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     }
   }, [portraitPreview]);
 
-  function requireAuth() {
-    if (!isGuest) return true;
-    showToast("请先登录");
-    onOpenAuth?.("login");
-    return false;
-  }
-
   function selectPortrait(file) {
     if (!file) return;
-    if (!requireAuth()) return;
     if (!file.type.startsWith("image/")) {
       setNotice("请上传图片文件");
       return;
@@ -115,7 +96,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     if (portraitPreview.startsWith("blob:")) {
       window.URL.revokeObjectURL(portraitPreview);
     }
-    setPortraitFile(file);
     setPortraitPreview(window.URL.createObjectURL(file));
     setNotice("");
   }
@@ -124,35 +104,11 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     if (portraitPreview.startsWith("blob:")) {
       window.URL.revokeObjectURL(portraitPreview);
     }
-    setPortraitFile(null);
     setPortraitPreview("");
     setNotice("");
   }
 
-  function selectAudio(file) {
-    if (!file) return;
-    if (!requireAuth()) return;
-    if (!file.type.startsWith("audio/")) {
-      setNotice("请上传音频文件");
-      return;
-    }
-    setAudioFile(file);
-    setDriveMode("audio");
-    setNotice("");
-  }
-
-  function clearAudio() {
-    setAudioFile(null);
-    setDriveMode("text");
-    setNotice("");
-  }
-
   async function previewVoice() {
-    if (!requireAuth()) return;
-    if (audioFile) {
-      setNotice("已上传音频，无需试听");
-      return;
-    }
     if (!text.trim()) {
       setNotice("请先填写脚本内容");
       return;
@@ -178,35 +134,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
     } finally {
       setIsPreviewingVoice(false);
     }
-  }
-
-  function submit() {
-    if (!requireAuth()) return;
-    if (!portraitFile) {
-      setNotice("请上传人物图");
-      return;
-    }
-    if (driveMode === "text" && !text.trim()) {
-      setNotice("请填写脚本内容");
-      return;
-    }
-    if (driveMode === "audio" && !audioFile) {
-      setNotice("请上传音频文件");
-      return;
-    }
-    setNotice("");
-    onSubmit?.({
-      portrait: portraitFile,
-      driveMode,
-      text,
-      audioFile,
-      voiceId,
-      model,
-      speed,
-      volume,
-      pitch,
-      emotion,
-    });
   }
 
   return (
@@ -258,64 +185,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
 
         <section className="face-swap-workbench__upload-card image-digital-human-workbench__card">
           <div className="idh-showcase-settings">
-            <div className="idh-showcase-drive-tabs">
-              <button
-                className={`idh-showcase-pill ${driveMode === "text" ? "is-active" : ""}`}
-                type="button"
-                onClick={() => { setDriveMode("text"); clearAudio(); }}
-                aria-pressed={driveMode === "text"}
-              >
-                <span>文本驱动</span>
-              </button>
-              <button
-                className={`idh-showcase-pill ${driveMode === "audio" ? "is-active" : ""}`}
-                type="button"
-                onClick={() => audioInputRef.current?.click()}
-                aria-pressed={driveMode === "audio"}
-              >
-                <span>音频驱动</span>
-              </button>
-              <input
-                ref={audioInputRef}
-                type="file"
-                accept="audio/*"
-                hidden
-                onChange={(event) => {
-                  selectAudio(event.target.files?.[0] || null);
-                  event.target.value = "";
-                }}
-              />
-            </div>
-
-            {audioFile && (
-              <div className="idh-audio-upload is-compact">
-                <span
-                  className="upload-clear-button"
-                  role="button"
-                  tabIndex={0}
-                  title="取消上传"
-                  aria-label="取消上传"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    clearAudio();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      clearAudio();
-                    }
-                  }}
-                >
-                  <X size={13} />
-                </span>
-                <Mic size={22} />
-                <strong>{audioFile.name}</strong>
-                <span>已选择音频，TTS 参数已禁用</span>
-              </div>
-            )}
-
             <div className="idh-showcase-steps">
               <div className="is-active">
                 <span>1</span>
@@ -340,6 +209,25 @@ export function ImageDigitalHumanFaceSwapWorkbench({
               </div>
             </div>
 
+            <div className="idh-showcase-drive-tabs">
+              <button
+                className={`idh-showcase-pill ${driveMode === "text" ? "is-active" : ""}`}
+                type="button"
+                onClick={() => setDriveMode("text")}
+                aria-pressed={driveMode === "text"}
+              >
+                <span>文本驱动</span>
+              </button>
+              <button
+                className={`idh-showcase-pill ${driveMode === "audio" ? "is-active" : ""}`}
+                type="button"
+                onClick={() => setDriveMode("audio")}
+                aria-pressed={driveMode === "audio"}
+              >
+                <span>音频驱动</span>
+              </button>
+            </div>
+
             <label className="idh-showcase-field idh-showcase-field--model">
               <span>模型</span>
               <CustomSelect
@@ -360,7 +248,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
                   value={voiceId}
                   onChange={setVoiceId}
                   options={voices.map((item) => ({ value: item.id, label: item.name }))}
-                  disabled={ttsDisabled}
                 />
               </label>
               <label className="idh-showcase-field">
@@ -371,14 +258,13 @@ export function ImageDigitalHumanFaceSwapWorkbench({
                   value={emotion}
                   onChange={setEmotion}
                   options={ttsEmotionOptions}
-                  disabled={ttsDisabled}
                 />
               </label>
             </div>
 
-            <label className={`idh-showcase-field idh-showcase-field--textarea ${ttsDisabled ? "is-disabled" : ""}`}>
+            <label className="idh-showcase-field idh-showcase-field--textarea">
               <span>脚本内容</span>
-              <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} disabled={ttsDisabled} />
+              <textarea value={text} maxLength={2000} onChange={(event) => setText(event.target.value)} />
             </label>
 
             <div className="idh-showcase-tts-panel">
@@ -388,27 +274,23 @@ export function ImageDigitalHumanFaceSwapWorkbench({
               </div>
               <div className="idh-showcase-tts-controls">
                 <div className="idh-showcase-tts-sliders">
-                  <label className={`idh-showcase-range-field ${ttsDisabled ? "is-disabled" : ""}`}>
+                  <label className="idh-showcase-range-field">
                     <span>语速 <small>{speed.toFixed(2)}x</small></span>
-                    <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} disabled={ttsDisabled} />
+                    <input type="range" min="0.5" max="2" step="0.05" value={speed} onChange={(event) => setSpeed(Number(event.target.value))} />
                   </label>
-                  <label className={`idh-showcase-range-field ${ttsDisabled ? "is-disabled" : ""}`}>
+                  <label className="idh-showcase-range-field">
                     <span>音量 <small>{volume.toFixed(1)}</small></span>
-                    <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} disabled={ttsDisabled} />
+                    <input type="range" min="0.1" max="10" step="0.1" value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
                   </label>
-                  <label className={`idh-showcase-range-field ${ttsDisabled ? "is-disabled" : ""}`}>
+                  <label className="idh-showcase-range-field">
                     <span>音调 <small>{pitch > 0 ? `+${pitch}` : pitch}</small></span>
-                    <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} disabled={ttsDisabled} />
+                    <input type="range" min="-12" max="12" step="1" value={pitch} onChange={(event) => setPitch(Number(event.target.value))} />
                   </label>
                 </div>
                 <div className="idh-showcase-tts-action">
-                  <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={previewVoice} disabled={ttsDisabled || isPreviewingVoice}>
+                  <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={previewVoice} disabled={isPreviewingVoice}>
                     {isPreviewingVoice ? <Loader2 size={18} className="image-digital-human-workbench__spinner" /> : <Wand2 size={18} />}
-                    试听音色
-                  </button>
-                  <button className="idh-showcase-generate-voice dh-generate-button" type="button" onClick={submit} disabled={isSubmitting || !portraitFile}>
-                    {isSubmitting ? <Loader2 size={18} className="image-digital-human-workbench__spinner" /> : <Wand2 size={18} />}
-                    生成数字人视频
+                    {"\u751f\u6210\u6570\u5b57\u4eba\u89c6\u9891"}
                   </button>
                 </div>
               </div>
@@ -431,7 +313,6 @@ export function ImageDigitalHumanFaceSwapWorkbench({
       </section>
 
       {notice ? <div className="face-swap-workbench__notice">{notice}</div> : null}
-      {toastMessage && <div className="fm-floating-toast" role="alert">{toastMessage}</div>}
 
       <div className="image-digital-human-workbench__privacy-note">
         <LockKeyhole size={16} />

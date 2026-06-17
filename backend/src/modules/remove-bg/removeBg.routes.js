@@ -42,6 +42,9 @@ const sourceUpload = multer({
 function uploadSource(req, res, next) {
   sourceUpload.single("file")(req, res, (error) => {
     if (!error) {
+      if (req.file?.originalname) {
+        req.file.originalname = Buffer.from(req.file.originalname, "latin1").toString("utf8");
+      }
       next();
       return undefined;
     }

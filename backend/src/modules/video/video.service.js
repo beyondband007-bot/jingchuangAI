@@ -1,4 +1,5 @@
 import { getPool } from "../../db/pool.js";
+import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { createKieVideoTask, extractVideoResultUrls, getKieVideoTask, mapKieVideoState } from "../../providers/kie/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
@@ -56,7 +57,14 @@ export async function getTask(id, userId) {
 }
 
 export async function createTask(payload, userId) {
-  const { prompt, model, ratio, duration, mode = "first-frame", count = 1 } = payload;
+  let { prompt, model, ratio, duration, mode = "first-frame", count = 1, referenceImageUrl, referenceVideoUrl } = payload;
+
+  // 强制使用 kling_3_std 模型，无论用户选择什么
+  const forcedModelKey = "kling_3_std";
+  if (model !== forcedModelKey) {
+    console.log(`[video] user selected ${model}, forcing to ${forcedModelKey}`);
+    model = forcedModelKey;
+  }
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -70,7 +78,7 @@ export async function createTask(payload, userId) {
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
     }
-    validateVideoPayload({ prompt, model: modelPrice, ratio, duration, count });
+    validateVideoPayload({ prompt, model: modelPrice, ratio, duration, count, referenceImageUrl, referenceVideoUrl });
 
     costPoints = calculateVideoPoints(modelPrice, duration, count);
     const rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
@@ -83,7 +91,9 @@ export async function createTask(payload, userId) {
       mode,
       count: Number(count),
       costPoints,
-      rmbCost
+      rmbCost,
+      referenceImageUrl: referenceImageUrl || null,
+      referenceVideoUrl: referenceVideoUrl || null
     });
 
     await debitCredits(connection, {
@@ -107,7 +117,9 @@ export async function createTask(payload, userId) {
       model: modelPrice,
       prompt: prompt.trim(),
       ratio,
-      duration: Number(duration)
+      duration: Number(duration),
+      referenceImageUrl: referenceImageUrl || null,
+      referenceVideoUrl: referenceVideoUrl || null
     });
     await setVideoTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
@@ -116,6 +128,46 @@ export async function createTask(payload, userId) {
   }
 
   return getTask(taskId, userId);
+}
+
+export async function uploadReferenceImage({ file }) {
+  if (!file) {
+    throw createHttpError("file is required", 400);
+  }
+  const upload = await uploadFileToKie({
+    filePath: file.path,
+    fileName: file.filename || file.originalname || "reference-image",
+    mimeType: file.mimetype || "application/octet-stream",
+    uploadPath: "video-generation"
+  });
+
+  return {
+    url: upload.url,
+    referenceImageUrl: upload.url,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size
+  };
+}
+
+export async function uploadReferenceVideo({ file }) {
+  if (!file) {
+    throw createHttpError("file is required", 400);
+  }
+  const upload = await uploadFileToKie({
+    filePath: file.path,
+    fileName: file.filename || file.originalname || "reference-video",
+    mimeType: file.mimetype || "application/octet-stream",
+    uploadPath: "video-generation"
+  });
+
+  return {
+    url: upload.url,
+    referenceVideoUrl: upload.url,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size
+  };
 }
 
 async function refreshProcessingTasks() {

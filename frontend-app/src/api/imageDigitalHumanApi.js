@@ -41,17 +41,13 @@ export const imageDigitalHumanApi = {
   async createTask(payload) {
     const formData = new FormData();
     formData.append("portrait", payload.portrait);
-    formData.append("driveMode", payload.driveMode || "text");
-    formData.append("text", payload.text || "");
-    formData.append("voiceId", payload.voiceId || "");
-    formData.append("model", payload.model || "");
-    formData.append("speed", String(payload.speed ?? 1));
-    formData.append("volume", String(payload.volume ?? 1));
-    formData.append("pitch", String(payload.pitch ?? 0));
+    formData.append("text", payload.text);
+    formData.append("voiceId", payload.voiceId);
+    formData.append("model", payload.model);
+    formData.append("speed", String(payload.speed));
+    formData.append("volume", String(payload.volume));
+    formData.append("pitch", String(payload.pitch));
     formData.append("emotion", payload.emotion || "");
-    if (payload.audioFile instanceof File) {
-      formData.append("audio", payload.audioFile);
-    }
 
     const task = await request("/api/image-digital-human/tasks", {
       method: "POST",

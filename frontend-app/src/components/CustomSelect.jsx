@@ -101,7 +101,10 @@ export function CustomSelect({
     );
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const openUpward = spaceAbove >= Math.min(estimatedHeight + 12, 120) || spaceAbove >= spaceBelow;
+    const requiredHeight = Math.min(estimatedHeight + 12, window.innerHeight - 16);
+    const canOpenBelow = spaceBelow >= requiredHeight;
+    const canOpenAbove = spaceAbove >= requiredHeight;
+    const openUpward = !canOpenBelow && canOpenAbove;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
     const top = openUpward
       ? Math.max(8, rect.top - estimatedHeight - 8)

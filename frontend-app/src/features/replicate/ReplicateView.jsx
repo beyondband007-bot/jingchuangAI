@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Copy, Download, FileImage, FileVideo, Loader2, Sparkles, Star, Upload, X } from "lucide-react";
 import { replicateApi } from "./replicateApi";
-import { useRequireAuth } from "../../hooks/useRequireAuth";
 import { formatBeijingDateTime } from "../../utils/time";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
@@ -180,7 +179,7 @@ function ReplicateResult({ result, onCopy }) {
   );
 }
 
-export function ReplicateView({ authUser, onOpenAuth }) {
+export function ReplicateView({ authUser }) {
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -189,11 +188,6 @@ export function ReplicateView({ authUser, onOpenAuth }) {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const isGuest = Boolean(authUser?.isGuest);
-  const requireAuth = useRequireAuth({
-    authUser,
-    onOpenAuth,
-    onDeny: () => setNotice("请先登录"),
-  });
 
   useEffect(() => {
     window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(recentResults));
@@ -217,7 +211,10 @@ export function ReplicateView({ authUser, onOpenAuth }) {
   }
 
   async function startReplicate() {
-    if (!requireAuth()) return;
+    if (isGuest) {
+      setNotice("积分不够，请充值");
+      return;
+    }
     if (!selectedFile?.file) {
       setNotice("请先上传素材");
       return;
