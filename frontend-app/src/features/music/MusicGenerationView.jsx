@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, Loader2, Music, Pause, Play, Star } from "lucide-react";
+import { Download, Loader2, Music, Star } from "lucide-react";
 import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
+import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
@@ -78,9 +79,6 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     ? prompt.trim().length > 0
     : prompt.trim().length > 0 && lyrics.trim().length > 0;
   const [playingRecentId, setPlayingRecentId] = useState("");
-  const [recentProgress, setRecentProgress] = useState({});
-  const [recentTimes, setRecentTimes] = useState({});
-  const recentAudioRefs = useRef({});
   const toastTimerRef = useRef(null);
 
   useEffect(() => {
@@ -103,7 +101,6 @@ export function MusicGenerationView({ resetSignal = 0 }) {
 
   useEffect(() => {
     if (!resetSignal) return;
-    Object.values(recentAudioRefs.current).forEach((audio) => audio?.pause?.());
     setPrompt("");
     setLyrics("");
     setIsInstrumental(false);
@@ -114,8 +111,6 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     setToast(null);
     setViewTab("home");
     setPlayingRecentId("");
-    setRecentProgress({});
-    setRecentTimes({});
     if (toastTimerRef.current) {
       window.clearTimeout(toastTimerRef.current);
       toastTimerRef.current = null;
@@ -264,69 +259,31 @@ export function MusicGenerationView({ resetSignal = 0 }) {
               recentResults.map((item) => (
                 <article className="voice-recent-card music-recent-card" key={item.id}>
                   <div className="music-recent-art">
-                    <Music size={40} />
+                    <Music size={22} />
                   </div>
                   <div className="voice-recent-info">
                     <strong>{item.prompt || "AI 音乐"}</strong>
                     <span>{formatDuration(item.durationMs) || "音乐"} · {item.createdAt}</span>
                   </div>
-                  <div className="music-recent-controls">
+                  <VoiceRecentPlayer
+                    playerId={item.id}
+                    src={item.audioUrl}
+                    durationMs={item.durationMs}
+                    disabled={!item.audioUrl || item.status === "failed"}
+                    playingId={playingRecentId}
+                    onPlayingChange={setPlayingRecentId}
+                  >
                     <button
-                      className="music-recent-control-btn"
-                      type="button"
-                      onClick={() => {
-                        const audio = recentAudioRefs.current[item.id];
-                        if (!audio) return;
-                        Object.values(recentAudioRefs.current).forEach((a) => { if (a && a !== audio) a.pause(); });
-                        if (audio.paused) {
-                          audio.play().then(() => setPlayingRecentId(item.id)).catch(() => setNotice("播放失败"));
-                        } else {
-                          audio.pause();
-                          setPlayingRecentId("");
-                        }
-                      }}
-                      disabled={!item.audioUrl || item.status === "failed"}
-                      aria-label="播放"
-                    >
-                      {playingRecentId === item.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" />}
-                    </button>
-                    <span className="music-recent-time">
-                      {recentTimes[item.id] || "0:00"} / {formatDuration(item.durationMs)}
-                    </span>
-                    <div className="music-recent-progress-track">
-                      <div className="music-recent-progress-fill" style={{ width: `${recentProgress[item.id] || 0}%` }} />
-                    </div>
-                    <button
-                      className="music-recent-control-btn"
+                      className="voice-recent-icon-button"
                       type="button"
                       onClick={() => downloadAudioUrl(item.audioUrl, makeFileName("ai-music", "mp3"))}
                       disabled={!item.audioUrl || item.status === "failed"}
-                      aria-label="下载"
+                      title="下载 MP3"
+                      aria-label="下载 MP3"
                     >
-                      <Download size={14} />
+                      <Download size={16} />
                     </button>
-                  </div>
-                  <audio
-                    ref={(node) => {
-                      if (node) recentAudioRefs.current[item.id] = node;
-                      else delete recentAudioRefs.current[item.id];
-                    }}
-                    src={item.audioUrl}
-                    onEnded={() => {
-                      setPlayingRecentId("");
-                      setRecentProgress((p) => ({ ...p, [item.id]: 0 }));
-                    }}
-                    onTimeUpdate={(event) => {
-                      const audio = event.target;
-                      if (audio.duration) {
-                        const percent = (audio.currentTime / audio.duration) * 100;
-                        setRecentProgress((p) => ({ ...p, [item.id]: percent }));
-                        const mins = Math.floor(audio.currentTime / 60);
-                        const secs = Math.floor(audio.currentTime % 60);
-                        setRecentTimes((t) => ({ ...t, [item.id]: `${mins}:${String(secs).padStart(2, "0")}` }));
-                      }
-                    }}
-                  />
+                  </VoiceRecentPlayer>
                 </article>
               ))
             )}

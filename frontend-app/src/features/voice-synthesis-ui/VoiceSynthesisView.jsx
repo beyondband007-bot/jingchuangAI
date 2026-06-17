@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Loader2, LockKeyhole, Mic, Music, Play, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Heart, Loader2, LockKeyhole, Mic, Music, Star, Trash2 } from "lucide-react";
 import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
+import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
@@ -94,7 +95,6 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
   const [toast, setToast] = useState(null);
-  const recentAudioRefs = useRef({});
   const toastTimerRef = useRef(null);
   const uploadVersionRef = useRef(0);
   const isGuest = Boolean(authUser?.isGuest);
@@ -145,7 +145,6 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
   useEffect(() => {
     if (!resetSignal) return;
     uploadVersionRef.current += 1;
-    Object.values(recentAudioRefs.current).forEach((audio) => audio?.pause?.());
     setCloneAudio(null);
     setUploading("");
     setNotice("");
@@ -330,28 +329,6 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
     setNotice("已插入停顿标记。");
   }
 
-  async function toggleRecentPlayback(item) {
-    const currentAudio = recentAudioRefs.current[item.id];
-    if (!currentAudio) return;
-
-    Object.entries(recentAudioRefs.current).forEach(([id, audio]) => {
-      if (id !== item.id && audio) audio.pause();
-    });
-
-    if (!currentAudio.paused) {
-      currentAudio.pause();
-      setPlayingRecentId("");
-      return;
-    }
-
-    try {
-      await currentAudio.play();
-      setPlayingRecentId(item.id);
-    } catch (error) {
-      setNotice(error.message || "播放音频失败");
-    }
-  }
-
   function toggleRecentFavorite(id) {
     setRecentResults((items) => items.map((item) => (
       item.id === id ? { ...item, favorite: !item.favorite } : item
@@ -359,9 +336,6 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
   }
 
   function deleteRecentResult(id) {
-    const audio = recentAudioRefs.current[id];
-    if (audio) audio.pause();
-    delete recentAudioRefs.current[id];
     setPlayingRecentId((current) => (current === id ? "" : current));
     setRecentResults((items) => items.filter((item) => item.id !== id));
   }
@@ -452,27 +426,23 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
               recentResults.map((item) => (
                 <article className="voice-recent-card" key={item.id}>
                   <div className="voice-recent-art">
-                    <Music size={34} />
+                    <Music size={22} />
                   </div>
                   <div className="voice-recent-info">
                     <strong>{item.title}</strong>
                     <span>{item.voiceName} · {item.createdAt}</span>
                     <small>{item.durationMs ? formatVoiceDuration(item.durationMs) : "已生成"}</small>
                   </div>
-                  <audio
-                    ref={(node) => {
-                      if (node) recentAudioRefs.current[item.id] = node;
-                      else delete recentAudioRefs.current[item.id];
-                    }}
+                  <VoiceRecentPlayer
+                    playerId={item.id}
                     src={item.audioUrl || item.audioDataUrl}
-                    onEnded={() => setPlayingRecentId("")}
-                  />
-                  <button className="voice-recent-play" type="button" onClick={() => toggleRecentPlayback(item)} aria-label="播放音频">
-                    {playingRecentId === item.id ? <Loader2 size={18} /> : <Play size={18} fill="currentColor" />}
-                  </button>
-                  <div className="voice-recent-actions">
+                    durationMs={item.durationMs}
+                    disabled={!item.audioUrl && !item.audioDataUrl}
+                    playingId={playingRecentId}
+                    onPlayingChange={setPlayingRecentId}
+                  >
                     <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
-                      <Download size={15} />
+                      <Download size={16} />
                     </button>
                     <button
                       className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`}
@@ -481,12 +451,12 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
                       title={item.favorite ? "取消收藏" : "收藏"}
                       aria-label={item.favorite ? "取消收藏" : "收藏"}
                     >
-                      <Star size={15} fill={item.favorite ? "currentColor" : "none"} />
+                      <Heart size={16} fill={item.favorite ? "currentColor" : "none"} />
                     </button>
                     <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
-                      <Trash2 size={15} />
+                      <Trash2 size={16} />
                     </button>
-                  </div>
+                  </VoiceRecentPlayer>
                 </article>
               ))
             )}

@@ -347,7 +347,7 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
               recentResults.map((item) => (
                 <article className="voice-recent-card transcribe-recent-card" key={item.id}>
                   <div className="voice-recent-art">
-                    <FileAudio size={34} />
+                    <FileAudio size={22} />
                   </div>
                   <div className="voice-recent-info">
                     <strong>{item.title}</strong>
@@ -356,13 +356,13 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
                   <p>{item.text || item.formattedText || "暂无文本"}</p>
                   <div className="voice-recent-actions">
                     <button className="voice-recent-icon-button" type="button" onClick={() => copyResultText(item)} title="复制文本" aria-label="复制文本">
-                      <Clipboard size={15} />
+                      <Clipboard size={16} />
                     </button>
                     <button className="voice-recent-icon-button" type="button" onClick={() => downloadText(item)} title="下载 TXT" aria-label="下载 TXT">
-                      <Download size={15} />
+                      <Download size={16} />
                     </button>
                     <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
-                      <Trash2 size={15} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </article>

@@ -567,6 +567,10 @@ function getPendingInviteCode() {
   }
 }
 
+function isLoggedInUser(authUser) {
+  return Boolean(authUser && !authUser.isGuest);
+}
+
 function clearPendingInviteCode() {
   try {
     window.localStorage.removeItem(pendingInviteCodeStorageKey);
@@ -7227,8 +7231,6 @@ function ChatComposerBar({
 }
 
 function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
-  if (!conversations.length) return null;
-
   return (
     <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
@@ -7236,19 +7238,23 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
         <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
-        {conversations.map((conversation) => (
-          <button
-            className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-            key={conversation.id}
-            type="button"
-            onClick={() => onSelect(conversation.id)}
-          >
-            <span>{conversation.title}</span>
-            <small>
-              {conversation.model} · {conversation.time}
-            </small>
-          </button>
-        ))}
+        {conversations.length === 0 ? (
+          <p className="chat-history-empty">暂无历史对话</p>
+        ) : (
+          conversations.map((conversation) => (
+            <button
+              className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
+              key={conversation.id}
+              type="button"
+              onClick={() => onSelect(conversation.id)}
+            >
+              <span>{conversation.title}</span>
+              <small>
+                {conversation.model} · {conversation.time}
+              </small>
+            </button>
+          ))
+        )}
       </div>
     </aside>
   );
@@ -7263,21 +7269,10 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedReasoningEffort, setSelectedReasoningEffort] =
     useState("none");
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [modelSwitchNotice, setModelSwitchNotice] = useState("");
-  const isGuest = Boolean(authUser?.isGuest);
-  const historyPanelWidth = useMemo(() => {
-    if (!conversations.length) return 120;
-
-    const longestTitleLength = conversations.reduce((longest, item) => {
-      const titleLength = [...String(item.title || "")].length;
-      return Math.max(longest, titleLength);
-    }, 0);
-
-    return Math.min(300, Math.max(120, 120 + longestTitleLength * 14));
-  }, [conversations]);
+  const isGuest = !isLoggedInUser(authUser);
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
   useEffect(() => {
@@ -7422,14 +7417,12 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
     setMessages([]);
     setConversationId(null);
     setSubmitError("");
-    setIsHistoryOpen(false);
     setModelSwitchNotice("");
   }
 
   async function selectConversation(id) {
     setSubmitError("");
     setConversationId(id);
-    setIsHistoryOpen(false);
     try {
       const historyMessages = await chatApi.getMessages(id);
       setMessages(historyMessages);
@@ -7453,13 +7446,10 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   );
 
   return (
-    <section
-      className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}
-      style={{ "--chat-actions-width": `${historyPanelWidth}px` }}
-    >
+    <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
       <div className="chat-topbar">
         <h1>大模型</h1>
-        {credits && (
+        {isLoggedInUser(authUser) && credits && (
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
@@ -7494,35 +7484,20 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
           )}
         </div>
         <aside className="chat-actions-panel" aria-label="对话操作">
-          {conversations.length > 0 && (
-            <>
-              <button
-                className="chat-new-conversation-button"
-                type="button"
-                onClick={startNewConversation}
-                disabled={isSubmitting}
-              >
-                <Plus size={16} />
-                新建对话
-              </button>
-              <button
-                className={`history-toggle ${isHistoryOpen ? "is-open" : ""}`}
-                type="button"
-                onClick={() => setIsHistoryOpen((value) => !value)}
-              >
-                <Layers size={17} />
-                历史对话
-                <span>{conversations.length}</span>
-              </button>
-            </>
-          )}
-          {isHistoryOpen && (
-            <ChatHistoryRail
-              conversations={conversations}
-              activeConversationId={conversationId}
-              onSelect={selectConversation}
-            />
-          )}
+          <button
+            className="chat-new-conversation-button"
+            type="button"
+            onClick={startNewConversation}
+            disabled={isSubmitting}
+          >
+            <Plus size={16} />
+            新建对话
+          </button>
+          <ChatHistoryRail
+            conversations={conversations}
+            activeConversationId={conversationId}
+            onSelect={selectConversation}
+          />
         </aside>
       </div>
     </section>
@@ -11093,7 +11068,8 @@ function WorkbenchTopbar({
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
-  const credits = authUser && !authUser.isGuest ? authUser.credits : null;
+  const isLoggedIn = isLoggedInUser(authUser);
+  const credits = isLoggedIn ? authUser.credits : null;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
@@ -11222,20 +11198,22 @@ function WorkbenchTopbar({
             <Gift size={17} />
             邀请有礼
           </button>
-          <button
-            className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
-            type="button"
-          >
-            <Zap size={17} />
-            {displayCredits ?? 666}
-            {creditDelta && (
-              <span className="fm-credit-delta">+{creditDelta}</span>
-            )}
-          </button>
+          {isLoggedIn && (
+            <button
+              className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
+              type="button"
+            >
+              <Zap size={17} />
+              {displayCredits ?? 0}
+              {creditDelta && (
+                <span className="fm-credit-delta">+{creditDelta}</span>
+              )}
+            </button>
+          )}
           <button className="fm-top-bell" type="button" aria-label="通知">
             <Bell size={21} />
           </button>
-          {authUser && !authUser.isGuest ? (
+          {isLoggedIn ? (
             <div className="fm-profile-menu-wrap" ref={profileMenuRef}>
               <button
                 className="fm-top-avatar-button"
@@ -11308,7 +11286,7 @@ function ImageFeaturePage({
 }) {
   const firstNav =
     initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
-  const isGuest = Boolean(authUser?.isGuest);
+  const isGuest = !isLoggedInUser(authUser);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));

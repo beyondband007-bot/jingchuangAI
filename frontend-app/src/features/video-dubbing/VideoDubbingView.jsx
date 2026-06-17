@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CheckCircle2,
   Download,
@@ -190,6 +191,16 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
         )}
         {isProcessing && <div className="video-dub-recent-overlay"><Loader2 size={18} /></div>}
         {isFailed && <div className="video-dub-recent-overlay is-failed"><span>失败</span></div>}
+        {isCompleted && item.result?.videoUrl && (
+          <button
+            className="video-dub-recent-play"
+            type="button"
+            onClick={() => onPlay(item)}
+            aria-label="播放"
+          >
+            <Play size={16} fill="currentColor" />
+          </button>
+        )}
       </div>
       {isProcessing && item.stage && (
         <div className="video-dub-recent-stage">
@@ -211,16 +222,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
         </span>
       </div>
       {isCompleted && item.result?.videoUrl && (
-        <>
-          <button
-            className="video-dub-recent-play"
-            type="button"
-            onClick={() => onPlay(item)}
-            aria-label="播放"
-          >
-            <Play size={16} fill="currentColor" />
-          </button>
-          <div className="video-dub-recent-actions">
+        <div className="video-dub-recent-actions">
             <button
               className={`video-dub-favorite-button ${isFavorite ? "is-favorite" : ""}`}
               type="button"
@@ -249,8 +251,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
             >
               <Trash2 size={15} />
             </button>
-          </div>
-        </>
+        </div>
       )}
       {isFailed && (
         <div className="video-dub-recent-actions">
@@ -566,19 +567,30 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
           </div>
         )}
       </div>
-      {previewTask?.result?.videoUrl && (
-        <div className="video-dub-player-modal" role="dialog" aria-modal="true" onClick={() => setPreviewTask(null)}>
-          <div className="video-dub-player-dialog" onClick={(event) => event.stopPropagation()}>
-            <div className="video-dub-player-head">
-              <strong>{previewTask.sourceFileName || "视频配音"}</strong>
-              <button type="button" onClick={() => setPreviewTask(null)} aria-label="关闭">
-                <X size={18} />
-              </button>
+      {previewTask?.result?.videoUrl
+        ? createPortal(
+          <div
+            className="video-dub-player-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="视频播放"
+            onClick={() => setPreviewTask(null)}
+          >
+            <div className="video-dub-player-dialog" onClick={(event) => event.stopPropagation()}>
+              <div className="video-dub-player-head">
+                <strong>{previewTask.sourceFileName || "视频配音"}</strong>
+                <button type="button" onClick={() => setPreviewTask(null)} aria-label="关闭">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="video-dub-player-body">
+                <video src={previewTask.result.videoUrl} controls autoPlay playsInline />
+              </div>
             </div>
-            <video src={previewTask.result.videoUrl} controls autoPlay />
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )
+        : null}
       {toast ? (
         <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
           {toast.message}
