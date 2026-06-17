@@ -1457,7 +1457,6 @@ export function ArticleGenerationView({
             </div>
           )}
         </main>
-      </div>
 
       {step < 3 && (
         <section className="article-quick-section">
@@ -1482,7 +1481,7 @@ export function ArticleGenerationView({
           </div>
         </section>
       )}
-
+      </div>
       <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
       {toastMessage && (
         <div className="article-floating-toast" role="alert">
