@@ -894,6 +894,37 @@ const fmImageInspirations = [
   ratio: formatFaceminiImageRatio(id),
 }));
 
+const fmDigitalHumanInspirations = [
+  ["public-anchor-dialogue", "主播对话"],
+  ["public-product", "产品讲解员"],
+  ["public-medical", "健康科普员", "健康科普员-safari"],
+  ["public-home-lady", "居家知性女性"],
+  ["public-real-estate", "房地产经纪人"],
+  ["public-travel", "文旅推荐官"],
+  ["public-fashion-host", "时尚类女主播"],
+  ["public-knowledge-host", "知识科普类女主播"],
+  ["public-executive-lady", "职场女高管"],
+  ["public-business-host", "职场轻商务女主播"],
+  ["public-finance", "财经主播"],
+  ["public-operations", "运营达人"],
+].map(([avatarId, title, assetName]) => {
+  const fileName = assetName || title;
+  return {
+    id: `digital-human-${avatarId}`,
+    avatarId,
+    title,
+    category: "数字人形象",
+    prompt: `今天也是充满希望的一天`,
+    thumbnail: `/assets/digital-human/posters/${fileName}.jpg`,
+    poster: `/assets/digital-human/posters/${fileName}.jpg`,
+    source: `/assets/digital-human/${fileName}.mp4`,
+    videoSrc: `/assets/digital-human/${fileName}.mp4`,
+    ratio: "3s",
+    model: "kling-ai-avatar-pro",
+    material: "视频封面",
+  };
+});
+
 const fmCreationScenes = [
   [
     "自媒体创作",
@@ -1024,6 +1055,7 @@ function getFaceminiInspirationRoute(item) {
 function resolveFaceminiInspirationImageUrl(item) {
   if (!item) return "";
   return (
+    item.videoSrc ||
     item.hdSrc ||
     item.imageUrl ||
     item.image ||
@@ -2141,6 +2173,8 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const filteredImages =
     activeTab === "图片灵感"
       ? fmImageGenerationInspirations
+      : activeTab === "数字人形象"
+        ? fmDigitalHumanInspirations
       : fmImageInspirations.filter((item) => item.category === activeTab);
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
@@ -2163,8 +2197,9 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
     setModalItem({
       ...item,
       image: resolveFaceminiInspirationImageUrl(item),
-      material: "高清原图",
-      model: route.model,
+      material:
+        item.material || (item.category === "数字人形象" ? "视频封面" : "高清原图"),
+      model: item.model || route.model,
     });
   }
 
@@ -2179,6 +2214,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
       target: route.target,
       title: item.title,
       category: item.category,
+      avatarId: item.avatarId || null,
       ...launchSeed,
     });
     setModalItem(null);
@@ -4663,8 +4699,9 @@ function FaceminiInspirationModal({
 
   if (!item) return null;
 
-  const isVideo = item.mediaType === "video" || item.video;
+  const isVideo = item.mediaType === "video" || item.video || item.videoSrc;
   const primarySrc =
+    item.videoSrc ||
     item.hdSrc ||
     item.imageUrl ||
     item.image ||
@@ -4673,7 +4710,7 @@ function FaceminiInspirationModal({
     item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
-  const videoSrc = item.video || item.preview || item.source;
+  const videoSrc = item.videoSrc || item.video || item.preview || item.source;
 
   return (
     <div
@@ -8054,15 +8091,15 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   }
 
   return (
-    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="dh-modal">
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true" onMouseDown={onClose}>
+      <div className="dh-modal" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dh-modal-header">
           <div>
             <span>创建形象</span>
-            <strong>上传至火山方舟虚拟资产库</strong>
+            <strong>上传形象图</strong>
           </div>
-          <button type="button" onClick={onClose} aria-label="关闭">
-            关闭
+          <button className="dh-modal-close-button" type="button" onClick={onClose} aria-label="关闭">
+            <X size={18} />
           </button>
         </div>
         <div className="dh-modal-body">
@@ -8123,10 +8160,10 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
           {notice && <div className="dh-form-notice">{notice}</div>}
         </div>
         <div className="dh-modal-footer">
-          <button type="button" onClick={onClose}>
+          <button className="dh-modal-secondary-button" type="button" onClick={onClose}>
             取消
           </button>
-          <button type="button" onClick={submit} disabled={isSubmitting}>
+          <button className="dh-modal-primary-button" type="button" onClick={submit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
             创建形象
           </button>
@@ -8136,6 +8173,21 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   );
 }
 
+function DigitalHumanFloatingToast({ message }) {
+  if (!message) return null;
+  return (
+    <div className="dh-floating-toast" role="alert">
+      {message}
+    </div>
+  );
+}
+
+function getDigitalHumanErrorToast(error, fallback) {
+  const message = error?.message || String(error || "");
+  if (/voice id not exist/i.test(message)) return "音色不存在，请重新选择音色";
+  return fallback;
+}
+
 function DigitalHumanConfigPanel({
   options,
   voices,
@@ -8143,6 +8195,7 @@ function DigitalHumanConfigPanel({
   seed,
   onSubmit,
   isSubmitting,
+  onToast,
 }) {
   const audioInputRef = useRef(null);
   const defaultDigitalHumanScript =
@@ -8209,6 +8262,10 @@ function DigitalHumanConfigPanel({
       : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
   function showToast(message) {
+    if (onToast) {
+      onToast(message);
+      return;
+    }
     setToastMessage(message);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => {
@@ -8252,7 +8309,8 @@ function DigitalHumanConfigPanel({
       });
       setNotice("");
     } catch (error) {
-      setNotice(error.message || "音色试听失败");
+      setNotice("");
+      showToast(getDigitalHumanErrorToast(error, "音色试听失败"));
     } finally {
       setIsDesigningVoice(false);
     }
@@ -8284,7 +8342,8 @@ function DigitalHumanConfigPanel({
       resetVoicePreview();
       showToast("驱动音频已上传");
     } catch (error) {
-      setNotice(error.message || "音频上传失败，请重试");
+      setNotice("");
+      showToast(getDigitalHumanErrorToast(error, "音频上传失败，请重试"));
     } finally {
       setIsUploadingAudio(false);
     }
@@ -8478,11 +8537,7 @@ function DigitalHumanConfigPanel({
           <span>生成</span>
         </button>
       </div>
-      {toastMessage && (
-        <div className="dh-floating-toast" role="alert">
-          {toastMessage}
-        </div>
-      )}
+      <DigitalHumanFloatingToast message={toastMessage} />
       {voicePreviewUrl && isPreviewCurrent ? (
         <div
           className={`dh-voice-preview-panel ${currentAudioTooLong ? "is-warning" : ""}`}
@@ -8536,9 +8591,11 @@ function DigitalHumanGenerationView({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
   const [favoriteTaskIds, setFavoriteTaskIds] = useState(() => new Set());
   const [composerSeed, setComposerSeed] = useState(null);
   const taskStatusSignatureRef = useRef("");
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isActive) return;
@@ -8546,12 +8603,34 @@ function DigitalHumanGenerationView({
     if (!pendingSeed) return;
     setSelectedTask(null);
     setRightMode("preview");
+    if (pendingSeed.avatarId) {
+      setSelectedAvatar((current) => ({
+        ...(current || {}),
+        id: pendingSeed.avatarId,
+        name: pendingSeed.title || current?.name || "",
+      }));
+    }
     setComposerSeed({
       id: `pending-digital-human-${Date.now()}`,
       prompt: pendingSeed.prompt || "",
       notice: pendingSeed.notice || "",
     });
   }, [isActive]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  function showToast(message) {
+    setToastMessage(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage("");
+      toastTimerRef.current = null;
+    }, 2000);
+  }
 
   // 模块由外层保活挂载，此处始终订阅数字人任务与形象
   useEffect(() => {
@@ -8641,7 +8720,8 @@ function DigitalHumanGenerationView({
       setRightMode("preview");
       setTab("history");
     } catch (submitError) {
-      setError(submitError.message || "创建数字人任务失败");
+      setError("");
+      showToast(getDigitalHumanErrorToast(submitError, "数字人视频创建失败"));
     } finally {
       setIsSubmitting(false);
     }
@@ -8656,7 +8736,9 @@ function DigitalHumanGenerationView({
       setRightMode("my-library");
       setIsCreateOpen(false);
     } catch (submitError) {
-      setError(submitError.message || "创建形象失败");
+      setError("");
+      setIsCreateOpen(false);
+      showToast("个人形象创建失败");
     } finally {
       setIsSubmitting(false);
     }
@@ -8793,10 +8875,6 @@ function DigitalHumanGenerationView({
                   <UserRound size={16} />
                   个人形象
                 </button>
-                <button type="button" onClick={() => setIsCreateOpen(true)}>
-                  <Sparkles size={16} />
-                  AI 生图
-                </button>
               </div>
             </div>
           </div>
@@ -8862,6 +8940,7 @@ function DigitalHumanGenerationView({
             seed={composerSeed}
             onSubmit={createTask}
             isSubmitting={isSubmitting}
+            onToast={showToast}
           />
         </section>
         {currentPreviewTask || rightMode === "preview" ? (
@@ -8908,13 +8987,6 @@ function DigitalHumanGenerationView({
                   复制
                 </button>
               </div>
-            </div>
-            <div className="dh-preview-script">
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-              <br />
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
-              <br />
-              [角色表现] 固定镜头位置，表情自然愉悦 [配音音频] 数字人草稿
             </div>
             <div className="dh-video-shell">
               {currentPreviewTask?.resultUrl ? (
@@ -9045,6 +9117,7 @@ function DigitalHumanGenerationView({
           onClose={() => setPreviewAvatar(null)}
         />
       )}
+      <DigitalHumanFloatingToast message={toastMessage} />
     </section>
   );
 }
@@ -9311,29 +9384,9 @@ function MotionTransferTaskCard({
         )}
       </div>
       <div className="motion-task-meta">
-        <div className="tag-row">
-          <span className="model-tag">
-            {formatProviderLabel(task.providerModel || task.model)}
-          </span>
-          <span className="ratio-tag">{task.resolution}</span>
-          <span className="quality-tag">
-            {task.characterOrientation === "video" ? "视频朝向" : "图片朝向"}
-          </span>
-        </div>
         <div className="time-row">
           <span>{task.time}</span>
           <strong>{task.price}</strong>
-        </div>
-        <p>{task.error || task.prompt}</p>
-        <div className="motion-source-row">
-          <span>
-            <Image size={14} />
-            {cleanDisplayName(task.imageFileName, copy.imageFallback)}
-          </span>
-          <span>
-            <Film size={14} />
-            {cleanDisplayName(task.videoFileName, copy.videoFallback)}
-          </span>
         </div>
         <div className="card-actions motion-card-actions">
           <button
@@ -9448,6 +9501,35 @@ function MotionTransferUploadSlot({
   );
 }
 
+function MotionValidationDialog({ message, onClose }) {
+  if (!message) return null;
+
+  return (
+    <div className="face-swap-workbench__dialog-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className="face-swap-workbench__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="motion-validation-title"
+        aria-describedby="motion-validation-desc"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button className="face-swap-workbench__dialog-close" type="button" aria-label="关闭提示" onClick={onClose}>
+          <X size={18} />
+        </button>
+        <div className="face-swap-workbench__dialog-icon">
+          <CircleAlert size={24} />
+        </div>
+        <div className="face-swap-workbench__dialog-copy">
+          <h2 id="motion-validation-title">素材还未上传完整</h2>
+          <p id="motion-validation-desc">{message}</p>
+          <span>请先补充必需素材，再开始生成。</span>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function MotionTransferComposer({
   options,
   onSubmit,
@@ -9472,6 +9554,16 @@ function MotionTransferComposer({
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
   const activeRef = useRef(isActive);
+  const noticeTimerRef = useRef(null);
+
+  function showTemporaryNotice(message) {
+    setNotice(message);
+    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice("");
+      noticeTimerRef.current = null;
+    }, 2000);
+  }
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -9498,6 +9590,7 @@ function MotionTransferComposer({
 
   useEffect(() => {
     return () => {
+      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
       if (imagePreview) window.URL.revokeObjectURL(imagePreview);
       if (videoPreview) window.URL.revokeObjectURL(videoPreview);
     };
@@ -9580,11 +9673,11 @@ function MotionTransferComposer({
 
   function submit() {
     if (!imageAsset) {
-      setNotice(copy.imageRequired);
+      showTemporaryNotice(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setNotice(copy.videoRequired);
+      showTemporaryNotice(copy.videoRequired);
       return;
     }
     setNotice("");
@@ -9654,7 +9747,7 @@ function MotionTransferComposer({
           className="send-button"
           type="button"
           onClick={submit}
-          disabled={!canSubmit}
+          disabled={Boolean(uploading) || isSubmitting}
           aria-label={copy.submitLabel}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}

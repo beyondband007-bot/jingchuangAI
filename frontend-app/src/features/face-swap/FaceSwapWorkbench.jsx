@@ -228,9 +228,18 @@ export function FaceSwapWorkbench({
   const [enhanceQuality, setEnhanceQuality] = useState(true);
   const [faceOptimize, setFaceOptimize] = useState(true);
   const [notice, setNotice] = useState("");
-  const [validationDialog, setValidationDialog] = useState("");
   const [uploading, setUploading] = useState("");
   const activeRef = useRef(isActive);
+  const noticeTimerRef = useRef(null);
+
+  function showTemporaryNotice(message) {
+    setNotice(message);
+    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => {
+      setNotice("");
+      noticeTimerRef.current = null;
+    }, 2000);
+  }
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -245,6 +254,12 @@ export function FaceSwapWorkbench({
     setNotice("");
     setUploading("");
   }, [isActive, imagePreview, videoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!model && (options.defaults?.model || options.models[0]?.value)) {
@@ -355,14 +370,13 @@ export function FaceSwapWorkbench({
 
   function submit() {
     if (!imageAsset) {
-      setValidationDialog(copy.imageRequired);
+      showTemporaryNotice(copy.imageRequired);
       return;
     }
     if (!videoAsset) {
-      setValidationDialog(copy.videoRequired);
+      showTemporaryNotice(copy.videoRequired);
       return;
     }
-    setValidationDialog("");
     setNotice("");
     onSubmit({
       imageAssetId: imageAsset.id,
@@ -475,14 +489,14 @@ export function FaceSwapWorkbench({
             </button>
           )}
         </div>
-        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : ""}`}>
+        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : "is-empty"}`}>
           {videoPreview ? (
             <video src={videoPreview} controls playsInline preload="metadata" />
           ) : (
-            <img
-              src={heading.includes("\u52a8\u4f5c") ? "/assets/motion/hot-3-motion.jpg" : "/assets/face-swap/hot-4-faceswap.jpg"}
-              alt={heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}
-            />
+            <div className="face-swap-workbench__target-empty">
+              <Video size={34} />
+              <span>{heading.includes("\u52a8\u4f5c") ? "\u7b49\u5f85\u52a8\u4f5c\u89c6\u9891" : "\u7b49\u5f85\u76ee\u6807\u89c6\u9891"}</span>
+            </div>
           )}
           <span className="face-swap-workbench__target-compare-line" />
           <span className="face-swap-workbench__target-compare-handle">{"< >"}</span>
@@ -501,8 +515,6 @@ export function FaceSwapWorkbench({
       </section>
 
       {notice && <div className="face-swap-workbench__notice">{notice}</div>}
-
-      <ValidationDialog message={validationDialog} onClose={() => setValidationDialog("")} />
 
       <div className="face-swap-workbench__privacy">
         <LockKeyhole size={16} />
