@@ -11843,7 +11843,6 @@ function App() {
         })
         .catch(() => {});
     };
-    const interval = window.setInterval(refreshCredits, 30000);
     const onFocus = () => refreshCredits();
     const onVisibility = () => {
       if (document.visibilityState === "visible") refreshCredits();
@@ -11852,7 +11851,6 @@ function App() {
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       alive = false;
-      window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
