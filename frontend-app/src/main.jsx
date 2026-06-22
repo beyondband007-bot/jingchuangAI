@@ -1069,6 +1069,18 @@ function resolveFaceminiInspirationImageUrl(item) {
   );
 }
 
+function getFaceminiVideoInspirations() {
+  return videoInspirationItems.map((item) => ({
+    ...item,
+    id: `creation-${item.id}`,
+    category: "视频灵感",
+    thumbnail: item.poster,
+    source: item.video,
+    videoSrc: item.video,
+    material: "视频素材",
+  }));
+}
+
 function InspirationLibraryDrawer({
   open,
   activeTab,
@@ -2175,6 +2187,8 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   const filteredImages =
     activeTab === "图片灵感"
       ? fmImageGenerationInspirations
+      : activeTab === "视频灵感"
+        ? getFaceminiVideoInspirations()
       : activeTab === "数字人形象"
         ? fmDigitalHumanInspirations
       : fmImageInspirations.filter((item) => item.category === activeTab);
