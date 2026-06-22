@@ -91,6 +91,10 @@ async function extractVideoFrames(videoBuffer, fileName) {
   const tempVideoPath = path.join(framesDir, `${taskId}-input${getExt(fileName)}`);
   await writeFile(tempVideoPath, videoBuffer);
 
+  const pythonCandidates = process.platform === "win32"
+    ? ["python", "py", "python3"]
+    : ["python3", "python"];
+
   return new Promise((resolve, reject) => {
     const pythonScript = `
 import sys
@@ -153,50 +157,89 @@ print("---FRAMES_END---", flush=True)
     const scriptPath = path.join(framesDir, `${taskId}_extract.py`);
     writeFile(scriptPath, pythonScript)
       .then(() => {
-        const python = spawn("python", [scriptPath, tempVideoPath, framesDir, taskId]);
-        let stdout = "";
-        let stderr = "";
+        let candidateIndex = 0;
+        let missingCv2Error = false;
 
-        python.stdout.on("data", (data) => {
-          stdout += data.toString();
-        });
-
-        python.stderr.on("data", (data) => {
-          stderr += data.toString();
-        });
-
-        python.on("close", (code) => {
-          unlink(scriptPath).catch(() => {});
-          unlink(tempVideoPath).catch(() => {});
-
-          if (code !== 0) {
-            reject(new Error(`视频抽帧失败：${stderr || "未知错误"}`));
+        function runPython() {
+          const command = pythonCandidates[candidateIndex];
+          if (!command) {
+            reject(new Error("视频抽帧失败：未找到可用的 Python 环境，请安装 Python 和 opencv-python"));
             return;
           }
 
-          const startMarker = "---FRAMES_START---";
-          const endMarker = "---FRAMES_END---";
-          const startIndex = stdout.indexOf(startMarker);
-          const endIndex = stdout.indexOf(endMarker);
+          const python = spawn(command, [scriptPath, tempVideoPath, framesDir, taskId]);
+          let stdout = "";
+          let stderr = "";
 
-          if (startIndex === -1 || endIndex === -1) {
-            reject(new Error("视频抽帧输出格式无效"));
-            return;
-          }
+          python.stdout.on("data", (data) => {
+            stdout += data.toString();
+          });
 
-          const framesBase64 = stdout
-            .slice(startIndex + startMarker.length, endIndex)
-            .trim()
-            .split("\n")
-            .filter(Boolean);
+          python.stderr.on("data", (data) => {
+            stderr += data.toString();
+          });
 
-          if (!framesBase64.length) {
-            reject(new Error("未能从视频中提取到画面帧"));
-            return;
-          }
+          python.on("error", (error) => {
+            if (error?.code === "ENOENT" && candidateIndex < pythonCandidates.length - 1) {
+              candidateIndex += 1;
+              runPython();
+              return;
+            }
+            unlink(scriptPath).catch(() => {});
+            unlink(tempVideoPath).catch(() => {});
+            reject(new Error(`视频抽帧失败：${error.message || "无法启动 Python"}`));
+          });
 
-          resolve({ framesBase64, taskId });
-        });
+          python.on("close", (code) => {
+            const missingCv2 = code !== 0 && /No module named 'cv2'|ModuleNotFoundError/i.test(stderr);
+            if (missingCv2) {
+              missingCv2Error = true;
+            }
+
+            if (code !== 0 && candidateIndex < pythonCandidates.length - 1) {
+              candidateIndex += 1;
+              runPython();
+              return;
+            }
+
+            unlink(scriptPath).catch(() => {});
+            unlink(tempVideoPath).catch(() => {});
+
+            if (code !== 0) {
+              if (missingCv2Error) {
+                reject(new Error("视频抽帧失败：缺少 opencv-python，请先安装 pip install opencv-python"));
+                return;
+              }
+              reject(new Error(`视频抽帧失败：${stderr || "未知错误"}`));
+              return;
+            }
+
+            const startMarker = "---FRAMES_START---";
+            const endMarker = "---FRAMES_END---";
+            const startIndex = stdout.indexOf(startMarker);
+            const endIndex = stdout.indexOf(endMarker);
+
+            if (startIndex === -1 || endIndex === -1) {
+              reject(new Error("视频抽帧输出格式无效"));
+              return;
+            }
+
+            const framesBase64 = stdout
+              .slice(startIndex + startMarker.length, endIndex)
+              .trim()
+              .split("\n")
+              .filter(Boolean);
+
+            if (!framesBase64.length) {
+              reject(new Error("未能从视频中提取到画面帧"));
+              return;
+            }
+
+            resolve({ framesBase64, taskId });
+          });
+        }
+
+        runPython();
       })
       .catch(reject);
   });

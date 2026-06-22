@@ -4774,6 +4774,24 @@ function FaceminiInspirationModal({
               }}
             />
           )}
+          <div className="fm-detail-media-actions">
+            <button
+              className="fm-detail-media-action is-primary"
+              type="button"
+              onClick={() => onRemix?.(item)}
+            >
+              <Sparkles size={16} />
+              生成同款
+            </button>
+            <button
+              className="fm-detail-media-action"
+              type="button"
+              onClick={() => onReference?.(item)}
+            >
+              <Image size={16} />
+              用作参考图
+            </button>
+          </div>
         </div>
         <aside className="fm-detail-info">
           <button
@@ -4814,16 +4832,6 @@ function FaceminiInspirationModal({
               <dd>{item.material || (isVideo ? "视频封面" : "高清原图")}</dd>
             </div>
           </dl>
-          <div className="fm-detail-actions">
-            <button type="button" onClick={() => onRemix?.(item)}>
-              <Sparkles size={16} />
-              生成同款
-            </button>
-            <button type="button" onClick={() => onReference?.(item)}>
-              <Image size={16} />
-              用作参考图
-            </button>
-          </div>
         </aside>
       </section>
     </div>
@@ -10938,16 +10946,34 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
 /** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
   if (!visitedIds.has(id)) return null;
+  const isActive = activeNav === id;
   return (
     <div
       className="feature-module-keepalive"
-      style={{ display: activeNav === id ? "contents" : "none" }}
-      aria-hidden={activeNav !== id}
+      style={{ display: isActive ? "contents" : "none" }}
+      aria-hidden={!isActive}
       data-feature-module={id}
+      data-feature-active={isActive ? "true" : "false"}
     >
       {children}
     </div>
   );
+}
+
+function clearStaleGlobalScrollLocks() {
+  document.body.classList.remove("studio-landing-active");
+  document.documentElement.classList.remove("studio-landing-active");
+
+  const root = document.getElementById("root");
+  if (document.body.style.overflow === "hidden") {
+    document.body.style.overflow = "";
+  }
+  if (document.documentElement.style.overflow === "hidden") {
+    document.documentElement.style.overflow = "";
+  }
+  if (root?.style.overflow === "hidden") {
+    root.style.overflow = "";
+  }
 }
 
 function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
@@ -11455,6 +11481,11 @@ function ImageFeaturePage({
   const [imageLaunchSeed, setImageLaunchSeed] = useState(null);
 
   useEffect(() => {
+    if (showInvite) return;
+    clearStaleGlobalScrollLocks();
+  }, [activeNav, showInvite]);
+
+  useEffect(() => {
     const next =
       initialNav && featureNavIdSet.has(initialNav) ? initialNav : "image";
     setActiveNav(next);
@@ -11512,6 +11543,17 @@ function ImageFeaturePage({
           setImageLaunchSeed(payload);
         } else {
           setImageLaunchSeed(null);
+        }
+      }
+      if (id === "video") {
+        const payload = launchSeed || peekPendingGenerationSeed("video") || {};
+        const prompt = String(payload.prompt || "").trim();
+        if (prompt) {
+          writePendingGenerationSeed({
+            target: "video",
+            prompt,
+            notice: payload.notice || "",
+          });
         }
       }
       handleNavChange(id);
@@ -11708,7 +11750,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ReplicateView authUser={authUser} />
+          <ReplicateView authUser={authUser} onOpenFeature={handleOpenFeature} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="enhance"
