@@ -5747,6 +5747,7 @@ function ImageGenerationView({
           className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
           gap={6}
           maxColumns={6}
+          reductionThreshold={4}
           items={galleryItems}
           renderItem={({ card, isExample }) => (
             <ResultCard

@@ -10,6 +10,11 @@ function getColumnCount(width, minColumnWidth, gap, maxColumns) {
   return Math.max(1, Math.min(maxColumns, estimated || 1));
 }
 
+function applyColumnReduction(columnCount, reductionThreshold) {
+  if (columnCount < reductionThreshold) return columnCount;
+  return Math.max(1, columnCount - 1);
+}
+
 export function WaterfallGrid({
   items,
   renderItem,
@@ -17,7 +22,8 @@ export function WaterfallGrid({
   itemClassName = "",
   minColumnWidth = 172,
   gap = 13,
-  maxColumns = 8
+  maxColumns = 8,
+  reductionThreshold = Number.POSITIVE_INFINITY
 }) {
   const containerRef = useRef(null);
   const [columnCount, setColumnCount] = useState(1);
@@ -27,7 +33,10 @@ export function WaterfallGrid({
     if (!element) return undefined;
 
     const updateColumnCount = () => {
-      const next = getColumnCount(element.clientWidth, minColumnWidth, gap, maxColumns);
+      const next = applyColumnReduction(
+        getColumnCount(element.clientWidth, minColumnWidth, gap, maxColumns),
+        reductionThreshold,
+      );
       setColumnCount((current) => (current === next ? current : next));
     };
 
@@ -37,7 +46,7 @@ export function WaterfallGrid({
     observer.observe(element);
 
     return () => observer.disconnect();
-  }, [gap, maxColumns, minColumnWidth]);
+  }, [gap, maxColumns, minColumnWidth, reductionThreshold]);
 
   const columns = useMemo(() => {
     const next = Array.from({ length: columnCount }, () => []);
