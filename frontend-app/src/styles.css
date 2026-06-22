@@ -12429,8 +12429,8 @@ select {
 }
 
 .feature-sidebar {
-  flex-basis: 256px !important;
-  width: 256px !important;
+  flex-basis: 200px !important;
+  width: 200px !important;
   color: #d1d5db !important;
   background: #090909 !important;
   border-right: 1px solid #262626 !important;
@@ -12461,23 +12461,8 @@ select {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.03em;
-  color: transparent;
-  background-image: linear-gradient(
-    to right,
-    #5a2cfc,
-    #ad6cfc,
-    #d8deff,
-    #162089,
-    #5a2cfc
-  );
-  background-position: 0 50%;
-  background-repeat: repeat;
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: brand-gradient-shift 5s ease-in-out infinite;
-  transform: translate(10px, 21px);
+  color: #000000;
+  transform: translate(16px, 21px);
 }
 
 .feature-brand-beta {
@@ -12488,7 +12473,7 @@ select {
   line-height: 1;
   letter-spacing: 0;
   white-space: nowrap;
-  transform: translate(15px, 14px);
+  transform: translate(15px, 16px);
   color: #fff;
   background: linear-gradient(to top, #ad6cfc 0%, #5a2cfc 100%);
   box-shadow: 0 8px 18px rgba(90, 44, 252, 0.22);
@@ -19933,20 +19918,20 @@ body {
 }
 
 .feature-brand-text {
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 900;
 }
 
 .feature-brand-beta {
-  height: 24px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
-  padding: 0 7px;
+  padding: 0 6px;
   border-radius: 999px;
   background: linear-gradient(135deg, #b58aff, var(--fm-brand));
   color: #fff;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 100;
 }
 
@@ -20061,20 +20046,20 @@ body {
 
 .fm-brand-name {
   color: #23222d;
-  font-size: 30px;
+  font-size: 24px;
   line-height: 1;
   font-weight: 900;
 }
 
 .fm-beta-badge {
-  height: 20px;
+  height: 18px;
   display: inline-flex;
   align-items: center;
-  padding: 0 7px;
+  padding: 0 6px;
   border-radius: 999px;
   background: linear-gradient(135deg, #b58aff, var(--fm-brand));
   color: #fff;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 100;
 }
 
@@ -20392,12 +20377,12 @@ body {
 }
 
 .fm-footer-brand-block .fm-brand-name {
-  font-size: 44px;
+  font-size: 32px;
 }
 
 .fm-footer-brand-block .fm-beta-badge {
-  height: 28px;
-  font-size: 16px;
+  height: 20px;
+  font-size: 10px;
 }
 
 .fm-home-footer {
