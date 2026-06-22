@@ -3754,6 +3754,7 @@ function ComposerBar({
   const [toastMessage, setToastMessage] = useState("");
   const referenceInputRef = useRef(null);
   const previousResetSignalRef = useRef(resetSignal);
+  const appliedSeedIdRef = useRef(null);
 
   function showToast(message) {
     setToastMessage(message);
@@ -3761,6 +3762,9 @@ function ComposerBar({
 
   useEffect(() => {
     if (!seed) return;
+    const seedId = seed.id || "__seed_without_id__";
+    if (appliedSeedIdRef.current === seedId) return;
+    appliedSeedIdRef.current = seedId;
     setPrompt(seed.prompt || "");
     setReferenceImage(seed.referenceImage?.url ? seed.referenceImage : null);
     if (
@@ -11461,13 +11465,15 @@ function ImageFeaturePage({
         return;
       }
       const nextId = id;
-      if (nextId === "image" || nextId === "video") {
-        if (!hasPendingGenerationSeed(nextId)) {
-          setComposerResetSignals((signals) => ({
-            ...signals,
-            [nextId]: signals[nextId] + 1,
-          }));
-        }
+      if (
+        activeNav !== nextId &&
+        (nextId === "image" || nextId === "video") &&
+        !hasPendingGenerationSeed(nextId)
+      ) {
+        setComposerResetSignals((signals) => ({
+          ...signals,
+          [nextId]: signals[nextId] + 1,
+        }));
       }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
@@ -11482,7 +11488,7 @@ function ImageFeaturePage({
         return current === nextId ? current : nextId;
       });
     },
-    [audioResetSignals, onOpenHome],
+    [activeNav, audioResetSignals, onOpenHome],
   );
 
   const handleOpenFeature = useCallback(
