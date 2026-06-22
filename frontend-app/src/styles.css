@@ -13992,8 +13992,8 @@ section.image-gen-view .image-composer-shell {
   box-shadow: none !important;
   backdrop-filter: none !important;
   padding: 0 !important;
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
-  will-change: transform;
+  transition: none !important;
+  will-change: auto;
 }
 
 section.image-gen-view .image-composer-shell.is-inline {
@@ -14016,9 +14016,37 @@ section.image-gen-view .image-composer-shell.is-inline {
   text-align: center;
 }
 
+.composer-sticky-spacer {
+  flex: 0 0 auto;
+  width: min(800px, calc(100vw - var(--feature-sidebar-width) - 48px));
+  max-width: 800px;
+  height: clamp(190px, 22vh, 240px);
+  margin: 120px auto 150px;
+  pointer-events: none;
+}
+
 section.image-gen-view .image-composer-shell.is-sticky {
   position: fixed !important;
   bottom: 24px !important;
+}
+
+section.image-gen-view .image-composer-shell.is-sticky .image-prompt-dialog,
+section.image-gen-view .image-composer-shell.is-sticky .image-prompt-main-row,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-main-row
+  textarea,
+section.image-gen-view .image-composer-shell.is-sticky .image-prompt-main-add,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-compact-submit,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-reference-region,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-controls-row {
+  transition: none !important;
 }
 
 section.image-gen-view .image-composer-shell.is-workbench {
@@ -14248,6 +14276,12 @@ section.image-gen-view .image-composer-shell.is-collapsed .chatbot-ui-dialog {
 }
 
 @media (max-width: 760px) {
+  .composer-sticky-spacer {
+    width: calc(100vw - 32px);
+    height: clamp(168px, 24vh, 210px);
+    margin: 72px auto 96px;
+  }
+
   section.image-gen-view .image-composer-shell {
     width: calc(100vw - 32px) !important;
     max-width: calc(100vw - 32px) !important;
@@ -21948,7 +21982,7 @@ body {
 
 /* Facemini top tabs, light dropdowns, and generation workspace polish. */
 :root {
-  --feature-sidebar-width: 270px;
+  --feature-sidebar-width: 200px;
 }
 
 .feature-main {

@@ -5179,9 +5179,11 @@ function ImageGenerationView({
 
   useEffect(() => {
     function syncComposerThreshold() {
-      const pastThreshold = filter === "inspiration" && window.scrollY > 240;
-      setIsComposerPastThreshold(pastThreshold);
-      if (pastThreshold) {
+      const next =
+        filter === "inspiration" &&
+        (isComposerPastThreshold ? window.scrollY > 300 : window.scrollY > 360);
+      setIsComposerPastThreshold(next);
+      if (next) {
         setIsComposerFocused(false);
       }
     }
@@ -5189,7 +5191,7 @@ function ImageGenerationView({
     syncComposerThreshold();
     window.addEventListener("scroll", syncComposerThreshold, { passive: true });
     return () => window.removeEventListener("scroll", syncComposerThreshold);
-  }, [filter]);
+  }, [filter, isComposerPastThreshold]);
 
   useEffect(() => {
     if (filter !== "inspiration") return;
@@ -5728,7 +5730,7 @@ function ImageGenerationView({
 
   return (
     <section
-      className={`image-gen-view video-gen-view-root ${filter === "recent" ? "is-generation-workbench" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
+      className={`image-gen-view ${filter === "recent" ? "is-generation-workbench" : ""} ${hasCompletedNotice ? "has-completed-notice" : ""}`}
     >
       <div className="image-filter-tabs">
         <button
@@ -5771,6 +5773,12 @@ function ImageGenerationView({
       )}
       {filter === "inspiration" && (
         <>
+          {isComposerSticky && (
+            <div
+              className="composer-sticky-spacer image-composer-sticky-spacer"
+              aria-hidden="true"
+            />
+          )}
           {!isComposerSticky && (
             <div className="image-composer-heading">图片生成</div>
           )}
@@ -6569,15 +6577,17 @@ function VideoGenerationView({
 
   useEffect(() => {
     function syncComposerThreshold() {
-      const pastThreshold = filter === "inspiration" && window.scrollY > 360;
-      setIsComposerPastThreshold(pastThreshold);
-      if (pastThreshold) setIsComposerFocused(false);
+      const next =
+        filter === "inspiration" &&
+        (isComposerPastThreshold ? window.scrollY > 300 : window.scrollY > 360);
+      setIsComposerPastThreshold(next);
+      if (next) setIsComposerFocused(false);
     }
 
     syncComposerThreshold();
     window.addEventListener("scroll", syncComposerThreshold, { passive: true });
     return () => window.removeEventListener("scroll", syncComposerThreshold);
-  }, [filter]);
+  }, [filter, isComposerPastThreshold]);
 
   useEffect(() => {
     if (filter !== "inspiration") return;
@@ -6743,6 +6753,12 @@ function VideoGenerationView({
       )}
       {filter === "inspiration" && (
         <>
+          {isComposerSticky && (
+            <div
+              className="composer-sticky-spacer video-composer-sticky-spacer"
+              aria-hidden="true"
+            />
+          )}
           {!isComposerSticky && (
             <div className="video-composer-heading">视频生成</div>
           )}
