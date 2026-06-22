@@ -6026,6 +6026,16 @@ function getVideoModelOptions(options, modelKey) {
   };
 }
 
+const defaultVideoModelKey = "kling_3_std";
+
+function pickDefaultVideoModel(models = []) {
+  return (
+    models.find((item) => item.value === defaultVideoModelKey)?.value ||
+    models[0]?.value ||
+    ""
+  );
+}
+
 function getVideoTaskTimestamp(task) {
   const value =
     task?.createdAt || task?.created_at || task?.updatedAt || task?.updated_at;
@@ -6228,7 +6238,9 @@ function VideoComposerBar({
   onBlur,
 }) {
   const [prompt, setPrompt] = useState("");
-  const [model, setModel] = useState(options.models[0]?.value || "");
+  const [model, setModel] = useState(() =>
+    pickDefaultVideoModel(options.models),
+  );
   const modelOptions = getVideoModelOptions(options, model);
   const [ratio, setRatio] = useState(
     modelOptions.model?.defaultRatio || modelOptions.ratios[0] || "",
@@ -6248,8 +6260,10 @@ function VideoComposerBar({
   }
 
   useEffect(() => {
-    if (!model && options.models[0]) {
-      setModel(options.models[0].value);
+    const hasSelectedModel = options.models.some((item) => item.value === model);
+    if (!model || !hasSelectedModel) {
+      const defaultModel = pickDefaultVideoModel(options.models);
+      if (defaultModel) setModel(defaultModel);
       return;
     }
 
