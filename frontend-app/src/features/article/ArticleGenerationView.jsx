@@ -19,6 +19,7 @@ import {
 import { articleApi } from "./articleApi";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -963,11 +964,18 @@ export function ArticleGenerationView({
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await articleApi.deleteTask(id);
     setCards((current) => current.filter((item) => item.id !== id));
     if (selectedTaskId === id) setSelectedTaskId(null);
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史图文？",
+      message: "该图文生成记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     const updated = await articleApi.toggleFavorite(id);
@@ -1046,6 +1054,7 @@ export function ArticleGenerationView({
           task={previewTask}
           onClose={() => setPreviewTask(null)}
         />
+        {deleteConfirmDialog}
       </section>
     );
   }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { enhanceApi } from "./enhanceApi";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
@@ -419,11 +420,18 @@ export function EnhanceView() {
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await enhanceApi.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
     setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该增强记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     const updated = await enhanceApi.toggleFavorite(id);
@@ -502,6 +510,7 @@ export function EnhanceView() {
           isSubmitting={isSubmitting}
         />
       )}
+      {deleteConfirmDialog}
     </section>
   );
 }

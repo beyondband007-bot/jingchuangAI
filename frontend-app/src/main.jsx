@@ -84,6 +84,7 @@ import { PromptSelectField } from "./features/chat/components/PromptSelectField"
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
 import { CustomSelect } from "./components/CustomSelect";
+import { useDeleteConfirmation } from "./components/DeleteConfirmDialog";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
@@ -3142,7 +3143,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setTransactionsPage(1);
   }
 
-  async function deleteAsset(item) {
+  async function performDeleteAsset(item) {
     if (!item) return;
     if (item.type === "AI 图片") await imageApi.deleteTask(item.rawId);
     if (item.type === "爆款图文") await articleApi.deleteTask(item.rawId);
@@ -3157,6 +3158,13 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setPreviewAsset((current) => (current?.id === item.id ? null : current));
     await refreshAssets();
   }
+
+  const { requestDelete: deleteAsset, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteAsset,
+      title: "删除资产？",
+      message: "该作品会从我的资产中移除，删除后无法恢复。",
+    });
 
   async function toggleAssetFavorite(item) {
     if (!item) return;
@@ -3394,7 +3402,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            deleteAsset(card);
+                            deleteAsset(card, {
+                              targetName: card.title || card.type,
+                            });
                           }}
                         >
                           <Trash2 size={16} />
@@ -3452,6 +3462,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
           onRemix={remixAsset}
           onReference={referenceAsset}
         />
+        {deleteConfirmDialog}
       </section>
     );
   }
@@ -4774,24 +4785,6 @@ function FaceminiInspirationModal({
               }}
             />
           )}
-          <div className="fm-detail-media-actions">
-            <button
-              className="fm-detail-media-action is-primary"
-              type="button"
-              onClick={() => onRemix?.(item)}
-            >
-              <Sparkles size={16} />
-              生成同款
-            </button>
-            <button
-              className="fm-detail-media-action"
-              type="button"
-              onClick={() => onReference?.(item)}
-            >
-              <Image size={16} />
-              用作参考图
-            </button>
-          </div>
         </div>
         <aside className="fm-detail-info">
           <button
@@ -4832,6 +4825,16 @@ function FaceminiInspirationModal({
               <dd>{item.material || (isVideo ? "视频封面" : "高清原图")}</dd>
             </div>
           </dl>
+          <div className="fm-detail-actions">
+            <button type="button" onClick={() => onRemix?.(item)}>
+              <Sparkles size={16} />
+              生成同款
+            </button>
+            <button type="button" onClick={() => onReference?.(item)}>
+              <Image size={16} />
+              用作参考图
+            </button>
+          </div>
         </aside>
       </section>
     </div>
@@ -5541,7 +5544,7 @@ function ImageGenerationView({
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await imageApi.deleteTask(id);
     if (selectedTaskId === id) {
       setSelectedTaskId(null);
@@ -5554,6 +5557,13 @@ function ImageGenerationView({
       clearImageGenerationSession();
     }
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该生成记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     await imageApi.toggleFavorite(id);
@@ -5855,6 +5865,7 @@ function ImageGenerationView({
         onRemix={remixTask}
         onReference={referenceTask}
       />
+      {deleteConfirmDialog}
     </section>
   );
 }
@@ -6636,9 +6647,16 @@ function VideoGenerationView({
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await videoApi.deleteTask(id);
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除视频记录？",
+      message: "该视频生成记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     await videoApi.toggleFavorite(id);
@@ -6837,6 +6855,7 @@ function VideoGenerationView({
         onClose={() => setSelectedInspiration(null)}
         onRemix={useVideoInspiration}
       />
+      {deleteConfirmDialog}
     </section>
   );
 }
@@ -8891,10 +8910,17 @@ function DigitalHumanGenerationView({
     }
   }
 
-  async function deleteAvatar(id) {
+  async function performDeleteAvatar(id) {
     await digitalHumanApi.deleteAvatar(id);
     setSelectedAvatar((current) => (current?.id === id ? null : current));
   }
+
+  const { requestDelete: deleteAvatar, deleteConfirmDialog: avatarDeleteDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteAvatar,
+      title: "删除数字人形象？",
+      message: "该形象会从我的形象库中移除，删除后无法恢复。",
+    });
 
   async function renameAvatar(avatar) {
     const nextName = window.prompt("输入新的形象名称", avatar.name);
@@ -8905,10 +8931,17 @@ function DigitalHumanGenerationView({
     setSelectedAvatar(updated);
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await digitalHumanApi.deleteTask(id);
     setSelectedTask((current) => (current?.id === id ? null : current));
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog: taskDeleteDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该数字人生成记录会被移除，删除后无法恢复。",
+    });
 
   async function regenerateTask(id) {
     const task = await digitalHumanApi.regenerateTask(id);
@@ -9264,6 +9297,8 @@ function DigitalHumanGenerationView({
           onClose={() => setPreviewAvatar(null)}
         />
       )}
+      {avatarDeleteDialog}
+      {taskDeleteDialog}
       <DigitalHumanFloatingToast message={toastMessage} />
     </section>
   );
@@ -10078,7 +10113,7 @@ function MotionTransferView({
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await api.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
     setSubmittedTaskId((current) => {
@@ -10087,6 +10122,13 @@ function MotionTransferView({
       return null;
     });
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该处理记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     const updated = await api.toggleFavorite(id);
@@ -10250,6 +10292,7 @@ function MotionTransferView({
           isActive={isActive}
         />
       )}
+      {deleteConfirmDialog}
     </section>
   );
 }
@@ -10836,13 +10879,20 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await watermarkApi.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
     setSubmittedTaskId((current) =>
       String(current) === String(id) ? null : current,
     );
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该去水印记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     const updated = await watermarkApi.toggleFavorite(id);
@@ -10955,6 +11005,7 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
           isActive={isActive}
         />
       )}
+      {deleteConfirmDialog}
     </section>
   );
 }

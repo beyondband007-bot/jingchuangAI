@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -362,11 +363,18 @@ export function RemoveBgView() {
     }
   }
 
-  async function deleteTask(id) {
+  async function performDeleteTask(id) {
     await removeBgApi.deleteTask(id);
     setTasks((current) => current.filter((task) => task.id !== id));
     setSubmittedTaskId((current) => String(current) === String(id) ? null : current);
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除历史记录？",
+      message: "该抠图记录会被移除，删除后无法恢复。",
+    });
 
   async function toggleFavorite(id) {
     const updated = await removeBgApi.toggleFavorite(id);
@@ -444,6 +452,7 @@ export function RemoveBgView() {
           isSubmitting={isSubmitting}
         />
       )}
+      {deleteConfirmDialog}
     </section>
   );
 }

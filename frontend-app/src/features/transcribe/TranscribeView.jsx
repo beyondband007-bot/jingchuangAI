@@ -2,6 +2,7 @@
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
 
@@ -299,10 +300,17 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
     });
   }
 
-  function deleteRecentResult(id) {
+  function performDeleteRecentResult(id) {
     setRecentResults((items) => items.filter((item) => item.id !== id));
     setResult((current) => (current?.id === id ? null : current));
   }
+
+  const { requestDelete: deleteRecentResult, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteRecentResult,
+      title: "删除转录记录？",
+      message: "该转录文本会被移除，删除后无法恢复。",
+    });
 
   return (
     <section className="voice-conversion-view-root transcribe-view-root">
@@ -402,6 +410,7 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {deleteConfirmDialog}
     </section>
   );
 }

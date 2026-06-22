@@ -16,6 +16,7 @@ import {
 import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
 const videoDubRunningStatuses = new Set(["pending", "processing"]);
@@ -467,7 +468,7 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
     }
   }
 
-  function deleteTask(id) {
+  function performDeleteTask(id) {
     setTasks((items) => items.filter((t) => t.id !== id));
     setFavoriteIds((prev) => {
       if (!prev.has(id)) return prev;
@@ -478,6 +479,13 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
     });
     if (currentTaskId === id) setCurrentTaskId(null);
   }
+
+  const { requestDelete: deleteTask, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteTask,
+      title: "删除配音记录？",
+      message: "该视频配音记录会被移除，删除后无法恢复。",
+    });
 
   function toggleFavorite(id) {
     setFavoriteIds((prev) => {
@@ -596,6 +604,7 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {deleteConfirmDialog}
     </section>
   );
 }

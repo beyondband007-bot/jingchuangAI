@@ -5,6 +5,7 @@ import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { normalizeUploadFileName, stripFileExtension } from "../../utils/fileName";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 const maxTargetAudioBytes = 20 * 1024 * 1024;
@@ -303,10 +304,17 @@ export function VoiceConvertView({ resetSignal = 0 }) {
     )));
   }
 
-  function deleteRecentResult(id) {
+  function performDeleteRecentResult(id) {
     setPlayingRecentId((current) => (current === id ? "" : current));
     setRecentResults((items) => items.filter((item) => item.id !== id));
   }
+
+  const { requestDelete: deleteRecentResult, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteRecentResult,
+      title: "删除历史记录？",
+      message: "该音频记录会被移除，删除后无法恢复。",
+    });
 
   return (
     <section className="voice-conversion-view-root voice-convert-view-root">
@@ -403,6 +411,7 @@ export function VoiceConvertView({ resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {deleteConfirmDialog}
     </section>
   );
 }

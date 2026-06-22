@@ -4,6 +4,7 @@ import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
@@ -335,10 +336,17 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
     )));
   }
 
-  function deleteRecentResult(id) {
+  function performDeleteRecentResult(id) {
     setPlayingRecentId((current) => (current === id ? "" : current));
     setRecentResults((items) => items.filter((item) => item.id !== id));
   }
+
+  const { requestDelete: deleteRecentResult, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteRecentResult,
+      title: "删除历史记录？",
+      message: "该语音生成记录会被移除，删除后无法恢复。",
+    });
 
   return (
     <section className="voice-conversion-view-root voice-synthesis-view-root">
@@ -468,6 +476,7 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {deleteConfirmDialog}
     </section>
   );
 }
