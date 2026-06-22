@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   memo,
   useCallback,
   useEffect,
@@ -3938,6 +3938,20 @@ function ComposerBar({
   );
 }
 
+function ComposerBarPlaceholder() {
+  return (
+    <div
+      className="sowa-composer image-composer-shell image-composer-placeholder is-workbench"
+      aria-hidden="true"
+    >
+      <div className="image-composer-placeholder-dialog">
+        <span className="image-composer-placeholder-line is-main" />
+        <span className="image-composer-placeholder-line" />
+      </div>
+    </div>
+  );
+}
+
 function ImageGenerationWorkbench({
   tasks,
   historyThreads,
@@ -3960,6 +3974,7 @@ function ImageGenerationWorkbench({
   onRegenerate,
 }) {
   const contextRef = useRef(null);
+  const wasSubmittingRef = useRef(false);
   const contextTask = activeTask || selectedTask;
   const threadTasks = contextTasks?.length
     ? contextTasks
@@ -3985,10 +4000,13 @@ function ImageGenerationWorkbench({
   }, []);
 
   useEffect(() => {
-    scrollContextToLatest();
+    const shouldFollowGeneration =
+      isSubmitting || submitError || wasSubmittingRef.current;
+    if (shouldFollowGeneration) {
+      scrollContextToLatest(isSubmitting ? "smooth" : "auto");
+    }
+    wasSubmittingRef.current = isSubmitting;
   }, [
-    activePrompt,
-    empty,
     isSubmitting,
     scrollContextToLatest,
     submitError,
@@ -4058,7 +4076,6 @@ function ImageGenerationWorkbench({
                       <img
                         src={task.imageUrl || task.image}
                         alt={task.prompt}
-                        onLoad={() => scrollContextToLatest("auto")}
                       />
                     </button>
                     <div className="image-workbench-result-meta">
@@ -4119,7 +4136,7 @@ function ImageGenerationWorkbench({
           )}
         </div>
 
-        {options.models.length > 0 && (
+        {options.models.length > 0 ? (
           <ComposerBar
             key={composerSeed?.id || "image-workbench-composer"}
             options={options}
@@ -4130,6 +4147,8 @@ function ImageGenerationWorkbench({
             resetSignal={resetSignal}
             onSeedApplied={onSeedApplied}
           />
+        ) : (
+          <ComposerBarPlaceholder />
         )}
       </main>
 
@@ -5027,8 +5046,12 @@ function ImageGenerationView({
   const [composerSeed, setComposerSeed] = useState(() =>
     buildImageComposerSeedFromPending(initialPendingImageSeed),
   );
-  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(false);
+  const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(
+    () => window.scrollY > 240,
+  );
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [isInspirationGalleryReady, setIsInspirationGalleryReady] =
+    useState(false);
   const imageComposerRef = useRef(null);
   const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
@@ -5141,7 +5164,7 @@ function ImageGenerationView({
 
   useEffect(() => {
     function syncComposerThreshold() {
-      const pastThreshold = window.scrollY > 240;
+      const pastThreshold = filter === "inspiration" && window.scrollY > 240;
       setIsComposerPastThreshold(pastThreshold);
       if (pastThreshold) {
         setIsComposerFocused(false);
@@ -5151,7 +5174,16 @@ function ImageGenerationView({
     syncComposerThreshold();
     window.addEventListener("scroll", syncComposerThreshold, { passive: true });
     return () => window.removeEventListener("scroll", syncComposerThreshold);
-  }, []);
+  }, [filter]);
+
+  useEffect(() => {
+    if (filter !== "inspiration") return;
+    setIsComposerFocused(false);
+    setIsComposerPastThreshold(false);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0 });
+    });
+  }, [filter]);
 
   useEffect(() => {
     setIsComposerFocused(false);
@@ -5365,6 +5397,30 @@ function ImageGenerationView({
     (filter === "inspiration" && isComposerPastThreshold);
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
   const composerPlacement = isComposerSticky ? "sticky" : "inline";
+  const canRenderImageGallery =
+    filter !== "inspiration" || isInspirationGalleryReady;
+
+  useEffect(() => {
+    if (filter !== "inspiration") {
+      setIsInspirationGalleryReady(true);
+      return undefined;
+    }
+
+    setIsInspirationGalleryReady(false);
+    if (!showComposer) return undefined;
+
+    let secondFrameId = 0;
+    const firstFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = window.requestAnimationFrame(() => {
+        setIsInspirationGalleryReady(true);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      if (secondFrameId) window.cancelAnimationFrame(secondFrameId);
+    };
+  }, [filter, showComposer]);
 
   function requestLoginForGeneration() {
     setSubmitError("");
@@ -5742,7 +5798,7 @@ function ImageGenerationView({
           onReference={referenceTask}
           onRegenerate={regenerateTask}
         />
-      ) : galleryItems.length ? (
+      ) : canRenderImageGallery && galleryItems.length ? (
         <WaterfallGrid
           className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
           gap={6}
@@ -5762,7 +5818,7 @@ function ImageGenerationView({
             />
           )}
         />
-      ) : !hasActiveGeneration ? (
+      ) : canRenderImageGallery && !hasActiveGeneration ? (
         <div className="results-feed video-results-feed image-results-feed-empty">
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
@@ -6395,6 +6451,8 @@ function VideoGenerationView({
     () => window.scrollY > 240,
   );
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [isVideoInspirationGridReady, setIsVideoInspirationGridReady] =
+    useState(false);
   const videoComposerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
@@ -6569,6 +6627,31 @@ function VideoGenerationView({
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
   const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
+  const showVideoComposer = options.models.length > 0 && filter === "inspiration";
+  const canRenderVideoInspirationGrid =
+    filter !== "inspiration" || isVideoInspirationGridReady;
+
+  useEffect(() => {
+    if (filter !== "inspiration") {
+      setIsVideoInspirationGridReady(true);
+      return undefined;
+    }
+
+    setIsVideoInspirationGridReady(false);
+    if (!showVideoComposer) return undefined;
+
+    let secondFrameId = 0;
+    const firstFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = window.requestAnimationFrame(() => {
+        setIsVideoInspirationGridReady(true);
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      if (secondFrameId) window.cancelAnimationFrame(secondFrameId);
+    };
+  }, [filter, showVideoComposer]);
 
   function openVideoInspiration() {
     setFilter("inspiration");
@@ -6629,7 +6712,7 @@ function VideoGenerationView({
           {pageToastMessage}
         </div>
       )}
-      {options.models.length > 0 && filter === "inspiration" && (
+      {showVideoComposer && (
         <>
           {!isComposerSticky && (
             <div className="video-composer-heading">视频生成</div>
@@ -6647,7 +6730,7 @@ function VideoGenerationView({
           />
         </>
       )}
-      {filter === "inspiration" ? (
+      {filter === "inspiration" && canRenderVideoInspirationGrid ? (
         <WaterfallGrid
           className="video-inspiration-grid"
           gap={12}
@@ -6657,7 +6740,7 @@ function VideoGenerationView({
             <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
           )}
         />
-      ) : (
+      ) : filter !== "inspiration" ? (
         <div className="results-feed video-results-feed">
           {isSubmitting && filter === "recent" && (
             <VideoResultCard
@@ -6696,7 +6779,7 @@ function VideoGenerationView({
             </div>
           )}
         </div>
-      )}
+      ) : null}
       <VideoInspirationModal
         item={selectedInspiration}
         onClose={() => setSelectedInspiration(null)}
@@ -6903,9 +6986,41 @@ function ChatCopyActions({ content }) {
 }
 
 function ChatCanvas({ messages, isSubmitting, error }) {
+  const scrollContainerRef = useRef(null);
+  const scrollSignature = messages
+    .map(
+      (message) =>
+        `${message.id}:${message.status}:${message.content?.length || 0}:${
+          message.attachments?.length || 0
+        }`,
+    )
+    .join("|");
   const hasStreamingMessage = messages.some(
     (message) => message.status === "streaming",
   );
+
+  useEffect(() => {
+    if (!messages.length && !isSubmitting && !error) return undefined;
+
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return undefined;
+
+    const scrollToBottom = () => {
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: "auto",
+      });
+    };
+
+    scrollToBottom();
+    const frameId = window.requestAnimationFrame(scrollToBottom);
+    const timeoutId = window.setTimeout(scrollToBottom, 60);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [error, isSubmitting, messages.length, scrollSignature]);
 
   if (!messages.length && !isSubmitting && !error) {
     return (
@@ -6918,7 +7033,11 @@ function ChatCanvas({ messages, isSubmitting, error }) {
   }
 
   return (
-    <div className="chat-main-canvas" aria-live="polite">
+    <div
+      className="chat-main-canvas"
+      ref={scrollContainerRef}
+      aria-live="polite"
+    >
       <div className="chat-conversation-thread">
         {messages.map((message) => (
           <div className={`chat-message-row ${message.role}`} key={message.id}>

@@ -351,6 +351,52 @@ function ArticleVisualOptionGroup({
   );
 }
 
+function QuickTemplateConfirmDialog({ template, onCancel, onConfirm }) {
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  return (
+    <div className="logout-confirm-layer" role="presentation">
+      <button
+        className="logout-confirm-backdrop"
+        type="button"
+        aria-label="关闭提示"
+        onClick={onCancel}
+      />
+      <section
+        className="logout-confirm-dialog article-quick-template-confirm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="article-quick-template-confirm-title"
+      >
+        <div className="logout-confirm-icon article-quick-template-confirm-icon">
+          <Sparkles size={20} />
+        </div>
+        <div className="logout-confirm-copy">
+          <h2 id="article-quick-template-confirm-title">套用快捷模板？</h2>
+          <p>
+            是否返回上一步并且套用模板
+            {template?.title ? `「${template.title}」` : ""}？
+          </p>
+        </div>
+        <div className="logout-confirm-actions">
+          <button type="button" onClick={onCancel}>
+            否
+          </button>
+          <button type="button" onClick={onConfirm}>
+            是
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function LegacyArticlePreview({ task, onClose }) {
   if (!task?.image) return null;
   return (
@@ -547,6 +593,7 @@ export function ArticleGenerationView({
   const [toastMessage, setToastMessage] = useState("");
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
+  const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
   const templateSelectRef = useRef(null);
   const modelSelectRef = useRef(null);
   const toastTimerRef = useRef(null);
@@ -702,7 +749,13 @@ export function ArticleGenerationView({
 
   function updateForm(patch) {
     setForm((current) => ({ ...current, ...patch }));
-    if ("visualStyle" in patch || "ratio" in patch || "imageCount" in patch) {
+    if (
+      "contentType" in patch ||
+      "visualStyle" in patch ||
+      "layoutStyle" in patch ||
+      "ratio" in patch ||
+      "imageCount" in patch
+    ) {
       setImagePromptPlan(null);
     }
     setSubmitError("");
@@ -726,22 +779,43 @@ export function ArticleGenerationView({
     setIsTemplateOpen(false);
   }
 
-  function applyQuickTemplate(template) {
+  function applyQuickTemplate(
+    template,
+    { preserveDraftAndTopic = false } = {},
+  ) {
     setForm((current) => ({
       ...current,
       platform: "小红书种草",
       copyTemplate: template.copyTemplate || "完整图文模板",
-      topic: template.topic,
-      keyword: template.keyword,
+      topic: preserveDraftAndTopic ? current.topic : template.topic,
+      keyword: preserveDraftAndTopic ? current.keyword : template.keyword,
       tone: template.tone || current.tone,
       ratio: "3:4",
     }));
-    setDraftCopy(null);
-    setImagePromptPlan(null);
+    if (!preserveDraftAndTopic) {
+      setDraftCopy(null);
+      setImagePromptPlan(null);
+    }
     setStep(2);
     setSelectedTaskId(null);
     setPreviewTask(null);
+    setSubmitError("");
     onModeChange?.("home");
+  }
+
+  function handleQuickTemplateClick(template) {
+    if (step >= 3) {
+      setPendingQuickTemplate(template);
+      return;
+    }
+    applyQuickTemplate(template);
+  }
+
+  function confirmPendingQuickTemplate() {
+    if (!pendingQuickTemplate) return;
+    const template = pendingQuickTemplate;
+    setPendingQuickTemplate(null);
+    applyQuickTemplate(template, { preserveDraftAndTopic: true });
   }
 
   async function generateDraft() {
@@ -773,6 +847,8 @@ export function ArticleGenerationView({
         keywords: form.keyword,
         imageCount: form.imageCount,
         ratio: form.ratio,
+        contentType: form.contentType,
+        layoutStyle: form.layoutStyle,
         visualStyle: form.visualStyle
       });
       setDraftCopy(result.copy);
@@ -828,7 +904,9 @@ export function ArticleGenerationView({
         topic: form.topic,
         keyword: form.keyword,
         keywords: form.keyword,
+        contentType: form.contentType,
         visualStyle: form.visualStyle,
+        layoutStyle: form.layoutStyle,
         model: selectedModel,
         ratio: form.ratio,
         quality: form.quality,
@@ -1123,6 +1201,14 @@ export function ArticleGenerationView({
               <h2>
                 <span>步骤 3 ·</span> 配图配置
               </h2>
+              <div className="article-visual-config">
+                <ArticleVisualOptionGroup
+                  title="视觉风格"
+                  options={visualStyles}
+                  value={form.visualStyle}
+                  onChange={(value) => updateForm({ visualStyle: value })}
+                />
+              </div>
               <div className="article-choice-row is-ratio">
                 <strong>尺寸比例</strong>
                 {ratios.map((item) => (
@@ -1465,7 +1551,7 @@ export function ArticleGenerationView({
           )}
         </main>
 
-      {step < 3 && (
+      {step < 4 && (
         <section className="article-quick-section">
           <header>
             <div>
@@ -1478,7 +1564,7 @@ export function ArticleGenerationView({
               <button
                 type="button"
                 key={item.id}
-                onClick={() => applyQuickTemplate(item)}
+                onClick={() => handleQuickTemplateClick(item)}
               >
                 <img src={item.image} alt="" />
                 <span>{item.title}</span>
@@ -1489,6 +1575,13 @@ export function ArticleGenerationView({
       )}
       </div>
       <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
+      {pendingQuickTemplate && (
+        <QuickTemplateConfirmDialog
+          template={pendingQuickTemplate}
+          onCancel={() => setPendingQuickTemplate(null)}
+          onConfirm={confirmPendingQuickTemplate}
+        />
+      )}
       {toastMessage && (
         <div className="article-floating-toast" role="alert">
           {toastMessage}

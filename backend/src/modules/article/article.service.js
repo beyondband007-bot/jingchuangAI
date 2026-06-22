@@ -44,6 +44,24 @@ const visualStylePrompts = {
   blackboard: "黑板风，粉笔质感，知识笔记排版，重点清晰"
 };
 
+const contentTypePrompts = {
+  "xiaohongshu-cover": "小红书封面，首图强吸引力，主体明确，适合封面点击",
+  "knowledge-card": "知识卡片，重点清晰，信息层级明确，适合收藏学习",
+  "quote-poster": "金句海报，情绪氛围突出，画面有记忆点",
+  tutorial: "步骤教程图，流程感清楚，适合展示操作步骤和方法",
+  "product-card": "产品卖点图，突出产品优势和使用价值，适合电商种草",
+  comparison: "对比分析图，强调差异和选择理由，画面结构有对照感"
+};
+
+const layoutStylePrompts = {
+  balanced: "均衡布局，主体、留白和信息区比例稳定",
+  spacious: "留白布局，画面干净、呼吸感强，少量重点信息",
+  dense: "密集布局，信息承载更强但保持可读性，适合多卖点表达",
+  list: "列表布局，用清晰分组呈现要点，适合清单和攻略",
+  contrast: "对比布局，左右或上下形成鲜明差异，适合前后/优劣对比",
+  flow: "流程布局，按步骤或动线组织画面，适合教程和方法说明"
+};
+
 const imageRoleMap = {
   1: [{ role: "cover", title: "封面主视觉" }],
   2: [
@@ -171,8 +189,12 @@ function shortTitle(title) {
 function buildImagePromptSegment({ copy, base, item, index, total }) {
   const tags = normalizeTags(copy.tags).map((tag) => `#${tag}`).join(" ");
   const visualStyle = visualStylePrompts[base.visualStyle] || normalizeText(base.visualStyle, 80) || visualStylePrompts.fresh;
+  const contentType = contentTypePrompts[base.contentType] || normalizeText(base.contentType, 80) || contentTypePrompts["xiaohongshu-cover"];
+  const layoutStyle = layoutStylePrompts[base.layoutStyle] || normalizeText(base.layoutStyle, 80) || layoutStylePrompts.balanced;
   const keywords = normalizeText(base.keywords, 220);
   const common = [
+    `内容类型：${contentType}`,
+    `布局方式：${layoutStyle}`,
     `${ARTICLE_PROMPT_MARKER}，${base.platform}，第 ${index}/${total} 张图，${item.title}。`,
     `主题：${base.topic}`,
     `核心卖点关键词：${keywords || "围绕标题和正文提炼商品卖点"}`,
@@ -206,12 +228,16 @@ export function buildImagePromptPlan({ copy, payload }) {
   const count = normalizeImageCount(payload.imageCount || payload.count || payload.imagePromptPlan?.count || 1);
   const ratio = normalizeText(payload.ratio || payload.imagePromptPlan?.ratio || "3:4", 20);
   const visualStyle = normalizeText(payload.visualStyle || payload.imagePromptPlan?.visualStyle || "fresh", 80);
+  const contentType = normalizeText(payload.contentType || payload.imagePromptPlan?.contentType || "xiaohongshu-cover", 80);
+  const layoutStyle = normalizeText(payload.layoutStyle || payload.imagePromptPlan?.layoutStyle || "balanced", 80);
   const base = {
     platform: normalizeText(payload.platform || "小红书种草", 80),
     topic: ensureTopic(payload),
     keywords: normalizeText(payload.keyword || payload.keywords, 300),
     ratio,
-    visualStyle
+    visualStyle,
+    contentType,
+    layoutStyle
   };
   const roles = imageRoleMap[count] || imageRoleMap[1];
   const segments = roles.map((item, idx) => buildImagePromptSegment({
@@ -221,7 +247,7 @@ export function buildImagePromptPlan({ copy, payload }) {
     index: idx + 1,
     total: count
   }));
-  return { count, ratio, visualStyle, segments };
+  return { count, ratio, visualStyle, contentType, layoutStyle, segments };
 }
 
 async function getDeepSeekCopyModel() {
@@ -393,7 +419,9 @@ export async function createPackage(payload, userId) {
     payload.imagePromptPlan?.segments?.length &&
     Number(payload.imagePromptPlan.count || payload.imagePromptPlan.segments.length) === requestedCount &&
     (!payload.ratio || payload.imagePromptPlan.ratio === payload.ratio) &&
-    (!payload.visualStyle || payload.imagePromptPlan.visualStyle === payload.visualStyle);
+    (!payload.visualStyle || payload.imagePromptPlan.visualStyle === payload.visualStyle) &&
+    (!payload.contentType || payload.imagePromptPlan.contentType === payload.contentType) &&
+    (!payload.layoutStyle || payload.imagePromptPlan.layoutStyle === payload.layoutStyle);
   const imagePromptPlan = shouldReusePromptPlan
     ? {
         ...payload.imagePromptPlan,
