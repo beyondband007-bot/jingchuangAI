@@ -3942,10 +3942,13 @@ function ComposerBar({
   );
 }
 
-function ComposerBarPlaceholder() {
+function ComposerBarPlaceholder({
+  placement = "workbench",
+  className = "image-composer-shell",
+}) {
   return (
     <div
-      className="sowa-composer image-composer-shell image-composer-placeholder is-workbench"
+      className={`sowa-composer ${className} image-composer-placeholder is-${placement}`}
       aria-hidden="true"
     >
       <div className="image-composer-placeholder-dialog">
@@ -5411,8 +5414,6 @@ function ImageGenerationView({
     }
 
     setIsInspirationGalleryReady(false);
-    if (!showComposer) return undefined;
-
     let secondFrameId = 0;
     const firstFrameId = window.requestAnimationFrame(() => {
       secondFrameId = window.requestAnimationFrame(() => {
@@ -5424,7 +5425,7 @@ function ImageGenerationView({
       window.cancelAnimationFrame(firstFrameId);
       if (secondFrameId) window.cancelAnimationFrame(secondFrameId);
     };
-  }, [filter, showComposer]);
+  }, [filter]);
 
   function requestLoginForGeneration() {
     setSubmitError("");
@@ -5760,23 +5761,27 @@ function ImageGenerationView({
           onReveal={revealGeneratedTask}
         />
       )}
-      {showComposer && (
+      {filter === "inspiration" && (
         <>
           {!isComposerSticky && (
             <div className="image-composer-heading">图片生成</div>
           )}
-          <ComposerBar
-            key={composerSeed?.id || "image-inspiration-composer"}
-            options={options}
-            onSubmit={createTask}
-            placement={composerPlacement}
-            collapsed={isComposerCollapsed}
-            shellRef={imageComposerRef}
-            onFocus={() => setIsComposerFocused(true)}
-            resetSignal={resetSignal}
-            seed={composerSeed}
-            onSeedApplied={applyComposerSeedApplied}
-          />
+          {showComposer ? (
+            <ComposerBar
+              key={composerSeed?.id || "image-inspiration-composer"}
+              options={options}
+              onSubmit={createTask}
+              placement={composerPlacement}
+              collapsed={isComposerCollapsed}
+              shellRef={imageComposerRef}
+              onFocus={() => setIsComposerFocused(true)}
+              resetSignal={resetSignal}
+              seed={composerSeed}
+              onSeedApplied={applyComposerSeedApplied}
+            />
+          ) : (
+            <ComposerBarPlaceholder placement={composerPlacement} />
+          )}
         </>
       )}
       {filter === "recent" ? (
@@ -6656,8 +6661,6 @@ function VideoGenerationView({
     }
 
     setIsVideoInspirationGridReady(false);
-    if (!showVideoComposer) return undefined;
-
     let secondFrameId = 0;
     const firstFrameId = window.requestAnimationFrame(() => {
       secondFrameId = window.requestAnimationFrame(() => {
@@ -6669,7 +6672,7 @@ function VideoGenerationView({
       window.cancelAnimationFrame(firstFrameId);
       if (secondFrameId) window.cancelAnimationFrame(secondFrameId);
     };
-  }, [filter, showVideoComposer]);
+  }, [filter]);
 
   function openVideoInspiration() {
     setFilter("inspiration");
@@ -6730,22 +6733,29 @@ function VideoGenerationView({
           {pageToastMessage}
         </div>
       )}
-      {showVideoComposer && (
+      {filter === "inspiration" && (
         <>
           {!isComposerSticky && (
             <div className="video-composer-heading">视频生成</div>
           )}
-          <VideoComposerBar
-            options={options}
-            onSubmit={createTask}
-            resetSignal={resetSignal}
-            seed={composerSeed}
-            placement={isComposerSticky ? "sticky" : "inline"}
-            collapsed={isComposerCollapsed}
-            shellRef={videoComposerRef}
-            onFocus={() => setIsComposerFocused(true)}
-            onBlur={() => {}}
-          />
+          {showVideoComposer ? (
+            <VideoComposerBar
+              options={options}
+              onSubmit={createTask}
+              resetSignal={resetSignal}
+              seed={composerSeed}
+              placement={isComposerSticky ? "sticky" : "inline"}
+              collapsed={isComposerCollapsed}
+              shellRef={videoComposerRef}
+              onFocus={() => setIsComposerFocused(true)}
+              onBlur={() => {}}
+            />
+          ) : (
+            <ComposerBarPlaceholder
+              placement={isComposerSticky ? "sticky" : "inline"}
+              className="video-composer"
+            />
+          )}
         </>
       )}
       {filter === "inspiration" && canRenderVideoInspirationGrid ? (

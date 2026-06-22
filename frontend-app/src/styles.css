@@ -13771,19 +13771,22 @@ section.image-gen-view .image-composer-shell.is-workbench {
   z-index: 2 !important;
 }
 
-section.image-gen-view .image-composer-placeholder.is-workbench {
+section.image-gen-view .image-composer-placeholder,
+.video-gen-view-root .image-composer-placeholder {
   pointer-events: none;
 }
 
 .image-composer-placeholder-dialog {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   min-height: 152px;
   padding: 20px 24px;
   border: 1px solid rgba(226, 223, 236, 0.92);
   border-radius: 24px;
-  background: #101010;
-  opacity: 0.18;
+  background:
+    linear-gradient(90deg, #f4f2fb 25%, #ffffff 42%, #f4f2fb 64%);
+  background-size: 220% 100%;
+  animation: composer-placeholder-shimmer 1.2s ease-in-out infinite;
 }
 
 .image-composer-placeholder-line {
@@ -13791,12 +13794,22 @@ section.image-gen-view .image-composer-placeholder.is-workbench {
   width: min(360px, 74%);
   height: 18px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: #e2deee;
 }
 
 .image-composer-placeholder-line.is-main {
   width: min(520px, 88%);
   height: 28px;
+}
+
+@keyframes composer-placeholder-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 section.image-gen-view .image-composer-shell.is-collapsed {
