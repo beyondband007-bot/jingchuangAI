@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { stat } from "fs/promises";
 import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
 import { createHttpError } from "../../shared/http.js";
 import { mkdir, writeFile } from "fs/promises";
@@ -9,12 +10,25 @@ import {
   createMusicTaskRow,
   failMusicTaskRow,
   findMusicTaskRow,
-  listMusicTaskRows
+  listMusicTaskRows,
+  updateMusicTaskAudioMeta
 } from "./music.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
+import { compressMusicAudioFile, MUSIC_COMPRESS_THRESHOLD_BYTES } from "./musicAudio.js";
+import { syncMusicLyrics } from "./lyricsSync.service.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+function safeJson(value, fallback = null) {
+  if (!value) return fallback;
+  if (typeof value === "object") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
 }
 
 function mapMusicTask(row) {
@@ -34,6 +48,9 @@ function mapMusicTask(row) {
     favorite: Boolean(row.favorite),
     status: row.status || (row.audio_url ? "completed" : "processing"),
     error: row.error_message || "",
+    lyricsTimeline: safeJson(row.lyrics_timeline, []),
+    lyricsSyncStatus: row.lyrics_sync_status || "none",
+    lyricsSyncError: row.lyrics_sync_error || "",
     createdAt: formatBeijingDateTime(row.created_at)
   };
 }
@@ -104,7 +121,7 @@ function cleanGenerationError(error) {
   return message;
 }
 
-async function runMusicGeneration(taskId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }) {
+async function runMusicGeneration(taskId, userId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }) {
   try {
     const result = await generateMinimaxMusic({
       prompt,
@@ -115,16 +132,37 @@ async function runMusicGeneration(taskId, { prompt, lyrics, model, isInstrumenta
     });
 
     const savedAudio = await saveMusicAudio({ taskId, audioBuffer: result.audioBuffer });
+    let musicSize = Number(result.musicSize || result.audioBuffer?.length || 0);
+    let bitrate = result.bitrate;
+
+    const fileStat = await stat(savedAudio.filePath);
+    musicSize = fileStat.size;
+
+    if (musicSize > MUSIC_COMPRESS_THRESHOLD_BYTES) {
+      const compressed = await compressMusicAudioFile(savedAudio.filePath);
+      musicSize = compressed.size;
+      bitrate = compressed.bitrate;
+      await updateMusicTaskAudioMeta(taskId, { musicSize, bitrate });
+    }
+
     await completeMusicTaskRow({
       id: taskId,
       audioUrl: savedAudio.publicPath,
       durationMs: result.durationMs,
       sampleRate: result.sampleRate,
       channel: result.channel,
-      bitrate: result.bitrate,
-      musicSize: result.musicSize,
+      bitrate,
+      musicSize,
       traceId: result.traceId
     });
+
+    if (!isInstrumental && String(lyrics || "").trim()) {
+      try {
+        await syncMusicLyrics(taskId, userId);
+      } catch (error) {
+        console.error("auto lyrics sync failed:", error);
+      }
+    }
   } catch (error) {
     await failMusicTaskRow(taskId, cleanGenerationError(error));
   }
@@ -147,7 +185,7 @@ export async function generateMusic(payload, userId) {
     isInstrumental
   });
 
-  runMusicGeneration(taskId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }).catch((error) => {
+  runMusicGeneration(taskId, userId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }).catch((error) => {
     console.error("background music generation failed:", error);
   });
 

@@ -82,3 +82,32 @@ export async function listMusicTaskRows({ userId }) {
   );
   return rows;
 }
+
+export async function updateMusicLyricsSyncStatus(id, { status, errorMessage = "" }) {
+  await getPool().query(
+    `UPDATE music_tasks
+     SET lyrics_sync_status = ?, lyrics_sync_error = ?
+     WHERE id = ?`,
+    [status, errorMessage || null, id]
+  );
+}
+
+export async function saveMusicLyricsTimeline(id, timeline) {
+  await getPool().query(
+    `UPDATE music_tasks
+     SET lyrics_timeline = ?,
+         lyrics_sync_status = 'completed',
+         lyrics_sync_error = NULL
+     WHERE id = ?`,
+    [JSON.stringify(timeline || []), id]
+  );
+}
+
+export async function updateMusicTaskAudioMeta(id, { musicSize, bitrate }) {
+  await getPool().query(
+    `UPDATE music_tasks
+     SET music_size = ?, bitrate = ?
+     WHERE id = ?`,
+    [musicSize || null, bitrate || null, id]
+  );
+}

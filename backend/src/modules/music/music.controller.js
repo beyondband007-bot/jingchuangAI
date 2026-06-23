@@ -1,5 +1,6 @@
 import { sendError } from "../../shared/http.js";
 import * as service from "./music.service.js";
+import { syncMusicLyrics } from "./lyricsSync.service.js";
 
 export async function getConfig(req, res) {
   try {
@@ -34,6 +35,16 @@ export async function generate(req, res) {
   try {
     const result = await service.generateMusic(req.body || {}, req.user.id);
     res.status(202).json(result);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function syncLyrics(req, res) {
+  try {
+    const force = req.query.force === "1" || req.query.force === "true";
+    const result = await syncMusicLyrics(req.params.id, req.user.id, { force });
+    res.json(result);
   } catch (error) {
     sendError(res, error);
   }

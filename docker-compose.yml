@@ -37,8 +37,8 @@ services:
       DEFAULT_DEMO_CREDITS: ${DEFAULT_DEMO_CREDITS:-100}
       MEDIA_STORAGE_DIR: /app/storage
       PUBLIC_ASSETS_DIR: /app/public
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
-      PUBLIC_MEDIA_BASE_URL: ${PUBLIC_MEDIA_BASE_URL:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://facemini.com}
+      PUBLIC_MEDIA_BASE_URL: ${PUBLIC_MEDIA_BASE_URL:-https://facemini.com/media}
       ARK_API_KEY: ${ARK_API_KEY:-}
       ARK_API_BASE_URL: ${ARK_API_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
       ARK_VIDEO_MODEL: ${ARK_VIDEO_MODEL:-doubao-seedance-2-0-260128}

@@ -974,6 +974,9 @@ async function createTables() {
       user_id BIGINT UNSIGNED NOT NULL,
       prompt TEXT NOT NULL,
       lyrics MEDIUMTEXT NULL,
+      lyrics_timeline JSON NULL,
+      lyrics_sync_status ENUM('none','processing','completed','failed') NOT NULL DEFAULT 'none',
+      lyrics_sync_error TEXT NULL,
       model VARCHAR(80) NOT NULL,
       is_instrumental BOOLEAN NOT NULL DEFAULT FALSE,
       audio_url VARCHAR(1000) NOT NULL,
@@ -1005,6 +1008,15 @@ async function createTables() {
   }
   if (!musicColumnNames.has("error_message")) {
     await pool.query("ALTER TABLE music_tasks ADD COLUMN error_message TEXT NULL AFTER status");
+  }
+  if (!musicColumnNames.has("lyrics_timeline")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN lyrics_timeline JSON NULL AFTER lyrics");
+  }
+  if (!musicColumnNames.has("lyrics_sync_status")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN lyrics_sync_status ENUM('none','processing','completed','failed') NOT NULL DEFAULT 'none' AFTER lyrics_timeline");
+  }
+  if (!musicColumnNames.has("lyrics_sync_error")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN lyrics_sync_error TEXT NULL AFTER lyrics_sync_status");
   }
 
   await pool.query(`

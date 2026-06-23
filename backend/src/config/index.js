@@ -105,7 +105,12 @@ export const config = {
   tencentCloud: {
     secretId: process.env.TENCENTCLOUD_SECRET_ID || "",
     secretKey: process.env.TENCENTCLOUD_SECRET_KEY || "",
-    region: process.env.TENCENTCLOUD_REGION || "ap-guangzhou"
+    region: process.env.TENCENTCLOUD_REGION || "ap-guangzhou",
+    asrRegion: process.env.TENCENTCLOUD_ASR_REGION || process.env.TENCENTCLOUD_REGION || "ap-guangzhou",
+    asrEngine: process.env.TENCENTCLOUD_ASR_ENGINE || "16k_zh",
+    asrResTextFormat: Number(process.env.TENCENTCLOUD_ASR_RES_TEXT_FORMAT || 3),
+    asrPollIntervalMs: Number(process.env.TENCENTCLOUD_ASR_POLL_INTERVAL_MS || 3000),
+    asrMaxAttempts: Number(process.env.TENCENTCLOUD_ASR_MAX_ATTEMPTS || 80)
   },
   sms: {
     sdkAppId: process.env.SMS_SDK_APP_ID || "",
