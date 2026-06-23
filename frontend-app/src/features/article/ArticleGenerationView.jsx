@@ -1499,89 +1499,117 @@ export function ArticleGenerationView({
             </div>
           ) : (
             <>
-            <div className="article-image-result">
-              <div className="article-result-mode-tabs" aria-label="图文展示模式">
-                {[
-                  ["full", "全文模式"],
-                  ["grid", "平铺展示"]
-                ].map(([value, label]) => (
-                  <button
-                    className={resultViewMode === value ? "is-active" : ""}
-                    type="button"
-                    key={value}
-                    onClick={() => setResultViewMode(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {hasFailedArticle && (
-                <div className="article-generation-failed" role="alert">
-                  <CircleAlert size={26} />
-                  <div>
-                    <strong>图片生成失败</strong>
-                    <p>
-                      {formatArticleError(
-                        selectedTask?.error || submitError,
-                        "本次生成没有成功，请调整模型、比例或稍后重试。",
-                      )}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => regenerateTask(selectedTask)}
-                  >
-                    <RefreshCcw size={15} />
-                    重新生成
-                  </button>
+              <div className="article-image-result">
+                <div className="article-result-mode-tabs" aria-label="图文展示模式">
+                  {[
+                    ["full", "全文模式"],
+                    ["grid", "平铺展示"],
+                    ["cover", "封面预览"]
+                  ].map(([value, label]) => (
+                    <button
+                      className={resultViewMode === value ? "is-active" : ""}
+                      type="button"
+                      key={value}
+                      onClick={() => setResultViewMode(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
-              )}
-              {hasCompletedArticle && (
-                <>
-                  {resultViewMode === "full" && (
-                    <article className="article-full-layout">
-                      <div className="article-full-carousel">
-                        <div className="article-full-carousel-scroll">
-                          {currentPreviewImage?.image ? (
-                            <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
-                          ) : (
-                            <span className="article-image-pending">生成中</span>
-                          )}
-                        </div>
-                        {previewImages.length > 1 && (
-                          <>
-                            <button
-                              className="article-carousel-nav is-prev"
-                              type="button"
-                              aria-label="上一张"
-                              onClick={() => setActivePreviewIndex((current) => (current - 1 + previewImages.length) % previewImages.length)}
-                            >
-                              <ChevronLeft size={24} />
-                            </button>
-                            <button
-                              className="article-carousel-nav is-next"
-                              type="button"
-                              aria-label="下一张"
-                              onClick={() => setActivePreviewIndex((current) => (current + 1) % previewImages.length)}
-                            >
-                              <ChevronRight size={24} />
-                            </button>
-                          </>
+                {hasFailedArticle && (
+                  <div className="article-generation-failed" role="alert">
+                    <CircleAlert size={26} />
+                    <div>
+                      <strong>图片生成失败</strong>
+                      <p>
+                        {formatArticleError(
+                          selectedTask?.error || submitError,
+                          "本次生成没有成功，请调整模型、比例或稍后重试。",
                         )}
-                        <div className="article-carousel-dots" aria-label="配图切换">
-                          {previewImages.map((item, index) => (
-                            <button
-                              className={index === activePreviewIndex ? "is-active" : ""}
-                              type="button"
-                              key={item.id}
-                              aria-label={`第 ${index + 1} 张`}
-                              onClick={() => setActivePreviewIndex(index)}
-                            />
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => regenerateTask(selectedTask)}
+                    >
+                      <RefreshCcw size={15} />
+                      重新生成
+                    </button>
+                  </div>
+                )}
+                {hasCompletedArticle && (
+                  <>
+                    {resultViewMode === "full" && (
+                      <article className="article-full-layout">
+                        <div className="article-full-carousel">
+                          <div className="article-full-carousel-scroll">
+                            {currentPreviewImage?.image ? (
+                              <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
+                            ) : (
+                              <span className="article-image-pending">生成中</span>
+                            )}
+                          </div>
+                          {previewImages.length > 1 && (
+                            <>
+                              <button
+                                className="article-carousel-nav is-prev"
+                                type="button"
+                                aria-label="上一张"
+                                onClick={() => setActivePreviewIndex((current) => (current - 1 + previewImages.length) % previewImages.length)}
+                              >
+                                <ChevronLeft size={24} />
+                              </button>
+                              <button
+                                className="article-carousel-nav is-next"
+                                type="button"
+                                aria-label="下一张"
+                                onClick={() => setActivePreviewIndex((current) => (current + 1) % previewImages.length)}
+                              >
+                                <ChevronRight size={24} />
+                              </button>
+                            </>
+                          )}
+                          <div className="article-carousel-dots" aria-label="配图切换">
+                            {previewImages.map((item, index) => (
+                              <button
+                                className={index === activePreviewIndex ? "is-active" : ""}
+                                type="button"
+                                key={item.id}
+                                aria-label={`第 ${index + 1} 张`}
+                                onClick={() => setActivePreviewIndex(index)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="article-full-copy-scroll">
+                          <div className="article-full-copy">
+                            <h2>{draftCopy?.title}</h2>
+                            {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
+                              <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                            ))}
+                            <div>
+                              {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    )}
+                    {resultViewMode === "grid" && (
+                      <div className="article-preview-strip is-grid">
+                        <div>
+                          {previewImages.map((item) => (
+                            <figure key={item.id}>
+                              {item.image ? (
+                                <img src={item.image} alt={item.title || "配图预览"} />
+                              ) : (
+                                <span className="article-image-pending">
+                                  {item.status === "failed" ? "生成失败" : "生成中"}
+                                </span>
+                              )}
+                            </figure>
                           ))}
                         </div>
-                      </div>
-                      <div className="article-full-copy-scroll">
-                        <div className="article-full-copy">
+                        <article className="article-grid-copy">
                           <h2>{draftCopy?.title}</h2>
                           {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
                             <p key={`${paragraph}-${index}`}>{paragraph}</p>
@@ -1589,37 +1617,27 @@ export function ArticleGenerationView({
                           <div>
                             {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
                           </div>
-                        </div>
+                        </article>
                       </div>
-                    </article>
-                  )}
-                  {resultViewMode === "grid" && (
-                    <div className="article-preview-strip is-grid">
-                      <div>
-                        {previewImages.map((item) => (
-                          <figure key={item.id}>
-                            {item.image ? (
-                              <img src={item.image} alt={item.title || "配图预览"} />
+                    )}
+                    {resultViewMode === "cover" && (
+                      <div className="article-cover-preview-wrap">
+                        <article className="article-cover-preview-card">
+                          <div className="article-cover-preview-image">
+                            {currentPreviewImage?.image ? (
+                              <img src={currentPreviewImage.image} alt={draftCopy?.title || "封面预览"} />
                             ) : (
-                              <span className="article-image-pending">
-                                {item.status === "failed" ? "生成失败" : "生成中"}
-                              </span>
+                              <span className="article-image-pending">生成中</span>
                             )}
-                          </figure>
-                        ))}
+                            <span className="article-cover-preview-badge">
+                              {form.copyTemplate || "小红书封面"}
+                            </span>
+                          </div>
+                          <h2>{draftCopy?.title || currentPreviewImage?.title || "未命名封面"}</h2>
+                        </article>
                       </div>
-                      <article className="article-grid-copy">
-                        <h2>{draftCopy?.title}</h2>
-                        {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
-                          <p key={`${paragraph}-${index}`}>{paragraph}</p>
-                        ))}
-                        <div>
-                          {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
-                        </div>
-                      </article>
-                    </div>
-                  )}
-                </>
+                    )}
+                  </>
               )}
               {hasCompletedArticle && (
                 <footer>

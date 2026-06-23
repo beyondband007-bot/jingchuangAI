@@ -12,6 +12,7 @@ import {
   SkipForward
 } from "lucide-react";
 import { formatBeijingStamp } from "../../utils/time";
+import { downloadMediaFile, resolveMediaUrl } from "../../api/mediaUrl.js";
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -63,17 +64,7 @@ function makeFileName(prefix, ext) {
 }
 
 async function downloadAudioUrl(audioUrl, fileName) {
-  const response = await fetch(audioUrl);
-  if (!response.ok) throw new Error("音乐下载失败");
-  const blob = await response.blob();
-  const href = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = href;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(href);
+  await downloadMediaFile(audioUrl, fileName);
 }
 
 function LyricLine({ line, isActive, progress, isNear }) {
@@ -115,10 +106,16 @@ export function MusicHistoryPanel({
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const [audioState, setAudioState] = useState("idle");
 
   const activeItem = useMemo(
     () => items.find((item) => item.id === activeId) || null,
     [items, activeId]
+  );
+
+  const playbackUrl = useMemo(
+    () => resolveMediaUrl(activeItem?.audioUrl),
+    [activeItem?.audioUrl],
   );
 
   const playableItems = useMemo(
@@ -130,6 +127,11 @@ export function MusicHistoryPanel({
   const timeline = Array.isArray(activeItem?.lyricsTimeline) ? activeItem.lyricsTimeline : [];
   const currentMs = currentTime * 1000;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const canPlayAudio = Boolean(playbackUrl) && audioState !== "error";
+  const isAudioLoading = Boolean(playbackUrl) && audioState === "idle";
+  const displayDuration = audioState === "ready" && duration > 0
+    ? duration
+    : (activeItem?.durationMs ? activeItem.durationMs / 1000 : 0);
 
   useEffect(() => {
     if (!initialActiveId) return;
@@ -161,16 +163,22 @@ export function MusicHistoryPanel({
   }, [items, activeId]);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !activeItem?.audioUrl) return;
-    audio.load();
+    setAudioState("idle");
     setCurrentTime(0);
     setDuration(0);
-    if (isPlaying) {
-      audio.playbackRate = speed;
-      audio.play().catch(() => setIsPlaying(false));
-    }
   }, [activeItem?.id, activeItem?.audioUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !playbackUrl) return;
+    audio.load();
+  }, [playbackUrl]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.playbackRate = speed;
+  }, [speed]);
 
   useEffect(() => {
     if (variant !== "generation") return;
@@ -196,28 +204,38 @@ export function MusicHistoryPanel({
   function selectTrack(item, { autoplay = true } = {}) {
     if (!item?.audioUrl || item.status === "failed") return;
     setActiveId(item.id);
-    if (autoplay) {
-      setIsPlaying(true);
-      window.setTimeout(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-        audio.playbackRate = speed;
-        audio.play().catch(() => setIsPlaying(false));
-      }, 0);
-    }
+    if (autoplay) setIsPlaying(true);
   }
 
   function togglePlay() {
     const audio = audioRef.current;
-    if (!audio || !activeItem?.audioUrl) return;
+    if (!audio || !playbackUrl || audioState === "error") return;
     if (isPlaying) {
-      audio.pause();
+      if (audioState === "ready") audio.pause();
       setIsPlaying(false);
       return;
     }
-    audio.playbackRate = speed;
-    audio.play().catch(() => setIsPlaying(false));
     setIsPlaying(true);
+    if (audioState === "ready") {
+      audio.playbackRate = speed;
+      audio.play().catch(() => setIsPlaying(false));
+    }
+  }
+
+  function handleAudioReady(event) {
+    setAudioState("ready");
+    setDuration(event.currentTarget.duration || 0);
+    setCurrentTime(event.currentTarget.currentTime || 0);
+    if (isPlaying) {
+      event.currentTarget.play().catch(() => setIsPlaying(false));
+    }
+  }
+
+  function handleAudioError() {
+    setAudioState("error");
+    setIsPlaying(false);
+    setDuration(0);
+    setCurrentTime(0);
   }
 
   function seekTo(ratio) {
@@ -306,12 +324,11 @@ export function MusicHistoryPanel({
     <div className={`music-history-panel${activeItem ? " has-player" : ""}${isExpanded ? " is-expanded" : ""}${variant === "generation" ? " is-generation" : ""}`}>
       <audio
         ref={audioRef}
-        src={activeItem?.audioUrl || undefined}
+        src={playbackUrl || undefined}
         preload="metadata"
-        onLoadedMetadata={(event) => {
-          setDuration(event.currentTarget.duration || 0);
-          setCurrentTime(event.currentTarget.currentTime || 0);
-        }}
+        onLoadedMetadata={handleAudioReady}
+        onCanPlay={handleAudioReady}
+        onError={handleAudioError}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
         onEnded={() => {
           setIsPlaying(false);
@@ -398,7 +415,7 @@ export function MusicHistoryPanel({
             <button type="button" className="music-mini-btn" onClick={() => playSibling(-1)} aria-label="上一首">
               <SkipBack size={16} />
             </button>
-            <button type="button" className="music-mini-btn is-primary" onClick={togglePlay} disabled={isProcessing || !activeItem.audioUrl} aria-label={isPlaying ? "暂停" : "播放"}>
+            <button type="button" className="music-mini-btn is-primary" onClick={togglePlay} disabled={isProcessing || !canPlayAudio} aria-label={isPlaying ? "暂停" : "播放"}>
               {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
             </button>
             <button type="button" className="music-mini-btn" onClick={() => playSibling(1)} aria-label="下一首">
@@ -419,7 +436,7 @@ export function MusicHistoryPanel({
             >
               <div className="music-mini-progress-fill" style={{ width: `${progressPercent}%` }} />
             </div>
-            <span>{formatAudioTime(duration || activeItem.durationMs / 1000)}</span>
+            <span>{formatAudioTime(displayDuration)}</span>
           </div>
 
           <div className="music-mini-tools">
@@ -497,11 +514,11 @@ export function MusicHistoryPanel({
                 >
                   <div className="music-mini-progress-fill" style={{ width: `${progressPercent}%` }} />
                 </div>
-                <span>{formatAudioTime(duration || activeItem.durationMs / 1000)}</span>
+                <span>{formatAudioTime(displayDuration)}</span>
               </div>
               <div className="music-expanded-controls">
                 <button type="button" className="music-mini-btn" onClick={() => playSibling(-1)}><SkipBack size={18} /></button>
-                <button type="button" className="music-mini-btn is-primary is-large" onClick={togglePlay} disabled={isProcessing || !activeItem.audioUrl}>
+                <button type="button" className="music-mini-btn is-primary is-large" onClick={togglePlay} disabled={isProcessing || !canPlayAudio}>
                   {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
                 </button>
                 <button type="button" className="music-mini-btn" onClick={() => playSibling(1)}><SkipForward size={18} /></button>

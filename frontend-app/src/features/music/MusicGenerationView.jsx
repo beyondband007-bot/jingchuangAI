@@ -6,6 +6,7 @@ import { MusicFullPagePlayer } from "./MusicFullPagePlayer";
 import { MusicRecentGrid } from "./MusicRecentGrid";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import { downloadMediaFile } from "../../api/mediaUrl.js";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -383,13 +384,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
   async function downloadMp3() {
     if (!playerTask?.audioUrl) return;
     try {
-      const response = await fetch(playerTask.audioUrl);
-      if (!response.ok) throw new Error("音乐下载失败");
-      downloadBlob({
-        content: await response.blob(),
-        fileName: makeFileName("ai-music", "mp3"),
-        type: response.headers.get("Content-Type") || "audio/mpeg"
-      });
+      await downloadMediaFile(playerTask.audioUrl, makeFileName("ai-music", "mp3"));
       setNotice("音乐已下载。");
     } catch (error) {
       setNotice(error.message || "音乐下载失败");

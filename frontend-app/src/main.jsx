@@ -96,6 +96,7 @@ import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
+import { formatBeijingHistoryTime } from "./utils/time";
 import "./styles.css";
 
 const caseImageFiles = [
@@ -3647,6 +3648,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
           if (assetTimePreset === "all") return true;
           return isTimestampInRange(item.sortTime, assetTimeRange);
         });
+  const visibleFavoriteCards = favoriteTabCards.filter((item) => {
+    if (assetTimePreset === "all") return true;
+    return isTimestampInRange(item.sortTime, assetTimeRange);
+  });
 
   useEffect(() => {
     if (!assetGalleryTabs.includes(activeAssetTab)) setActiveAssetTab("全部");
@@ -4146,7 +4151,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   if (viewMode === "favorites") {
     return (
-      <section className="assets-view-root fm-favorites-view">
+      <section className="assets-view-root fm-assets-gallery-view fm-favorites-view">
         {isGuest ? (
           <div className="assets-login-panel fm-favorites-login-panel">
             <Star size={32} />
@@ -4157,23 +4162,24 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
             </button>
           </div>
         ) : (
-          <div className="fm-favorites-inner">
-            <button
-              className="fm-favorites-back"
-              type="button"
-              onClick={() => setViewMode("profile")}
-            >
-              返回个人中心
-            </button>
-            <div className="fm-section-title-row fm-favorites-title-row">
-              <h2>我的收藏</h2>
-              <div
-                className="fm-pill-tabs fm-inspiration-tabs fm-favorites-tabs"
-                aria-label="收藏分类"
+          <div className="fm-assets-inner fm-favorites-inner">
+            <div className="fm-favorites-nav-row">
+              <button
+                className="fm-favorites-back"
+                type="button"
+                onClick={() => setViewMode("profile")}
               >
+                返回个人中心
+              </button>
+            </div>
+            <div className="fm-assets-headline fm-favorites-title-row">
+              <h2>我的收藏</h2>
+            </div>
+            <div className="fm-assets-filter-row">
+              <div className="fm-assets-tabs fm-favorites-tabs" aria-label="我的收藏分类">
                 {favoriteModuleTabs.map((tab) => (
                   <button
-                    className={tab === favoriteTab ? "active" : ""}
+                    className={tab === favoriteTab ? "is-active" : ""}
                     key={tab}
                     type="button"
                     onClick={() => setFavoriteTab(tab)}
@@ -4182,10 +4188,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                   </button>
                 ))}
               </div>
+              {assetTimeFilterControl}
             </div>
-            {favoriteTabCards.length ? (
+            {visibleFavoriteCards.length ? (
               <div className="fm-assets-grid fm-favorites-grid">
-                {favoriteTabCards.map((card) => (
+                {visibleFavoriteCards.map((card) => (
                   <article
                     className="fm-asset-card"
                     key={card.id}
@@ -4262,7 +4269,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                 ))}
               </div>
             ) : (
-              <div className="fm-favorites-empty-state">
+              <div className="fm-assets-empty-state fm-favorites-empty-state">
                 <Star size={34} />
                 <strong>暂无{favoriteTab}收藏</strong>
                 <p>在对应模块收藏作品后，会显示在这里</p>
@@ -5244,6 +5251,17 @@ function ImageGenerationWorkbench({
     threadSignature,
   ]);
 
+  function getImageHistoryTime(task, thread) {
+    const rawValue =
+      task?.createdAt ||
+      task?.created_at ||
+      task?.updatedAt ||
+      task?.updated_at ||
+      thread?.createdAt ||
+      thread?.created_at;
+    return rawValue ? formatBeijingHistoryTime(rawValue) : task?.time || "";
+  }
+
   return (
     <div className="image-workbench-layout">
       <main className="image-workbench-main" aria-label="图片生成上下文工作台">
@@ -5398,6 +5416,7 @@ function ImageGenerationWorkbench({
           {historyThreads.length ? (
             historyThreads.map((thread) => {
               const task = thread.latestTask;
+              const displayTime = getImageHistoryTime(task, thread);
               const isSelected = thread.ids.includes(contextTask?.id);
               const isTaskProcessing =
                 task.status === "pending" || task.status === "processing";
@@ -5426,8 +5445,8 @@ function ImageGenerationWorkbench({
                         : isTaskFailed
                           ? "生成失败"
                           : thread.count > 1
-                            ? `${thread.count} 条上下文 · ${task.time || "已完成"}`
-                            : task.time || task.ratio || "已完成"}
+                            ? `${thread.count} 条上下文 · ${displayTime || "已完成"}`
+                            : displayTime || task.ratio || "已完成"}
                     </small>
                   </span>
                 </button>
@@ -8912,32 +8931,52 @@ function ChatComposerBar({
 }
 
 function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
-      <div className="history-rail-header">
-        <span>历史对话</span>
-        <strong>{conversations.length}</strong>
-      </div>
-      <div className="history-list chat-history-list">
-        {conversations.length === 0 ? (
-          <p className="chat-history-empty">暂无历史对话</p>
-        ) : (
-          conversations.map((conversation) => (
-            <button
-              className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-              key={conversation.id}
-              type="button"
-              onClick={() => onSelect(conversation.id)}
-            >
-              <span>{conversation.title}</span>
-              <small>
-                {conversation.model} · {conversation.time}
-              </small>
-            </button>
-          ))
-        )}
-      </div>
-    </aside>
+    <div className="chat-history-dropdown">
+      <button
+        className={`history-toggle chat-history-toggle ${isOpen ? "is-open" : ""}`}
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((value) => !value)}
+      >
+        <History size={16} />
+        <span>历史记录</span>
+        <b>{conversations.length}</b>
+        <ChevronDown size={16} />
+      </button>
+      {isOpen && (
+        <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
+          <div className="history-rail-header">
+            <span>历史对话</span>
+            <strong>{conversations.length}</strong>
+          </div>
+          <div className="history-list chat-history-list">
+            {conversations.length === 0 ? (
+              <p className="chat-history-empty">暂无历史对话</p>
+            ) : (
+              conversations.map((conversation) => (
+                <button
+                  className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
+                  key={conversation.id}
+                  type="button"
+                  title={conversation.title}
+                  onClick={() => onSelect(conversation.id)}
+                >
+                  <span>{conversation.title || "未命名对话"}</span>
+                  <small>
+                    {[conversation.model, conversation.time]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
+    </div>
   );
 }
 

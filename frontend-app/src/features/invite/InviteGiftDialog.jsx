@@ -81,13 +81,13 @@ function InviteZapIcon({ size = 16, height }) {
   );
 }
 
-function SparkleIcon({ style }) {
+function SparkleIcon({ width = 26, height = 25, style }) {
   return (
     <svg
       viewBox="-3.117 -2.927 25.974 24.395"
       preserveAspectRatio="none"
-      width="26"
-      height="25"
+      width={width}
+      height={height}
       xmlns="http://www.w3.org/2000/svg"
       style={{ overflowX: "visible", overflowY: "visible", ...style }}
       aria-hidden="true"
@@ -101,11 +101,32 @@ function SparkleIcon({ style }) {
   );
 }
 
+const RULE_ITEMS = [
+  "仅限已注册 Facemini 老用户参与活动，每位新注册用户仅能绑定一位邀请人。",
+  "好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。",
+  "积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。",
+  "严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。",
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "Q：积分多久到账？",
+    a: "A：好友完成注册并登录账号后，积分实时自动发放。",
+  },
+  {
+    q: "Q：积分能用来做什么？",
+    a: "A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。",
+  },
+  {
+    q: "Q：同一个好友可以多次领取奖励吗？",
+    a: "A：新用户仅首次注册可触发一次双向奖励。",
+  },
+];
+
 export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
   const [copied, setCopied] = useState(false);
   const [inviteProfile, setInviteProfile] = useState(null);
   const [inviteError, setInviteError] = useState("");
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const isGuest = !authUser || authUser.isGuest;
 
   useEffect(() => {
@@ -162,7 +183,6 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
     inviteProfile?.inviteLink ||
     buildClientInviteLink(inviteProfile?.inviteCode || authUser?.inviteCode);
   const canCopyInviteLink = !isGuest && Boolean(inviteLink);
-  const toggleInviteDetails = () => setDetailsOpen((value) => !value);
   const copyButtonLabel = isGuest
     ? "登录后生成专属邀请链接"
     : copied
@@ -207,6 +227,7 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
       }}
     >
       <div
+        className="invite-gift-panel"
         style={{
           alignItems: "center",
           backgroundColor: "#FFFFFF",
@@ -217,10 +238,11 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
           fontSize: "12px",
           fontSynthesis: "none",
           gap: "10px",
+          height: "835px",
           lineHeight: "16px",
-          MozOsxFontSmoothing: "grayscale",
           maxHeight: "calc(100vh - 48px)",
-          overflow: "auto",
+          MozOsxFontSmoothing: "grayscale",
+          overflow: "clip",
           WebkitFontSmoothing: "antialiased",
           width: "min(730px, 94vw)",
         }}
@@ -230,17 +252,14 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
             boxSizing: "border-box",
             flexShrink: 0,
             height: "220px",
-            overflow: "hidden",
             position: "relative",
             width: "100%",
-            borderRadius: "16px 16px 0 0",
           }}
         >
           <div
             style={{
               backgroundImage: `url(${INVITE_HERO_BG})`,
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              backgroundPosition: "50%",
               backgroundSize: "cover",
               boxSizing: "border-box",
               height: "220px",
@@ -309,7 +328,6 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
             flexDirection: "column",
             gap: 25,
             paddingInline: "20px",
-            paddingBottom: "20px",
           }}
         >
           <div
@@ -317,7 +335,7 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
               alignSelf: "stretch",
               backgroundColor: "#FFFFFF",
               borderRadius: "14px",
-              boxShadow: "4px 4px 8px #241E4A33",
+              boxShadow: "#241E4A33 4px 4px 8px",
               boxSizing: "border-box",
               paddingBlock: "18px",
               paddingInline: "28px",
@@ -413,7 +431,7 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                   display: "flex",
                   gap: "10px",
                   justifyContent: "center",
-                  minHeight: "55px",
+                  minHeight: "50px",
                 }}
               >
                 <svg
@@ -461,15 +479,15 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
               <div
                 style={{
                   boxSizing: "border-box",
-                  height: "94px",
+                  height: "89px",
                   position: "relative",
                   width: "161px",
                 }}
               >
-                <SparkleIcon style={{ left: -0.5, top: 45, position: "absolute" }} />
+                <SparkleIcon style={{ left: -0.5, top: 40, position: "absolute" }} />
                 <SparkleIcon style={{ left: 139.5, top: 15, position: "absolute", width: 22, height: 21 }} />
                 <SparkleIcon style={{ left: 23.5, top: 7, position: "absolute", width: 16, height: 15 }} />
-                <SparkleIcon style={{ left: 141.5, top: 63, position: "absolute", width: 12, height: 11 }} />
+                <SparkleIcon style={{ left: 141.5, top: 58, position: "absolute", width: 12, height: 11 }} />
                 <div
                   style={{
                     backgroundClip: "text",
@@ -482,7 +500,7 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                     fontFamily: '"ZonaPro-Bold", "Zona Pro", system-ui, sans-serif',
                     fontSize: "60px",
                     fontWeight: 700,
-                    height: "55px",
+                    height: "50px",
                     justifyContent: "center",
                     left: 23.5,
                     letterSpacing: "-0.05em",
@@ -508,7 +526,7 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                   display: "flex",
                   gap: "10px",
                   justifyContent: "center",
-                  minHeight: "55px",
+                  minHeight: "50px",
                 }}
               >
                 <div
@@ -671,55 +689,39 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
             </div>
           </div>
 
-          <div
-            style={{
-              alignItems: "start",
-              boxSizing: "border-box",
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 14,
-              width: "100%",
-            }}
-          >
+          <div style={{ alignItems: "start", boxSizing: "border-box", display: "flex", gap: 14 }}>
             <div
               style={{
                 alignItems: "end",
                 backgroundColor: "#FFFFFF",
                 borderRadius: "14px",
-                boxShadow: "4px 4px 8px #241E4A33",
+                boxShadow: "#241E4A33 4px 4px 8px",
                 boxSizing: "border-box",
                 display: "flex",
-                flex: "1 1 280px",
                 flexDirection: "column",
-                minWidth: 0,
+                flexShrink: 0,
                 paddingBlock: "16px",
                 paddingInline: "18px",
+                width: "338px",
               }}
             >
-              <button
-                type="button"
-                onClick={toggleInviteDetails}
-                aria-expanded={detailsOpen}
+              <div
                 style={{
                   alignItems: "center",
                   alignSelf: "stretch",
-                  background: "none",
-                  border: 0,
                   boxSizing: "border-box",
-                  cursor: "pointer",
                   display: "flex",
                   gap: "8px",
                   justifyContent: "space-between",
-                  padding: 0,
                 }}
               >
-                <span style={{ alignItems: "center", boxSizing: "border-box", display: "flex", gap: "8px" }}>
+                <div style={{ alignItems: "center", boxSizing: "border-box", display: "flex", gap: "8px" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" fill="none" stroke="#23212D" strokeWidth="2" />
                     <line x1="12" x2="12" y1="8" y2="12" stroke="#23212D" strokeWidth="2" />
                     <line x1="12" x2="12.01" y1="16" y2="16" stroke="#23212D" strokeWidth="2" />
                   </svg>
-                  <span
+                  <div
                     style={{
                       boxSizing: "border-box",
                       color: "#23212D",
@@ -730,77 +732,78 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                     }}
                   >
                     活动规则
-                  </span>
-                </span>
+                  </div>
+                </div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
-                  style={{
-                    flexShrink: 0,
-                    transform: detailsOpen ? "rotate(180deg)" : "none",
-                    transition: "transform 0.25s ease",
-                  }}
+                  style={{ flexShrink: 0, rotate: "180deg" }}
                 >
                   <path d="m6 9 6 6 6-6" fill="none" stroke="#23212D" strokeWidth="2" />
                 </svg>
-              </button>
-              {detailsOpen ? (
-                <div
-                  style={{
-                    alignItems: "end",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "column",
-                    marginTop: "12px",
-                    width: "100%",
-                  }}
-                >
-                  <div style={{ alignItems: "start", alignSelf: "stretch", boxSizing: "border-box", display: "flex", gap: "10px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", flexShrink: 0, gap: "25px", width: "11px" }}>
-                      {[1, 2, 3, 4].map((n) => (
-                        <div
-                          key={n}
-                          style={{
-                            boxSizing: "border-box",
-                            color: "#555365",
-                            fontFamily: fontRegular,
-                            fontSize: "14px",
-                            letterSpacing: "-0.05em",
-                            lineHeight: "175%",
-                          }}
-                        >
-                          {n}.
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: 0 }}>
-                      {[
-                        "仅限已注册 Facemini 老用户参与活动，每位新注册用户仅能绑定一位邀请人。",
-                        "好友通过你的专属链接访问并完成完整注册登录后，积分自动发放到双方账户。",
-                        "积分无使用有效期，可自由抵扣平台内容页创作功能消耗额度。",
-                        "严禁批量注册、刷量、作弊套取积分，平台有权回收违规积分。",
-                      ].map((text) => (
-                        <div
-                          key={text}
-                          style={{
-                            boxSizing: "border-box",
-                            color: "#555365",
-                            fontFamily: fontRegular,
-                            fontSize: "14px",
-                            letterSpacing: "-0.05em",
-                            lineHeight: "175%",
-                          }}
-                        >
-                          {text}
-                        </div>
-                      ))}
-                    </div>
+              </div>
+              <div
+                style={{
+                  alignItems: "end",
+                  boxSizing: "border-box",
+                  display: "flex",
+                  flexDirection: "column",
+                  marginTop: "12px",
+                  width: "fit-content",
+                }}
+              >
+                <div style={{ alignItems: "start", alignSelf: "stretch", boxSizing: "border-box", display: "flex", gap: "10px" }}>
+                  <div
+                    style={{
+                      alignItems: "start",
+                      boxSizing: "border-box",
+                      display: "flex",
+                      flexDirection: "column",
+                      flexShrink: 0,
+                      gap: "25px",
+                      width: "11px",
+                    }}
+                  >
+                    {RULE_ITEMS.map((_, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          alignSelf: "stretch",
+                          boxSizing: "border-box",
+                          color: "#555365",
+                          fontFamily: fontRegular,
+                          fontSize: "14px",
+                          letterSpacing: "-0.05em",
+                          lineHeight: "175%",
+                        }}
+                      >
+                        {index + 1}.
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ alignItems: "start", boxSizing: "border-box", display: "flex", flex: 1, flexDirection: "column" }}>
+                    {RULE_ITEMS.map((text) => (
+                      <div
+                        key={text}
+                        style={{
+                          alignSelf: "stretch",
+                          boxSizing: "border-box",
+                          color: "#555365",
+                          fontFamily: fontRegular,
+                          fontSize: "14px",
+                          letterSpacing: "-0.05em",
+                          lineHeight: "175%",
+                        }}
+                      >
+                        {text}
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ) : null}
+              </div>
             </div>
 
             <div
@@ -808,41 +811,34 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                 alignItems: "start",
                 backgroundColor: "#FFFFFF",
                 borderRadius: "14px",
-                boxShadow: "4px 4px 8px #241E4A33",
+                boxShadow: "#241E4A33 4px 4px 8px",
                 boxSizing: "border-box",
                 display: "flex",
-                flex: "1 1 280px",
                 flexDirection: "column",
+                flexShrink: 0,
                 gap: 12,
-                minWidth: 0,
                 paddingBlock: "16px",
                 paddingInline: "18px",
+                width: "338px",
               }}
             >
-              <button
-                type="button"
-                onClick={toggleInviteDetails}
-                aria-expanded={detailsOpen}
+              <div
                 style={{
                   alignItems: "center",
                   alignSelf: "stretch",
-                  background: "none",
-                  border: 0,
                   boxSizing: "border-box",
-                  cursor: "pointer",
                   display: "flex",
                   gap: "8px",
                   justifyContent: "space-between",
-                  padding: 0,
                 }}
               >
-                <span style={{ alignItems: "center", boxSizing: "border-box", display: "flex", gap: "8px" }}>
+                <div style={{ alignItems: "center", boxSizing: "border-box", display: "flex", gap: "8px" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                     <circle cx="12" cy="12" r="10" fill="none" stroke="#23212D" strokeWidth="2" />
                     <line x1="12" x2="12" y1="8" y2="12" stroke="#23212D" strokeWidth="2" />
                     <line x1="12" x2="12.01" y1="16" y2="16" stroke="#23212D" strokeWidth="2" />
                   </svg>
-                  <span
+                  <div
                     style={{
                       boxSizing: "border-box",
                       color: "#23212D",
@@ -853,89 +849,71 @@ export function InviteGiftDialog({ authUser, onClose, onOpenAuth }) {
                     }}
                   >
                     FAQ 常见问题
-                  </span>
-                </span>
+                  </div>
+                </div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="18"
                   height="18"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
-                  style={{
-                    flexShrink: 0,
-                    transform: detailsOpen ? "rotate(180deg)" : "none",
-                    transition: "transform 0.25s ease",
-                  }}
+                  style={{ flexShrink: 0, rotate: "180deg" }}
                 >
                   <path d="m6 9 6 6 6-6" fill="none" stroke="#23212D" strokeWidth="2" />
                 </svg>
-              </button>
-              {detailsOpen ? (
-                <div
-                  style={{
-                    alignItems: "start",
-                    alignSelf: "stretch",
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "14px",
-                    overflow: "clip",
-                  }}
-                >
-                  {[
-                    {
-                      q: "Q：积分多久到账？",
-                      a: "A：好友完成注册并登录账号后，积分实时自动发放。",
-                    },
-                    {
-                      q: "Q：积分能用来做什么？",
-                      a: "A：可抵扣图片生成、视频生成、数字人制作、爆款图文创作等功能额度。",
-                    },
-                    {
-                      q: "Q：同一个好友可以多次领取奖励吗？",
-                      a: "A：新用户仅首次注册可触发一次双向奖励。",
-                    },
-                  ].map((item) => (
+              </div>
+              <div
+                style={{
+                  alignItems: "start",
+                  alignSelf: "stretch",
+                  boxSizing: "border-box",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "14px",
+                  overflow: "clip",
+                }}
+              >
+                {FAQ_ITEMS.map((item) => (
+                  <div
+                    key={item.q}
+                    style={{
+                      alignItems: "start",
+                      alignSelf: "stretch",
+                      boxSizing: "border-box",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                    }}
+                  >
                     <div
-                      key={item.q}
                       style={{
-                        alignItems: "start",
-                        alignSelf: "stretch",
                         boxSizing: "border-box",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "4px",
+                        color: "#555365",
+                        fontFamily: fontBold,
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        letterSpacing: "-0.05em",
+                        lineHeight: "175%",
                       }}
                     >
-                      <div
-                        style={{
-                          boxSizing: "border-box",
-                          color: "#555365",
-                          fontFamily: fontBold,
-                          fontSize: "14px",
-                          fontWeight: 700,
-                          letterSpacing: "-0.05em",
-                          lineHeight: "175%",
-                        }}
-                      >
-                        {item.q}
-                      </div>
-                      <div
-                        style={{
-                          boxSizing: "border-box",
-                          color: "#555365",
-                          fontFamily: fontRegular,
-                          fontSize: "14px",
-                          letterSpacing: "-0.05em",
-                          lineHeight: "120%",
-                        }}
-                      >
-                        {item.a}
-                      </div>
+                      {item.q}
                     </div>
-                  ))}
-                </div>
-              ) : null}
+                    <div
+                      style={{
+                        alignSelf: "stretch",
+                        boxSizing: "border-box",
+                        color: "#555365",
+                        fontFamily: fontRegular,
+                        fontSize: "14px",
+                        letterSpacing: "-0.05em",
+                        lineHeight: "120%",
+                      }}
+                    >
+                      {item.a}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

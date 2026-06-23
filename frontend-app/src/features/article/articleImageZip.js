@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { resolveMediaUrl } from "../../api/mediaUrl.js";
 
 function extFromUrl(url, fallback = "png") {
   try {
@@ -9,19 +10,6 @@ function extFromUrl(url, fallback = "png") {
     return fallback;
   }
   return fallback;
-}
-
-function resolveFetchUrl(url) {
-  const value = String(url || "").trim();
-  if (!value) return "";
-  if (value.startsWith("/")) return value;
-  try {
-    const parsed = new URL(value);
-    if (parsed.origin === window.location.origin) return value;
-    return `/api/media/proxy?url=${encodeURIComponent(value)}`;
-  } catch {
-    return value;
-  }
 }
 
 export function sanitizeArticleZipName(value) {
@@ -41,7 +29,7 @@ export async function buildArticleImagesZipBlob(images) {
 
   const zip = new JSZip();
   for (let index = 0; index < items.length; index += 1) {
-    const fetchUrl = resolveFetchUrl(items[index]);
+    const fetchUrl = resolveMediaUrl(items[index]);
     const response = await fetch(fetchUrl, { credentials: "include" });
     if (!response.ok) {
       throw new Error(`下载第 ${index + 1} 张图片失败`);

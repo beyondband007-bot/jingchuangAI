@@ -18,6 +18,7 @@ import {
   VolumeX
 } from "lucide-react";
 import { formatBeijingStamp } from "../../utils/time";
+import { downloadMediaFile, resolveMediaUrl } from "../../api/mediaUrl.js";
 import {
   formatAudioTime,
   getActiveLyricIndex,
@@ -60,17 +61,7 @@ function generateCoverGradient(seed) {
 }
 
 async function downloadAudioUrl(audioUrl, fileName) {
-  const response = await fetch(audioUrl);
-  if (!response.ok) throw new Error("音乐下载失败");
-  const blob = await response.blob();
-  const href = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = href;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(href);
+  await downloadMediaFile(audioUrl, fileName);
 }
 
 function LyricLine({ line, isActive, progress, isNear }) {
@@ -307,6 +298,12 @@ export function MusicFullPagePlayer({
   const [showPlayModeMenu, setShowPlayModeMenu] = useState(false);
   const [showVolume, setShowVolume] = useState(false);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
+  const [audioState, setAudioState] = useState("idle");
+
+  const playbackUrl = useMemo(
+    () => resolveMediaUrl(item?.audioUrl),
+    [item?.audioUrl],
+  );
 
   const timeline = Array.isArray(item?.lyricsTimeline) ? item.lyricsTimeline : [];
   const currentMs = currentTime * 1000;
@@ -314,6 +311,11 @@ export function MusicFullPagePlayer({
   const isLyricsSyncing = item?.lyricsSyncStatus === "processing";
   const title = getLyricSubtitle(item);
   const isInstrumentalMode = Boolean(item?.isInstrumental);
+  const canPlayAudio = Boolean(playbackUrl) && audioState !== "error";
+  const isAudioLoading = Boolean(playbackUrl) && audioState === "idle";
+  const displayDuration = audioState === "ready" && duration > 0
+    ? duration
+    : (item?.durationMs ? item.durationMs / 1000 : 0);
 
   const playableItems = useMemo(
     () => items.filter((entry) => entry.audioUrl && entry.status !== "failed"),
@@ -322,23 +324,24 @@ export function MusicFullPagePlayer({
   const activeIndex = playableItems.findIndex((entry) => entry.id === item?.id);
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !item?.audioUrl) return;
-    audio.load();
+    setAudioState("idle");
     setCurrentTime(0);
     setDuration(0);
-    audio.playbackRate = speed;
-    audio.volume = isMuted ? 0 : volume;
-    if (isPlaying) {
-      audio.play().catch(() => setIsPlaying(false));
-    }
-  }, [item?.id, item?.audioUrl]);
+    setIsPlaying(autoPlay);
+  }, [item?.id, item?.audioUrl, autoPlay]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !playbackUrl) return;
+    audio.load();
+  }, [playbackUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    audio.playbackRate = speed;
     audio.volume = isMuted ? 0 : volume;
-  }, [volume, isMuted]);
+  }, [speed, volume, isMuted]);
 
   useEffect(() => {
     if (!showVolume) return undefined;
@@ -427,15 +430,33 @@ export function MusicFullPagePlayer({
 
   function togglePlay() {
     const audio = audioRef.current;
-    if (!audio || !item?.audioUrl) return;
+    if (!audio || !playbackUrl || audioState === "error") return;
     if (isPlaying) {
-      audio.pause();
+      if (audioState === "ready") audio.pause();
       setIsPlaying(false);
       return;
     }
-    audio.playbackRate = speed;
-    audio.play().catch(() => setIsPlaying(false));
     setIsPlaying(true);
+    if (audioState === "ready") {
+      audio.playbackRate = speed;
+      audio.play().catch(() => setIsPlaying(false));
+    }
+  }
+
+  function handleAudioReady(event) {
+    setAudioState("ready");
+    setDuration(event.currentTarget.duration || 0);
+    setCurrentTime(event.currentTarget.currentTime || 0);
+    if (isPlaying) {
+      event.currentTarget.play().catch(() => setIsPlaying(false));
+    }
+  }
+
+  function handleAudioError() {
+    setAudioState("error");
+    setIsPlaying(false);
+    setDuration(0);
+    setCurrentTime(0);
   }
 
   function seekTo(ratio) {
@@ -460,12 +481,11 @@ export function MusicFullPagePlayer({
     <div className={`music-full-player${isInstrumentalMode ? " music-full-player--instrumental" : ""}`}>
       <audio
         ref={audioRef}
-        src={item.audioUrl || undefined}
+        src={playbackUrl || undefined}
         preload="metadata"
-        onLoadedMetadata={(event) => {
-          setDuration(event.currentTarget.duration || 0);
-          setCurrentTime(event.currentTarget.currentTime || 0);
-        }}
+        onLoadedMetadata={handleAudioReady}
+        onCanPlay={handleAudioReady}
+        onError={handleAudioError}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
         onEnded={handleTrackEnded}
         onPlay={() => setIsPlaying(true)}
@@ -525,8 +545,14 @@ export function MusicFullPagePlayer({
           >
             <div className="music-mini-progress-fill" style={{ width: `${progressPercent}%` }} />
           </div>
-          <span>{formatAudioTime(duration || item.durationMs / 1000)}</span>
+          <span>{formatAudioTime(displayDuration)}</span>
         </div>
+
+        {audioState === "error" ? (
+          <p className="music-full-player__audio-error" role="alert">
+            音频加载失败，请重新生成或稍后再试
+          </p>
+        ) : null}
 
         <div className="music-full-player__controls">
           <div className="music-full-player__now-playing">
@@ -569,10 +595,12 @@ export function MusicFullPagePlayer({
               type="button"
               className="music-mini-btn is-primary is-large"
               onClick={togglePlay}
-              disabled={!item.audioUrl}
+              disabled={!canPlayAudio}
               aria-label={isPlaying ? "暂停" : "播放"}
             >
-              {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+              {isAudioLoading ? <Loader2 size={24} className="music-lyrics-sync-spinner" /> : null}
+              {!isAudioLoading && isPlaying ? <Pause size={24} fill="currentColor" /> : null}
+              {!isAudioLoading && !isPlaying ? <Play size={24} fill="currentColor" /> : null}
             </button>
             <button
               type="button"
