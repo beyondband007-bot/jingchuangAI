@@ -5696,6 +5696,52 @@ a:hover {
   padding: 10px 0 42px;
 }
 
+.video-inspiration-category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 4px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+  scrollbar-width: none;
+}
+
+.video-inspiration-category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.video-inspiration-category-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 16px;
+  color: #777387;
+  background: #fff;
+  border: 1px solid #e2dfed;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.video-inspiration-category-tabs button:hover,
+.video-inspiration-category-tabs button:focus-visible {
+  color: var(--fm-brand);
+  border-color: #cfc6ff;
+  outline: none;
+}
+
+.video-inspiration-category-tabs button.is-active {
+  color: #fff;
+  background: var(--fm-brand);
+  border-color: var(--fm-brand);
+  box-shadow: 0 10px 22px rgba(107, 53, 255, 0.18);
+}
+
 .video-inspiration-card {
   display: grid;
   width: 100%;

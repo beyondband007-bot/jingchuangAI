@@ -6012,7 +6012,57 @@ const emptyVideoOptions = {
   modes: [],
 };
 
-const videoInspirationItems = [
+const videoInspirationCategoryTabs = [
+  { id: "all", label: "全部" },
+  { id: "tvc", label: "TVC 广告", folder: "TVC-gg" },
+  { id: "live-commerce", label: "AI 真人带货", folder: "AI-zrdh" },
+  { id: "live-drama", label: "AI 真人短剧", folder: "AI-zrdj" },
+  { id: "comic-drama", label: "AI 漫剧", folder: "AI-mj" },
+  { id: "creative", label: "AI 创作视频", folder: "AI-czsp" },
+  { id: "promo", label: "宣传类视频", folder: "XCL-sp" },
+];
+
+const videoInspirationFolderSlugs = {
+  "TVC-gg": [
+    "axiom-visual-concept-ad",
+    "camera",
+    "car-ad",
+    "car-visual-concept-ad",
+    "chagee-visual-concept-ad",
+    "massage-device",
+    "medical-ultrasound-device-1",
+    "smartphone-4",
+  ],
+  "AI-zrdh": ["cola", "golden-pomelo-1", "golden-pomelo-2"],
+  "AI-zrdj": [
+    "boxing-king-returns",
+    "costume-drama",
+    "fallen-god",
+    "former-king",
+    "tenth-freezer",
+  ],
+  "AI-mj": [
+    "ai-3d-animation",
+    "ai-3d-bleach-vs-naruto",
+    "isekai-demon-king",
+    "tianmen-weihe",
+    "yongyeti",
+  ],
+  "AI-czsp": [
+    "3a-game-style-remake-1",
+    "3a-game-style-remake-2",
+    "live-action-yuelin-qiji-remake",
+    "mecha-transformation-1",
+    "mecha-transformation-2",
+    "mecha-transformation-3",
+    "mecha-transformation-4",
+    "yuelin-qiji-3d-remake",
+    "zhang-xue-motorcycle-remake",
+  ],
+  "XCL-sp": ["wuhan-cherry-blossom-season"],
+};
+
+const videoInspirationMetadata = [
   [
     "3a-game-style-remake-1",
     "3A 游戏风格重制",
@@ -6168,19 +6218,39 @@ const videoInspirationItems = [
     "摩托车重制",
     "人物骑摩托车穿越雨夜街道，车灯划破水雾，镜头贴地跟拍，速度与孤独感并存。",
   ],
-].map(([slug, title, prompt]) => ({
-  id: `video-inspiration-${slug}`,
-  slug,
-  title,
-  prompt,
-  model: "Seedance 2.0",
-  feature: "文生视频",
-  ratio: "16:9",
-  duration: 5,
-  video: `/assets/videoInspiration/${slug}.webm?v=20260613`,
-  preview: `/assets/videoInspiration/previews/${slug}-preview.webm?v=20260613`,
-  poster: `/assets/videoInspiration/posters/${slug}.jpg?v=20260613`,
-}));
+];
+
+const videoInspirationMetadataMap = new Map(
+  videoInspirationMetadata.map(([slug, title, prompt]) => [
+    slug,
+    { title, prompt },
+  ]),
+);
+
+const videoInspirationItems = videoInspirationCategoryTabs
+  .filter((category) => category.id !== "all")
+  .flatMap((category) =>
+    (videoInspirationFolderSlugs[category.folder] || []).map((slug) => {
+      const metadata = videoInspirationMetadataMap.get(slug) || {};
+      const title = metadata.title || slug;
+      return {
+        id: `video-inspiration-${category.id}-${slug}`,
+        slug,
+        title,
+        prompt: metadata.prompt || title,
+        model: "Seedance 2.0",
+        feature: category.label,
+        categoryId: category.id,
+        category: category.label,
+        folder: category.folder,
+        ratio: "16:9",
+        duration: 5,
+        video: `/assets/videoInspiration/${category.folder}/${slug}.webm?v=20260623`,
+        preview: `/assets/videoInspiration/previews/${slug}-preview.webm?v=20260613`,
+        poster: `/assets/videoInspiration/posters/${slug}.jpg?v=20260613`,
+      };
+    }),
+  );
 
 function getVideoModelOptions(options, modelKey) {
   const selectedModel =
@@ -6630,6 +6700,8 @@ function VideoGenerationView({
   const [submitError, setSubmitError] = useState("");
   const [pageToastMessage, setPageToastMessage] = useState("");
   const [selectedInspiration, setSelectedInspiration] = useState(null);
+  const [videoInspirationCategory, setVideoInspirationCategory] =
+    useState("all");
   const [composerSeed, setComposerSeed] = useState(null);
   const [isComposerPastThreshold, setIsComposerPastThreshold] = useState(
     () => window.scrollY > 240,
@@ -6818,6 +6890,15 @@ function VideoGenerationView({
   }
 
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
+  const filteredVideoInspirationItems = useMemo(
+    () =>
+      videoInspirationCategory === "all"
+        ? videoInspirationItems
+        : videoInspirationItems.filter(
+            (item) => item.categoryId === videoInspirationCategory,
+          ),
+    [videoInspirationCategory],
+  );
   const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
   const showVideoComposer = options.models.length > 0 && filter === "inspiration";
@@ -6849,6 +6930,11 @@ function VideoGenerationView({
     setIsComposerFocused(false);
     setIsComposerPastThreshold(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function selectVideoInspirationCategory(categoryId) {
+    setVideoInspirationCategory(categoryId);
+    setSelectedInspiration(null);
   }
 
   function useVideoInspiration(item) {
@@ -6935,15 +7021,31 @@ function VideoGenerationView({
         </>
       )}
       {filter === "inspiration" && canRenderVideoInspirationGrid ? (
-        <WaterfallGrid
-          className="video-inspiration-grid"
-          gap={12}
-          maxColumns={4}
-          items={videoInspirationItems}
-          renderItem={(item) => (
-            <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
-          )}
-        />
+        <>
+          <div className="video-inspiration-category-tabs" aria-label="视频分类">
+            {videoInspirationCategoryTabs.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={
+                  videoInspirationCategory === category.id ? "is-active" : ""
+                }
+                onClick={() => selectVideoInspirationCategory(category.id)}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
+          <WaterfallGrid
+            className="video-inspiration-grid"
+            gap={12}
+            maxColumns={4}
+            items={filteredVideoInspirationItems}
+            renderItem={(item) => (
+              <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
+            )}
+          />
+        </>
       ) : filter !== "inspiration" ? (
         <div className="results-feed video-results-feed">
           {isSubmitting && filter === "recent" && (
