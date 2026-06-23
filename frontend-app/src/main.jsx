@@ -332,6 +332,80 @@ function getInspirationAspectBucket(aspect) {
   return "portrait";
 }
 
+function useIncrementalItems(
+  items,
+  resetKey,
+  { batchSize = 30, enabled = true, delay = 720 } = {},
+) {
+  const [visibleCount, setVisibleCount] = useState(batchSize);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const isLoadingMoreRef = useRef(false);
+  const loadMoreTimerRef = useRef(0);
+  const total = items.length;
+  const hasMore = enabled && visibleCount < total;
+
+  useEffect(() => {
+    if (loadMoreTimerRef.current) {
+      window.clearTimeout(loadMoreTimerRef.current);
+      loadMoreTimerRef.current = 0;
+    }
+    isLoadingMoreRef.current = false;
+    setVisibleCount(batchSize);
+    setIsLoadingMore(false);
+  }, [batchSize, resetKey]);
+
+  useEffect(() => {
+    if (!enabled || !hasMore) return undefined;
+
+    let frameId = 0;
+    function loadMoreIfNeeded() {
+      if (!hasMore || isLoadingMoreRef.current) return;
+      const scrollPosition = window.innerHeight + window.scrollY;
+      const triggerPosition = document.documentElement.scrollHeight - 420;
+      if (scrollPosition >= triggerPosition) {
+        isLoadingMoreRef.current = true;
+        setIsLoadingMore(true);
+        loadMoreTimerRef.current = window.setTimeout(() => {
+          setVisibleCount((count) => Math.min(total, count + batchSize));
+          isLoadingMoreRef.current = false;
+          setIsLoadingMore(false);
+          loadMoreTimerRef.current = 0;
+        }, delay);
+      }
+    }
+
+    function scheduleCheck() {
+      window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(loadMoreIfNeeded);
+    }
+
+    scheduleCheck();
+    window.addEventListener("scroll", scheduleCheck, { passive: true });
+    window.addEventListener("resize", scheduleCheck);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", scheduleCheck);
+      window.removeEventListener("resize", scheduleCheck);
+    };
+  }, [batchSize, delay, enabled, hasMore, total]);
+
+  return {
+    items: enabled ? items.slice(0, visibleCount) : items,
+    isLoadingMore,
+    hasMore,
+  };
+}
+
+function IncrementalLoadMoreIndicator({ active }) {
+  if (!active) return null;
+  return (
+    <div className="incremental-load-more" role="status" aria-live="polite">
+      <Loader2 size={18} className="is-spinning" />
+      <span>加载中...</span>
+    </div>
+  );
+}
+
 function arrangeInspirationCards(cards, columnCount = 6) {
   const buckets = cards.reduce(
     (next, card) => {
@@ -369,7 +443,7 @@ function arrangeInspirationCards(cards, columnCount = 6) {
   });
 
   const columns = columnLengths.map((length, columnIndex) => {
-    const wideCount = wideTargets[columnIndex];
+    const wideCount = Math.min(wideTargets[columnIndex], buckets.wide.length);
     const nonWideCount = length - wideCount;
     const wideCards = buckets.wide.splice(0, wideCount);
     const nonWide = nonWideCards.splice(0, nonWideCount);
@@ -400,6 +474,16 @@ function arrangeInspirationCards(cards, columnCount = 6) {
     });
   }
 
+  return arranged;
+}
+
+function arrangeInspirationCardsByBatch(cards, columnCount = 6, batchSize = 30) {
+  const arranged = [];
+  for (let index = 0; index < cards.length; index += batchSize) {
+    arranged.push(
+      ...arrangeInspirationCards(cards.slice(index, index + batchSize), columnCount),
+    );
+  }
   return arranged;
 }
 
@@ -454,6 +538,7 @@ const fmImageGenerationInspirations = exampleImages.map((item, index) => ({
   source: item.hdSrc || item.src,
   fallbackSource: item.hdFallbackSrc || item.hdSrc || item.src,
   ratio: item.ratio,
+  aspect: item.aspect,
   model: item.model || "图片生成",
   material: "高清原图",
 }));
@@ -917,6 +1002,10 @@ const fmImageInspirations = [
   ),
   dimensions: fmImageDimensions[id],
   ratio: formatFaceminiImageRatio(id),
+  aspect:
+    fmImageDimensions[id]?.[0] && fmImageDimensions[id]?.[1]
+      ? fmImageDimensions[id][0] / fmImageDimensions[id][1]
+      : "portrait",
 }));
 
 const fmDigitalHumanInspirations = [
@@ -947,6 +1036,7 @@ const fmDigitalHumanInspirations = [
     ratio: "3s",
     model: "kling-ai-avatar-pro",
     material: "视频封面",
+    aspect: "wide",
   };
 });
 
@@ -1101,6 +1191,7 @@ function getFaceminiVideoInspirations() {
     source: item.video,
     videoSrc: item.video,
     material: "视频素材",
+    aspect: "wide",
   }));
 }
 
@@ -2215,6 +2306,14 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
       : activeTab === "数字人形象"
         ? fmDigitalHumanInspirations
       : fmImageInspirations.filter((item) => item.category === activeTab);
+  const visibleFilteredImages = useIncrementalItems(
+    filteredImages,
+    `creation-${activeTab}-${filteredImages.length}`,
+  );
+  const arrangedVisibleFilteredImages = useMemo(
+    () => arrangeInspirationCardsByBatch(visibleFilteredImages.items, 5),
+    [visibleFilteredImages.items],
+  );
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
   const advanceHeroBanner = useCallback(() => {
@@ -2388,9 +2487,14 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
             ))}
           </div>
         </div>
-        <div className="fm-masonry">
-          {filteredImages.map((item) => (
-            <div className="fm-image-card" key={item.id}>
+        <WaterfallGrid
+          className="fm-masonry"
+          gap={12}
+          maxColumns={5}
+          minColumnWidth={172}
+          items={arrangedVisibleFilteredImages}
+          renderItem={(item) => (
+            <div className="fm-image-card">
               <button
                 className="fm-image-card-hit"
                 type="button"
@@ -2428,8 +2532,11 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
                 生成同款
               </button>
             </div>
-          ))}
-        </div>
+          )}
+        />
+        <IncrementalLoadMoreIndicator
+          active={visibleFilteredImages.isLoadingMore && visibleFilteredImages.hasMore}
+        />
       </section>
       <FaceminiInspirationModal
         item={modalItem}
@@ -5474,9 +5581,14 @@ function ImageGenerationView({
       })),
     [filteredExampleImages],
   );
+  const visibleImageExampleCards = useIncrementalItems(
+    imageExampleCards,
+    `image-${imageInspirationCategory}-${imageExampleCards.length}`,
+    { enabled: filter === "inspiration" },
+  );
   const arrangedImageExampleCards = useMemo(
-    () => arrangeInspirationCards(imageExampleCards, 6),
-    [imageExampleCards],
+    () => arrangeInspirationCardsByBatch(visibleImageExampleCards.items, 6),
+    [visibleImageExampleCards.items],
   );
   const galleryItems = useMemo(() => {
     if (filter === "inspiration") {
@@ -6019,25 +6131,34 @@ function ImageGenerationView({
           onRegenerate={regenerateTask}
         />
       ) : canRenderImageGallery && galleryItems.length ? (
-        <WaterfallGrid
-          className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
-          gap={6}
-          maxColumns={6}
-          reductionThreshold={4}
-          items={galleryItems}
-          renderItem={({ card, isExample }) => (
-            <ResultCard
-              card={card}
-              isExample={isExample}
-              isImageGallery
-              isSelected={!isExample && selectedTaskId === card.id}
-              onPreview={(task) => setPreviewTask(task)}
-              onDelete={isExample ? () => {} : deleteTask}
-              onFavorite={isExample ? () => {} : toggleFavorite}
-              onRegenerate={isExample ? () => {} : regenerateTask}
-            />
-          )}
-        />
+        <>
+          <WaterfallGrid
+            className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
+            gap={6}
+            maxColumns={6}
+            reductionThreshold={4}
+            items={galleryItems}
+            renderItem={({ card, isExample }) => (
+              <ResultCard
+                card={card}
+                isExample={isExample}
+                isImageGallery
+                isSelected={!isExample && selectedTaskId === card.id}
+                onPreview={(task) => setPreviewTask(task)}
+                onDelete={isExample ? () => {} : deleteTask}
+                onFavorite={isExample ? () => {} : toggleFavorite}
+                onRegenerate={isExample ? () => {} : regenerateTask}
+              />
+            )}
+          />
+          <IncrementalLoadMoreIndicator
+            active={
+              filter === "inspiration" &&
+              visibleImageExampleCards.isLoadingMore &&
+              visibleImageExampleCards.hasMore
+            }
+          />
+        </>
       ) : canRenderImageGallery && !hasActiveGeneration ? (
         <div className="results-feed video-results-feed image-results-feed-empty">
           <div className="empty-results video-empty-results">暂无图片结果</div>
@@ -6950,6 +7071,11 @@ function VideoGenerationView({
           ),
     [videoInspirationCategory],
   );
+  const visibleVideoInspirationItems = useIncrementalItems(
+    filteredVideoInspirationItems,
+    `video-${videoInspirationCategory}-${filteredVideoInspirationItems.length}`,
+    { enabled: filter === "inspiration" },
+  );
   const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
   const showVideoComposer = options.models.length > 0 && filter === "inspiration";
@@ -7091,10 +7217,16 @@ function VideoGenerationView({
             className="video-inspiration-grid"
             gap={12}
             maxColumns={4}
-            items={filteredVideoInspirationItems}
+            items={visibleVideoInspirationItems.items}
             renderItem={(item) => (
               <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
             )}
+          />
+          <IncrementalLoadMoreIndicator
+            active={
+              visibleVideoInspirationItems.isLoadingMore &&
+              visibleVideoInspirationItems.hasMore
+            }
           />
         </>
       ) : filter !== "inspiration" ? (

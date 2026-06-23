@@ -5696,6 +5696,22 @@ a:hover {
   padding: 10px 0 42px;
 }
 
+.incremental-load-more {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 0;
+  color: var(--fm-brand);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.incremental-load-more svg {
+  color: currentColor;
+}
+
 .video-inspiration-category-tabs,
 .image-inspiration-category-tabs {
   display: flex;
@@ -21322,6 +21338,10 @@ body {
   border-radius: 8px;
   background: #eee;
   break-inside: avoid;
+}
+
+.fm-masonry.waterfall-grid .fm-image-card {
+  margin-bottom: 0;
 }
 
 .fm-image-card-hit {
