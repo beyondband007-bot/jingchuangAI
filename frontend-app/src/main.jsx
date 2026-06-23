@@ -93,7 +93,7 @@ import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
-import imageInspirationPrompts from "./data/imageInspirationPrompts.json";
+import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
 import "./styles.css";
 
@@ -321,10 +321,21 @@ function takeFirstAvailable(buckets, preferredTypes) {
   return null;
 }
 
+function getInspirationAspectBucket(aspect) {
+  if (aspect === "wide" || aspect === "square" || aspect === "portrait") {
+    return aspect;
+  }
+  if (typeof aspect === "number" && Number.isFinite(aspect)) {
+    if (aspect >= 1.18) return "wide";
+    if (aspect >= 0.86) return "square";
+  }
+  return "portrait";
+}
+
 function arrangeInspirationCards(cards, columnCount = 6) {
   const buckets = cards.reduce(
     (next, card) => {
-      next[card.aspect || "portrait"].push(card);
+      next[getInspirationAspectBucket(card.aspect)].push(card);
       return next;
     },
     { portrait: [], square: [], wide: [] },
@@ -392,28 +403,40 @@ function arrangeInspirationCards(cards, columnCount = 6) {
   return arranged;
 }
 
-const exampleImages = caseImageFiles.map((file, index) => {
-  const metadata = imageInspirationPrompts[file] || {};
-  const baseName = file.replace(/\.[^.]+$/, "");
-  return {
-    file,
-    src: `/refactor/cases/${encodeURIComponent(`${baseName}-thumb.webp`)}`,
-    fallbackSrc: `/refactor/cases/${encodeURIComponent(`${baseName}-thumb.jpg`)}`,
-    hdSrc: `/refactor/cases/${encodeURIComponent(file)}`,
-    hdFallbackSrc: `/refactor/cases/${encodeURIComponent(`${baseName}.jpg`)}`,
-    label: `案例 ${String(index + 1).padStart(2, "0")}`,
-    prompt: metadata.prompt || `案例 ${String(index + 1).padStart(2, "0")}`,
-    description: metadata.description || "",
-    style: metadata.style || "",
-    mood: metadata.mood || "",
-    tags: metadata.tags || [],
-    model: "图片生成",
-    ratio: metadata.ratio || "案例图",
-    quality: "精选",
-    price: "参考",
-    aspect: getInspirationAspect(file),
-  };
-});
+const imageInspirationCategoryTabs = [
+  { id: "all", label: "全部" },
+  { id: "baokuan", label: "爆款模板" },
+  { id: "sheying", label: "摄影写真" },
+  { id: "dianshang", label: "电商营销" },
+  { id: "dongman", label: "动漫游戏" },
+  { id: "chahua", label: "风格插画" },
+];
+
+const exampleImages = imgInspirationManifest.map((item, index) => ({
+  file: `${item.baseName}.webp`,
+  categoryId: item.categoryId,
+  categoryLabel: item.categoryLabel,
+  src: item.thumbnailWebp || item.thumbnailJpg,
+  fallbackSrc: item.thumbnailJpg || item.thumbnailWebp,
+  hdSrc: item.imageWebp || item.imageJpg,
+  hdFallbackSrc: item.imageJpg || item.imageWebp,
+  label:
+    item.title ||
+    `${item.categoryLabel} ${String(index + 1).padStart(2, "0")}`,
+  prompt: item.prompt || item.title || `${item.categoryLabel}灵感图`,
+  description: item.description || "",
+  style: item.categoryLabel || "",
+  mood: "",
+  tags: [item.categoryLabel].filter(Boolean),
+  model: "图片生成",
+  ratio: item.ratio || "高清原图",
+  quality: "精选",
+  price: "参考",
+  aspect:
+    item.width && item.height
+      ? item.width / item.height
+      : getInspirationAspect(`${item.baseName}.webp`),
+}));
 
 function summarizeInspirationTitle(text, fallback = "AI 图片案例") {
   const normalized = String(text || "").trim();
@@ -422,9 +445,9 @@ function summarizeInspirationTitle(text, fallback = "AI 图片案例") {
 }
 
 const fmImageGenerationInspirations = exampleImages.map((item, index) => ({
-  id: `image-gen-${caseImageFiles[index] || index}`,
+  id: `image-gen-${item.categoryId || "all"}-${item.file || index}`,
   title: summarizeInspirationTitle(item.description || item.prompt, item.label),
-  category: "图片灵感",
+  category: item.categoryLabel || "图片灵感",
   prompt: item.prompt,
   thumbnail: item.src,
   fallbackThumbnail: item.fallbackSrc,
@@ -2387,6 +2410,15 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
                     }
                   }}
                 />
+                {(item.category === "视频灵感" ||
+                  item.category === "数字人形象" ||
+                  item.videoSrc ||
+                  item.source?.endsWith?.(".mp4") ||
+                  item.source?.endsWith?.(".webm")) && (
+                  <span className="fm-image-card-play" aria-hidden="true">
+                    <Play size={18} fill="currentColor" />
+                  </span>
+                )}
               </button>
               <button
                 className="fm-image-card-remix"
@@ -3628,13 +3660,21 @@ function ResultCard({
       className={`result-card status-${card.status} ${isExample ? "is-example" : ""} ${isImageGallery ? "is-image-gallery" : ""} ${isSelected ? "is-selected-result" : ""}`}
       data-image-card-id={card.id}
     >
-      {isImageGallery && (
-        <div className="result-card-model-tag">
-          <span className="model-tag">{card.model}</span>
-        </div>
-      )}
       <div
         className={`result-preview ${card.grid ? "preview-grid" : ""} ${shouldShowPlaceholder ? "is-placeholder-preview" : ""}`}
+        role={canPreview && isImageGallery ? "button" : undefined}
+        tabIndex={canPreview && isImageGallery ? 0 : undefined}
+        onClick={canPreview && isImageGallery ? () => onPreview(card) : undefined}
+        onKeyDown={
+          canPreview && isImageGallery
+            ? (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onPreview(card);
+                }
+              }
+            : undefined
+        }
       >
         {isProcessing && <div className="processing-state">生成中...</div>}
         {isFailed && <div className="failed-state">生成失败</div>}
@@ -3667,16 +3707,6 @@ function ResultCard({
             />
           )
         ) : null}
-        {canPreview && isImageGallery && (
-          <button
-            className="result-preview-hitarea"
-            type="button"
-            onClick={() => onPreview(card)}
-            aria-label="放大查看图片"
-          >
-            <Maximize2 size={18} />
-          </button>
-        )}
         {card.referenceImageUrl && (
           <span className="result-reference-thumb" title="参考图">
             <img src={card.referenceImageUrl} alt="" />
@@ -3686,6 +3716,7 @@ function ResultCard({
           <span className="broken-image-mark" aria-hidden="true" />
         )}
       </div>
+      {!isImageGallery && (
       <div className="result-meta">
         <div className="tag-row">
           {!isImageGallery && <span className="model-tag">{card.model}</span>}
@@ -3704,13 +3735,7 @@ function ResultCard({
             <strong>{card.price}</strong>
           </div>
         )}
-        {isImageGallery ? (
-          <div className="gallery-title-row">
-            <p>{card.error || card.title || card.prompt}</p>
-            <strong>{card.price}</strong>
-          </div>
-        ) : (
-          <>
+        <>
             <p>{card.error || card.prompt}</p>
             <div className="card-actions">
               <button
@@ -3755,8 +3780,8 @@ function ResultCard({
               </button>
             </div>
           </>
-        )}
       </div>
+      )}
     </article>
   );
 }
@@ -5204,6 +5229,8 @@ function ImageGenerationView({
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [isInspirationGalleryReady, setIsInspirationGalleryReady] =
     useState(false);
+  const [imageInspirationCategory, setImageInspirationCategory] =
+    useState("all");
   const imageComposerRef = useRef(null);
   const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
@@ -5414,9 +5441,15 @@ function ImageGenerationView({
     () => buildImageHistoryThreads(cards),
     [cards, contextTaskIds],
   );
+  const filteredExampleImages = useMemo(() => {
+    if (imageInspirationCategory === "all") return exampleImages;
+    return exampleImages.filter(
+      (item) => item.categoryId === imageInspirationCategory,
+    );
+  }, [imageInspirationCategory]);
   const imageExampleCards = useMemo(
     () =>
-      exampleImages.map((item, index) => ({
+      filteredExampleImages.map((item, index) => ({
         id: `example-image-${index}`,
         status: "completed",
         model: item.model,
@@ -5439,7 +5472,7 @@ function ImageGenerationView({
         aspect: item.aspect,
         favorite: false,
       })),
-    [],
+    [filteredExampleImages],
   );
   const arrangedImageExampleCards = useMemo(
     () => arrangeInspirationCards(imageExampleCards, 6),
@@ -5942,6 +5975,24 @@ function ImageGenerationView({
           ) : (
             <ComposerBarPlaceholder placement={composerPlacement} />
           )}
+          <div
+            className="image-inspiration-category-tabs"
+            role="tablist"
+            aria-label="图片灵感分类"
+          >
+            {imageInspirationCategoryTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                className={
+                  imageInspirationCategory === tab.id ? "is-active" : ""
+                }
+                onClick={() => setImageInspirationCategory(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </>
       )}
       {filter === "recent" ? (
