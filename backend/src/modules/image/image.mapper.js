@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingHistoryTime } from "../../shared/time.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -20,7 +20,7 @@ export function mapImageTask(row) {
     ratio: row.ratio,
     quality: row.quality,
     count: row.image_count,
-    time: formatBeijingClock(row.created_at),
+    time: formatBeijingHistoryTime(row.created_at),
     price: `${row.cost_points} 积分`,
     points: row.cost_points,
     prompt: row.prompt,

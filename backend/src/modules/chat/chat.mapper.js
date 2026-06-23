@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingClock, formatBeijingHistoryTime } from "../../shared/time.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -50,7 +50,7 @@ export function mapChatConversation(row) {
     title: row.title,
     model: formatChatModelName(row.display_name) || row.model_key,
     modelKey: row.model_key,
-    time: formatBeijingClock(row.updated_at || row.created_at)
+    time: formatBeijingHistoryTime(row.updated_at || row.created_at)
   };
 }
 
