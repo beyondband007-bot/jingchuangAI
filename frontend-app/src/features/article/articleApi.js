@@ -1,5 +1,4 @@
-import { requestJson as request, cleanApiErrorMessage } from "../../api/request.js";
-import { API_BASE } from "../../apiBase.js";
+import { requestJson as request } from "../../api/request.js";
 import { createTaskPollingController } from "../../api/taskPolling.js";
 const taskPolling = createTaskPollingController();
 let modelsPromise;
@@ -51,24 +50,6 @@ export const articleApi = {
 
   async getPackage(id) {
     return request(`/api/article/packages/${encodeURIComponent(id)}`);
-  },
-
-  async downloadPackageImages(packageId) {
-    const response = await fetch(
-      `${API_BASE}/api/article/packages/${encodeURIComponent(packageId)}/images.zip`,
-      { credentials: "include" },
-    );
-    if (!response.ok) {
-      let message = "打包下载失败，请稍后重试";
-      try {
-        const body = await response.json();
-        message = cleanApiErrorMessage({ message: body.error || body.message, status: response.status }, message);
-      } catch {
-        message = cleanApiErrorMessage({ status: response.status }, message);
-      }
-      throw new Error(message);
-    }
-    return response.blob();
   },
 
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {

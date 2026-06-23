@@ -25,6 +25,7 @@ import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
 import { sendError } from "./shared/http.js";
 import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
+import { fetchProxiedMedia } from "./shared/mediaProxy.js";
 
 export function createApp() {
   const app = express();
@@ -74,6 +75,17 @@ export function createApp() {
       }
       const { listCreditTransactions } = await import("./modules/payment/payment.service.js");
       res.json(await listCreditTransactions(req.user.id, req.query));
+    } catch (error) {
+      sendError(res, error);
+    }
+  });
+
+  app.get("/api/media/proxy", async (req, res) => {
+    try {
+      const { buffer, contentType } = await fetchProxiedMedia(req.query.url);
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "private, max-age=300");
+      res.send(buffer);
     } catch (error) {
       sendError(res, error);
     }

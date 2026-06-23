@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { articleApi } from "./articleApi";
+import { downloadArticleImagesZip } from "./articleImageZip";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
@@ -814,21 +815,18 @@ export function ArticleGenerationView({
   }
 
   async function downloadImagesAsZip() {
-    if (!selectedTask?.id) return;
+    const images = getArticleImages(selectedTask)
+      .map((item) => item.image)
+      .filter(Boolean);
+    if (!images.length) {
+      showToast("暂无可下载的图片");
+      return;
+    }
 
     try {
       showToast("正在打包图片…");
-      const blob = await articleApi.downloadPackageImages(selectedTask.id);
-      const title = draftCopy?.title || selectedTask.title || "article-images";
-      const safeName = title.replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, "_").slice(0, 48) || "article-images";
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${safeName}.zip`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      const title = draftCopy?.title || selectedTask?.title || "article-images";
+      await downloadArticleImagesZip(images, { zipName: title });
       showToast("图片已打包下载");
     } catch (error) {
       console.error("打包下载失败", error);

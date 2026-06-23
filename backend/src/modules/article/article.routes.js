@@ -4,7 +4,6 @@ import {
   createArticlePackage,
   createArticleTask,
   deleteArticleTask,
-  downloadArticlePackageImages,
   getArticlePackage,
   getArticleModels,
   getArticleTask,
@@ -17,7 +16,6 @@ export const articleRouter = Router();
 articleRouter.get("/models", getArticleModels);
 articleRouter.post("/copy-draft", createArticleCopyDraft);
 articleRouter.post("/packages", createArticlePackage);
-articleRouter.get("/packages/:id/images.zip", downloadArticlePackageImages);
 articleRouter.get("/packages/:id", getArticlePackage);
 articleRouter.get("/tasks", listArticleTasks);
 articleRouter.post("/tasks", createArticleTask);
