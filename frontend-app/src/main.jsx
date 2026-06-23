@@ -2725,8 +2725,66 @@ const transactionFilterOptions = [
   ["debit", "消费"],
   ["refund", "退款"],
 ];
+const assetTimeFilterOptions = [
+  ["all", "全部时间"],
+  ["today", "今天"],
+  ["7d", "近 7 天"],
+  ["30d", "近 30 天"],
+  ["custom", "自定义"],
+];
 const articleImageSource = "article";
 const articlePromptMarker = "爆款图文设计";
+
+function formatDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getAssetTimeRange(preset, startDate, endDate) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let rangeStart = null;
+  let rangeEnd = null;
+
+  if (preset === "today") {
+    rangeStart = todayStart;
+    rangeEnd = new Date(todayStart);
+  } else if (preset === "7d") {
+    rangeStart = new Date(todayStart);
+    rangeStart.setDate(rangeStart.getDate() - 6);
+    rangeEnd = new Date(todayStart);
+  } else if (preset === "30d") {
+    rangeStart = new Date(todayStart);
+    rangeStart.setDate(rangeStart.getDate() - 29);
+    rangeEnd = new Date(todayStart);
+  } else if (preset === "custom") {
+    if (startDate) rangeStart = new Date(`${startDate}T00:00:00`);
+    if (endDate) rangeEnd = new Date(`${endDate}T00:00:00`);
+  }
+
+  const startMs = rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
+    ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()).getTime()
+    : null;
+  const endMs = rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime())
+    ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999).getTime()
+    : null;
+
+  return {
+    startDate: startMs !== null ? formatDateInputValue(new Date(startMs)) : "",
+    endDate: endMs !== null ? formatDateInputValue(new Date(endMs)) : "",
+    startMs,
+    endMs,
+  };
+}
+
+function isTimestampInRange(timestamp, range) {
+  if (!timestamp) return false;
+  if (range.startMs !== null && timestamp < range.startMs) return false;
+  if (range.endMs !== null && timestamp > range.endMs) return false;
+  return true;
+}
 
 function isArticleImageTask(task) {
   return (
@@ -2841,8 +2899,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [transactionFilter, setTransactionFilter] = useState("all");
-  const [transactionKeyword, setTransactionKeyword] = useState("");
-  const [transactionSearch, setTransactionSearch] = useState("");
+  const [assetTimePreset, setAssetTimePreset] = useState("all");
+  const [assetStartDate, setAssetStartDate] = useState("");
+  const [assetEndDate, setAssetEndDate] = useState("");
   const [transactionMeta, setTransactionMeta] = useState({
     page: 1,
     pageSize: transactionsPageSize,
@@ -2872,7 +2931,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       .slice(0, 10);
   }, [orders]);
   const transactionsTotalPages = transactionMeta.totalPages || 1;
-  const visibleTransactions = transactions;
+  const assetTimeRange = useMemo(
+    () => getAssetTimeRange(assetTimePreset, assetStartDate, assetEndDate),
+    [assetEndDate, assetStartDate, assetTimePreset],
+  );
+  const visibleTransactions = transactions.filter((tx) => {
+    if (assetTimePreset === "all") return true;
+    return isTimestampInRange(new Date(tx.createdAt).getTime(), assetTimeRange);
+  });
 
   const refreshAssets = useCallback(async () => {
     if (isGuest) return;
@@ -2894,7 +2960,8 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
           type: transactionFilter,
           page: transactionsPage,
           pageSize: transactionsPageSize,
-          keyword: transactionSearch,
+          startDate: assetTimeRange.startDate,
+          endDate: assetTimeRange.endDate,
         }),
         imageApi.getTasks({ filter: "all" }).catch(() => []),
         videoApi.getTasks({ filter: "all" }).catch(() => []),
@@ -2928,7 +2995,13 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     } finally {
       setIsLoading(false);
     }
-  }, [isGuest, transactionFilter, transactionSearch, transactionsPage]);
+  }, [
+    assetTimeRange.endDate,
+    assetTimeRange.startDate,
+    isGuest,
+    transactionFilter,
+    transactionsPage,
+  ]);
 
   useEffect(() => {
     refreshAssets();
@@ -2940,7 +3013,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
 
   useEffect(() => {
     setTransactionsPage(1);
-  }, [transactionFilter, transactionSearch]);
+  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -3101,10 +3174,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }
 
   const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
-  const assetGalleryCards =
-    activeAssetTab === "全部"
-      ? userAssets
-      : userAssets.filter((item) => item.type === activeAssetTab);
+  const assetGalleryCards = userAssets.filter((item) => {
+    if (activeAssetTab !== "全部" && item.type !== activeAssetTab) return false;
+    if (assetTimePreset === "all") return true;
+    return isTimestampInRange(item.sortTime, assetTimeRange);
+  });
   const [previewAsset, setPreviewAsset] = useState(null);
 
   useEffect(() => {
@@ -3151,9 +3225,24 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     setTransactionsPage(1);
   }
 
-  function submitTransactionSearch(event) {
-    event.preventDefault();
-    setTransactionSearch(transactionKeyword.trim());
+  function selectAssetTimePreset(nextPreset) {
+    setAssetTimePreset(nextPreset);
+    if (nextPreset !== "custom") {
+      setAssetStartDate("");
+      setAssetEndDate("");
+    }
+    setTransactionsPage(1);
+  }
+
+  function updateAssetStartDate(value) {
+    setAssetTimePreset("custom");
+    setAssetStartDate(value);
+    setTransactionsPage(1);
+  }
+
+  function updateAssetEndDate(value) {
+    setAssetTimePreset("custom");
+    setAssetEndDate(value);
     setTransactionsPage(1);
   }
 
@@ -3224,6 +3313,42 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     onOpenFeature?.("image");
   }
 
+  const assetTimeFilterControl = (
+    <div className="fm-assets-time-filter" aria-label="时间筛选">
+      <div className="fm-assets-time-presets">
+        {assetTimeFilterOptions.map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={assetTimePreset === value ? "is-active" : ""}
+            onClick={() => selectAssetTimePreset(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {assetTimePreset === "custom" && (
+        <div className="fm-assets-date-range">
+          <input
+            type="date"
+            value={assetStartDate}
+            max={assetEndDate || undefined}
+            onChange={(event) => updateAssetStartDate(event.target.value)}
+            aria-label="开始日期"
+          />
+          <span>至</span>
+          <input
+            type="date"
+            value={assetEndDate}
+            min={assetStartDate || undefined}
+            onChange={(event) => updateAssetEndDate(event.target.value)}
+            aria-label="结束日期"
+          />
+        </div>
+      )}
+    </div>
+  );
+
   if (true) {
     return (
       <section className="assets-view-root fm-assets-gallery-view">
@@ -3263,20 +3388,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                     </button>
                   ))}
                 </div>
-                <form
-                  className="fm-transaction-search"
-                  onSubmit={submitTransactionSearch}
-                >
-                  <Search size={16} />
-                  <input
-                    value={transactionKeyword}
-                    onChange={(event) =>
-                      setTransactionKeyword(event.target.value)
-                    }
-                    placeholder="搜索备注或类型"
-                  />
-                  <button type="submit">查询</button>
-                </form>
+                {assetTimeFilterControl}
               </div>
               {visibleTransactions.length ? (
                 <>
@@ -3312,7 +3424,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
                             {tx.amount}
                           </span>
                           <span>{tx.balanceAfter}</span>
-                          <span title={tx.memo}>{tx.memo || "-"}</span>
+                          <span
+                            data-tooltip={tx.memo || ""}
+                            className="fm-transaction-memo"
+                          >
+                            {tx.memo || "-"}
+                          </span>
                         </div>
                       );
                     })}
@@ -3364,17 +3481,20 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
             </div>
           ) : (
             <>
-              <div className="fm-assets-tabs" aria-label="资产分类">
-                {assetGalleryTabs.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    className={tab === activeAssetTab ? "is-active" : ""}
-                    onClick={() => selectAssetTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="fm-assets-filter-row">
+                <div className="fm-assets-tabs" aria-label="资产分类">
+                  {assetGalleryTabs.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={tab === activeAssetTab ? "is-active" : ""}
+                      onClick={() => selectAssetTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                {assetTimeFilterControl}
               </div>
               {assetGalleryCards.length ? (
                 <div className="fm-assets-grid">

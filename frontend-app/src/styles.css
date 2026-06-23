@@ -16385,9 +16385,7 @@ textarea:focus-visible {
   min-height: 0;
   max-height: calc(100vh - 400px);
   overflow-y: auto;
-  padding-right: 4px;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 
 .assets-transactions-header {
@@ -16427,7 +16425,6 @@ textarea:focus-visible {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--text-secondary);
 }
 
 .assets-transaction-row span:first-child {
@@ -16460,10 +16457,9 @@ textarea:focus-visible {
   justify-content: center;
   min-height: 34px;
   padding: 0 14px;
-  color: var(--text-secondary);
-  background: var(--app-surface-muted);
-  border: 1px solid var(--app-border);
-  border-radius: 9px;
+  color: #fff;
+  background: #6d3cff;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
@@ -16471,12 +16467,6 @@ textarea:focus-visible {
     background 160ms ease,
     color 160ms ease,
     border-color 160ms ease;
-}
-
-.assets-pagination button:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: var(--app-surface-raised);
-  border-color: var(--brand-primary-border);
 }
 
 .assets-pagination button:disabled {
@@ -22611,8 +22601,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 .fm-assets-mode-tabs button,
-.fm-transaction-filters button,
-.fm-transaction-search button {
+.fm-transaction-filters button {
   min-height: 34px;
   border: 0;
   border-radius: 999px;
@@ -22641,6 +22630,18 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   margin-bottom: 18px;
 }
 
+.fm-assets-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.fm-assets-filter-row .fm-assets-tabs {
+  margin-bottom: 0;
+}
+
 .fm-assets-tabs button {
   border: 0;
   border-radius: 999px;
@@ -22654,6 +22655,66 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border: 2px solid var(--fm-brand);
   color: var(--fm-brand);
   background: #fff;
+}
+
+.fm-assets-time-filter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fm-assets-time-presets {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid #e2dfed;
+  border-radius: 999px;
+  background: #f6f4fb;
+}
+
+.fm-assets-time-presets button {
+  min-height: 30px;
+  padding: 0 12px;
+  color: #777387;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fm-assets-time-presets button.is-active {
+  color: #fff;
+  background: var(--fm-brand);
+  box-shadow: 0 8px 18px rgba(107, 53, 255, 0.18);
+}
+
+.fm-assets-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 10px;
+  color: #8f8a9d;
+  background: #fff;
+  border: 1px solid #e2dfed;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fm-assets-date-range input {
+  width: 126px;
+  color: #292733;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
 }
 
 .fm-assets-grid {
@@ -22722,36 +22783,6 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border: 1px solid #e2dfed;
 }
 
-.fm-transaction-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: min(360px, 100%);
-  min-height: 40px;
-  padding: 0 3px 0 12px;
-  border: 1px solid #e2dfed;
-  border-radius: 999px;
-  background: #fff;
-  color: #918da0;
-}
-
-.fm-transaction-search input {
-  min-width: 0;
-  flex: 1;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #292733;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.fm-transaction-search button {
-  padding: 0 14px;
-  background: #ffda71;
-  color: #8a6420;
-}
-
 .fm-transactions-table {
   max-height: calc(100vh - 345px);
   border: 1px solid #e5e2ef;
@@ -22769,6 +22800,26 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 .fm-assets-transactions-view .assets-transactions-header {
   background: #f2f0f8;
   color: #777387;
+}
+
+.fm-transaction-memo {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assets-transaction-row .fm-transaction-memo {
+  justify-self: start;
+  width: max-content;
+  overflow: visible;
+}
+
+.assets-transaction-row .fm-transaction-memo::before,
+.assets-transaction-row .fm-transaction-memo::after {
+  z-index: 20;
 }
 
 .fm-asset-card {
@@ -30453,8 +30504,7 @@ textarea::placeholder {
     flex-direction: column;
   }
 
-  .fm-assets-mode-tabs,
-  .fm-transaction-search {
+  .fm-assets-mode-tabs {
     width: 100%;
   }
 
@@ -34388,6 +34438,28 @@ textarea::placeholder {
   }
 }
 
+@media (max-width: 900px) {
+  .fm-assets-filter-row,
+  .fm-transaction-toolbar,
+  .fm-assets-time-filter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fm-assets-time-presets,
+  .fm-assets-date-range {
+    width: 100%;
+  }
+
+  .fm-assets-time-presets {
+    overflow-x: auto;
+  }
+
+  .fm-transaction-toolbar .fm-assets-time-filter {
+    align-items: stretch;
+  }
+}
+
 .image-gen-view .chatbot-ui-dialog button[aria-label*="生成"],
 .video-gen-view .chatbot-ui-dialog button[aria-label*="生成"],
 [data-feature-module="digital-human"] .dh-generate-button {
@@ -34412,15 +34484,12 @@ textarea::placeholder {
   opacity: 0.62 !important;
 }
 
-button[data-tooltip],
-a[data-tooltip] {
+[data-tooltip] {
   position: relative;
 }
 
-button[data-tooltip]::before,
-a[data-tooltip]::before,
-button[data-tooltip]::after,
-a[data-tooltip]::after {
+[data-tooltip]::before,
+[data-tooltip]::after {
   position: absolute;
   left: 50%;
   z-index: 500;
@@ -34431,8 +34500,7 @@ a[data-tooltip]::after {
     transform 0.16s ease;
 }
 
-button[data-tooltip]::before,
-a[data-tooltip]::before {
+[data-tooltip]::before {
   content: attr(data-tooltip);
   bottom: calc(100% + 10px);
   min-width: max-content;
@@ -34448,8 +34516,7 @@ a[data-tooltip]::before {
   transform: translate(-50%, 4px);
 }
 
-button[data-tooltip]::after,
-a[data-tooltip]::after {
+[data-tooltip]::after {
   content: "";
   bottom: calc(100% + 5px);
   width: 8px;
@@ -34458,27 +34525,24 @@ a[data-tooltip]::after {
   transform: translate(-50%, 4px) rotate(45deg);
 }
 
-button[data-tooltip]:hover::before,
-button[data-tooltip]:hover::after,
-button[data-tooltip]:focus-visible::before,
-button[data-tooltip]:focus-visible::after,
-a[data-tooltip]:hover::before,
-a[data-tooltip]:hover::after,
-a[data-tooltip]:focus-visible::before,
-a[data-tooltip]:focus-visible::after {
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::before,
+[data-tooltip]:focus-visible::after {
   opacity: 1;
 }
 
-button[data-tooltip]:hover::before,
-button[data-tooltip]:focus-visible::before,
-a[data-tooltip]:hover::before,
-a[data-tooltip]:focus-visible::before {
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
   transform: translate(-50%, 0);
 }
 
-button[data-tooltip]:hover::after,
-button[data-tooltip]:focus-visible::after,
-a[data-tooltip]:hover::after,
-a[data-tooltip]:focus-visible::after {
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
   transform: translate(-50%, 0) rotate(45deg);
+}
+
+[data-tooltip=""]::before,
+[data-tooltip=""]::after {
+  display: none;
 }

@@ -585,6 +585,8 @@ export async function listCreditTransactions(userId, options = {}) {
   const pageSize = Math.min(100, Math.max(1, Number.parseInt(options.pageSize || "20", 10) || 20));
   const type = String(options.type || "all").trim().toLowerCase();
   const keyword = String(options.keyword || "").trim();
+  const startDate = String(options.startDate || "").trim();
+  const endDate = String(options.endDate || "").trim();
   const where = ["user_id = ?"];
   const params = [userId];
 
@@ -595,6 +597,14 @@ export async function listCreditTransactions(userId, options = {}) {
   if (keyword) {
     where.push("(memo LIKE ? OR type LIKE ?)");
     params.push(`%${keyword}%`, `%${keyword}%`);
+  }
+  if (startDate) {
+    where.push("created_at >= ?");
+    params.push(`${startDate} 00:00:00`);
+  }
+  if (endDate) {
+    where.push("created_at <= ?");
+    params.push(`${endDate} 23:59:59`);
   }
 
   const whereSql = where.join(" AND ");
