@@ -35488,7 +35488,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 .fm-transactions-modal {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   width: min(1080px, calc(100vw - 48px));
   max-height: min(86vh, 860px);
   overflow: hidden;
@@ -35521,18 +35521,60 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   font-weight: 600;
 }
 
+.fm-transactions-modal > .fm-assets-time-filter {
+  justify-content: flex-start;
+  padding: 14px 20px 0;
+}
+
+.fm-transactions-modal > .fm-assets-time-filter .fm-assets-time-presets {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .fm-transactions-modal .fm-assets-transactions-view {
   min-height: 0;
   margin: 0;
-  padding: 18px 20px 20px;
+  padding: 14px 20px 20px;
   overflow: auto;
   border: 0;
   border-radius: 0;
   background: #fff;
 }
 
+.fm-transactions-modal .fm-transaction-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.fm-transactions-modal .fm-transaction-filters {
+  min-width: 0;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+}
+
+.fm-transactions-modal .fm-transaction-search {
+  justify-self: end;
+  width: 100%;
+  max-width: 360px;
+}
+
 .fm-transactions-modal .fm-transactions-table {
   max-height: none;
+}
+
+@media (max-width: 900px) {
+  .fm-transactions-modal .fm-transaction-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .fm-transactions-modal .fm-transaction-search {
+    justify-self: stretch;
+    max-width: none;
+  }
 }
 
 @media (max-width: 1080px) {
