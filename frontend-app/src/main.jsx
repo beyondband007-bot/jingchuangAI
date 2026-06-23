@@ -8711,7 +8711,8 @@ function DigitalHumanConfigPanel({
           type="button"
           onClick={submit}
           disabled={isSubmitting || isUploadingAudio || currentAudioTooLong}
-          title={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          data-tooltip={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          aria-label={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
           <span>生成</span>

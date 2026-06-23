@@ -156,6 +156,11 @@ export function VideoPromptDialog({
     fontSize: "13px",
     fontWeight: "500"
   };
+  const submitButtonStyle = {
+    background: "var(--brand-primary, #5a2cfc)",
+    border: "1px solid var(--brand-primary, #5a2cfc)",
+    color: "#ffffff"
+  };
 
   function dropdownMenuStyle(minWidth) {
     return {
@@ -276,9 +281,13 @@ export function VideoPromptDialog({
             ...buttonBaseStyle,
             flex: "0 0 auto",
             minWidth: "104px",
-            background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
-            border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
-            color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
+            ...(canSubmit
+              ? submitButtonStyle
+              : {
+                  background: "rgba(55, 55, 55, 0.5)",
+                  border: "1px solid rgba(255, 255, 255, 0.04)",
+                  color: "#8b8b8b"
+                }),
             cursor: canSubmit ? "pointer" : "not-allowed",
             opacity: canSubmit ? 1 : 0.6
           }}
@@ -586,9 +595,13 @@ export function VideoPromptDialog({
               ...buttonBaseStyle,
               width: "auto",
               minWidth: "108px",
-              background: canSubmit ? buttonBaseStyle.background : "rgba(55, 55, 55, 0.5)",
-              border: canSubmit ? buttonBaseStyle.border : "1px solid rgba(255, 255, 255, 0.04)",
-              color: canSubmit ? buttonBaseStyle.color : "#8b8b8b",
+              ...(canSubmit
+                ? submitButtonStyle
+                : {
+                    background: "rgba(55, 55, 55, 0.5)",
+                    border: "1px solid rgba(255, 255, 255, 0.04)",
+                    color: "#8b8b8b"
+                  }),
               fontSize: buttonBaseStyle.fontSize,
               fontWeight: buttonBaseStyle.fontWeight,
               cursor: canSubmit ? "pointer" : "not-allowed",

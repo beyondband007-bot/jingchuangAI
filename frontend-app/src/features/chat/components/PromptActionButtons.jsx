@@ -7,7 +7,7 @@ export function PromptIconButton({ ariaLabel, onClick, disabled = false, childre
     <button
       type="button"
       aria-label={ariaLabel}
-      title={title || ariaLabel}
+      data-tooltip={title || ariaLabel}
       onClick={onClick}
       disabled={disabled}
       style={{
@@ -26,7 +26,7 @@ export function PromptSendButton({ ariaLabel, onClick, disabled = false, childre
     <button
       type="button"
       aria-label={ariaLabel}
-      title={ariaLabel}
+      data-tooltip={ariaLabel}
       onClick={onClick}
       disabled={disabled}
       style={{
