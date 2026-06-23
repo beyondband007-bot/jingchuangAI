@@ -400,6 +400,18 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS inspiration_favorites (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      inspiration_id VARCHAR(180) NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_inspiration_favorite_user_item (user_id, inspiration_id),
+      INDEX idx_inspiration_favorites_user_created (user_id, created_at),
+      CONSTRAINT fk_inspiration_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS article_generation_packages (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,

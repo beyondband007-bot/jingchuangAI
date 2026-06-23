@@ -2,7 +2,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { mediaProxyPlugin } from "./viteMediaProxyPlugin.js";
 
-const proxyTarget = process.env.VITE_DEV_PROXY_TARGET || "http://127.0.0.1:3010";
+const proxyTarget = process.env.VITE_DEV_PROXY_TARGET || "http://127.0.0.1:3006";
 
 export default defineConfig({
   plugins: [react(), mediaProxyPlugin()],

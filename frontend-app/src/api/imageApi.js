@@ -34,6 +34,16 @@ export const imageApi = {
     return request(`/api/image/tasks?filter=${encodeURIComponent(filter)}`);
   },
 
+  async getInspirationFavorites() {
+    return request("/api/image/inspiration-favorites");
+  },
+
+  async toggleInspirationFavorite(id) {
+    return request(`/api/image/inspiration-favorites/${encodeURIComponent(id)}`, {
+      method: "POST"
+    });
+  },
+
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
     const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];

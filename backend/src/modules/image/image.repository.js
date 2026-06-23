@@ -269,3 +269,41 @@ export async function toggleImageTaskFavorite(id, userId) {
     [userId, id]
   );
 }
+
+export async function listInspirationFavoriteIds(userId) {
+  const [rows] = await getPool().query(
+    `SELECT inspiration_id
+     FROM inspiration_favorites
+     WHERE user_id = ?
+     ORDER BY created_at DESC, id DESC`,
+    [userId]
+  );
+  return rows.map((row) => row.inspiration_id);
+}
+
+export async function findInspirationFavorite(userId, inspirationId) {
+  const [rows] = await getPool().query(
+    `SELECT id
+     FROM inspiration_favorites
+     WHERE user_id = ? AND inspiration_id = ?
+     LIMIT 1`,
+    [userId, inspirationId]
+  );
+  return rows[0] || null;
+}
+
+export async function addInspirationFavorite(userId, inspirationId) {
+  await getPool().query(
+    `INSERT IGNORE INTO inspiration_favorites (user_id, inspiration_id)
+     VALUES (?, ?)`,
+    [userId, inspirationId]
+  );
+}
+
+export async function removeInspirationFavorite(userId, inspirationId) {
+  await getPool().query(
+    `DELETE FROM inspiration_favorites
+     WHERE user_id = ? AND inspiration_id = ?`,
+    [userId, inspirationId]
+  );
+}
