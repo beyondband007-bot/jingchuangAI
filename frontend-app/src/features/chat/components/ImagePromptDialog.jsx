@@ -743,9 +743,9 @@ export function ImagePromptDialog({
             <span
               style={{
                 padding: "8px 12px",
-                color: "#f5d475",
-                background: "rgba(61, 46, 16, 0.82)",
-                border: "1px solid rgba(255, 212, 117, 0.2)",
+                color: "#6d3cff",
+                background: "#f0eef7",
+                border: "1px solid #dedbea",
                 borderRadius: "999px",
                 fontSize: "12px",
                 fontWeight: "900",
