@@ -34407,21 +34407,29 @@ textarea::placeholder {
   z-index: 30 !important;
   flex: none !important;
   width: 100% !important;
-  max-height: min(420px, calc(100vh - 230px)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
   margin: 0 !important;
+  padding: 10px !important;
+  overflow: visible !important;
 }
 
 .feature-page-shell [data-feature-module="chat"] .chat-history-dropdown .chat-history-list {
+  display: grid !important;
   flex: none !important;
-  max-height: 320px !important;
+  gap: 10px !important;
+  max-height: 354px !important;
+  padding: 6px 2px !important;
   overflow-y: auto !important;
 }
 
 .feature-page-shell [data-feature-module="chat"] .chat-history-item {
   display: grid !important;
-  gap: 6px !important;
-  min-height: 50px !important;
-  padding: 10px 12px !important;
+  align-content: center !important;
+  gap: 7px !important;
+  min-height: 62px !important;
+  padding: 11px 12px !important;
 }
 
 .feature-page-shell [data-feature-module="chat"] .chat-history-item span {
@@ -34448,7 +34456,8 @@ textarea::placeholder {
   align-items: stretch !important;
   width: 256px !important;
   max-width: 256px !important;
-  height: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
   pointer-events: auto !important;
