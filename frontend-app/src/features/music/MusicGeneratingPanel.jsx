@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Check,
   ChevronRight,
@@ -21,7 +21,64 @@ const STEP_DEFINITIONS = [
   { id: "sync", label: "歌词同步", icon: Mic }
 ];
 
-const WAVE_BARS = [18, 32, 24, 40, 28, 36, 22, 44, 30, 38, 26, 42, 20, 34, 28, 40, 24, 36, 22, 32];
+const ICON_BAR_COUNT = 5;
+const WAVE_BAR_COUNT = 20;
+
+function useRandomBarHeights(count, { min, max, tickMin = 90, tickMax = 260 }) {
+  const [heights, setHeights] = useState(() =>
+    Array.from({ length: count }, () => min + Math.random() * (max - min))
+  );
+
+  useEffect(() => {
+    const timeouts = new Set();
+    let cancelled = false;
+
+    function scheduleBar(index) {
+      const delay = tickMin + Math.random() * (tickMax - tickMin);
+      const id = window.setTimeout(() => {
+        if (cancelled) return;
+        setHeights((prev) => {
+          const next = [...prev];
+          next[index] = min + Math.random() * (max - min);
+          return next;
+        });
+        scheduleBar(index);
+      }, delay);
+      timeouts.add(id);
+    }
+
+    for (let index = 0; index < count; index += 1) {
+      scheduleBar(index);
+    }
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach((id) => window.clearTimeout(id));
+    };
+  }, [count, min, max, tickMin, tickMax]);
+
+  return heights;
+}
+
+function RandomEqualizerBars({
+  count,
+  min,
+  max,
+  className,
+  barTag: Bar = "span",
+  tickMin,
+  tickMax
+}) {
+  const heights = useRandomBarHeights(count, { min, max, tickMin, tickMax });
+
+  return (
+    <>
+      {heights.map((height, index) => (
+        <Bar key={index} style={{ height: `${height}px` }} />
+      ))}
+    </>
+  );
+}
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return "00:00";
@@ -76,7 +133,14 @@ export function MusicGeneratingPanel({
           <span className="music-gen-waiting-icon-glow" />
           <Music size={28} />
           <span className="music-gen-waiting-icon-bars">
-            <i /><i /><i /><i /><i />
+            <RandomEqualizerBars
+              count={ICON_BAR_COUNT}
+              min={6}
+              max={16}
+              barTag="i"
+              tickMin={70}
+              tickMax={200}
+            />
           </span>
         </div>
         <h1>正在创作你的音乐</h1>
@@ -115,9 +179,13 @@ export function MusicGeneratingPanel({
         </div>
 
         <div className="music-gen-waiting-wave" aria-hidden="true">
-          {WAVE_BARS.map((height, index) => (
-            <span key={index} style={{ height: `${height}px` }} />
-          ))}
+          <RandomEqualizerBars
+            count={WAVE_BAR_COUNT}
+            min={14}
+            max={48}
+            tickMin={80}
+            tickMax={280}
+          />
         </div>
 
         <div className="music-gen-waiting-progress">

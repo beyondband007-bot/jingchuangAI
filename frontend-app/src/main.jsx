@@ -15,6 +15,7 @@ import {
   Bot,
   Box,
   ChevronDown,
+  ChevronRight,
   CheckCircle2,
   Camera,
   Copy,
@@ -1312,6 +1313,14 @@ function InspirationLibraryDrawer({
 const appEntryStorageKey = "jingchuang:enter-app";
 const pendingGenerationSeedKey = "facemini:pending-generation-seed";
 const assetGalleryTabStorageKey = "facemini:asset-gallery-tab";
+const assetsViewModeStorageKey = "facemini:assets-view-mode";
+const favoriteModuleTabs = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
+const favoriteTabToAssetType = {
+  图片灵感: "AI 图片",
+  视频灵感: "AI 视频",
+  数字人形象: "数字人",
+  爆款图文: "爆款图文",
+};
 const originalFetch = window.fetch.bind(window);
 window.fetch = (input, init = {}) =>
   originalFetch(input, { credentials: "include", ...init });
@@ -3019,8 +3028,127 @@ function mapAssetTasks(type, tasks = []) {
   });
 }
 
-function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
-  const isGuest = Boolean(authUser?.isGuest);
+function CreditTransactionsPanel({
+  transactions,
+  transactionsPage,
+  transactionsTotalPages,
+  transactionMeta,
+  transactionFilter,
+  transactionKeyword,
+  isLoading,
+  onFilterChange,
+  onKeywordChange,
+  onSearchSubmit,
+  onPageChange,
+}) {
+  return (
+    <div className="fm-assets-transactions-view">
+      <div className="fm-transaction-toolbar">
+        <div className="fm-transaction-filters" aria-label="账单分类">
+          {transactionFilterOptions.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={transactionFilter === value ? "is-active" : ""}
+              onClick={() => onFilterChange(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <form className="fm-transaction-search" onSubmit={onSearchSubmit}>
+          <Search size={16} />
+          <input
+            value={transactionKeyword}
+            onChange={(event) => onKeywordChange(event.target.value)}
+            placeholder="搜索备注或类型"
+          />
+          <button type="submit">查询</button>
+        </form>
+      </div>
+      {transactions.length ? (
+        <>
+          <div className="assets-transactions-table fm-transactions-table">
+            <div className="assets-transactions-header">
+              <span>时间</span>
+              <span>类型</span>
+              <span>变动</span>
+              <span>余额</span>
+              <span>备注</span>
+            </div>
+            {transactions.map((tx) => {
+              const typeInfo = txTypeMap[tx.type] || {
+                label: tx.type,
+                color: "#64748b",
+              };
+              const isIncome = Number(tx.amount || 0) > 0;
+              return (
+                <div className="assets-transaction-row" key={tx.id}>
+                  <span>
+                    {new Date(tx.createdAt).toLocaleString("zh-CN")}
+                  </span>
+                  <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
+                  <span
+                    style={{
+                      color: isIncome ? "#16a34a" : "#dc2626",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {isIncome ? "+" : ""}
+                    {tx.amount}
+                  </span>
+                  <span>{tx.balanceAfter}</span>
+                  <span title={tx.memo}>{tx.memo || "-"}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="assets-pagination">
+            <span>
+              第 {transactionMeta.page || transactionsPage} /{" "}
+              {transactionsTotalPages} 页 · 共 {transactionMeta.total || 0} 条
+            </span>
+            <div>
+              <button
+                type="button"
+                onClick={() => onPageChange(Math.max(1, transactionsPage - 1))}
+                disabled={transactionsPage <= 1 || isLoading}
+              >
+                上一页
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onPageChange(
+                    Math.min(transactionsTotalPages, transactionsPage + 1),
+                  )
+                }
+                disabled={
+                  transactionsPage >= transactionsTotalPages || isLoading
+                }
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="fm-assets-empty-state">
+          <History size={34} />
+          <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
+          <p>
+            {transactionFilter === "invitegift"
+              ? "邀请奖励到账后会显示在这里"
+              : "暂无符合条件的积分变动"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
+  const isGuest = !authUser || Boolean(authUser.isGuest);
   const [credits, setCredits] = useState(null);
   const [orders, setOrders] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -3032,12 +3160,34 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       return "全部";
     }
   });
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const stored = window.sessionStorage.getItem(assetsViewModeStorageKey);
+      if (
+        stored === "profile" ||
+        stored === "billing" ||
+        stored === "favorites" ||
+        stored === "gallery"
+      ) {
+        return stored;
+      }
+      return "gallery";
+    } catch {
+      return "gallery";
+    }
+  });
+  const [inviteProfile, setInviteProfile] = useState(null);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [monthlyConsumedCredits, setMonthlyConsumedCredits] = useState(0);
+  const [favoriteTab, setFavoriteTab] = useState("图片灵感");
   const [amount, setAmount] = useState(1);
   const [activePreset, setActivePreset] = useState(1);
   const [paymentProvider, setPaymentProvider] = useState("alipay");
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [transactionFilter, setTransactionFilter] = useState("all");
+  const [transactionKeyword, setTransactionKeyword] = useState("");
+  const [transactionSearch, setTransactionSearch] = useState("");
   const [assetTimePreset, setAssetTimePreset] = useState("all");
   const [assetStartDate, setAssetStartDate] = useState("");
   const [assetEndDate, setAssetEndDate] = useState("");
@@ -3058,8 +3208,33 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   const [paymentResultCountdown, setPaymentResultCountdown] = useState(
     paymentResultTtlSeconds,
   );
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [previewAsset, setPreviewAsset] = useState(null);
 
   const points = Math.max(1, Number(amount) || 1) * 100;
+  const totalCreations = userAssets.length;
+  const profileDisplayName =
+    authUser?.displayName || authUser?.username || "用户";
+  const profileAvatarChar = String(profileDisplayName).trim().charAt(0) || "用";
+  const profileCredits = Number(
+    credits?.balance ?? authUser?.credits ?? 0,
+  ).toLocaleString("zh-CN");
+  const profileInviteCode =
+    inviteProfile?.inviteCode || authUser?.inviteCode || "";
+  const profileInviteLink =
+    inviteProfile?.inviteLink || buildClientInviteLink(profileInviteCode);
+  const favoriteAssets = useMemo(
+    () => userAssets.filter((asset) => asset.favorite),
+    [userAssets],
+  );
+  const totalFavorites = favoriteAssets.length;
+  const favoriteTabCards = useMemo(
+    () =>
+      favoriteAssets.filter(
+        (asset) => asset.type === favoriteTabToAssetType[favoriteTab],
+      ),
+    [favoriteAssets, favoriteTab],
+  );
   const recentRechargeOrders = useMemo(() => {
     const oneMonthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return orders
@@ -3078,6 +3253,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     if (assetTimePreset === "all") return true;
     return isTimestampInRange(new Date(tx.createdAt).getTime(), assetTimeRange);
   });
+  const latestTransaction = visibleTransactions[0] || null;
 
   const refreshAssets = useCallback(async () => {
     if (isGuest) return;
@@ -3088,6 +3264,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
         creditsState,
         orderState,
         txState,
+        monthDebitState,
         imageTasks,
         videoTasks,
         digitalHumanTasks,
@@ -3099,14 +3276,33 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
           type: transactionFilter,
           page: transactionsPage,
           pageSize: transactionsPageSize,
+          keyword: transactionSearch,
           startDate: assetTimeRange.startDate,
           endDate: assetTimeRange.endDate,
         }),
+        paymentApi
+          .getCreditTransactions({
+            type: "debit",
+            page: 1,
+            pageSize: 200,
+            keyword: "",
+          })
+          .catch(() => ({ transactions: [] })),
         imageApi.getTasks({ filter: "all" }).catch(() => []),
         videoApi.getTasks({ filter: "all" }).catch(() => []),
         digitalHumanApi.getTasks().catch(() => []),
         imageDigitalHumanApi.getTasks().catch(() => []),
       ]);
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      const monthlyConsumed = (monthDebitState.transactions || [])
+        .filter((tx) => new Date(tx.createdAt).getTime() >= monthStart.getTime())
+        .reduce(
+          (sum, tx) => sum + Math.abs(Number(tx.amount) || 0),
+          0,
+        );
+      setMonthlyConsumedCredits(monthlyConsumed);
       setCredits(creditsState);
       setOrders(orderState.orders || []);
       setTransactions(txState.transactions || []);
@@ -3139,6 +3335,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     assetTimeRange.startDate,
     isGuest,
     transactionFilter,
+    transactionSearch,
     transactionsPage,
   ]);
 
@@ -3147,12 +3344,26 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }, [refreshAssets]);
 
   useEffect(() => {
+    if (isGuest || viewMode !== "profile") return undefined;
+    let alive = true;
+    invitationApi
+      .me()
+      .then((profile) => {
+        if (alive) setInviteProfile(profile);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [authUser?.id, isGuest, viewMode]);
+
+  useEffect(() => {
     setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
   }, [transactionsTotalPages]);
 
   useEffect(() => {
     setTransactionsPage(1);
-  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter]);
+  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter, transactionSearch]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -3313,12 +3524,17 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
   }
 
   const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
-  const assetGalleryCards = userAssets.filter((item) => {
-    if (activeAssetTab !== "全部" && item.type !== activeAssetTab) return false;
-    if (assetTimePreset === "all") return true;
-    return isTimestampInRange(item.sortTime, assetTimeRange);
-  });
-  const [previewAsset, setPreviewAsset] = useState(null);
+  const assetGalleryCards =
+    activeAssetTab === "全部"
+      ? userAssets.filter((item) => {
+          if (assetTimePreset === "all") return true;
+          return isTimestampInRange(item.sortTime, assetTimeRange);
+        })
+      : userAssets.filter((item) => {
+          if (item.type !== activeAssetTab) return false;
+          if (assetTimePreset === "all") return true;
+          return isTimestampInRange(item.sortTime, assetTimeRange);
+        });
 
   useEffect(() => {
     if (!assetGalleryTabs.includes(activeAssetTab)) setActiveAssetTab("全部");
@@ -3326,19 +3542,47 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
       const nextSubTab = window.sessionStorage.getItem(
         "facemini:assets-subtab",
       );
+      const nextViewMode = window.sessionStorage.getItem(assetsViewModeStorageKey);
+      if (
+        nextViewMode === "profile" ||
+        nextViewMode === "billing" ||
+        nextViewMode === "favorites" ||
+        nextViewMode === "gallery"
+      ) {
+        setViewMode(nextViewMode);
+      }
       if (nextSubTab === "transactions" || nextSubTab === "recharge") {
         setActiveTab(nextSubTab);
       }
+      if (
+        window.sessionStorage.getItem("facemini:open-transactions-modal") === "1"
+      ) {
+        setShowTransactionsModal(true);
+        window.sessionStorage.removeItem("facemini:open-transactions-modal");
+      }
       window.sessionStorage.removeItem("facemini:assets-subtab");
+      window.sessionStorage.removeItem(assetsViewModeStorageKey);
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
     function handleAssetTabChange(event) {
       const nextTab = event.detail?.tab;
       const nextSubTab = event.detail?.subTab;
+      const nextViewMode = event.detail?.viewMode;
       if (assetGalleryTabs.includes(nextTab)) setActiveAssetTab(nextTab);
+      if (
+        nextViewMode === "profile" ||
+        nextViewMode === "billing" ||
+        nextViewMode === "favorites" ||
+        nextViewMode === "gallery"
+      ) {
+        setViewMode(nextViewMode);
+      }
       if (nextSubTab === "transactions" || nextSubTab === "recharge") {
         setActiveTab(nextSubTab);
+      }
+      if (event.detail?.openTransactionsModal) {
+        setShowTransactionsModal(true);
       }
     }
     window.addEventListener("facemini-assets-tab-change", handleAssetTabChange);
@@ -3355,12 +3599,27 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!showTransactionsModal) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setShowTransactionsModal(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showTransactionsModal]);
+
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
   }
 
   function selectTransactionFilter(nextFilter) {
     setTransactionFilter(nextFilter);
+    setTransactionsPage(1);
+  }
+
+  function submitTransactionSearch(event) {
+    event.preventDefault();
+    setTransactionSearch(transactionKeyword.trim());
     setTransactionsPage(1);
   }
 
@@ -3452,6 +3711,35 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     onOpenFeature?.("image");
   }
 
+  function goToFavoritesView() {
+    setViewMode("favorites");
+    setFavoriteTab("图片灵感");
+  }
+
+  function goToGalleryView() {
+    setViewMode("gallery");
+  }
+
+  function goToBillingView({ openTransactions = false } = {}) {
+    setViewMode("billing");
+    if (openTransactions) setShowTransactionsModal(true);
+  }
+
+  async function copyInviteLink() {
+    if (!profileInviteLink) return;
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(profileInviteLink);
+      copied = true;
+    } catch {
+      copied = false;
+    }
+    if (copied) {
+      setInviteLinkCopied(true);
+      window.setTimeout(() => setInviteLinkCopied(false), 1800);
+    }
+  }
+
   const assetTimeFilterControl = (
     <div className="fm-assets-time-filter" aria-label="时间筛选">
       <div className="fm-assets-time-presets">
@@ -3488,245 +3776,116 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     </div>
   );
 
-  if (true) {
+  if (viewMode === "gallery") {
     return (
       <section className="assets-view-root fm-assets-gallery-view">
         <div className="fm-assets-inner">
           <div className="fm-assets-headline">
             <h2>我的资产</h2>
-            <div className="fm-assets-mode-tabs" aria-label="资产视图">
-              <button
-                type="button"
-                className={activeTab !== "transactions" ? "is-active" : ""}
-                onClick={() => setActiveTab("assets")}
-              >
-                作品资产
-              </button>
-              <button
-                type="button"
-                className={activeTab === "transactions" ? "is-active" : ""}
-                onClick={() => setActiveTab("transactions")}
-              >
-                账单明细
-              </button>
-            </div>
           </div>
-
-          {activeTab === "transactions" ? (
-            <div className="fm-assets-transactions-view">
-              <div className="fm-transaction-toolbar">
-                <div className="fm-transaction-filters" aria-label="账单分类">
-                  {transactionFilterOptions.map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      className={transactionFilter === value ? "is-active" : ""}
-                      onClick={() => selectTransactionFilter(value)}
-                    >
-                      {label}
+          <div className="fm-assets-filter-row">
+            <div className="fm-assets-tabs" aria-label="????">
+              {assetGalleryTabs.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={tab === activeAssetTab ? "is-active" : ""}
+                  onClick={() => selectAssetTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {assetTimeFilterControl}
+          </div>
+          {assetGalleryCards.length ? (
+            <div className="fm-assets-grid">
+              {assetGalleryCards.map((card) => (
+                <article
+                  className="fm-asset-card"
+                  key={card.id}
+                  onClick={() => setPreviewAsset(card)}
+                >
+                  {card.isVideo && card.video ? (
+                    <video
+                      src={card.video}
+                      poster={card.poster || undefined}
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : card.src ? (
+                    <img src={card.src} alt={card.title} loading="lazy" />
+                  ) : (
+                    <div className="fm-asset-placeholder">
+                      {card.isVideo ? (
+                        <Video size={28} />
+                      ) : (
+                        <Image size={28} />
+                      )}
+                    </div>
+                  )}
+                  <span>{card.type}</span>
+                  {card.isVideo && (
+                    <button type="button" aria-label="播放">
+                      <Play size={16} fill="currentColor" />
                     </button>
-                  ))}
-                </div>
-                {assetTimeFilterControl}
-              </div>
-              {visibleTransactions.length ? (
-                <>
-                  <div className="assets-transactions-table fm-transactions-table">
-                    <div className="assets-transactions-header">
-                      <span>时间</span>
-                      <span>类型</span>
-                      <span>变动</span>
-                      <span>余额</span>
-                      <span>备注</span>
-                    </div>
-                    {visibleTransactions.map((tx) => {
-                      const typeInfo = txTypeMap[tx.type] || {
-                        label: tx.type,
-                        color: "#64748b",
-                      };
-                      const isIncome = Number(tx.amount || 0) > 0;
-                      return (
-                        <div className="assets-transaction-row" key={tx.id}>
-                          <span>
-                            {new Date(tx.createdAt).toLocaleString("zh-CN")}
-                          </span>
-                          <span style={{ color: typeInfo.color }}>
-                            {typeInfo.label}
-                          </span>
-                          <span
-                            style={{
-                              color: isIncome ? "#16a34a" : "#dc2626",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {isIncome ? "+" : ""}
-                            {tx.amount}
-                          </span>
-                          <span>{tx.balanceAfter}</span>
-                          <span
-                            data-tooltip={tx.memo || ""}
-                            className="fm-transaction-memo"
-                          >
-                            {tx.memo || "-"}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="assets-pagination">
-                    <span>
-                      第 {transactionMeta.page || transactionsPage} /{" "}
-                      {transactionsTotalPages} 页 · 共{" "}
-                      {transactionMeta.total || 0} 条
-                    </span>
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTransactionsPage((page) => Math.max(1, page - 1))
-                        }
-                        disabled={transactionsPage <= 1 || isLoading}
+                  )}
+                  <div className="fm-asset-hover-actions">
+                    <button
+                      type="button"
+                      aria-label="删除"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        deleteAsset(card);
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    {card.video || card.image ? (
+                      <a
+                        href={card.video || card.image}
+                        download
+                        aria-label="下载"
+                        onClick={(event) => event.stopPropagation()}
                       >
-                        上一页
+                        <Download size={16} />
+                      </a>
+                    ) : (
+                      <button type="button" aria-label="下载" disabled>
+                        <Download size={16} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setTransactionsPage((page) =>
-                            Math.min(transactionsTotalPages, page + 1),
-                          )
-                        }
-                        disabled={
-                          transactionsPage >= transactionsTotalPages ||
-                          isLoading
-                        }
-                      >
-                        下一页
-                      </button>
-                    </div>
+                    )}
+                    <button
+                      type="button"
+                      aria-label="收藏"
+                      className={card.favorite ? "is-favorite" : ""}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleAssetFavorite(card);
+                      }}
+                    >
+                      <Star
+                        size={16}
+                        fill={card.favorite ? "currentColor" : "none"}
+                      />
+                    </button>
                   </div>
-                </>
-              ) : (
-                <div className="fm-assets-empty-state">
-                  <History size={34} />
-                  <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
-                  <p>
-                    {transactionFilter === "invitegift"
-                      ? "邀请奖励到账后会显示在这里"
-                      : "暂无符合条件的积分变动"}
-                  </p>
-                </div>
-              )}
+                </article>
+              ))}
             </div>
           ) : (
-            <>
-              <div className="fm-assets-filter-row">
-                <div className="fm-assets-tabs" aria-label="资产分类">
-                  {assetGalleryTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={tab === activeAssetTab ? "is-active" : ""}
-                      onClick={() => selectAssetTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
-                {assetTimeFilterControl}
-              </div>
-              {assetGalleryCards.length ? (
-                <div className="fm-assets-grid">
-                  {assetGalleryCards.map((card) => (
-                    <article
-                      className="fm-asset-card"
-                      key={card.id}
-                      onClick={() => setPreviewAsset(card)}
-                    >
-                      {card.isVideo && card.video ? (
-                        <video
-                          src={card.video}
-                          poster={card.poster || undefined}
-                          muted
-                          playsInline
-                          preload="metadata"
-                        />
-                      ) : card.src ? (
-                        <img src={card.src} alt={card.title} loading="lazy" />
-                      ) : (
-                        <div className="fm-asset-placeholder">
-                          {card.isVideo ? (
-                            <Video size={28} />
-                          ) : (
-                            <Image size={28} />
-                          )}
-                        </div>
-                      )}
-                      <span>{card.type}</span>
-                      {card.isVideo && (
-                        <button type="button" aria-label="播放">
-                          <Play size={16} fill="currentColor" />
-                        </button>
-                      )}
-                      <div className="fm-asset-hover-actions">
-                        <button
-                          type="button"
-                          aria-label="删除"
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            deleteAsset(card, {
-                              targetName: card.title || card.type,
-                            });
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        {card.video || card.image ? (
-                          <a
-                            href={card.video || card.image}
-                            download
-                            aria-label="下载"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <Download size={16} />
-                          </a>
-                        ) : (
-                          <button type="button" aria-label="下载" disabled>
-                            <Download size={16} />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          aria-label="收藏"
-                          className={card.favorite ? "is-favorite" : ""}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            toggleAssetFavorite(card);
-                          }}
-                        >
-                          <Star
-                            size={16}
-                            fill={card.favorite ? "currentColor" : "none"}
-                          />
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="fm-assets-empty-state">
-                  <Wallet size={34} />
-                  <strong>{isLoading ? "正在加载作品" : "暂无作品"}</strong>
-                  <p>
-                    {activeAssetTab === "全部"
-                      ? "你的生成作品会显示在这里"
-                      : `暂无${activeAssetTab}作品`}
-                  </p>
-                </div>
-              )}
-            </>
+            <div className="fm-assets-empty-state">
+              <Wallet size={34} />
+              <strong>{isLoading ? "正在加载作品" : "暂无作品"}</strong>
+              <p>
+                {activeAssetTab === "全部"
+                  ? "你的生成作品会显示在这里"
+                  : `暂无${activeAssetTab}作品`}
+              </p>
+            </div>
           )}
         </div>
         <FaceminiInspirationModal
@@ -3740,7 +3899,663 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     );
   }
 
+  if (viewMode === "profile") {
+    return (
+      <section className="assets-view-root fm-profile-center-view">
+        {isGuest ? (
+          <div className="assets-login-panel fm-profile-login-panel">
+            <UserRound size={32} />
+            <strong>登录后查看个人中心</strong>
+            <p>登录后可管理资料、邀请好友与查看账户概览</p>
+            <button type="button" onClick={() => onOpenAuth("login")}>
+              登录
+            </button>
+          </div>
+        ) : (
+          <div className="fm-profile-center-inner">
+            <div className="fm-profile-user-card">
+              <div className="fm-profile-user-main">
+                <div className="fm-profile-avatar" aria-hidden="true">
+                  {profileAvatarChar}
+                </div>
+                <div className="fm-profile-user-meta">
+                  <strong>{profileDisplayName}</strong>
+                  <span>剩余 {profileCredits} 积分</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="fm-profile-invite-card">
+              <button
+                className="fm-profile-invite-head"
+                type="button"
+                onClick={() => onOpenInvite?.()}
+              >
+                <span className="fm-profile-invite-icon" aria-hidden="true">
+                  <Gift size={18} />
+                </span>
+                <span className="fm-profile-invite-copy">
+                  <strong>邀请有礼</strong>
+                  <small>
+                    邀请好友注册，双方各得 {inviteRewardPoints} 积分
+                  </small>
+                </span>
+                <ChevronRight size={18} className="fm-profile-invite-arrow" />
+              </button>
+              <div className="fm-profile-invite-foot">
+                <div>
+                  <span>我的邀请码</span>
+                  <strong>{profileInviteCode || "—"}</strong>
+                </div>
+                <button
+                  className="fm-profile-copy-button"
+                  type="button"
+                  onClick={copyInviteLink}
+                  disabled={!profileInviteLink}
+                >
+                  {inviteLinkCopied ? "已复制" : "复制邀请链接"}
+                </button>
+              </div>
+            </div>
+
+            <div className="fm-profile-bottom-grid">
+              <div className="fm-profile-panel">
+                <h3>账户概览</h3>
+                <dl className="fm-profile-stats">
+                  <div>
+                    <dt>累计创作</dt>
+                    <dd>{totalCreations.toLocaleString("zh-CN")}</dd>
+                  </div>
+                  <div>
+                    <dt>本月消耗积分</dt>
+                    <dd>{monthlyConsumedCredits.toLocaleString("zh-CN")}</dd>
+                  </div>
+                  <div>
+                    <dt>我的收藏</dt>
+                    <dd>
+                      <button
+                        className="fm-profile-stat-link"
+                        type="button"
+                        onClick={goToFavoritesView}
+                      >
+                        {totalFavorites.toLocaleString("zh-CN")}
+                      </button>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="fm-profile-panel">
+                <h3>快捷入口</h3>
+                <div className="fm-profile-quick-links">
+                  <button type="button" className="is-muted">
+                    会员中心
+                  </button>
+                  <button type="button" onClick={() => onOpenInvite?.()}>
+                    邀请有礼
+                  </button>
+                  <button type="button" onClick={() => goToBillingView()}>
+                    账单明细
+                  </button>
+                  <button type="button" className="is-muted">
+                    账号设置
+                  </button>
+                  <button type="button" onClick={goToGalleryView}>
+                    我的资产
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  if (viewMode === "favorites") {
+    return (
+      <section className="assets-view-root fm-favorites-view">
+        {isGuest ? (
+          <div className="assets-login-panel fm-favorites-login-panel">
+            <Star size={32} />
+            <strong>登录后查看我的收藏</strong>
+            <p>登录后可按模块浏览已收藏的作品</p>
+            <button type="button" onClick={() => onOpenAuth("login")}>
+              登录
+            </button>
+          </div>
+        ) : (
+          <div className="fm-favorites-inner">
+            <button
+              className="fm-favorites-back"
+              type="button"
+              onClick={() => setViewMode("profile")}
+            >
+              返回个人中心
+            </button>
+            <div className="fm-section-title-row fm-favorites-title-row">
+              <h2>我的收藏</h2>
+              <div
+                className="fm-pill-tabs fm-inspiration-tabs fm-favorites-tabs"
+                aria-label="收藏分类"
+              >
+                {favoriteModuleTabs.map((tab) => (
+                  <button
+                    className={tab === favoriteTab ? "active" : ""}
+                    key={tab}
+                    type="button"
+                    onClick={() => setFavoriteTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {favoriteTabCards.length ? (
+              <div className="fm-assets-grid fm-favorites-grid">
+                {favoriteTabCards.map((card) => (
+                  <article
+                    className="fm-asset-card"
+                    key={card.id}
+                    onClick={() => setPreviewAsset(card)}
+                  >
+                    {card.isVideo && card.video ? (
+                      <video
+                        src={card.video}
+                        poster={card.poster || undefined}
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : card.src ? (
+                      <img src={card.src} alt={card.title} loading="lazy" />
+                    ) : (
+                      <div className="fm-asset-placeholder">
+                        {card.isVideo ? (
+                          <Video size={28} />
+                        ) : (
+                          <Image size={28} />
+                        )}
+                      </div>
+                    )}
+                    <span>{card.type}</span>
+                    {card.isVideo && (
+                      <button type="button" aria-label="播放">
+                        <Play size={16} fill="currentColor" />
+                      </button>
+                    )}
+                    <div className="fm-asset-hover-actions">
+                      <button
+                        type="button"
+                        aria-label="删除"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          deleteAsset(card);
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      {card.video || card.image ? (
+                        <a
+                          href={card.video || card.image}
+                          download
+                          aria-label="下载"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <Download size={16} />
+                        </a>
+                      ) : (
+                        <button type="button" aria-label="下载" disabled>
+                          <Download size={16} />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        aria-label="收藏"
+                        className={card.favorite ? "is-favorite" : ""}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleAssetFavorite(card);
+                        }}
+                      >
+                        <Star
+                          size={16}
+                          fill={card.favorite ? "currentColor" : "none"}
+                        />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="fm-favorites-empty-state">
+                <Star size={34} />
+                <strong>暂无{favoriteTab}收藏</strong>
+                <p>在对应模块收藏作品后，会显示在这里</p>
+              </div>
+            )}
+          </div>
+        )}
+        <FaceminiInspirationModal
+          item={previewAsset}
+          onClose={() => setPreviewAsset(null)}
+          onRemix={remixAsset}
+          onReference={referenceAsset}
+        />
+        {deleteConfirmDialog}
+      </section>
+    );
+  }
+
+  const displayBalance = Number(
+    credits?.balance ?? authUser?.credits ?? 0,
+  ).toLocaleString("zh-CN");
+  const latestTypeInfo = latestTransaction
+    ? txTypeMap[latestTransaction.type] || {
+        label: latestTransaction.type,
+        color: "#64748b",
+      }
+    : null;
+  const latestIsIncome = latestTransaction
+    ? Number(latestTransaction.amount || 0) > 0
+    : false;
+  const latestDescription = latestTransaction
+    ? (() => {
+        const memo = String(latestTransaction.memo || "").trim();
+        const label = latestTypeInfo?.label || "";
+        if (memo && label && !memo.includes(label)) {
+          return `${label} · ${memo}`;
+        }
+        return memo || label || "积分变动";
+      })()
+    : "";
+  const latestTimeLabel = latestTransaction
+    ? (() => {
+        const date = new Date(latestTransaction.createdAt);
+        if (Number.isNaN(date.getTime())) return "";
+        const pad = (value) => String(value).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      })()
+    : "";
+
+  function scrollToRechargePanel() {
+    document
+      .getElementById("fm-billing-recharge")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  return (
+    <section className="assets-view-root fm-profile-billing-view">
+      <header className="assets-toolbar fm-billing-toolbar">
+        <div>
+          <h1>账单明细</h1>
+          <p>积分充值、消费记录与订单查询</p>
+        </div>
+        <button
+          className="assets-icon-button"
+          type="button"
+          onClick={refreshAssets}
+          disabled={isLoading || isGuest}
+          aria-label="刷新账单"
+        >
+          <RefreshCcw size={18} className={isLoading ? "is-spinning" : ""} />
+        </button>
+      </header>
+
+      {isGuest ? (
+        <div className="assets-login-panel">
+          <Wallet size={32} />
+          <strong>登录后查看账单明细</strong>
+          <p>登录后可查看积分余额、充值记录和消费明细</p>
+          <button type="button" onClick={() => onOpenAuth("login")}>
+            登录
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="assets-balance-hero fm-billing-balance-hero">
+            <div className="assets-balance-info">
+              <span>可用积分</span>
+              <strong>{displayBalance}</strong>
+              <small>1 元 = 100 积分</small>
+            </div>
+            <div className="assets-balance-actions">
+              <button type="button" onClick={scrollToRechargePanel}>
+                <Wallet size={18} />
+                立即充值
+              </button>
+              <button
+                className="is-ghost"
+                type="button"
+                onClick={() => setShowTransactionsModal(true)}
+              >
+                <History size={18} />
+                收支记录
+              </button>
+            </div>
+          </div>
+
+          <div className="fm-billing-workspace">
+            <div
+              className="fm-billing-recharge-card"
+              id="fm-billing-recharge"
+            >
+              <div className="assets-section-title">
+                <Wallet size={18} />
+                <strong>在线充值</strong>
+              </div>
+              <div className="assets-presets">
+                {rechargePresets.map((value) => (
+                  <button
+                    className={activePreset === value ? "is-active" : ""}
+                    key={value}
+                    type="button"
+                    onClick={() => selectPreset(value)}
+                  >
+                    <span>{value} 元</span>
+                    <small>{value * 100} 积分</small>
+                  </button>
+                ))}
+              </div>
+              <div className="fm-billing-pay-row">
+                <label className="assets-custom-amount fm-billing-custom-field">
+                  <span>自定义金额</span>
+                  <div className="fm-billing-custom-control">
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={amount}
+                      onChange={(event) => updateAmount(event.target.value)}
+                    />
+                    <em>{points} 积分</em>
+                  </div>
+                </label>
+                <div className="assets-payment-method-row fm-billing-payment-field">
+                  <span>支付方式</span>
+                  <div
+                    className="assets-payment-methods"
+                    aria-label="选择支付方式"
+                  >
+                    {paymentProviderOptions.map((option) => (
+                      <button
+                        className={
+                          paymentProvider === option.value ? "is-active" : ""
+                        }
+                        key={option.value}
+                        type="button"
+                        onClick={() => setPaymentProvider(option.value)}
+                      >
+                        <Wallet size={16} />
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {error && <div className="assets-error">{error}</div>}
+              <button
+                className="assets-primary-action"
+                type="button"
+                onClick={createOrder}
+                disabled={isCreating}
+              >
+                {isCreating ? (
+                  <Loader2 size={18} className="is-spinning" />
+                ) : (
+                  <Wallet size={18} />
+                )}
+                <span>立即支付</span>
+              </button>
+            </div>
+
+            <div className="fm-billing-side">
+              <div className="fm-billing-side-card fm-billing-records-card">
+                <div className="assets-section-title">
+                  <History size={18} />
+                  <strong>收支记录</strong>
+                </div>
+                {latestTransaction ? (
+                  <button
+                    className="fm-billing-latest-tx"
+                    type="button"
+                    onClick={() => setShowTransactionsModal(true)}
+                  >
+                    <div className="fm-billing-latest-main">
+                      <div className="fm-billing-latest-head">
+                        <span
+                          className="fm-billing-latest-type"
+                          style={{ color: latestTypeInfo?.color }}
+                        >
+                          {latestTypeInfo?.label}
+                        </span>
+                        <strong>{latestDescription}</strong>
+                      </div>
+                      <small>{latestTimeLabel}</small>
+                    </div>
+                    <em
+                      className="fm-billing-latest-amount"
+                      style={{
+                        color: latestIsIncome ? "#16a34a" : "#dc2626",
+                      }}
+                    >
+                      {latestIsIncome ? "+" : ""}
+                      {latestTransaction.amount} 积分
+                    </em>
+                  </button>
+                ) : (
+                  <div className="assets-empty-state">暂无收支记录</div>
+                )}
+                <button
+                  className="fm-billing-side-link"
+                  type="button"
+                  onClick={() => setShowTransactionsModal(true)}
+                >
+                  查看全部收支记录
+                </button>
+              </div>
+
+              <div className="fm-billing-side-card fm-billing-orders-card">
+                <div className="assets-section-title">
+                  <FileText size={18} />
+                  <strong>近期充值订单</strong>
+                </div>
+                <div className="assets-order-list">
+                  {recentRechargeOrders.length ? (
+                    recentRechargeOrders.map((order) => (
+                      <div
+                        className={`assets-order-row status-${order.status}`}
+                        key={order.outTradeNo}
+                      >
+                        <div>
+                          <strong>{order.totalAmount} 元</strong>
+                          <span>
+                            {paymentProviderText(order.provider)} ·{" "}
+                            {order.outTradeNo}
+                          </span>
+                        </div>
+                        <div>
+                          <strong>{order.points} 积分</strong>
+                          <span>{paymentStatusText(order.status)}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="assets-empty-state">
+                      近一个月暂无充值订单
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showTransactionsModal && (
+        <div
+          className="fm-transactions-modal-backdrop"
+          role="presentation"
+          onClick={() => setShowTransactionsModal(false)}
+        >
+          <div
+            className="fm-transactions-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="收支记录"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="fm-transactions-modal-head">
+              <div>
+                <strong>收支记录</strong>
+                <span>积分流水明细</span>
+              </div>
+              <button
+                className="assets-dialog-close"
+                type="button"
+                onClick={() => setShowTransactionsModal(false)}
+                aria-label="关闭"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {assetTimeFilterControl}
+            <CreditTransactionsPanel
+              transactions={visibleTransactions}
+              transactionsPage={transactionsPage}
+              transactionsTotalPages={transactionsTotalPages}
+              transactionMeta={transactionMeta}
+              transactionFilter={transactionFilter}
+              transactionKeyword={transactionKeyword}
+              isLoading={isLoading}
+              onFilterChange={selectTransactionFilter}
+              onKeywordChange={setTransactionKeyword}
+              onSearchSubmit={submitTransactionSearch}
+              onPageChange={setTransactionsPage}
+            />
+          </div>
+        </div>
+      )}
+
+      {paymentDialog && (
+        <div
+          className="assets-payment-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}二维码`}
+        >
+          <div className="assets-payment-dialog">
+            <button
+              className="assets-dialog-close"
+              type="button"
+              onClick={() => showPaymentResult(paymentDialog.order, "CANCELED")}
+              aria-label="关闭"
+            >
+              <X size={18} />
+            </button>
+            <div className="assets-payment-dialog-head">
+              <span>
+                {paymentProviderText(
+                  paymentDialog.order?.provider || paymentDialog.provider,
+                )}
+              </span>
+              <strong>
+                {paymentDialog.order?.status === "PAID"
+                  ? "充值成功"
+                  : paymentProviderOrderTitle(
+                      paymentDialog.order?.provider || paymentDialog.provider,
+                    )}
+              </strong>
+            </div>
+            <div className="assets-qr-box">
+              {paymentDialog.qrCodeDataUrl ? (
+                <img
+                  src={paymentDialog.qrCodeDataUrl}
+                  alt={`${paymentProviderText(paymentDialog.order?.provider || paymentDialog.provider)}充值二维码`}
+                />
+              ) : (
+                <Loader2 size={28} className="is-spinning" />
+              )}
+            </div>
+            <div className="assets-dialog-meta-card">
+              <span>订单号</span>
+              <strong>{paymentDialog.order?.outTradeNo}</strong>
+              <span>支付金额</span>
+              <em>
+                ¥ {Number(paymentDialog.order?.totalAmount || 0).toFixed(0)}
+              </em>
+              <span>到账积分</span>
+              <strong>
+                {Number(paymentDialog.order?.points || 0).toLocaleString("zh-CN")}{" "}
+                积分
+              </strong>
+            </div>
+            <div className="assets-dialog-countdown">
+              <span>订单码有效期</span>
+              <strong>{formatPaymentCountdown(paymentCountdown)}</strong>
+            </div>
+            {paymentDialog.error && (
+              <div className="assets-error">{paymentDialog.error}</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {paymentResultDialog && (
+        <div
+          className="assets-payment-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={paymentResultDialog.title}
+        >
+          <div
+            className={`assets-payment-result-dialog tone-${paymentResultDialog.tone}`}
+          >
+            <button
+              className="assets-dialog-close"
+              type="button"
+              onClick={() => setPaymentResultDialog(null)}
+              aria-label="关闭"
+            >
+              <X size={18} />
+            </button>
+            <div className="assets-result-icon">
+              {React.createElement(paymentResultDialog.icon, { size: 30 })}
+            </div>
+            <div className="assets-payment-dialog-head">
+              <span>
+                {paymentProviderText(
+                  paymentResultDialog.order?.provider || paymentProvider,
+                )}
+              </span>
+              <strong>{paymentResultDialog.title}</strong>
+            </div>
+            <p className="assets-result-message">{paymentResultDialog.message}</p>
+            {paymentResultDialog.order?.outTradeNo && (
+              <div className="assets-dialog-meta-card">
+                <span>订单号</span>
+                <strong>{paymentResultDialog.order.outTradeNo}</strong>
+                <span>支付金额</span>
+                <em>
+                  ¥ {Number(paymentResultDialog.order.totalAmount || 0).toFixed(0)}
+                </em>
+                <span>订单状态</span>
+                <strong>{paymentStatusText(paymentResultDialog.status)}</strong>
+              </div>
+            )}
+            <div className="assets-dialog-countdown">
+              <span>弹窗自动关闭</span>
+              <strong>{paymentResultCountdown}s</strong>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
 }
+
 
 function ResultCard({
   card,
@@ -11795,6 +12610,7 @@ function WorkbenchTopbar({
 
   function openAssets(tab = "全部", subTab = "") {
     try {
+      window.sessionStorage.setItem(assetsViewModeStorageKey, "gallery");
       window.sessionStorage.setItem(assetGalleryTabStorageKey, tab);
       if (subTab)
         window.sessionStorage.setItem("facemini:assets-subtab", subTab);
@@ -11803,10 +12619,46 @@ function WorkbenchTopbar({
     }
     window.dispatchEvent(
       new CustomEvent("facemini-assets-tab-change", {
-        detail: { tab, subTab },
+        detail: { tab, subTab, viewMode: "gallery" },
       }),
     );
     onNavChange?.("assets");
+    setShowProfileMenu(false);
+  }
+
+  function openProfileCenter() {
+    try {
+      window.sessionStorage.setItem(assetsViewModeStorageKey, "profile");
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+    onNavChange?.("assets");
+    window.dispatchEvent(
+      new CustomEvent("facemini-assets-tab-change", {
+        detail: { viewMode: "profile" },
+      }),
+    );
+    setShowProfileMenu(false);
+  }
+
+  function openBillingCenter({ openTransactions = false } = {}) {
+    try {
+      window.sessionStorage.setItem(assetsViewModeStorageKey, "billing");
+      if (openTransactions) {
+        window.sessionStorage.setItem("facemini:open-transactions-modal", "1");
+      }
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+    onNavChange?.("assets");
+    window.dispatchEvent(
+      new CustomEvent("facemini-assets-tab-change", {
+        detail: {
+          viewMode: "billing",
+          openTransactionsModal: openTransactions,
+        },
+      }),
+    );
     setShowProfileMenu(false);
   }
 
@@ -11896,6 +12748,13 @@ function WorkbenchTopbar({
                   <button
                     type="button"
                     role="menuitem"
+                    onClick={() => openProfileCenter()}
+                  >
+                    个人中心
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
                     onClick={() => openAssets("全部")}
                   >
                     我的资产
@@ -11903,7 +12762,7 @@ function WorkbenchTopbar({
                   <button
                     type="button"
                     role="menuitem"
-                    onClick={() => openAssets("全部", "transactions")}
+                    onClick={() => openBillingCenter()}
                   >
                     账单明细
                   </button>
@@ -12122,6 +12981,7 @@ function ImageFeaturePage({
             authUser={authUser}
             onOpenAuth={onOpenAuth}
             onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive

@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import JSZip from "jszip";
 import { articleApi } from "./articleApi";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
@@ -771,6 +772,59 @@ export function ArticleGenerationView({
     }, 2000);
   }
 
+  async function copyArticleText() {
+    if (!draftCopy) return;
+    const text = [
+      draftCopy.title,
+      "",
+      draftCopy.body,
+      "",
+      (draftCopy.tags || []).map((tag) => `#${tag}`).join(" "),
+    ].join("\n");
+    try {
+      await navigator.clipboard?.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    showToast("文案已复制");
+  }
+
+  async function downloadImagesAsZip() {
+    const images = previewImages.filter((item) => item.image);
+    if (!images.length) return;
+    const zip = new JSZip();
+    await Promise.all(
+      images.map(async (item, index) => {
+        try {
+          const response = await fetch(item.image);
+          const blob = await response.blob();
+          const ext = blob.type.split("/")[1] || "png";
+          zip.file(`image-${index + 1}.${ext}`, blob);
+        } catch (error) {
+          console.error("下载图片失败", error);
+        }
+      }),
+    );
+    const content = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "images.zip";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("图片已打包下载");
+  }
+
   function changePlatform(platform) {
     setForm((current) => ({ ...current, platform, copyTemplate: "" }));
     setDraftCopy(null);
@@ -1516,13 +1570,15 @@ export function ArticleGenerationView({
                           ))}
                         </div>
                       </div>
-                      <div className="article-full-copy">
-                        <h2>{draftCopy?.title}</h2>
-                        {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
-                          <p key={`${paragraph}-${index}`}>{paragraph}</p>
-                        ))}
-                        <div>
-                          {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                      <div className="article-full-copy-scroll">
+                        <div className="article-full-copy">
+                          <h2>{draftCopy?.title}</h2>
+                          {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
+                            <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                          ))}
+                          <div>
+                            {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                          </div>
                         </div>
                       </div>
                     </article>
@@ -1555,6 +1611,14 @@ export function ArticleGenerationView({
                   )}
                   <footer>
                     <button type="button" onClick={() => selectedTask && setPreviewTask(selectedTask)}>预览图文</button>
+                    <button type="button" onClick={copyArticleText}>
+                      <Copy size={16} />
+                      复制文案
+                    </button>
+                    <button type="button" onClick={downloadImagesAsZip}>
+                      <Download size={16} />
+                      下载图片
+                    </button>
                   </footer>
                 </>
               )}
@@ -1562,28 +1626,26 @@ export function ArticleGenerationView({
           )}
         </main>
 
-      {step < 4 && (
-        <section className="article-quick-section">
-          <header>
-            <div>
-              <strong>快捷图文模板</strong>
-              <p>成套图文模板，一键填充文案+预设配图风格</p>
-            </div>
-          </header>
-          <div className="article-quick-rail">
-            {quickTemplates.map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                onClick={() => handleQuickTemplateClick(item)}
-              >
-                <img src={item.image} alt="" />
-                <span>{item.title}</span>
-              </button>
-            ))}
+      <section className="article-quick-section">
+        <header>
+          <div>
+            <strong>快捷图文模板</strong>
+            <p>成套图文模板，一键填充文案+预设配图风格</p>
           </div>
-        </section>
-      )}
+        </header>
+        <div className="article-quick-rail">
+          {quickTemplates.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              onClick={() => handleQuickTemplateClick(item)}
+            >
+              <img src={item.image} alt="" />
+              <span>{item.title}</span>
+            </button>
+          ))}
+        </div>
+      </section>
       </div>
       <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
       {pendingQuickTemplate && (
