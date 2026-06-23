@@ -1,4 +1,12 @@
-import { fetchProxiedMedia } from "../backend/src/shared/mediaProxy.js";
+const mediaProxyModulePath = "../backend/src/shared/mediaProxy.js";
+let mediaProxyModulePromise;
+
+function loadMediaProxyModule() {
+  if (!mediaProxyModulePromise) {
+    mediaProxyModulePromise = import(mediaProxyModulePath);
+  }
+  return mediaProxyModulePromise;
+}
 
 export function mediaProxyPlugin() {
   return {
@@ -14,6 +22,7 @@ export function mediaProxyPlugin() {
 
         try {
           const requestUrl = new URL(req.url, "http://127.0.0.1");
+          const { fetchProxiedMedia } = await loadMediaProxyModule();
           const { buffer, contentType } = await fetchProxiedMedia(requestUrl.searchParams.get("url"));
           res.statusCode = 200;
           res.setHeader("Content-Type", contentType);

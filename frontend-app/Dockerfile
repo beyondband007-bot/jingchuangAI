@@ -12,6 +12,7 @@ COPY index.html ./
 COPY public ./public
 COPY src ./src
 COPY vite.config.js ./
+COPY viteMediaProxyPlugin.js ./
 
 RUN npm run build
 

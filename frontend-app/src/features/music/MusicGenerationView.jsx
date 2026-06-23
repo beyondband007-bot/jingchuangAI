@@ -84,6 +84,23 @@ async function waitForLyricsSync(taskId, { attempts = 80, intervalMs = 3000 } = 
   return task;
 }
 
+async function syncLyricsAndGetTask(taskId) {
+  const current = await musicApi.getTask(taskId);
+  const hasTimeline = Array.isArray(current.lyricsTimeline) && current.lyricsTimeline.length > 0;
+  if (current.lyricsSyncStatus === "completed" && hasTimeline) return current;
+
+  try {
+    await musicApi.syncLyrics(taskId, { force: current.lyricsSyncStatus === "failed" });
+  } catch (error) {
+    const latest = await musicApi.getTask(taskId).catch(() => null);
+    if (!latest) throw error;
+    if (latest.lyricsSyncStatus === "processing") return waitForLyricsSync(taskId);
+    return latest;
+  }
+
+  return musicApi.getTask(taskId);
+}
+
 function generateCoverGradient(seed) {
   const gradients = [
     "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -289,7 +306,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
         setProgressPercent(90);
         setNotice("音乐生成完成，正在处理歌词...");
         setSyncingIds((current) => ({ ...current, [taskId]: true }));
-        const synced = await waitForLyricsSync(taskId);
+        const synced = await syncLyricsAndGetTask(taskId);
         if (token !== pollTokenRef.current) return;
         mapped = applyTaskUpdate(taskId, synced, fallback);
         setSyncingIds((current) => {
