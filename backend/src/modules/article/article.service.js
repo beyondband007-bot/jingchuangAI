@@ -20,6 +20,7 @@ import {
   updateArticlePackageStatus,
   updateArticlePackageTaskIds
 } from "./article.repository.js";
+import { buildArticleImagesZip, sanitizeZipBaseName } from "./articleImageZip.js";
 
 const ARTICLE_SOURCE = "article";
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
@@ -493,6 +494,21 @@ export async function getPackage(id, userId) {
   const packageId = String(id || "").replace(/^package-/, "");
   const row = await findArticlePackageRow(packageId, userId);
   return row ? hydratePackage(row, userId) : null;
+}
+
+export async function downloadPackageImagesZip(id, userId) {
+  const pkg = await getPackage(id, userId);
+  if (!pkg) return null;
+
+  const images = (pkg.imageTasks || [])
+    .map((task) => task.imageUrl || task.image)
+    .filter(Boolean);
+  if (!images.length && pkg.images?.length) {
+    images.push(...pkg.images.filter(Boolean));
+  }
+
+  const zipName = sanitizeZipBaseName(pkg.copy?.title || pkg.title || `article-${id}`);
+  return buildArticleImagesZip(images, { zipName });
 }
 
 export async function toggleFavorite(id, userId) {

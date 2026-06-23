@@ -16,7 +16,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import JSZip from "jszip";
 import { articleApi } from "./articleApi";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
@@ -746,6 +745,23 @@ export function ArticleGenerationView({
       if (selectedTask.copy && !draftCopy) setDraftCopy(selectedTask.copy);
       if (selectedTask.imagePromptPlan && !imagePromptPlan) setImagePromptPlan(selectedTask.imagePromptPlan);
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
+
+      if (
+        (selectedTask.status === "completed" || selectedTask.status === "partial_completed") &&
+        selectedTask.imagePromptPlan &&
+        !getArticleImages(selectedTask).length
+      ) {
+        articleApi
+          .getPackage(selectedTask.id)
+          .then((pkg) => {
+            setCards((current) =>
+              current.map((card) =>
+                card.id === pkg.id ? { ...card, ...pkg } : card,
+              ),
+            );
+          })
+          .catch(() => {});
+      }
     }
   }, [selectedTask, draftCopy, imagePromptPlan]);
 
@@ -798,31 +814,26 @@ export function ArticleGenerationView({
   }
 
   async function downloadImagesAsZip() {
-    const images = previewImages.filter((item) => item.image);
-    if (!images.length) return;
-    const zip = new JSZip();
-    await Promise.all(
-      images.map(async (item, index) => {
-        try {
-          const response = await fetch(item.image);
-          const blob = await response.blob();
-          const ext = blob.type.split("/")[1] || "png";
-          zip.file(`image-${index + 1}.${ext}`, blob);
-        } catch (error) {
-          console.error("下载图片失败", error);
-        }
-      }),
-    );
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "images.zip";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast("图片已打包下载");
+    if (!selectedTask?.id) return;
+
+    try {
+      showToast("正在打包图片…");
+      const blob = await articleApi.downloadPackageImages(selectedTask.id);
+      const title = draftCopy?.title || selectedTask.title || "article-images";
+      const safeName = title.replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, "_").slice(0, 48) || "article-images";
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${safeName}.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(url);
+      showToast("图片已打包下载");
+    } catch (error) {
+      console.error("打包下载失败", error);
+      showToast(error.message || "打包下载失败，请稍后重试");
+    }
   }
 
   function changePlatform(platform) {
@@ -1489,6 +1500,7 @@ export function ArticleGenerationView({
               </div>
             </div>
           ) : (
+            <>
             <div className="article-image-result">
               <div className="article-result-mode-tabs" aria-label="图文展示模式">
                 {[
@@ -1609,20 +1621,22 @@ export function ArticleGenerationView({
                       </article>
                     </div>
                   )}
-                  <footer>
-                    <button type="button" onClick={() => selectedTask && setPreviewTask(selectedTask)}>预览图文</button>
-                    <button type="button" onClick={copyArticleText}>
-                      <Copy size={16} />
-                      复制文案
-                    </button>
-                    <button type="button" onClick={downloadImagesAsZip}>
-                      <Download size={16} />
-                      下载图片
-                    </button>
-                  </footer>
                 </>
               )}
+              {hasCompletedArticle && (
+                <footer>
+                  <button className="article-footer-btn" type="button" onClick={copyArticleText}>
+                    <Copy size={16} />
+                    复制文案
+                  </button>
+                  <button className="article-footer-btn" type="button" onClick={downloadImagesAsZip}>
+                    <Download size={16} />
+                    下载图片
+                  </button>
+                </footer>
+              )}
             </div>
+            </>
           )}
         </main>
 

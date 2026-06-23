@@ -5,6 +5,7 @@ import {
   createTask,
   deleteTask,
   getModels,
+  downloadPackageImagesZip,
   getPackage,
   getTask,
   listTasks,
@@ -53,6 +54,24 @@ export async function getArticlePackage(req, res) {
       return;
     }
     res.json(item);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function downloadArticlePackageImages(req, res) {
+  try {
+    const result = await downloadPackageImagesZip(req.params.id, req.user.id);
+    if (!result) {
+      res.status(404).json({ error: "package not found" });
+      return;
+    }
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename*=UTF-8''${encodeURIComponent(result.fileName)}`,
+    );
+    res.send(result.buffer);
   } catch (error) {
     sendError(res, error);
   }
