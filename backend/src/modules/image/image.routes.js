@@ -8,7 +8,9 @@ import {
   deleteImageTask,
   getImageModels,
   getImageTask,
+  listImageInspirationFavorites,
   listImageTasks,
+  toggleImageInspirationFavorite,
   toggleImageFavorite,
   uploadImageReference
 } from "./image.controller.js";
@@ -55,6 +57,8 @@ function uploadReference(req, res, next) {
 
 imageRouter.get("/models", getImageModels);
 imageRouter.post("/uploads/reference", uploadReference, uploadImageReference);
+imageRouter.get("/inspiration-favorites", listImageInspirationFavorites);
+imageRouter.post("/inspiration-favorites/:id", toggleImageInspirationFavorite);
 imageRouter.get("/tasks", listImageTasks);
 imageRouter.post("/tasks", createImageTask);
 imageRouter.get("/tasks/:id", getImageTask);

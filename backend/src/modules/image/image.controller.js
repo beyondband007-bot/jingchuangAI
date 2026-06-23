@@ -1,5 +1,15 @@
 import { requireLoggedIn, sendError } from "../../shared/http.js";
-import { createTask, deleteTask, getModels, getTask, listTasks, toggleFavorite, uploadReferenceImage } from "./image.service.js";
+import {
+  createTask,
+  deleteTask,
+  getModels,
+  getTask,
+  listInspirationFavorites,
+  listTasks,
+  toggleFavorite,
+  toggleInspirationFavorite,
+  uploadReferenceImage
+} from "./image.service.js";
 
 export async function getImageModels(_req, res) {
   try {
@@ -56,6 +66,24 @@ export async function toggleImageFavorite(req, res) {
       return;
     }
     res.json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function listImageInspirationFavorites(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await listInspirationFavorites(req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function toggleImageInspirationFavorite(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await toggleInspirationFavorite(req.params.id, req.user.id));
   } catch (error) {
     sendError(res, error);
   }

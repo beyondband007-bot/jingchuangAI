@@ -29132,7 +29132,7 @@ function Zc({
                   a.jsxs('button', {
                     type: 'button',
                     onClick: () => o?.(i),
-                    children: [a.jsx(At, { size: 16 }), '用作参考图'],
+                    children: [a.jsx(At, { size: 16 }), '用作参考'],
                   }),
                 ],
               }),

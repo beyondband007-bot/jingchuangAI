@@ -20,9 +20,13 @@ import {
   findImageTaskRow,
   findImageTaskStatus,
   findRefreshableImageTasks,
+  findInspirationFavorite,
+  listInspirationFavoriteIds,
   listImageTaskRows,
   lockImageTaskForRefund,
+  addInspirationFavorite,
   markImageTaskRefunded,
+  removeInspirationFavorite,
   setImageTaskCompleted,
   setImageTaskError,
   setImageTaskFailed,
@@ -274,4 +278,28 @@ export async function deleteTask(id, userId) {
 export async function toggleFavorite(id, userId) {
   await toggleImageTaskFavorite(id, userId)
   return getTask(id, userId)
+}
+
+function normalizeInspirationId(value) {
+  const id = String(value || '').trim()
+  if (!id || id.length > 180) {
+    throw createHttpError('inspiration id is required', 400)
+  }
+  return id
+}
+
+export async function listInspirationFavorites(userId) {
+  return { ids: await listInspirationFavoriteIds(userId) }
+}
+
+export async function toggleInspirationFavorite(id, userId) {
+  const inspirationId = normalizeInspirationId(id)
+  const existing = await findInspirationFavorite(userId, inspirationId)
+  if (existing) {
+    await removeInspirationFavorite(userId, inspirationId)
+    return { id: inspirationId, favorite: false }
+  }
+
+  await addInspirationFavorite(userId, inspirationId)
+  return { id: inspirationId, favorite: true }
 }

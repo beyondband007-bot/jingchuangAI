@@ -616,6 +616,71 @@ const homeFeatureRoutes = [
 const faceminiAsset = (path) => `/assets/facemini/${path}`;
 const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
 const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
+const inspirationFavoritesStorageKey = "facemini:inspiration-favorites";
+const inspirationFavoritesChangedEvent = "facemini-inspiration-favorites-changed";
+
+function getInspirationFavoriteId(item) {
+  return item?.id ? String(item.id) : "";
+}
+
+function readInspirationFavoriteIds() {
+  try {
+    const value = window.localStorage.getItem(inspirationFavoritesStorageKey);
+    const ids = JSON.parse(value || "[]");
+    return new Set(Array.isArray(ids) ? ids.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeInspirationFavoriteIds(ids) {
+  try {
+    window.localStorage.setItem(
+      inspirationFavoritesStorageKey,
+      JSON.stringify([...ids]),
+    );
+    window.dispatchEvent(
+      new CustomEvent(inspirationFavoritesChangedEvent, {
+        detail: { ids: [...ids] },
+      }),
+    );
+  } catch {
+    // Local storage can be unavailable in restricted browser contexts.
+  }
+}
+
+function publishInspirationFavoriteIds(ids) {
+  writeInspirationFavoriteIds(ids);
+}
+
+async function loadInspirationFavoriteIds({ allowFallback = true } = {}) {
+  try {
+    const result = await imageApi.getInspirationFavorites();
+    const ids = new Set(Array.isArray(result?.ids) ? result.ids.map(String) : []);
+    publishInspirationFavoriteIds(ids);
+    return ids;
+  } catch (error) {
+    if (allowFallback) return readInspirationFavoriteIds();
+    throw error;
+  }
+}
+
+async function toggleInspirationFavoriteId(id) {
+  const favoriteId = String(id || "");
+  if (!favoriteId) return false;
+  const result = await imageApi.toggleInspirationFavorite(favoriteId);
+  const nextValue = Boolean(result?.favorite);
+  const ids = readInspirationFavoriteIds();
+  if (nextValue) ids.add(favoriteId);
+  else ids.delete(favoriteId);
+  publishInspirationFavoriteIds(ids);
+  return nextValue;
+}
+
+function isInspirationFavorite(item) {
+  const id = getInspirationFavoriteId(item);
+  return Boolean(id && readInspirationFavoriteIds().has(id));
+}
 const registerGrantPoints = 200;
 const inviteRewardPoints = 200;
 
@@ -2280,11 +2345,20 @@ const AppHome = memo(function AppHome({
   );
 });
 
-function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
+function CreationCenterView({
+  onOpenFeature,
+  onOpenInvite,
+  onOpenLibrary,
+  authUser,
+  onOpenAuth,
+}) {
   const [activeTab, setActiveTab] = useState("图片灵感");
   const [bannerIndex, setBannerIndex] = useState(0);
   const [isBannerSliding, setIsBannerSliding] = useState(false);
   const [modalItem, setModalItem] = useState(null);
+  const [favoriteInspirationIds, setFavoriteInspirationIds] = useState(() =>
+    readInspirationFavoriteIds(),
+  );
   const heroBanners = [
     {
       image: faceminiAsset("creation/banners/home-top-slider-1.jpg"),
@@ -2316,6 +2390,23 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
   );
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
+  useEffect(() => {
+    function syncFavoriteIds() {
+      setFavoriteInspirationIds(readInspirationFavoriteIds());
+    }
+    window.addEventListener(inspirationFavoritesChangedEvent, syncFavoriteIds);
+    return () =>
+      window.removeEventListener(
+        inspirationFavoritesChangedEvent,
+        syncFavoriteIds,
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedInUser(authUser)) return;
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+  }, [authUser?.id]);
+
   const advanceHeroBanner = useCallback(() => {
     if (isBannerSliding) return;
     setIsBannerSliding(true);
@@ -2332,13 +2423,33 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
 
   function openInspiration(item) {
     const route = getFaceminiInspirationRoute(item);
+    const favoriteId = getInspirationFavoriteId(item);
     setModalItem({
       ...item,
+      favorite: favoriteInspirationIds.has(favoriteId),
       image: resolveFaceminiInspirationImageUrl(item),
       material:
         item.material || (item.category === "数字人形象" ? "视频封面" : "高清原图"),
       model: item.model || route.model,
     });
+  }
+
+  async function toggleInspirationFavorite(item) {
+    if (!isLoggedInUser(authUser)) {
+      onOpenAuth?.("login");
+      throw new Error("请先登录");
+    }
+    const nextValue = await toggleInspirationFavoriteId(
+      getInspirationFavoriteId(item),
+    );
+    const nextIds = readInspirationFavoriteIds();
+    setFavoriteInspirationIds(nextIds);
+    setModalItem((current) =>
+      current && getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
+        ? { ...current, favorite: nextValue }
+        : current,
+    );
+    return nextValue;
   }
 
   function remixInspiration(item) {
@@ -2543,6 +2654,7 @@ function CreationCenterView({ onOpenFeature, onOpenInvite, onOpenLibrary }) {
         onClose={() => setModalItem(null)}
         onRemix={remixInspiration}
         onReference={referenceInspiration}
+        onFavorite={toggleInspirationFavorite}
       />
     </section>
   );
@@ -3426,6 +3538,25 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
     await refreshAssets();
   }
 
+  async function togglePreviewAssetFavorite(item) {
+    if (!item) return Boolean(item?.favorite);
+    const nextValue = !Boolean(item.favorite);
+    setPreviewAsset((current) =>
+      current?.id === item.id ? { ...current, favorite: nextValue } : current,
+    );
+    try {
+      await toggleAssetFavorite(item);
+      return nextValue;
+    } catch (error) {
+      setPreviewAsset((current) =>
+        current?.id === item.id
+          ? { ...current, favorite: item.favorite }
+          : current,
+      );
+      throw error;
+    }
+  }
+
   function remixAsset(item) {
     const target = item.isVideo ? "video" : "image";
     writePendingGenerationSeed({
@@ -3734,6 +3865,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature }) {
           onClose={() => setPreviewAsset(null)}
           onRemix={remixAsset}
           onReference={referenceAsset}
+          onFavorite={togglePreviewAssetFavorite}
         />
         {deleteConfirmDialog}
       </section>
@@ -4928,6 +5060,7 @@ function ImagePreviewLightbox({
   onCopyPrompt,
   onRemix,
   onReference,
+  onFavorite,
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -4968,10 +5101,12 @@ function ImagePreviewLightbox({
         ratio: task.ratio,
         model: task.model || task.modelKey || "Kling Image",
         material: "高清原图",
+        favorite: Boolean(task.favorite),
       }}
       onClose={onClose}
       onRemix={() => onRemix?.(task)}
       onReference={() => onReference?.(task)}
+      onFavorite={onFavorite ? () => onFavorite(task) : undefined}
       onCopyPrompt={copyPrompt}
       copied={copied}
     />
@@ -4983,10 +5118,12 @@ function FaceminiInspirationModal({
   onClose,
   onRemix,
   onReference,
+  onFavorite,
   onCopyPrompt,
   copied = false,
 }) {
   const [activeSrc, setActiveSrc] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (!item) return undefined;
@@ -4999,6 +5136,7 @@ function FaceminiInspirationModal({
 
   useEffect(() => {
     setActiveSrc(null);
+    setIsFavorite(Boolean(item?.favorite) || isInspirationFavorite(item));
   }, [item?.id]);
 
   if (!item) return null;
@@ -5092,14 +5230,40 @@ function FaceminiInspirationModal({
             </div>
           </dl>
           <div className="fm-detail-actions">
-            <button type="button" onClick={() => onRemix?.(item)}>
+            <button
+              className="is-primary"
+              type="button"
+              onClick={() => onRemix?.(item)}
+            >
               <Sparkles size={16} />
               生成同款
             </button>
-            <button type="button" onClick={() => onReference?.(item)}>
+            <button
+              className="is-secondary"
+              type="button"
+              onClick={() => onReference?.(item)}
+            >
               <Image size={16} />
-              用作参考图
+              用作参考
             </button>
+            {onFavorite && (
+              <button
+                className={`is-favorite ${isFavorite ? "is-active" : ""}`}
+                type="button"
+                onClick={async () => {
+                  try {
+                    const nextValue = await onFavorite(item);
+                    setIsFavorite(Boolean(nextValue));
+                  } catch {
+                    // Keep the current state when the favorite action fails.
+                  }
+                }}
+                aria-label={isFavorite ? "取消收藏" : "收藏"}
+                title={isFavorite ? "取消收藏" : "收藏"}
+              >
+                <Star size={17} fill={isFavorite ? "currentColor" : "none"} />
+              </button>
+            )}
           </div>
         </aside>
       </section>
@@ -5338,6 +5502,9 @@ function ImageGenerationView({
     useState(false);
   const [imageInspirationCategory, setImageInspirationCategory] =
     useState("all");
+  const [favoriteInspirationIds, setFavoriteInspirationIds] = useState(() =>
+    readInspirationFavoriteIds(),
+  );
   const imageComposerRef = useRef(null);
   const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
@@ -5556,30 +5723,65 @@ function ImageGenerationView({
   }, [imageInspirationCategory]);
   const imageExampleCards = useMemo(
     () =>
-      filteredExampleImages.map((item, index) => ({
-        id: `example-image-${index}`,
-        status: "completed",
-        model: item.model,
-        ratio: item.ratio,
-        quality: item.quality,
-        count: 1,
-        time: "示例",
-        price: item.price,
-        title: item.label,
-        prompt: item.prompt,
-        description: item.description,
-        style: item.style,
-        mood: item.mood,
-        tags: item.tags,
-        image: item.src,
-        src: item.src,
-        fallbackSrc: item.fallbackSrc,
-        hdSrc: item.hdSrc,
-        hdFallbackSrc: item.hdFallbackSrc,
-        aspect: item.aspect,
-        favorite: false,
-      })),
-    [filteredExampleImages],
+      filteredExampleImages.map((item, index) => {
+        const id = `image-gen-${item.categoryId || "all"}-${item.file || index}`;
+        return {
+          id,
+          status: "completed",
+          model: item.model,
+          ratio: item.ratio,
+          quality: item.quality,
+          count: 1,
+          time: "示例",
+          price: item.price,
+          title: item.label,
+          prompt: item.prompt,
+          description: item.description,
+          style: item.style,
+          mood: item.mood,
+          tags: item.tags,
+          image: item.src,
+          src: item.src,
+          fallbackSrc: item.fallbackSrc,
+          hdSrc: item.hdSrc,
+          hdFallbackSrc: item.hdFallbackSrc,
+          aspect: item.aspect,
+          favorite: favoriteInspirationIds.has(id),
+        };
+      }),
+    [favoriteInspirationIds, filteredExampleImages],
+  );
+  const favoriteImageExampleCards = useMemo(
+    () =>
+      exampleImages
+        .map((item, index) => {
+          const id = `image-gen-${item.categoryId || "all"}-${item.file || index}`;
+          return {
+            id,
+            status: "completed",
+            model: item.model,
+            ratio: item.ratio,
+            quality: item.quality,
+            count: 1,
+            time: "收藏灵感",
+            price: item.price,
+            title: item.label,
+            prompt: item.prompt,
+            description: item.description,
+            style: item.style,
+            mood: item.mood,
+            tags: item.tags,
+            image: item.src,
+            src: item.src,
+            fallbackSrc: item.fallbackSrc,
+            hdSrc: item.hdSrc,
+            hdFallbackSrc: item.hdFallbackSrc,
+            aspect: item.aspect,
+            favorite: true,
+          };
+        })
+        .filter((card) => favoriteInspirationIds.has(card.id)),
+    [favoriteInspirationIds],
   );
   const visibleImageExampleCards = useIncrementalItems(
     imageExampleCards,
@@ -5598,6 +5800,13 @@ function ImageGenerationView({
       }));
     }
 
+    if (filter === "favorite") {
+      return [
+        ...favoriteImageExampleCards.map((card) => ({ card, isExample: true })),
+        ...cards.map((card) => ({ card, isExample: false })),
+      ];
+    }
+
     const shouldShowExamples =
       filter === "all" &&
       cards.length === 0 &&
@@ -5613,6 +5822,7 @@ function ImageGenerationView({
   }, [
     arrangedImageExampleCards,
     cards,
+    favoriteImageExampleCards,
     filter,
     isSubmitting,
     selectedTaskId,
@@ -5669,6 +5879,23 @@ function ImageGenerationView({
     selectedTaskId,
     submittedTaskId,
   ]);
+
+  useEffect(() => {
+    function syncFavoriteIds() {
+      setFavoriteInspirationIds(readInspirationFavoriteIds());
+    }
+    window.addEventListener(inspirationFavoritesChangedEvent, syncFavoriteIds);
+    return () =>
+      window.removeEventListener(
+        inspirationFavoritesChangedEvent,
+        syncFavoriteIds,
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedInUser(authUser)) return;
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+  }, [authUser?.id]);
 
   const canvasStatus = useMemo(() => {
     if (submitError) return "failed";
@@ -5846,6 +6073,34 @@ function ImageGenerationView({
 
   async function toggleFavorite(id) {
     await imageApi.toggleFavorite(id);
+  }
+
+  async function togglePreviewFavorite(task) {
+    const id = String(task?.id || "");
+    if (id.startsWith("image-gen-")) {
+      if (!isLoggedInUser(authUser)) {
+        requestLoginForGeneration();
+        throw new Error("请先登录");
+      }
+      const nextValue = await toggleInspirationFavoriteId(id);
+      const nextIds = readInspirationFavoriteIds();
+      setFavoriteInspirationIds(nextIds);
+      setPreviewTask((current) =>
+        current && current.id === task.id
+          ? { ...current, favorite: nextValue }
+          : current,
+      );
+      return nextValue;
+    }
+
+    await toggleFavorite(task.id);
+    const nextValue = !task.favorite;
+    setPreviewTask((current) =>
+      current && current.id === task.id
+        ? { ...current, favorite: nextValue }
+        : current,
+    );
+    return nextValue;
   }
 
   async function regenerateTask(id) {
@@ -6170,6 +6425,7 @@ function ImageGenerationView({
         onCopyPrompt={copyTaskPrompt}
         onRemix={remixTask}
         onReference={referenceTask}
+        onFavorite={togglePreviewFavorite}
       />
       {deleteConfirmDialog}
     </section>
@@ -12111,6 +12367,8 @@ function ImageFeaturePage({
             onOpenFeature={handleOpenFeature}
             onOpenInvite={openInviteDialog}
             onOpenLibrary={openInspirationLibrary}
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
