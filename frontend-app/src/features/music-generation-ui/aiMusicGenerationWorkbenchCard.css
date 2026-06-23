@@ -122,7 +122,8 @@
   position: relative;
 }
 
-.ai-music-workbench__style-box em {
+.ai-music-workbench__style-box em,
+.ai-music-workbench__lyric-box em {
   justify-self: end;
   color: #8f96a8;
   font-style: normal;

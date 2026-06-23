@@ -28,6 +28,7 @@ export function VoiceRecentPlayer({
   disabled = false,
   playingId,
   onPlayingChange,
+  onProgressChange,
   children,
 }) {
   const audioRef = useRef(null);
@@ -54,6 +55,10 @@ export function VoiceRecentPlayer({
     setProgress(percent);
     setCurrentLabel(formatAudioTime(audio.currentTime));
     setTotalLabel(formatAudioTime(audio.duration));
+    onProgressChange?.({
+      currentTime: audio.currentTime,
+      duration: audio.duration
+    });
   }
 
   function togglePlay() {

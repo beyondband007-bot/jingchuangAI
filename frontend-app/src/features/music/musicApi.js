@@ -34,5 +34,12 @@ export const musicApi = {
       ...result,
       audioUrl: toApiUrl(result.audioUrl)
     };
+  },
+
+  async syncLyrics(id, { force = false } = {}) {
+    const query = force ? "?force=1" : "";
+    return request(`/api/music/tasks/${encodeURIComponent(id)}/sync-lyrics${query}`, {
+      method: "POST"
+    });
   }
 };

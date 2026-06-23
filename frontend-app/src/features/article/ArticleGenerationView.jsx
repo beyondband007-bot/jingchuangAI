@@ -1477,11 +1477,13 @@ export function ArticleGenerationView({
                   {resultViewMode === "full" && (
                     <article className="article-full-layout">
                       <div className="article-full-carousel">
-                        {currentPreviewImage?.image ? (
-                          <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
-                        ) : (
-                          <span className="article-image-pending">生成中</span>
-                        )}
+                        <div className="article-full-carousel-scroll">
+                          {currentPreviewImage?.image ? (
+                            <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
+                          ) : (
+                            <span className="article-image-pending">生成中</span>
+                          )}
+                        </div>
                         {previewImages.length > 1 && (
                           <>
                             <button

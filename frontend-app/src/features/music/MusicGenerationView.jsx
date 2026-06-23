@@ -1,19 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, Loader2, Music, Star } from "lucide-react";
+import { ChevronRight, Clock, Music, Sparkles } from "lucide-react";
 import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
-import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
+import { MusicGeneratingPanel } from "./MusicGeneratingPanel";
+import { MusicFullPagePlayer } from "./MusicFullPagePlayer";
+import { MusicRecentGrid } from "./MusicRecentGrid";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
-
-function formatDuration(ms) {
-  const seconds = Math.round(Number(ms || 0) / 1000);
-  if (!seconds) return "";
-  const minutes = Math.floor(seconds / 60);
-  const rest = seconds % 60;
-  return minutes ? `${minutes}:${String(rest).padStart(2, "0")}` : `${rest}s`;
-}
 
 function loadRecentResults() {
   try {
@@ -40,18 +34,32 @@ function downloadBlob({ content, fileName, type }) {
   URL.revokeObjectURL(href);
 }
 
-async function downloadAudioUrl(audioUrl, fileName) {
-  const response = await fetch(audioUrl);
-  if (!response.ok) throw new Error("音乐下载失败");
-  downloadBlob({
-    content: await response.blob(),
-    fileName,
-    type: response.headers.get("Content-Type") || "audio/mpeg"
-  });
-}
-
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function mapTaskFromApi(task, fallback = {}) {
+  return {
+    id: task.id,
+    prompt: task.prompt || fallback.prompt || "",
+    lyrics: task.lyrics || fallback.lyrics || "",
+    model: task.model || fallback.model || "music-2.6-free",
+    isInstrumental: Boolean(task.isInstrumental ?? fallback.isInstrumental),
+    audioUrl: task.audioUrl || "",
+    durationMs: task.durationMs || 0,
+    musicSize: task.musicSize || 0,
+    traceId: task.traceId || "",
+    lyricsTimeline: task.lyricsTimeline || [],
+    lyricsSyncStatus: task.lyricsSyncStatus || "none",
+    lyricsSyncError: task.lyricsSyncError || "",
+    status: task.status || (task.audioUrl ? "completed" : "processing"),
+    error: task.error || "",
+    createdAt: task.createdAt || formatBeijingDateTime()
+  };
+}
+
+function updateRecentItem(items, id, patch) {
+  return items.map((item) => (item.id === id ? { ...item, ...patch } : item));
 }
 
 async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
@@ -64,6 +72,36 @@ async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {
   throw new Error("音乐仍在生成中，请稍后到历史记录里查看。");
 }
 
+async function waitForLyricsSync(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
+  let task = await musicApi.getTask(taskId);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (task.lyricsSyncStatus === "completed" || task.lyricsSyncStatus === "failed") return task;
+    if (task.status === "failed") return task;
+    await sleep(intervalMs);
+    task = await musicApi.getTask(taskId);
+  }
+  return task;
+}
+
+function generateCoverGradient(seed) {
+  const gradients = [
+    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+    "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+    "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+    "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+    "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+    "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)"
+  ];
+  const index = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
+  return gradients[index];
+}
+
+function randomMelodyDelayMs() {
+  return 15000 + Math.floor(Math.random() * 15001);
+}
+
 export function MusicGenerationView({ resetSignal = 0 }) {
   const [prompt, setPrompt] = useState("");
   const [lyrics, setLyrics] = useState("");
@@ -71,15 +109,25 @@ export function MusicGenerationView({ resetSignal = 0 }) {
   const [lyricsOptimizer, setLyricsOptimizer] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState("");
-  const [currentResult, setCurrentResult] = useState(null);
   const [toast, setToast] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
+  const [playerTask, setPlayerTask] = useState(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [etaSeconds, setEtaSeconds] = useState(0);
+  const [syncingIds, setSyncingIds] = useState({});
+  const toastTimerRef = useRef(null);
+  const pollTokenRef = useRef(0);
+  const melodyTimerRef = useRef(null);
+  const progressTimerRef = useRef(null);
+  const step2DeadlineRef = useRef(0);
+  const step2DurationRef = useRef(0);
+
   const canGenerate = isInstrumental
     ? prompt.trim().length > 0
     : prompt.trim().length > 0 && lyrics.trim().length > 0;
-  const [playingRecentId, setPlayingRecentId] = useState("");
-  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     let mounted = true;
@@ -101,25 +149,182 @@ export function MusicGenerationView({ resetSignal = 0 }) {
 
   useEffect(() => {
     if (!resetSignal) return;
+    pollTokenRef.current += 1;
     setPrompt("");
     setLyrics("");
     setIsInstrumental(false);
     setLyricsOptimizer(false);
     setIsGenerating(false);
     setNotice("");
-    setCurrentResult(null);
     setToast(null);
     setViewTab("home");
-    setPlayingRecentId("");
+    setPlayerTask(null);
+    setShowPlayer(false);
+    setSyncingIds({});
+    resetGenerationFlow();
     if (toastTimerRef.current) {
       window.clearTimeout(toastTimerRef.current);
       toastTimerRef.current = null;
     }
   }, [resetSignal]);
 
+  function clearGenerationTimers() {
+    if (melodyTimerRef.current) {
+      window.clearTimeout(melodyTimerRef.current);
+      melodyTimerRef.current = null;
+    }
+    if (progressTimerRef.current) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+  }
+
+  function resetGenerationFlow() {
+    clearGenerationTimers();
+    setGenerationStep(0);
+    setProgressPercent(0);
+    setEtaSeconds(0);
+    step2DeadlineRef.current = 0;
+    step2DurationRef.current = 0;
+  }
+
+  function beginMelodyStep() {
+    const delay = randomMelodyDelayMs();
+    step2DurationRef.current = delay;
+    step2DeadlineRef.current = Date.now() + delay;
+    setGenerationStep(2);
+    setEtaSeconds(Math.ceil(delay / 1000));
+    melodyTimerRef.current = window.setTimeout(() => {
+      setGenerationStep(3);
+      setEtaSeconds(0);
+      melodyTimerRef.current = null;
+    }, delay);
+  }
+
+  function finishGenerationFlow() {
+    clearGenerationTimers();
+    setGenerationStep(0);
+    setProgressPercent(100);
+    setEtaSeconds(0);
+    setIsGenerating(false);
+  }
+
+  useEffect(() => {
+    if (generationStep < 1 || generationStep > 4) return undefined;
+
+    progressTimerRef.current = window.setInterval(() => {
+      if (generationStep === 1) {
+        setProgressPercent((current) => Math.min(14, current + 1));
+        return;
+      }
+
+      if (generationStep === 2 && step2DeadlineRef.current > 0) {
+        const remaining = Math.max(0, step2DeadlineRef.current - Date.now());
+        const elapsed = step2DurationRef.current - remaining;
+        const ratio = step2DurationRef.current > 0 ? elapsed / step2DurationRef.current : 0;
+        setProgressPercent(15 + Math.round(ratio * 25));
+        setEtaSeconds(Math.max(0, Math.ceil(remaining / 1000)));
+        return;
+      }
+
+      if (generationStep === 3) {
+        setProgressPercent((current) => Math.min(88, current + 1));
+        return;
+      }
+
+      if (generationStep === 4) {
+        setProgressPercent((current) => Math.min(99, current + 1));
+      }
+    }, 500);
+
+    return () => {
+      if (progressTimerRef.current) {
+        window.clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
+    };
+  }, [generationStep]);
+
   useEffect(() => () => {
+    clearGenerationTimers();
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
   }, []);
+
+  function showToast(type, message, { switchTab = false } = {}) {
+    setToast({ type, message });
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+      if (switchTab) setViewTab("recent");
+    }, 2000);
+  }
+
+  function applyTaskUpdate(taskId, apiTask, fallback = {}) {
+    const mapped = mapTaskFromApi(apiTask, fallback);
+    setPlayerTask((current) => (current?.id === taskId ? mapped : current));
+    setRecentResults((items) => updateRecentItem(items, taskId, mapped));
+    return mapped;
+  }
+
+  async function pollGenerationResult(taskId, fallback) {
+    const token = pollTokenRef.current;
+    try {
+      const completed = await waitForMusicTask(taskId);
+      if (token !== pollTokenRef.current) return;
+
+      if (completed.status === "failed") {
+        throw new Error(completed.error || "音乐生成失败，请稍后重试。");
+      }
+      if (!completed.audioUrl) {
+        throw new Error("音乐已完成，但未返回音频文件。");
+      }
+
+      let mapped = applyTaskUpdate(taskId, completed, fallback);
+      const needsLyricsSync = !mapped.isInstrumental && mapped.lyrics?.trim();
+
+      if (needsLyricsSync) {
+        setGenerationStep(4);
+        setProgressPercent(90);
+        setNotice("音乐生成完成，正在处理歌词...");
+        setSyncingIds((current) => ({ ...current, [taskId]: true }));
+        const synced = await waitForLyricsSync(taskId);
+        if (token !== pollTokenRef.current) return;
+        mapped = applyTaskUpdate(taskId, synced, fallback);
+        setSyncingIds((current) => {
+          const next = { ...current };
+          delete next[taskId];
+          return next;
+        });
+
+        if (mapped.lyricsSyncStatus === "failed") {
+          showToast("error", "歌词同步失败，不影响音乐播放。");
+        }
+      }
+
+      if (token !== pollTokenRef.current) return;
+      setNotice("");
+      finishGenerationFlow();
+      showToast("success", "音乐生成成功");
+    } catch (error) {
+      if (token !== pollTokenRef.current) return;
+      const failedTask = await musicApi.getTask(taskId).catch(() => null);
+      if (failedTask) {
+        applyTaskUpdate(taskId, failedTask, fallback);
+      } else {
+        setPlayerTask((current) => (current?.id === taskId
+          ? { ...current, status: "failed", error: error.message }
+          : current));
+        setRecentResults((items) => updateRecentItem(items, taskId, {
+          status: "failed",
+          error: error.message || "音乐生成失败"
+        }));
+      }
+      setNotice(error.message || "生成失败");
+      showToast("error", "音乐生成失败，请稍后重试");
+      resetGenerationFlow();
+    }
+  }
 
   async function generate() {
     if (!prompt.trim()) {
@@ -131,64 +336,60 @@ export function MusicGenerationView({ resetSignal = 0 }) {
       return;
     }
 
+    const fallback = {
+      prompt: prompt.trim(),
+      lyrics: isInstrumental ? "" : lyrics.trim(),
+      model: "music-2.6-free",
+      isInstrumental
+    };
+
     setNotice("");
     setIsGenerating(true);
+    setShowPlayer(true);
+    clearGenerationTimers();
+    setGenerationStep(1);
+    setProgressPercent(6);
+    setEtaSeconds(0);
+
     try {
       const data = await musicApi.generate({
-        prompt: prompt.trim(),
-        lyrics: isInstrumental ? "" : lyrics.trim(),
-        model: "music-2.6-free",
+        prompt: fallback.prompt,
+        lyrics: fallback.lyrics,
+        model: fallback.model,
         isInstrumental,
         lyricsOptimizer: isInstrumental ? false : lyricsOptimizer
       });
+
+      const pendingTask = mapTaskFromApi({
+        ...data,
+        status: data.status || "processing",
+        audioUrl: data.audioUrl || ""
+      }, fallback);
+
+      setPlayerTask(pendingTask);
+      setRecentResults((items) => [pendingTask, ...items.filter((item) => item.id !== pendingTask.id)].slice(0, 20));
       setNotice("音乐任务已提交，正在生成中...");
-      const completed = data.status === "completed" ? data : await waitForMusicTask(data.id);
-      if (completed.status === "failed") {
-        throw new Error(completed.error || "音乐生成失败，请稍后重试。");
-      }
-      if (!completed.audioUrl) {
-        throw new Error("音乐已完成，但未返回音频文件。");
-      }
+      beginMelodyStep();
 
-      const result = {
-        id: completed.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        prompt: completed.prompt || prompt.trim(),
-        lyrics: completed.lyrics || lyrics.trim(),
-        model: completed.model || "music-2.6-free",
-        audioUrl: completed.audioUrl || "",
-        durationMs: completed.durationMs || 0,
-        traceId: completed.traceId || "",
-        createdAt: completed.createdAt || formatBeijingDateTime()
-      };
-
-      setCurrentResult(result);
-      setRecentResults((items) => [result, ...items].slice(0, 20));
-      setNotice("音乐生成完成。");
-      showToast("success", "音乐生成成功");
+      pollGenerationResult(pendingTask.id, fallback);
     } catch (error) {
       setNotice(error.message || "生成失败");
       showToast("error", "音乐生成失败，请稍后重试");
-    } finally {
       setIsGenerating(false);
+      resetGenerationFlow();
     }
   }
 
-  function showToast(type, message) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-      if (type === "success") {
-        setViewTab("recent");
-      }
-    }, 2000);
-  }
-
   async function downloadMp3() {
-    if (!currentResult?.audioUrl) return;
+    if (!playerTask?.audioUrl) return;
     try {
-      await downloadAudioUrl(currentResult.audioUrl, makeFileName("ai-music", "mp3"));
+      const response = await fetch(playerTask.audioUrl);
+      if (!response.ok) throw new Error("音乐下载失败");
+      downloadBlob({
+        content: await response.blob(),
+        fileName: makeFileName("ai-music", "mp3"),
+        type: response.headers.get("Content-Type") || "audio/mpeg"
+      });
       setNotice("音乐已下载。");
     } catch (error) {
       setNotice(error.message || "音乐下载失败");
@@ -196,9 +397,9 @@ export function MusicGenerationView({ resetSignal = 0 }) {
   }
 
   function downloadLyrics() {
-    if (!currentResult?.lyrics) return;
+    if (!playerTask?.lyrics) return;
     downloadBlob({
-      content: currentResult.lyrics,
+      content: playerTask.lyrics,
       fileName: makeFileName("ai-music-lyrics", "txt"),
       type: "text/plain;charset=utf-8"
     });
@@ -208,85 +409,109 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     setPrompt((current) => [current.trim(), textToAppend].filter(Boolean).join("，").slice(0, 200));
   }
 
+  function cancelGeneration() {
+    pollTokenRef.current += 1;
+    setIsGenerating(false);
+    setShowPlayer(false);
+    setPlayerTask(null);
+    setNotice("");
+    resetGenerationFlow();
+  }
+
+  function openCompletedPlayer(item) {
+    if (!item?.audioUrl || item.status === "failed") return;
+    setPlayerTask(item);
+    setShowPlayer(true);
+    resetGenerationFlow();
+    setIsGenerating(false);
+  }
+
+  const displayRecent = recentResults.slice(0, 4);
+  const showGeneratingPanel = viewTab === "home" && generationStep >= 1 && generationStep <= 4;
+  const showFullPagePlayer = showPlayer && playerTask?.audioUrl && !showGeneratingPanel;
+
   return (
     <section className="voice-conversion-view-root music-generation-view">
       <div className="image-filter-tabs voice-filter-tabs">
         <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
-        <button type="button" disabled>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
       </div>
 
-      <div className={`voice-conversion-canvas music-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
-        {viewTab === "home" ? (
-          <>
-            <div className="voice-hero-empty music-hero-empty">
-              <h1>音乐生成</h1>
-              <p>输入风格与歌词，一键生成专属音乐</p>
-            </div>
-
-            <AiMusicGenerationWorkbenchCard
-              prompt={prompt}
-              lyrics={lyrics}
-              isInstrumental={isInstrumental}
-              lyricsOptimizer={lyricsOptimizer}
-              model="music-2.6-free"
-              isGenerating={isGenerating}
-              canGenerate={canGenerate}
-              notice={notice}
-              currentResult={currentResult}
-              onPromptChange={setPrompt}
-              onLyricsChange={setLyrics}
-              onToggleInstrumental={setIsInstrumental}
-              onToggleLyricsOptimizer={setLyricsOptimizer}
-              onGenerate={generate}
-              onUseStyleTag={appendPrompt}
-              onDownloadMp3={downloadMp3}
-              onDownloadLyrics={downloadLyrics}
+      <div className={`voice-conversion-canvas music-canvas ${viewTab === "recent" ? "is-recent is-history" : ""}${showFullPagePlayer ? " is-full-player" : ""}${showGeneratingPanel ? " is-generating" : ""}`}>
+        {showFullPagePlayer ? (
+          <MusicFullPagePlayer
+            item={playerTask}
+            items={recentResults}
+            onBack={() => {
+              setShowPlayer(false);
+              setPlayerTask(null);
+            }}
+            onSelectItem={openCompletedPlayer}
+          />
+        ) : viewTab === "home" ? (
+          showGeneratingPanel ? (
+            <MusicGeneratingPanel
+              activeStep={generationStep}
+              progressPercent={progressPercent}
+              etaSeconds={etaSeconds}
+              recentItems={displayRecent}
+              generatingId={playerTask?.id || ""}
+              generateCoverGradient={generateCoverGradient}
+              onCancel={cancelGeneration}
+              onViewAll={() => setViewTab("recent")}
+              onSelectItem={openCompletedPlayer}
             />
-          </>
-        ) : (
-          <div className={`voice-recent-panel music-recent-panel ${recentResults.length ? "has-items" : ""}`}>
-            {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <Music size={28} />
-                <strong>暂无生成记录</strong>
-                <p>去主页创作你的第一首 AI 音乐，完成后会显示在这里。</p>
+          ) : (
+            <div className="music-ref-layout">
+              {/* Hero */}
+              <div className="music-ref-hero">
+                <h1><Music size={40} /> 创建你的音乐</h1>
+                <p>输入歌词与风格，AI 为你创作独一无二的音乐作品 <Sparkles size={16} /></p>
               </div>
-            ) : (
-              recentResults.map((item) => (
-                <article className="voice-recent-card music-recent-card" key={item.id}>
-                  <div className="music-recent-art">
-                    <Music size={22} />
-                  </div>
-                  <div className="voice-recent-info">
-                    <strong>{item.prompt || "AI 音乐"}</strong>
-                    <span>{formatDuration(item.durationMs) || "音乐"} · {item.createdAt}</span>
-                  </div>
-                  <VoiceRecentPlayer
-                    playerId={item.id}
-                    src={item.audioUrl}
-                    durationMs={item.durationMs}
-                    disabled={!item.audioUrl || item.status === "failed"}
-                    playingId={playingRecentId}
-                    onPlayingChange={setPlayingRecentId}
-                  >
-                    <button
-                      className="voice-recent-icon-button"
-                      type="button"
-                      onClick={() => downloadAudioUrl(item.audioUrl, makeFileName("ai-music", "mp3"))}
-                      disabled={!item.audioUrl || item.status === "failed"}
-                      title="下载 MP3"
-                      aria-label="下载 MP3"
-                    >
-                      <Download size={16} />
-                    </button>
-                  </VoiceRecentPlayer>
-                </article>
-              ))
-            )}
+
+              {/* Form card */}
+              <div className="music-ref-form">
+                <AiMusicGenerationWorkbenchCard
+                  prompt={prompt}
+                  lyrics={lyrics}
+                  isInstrumental={isInstrumental}
+                  lyricsOptimizer={lyricsOptimizer}
+                  model="music-2.6-free"
+                  isGenerating={isGenerating}
+                  canGenerate={canGenerate}
+                  notice={notice}
+                  currentResult={null}
+                  onPromptChange={setPrompt}
+                  onLyricsChange={setLyrics}
+                  onToggleInstrumental={setIsInstrumental}
+                  onToggleLyricsOptimizer={setLyricsOptimizer}
+                  onGenerate={generate}
+                  onUseStyleTag={appendPrompt}
+                  onDownloadMp3={downloadMp3}
+                  onDownloadLyrics={downloadLyrics}
+                />
+              </div>
+
+              {/* Recent */}
+              <div className="music-ref-recent">
+                <div className="music-ref-section-head">
+                  <h3><Clock size={18} /> 最近生成</h3>
+                  <button type="button" className="music-ref-link" onClick={() => setViewTab("recent")}>
+                    查看全部 <ChevronRight size={14} />
+                  </button>
+                </div>
+                <MusicRecentGrid items={displayRecent} onSelectItem={openCompletedPlayer} />
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="music-ref-layout">
+            <div className="music-ref-recent">
+              <div className="music-ref-section-head">
+                <h3><Clock size={18} /> 历史记录</h3>
+              </div>
+              <MusicRecentGrid items={recentResults} onSelectItem={openCompletedPlayer} />
+            </div>
           </div>
         )}
       </div>
