@@ -13426,6 +13426,11 @@ select {
   color: #9aa1ad !important;
 }
 
+.llm-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .llm-composer-footer {
   display: flex;
   flex-direction: column;
@@ -38436,6 +38441,24 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   font-size: 15px;
 }
 
+.music-full-player__lyrics-status.is-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 0;
+  margin-bottom: 16px;
+  color: #8b8798;
+  font-size: 13px;
+}
+
+.music-full-player__lyrics-status.is-inline p {
+  margin: 0;
+}
+
+.music-full-player .music-mini-btn.is-primary.is-loading {
+  opacity: 0.72;
+}
+
 .music-full-player__footer {
   position: relative;
   z-index: 30;
@@ -39178,4 +39201,385 @@ section.video-gen-view-root
   align-items: flex-start !important;
   min-height: 74px !important;
   margin-bottom: 2px !important;
+}
+
+/* ---------- Video immersive (generating / result) ---------- */
+.video-gen-view-root.is-immersive {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: calc(100vh - 72px);
+  max-height: calc(100vh - 72px);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(139, 125, 247, 0.18), transparent 38%),
+    radial-gradient(circle at 92% 2%, rgba(107, 92, 231, 0.16), transparent 36%),
+    linear-gradient(180deg, #faf9fd 0%, #f5f3fb 48%, #f0eef7 100%);
+}
+
+.feature-page-shell:has(.video-gen-view-root.is-immersive) {
+  overflow: hidden;
+}
+
+.feature-main:has(.video-gen-view-root.is-immersive) {
+  overflow: hidden !important;
+  background: #f4f2fa;
+}
+
+.feature-main:has([data-feature-active="true"] .video-gen-view-root.is-immersive) {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.video-gen-immersive-shell {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.video-gen-immersive-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.video-gen-immersive-hero {
+  display: grid;
+  gap: 8px;
+  width: min(720px, 100%);
+}
+
+.video-gen-immersive-hero h1 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  color: #4a3f8f;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.video-gen-immersive-hero h1 svg {
+  color: #8b7df7;
+}
+
+.video-gen-result-hero h1 svg:first-child {
+  color: #22a06b;
+}
+
+.video-gen-immersive-hero p {
+  margin: 0;
+  color: #8b8798;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.video-gen-immersive-progress {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  flex: 0 0 auto;
+}
+
+.video-gen-immersive-progress svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.video-gen-waiting-ring-track {
+  fill: none;
+  stroke: #ebe6f8;
+  stroke-width: 6;
+}
+
+.video-gen-waiting-ring-fill {
+  fill: none;
+  stroke: #7c5ce7;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 180ms linear;
+}
+
+.video-gen-immersive-progress-copy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+}
+
+.video-gen-immersive-progress-copy span,
+.video-gen-immersive-progress-copy em {
+  color: #a8a3b8;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.video-gen-immersive-progress-copy strong {
+  color: #4a3f8f;
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.video-gen-immersive-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(760px, 100%);
+}
+
+.video-gen-immersive-footnote {
+  width: min(640px, 100%);
+  margin: 0;
+  color: #9a95a8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.video-gen-waiting-step {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.video-gen-waiting-step-track {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.video-gen-waiting-step-node {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #b8b3c8;
+  background: #f3f1f8;
+  border: 1px solid #e8e4f2;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.video-gen-waiting-step-node.is-active {
+  color: #fff;
+  background: linear-gradient(145deg, #8b7df7, #6b5ce7);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(107, 92, 231, 0.28);
+}
+
+.video-gen-waiting-step-node.is-done {
+  color: #fff;
+  background: #6b5ce7;
+  border-color: transparent;
+}
+
+.video-gen-waiting-step-line {
+  flex: 1 1 auto;
+  height: 2px;
+  margin: 0 6px;
+  background: #e8e4f2;
+  border-radius: 999px;
+}
+
+.video-gen-waiting-step-line.is-done {
+  background: linear-gradient(90deg, #8b7df7, #6b5ce7);
+}
+
+.video-gen-waiting-step-copy strong {
+  display: block;
+  color: #3f3a4d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.video-gen-waiting-step-copy span {
+  display: block;
+  margin-top: 4px;
+  color: #a8a3b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.video-gen-waiting-step.is-done .video-gen-waiting-step-copy span {
+  color: #22a06b;
+  font-weight: 700;
+}
+
+.video-gen-waiting-step.is-active .video-gen-waiting-step-copy span {
+  color: #6b5ce7;
+  font-weight: 600;
+}
+
+.video-gen-result-panel {
+  gap: 14px;
+}
+
+.video-gen-result-player-shell {
+  width: min(920px, 100%);
+  overflow: hidden;
+  background: #0f1118;
+  border: 1px solid rgba(107, 92, 231, 0.16);
+  border-radius: 18px;
+  box-shadow:
+    0 24px 64px rgba(24, 20, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.video-gen-result-player-shell video {
+  display: block;
+  width: 100%;
+  max-height: min(52vh, 520px);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  object-fit: contain;
+}
+
+.video-gen-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.video-gen-result-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  color: #6b5ce7;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(107, 92, 231, 0.08);
+  border: 1px solid rgba(107, 92, 231, 0.14);
+  border-radius: 999px;
+}
+
+.video-gen-result-tag.is-muted {
+  color: #8b8798;
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(107, 92, 231, 0.08);
+}
+
+.video-gen-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(760px, 100%);
+}
+
+.video-gen-result-actions button,
+.video-gen-result-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  color: #5e5a6d;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e8e4f2;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.video-gen-result-actions button:hover,
+.video-gen-result-action:hover {
+  color: #6b5ce7;
+  border-color: #d8d0ff;
+  background: #fff;
+}
+
+.video-gen-result-actions button.is-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #8b7df7, #6b5ce7);
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(107, 92, 231, 0.28);
+}
+
+.video-gen-result-actions button.is-primary:hover {
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(107, 92, 231, 0.34);
+}
+
+.video-gen-result-action.is-favorite {
+  color: #9a7b00;
+  background: #fff9df;
+  border-color: #f3e39a;
+}
+
+@media (max-width: 760px) {
+  .video-gen-view-root.is-immersive {
+    height: calc(100vh - 72px);
+    max-height: calc(100vh - 72px);
+  }
+
+  .video-gen-immersive-panel {
+    gap: 14px;
+    padding: 16px 12px;
+  }
+
+  .video-gen-immersive-hero h1 {
+    font-size: 22px;
+  }
+
+  .video-gen-immersive-progress {
+    width: 176px;
+    height: 176px;
+  }
+
+  .video-gen-immersive-progress-copy strong {
+    font-size: 34px;
+  }
+
+  .video-gen-immersive-steps {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 16px;
+  }
+
+  .video-gen-waiting-step.is-last {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(220px, 100%);
+  }
+
+  .video-gen-result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .video-gen-result-actions button,
+  .video-gen-result-action {
+    width: 100%;
+  }
 }

@@ -7,15 +7,22 @@ export function formatAudioTime(seconds) {
 
 export function getActiveLyricIndex(timeline, currentTimeSec) {
   if (!Array.isArray(timeline) || !timeline.length) return -1;
+
   const currentMs = currentTimeSec * 1000;
-  let activeIndex = -1;
+  const lastIndex = timeline.length - 1;
+  const firstStartMs = Number(timeline[0].startMs || 0);
+  const lastEndMs = Number(timeline[lastIndex].endMs || timeline[lastIndex].startMs || 0);
+
+  if (currentMs < firstStartMs) return 0;
+  if (currentMs >= lastEndMs) return lastIndex;
+
+  let activeIndex = 0;
   for (let index = 0; index < timeline.length; index += 1) {
     const startMs = Number(timeline[index].startMs || 0);
     if (currentMs < startMs) break;
-    if (activeIndex === -1 || startMs > Number(timeline[activeIndex].startMs || 0)) {
-      activeIndex = index;
-    }
+    activeIndex = index;
   }
+
   return activeIndex;
 }
 
@@ -23,7 +30,9 @@ export function getLineProgress(line, currentMs) {
   const start = Number(line?.startMs);
   const end = Number(line?.endMs);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
-  return Math.min(1, Math.max(0, (currentMs - start) / (end - start)));
+  if (currentMs <= start) return 0;
+  if (currentMs >= end) return 1;
+  return (currentMs - start) / (end - start);
 }
 
 export function getLyricSubtitle(item) {
@@ -31,4 +40,32 @@ export function getLyricSubtitle(item) {
   if (timeline[0]?.text) return timeline[0].text;
   const firstLine = String(item?.lyrics || "").split(/\r?\n/).map((t) => t.trim()).find(Boolean);
   return firstLine || item?.prompt || "AI 音乐";
+}
+
+export function isAudioElementReady(audio) {
+  return Boolean(audio && audio.readyState >= HTMLMediaElement.HAVE_METADATA);
+}
+
+export function attachAudioElement(audio, { onReady, onError } = {}) {
+  if (!audio) return () => {};
+
+  function handleReady() {
+    if (!isAudioElementReady(audio)) return;
+    onReady?.(audio);
+  }
+
+  function handleError() {
+    onError?.(audio);
+  }
+
+  audio.addEventListener("loadedmetadata", handleReady);
+  audio.addEventListener("canplay", handleReady);
+  audio.addEventListener("error", handleError);
+  handleReady();
+
+  return () => {
+    audio.removeEventListener("loadedmetadata", handleReady);
+    audio.removeEventListener("canplay", handleReady);
+    audio.removeEventListener("error", handleError);
+  };
 }

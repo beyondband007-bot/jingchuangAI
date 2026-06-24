@@ -37,7 +37,7 @@ function mapMusicTask(row) {
     prompt: row.prompt,
     lyrics: row.lyrics || "",
     model: row.model,
-    isInstrumental: Boolean(row.is_instrumental),
+    isInstrumental: row.is_instrumental === 1 || row.is_instrumental === true,
     audioUrl: row.audio_url,
     durationMs: row.duration_ms || 0,
     sampleRate: row.sample_rate || 0,

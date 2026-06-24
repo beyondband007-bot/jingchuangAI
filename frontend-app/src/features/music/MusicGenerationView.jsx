@@ -39,18 +39,22 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isInstrumentalFlag(value) {
+  return value === true || value === 1 || value === "1";
+}
+
 function mapTaskFromApi(task, fallback = {}) {
   return {
     id: task.id,
     prompt: task.prompt || fallback.prompt || "",
     lyrics: task.lyrics || fallback.lyrics || "",
     model: task.model || fallback.model || "music-2.6-free",
-    isInstrumental: Boolean(task.isInstrumental ?? fallback.isInstrumental),
+    isInstrumental: isInstrumentalFlag(task.isInstrumental ?? fallback.isInstrumental),
     audioUrl: task.audioUrl || "",
     durationMs: task.durationMs || 0,
     musicSize: task.musicSize || 0,
     traceId: task.traceId || "",
-    lyricsTimeline: task.lyricsTimeline || [],
+    lyricsTimeline: Array.isArray(task.lyricsTimeline) ? task.lyricsTimeline : [],
     lyricsSyncStatus: task.lyricsSyncStatus || "none",
     lyricsSyncError: task.lyricsSyncError || "",
     status: task.status || (task.audioUrl ? "completed" : "processing"),
@@ -76,7 +80,9 @@ async function waitForMusicTask(taskId, { attempts = 80, intervalMs = 3000 } = {
 async function waitForLyricsSync(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
   let task = await musicApi.getTask(taskId);
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (task.lyricsSyncStatus === "completed" || task.lyricsSyncStatus === "failed") return task;
+    const hasTimeline = Array.isArray(task.lyricsTimeline) && task.lyricsTimeline.length > 0;
+    if (task.lyricsSyncStatus === "completed" && hasTimeline) return task;
+    if (task.lyricsSyncStatus === "failed") return task;
     if (task.status === "failed") return task;
     await sleep(intervalMs);
     task = await musicApi.getTask(taskId);
@@ -84,21 +90,44 @@ async function waitForLyricsSync(taskId, { attempts = 80, intervalMs = 3000 } = 
   return task;
 }
 
-async function syncLyricsAndGetTask(taskId) {
-  const current = await musicApi.getTask(taskId);
-  const hasTimeline = Array.isArray(current.lyricsTimeline) && current.lyricsTimeline.length > 0;
-  if (current.lyricsSyncStatus === "completed" && hasTimeline) return current;
+function hasSyncedLyrics(task) {
+  return task.lyricsSyncStatus === "completed"
+    && Array.isArray(task.lyricsTimeline)
+    && task.lyricsTimeline.length > 0;
+}
 
-  try {
-    await musicApi.syncLyrics(taskId, { force: current.lyricsSyncStatus === "failed" });
-  } catch (error) {
-    const latest = await musicApi.getTask(taskId).catch(() => null);
-    if (!latest) throw error;
-    if (latest.lyricsSyncStatus === "processing") return waitForLyricsSync(taskId);
-    return latest;
+function hasSuspiciousLyricsTimeline(task) {
+  const timeline = task?.lyricsTimeline || [];
+  if (!timeline.length) return false;
+  const firstStart = Number(timeline[0]?.startMs || 0);
+  const durationMs = Number(task?.durationMs || 0);
+  if (firstStart > 15000) return true;
+  if (durationMs > 0 && firstStart > durationMs * 0.35) return true;
+  return false;
+}
+
+function shouldSyncLyricsAfterGeneration(mapped, fallback = {}) {
+  const instrumental = isInstrumentalFlag(mapped.isInstrumental) || isInstrumentalFlag(fallback.isInstrumental);
+  const lyricsText = String(mapped.lyrics || fallback.lyrics || "").trim();
+  return !instrumental && lyricsText.length > 0;
+}
+
+async function syncLyricsAndGetTask(taskId, { force = false } = {}) {
+  const initial = await musicApi.getTask(taskId);
+  if (hasSyncedLyrics(initial) && !force) return initial;
+
+  const shouldForceInitialSync = force || initial.lyricsSyncStatus === "failed";
+  await musicApi.syncLyrics(taskId, { force: shouldForceInitialSync });
+
+  let task = await waitForLyricsSync(taskId);
+  if (hasSyncedLyrics(task)) return task;
+
+  if (task.lyricsSyncStatus === "failed" || task.lyricsSyncStatus === "completed") {
+    await musicApi.syncLyrics(taskId, { force: true });
+    task = await waitForLyricsSync(taskId, { attempts: 40 });
   }
 
-  return musicApi.getTask(taskId);
+  return task;
 }
 
 function generateCoverGradient(seed) {
@@ -142,6 +171,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
   const progressTimerRef = useRef(null);
   const step2DeadlineRef = useRef(0);
   const step2DurationRef = useRef(0);
+  const generationContextRef = useRef({ lyrics: "", isInstrumental: false });
 
   const canGenerate = isInstrumental
     ? prompt.trim().length > 0
@@ -225,6 +255,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     setProgressPercent(100);
     setEtaSeconds(0);
     setIsGenerating(false);
+    setShowPlayer(true);
   }
 
   useEffect(() => {
@@ -285,8 +316,8 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     return mapped;
   }
 
-  async function pollGenerationResult(taskId, fallback) {
-    const token = pollTokenRef.current;
+  async function pollGenerationResult(taskId, fallback, pollToken) {
+    const token = pollToken ?? pollTokenRef.current;
     try {
       const completed = await waitForMusicTask(taskId);
       if (token !== pollTokenRef.current) return;
@@ -299,12 +330,15 @@ export function MusicGenerationView({ resetSignal = 0 }) {
       }
 
       let mapped = applyTaskUpdate(taskId, completed, fallback);
-      const needsLyricsSync = !mapped.isInstrumental && mapped.lyrics?.trim();
+      const shouldSyncLyrics = shouldSyncLyricsAfterGeneration(
+        mapped,
+        { ...fallback, ...generationContextRef.current }
+      );
 
-      if (needsLyricsSync) {
+      if (shouldSyncLyrics) {
         setGenerationStep(4);
         setProgressPercent(90);
-        setNotice("音乐生成完成，正在处理歌词...");
+        setNotice("音乐生成完成，正在同步歌词...");
         setSyncingIds((current) => ({ ...current, [taskId]: true }));
         const synced = await syncLyricsAndGetTask(taskId);
         if (token !== pollTokenRef.current) return;
@@ -315,15 +349,17 @@ export function MusicGenerationView({ resetSignal = 0 }) {
           return next;
         });
 
-        if (mapped.lyricsSyncStatus === "failed") {
-          showToast("error", "歌词同步失败，不影响音乐播放。");
+        if (!hasSyncedLyrics(mapped)) {
+          showToast("error", mapped.lyricsSyncError || "歌词同步失败，不影响音乐播放。");
         }
       }
 
       if (token !== pollTokenRef.current) return;
       setNotice("");
       finishGenerationFlow();
-      showToast("success", "音乐生成成功");
+      showToast("success", shouldSyncLyrics && hasSyncedLyrics(mapped)
+        ? "音乐生成成功，歌词已同步"
+        : "音乐生成成功");
     } catch (error) {
       if (token !== pollTokenRef.current) return;
       const failedTask = await musicApi.getTask(taskId).catch(() => null);
@@ -361,13 +397,21 @@ export function MusicGenerationView({ resetSignal = 0 }) {
       isInstrumental
     };
 
+    generationContextRef.current = {
+      lyrics: fallback.lyrics,
+      isInstrumental: fallback.isInstrumental
+    };
+
+    pollTokenRef.current += 1;
+    const pollToken = pollTokenRef.current;
+
     setNotice("");
     setIsGenerating(true);
-    setShowPlayer(true);
     clearGenerationTimers();
     setGenerationStep(1);
     setProgressPercent(6);
     setEtaSeconds(0);
+    setShowPlayer(false);
 
     try {
       const data = await musicApi.generate({
@@ -389,7 +433,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
       setNotice("音乐任务已提交，正在生成中...");
       beginMelodyStep();
 
-      pollGenerationResult(pendingTask.id, fallback);
+      pollGenerationResult(pendingTask.id, fallback, pollToken);
     } catch (error) {
       setNotice(error.message || "生成失败");
       showToast("error", "音乐生成失败，请稍后重试");
@@ -430,12 +474,62 @@ export function MusicGenerationView({ resetSignal = 0 }) {
     resetGenerationFlow();
   }
 
-  function openCompletedPlayer(item) {
+  async function syncLyricsInBackground(item, fallback = {}) {
+    const context = { ...fallback, ...generationContextRef.current };
+    const timelineIsSuspicious = hasSuspiciousLyricsTimeline(item);
+    const needsSync = shouldSyncLyricsAfterGeneration(item, context)
+      && (!hasSyncedLyrics(item) || timelineIsSuspicious);
+    if (!needsSync) return;
+
+    const taskId = item.id;
+    setSyncingIds((current) => ({ ...current, [taskId]: true }));
+    try {
+      const synced = await syncLyricsAndGetTask(taskId, {
+        force: timelineIsSuspicious,
+      });
+      const mapped = mapTaskFromApi(synced, { ...item, ...context });
+      setRecentResults((items) => updateRecentItem(items, taskId, mapped));
+      setPlayerTask((current) => (current?.id === taskId ? mapped : current));
+    } catch {
+      const latest = await musicApi.getTask(taskId).catch(() => null);
+      if (!latest) return;
+      const mapped = mapTaskFromApi(latest, { ...item, ...context });
+      setRecentResults((items) => updateRecentItem(items, taskId, mapped));
+      setPlayerTask((current) => (current?.id === taskId ? mapped : current));
+    } finally {
+      setSyncingIds((current) => {
+        const next = { ...current };
+        delete next[taskId];
+        return next;
+      });
+    }
+  }
+
+  async function openCompletedPlayer(item) {
     if (!item?.audioUrl || item.status === "failed") return;
-    setPlayerTask(item);
+    const mapped = mapTaskFromApi(await musicApi.getTask(item.id).catch(() => item), item);
+    setPlayerTask(mapped);
     setShowPlayer(true);
     resetGenerationFlow();
     setIsGenerating(false);
+    setRecentResults((items) => updateRecentItem(items, item.id, mapped));
+
+    if (!hasSyncedLyrics(mapped) || hasSuspiciousLyricsTimeline(mapped)) {
+      setNotice("歌词时间轴同步中，完成后将自动逐字高亮。");
+      void syncLyricsInBackground(mapped, item).finally(() => {
+        setNotice((current) => (
+          current === "歌词时间轴同步中，完成后将自动逐字高亮。" ? "" : current
+        ));
+      });
+    }
+  }
+
+  function selectPlayerTrack(item) {
+    if (!item?.audioUrl || item.status === "failed") return;
+    const mapped = mapTaskFromApi(item, item);
+    setPlayerTask(mapped);
+    setRecentResults((items) => updateRecentItem(items, item.id, mapped));
+    void syncLyricsInBackground(mapped, item);
   }
 
   const displayRecent = recentResults.slice(0, 4);
@@ -458,7 +552,7 @@ export function MusicGenerationView({ resetSignal = 0 }) {
               setShowPlayer(false);
               setPlayerTask(null);
             }}
-            onSelectItem={openCompletedPlayer}
+            onSelectItem={selectPlayerTrack}
           />
         ) : viewTab === "home" ? (
           showGeneratingPanel ? (

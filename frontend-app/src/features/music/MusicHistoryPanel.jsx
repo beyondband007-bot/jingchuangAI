@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile, resolveMediaUrl } from "../../api/mediaUrl.js";
+import { attachAudioElement, getActiveLyricIndex, getLineProgress, getLyricSubtitle } from "./musicPlayerUtils";
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -29,34 +30,6 @@ function formatAudioTime(seconds) {
   const minutes = Math.floor(total / 60);
   const rest = total % 60;
   return `${minutes}:${String(rest).padStart(2, "0")}`;
-}
-
-function getActiveLyricIndex(timeline, currentTimeSec) {
-  if (!Array.isArray(timeline) || !timeline.length) return -1;
-  const currentMs = currentTimeSec * 1000;
-  let activeIndex = -1;
-  for (let index = 0; index < timeline.length; index += 1) {
-    const startMs = Number(timeline[index].startMs || 0);
-    if (currentMs < startMs) break;
-    if (activeIndex === -1 || startMs > Number(timeline[activeIndex].startMs || 0)) {
-      activeIndex = index;
-    }
-  }
-  return activeIndex;
-}
-
-function getLineProgress(line, currentMs) {
-  const start = Number(line?.startMs);
-  const end = Number(line?.endMs);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
-  return Math.min(1, Math.max(0, (currentMs - start) / (end - start)));
-}
-
-function getLyricSubtitle(item) {
-  const timeline = item.lyricsTimeline || [];
-  if (timeline[0]?.text) return timeline[0].text;
-  const firstLine = String(item.lyrics || "").split(/\r?\n/).map((t) => t.trim()).find(Boolean);
-  return firstLine || "AI 音乐";
 }
 
 function makeFileName(prefix, ext) {
@@ -107,6 +80,8 @@ export function MusicHistoryPanel({
   const [speed, setSpeed] = useState(1);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
   const [audioState, setAudioState] = useState("idle");
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
 
   const activeItem = useMemo(
     () => items.find((item) => item.id === activeId) || null,
@@ -125,6 +100,11 @@ export function MusicHistoryPanel({
 
   const activeIndex = playableItems.findIndex((item) => item.id === activeId);
   const timeline = Array.isArray(activeItem?.lyricsTimeline) ? activeItem.lyricsTimeline : [];
+  const timelineKey = useMemo(
+    () => timeline.map((line) => `${line.lineIndex}:${line.startMs}:${line.endMs}`).join("|"),
+    [timeline]
+  );
+  const prevTimelineKeyRef = useRef("");
   const currentMs = currentTime * 1000;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const canPlayAudio = Boolean(playbackUrl) && audioState !== "error";
@@ -163,16 +143,51 @@ export function MusicHistoryPanel({
   }, [items, activeId]);
 
   useEffect(() => {
+    const audio = audioRef.current;
+    if (!playbackUrl) {
+      setAudioState("idle");
+      setCurrentTime(0);
+      setDuration(0);
+      return undefined;
+    }
+
     setAudioState("idle");
     setCurrentTime(0);
     setDuration(0);
-  }, [activeItem?.id, activeItem?.audioUrl]);
+
+    if (!audio) return undefined;
+
+    function markReady(target) {
+      setAudioState("ready");
+      setDuration(Number.isFinite(target.duration) ? target.duration : 0);
+      setCurrentTime(target.currentTime || 0);
+      if (isPlayingRef.current) {
+        target.playbackRate = speed;
+        target.play().catch(() => setIsPlaying(false));
+      }
+    }
+
+    const detach = attachAudioElement(audio, {
+      onReady: markReady,
+      onError: () => {
+        setAudioState("error");
+        setIsPlaying(false);
+        setDuration(0);
+        setCurrentTime(0);
+      }
+    });
+
+    audio.load();
+
+    return detach;
+  }, [activeItem?.id, playbackUrl, speed]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !playbackUrl) return;
-    audio.load();
-  }, [playbackUrl]);
+    if (!audio || !isPlaying || audioState !== "ready" || !playbackUrl) return;
+    audio.playbackRate = speed;
+    audio.play().catch(() => setIsPlaying(false));
+  }, [isPlaying, audioState, playbackUrl, speed]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -189,8 +204,17 @@ export function MusicHistoryPanel({
   }, [variant, activeItem?.status, activeItem?.audioUrl]);
 
   useEffect(() => {
-    setActiveLyricIndex(getActiveLyricIndex(timeline, currentTime));
-  }, [timeline, currentTime]);
+    const audio = audioRef.current;
+    const time = audio?.currentTime ?? currentTime;
+    setActiveLyricIndex(getActiveLyricIndex(timeline, time));
+
+    if (timelineKey && timelineKey !== prevTimelineKeyRef.current) {
+      prevTimelineKeyRef.current = timelineKey;
+      if (audio && timeline.length) {
+        setActiveLyricIndex(getActiveLyricIndex(timeline, audio.currentTime));
+      }
+    }
+  }, [timeline, timelineKey, currentTime]);
 
   useEffect(() => {
     if (!isExpanded || activeLyricIndex < 0) return;
@@ -222,27 +246,13 @@ export function MusicHistoryPanel({
     }
   }
 
-  function handleAudioReady(event) {
-    setAudioState("ready");
-    setDuration(event.currentTarget.duration || 0);
-    setCurrentTime(event.currentTarget.currentTime || 0);
-    if (isPlaying) {
-      event.currentTarget.play().catch(() => setIsPlaying(false));
-    }
-  }
-
-  function handleAudioError() {
-    setAudioState("error");
-    setIsPlaying(false);
-    setDuration(0);
-    setCurrentTime(0);
-  }
-
   function seekTo(ratio) {
     const audio = audioRef.current;
     if (!audio || !Number.isFinite(audio.duration)) return;
-    audio.currentTime = Math.min(audio.duration, Math.max(0, ratio * audio.duration));
-    setCurrentTime(audio.currentTime);
+    const nextTime = Math.min(audio.duration, Math.max(0, ratio * audio.duration));
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+    setActiveLyricIndex(getActiveLyricIndex(timeline, nextTime));
   }
 
   function playSibling(step) {
@@ -326,9 +336,6 @@ export function MusicHistoryPanel({
         ref={audioRef}
         src={playbackUrl || undefined}
         preload="metadata"
-        onLoadedMetadata={handleAudioReady}
-        onCanPlay={handleAudioReady}
-        onError={handleAudioError}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
         onEnded={() => {
           setIsPlaying(false);

@@ -93,6 +93,9 @@ import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
+import { VideoGenStage } from "./features/video/VideoGenStage";
+import { useVideoGenStateMachine } from "./features/video/useVideoGenStateMachine";
+import "./features/video/videoGenStage.css";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
@@ -1176,14 +1179,8 @@ const fmInspirationCategoryRouteMap = {
   爆款图文: { feature: "article", target: "article", model: "AI 图文" },
 };
 
-const fmInspirationLibraryTabs = [
-  "全部",
-  "图片模板",
-  "视频模板",
-  "图文模板",
-  "数字人",
-  "口播模板",
-];
+const fmInspirationLibraryDefaultTab = "全部";
+const fmInspirationLibraryTabs = ["全部", "图片模板", "视频模板"];
 
 const fmInspirationLibraryItems = [
   { title: "电商主图", icon: "🛍️", tab: "图片模板", route: "image" },
@@ -1202,31 +1199,6 @@ const fmInspirationLibraryItems = [
   { title: "城市延时", icon: "🌃", tab: "视频模板", route: "video" },
   { title: "产品旋转", icon: "📦", tab: "视频模板", route: "video" },
   { title: "口播带货", icon: "🛒", tab: "视频模板", route: "video" },
-  { title: "口播脚本", icon: "🎬", tab: "图文模板", route: "article" },
-  { title: "小红书种草", icon: "🌿", tab: "图文模板", route: "article" },
-  { title: "朋友圈文案", icon: "💭", tab: "图文模板", route: "article" },
-  { title: "产品标题", icon: "🏷️", tab: "图文模板", route: "article" },
-  { title: "海报标语", icon: "📋", tab: "图文模板", route: "article" },
-  { title: "文慧", icon: "👩‍🏫", tab: "数字人", route: "digital-human" },
-  { title: "晓雯", icon: "🧕", tab: "数字人", route: "digital-human" },
-  { title: "欣悦", icon: "🎤", tab: "数字人", route: "digital-human" },
-  { title: "明悦", icon: "📺", tab: "数字人", route: "digital-human" },
-  { title: "婉婷", icon: "🎧", tab: "数字人", route: "digital-human" },
-  { title: "美娜", icon: "📖", tab: "数字人", route: "digital-human" },
-  { title: "直播主播", icon: "🎙️", tab: "数字人", route: "digital-human" },
-  { title: "职场精英", icon: "👔", tab: "数字人", route: "digital-human" },
-  { title: "时尚达人", icon: "✨", tab: "数字人", route: "digital-human" },
-  { title: "卡通男孩", icon: "👱‍♂️", tab: "数字人", route: "digital-human" },
-  { title: "短视频口播", icon: "🎤", tab: "口播模板", route: "digital-human" },
-  { title: "产品种草", icon: "🛍️", tab: "口播模板", route: "digital-human" },
-  { title: "新闻播报", icon: "📺", tab: "口播模板", route: "digital-human" },
-  { title: "知识科普", icon: "📚", tab: "口播模板", route: "digital-human" },
-  { title: "职场汇报", icon: "👔", tab: "口播模板", route: "digital-human" },
-  { title: "课堂讲解", icon: "🎓", tab: "口播模板", route: "digital-human" },
-  { title: "品牌宣传", icon: "🏢", tab: "口播模板", route: "digital-human" },
-  { title: "节日祝福", icon: "🎉", tab: "口播模板", route: "digital-human" },
-  { title: "活动邀约", icon: "📣", tab: "口播模板", route: "digital-human" },
-  { title: "客服应答", icon: "💬", tab: "口播模板", route: "digital-human" },
 ];
 
 function getFaceminiInspirationRoute(item) {
@@ -7956,6 +7928,18 @@ function VideoGenerationView({
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
 
+  const videoGen = useVideoGenStateMachine({
+    onFailed: (message) => {
+      showVideoPageToast(message || "视频生成失败");
+      setIsSubmitting(false);
+    },
+    onReturnToList: () => {
+      setFilter("recent");
+      setIsSubmitting(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+  });
+
   function showVideoPageToast(message) {
     if (!message) return;
     setPageToastMessage(message);
@@ -8081,18 +8065,23 @@ function VideoGenerationView({
     }
     setSubmitError("");
     setIsSubmitting(true);
+    videoGen.startGeneration({
+      prompt: payload.prompt,
+      duration: payload.duration,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
     try {
-      await videoApi.createTask(payload);
-      setFilter("recent");
+      const task = await videoApi.createTask(payload);
+      videoGen.attachTaskId(task.id);
       videoApi
         .refreshCredits()
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     } catch (error) {
+      videoGen.failGeneration(error.message || "创建视频生成任务失败");
       setSubmitError("");
       showVideoPageToast(error.message || "创建视频生成任务失败");
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -8203,7 +8192,16 @@ function VideoGenerationView({
   }
 
   return (
-    <section className="video-gen-view video-gen-view-root">
+    <section
+      className={`video-gen-view video-gen-view-root${videoGen.isGenStageActive ? " is-gen-stage" : ""}`}
+    >
+      {videoGen.isGenStageActive && videoGen.derivedState ? (
+        <VideoGenStage
+          derivedState={videoGen.derivedState}
+          logEndRef={videoGen.logEndRef}
+        />
+      ) : (
+        <>
       <div className="image-filter-tabs">
         <button
           className={filter === "inspiration" ? "selected" : ""}
@@ -8346,6 +8344,8 @@ function VideoGenerationView({
         onRemix={useVideoInspiration}
       />
       {deleteConfirmDialog}
+        </>
+      )}
     </section>
   );
 }
@@ -8686,6 +8686,7 @@ function ChatComposerBar({
   const isReady = options.models.length > 0;
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
+  const isInputLocked = !isReady || isSubmitting || isUploadingAttachment;
   const canSubmit =
     isReady &&
     (prompt.trim().length > 0 || attachments.length > 0) &&
@@ -8805,20 +8806,24 @@ function ChatComposerBar({
       <textarea
         className="llm-input"
         value={prompt}
+        disabled={isInputLocked}
         onChange={(event) => {
           setPrompt(event.target.value);
           if (notice) setNotice("");
         }}
         onKeyDown={(event) => {
+          if (isInputLocked) return;
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             submitPrompt();
           }
         }}
         placeholder={
-          isReady
-            ? "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
-            : "正在加载对话模型..."
+          !isReady
+            ? "正在加载对话模型..."
+            : isSubmitting
+              ? "AI 正在思考中..."
+              : "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
         }
       />
       <div className="llm-composer-footer">
@@ -8827,12 +8832,7 @@ function ChatComposerBar({
             <button
               className="llm-square"
               type="button"
-              disabled={
-                !isReady ||
-                isSubmitting ||
-                isUploadingAttachment ||
-                attachments.length >= 5
-              }
+              disabled={isInputLocked || attachments.length >= 5}
               onClick={() => attachmentInputRef.current?.click()}
               aria-label="上传附件"
               title="上传附件"
@@ -8854,7 +8854,7 @@ function ChatComposerBar({
               <button
                 className="llm-select"
                 type="button"
-                disabled={!isReady}
+                disabled={isInputLocked}
                 onClick={() =>
                   setOpenMenu((current) =>
                     current === "model" ? null : "model",
@@ -8890,6 +8890,7 @@ function ChatComposerBar({
                 ariaLabel="推理强度"
                 className="llm-reasoning-select"
                 value={reasoningEffort}
+                disabled={isInputLocked}
                 onChange={onReasoningEffortChange}
                 options={visibleReasoningEfforts}
               />
@@ -13111,7 +13112,9 @@ function ImageFeaturePage({
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
-  const [inspirationLibraryTab, setInspirationLibraryTab] = useState("全部");
+  const [inspirationLibraryTab, setInspirationLibraryTab] = useState(
+    fmInspirationLibraryDefaultTab,
+  );
   const [composerResetSignals, setComposerResetSignals] = useState({
     image: 0,
     video: 0,
@@ -13219,12 +13222,17 @@ function ImageFeaturePage({
     setShowInvite(true);
   }, [activeNav, authUser]);
 
-  const openInspirationLibrary = useCallback((tab = "全部") => {
-    setInspirationLibraryTab(
-      fmInspirationLibraryTabs.includes(tab) ? tab : "全部",
-    );
-    setShowInspirationLibrary(true);
-  }, []);
+  const openInspirationLibrary = useCallback(
+    (tab = fmInspirationLibraryDefaultTab) => {
+      setInspirationLibraryTab(
+        fmInspirationLibraryTabs.includes(tab)
+          ? tab
+          : fmInspirationLibraryDefaultTab,
+      );
+      setShowInspirationLibrary(true);
+    },
+    [],
+  );
 
   return (
     <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>

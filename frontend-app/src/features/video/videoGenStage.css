@@ -1,0 +1,218 @@
+/* Loading UI — user-provided styles (scoped to .gen-stage) */
+
+/* ── App shell when gen stage active ── */
+.feature-page-shell:has(.video-gen-view-root.is-gen-stage) {
+  overflow: hidden;
+}
+
+.feature-main:has(.video-gen-view-root.is-gen-stage) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #f7f8ff;
+}
+
+.feature-main:has(.video-gen-view-root.is-gen-stage) .fm-workbench-topbar {
+  flex: 0 0 auto;
+}
+
+.video-gen-view.is-gen-stage,
+.video-gen-view-root.is-gen-stage {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden;
+  background: #f7f8ff;
+}
+
+/* ── Stage root ── */
+.gen-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background: #f7f8ff;
+}
+
+/* ============ 背景层 ============ */
+.gen-stage .bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(120, 140, 255, 0.12), transparent 40%),
+    radial-gradient(circle at 80% 60%, rgba(100, 180, 255, 0.08), transparent 45%),
+    linear-gradient(180deg, #f8faff, #ffffff);
+}
+
+.gen-stage .particles::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(120, 130, 255, 0.25) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: loading-float 18s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes loading-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-120px);
+  }
+}
+
+/* ============ 中心容器 ============ */
+.gen-stage .container {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ============ 进度环 ============ */
+.gen-stage .progress-wrap {
+  position: relative;
+}
+
+.gen-stage .progress {
+  width: 220px;
+  height: 220px;
+  transform: rotate(-90deg);
+  display: block;
+}
+
+.gen-stage .progress circle {
+  fill: none;
+  stroke-width: 6;
+}
+
+.gen-stage .bg-circle {
+  stroke: rgba(120, 130, 255, 0.15);
+}
+
+.gen-stage .progress-circle {
+  stroke: #5b6cff;
+  stroke-linecap: round;
+  stroke-dasharray: 339;
+  transition: stroke-dashoffset 0.5s;
+}
+
+/* ============ 文案 ============ */
+.gen-stage .percent {
+  position: absolute;
+  left: 0;
+  right: 0;
+  font-size: 40px;
+  font-weight: bold;
+  color: #2c2f3a;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+/* ============ step ============ */
+.gen-stage .steps {
+  margin-top: 40px;
+  display: flex;
+  gap: 40px;
+  font-size: 13px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gen-stage .step {
+  color: #999;
+  transition: 0.3s;
+}
+
+.gen-stage .step.active {
+  color: #5b6cff;
+  font-weight: bold;
+}
+
+/* ============ logs ============ */
+.gen-stage .logs {
+  margin-top: 30px;
+  width: 420px;
+  max-width: calc(100% - 32px);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 12px;
+  color: #444;
+  max-height: 120px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.gen-stage .log-item {
+  opacity: 0.7;
+  animation: loading-fade-in 0.4s ease;
+}
+
+@keyframes loading-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+}
+
+/* ============ 完成态 ============ */
+.gen-stage.is-done .progress-wrap {
+  transform: scale(0.55);
+  opacity: 0;
+  transition: transform 0.65s ease, opacity 0.65s ease;
+}
+
+.gen-stage.is-done .bg,
+.gen-stage.is-done .particles::before {
+  opacity: 0.4;
+  transition: opacity 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-stage .particles::before,
+  .gen-stage .log-item {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .gen-stage .progress {
+    width: 190px;
+    height: 190px;
+  }
+
+  .gen-stage .percent {
+    font-size: 34px;
+  }
+
+  .gen-stage .steps {
+    margin-top: 28px;
+    gap: 24px;
+  }
+
+  .gen-stage .logs {
+    margin-top: 24px;
+  }
+}

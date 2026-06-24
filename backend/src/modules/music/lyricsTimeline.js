@@ -100,12 +100,40 @@ export function extractTencentWords(asrResult) {
 
   for (const segment of list) {
     const segmentStartMs = readSegmentStartMs(segment);
+    const segmentEndMs = normalizeAsrTimeToMs(
+      segment.EndMs ??
+      segment.EndTime ??
+      segment.end_ms ??
+      segment.end_time ??
+      0
+    );
     const wordList =
       segment.Words ||
       segment.WordList ||
       segment.words ||
       segment.word_list ||
       [];
+
+    if (!wordList.length) {
+      const sentence = String(
+        segment.FinalSentence ||
+        segment.Content ||
+        segment.Text ||
+        segment.text ||
+        ""
+      ).trim();
+      if (normalizeLyricText(sentence)) {
+        const endMs = segmentEndMs > segmentStartMs
+          ? segmentEndMs
+          : segmentStartMs + Math.max(500, sentence.length * 180);
+        words.push({
+          text: sentence,
+          startMs: segmentStartMs,
+          endMs: endMs
+        });
+      }
+      continue;
+    }
 
     for (const word of wordList) {
       const text = String(word.Word || word.Text || word.word || word.text || "").trim();
@@ -131,11 +159,17 @@ export function extractTencentWords(asrResult) {
         word.endMs ??
         rawStart
       );
+      const wordStartMs = normalizeAsrTimeToMs(rawStart);
+      const wordEndMs = normalizeAsrTimeToMs(rawEnd);
+      const absoluteStart = hasOffsetStart ? segmentStartMs + wordStartMs : wordStartMs;
+      const absoluteEnd = hasOffsetEnd
+        ? segmentStartMs + wordEndMs
+        : (wordEndMs > wordStartMs ? wordEndMs : absoluteStart + 300);
 
       words.push({
         text,
-        startMs: normalizeAsrTimeToMs(rawStart) + (hasOffsetStart ? segmentStartMs : 0),
-        endMs: normalizeAsrTimeToMs(rawEnd) + (hasOffsetEnd ? segmentStartMs : 0)
+        startMs: absoluteStart,
+        endMs: absoluteEnd
       });
     }
   }
@@ -181,7 +215,75 @@ export function buildLyricsTimeline({ lyricLines, words, durationMs = 0 }) {
     }
   }
 
-  return fillMissingTimeline(timeline, durationMs);
+  return anchorTimelineToStart(
+    fillMissingTimeline(demoteSuspiciousFirstMatch(timeline), durationMs),
+    durationMs
+  );
+}
+
+function demoteSuspiciousFirstMatch(timeline) {
+  if (timeline.length < 2) return timeline;
+  const first = timeline[0];
+  const second = timeline[1];
+  const firstStart = Number(first.startMs || 0);
+  const secondStart = Number(second.startMs || 0);
+
+  if (
+    first.source === "tencent-asr" &&
+    firstStart > 15000 &&
+    (secondStart <= 12000 || secondStart - firstStart > 20000)
+  ) {
+    return [
+      {
+        ...first,
+        startMs: null,
+        endMs: null,
+        confidence: 0,
+        source: "fallback"
+      },
+      ...timeline.slice(1)
+    ];
+  }
+
+  return timeline;
+}
+
+function anchorTimelineToStart(timeline, durationMs = 0) {
+  if (!timeline.length) return timeline;
+
+  const result = timeline.map((line) => ({ ...line }));
+  const anchorIndex = result.findIndex(
+    (line) => line.source === "tencent-asr" && Number(line.confidence || 0) >= 0.48
+  );
+
+  if (anchorIndex > 0) {
+    const anchorStart = Number(result[anchorIndex].startMs || 0);
+    const leadInMs = Math.min(Math.max(anchorStart - 500, 1500), 4000);
+    const segment = Math.max(1200, Math.floor(leadInMs / anchorIndex));
+
+    for (let index = 0; index < anchorIndex; index += 1) {
+      const startMs = segment * index;
+      const endMs = index === anchorIndex - 1
+        ? Math.max(startMs + 800, anchorStart - 200)
+        : segment * (index + 1);
+      result[index].startMs = startMs;
+      result[index].endMs = Math.max(startMs + 500, endMs);
+      if (result[index].source === "fallback") {
+        result[index].source = "estimated";
+      }
+    }
+  }
+
+  const firstStart = Number(result[0].startMs || 0);
+  if (firstStart > 12000 && durationMs > 0) {
+    const shift = firstStart - 2000;
+    for (const line of result) {
+      line.startMs = Math.max(0, Number(line.startMs || 0) - shift);
+      line.endMs = Math.max(Number(line.startMs || 0) + 500, Number(line.endMs || 0) - shift);
+    }
+  }
+
+  return result;
 }
 
 function findBestWordWindow({ line, words, searchStart }) {

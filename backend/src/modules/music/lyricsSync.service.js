@@ -112,7 +112,7 @@ export async function syncMusicLyrics(taskId, userId, { force = false } = {}) {
 
   const existingTimeline = safeJson(row.lyrics_timeline, []);
 
-  if (row.lyrics_sync_status === "processing") {
+  if (row.lyrics_sync_status === "processing" && !force) {
     return {
       lyricsTimeline: existingTimeline,
       lyricsSyncStatus: "processing",

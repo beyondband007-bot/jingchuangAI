@@ -20,6 +20,7 @@ import {
 import { formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile, resolveMediaUrl } from "../../api/mediaUrl.js";
 import {
+  attachAudioElement,
   formatAudioTime,
   getActiveLyricIndex,
   getLineProgress,
@@ -299,6 +300,8 @@ export function MusicFullPagePlayer({
   const [showVolume, setShowVolume] = useState(false);
   const [activeLyricIndex, setActiveLyricIndex] = useState(-1);
   const [audioState, setAudioState] = useState("idle");
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
 
   const playbackUrl = useMemo(
     () => resolveMediaUrl(item?.audioUrl),
@@ -306,6 +309,11 @@ export function MusicFullPagePlayer({
   );
 
   const timeline = Array.isArray(item?.lyricsTimeline) ? item.lyricsTimeline : [];
+  const timelineKey = useMemo(
+    () => timeline.map((line) => `${line.lineIndex}:${line.startMs}:${line.endMs}`).join("|"),
+    [timeline]
+  );
+  const prevTimelineKeyRef = useRef("");
   const currentMs = currentTime * 1000;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const isLyricsSyncing = item?.lyricsSyncStatus === "processing";
@@ -324,17 +332,52 @@ export function MusicFullPagePlayer({
   const activeIndex = playableItems.findIndex((entry) => entry.id === item?.id);
 
   useEffect(() => {
+    const audio = audioRef.current;
+    if (!playbackUrl) {
+      setAudioState("idle");
+      setCurrentTime(0);
+      setDuration(0);
+      return undefined;
+    }
+
     setAudioState("idle");
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(autoPlay);
-  }, [item?.id, item?.audioUrl, autoPlay]);
+
+    if (!audio) return undefined;
+
+    function markReady(target) {
+      setAudioState("ready");
+      setDuration(Number.isFinite(target.duration) ? target.duration : 0);
+      setCurrentTime(target.currentTime || 0);
+      if (isPlayingRef.current) {
+        target.playbackRate = speed;
+        target.play().catch(() => setIsPlaying(false));
+      }
+    }
+
+    const detach = attachAudioElement(audio, {
+      onReady: markReady,
+      onError: () => {
+        setAudioState("error");
+        setIsPlaying(false);
+        setDuration(0);
+        setCurrentTime(0);
+      }
+    });
+
+    audio.load();
+
+    return detach;
+  }, [item?.id, playbackUrl, autoPlay, speed]);
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !playbackUrl) return;
-    audio.load();
-  }, [playbackUrl]);
+    if (!audio || !isPlaying || audioState !== "ready" || !playbackUrl) return;
+    audio.playbackRate = speed;
+    audio.play().catch(() => setIsPlaying(false));
+  }, [isPlaying, audioState, playbackUrl, speed]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -354,8 +397,17 @@ export function MusicFullPagePlayer({
   }, [showVolume]);
 
   useEffect(() => {
-    setActiveLyricIndex(getActiveLyricIndex(timeline, currentTime));
-  }, [timeline, currentTime]);
+    const audio = audioRef.current;
+    const time = audio?.currentTime ?? currentTime;
+    setActiveLyricIndex(getActiveLyricIndex(timeline, time));
+
+    if (timelineKey && timelineKey !== prevTimelineKeyRef.current) {
+      prevTimelineKeyRef.current = timelineKey;
+      if (audio && timeline.length) {
+        setActiveLyricIndex(getActiveLyricIndex(timeline, audio.currentTime));
+      }
+    }
+  }, [timeline, timelineKey, currentTime]);
 
   useEffect(() => {
     if (isInstrumentalMode || activeLyricIndex < 0) return;
@@ -443,27 +495,13 @@ export function MusicFullPagePlayer({
     }
   }
 
-  function handleAudioReady(event) {
-    setAudioState("ready");
-    setDuration(event.currentTarget.duration || 0);
-    setCurrentTime(event.currentTarget.currentTime || 0);
-    if (isPlaying) {
-      event.currentTarget.play().catch(() => setIsPlaying(false));
-    }
-  }
-
-  function handleAudioError() {
-    setAudioState("error");
-    setIsPlaying(false);
-    setDuration(0);
-    setCurrentTime(0);
-  }
-
   function seekTo(ratio) {
     const audio = audioRef.current;
     if (!audio || !Number.isFinite(audio.duration)) return;
-    audio.currentTime = Math.min(audio.duration, Math.max(0, ratio * audio.duration));
-    setCurrentTime(audio.currentTime);
+    const nextTime = Math.min(audio.duration, Math.max(0, ratio * audio.duration));
+    audio.currentTime = nextTime;
+    setCurrentTime(nextTime);
+    setActiveLyricIndex(getActiveLyricIndex(timeline, nextTime));
   }
 
   function cycleSpeed() {
@@ -483,9 +521,6 @@ export function MusicFullPagePlayer({
         ref={audioRef}
         src={playbackUrl || undefined}
         preload="metadata"
-        onLoadedMetadata={handleAudioReady}
-        onCanPlay={handleAudioReady}
-        onError={handleAudioError}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime || 0)}
         onEnded={handleTrackEnded}
         onPlay={() => setIsPlaying(true)}
@@ -506,11 +541,12 @@ export function MusicFullPagePlayer({
           <section className="music-full-player__lyrics" ref={lyricScrollRef}>
             <div className={`music-full-player__lyrics-inner${timeline.length ? " is-karaoke" : " is-static"}`}>
               {isLyricsSyncing && !timeline.length ? (
-                <div className="music-full-player__lyrics-status">
-                  <Loader2 size={28} className="music-lyrics-sync-spinner" />
-                  <p>正在同步歌词时间轴...</p>
+                <div className="music-full-player__lyrics-status is-inline">
+                  <Loader2 size={18} className="music-lyrics-sync-spinner" />
+                  <p>正在后台同步歌词时间轴...</p>
                 </div>
-              ) : timeline.length ? (
+              ) : null}
+              {timeline.length ? (
                 timeline.map((line, index) => {
                   const isActive = index === activeLyricIndex;
                   const isNear = Math.abs(index - activeLyricIndex) <= 2;
@@ -593,14 +629,13 @@ export function MusicFullPagePlayer({
             </button>
             <button
               type="button"
-              className="music-mini-btn is-primary is-large"
+              className={`music-mini-btn is-primary is-large${isAudioLoading ? " is-loading" : ""}`}
               onClick={togglePlay}
               disabled={!canPlayAudio}
               aria-label={isPlaying ? "暂停" : "播放"}
+              aria-busy={isAudioLoading}
             >
-              {isAudioLoading ? <Loader2 size={24} className="music-lyrics-sync-spinner" /> : null}
-              {!isAudioLoading && isPlaying ? <Pause size={24} fill="currentColor" /> : null}
-              {!isAudioLoading && !isPlaying ? <Play size={24} fill="currentColor" /> : null}
+              {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
             </button>
             <button
               type="button"
