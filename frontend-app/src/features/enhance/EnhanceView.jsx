@@ -15,7 +15,15 @@ import {
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
+import { formatBeijingDateTime } from "../../utils/time";
 import { enhanceApi } from "./enhanceApi";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
@@ -27,7 +35,15 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
+function EnhanceCenterState({
+  task,
+  isSubmitting,
+  error,
+  onReset,
+  onRepeat,
+  onDismiss,
+  onRecharge,
+}) {
   const isVideo = task?.mediaType === "video";
 
   if (task?.status === "completed" && task.resultUrl) {
@@ -74,13 +90,27 @@ function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error || task?.error || "画质增强服务返回错误，积分会按任务状态自动处理。";
+    if (isRechargeRequiredMessage(message)) {
+      return (
+        <CreditAlertDialog
+          title="这次没有提升成功"
+          message={message}
+          icon={<Wand2 size={28} />}
+          onClose={onDismiss}
+          onRecharge={onRecharge}
+        />
+      );
+    }
+
     return (
       <section className="watermark-center-state enhance-center-state is-failed">
         <span className="watermark-center-icon enhance-center-icon">
           <Wand2 size={24} />
         </span>
         <strong>这次没有增强成功</strong>
-        <p>{error || task?.error || "画质增强服务返回错误，积分会按任务状态自动处理。"}</p>
+        <p>{message}</p>
       </section>
     );
   }
@@ -103,6 +133,9 @@ function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
 function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -123,14 +156,14 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
       </div>
       <div className="watermark-task-meta enhance-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -141,11 +174,11 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>
@@ -335,7 +368,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function EnhanceView() {
+export function EnhanceView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [credits, setCredits] = useState(null);
@@ -446,6 +479,21 @@ export function EnhanceView() {
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root enhance-view-root">
       <div className="image-filter-tabs watermark-filter-tabs enhance-filter-tabs">
@@ -481,7 +529,9 @@ export function EnhanceView() {
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (
@@ -498,7 +548,7 @@ export function EnhanceView() {
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -511,6 +561,7 @@ export function EnhanceView() {
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }

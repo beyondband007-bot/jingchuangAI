@@ -4,6 +4,10 @@ import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
@@ -76,7 +80,12 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
+export function VoiceSynthesisView({
+  authUser,
+  onOpenAuth,
+  onOpenFeature,
+  resetSignal = 0,
+}) {
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
@@ -347,6 +356,16 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
       title: "删除历史记录？",
       message: "该语音生成记录会被移除，删除后无法恢复。",
     });
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
 
   return (
     <section className="voice-conversion-view-root voice-synthesis-view-root">
@@ -476,6 +495,15 @@ export function VoiceSynthesisView({ authUser, onOpenAuth, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {showRechargeAlert && (
+        <CreditAlertDialog
+          title="这次没有生成语音"
+          message={notice}
+          icon={<Mic size={28} />}
+          onClose={closeRechargeAlert}
+          onRecharge={goToRecharge}
+        />
+      )}
       {deleteConfirmDialog}
     </section>
   );

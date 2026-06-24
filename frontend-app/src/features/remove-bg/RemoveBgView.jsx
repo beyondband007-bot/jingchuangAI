@@ -2,7 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
+import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -14,7 +22,15 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
+function RemoveBgCenterState({
+  task,
+  isSubmitting,
+  error,
+  onReset,
+  onRepeat,
+  onDismiss,
+  onRecharge,
+}) {
   if (task?.status === "completed" && task.resultUrl) {
     return (
       <section className="watermark-center-state remove-bg-center-state marketing-result-card is-completed">
@@ -51,13 +67,27 @@ function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error || task?.error || "抠图服务返回了错误，积分会按任务状态自动处理。";
+    if (isRechargeRequiredMessage(message)) {
+      return (
+        <CreditAlertDialog
+          title="这次没有抠图成功"
+          message={message}
+          icon={<Layers size={28} />}
+          onClose={onDismiss}
+          onRecharge={onRecharge}
+        />
+      );
+    }
+
     return (
       <section className="watermark-center-state remove-bg-center-state is-failed">
         <span className="watermark-center-icon remove-bg-center-icon">
           <Layers size={24} />
         </span>
         <strong>这次没有抠图成功</strong>
-        <p>{error || task?.error || "抠图服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <p>{message}</p>
       </section>
     );
   }
@@ -80,6 +110,9 @@ function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
 function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
 
   return (
     <article className={`watermark-task-card remove-bg-task-card status-${task.status}`}>
@@ -95,14 +128,14 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
       </div>
       <div className="watermark-task-meta remove-bg-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -113,11 +146,11 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>
@@ -278,7 +311,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function RemoveBgView() {
+export function RemoveBgView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [credits, setCredits] = useState(null);
@@ -388,6 +421,21 @@ export function RemoveBgView() {
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root remove-bg-view-root">
       <div className="image-filter-tabs watermark-filter-tabs remove-bg-filter-tabs">
@@ -423,7 +471,9 @@ export function RemoveBgView() {
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (
@@ -440,7 +490,7 @@ export function RemoveBgView() {
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -453,6 +503,7 @@ export function RemoveBgView() {
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }

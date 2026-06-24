@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { replicateApi } from "./replicateApi";
 import { formatBeijingDateTime } from "../../utils/time";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
 
@@ -416,6 +420,17 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     });
   }
 
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
+
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
   return (
     <section className="voice-conversion-view-root replicate-view">
       <div className="image-filter-tabs voice-filter-tabs">
@@ -514,6 +529,15 @@ export function ReplicateView({ authUser, onOpenFeature }) {
               >
                 {notice}
               </div>
+            )}
+            {showRechargeAlert && (
+              <CreditAlertDialog
+                title="这次没有反推成功"
+                message={notice}
+                icon={<Copy size={28} />}
+                onClose={closeRechargeAlert}
+                onRecharge={goToRecharge}
+              />
             )}
             </>
             )}

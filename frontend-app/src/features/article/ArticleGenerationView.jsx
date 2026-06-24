@@ -20,7 +20,11 @@ import { articleApi } from "./articleApi";
 import { downloadArticleImagesZip } from "./articleImageZip";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
+import { formatBeijingDateTime } from "../../utils/time";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -1040,6 +1044,11 @@ export function ArticleGenerationView({
       message: "该图文生成记录会被移除，删除后无法恢复。",
     });
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   async function toggleFavorite(id) {
     const updated = await articleApi.toggleFavorite(id);
     setCards((current) =>
@@ -1063,9 +1072,13 @@ export function ArticleGenerationView({
           <div className="article-history-grid">
             {historyCards.map((task) => {
               const taskImages = getArticleImages(task);
+              const isCompleted = ["completed", "partial_completed"].includes(task.status) && taskImages.length > 0;
+              const isFailed = task.status === "failed";
+              const canUseCompletedActions = isCompleted;
+              const canRetryOrDelete = isCompleted || isFailed;
               return (
                 <article className={`article-history-card status-${task.status}`} key={task.id}>
-                  <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)}>
+                  <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)} disabled={!canUseCompletedActions}>
                     <span className={`article-history-status-badge status-${task.status}`}>
                       {task.status === "failed" ? "生成失败" : task.status === "completed" ? "已完成" : "生成中"}
                     </span>
@@ -1089,15 +1102,18 @@ export function ArticleGenerationView({
                   </button>
                   <div className="article-history-meta">
                     <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
-                    <p>{taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} · {task.time}</p>
+                    <p>
+                      {taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} ·{" "}
+                      {formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}
+                    </p>
                     <div className="article-history-actions">
-                      <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
+                      <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
                         <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />
                       </button>
-                      <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成">
+                      <button type="button" onClick={() => requestRegenerate(task)} aria-label="重新生成" disabled={!canRetryOrDelete}>
                         <RefreshCcw size={15} />
                       </button>
-                      <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除">
+                      <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除" disabled={!canRetryOrDelete}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -1118,6 +1134,7 @@ export function ArticleGenerationView({
           onClose={() => setPreviewTask(null)}
         />
         {deleteConfirmDialog}
+        {regenerateConfirmDialog}
       </section>
     );
   }
@@ -1530,7 +1547,7 @@ export function ArticleGenerationView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => regenerateTask(selectedTask)}
+                      onClick={() => requestRegenerate(selectedTask)}
                     >
                       <RefreshCcw size={15} />
                       重新生成
@@ -1685,6 +1702,7 @@ export function ArticleGenerationView({
           onConfirm={confirmPendingQuickTemplate}
         />
       )}
+      {regenerateConfirmDialog}
       {toastMessage && (
         <div className="article-floating-toast" role="alert">
           {toastMessage}

@@ -8,6 +8,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: jingchuang_dev_password
       MYSQL_DATABASE: jingchuang_ai
+      TZ: Asia/Shanghai
+    command: ["mysqld", "--default-time-zone=+08:00"]
     volumes:
       - jingchuang_ai_mysql_data:/var/lib/mysql
     healthcheck:

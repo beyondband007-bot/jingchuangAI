@@ -2,6 +2,10 @@
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
@@ -156,7 +160,7 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   );
 }
 
-export function TranscribeView({ authUser, resetSignal = 0 }) {
+export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -311,6 +315,16 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
       title: "删除转录记录？",
       message: "该转录文本会被移除，删除后无法恢复。",
     });
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
 
   return (
     <section className="voice-conversion-view-root transcribe-view-root">
@@ -410,6 +424,15 @@ export function TranscribeView({ authUser, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {showRechargeAlert && (
+        <CreditAlertDialog
+          title="这次没有转录成功"
+          message={notice}
+          icon={<FileAudio size={28} />}
+          onClose={closeRechargeAlert}
+          onRecharge={goToRecharge}
+        />
+      )}
       {deleteConfirmDialog}
     </section>
   );

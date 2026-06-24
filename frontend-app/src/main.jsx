@@ -85,7 +85,10 @@ import { PromptSelectField } from "./features/chat/components/PromptSelectField"
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
 import { CustomSelect } from "./components/CustomSelect";
-import { useDeleteConfirmation } from "./components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "./components/DeleteConfirmDialog";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
@@ -99,7 +102,7 @@ import "./features/video/videoGenStage.css";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
-import { formatBeijingHistoryTime } from "./utils/time";
+import { formatBeijingDateTime, formatBeijingHistoryTime } from "./utils/time";
 import "./styles.css";
 
 const caseImageFiles = [
@@ -1564,7 +1567,7 @@ function loadTencentCaptchaScript() {
 }
 
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
-  const [loginMethod, setLoginMethod] = useState("phone-code");
+  const [loginMethod, setLoginMethod] = useState("password");
   const [phone, setPhone] = useState("");
   const [smsCode, setSmsCode] = useState("");
   const [identifier, setIdentifier] = useState("");
@@ -1590,7 +1593,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     if (!mode) return;
     setRenderMode(mode);
     setIsClosing(false);
-    setLoginMethod("phone-code");
+    setLoginMethod("password");
     setPhone("");
     setSmsCode("");
     setIdentifier("");
@@ -1934,17 +1937,17 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             >
               <button
                 type="button"
-                className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
-                onClick={() => setLoginMethod("phone-code")}
-              >
-                手机号登录
-              </button>
-              <button
-                type="button"
                 className={`auth-method-tab ${loginMethod === "password" ? "is-active" : ""}`}
                 onClick={() => setLoginMethod("password")}
               >
                 密码登录
+              </button>
+              <button
+                type="button"
+                className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
+                onClick={() => setLoginMethod("phone-code")}
+              >
+                验证码登录
               </button>
             </div>
           )}
@@ -3161,9 +3164,7 @@ function CreditTransactionsPanel({
               const isIncome = Number(tx.amount || 0) > 0;
               return (
                 <div className="assets-transaction-row" key={tx.id}>
-                  <span>
-                    {new Date(tx.createdAt).toLocaleString("zh-CN")}
-                  </span>
+                  <span>{formatBeijingDateTime(tx.createdAt)}</span>
                   <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
                   <span
                     style={{
@@ -4272,12 +4273,7 @@ function AssetsPage({
       })()
     : "";
   const latestTimeLabel = latestTransaction
-    ? (() => {
-        const date = new Date(latestTransaction.createdAt);
-        if (Number.isNaN(date.getTime())) return "";
-        const pad = (value) => String(value).padStart(2, "0");
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-      })()
+    ? formatBeijingDateTime(latestTransaction.createdAt)
     : "";
 
   return (
@@ -4639,6 +4635,9 @@ function ResultCard({
   const isFailed = card.status === "failed";
   const displaySrc = isImageGallery ? card.src || card.image : card.image;
   const displayFallback = isImageGallery ? card.fallbackSrc : undefined;
+  const isCompleted = card.status === "completed" && Boolean(displaySrc || card.hdSrc);
+  const canUseCompletedActions = !isExample && isCompleted;
+  const canRetryOrDelete = !isExample && (isCompleted || isFailed);
   const canPreview = Boolean(
     displaySrc && onPreview && !isProcessing && !isFailed,
   );
@@ -4732,11 +4731,11 @@ function ResultCard({
                 type="button"
                 onClick={() => onFavorite(card.id)}
                 aria-label="收藏"
-                disabled={isExample}
+                disabled={!canUseCompletedActions}
               >
                 <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
               </button>
-              {card.image || card.hdSrc ? (
+              {canUseCompletedActions ? (
                 <a
                   className="card-action-link"
                   href={card.hdSrc || card.imageUrl || card.image}
@@ -4754,7 +4753,7 @@ function ResultCard({
               <button
                 type="button"
                 onClick={() => onRegenerate(card.id)}
-                disabled={isExample}
+                disabled={!canRetryOrDelete}
               >
                 <RefreshCcw size={15} />
                 再次生成
@@ -4762,7 +4761,7 @@ function ResultCard({
               <button
                 type="button"
                 onClick={() => onDelete(card.id)}
-                disabled={isExample}
+                disabled={!canRetryOrDelete}
               >
                 <Trash2 size={15} />
                 删除
@@ -6153,6 +6152,9 @@ function HistoryRail({
           const isProcessing =
             card.status === "pending" || card.status === "processing";
           const isFailed = card.status === "failed";
+          const isCompleted = card.status === "completed" && Boolean(card.image);
+          const canUseCompletedActions = isCompleted;
+          const canRetryOrDelete = isCompleted || isFailed;
 
           return (
             <article
@@ -6189,17 +6191,18 @@ function HistoryRail({
                 <div className="history-tags">
                   <span>{card.ratio}</span>
                   <span>{card.quality}</span>
-                  <span>{card.time}</span>
+                  <span>{formatBeijingDateTime(card.createdAt || card.created_at || card.time) || card.time}</span>
                 </div>
                 <div className="history-actions">
                   <button
                     type="button"
                     onClick={() => onFavorite(card.id)}
                     aria-label="收藏"
+                    disabled={!canUseCompletedActions}
                   >
                     <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
                   </button>
-                  {card.image && (
+                  {canUseCompletedActions ? (
                     <a
                       href={card.imageUrl || card.image}
                       download
@@ -6207,11 +6210,16 @@ function HistoryRail({
                     >
                       <Download size={15} />
                     </a>
+                  ) : (
+                    <button type="button" aria-label="下载图片" disabled>
+                      <Download size={15} />
+                    </button>
                   )}
                   <button
                     type="button"
                     onClick={() => onRegenerate(card.id)}
                     aria-label="再次生成"
+                    disabled={!canRetryOrDelete}
                   >
                     <RefreshCcw size={15} />
                   </button>
@@ -6219,6 +6227,7 @@ function HistoryRail({
                     type="button"
                     onClick={() => onDelete(card.id)}
                     aria-label="删除"
+                    disabled={!canRetryOrDelete}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -6957,6 +6966,11 @@ function ImageGenerationView({
     }
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   async function copyTaskPrompt(task) {
     const copied = await writeClipboardText(task?.prompt);
     showImagePageToast(copied ? "提示词已复制" : "提示词复制失败，请重试");
@@ -7170,7 +7184,7 @@ function ImageGenerationView({
           onNewContext={startNewImageContext}
           onPreview={(task) => setPreviewTask(task)}
           onReference={referenceTask}
-          onRegenerate={regenerateTask}
+          onRegenerate={requestRegenerate}
         />
       ) : canRenderImageGallery && galleryItems.length ? (
         <>
@@ -7189,7 +7203,7 @@ function ImageGenerationView({
                 onPreview={(task) => setPreviewTask(task)}
                 onDelete={isExample ? () => {} : deleteTask}
                 onFavorite={isExample ? () => {} : toggleFavorite}
-                onRegenerate={isExample ? () => {} : regenerateTask}
+                onRegenerate={isExample ? () => {} : requestRegenerate}
               />
             )}
           />
@@ -7215,6 +7229,7 @@ function ImageGenerationView({
         onFavorite={togglePreviewFavorite}
       />
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -7537,6 +7552,11 @@ function VideoResultCard({
   onRegenerate,
   isExample = false,
 }) {
+  const isCompleted = card.status === "completed" && Boolean(card.video);
+  const isFailed = card.status === "failed";
+  const canUseCompletedActions = !isExample && isCompleted;
+  const canRetryOrDelete = !isExample && (isCompleted || isFailed);
+
   return (
     <article
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
@@ -7553,7 +7573,7 @@ function VideoResultCard({
           <span className="count-tag">首帧</span>
         </div>
         <div className="time-row">
-          <span>{card.time}</span>
+          <span>{formatBeijingDateTime(card.createdAt || card.created_at || card.time) || card.time}</span>
           <strong>{card.rmb || card.price}</strong>
         </div>
         <p>{card.error || card.prompt}</p>
@@ -7563,11 +7583,11 @@ function VideoResultCard({
             type="button"
             onClick={() => onFavorite(card.id)}
             aria-label="收藏"
-            disabled={isExample}
+            disabled={!canUseCompletedActions}
           >
             <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
           </button>
-          {card.video ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={card.video} download>
               <Download size={15} />
               下载
@@ -7581,7 +7601,7 @@ function VideoResultCard({
           <button
             type="button"
             onClick={() => onRegenerate(card.id)}
-            disabled={isExample}
+            disabled={!canRetryOrDelete}
           >
             <RefreshCcw size={15} />
             再次生成
@@ -7589,7 +7609,7 @@ function VideoResultCard({
           <button
             type="button"
             onClick={() => onDelete(card.id)}
-            disabled={isExample}
+            disabled={!canRetryOrDelete}
           >
             <Trash2 size={15} />
             删除
@@ -8121,6 +8141,11 @@ function VideoGenerationView({
     }
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
   const filteredVideoInspirationItems = useMemo(
     () =>
@@ -8326,7 +8351,7 @@ function VideoGenerationView({
                 key={card.id}
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
-                onRegenerate={regenerateTask}
+                onRegenerate={requestRegenerate}
               />
             ))
           ) : (
@@ -8344,6 +8369,7 @@ function VideoGenerationView({
         onRemix={useVideoInspiration}
       />
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
         </>
       )}
     </section>
@@ -8943,14 +8969,13 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
                   className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
                   key={conversation.id}
                   type="button"
-                  title={conversation.title}
                   onClick={() => onSelect(conversation.id)}
                 >
                   <span>{conversation.title || "未命名对话"}</span>
                   <small>
-                    {[conversation.model, conversation.time]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {formatBeijingDateTime(conversation.createdAt || conversation.created_at || conversation.time) ||
+                      conversation.time ||
+                      ""}
                   </small>
                 </button>
               ))
@@ -9539,14 +9564,17 @@ function DigitalHumanTaskCard({
 }) {
   const isProcessing =
     task.status === "processing" || task.status === "pending";
-  const isCompleted = task.status === "completed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl || task.thumbnailUrl);
   const isFailed = task.status === "failed";
+  const canOpenPreview = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   return (
     <article className={`dh-task-card ${selected ? "is-selected" : ""}`}>
       <button
         className="dh-task-preview"
         type="button"
         onClick={() => onSelect(task)}
+        disabled={!canOpenPreview}
       >
         {task.resultUrl ? (
           <video src={task.resultUrl} muted playsInline preload="metadata" />
@@ -9578,17 +9606,17 @@ function DigitalHumanTaskCard({
         <div className="dh-progress-track">
           <i style={{ width: `${task.progress || 0}%` }} />
         </div>
-        <small>{task.createdAt}</small>
+        <small>{formatBeijingDateTime(task.createdAt || task.created_at) || task.createdAt}</small>
       </div>
       <div className="dh-task-actions">
         <button
           type="button"
           onClick={() => onRegenerate(task.id)}
-          disabled={isProcessing}
+          disabled={!canRetryOrDelete}
         >
           <RefreshCcw size={14} />
         </button>
-        <button type="button" onClick={() => onDelete(task.id)}>
+        <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
           <Trash2 size={14} />
         </button>
       </div>
@@ -10465,6 +10493,11 @@ function DigitalHumanGenerationView({
     setRightMode("preview");
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   function openDigitalHumanAssets() {
     try {
       window.sessionStorage.setItem(assetGalleryTabStorageKey, "数字人");
@@ -10731,7 +10764,7 @@ function DigitalHumanGenerationView({
                   <button
                     type="button"
                     data-tooltip="重新生成"
-                    onClick={() => regenerateTask(currentPreviewTask.id)}
+                    onClick={() => requestRegenerate(currentPreviewTask.id)}
                     disabled={!canUsePreviewTaskActions}
                   >
                     <RefreshCcw size={18} />
@@ -10811,6 +10844,7 @@ function DigitalHumanGenerationView({
       )}
       {avatarDeleteDialog}
       {taskDeleteDialog}
+      {regenerateConfirmDialog}
       <DigitalHumanFloatingToast message={toastMessage} />
     </section>
   );
@@ -11058,6 +11092,9 @@ function MotionTransferTaskCard({
 }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   return (
     <article className={`motion-task-card status-${task.status}`}>
       <div className="motion-task-preview">
@@ -11080,7 +11117,7 @@ function MotionTransferTaskCard({
       </div>
       <div className="motion-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions motion-card-actions">
@@ -11088,11 +11125,12 @@ function MotionTransferTaskCard({
             className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
             type="button"
             onClick={() => onFavorite(task.id)}
+            disabled={!canUseCompletedActions}
             aria-label="收藏"
           >
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -11103,11 +11141,11 @@ function MotionTransferTaskCard({
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>
@@ -11661,6 +11699,11 @@ function MotionTransferView({
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
   return (
     <section
       className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""} ${navId === "image-digital-human" ? "image-digital-human-view-root" : ""}`}
@@ -11802,7 +11845,7 @@ function MotionTransferView({
                 task={task}
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
-                onRepeat={repeatTask}
+                onRepeat={requestRepeat}
                 copy={copy}
               />
             ))}
@@ -11820,6 +11863,7 @@ function MotionTransferView({
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -11845,6 +11889,8 @@ function WatermarkCenterState({
   error,
   onReset,
   onRepeat,
+  onDismiss,
+  onRecharge,
 }) {
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
@@ -11916,18 +11962,49 @@ function WatermarkCenterState({
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error ||
+      task?.error ||
+      "处理服务返回了错误，积分会按任务状态自动处理。";
     return (
-      <section className="watermark-center-state is-failed">
-        <span className="watermark-center-icon">
-          <Eraser size={24} />
-        </span>
-        <strong>这次没有生成成功</strong>
-        <p>
-          {error ||
-            task?.error ||
-            "生成服务返回了错误，积分会按任务状态自动处理。"}
-        </p>
-      </section>
+      <div
+        className="remove-bg-alert-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-bg-alert-title"
+      >
+        <button
+          className="remove-bg-alert-backdrop"
+          type="button"
+          aria-label="关闭提醒"
+          onClick={onDismiss}
+        />
+        <section className="remove-bg-alert-dialog">
+          <button
+            className="remove-bg-alert-close"
+            type="button"
+            aria-label="关闭提醒"
+            onClick={onDismiss}
+          >
+            <X size={18} />
+          </button>
+          <span className="remove-bg-alert-icon" aria-hidden="true">
+            <Layers size={28} />
+          </span>
+          <div className="remove-bg-alert-copy">
+            <strong id="remove-bg-alert-title">这次没有抠图成功</strong>
+            <p>{message}</p>
+          </div>
+          <div className="remove-bg-alert-actions">
+            <button type="button" onClick={onDismiss}>
+              关闭
+            </button>
+            <button type="button" className="is-primary" onClick={onRecharge}>
+              去充值
+            </button>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -11956,6 +12033,9 @@ function WatermarkCenterState({
 function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -11993,7 +12073,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
       </div>
       <div className="watermark-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">
@@ -12001,11 +12081,12 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
             className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
             type="button"
             onClick={() => onFavorite(task.id)}
+            disabled={!canUseCompletedActions}
             aria-label="收藏"
           >
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -12016,11 +12097,11 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>
@@ -12302,7 +12383,12 @@ function WatermarkComposer({
   );
 }
 
-function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
+function WatermarkRemovalView({
+  authUser,
+  onOpenAuth,
+  onOpenFeature,
+  isActive = true,
+}) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -12437,6 +12523,21 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root">
       <div className="image-filter-tabs watermark-filter-tabs">
@@ -12492,7 +12593,9 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (
@@ -12517,7 +12620,7 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -12533,6 +12636,7 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -13366,6 +13470,7 @@ function ImageFeaturePage({
           <WatermarkRemovalView
             authUser={authUser}
             onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
             isActive={activeNav === "watermark"}
           />
         </FeatureModuleKeepAlive>
@@ -13377,6 +13482,7 @@ function ImageFeaturePage({
           <VoiceSynthesisView
             authUser={authUser}
             onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
             resetSignal={audioResetSignals.voice}
           />
         </FeatureModuleKeepAlive>
@@ -13385,14 +13491,21 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceConvertView resetSignal={audioResetSignals["voice-convert"]} />
+          <VoiceConvertView
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals["voice-convert"]}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView authUser={authUser} resetSignal={audioResetSignals.transcribe} />
+          <TranscribeView
+            authUser={authUser}
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals.transcribe}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -13413,7 +13526,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MusicGenerationView resetSignal={audioResetSignals.music} />
+          <MusicGenerationView
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals.music}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"
@@ -13427,14 +13543,14 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <EnhanceView />
+          <EnhanceView onOpenFeature={handleNavChange} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="remove-bg"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <RemoveBgView />
+          <RemoveBgView onOpenFeature={handleNavChange} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video-voice"
@@ -13443,6 +13559,7 @@ function ImageFeaturePage({
         >
           <VideoDubbingView
             authUser={authUser}
+            onOpenFeature={handleNavChange}
             resetSignal={audioResetSignals["video-voice"]}
           />
         </FeatureModuleKeepAlive>

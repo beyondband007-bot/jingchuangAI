@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 export function mapEnhanceAsset(row) {
   if (!row) return null;
   return {
@@ -34,6 +34,8 @@ export function mapEnhanceTask(row) {
     error: row.error_message || "",
     points,
     price: `${points} \u79ef\u5206`,
-    time: formatBeijingClock(row.created_at)
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    time: formatBeijingDateTime(row.created_at)
   };
 }

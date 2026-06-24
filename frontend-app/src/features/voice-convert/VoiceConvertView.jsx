@@ -5,6 +5,10 @@ import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { normalizeUploadFileName, stripFileExtension } from "../../utils/fileName";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
@@ -82,7 +86,7 @@ function loadRecentResults() {
   }
 }
 
-export function VoiceConvertView({ resetSignal = 0 }) {
+export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
   const [uploading, setUploading] = useState("");
@@ -315,6 +319,16 @@ export function VoiceConvertView({ resetSignal = 0 }) {
       title: "删除历史记录？",
       message: "该音频记录会被移除，删除后无法恢复。",
     });
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
 
   return (
     <section className="voice-conversion-view-root voice-convert-view-root">
@@ -411,6 +425,15 @@ export function VoiceConvertView({ resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {showRechargeAlert && (
+        <CreditAlertDialog
+          title="这次没有转换成功"
+          message={notice}
+          icon={<Mic size={28} />}
+          onClose={closeRechargeAlert}
+          onRecharge={goToRecharge}
+        />
+      )}
       {deleteConfirmDialog}
     </section>
   );
