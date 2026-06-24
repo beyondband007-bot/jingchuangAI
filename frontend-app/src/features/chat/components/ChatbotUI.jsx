@@ -629,34 +629,16 @@ export function ChatbotUI() {
                         style={{
                           ...dropdownItemStyle(
                             item === model ? "#8f78ff" : "#cccccc",
+                            item === model,
                           ),
-                          fontWeight: item === model ? "500" : "400",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
                         }}
                         onMouseEnter={highlightDropdownItem}
                         onMouseLeave={resetDropdownItem(
                           item === model ? "#8f78ff" : "#cccccc",
+                          item === model,
                         )}
                       >
                         {item}
-                        {item === model && (
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 14 14"
-                            fill="none"
-                          >
-                            <path
-                              d="M2.5 7L5.5 10L11.5 4"
-                              stroke="#8f78ff"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -884,13 +866,21 @@ function dropdownMenuStyle(minWidth) {
   };
 }
 
-function dropdownItemStyle(color) {
+const selectedDropdownItemBackground = "rgba(255, 255, 255, 0.08)";
+
+function dropdownItemStyle(color, isSelected = false) {
   return {
     padding: "10px 12px",
     borderRadius: "8px",
     cursor: "pointer",
     color,
     fontSize: "14px",
+    fontWeight: isSelected ? "700" : "400",
+    background: isSelected ? selectedDropdownItemBackground : "transparent",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: "12px",
     transition: "all 0.15s ease",
   };
 }
@@ -914,13 +904,15 @@ function resetWideButton(event) {
 }
 
 function highlightDropdownItem(event) {
-  event.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+  event.currentTarget.style.background = selectedDropdownItemBackground;
   event.currentTarget.style.color = "#ffffff";
 }
 
-function resetDropdownItem(color) {
+function resetDropdownItem(color, isSelected = false) {
   return (event) => {
-    event.currentTarget.style.background = "transparent";
+    event.currentTarget.style.background = isSelected
+      ? selectedDropdownItemBackground
+      : "transparent";
     event.currentTarget.style.color = color;
   };
 }
