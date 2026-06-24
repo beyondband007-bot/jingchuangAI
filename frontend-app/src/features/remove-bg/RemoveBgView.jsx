@@ -6,7 +6,10 @@ import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
 
@@ -418,6 +421,11 @@ export function RemoveBgView({ onOpenFeature }) {
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
   function dismissCenterState() {
     setSubmitError("");
     setSubmittedTaskId(null);
@@ -463,7 +471,7 @@ export function RemoveBgView({ onOpenFeature }) {
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
             onDismiss={dismissCenterState}
             onRecharge={goToRecharge}
           />
@@ -482,7 +490,7 @@ export function RemoveBgView({ onOpenFeature }) {
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -495,6 +503,7 @@ export function RemoveBgView({ onOpenFeature }) {
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }

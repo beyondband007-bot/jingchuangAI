@@ -19,7 +19,10 @@ import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 import { enhanceApi } from "./enhanceApi";
 
@@ -476,6 +479,11 @@ export function EnhanceView({ onOpenFeature }) {
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
   function dismissCenterState() {
     setSubmitError("");
     setSubmittedTaskId(null);
@@ -521,7 +529,7 @@ export function EnhanceView({ onOpenFeature }) {
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
             onDismiss={dismissCenterState}
             onRecharge={goToRecharge}
           />
@@ -540,7 +548,7 @@ export function EnhanceView({ onOpenFeature }) {
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -553,6 +561,7 @@ export function EnhanceView({ onOpenFeature }) {
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }

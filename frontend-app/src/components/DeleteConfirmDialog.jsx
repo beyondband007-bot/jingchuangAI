@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Loader2, Trash2, X } from "lucide-react";
+import { Loader2, RefreshCcw, Trash2, X } from "lucide-react";
 
 export function DeleteConfirmDialog({
   open,
@@ -8,6 +8,9 @@ export function DeleteConfirmDialog({
   targetName = "",
   confirmText = "确认删除",
   cancelText = "取消",
+  submittingText = "删除中",
+  icon: Icon = Trash2,
+  confirmTone = "danger",
   isSubmitting = false,
   onCancel,
   onConfirm,
@@ -43,13 +46,13 @@ export function DeleteConfirmDialog({
           type="button"
           aria-label={cancelText}
           disabled={isSubmitting}
-          onClick={onCancel}
-        >
-          <X size={18} />
-        </button>
-        <span className="delete-confirm-icon" aria-hidden="true">
-          <Trash2 size={26} />
-        </span>
+        onClick={onCancel}
+      >
+        <X size={18} />
+      </button>
+      <span className="delete-confirm-icon" aria-hidden="true">
+          <Icon size={26} />
+      </span>
         <div className="delete-confirm-copy">
           <h2 id="delete-confirm-title">{title}</h2>
           <p>{message}</p>
@@ -60,13 +63,13 @@ export function DeleteConfirmDialog({
             {cancelText}
           </button>
           <button
-            className="is-danger"
+            className={`is-${confirmTone}`}
             type="button"
             disabled={isSubmitting}
             onClick={onConfirm}
           >
             {isSubmitting ? <Loader2 size={16} className="is-spinning" /> : null}
-            {isSubmitting ? "删除中" : confirmText}
+            {isSubmitting ? submittingText : confirmText}
           </button>
         </div>
       </section>
@@ -114,6 +117,54 @@ export function useDeleteConfirmation({
         isSubmitting={isDeleting}
         onCancel={cancelDelete}
         onConfirm={confirmDelete}
+      />
+    ),
+  };
+}
+
+export function useRegenerateConfirmation({
+  onConfirm,
+  title = "确认再次生成？",
+  message = "重新生成会开启新任务并扣除相应积分。您确定要继续吗？",
+  confirmText = "确认再次生成",
+} = {}) {
+  const [pendingRegenerate, setPendingRegenerate] = useState(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const requestRegenerate = useCallback((payload, options = {}) => {
+    setPendingRegenerate({ payload, ...options });
+  }, []);
+
+  const cancelRegenerate = useCallback(() => {
+    if (!isRegenerating) setPendingRegenerate(null);
+  }, [isRegenerating]);
+
+  const confirmRegenerate = useCallback(async () => {
+    if (!pendingRegenerate || !onConfirm) return;
+    setIsRegenerating(true);
+    try {
+      await onConfirm(pendingRegenerate.payload);
+      setPendingRegenerate(null);
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [onConfirm, pendingRegenerate]);
+
+  return {
+    requestRegenerate,
+    regenerateConfirmDialog: (
+      <DeleteConfirmDialog
+        open={Boolean(pendingRegenerate)}
+        title={pendingRegenerate?.title || title}
+        message={pendingRegenerate?.message || message}
+        targetName={pendingRegenerate?.targetName || ""}
+        confirmText={pendingRegenerate?.confirmText || confirmText}
+        submittingText="提交中"
+        icon={RefreshCcw}
+        confirmTone="primary"
+        isSubmitting={isRegenerating}
+        onCancel={cancelRegenerate}
+        onConfirm={confirmRegenerate}
       />
     ),
   };

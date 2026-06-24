@@ -20,7 +20,10 @@ import { articleApi } from "./articleApi";
 import { downloadArticleImagesZip } from "./articleImageZip";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
-import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
@@ -1041,6 +1044,11 @@ export function ArticleGenerationView({
       message: "该图文生成记录会被移除，删除后无法恢复。",
     });
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   async function toggleFavorite(id) {
     const updated = await articleApi.toggleFavorite(id);
     setCards((current) =>
@@ -1102,7 +1110,7 @@ export function ArticleGenerationView({
                       <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
                         <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />
                       </button>
-                      <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成" disabled={!canRetryOrDelete}>
+                      <button type="button" onClick={() => requestRegenerate(task)} aria-label="重新生成" disabled={!canRetryOrDelete}>
                         <RefreshCcw size={15} />
                       </button>
                       <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除" disabled={!canRetryOrDelete}>
@@ -1126,6 +1134,7 @@ export function ArticleGenerationView({
           onClose={() => setPreviewTask(null)}
         />
         {deleteConfirmDialog}
+        {regenerateConfirmDialog}
       </section>
     );
   }
@@ -1538,7 +1547,7 @@ export function ArticleGenerationView({
                     </div>
                     <button
                       type="button"
-                      onClick={() => regenerateTask(selectedTask)}
+                      onClick={() => requestRegenerate(selectedTask)}
                     >
                       <RefreshCcw size={15} />
                       重新生成
@@ -1693,6 +1702,7 @@ export function ArticleGenerationView({
           onConfirm={confirmPendingQuickTemplate}
         />
       )}
+      {regenerateConfirmDialog}
       {toastMessage && (
         <div className="article-floating-toast" role="alert">
           {toastMessage}

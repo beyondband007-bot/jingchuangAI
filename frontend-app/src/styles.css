@@ -35089,6 +35089,19 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   border-color: rgba(248, 113, 113, 0.62);
 }
 
+.delete-confirm-actions button.is-primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #9f5cff, #5b2cff);
+  border-color: rgba(159, 92, 255, 0.5);
+  box-shadow: 0 14px 30px rgba(91, 44, 255, 0.22);
+}
+
+.delete-confirm-actions button.is-primary:hover:not(:disabled),
+.delete-confirm-actions button.is-primary:focus-visible {
+  background: linear-gradient(135deg, #a86bff, #6d3cff);
+  border-color: rgba(168, 107, 255, 0.62);
+}
+
 @media (max-width: 520px) {
   .delete-confirm-dialog {
     padding: 28px 18px 20px;

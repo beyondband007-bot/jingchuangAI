@@ -85,7 +85,10 @@ import { PromptSelectField } from "./features/chat/components/PromptSelectField"
 import { ImagePromptDialog } from "./features/chat/components/ImagePromptDialog";
 import { VideoPromptDialog } from "./features/chat/components/VideoPromptDialog";
 import { CustomSelect } from "./components/CustomSelect";
-import { useDeleteConfirmation } from "./components/DeleteConfirmDialog";
+import {
+  useDeleteConfirmation,
+  useRegenerateConfirmation,
+} from "./components/DeleteConfirmDialog";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
@@ -6991,6 +6994,11 @@ function ImageGenerationView({
     }
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   async function copyTaskPrompt(task) {
     const copied = await writeClipboardText(task?.prompt);
     showImagePageToast(copied ? "提示词已复制" : "提示词复制失败，请重试");
@@ -7204,7 +7212,7 @@ function ImageGenerationView({
           onNewContext={startNewImageContext}
           onPreview={(task) => setPreviewTask(task)}
           onReference={referenceTask}
-          onRegenerate={regenerateTask}
+          onRegenerate={requestRegenerate}
         />
       ) : canRenderImageGallery && galleryItems.length ? (
         <>
@@ -7223,7 +7231,7 @@ function ImageGenerationView({
                 onPreview={(task) => setPreviewTask(task)}
                 onDelete={isExample ? () => {} : deleteTask}
                 onFavorite={isExample ? () => {} : toggleFavorite}
-                onRegenerate={isExample ? () => {} : regenerateTask}
+                onRegenerate={isExample ? () => {} : requestRegenerate}
               />
             )}
           />
@@ -7249,6 +7257,7 @@ function ImageGenerationView({
         onFavorite={togglePreviewFavorite}
       />
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -8143,6 +8152,11 @@ function VideoGenerationView({
     }
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   const sortedCards = useMemo(() => sortVideoTasksByNewest(cards), [cards]);
   const filteredVideoInspirationItems = useMemo(
     () =>
@@ -8339,7 +8353,7 @@ function VideoGenerationView({
                 key={card.id}
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
-                onRegenerate={regenerateTask}
+                onRegenerate={requestRegenerate}
               />
             ))
           ) : (
@@ -8357,6 +8371,7 @@ function VideoGenerationView({
         onRemix={useVideoInspiration}
       />
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -10477,6 +10492,11 @@ function DigitalHumanGenerationView({
     setRightMode("preview");
   }
 
+  const { requestRegenerate, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: regenerateTask,
+    });
+
   function openDigitalHumanAssets() {
     try {
       window.sessionStorage.setItem(assetGalleryTabStorageKey, "数字人");
@@ -10743,7 +10763,7 @@ function DigitalHumanGenerationView({
                   <button
                     type="button"
                     data-tooltip="重新生成"
-                    onClick={() => regenerateTask(currentPreviewTask.id)}
+                    onClick={() => requestRegenerate(currentPreviewTask.id)}
                     disabled={!canUsePreviewTaskActions}
                   >
                     <RefreshCcw size={18} />
@@ -10823,6 +10843,7 @@ function DigitalHumanGenerationView({
       )}
       {avatarDeleteDialog}
       {taskDeleteDialog}
+      {regenerateConfirmDialog}
       <DigitalHumanFloatingToast message={toastMessage} />
     </section>
   );
@@ -11677,6 +11698,11 @@ function MotionTransferView({
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
   return (
     <section
       className={`motion-view-root ${splitResults ? "face-swap-view-root" : ""} ${navId === "image-digital-human" ? "image-digital-human-view-root" : ""}`}
@@ -11818,7 +11844,7 @@ function MotionTransferView({
                 task={task}
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
-                onRepeat={repeatTask}
+                onRepeat={requestRepeat}
                 copy={copy}
               />
             ))}
@@ -11836,6 +11862,7 @@ function MotionTransferView({
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
@@ -12495,6 +12522,11 @@ function WatermarkRemovalView({
     });
   }
 
+  const { requestRegenerate: requestRepeat, regenerateConfirmDialog } =
+    useRegenerateConfirmation({
+      onConfirm: repeatTask,
+    });
+
   function dismissCenterState() {
     setSubmitError("");
     setSubmittedTaskId(null);
@@ -12560,7 +12592,7 @@ function WatermarkRemovalView({
             onReset={() => {
               setSubmittedTaskId(null);
             }}
-            onRepeat={repeatTask}
+            onRepeat={requestRepeat}
             onDismiss={dismissCenterState}
             onRecharge={goToRecharge}
           />
@@ -12587,7 +12619,7 @@ function WatermarkRemovalView({
               task={task}
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
-              onRepeat={repeatTask}
+              onRepeat={requestRepeat}
             />
           ))}
         </div>
@@ -12603,6 +12635,7 @@ function WatermarkRemovalView({
         />
       )}
       {deleteConfirmDialog}
+      {regenerateConfirmDialog}
     </section>
   );
 }
