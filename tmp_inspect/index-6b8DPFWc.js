@@ -27820,7 +27820,7 @@ function rj({ authUser: i, onOpenAuth: r, onOpenFeature: u }) {
                     type: 'button',
                     className: H === 'transactions' ? 'is-active' : '',
                     onClick: () => z('transactions'),
-                    children: '账单明细',
+                    children: '充值与明细',
                   }),
                 ],
               }),
@@ -34375,7 +34375,7 @@ function l2({
                               type: 'button',
                               role: 'menuitem',
                               onClick: () => W('全部', 'transactions'),
-                              children: '账单明细',
+                              children: '充值与明细',
                             }),
                             a.jsx('button', {
                               type: 'button',

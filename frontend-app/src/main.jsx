@@ -479,11 +479,18 @@ function arrangeInspirationCards(cards, columnCount = 6) {
   return arranged;
 }
 
-function arrangeInspirationCardsByBatch(cards, columnCount = 6, batchSize = 30) {
+function arrangeInspirationCardsByBatch(
+  cards,
+  columnCount = 6,
+  batchSize = 30,
+) {
   const arranged = [];
   for (let index = 0; index < cards.length; index += batchSize) {
     arranged.push(
-      ...arrangeInspirationCards(cards.slice(index, index + batchSize), columnCount),
+      ...arrangeInspirationCards(
+        cards.slice(index, index + batchSize),
+        columnCount,
+      ),
     );
   }
   return arranged;
@@ -507,8 +514,7 @@ const exampleImages = imgInspirationManifest.map((item, index) => ({
   hdSrc: item.imageWebp || item.imageJpg,
   hdFallbackSrc: item.imageJpg || item.imageWebp,
   label:
-    item.title ||
-    `${item.categoryLabel} ${String(index + 1).padStart(2, "0")}`,
+    item.title || `${item.categoryLabel} ${String(index + 1).padStart(2, "0")}`,
   prompt: item.prompt || item.title || `${item.categoryLabel}灵感图`,
   description: item.description || "",
   style: item.categoryLabel || "",
@@ -619,7 +625,8 @@ const faceminiAsset = (path) => `/assets/facemini/${path}`;
 const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
 const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
 const inspirationFavoritesStorageKey = "facemini:inspiration-favorites";
-const inspirationFavoritesChangedEvent = "facemini-inspiration-favorites-changed";
+const inspirationFavoritesChangedEvent =
+  "facemini-inspiration-favorites-changed";
 
 function getInspirationFavoriteId(item) {
   return item?.id ? String(item.id) : "";
@@ -658,7 +665,9 @@ function publishInspirationFavoriteIds(ids) {
 async function loadInspirationFavoriteIds({ allowFallback = true } = {}) {
   try {
     const result = await imageApi.getInspirationFavorites();
-    const ids = new Set(Array.isArray(result?.ids) ? result.ids.map(String) : []);
+    const ids = new Set(
+      Array.isArray(result?.ids) ? result.ids.map(String) : [],
+    );
     publishInspirationFavoriteIds(ids);
     return ids;
   } catch (error) {
@@ -2241,10 +2250,19 @@ const AppHome = memo(function AppHome({
         <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
           <BrandWordmark />
         </button>
-        <div>
+        <div className="fm-home-nav-center">
           <a href="#why">关于我们</a>
           <a href="#modules">关于产品</a>
           <a href="#footer">探索我们</a>
+        </div>
+        <div className="fm-home-actions">
+          <button
+            type="button"
+            className="fm-primary fm-home-enter-creation"
+            onClick={() => onOpenFeature("creation")}
+          >
+            开始探索
+          </button>
         </div>
       </nav>
       <section className="fm-hero-section">
@@ -2387,9 +2405,9 @@ function CreationCenterView({
       ? fmImageGenerationInspirations
       : activeTab === "视频灵感"
         ? getFaceminiVideoInspirations()
-      : activeTab === "数字人形象"
-        ? fmDigitalHumanInspirations
-      : fmImageInspirations.filter((item) => item.category === activeTab);
+        : activeTab === "数字人形象"
+          ? fmDigitalHumanInspirations
+          : fmImageInspirations.filter((item) => item.category === activeTab);
   const visibleFilteredImages = useIncrementalItems(
     filteredImages,
     `creation-${activeTab}-${filteredImages.length}`,
@@ -2414,7 +2432,9 @@ function CreationCenterView({
 
   useEffect(() => {
     if (!isLoggedInUser(authUser)) return;
-    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+    loadInspirationFavoriteIds()
+      .then(setFavoriteInspirationIds)
+      .catch(() => {});
   }, [authUser?.id]);
 
   const advanceHeroBanner = useCallback(() => {
@@ -2439,7 +2459,8 @@ function CreationCenterView({
       favorite: favoriteInspirationIds.has(favoriteId),
       image: resolveFaceminiInspirationImageUrl(item),
       material:
-        item.material || (item.category === "数字人形象" ? "视频封面" : "高清原图"),
+        item.material ||
+        (item.category === "数字人形象" ? "视频封面" : "高清原图"),
       model: item.model || route.model,
     });
   }
@@ -2455,7 +2476,8 @@ function CreationCenterView({
     const nextIds = readInspirationFavoriteIds();
     setFavoriteInspirationIds(nextIds);
     setModalItem((current) =>
-      current && getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
+      current &&
+      getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
         ? { ...current, favorite: nextValue }
         : current,
     );
@@ -2656,7 +2678,9 @@ function CreationCenterView({
           )}
         />
         <IncrementalLoadMoreIndicator
-          active={visibleFilteredImages.isLoadingMore && visibleFilteredImages.hasMore}
+          active={
+            visibleFilteredImages.isLoadingMore && visibleFilteredImages.hasMore
+          }
         />
       </section>
       <FaceminiInspirationModal
@@ -2706,6 +2730,22 @@ const FeatureSidebar = memo(function FeatureSidebar({
   const toggleGroup = useCallback((id) => {
     setOpenGroups((current) => ({ ...current, [id]: !current[id] }));
   }, []);
+
+  const openAssetsGallery = useCallback(() => {
+    try {
+      window.sessionStorage.setItem(assetsViewModeStorageKey, "gallery");
+      window.sessionStorage.setItem(assetGalleryTabStorageKey, "全部");
+      window.sessionStorage.removeItem("facemini:assets-subtab");
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+    window.dispatchEvent(
+      new CustomEvent("facemini-assets-tab-change", {
+        detail: { tab: "全部", subTab: "", viewMode: "gallery" },
+      }),
+    );
+    onNavChange("assets");
+  }, [onNavChange]);
 
   const sidebarSections = navSections.filter(
     (section) => section.id !== "assets",
@@ -2833,7 +2873,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
             className={`feature-nav-item feature-nav-asset-bottom ${
               activeNav === "assets" ? "is-active" : ""
             }`}
-            onClick={() => onNavChange("assets")}
+            onClick={openAssetsGallery}
             type="button"
           >
             <AssetsIcon size={18} strokeWidth={1.9} />
@@ -3025,12 +3065,26 @@ function getAssetTimeRange(preset, startDate, endDate) {
     if (endDate) rangeEnd = new Date(`${endDate}T00:00:00`);
   }
 
-  const startMs = rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
-    ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()).getTime()
-    : null;
-  const endMs = rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime())
-    ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999).getTime()
-    : null;
+  const startMs =
+    rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
+      ? new Date(
+          rangeStart.getFullYear(),
+          rangeStart.getMonth(),
+          rangeStart.getDate(),
+        ).getTime()
+      : null;
+  const endMs =
+    rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime())
+      ? new Date(
+          rangeEnd.getFullYear(),
+          rangeEnd.getMonth(),
+          rangeEnd.getDate(),
+          23,
+          59,
+          59,
+          999,
+        ).getTime()
+      : null;
 
   return {
     startDate: startMs !== null ? formatDateInputValue(new Date(startMs)) : "",
@@ -3197,10 +3251,10 @@ function CreditTransactionsPanel({
               const isIncome = Number(tx.amount || 0) > 0;
               return (
                 <div className="assets-transaction-row" key={tx.id}>
-                  <span>
-                    {new Date(tx.createdAt).toLocaleString("zh-CN")}
+                  <span>{new Date(tx.createdAt).toLocaleString("zh-CN")}</span>
+                  <span style={{ color: typeInfo.color }}>
+                    {typeInfo.label}
                   </span>
-                  <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
                   <span
                     style={{
                       color: isIncome ? "#16a34a" : "#dc2626",
@@ -3410,11 +3464,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
       const monthlyConsumed = (monthDebitState.transactions || [])
-        .filter((tx) => new Date(tx.createdAt).getTime() >= monthStart.getTime())
-        .reduce(
-          (sum, tx) => sum + Math.abs(Number(tx.amount) || 0),
-          0,
-        );
+        .filter(
+          (tx) => new Date(tx.createdAt).getTime() >= monthStart.getTime(),
+        )
+        .reduce((sum, tx) => sum + Math.abs(Number(tx.amount) || 0), 0);
       setMonthlyConsumedCredits(monthlyConsumed);
       setCredits(creditsState);
       setOrders(orderState.orders || []);
@@ -3476,7 +3529,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   useEffect(() => {
     setTransactionsPage(1);
-  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter, transactionSearch]);
+  }, [
+    assetTimeRange.endDate,
+    assetTimeRange.startDate,
+    transactionFilter,
+    transactionSearch,
+  ]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -3659,7 +3717,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       const nextSubTab = window.sessionStorage.getItem(
         "facemini:assets-subtab",
       );
-      const nextViewMode = window.sessionStorage.getItem(assetsViewModeStorageKey);
+      const nextViewMode = window.sessionStorage.getItem(
+        assetsViewModeStorageKey,
+      );
       if (
         nextViewMode === "profile" ||
         nextViewMode === "billing" ||
@@ -3672,7 +3732,8 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
         setActiveTab(nextSubTab);
       }
       if (
-        window.sessionStorage.getItem("facemini:open-transactions-modal") === "1"
+        window.sessionStorage.getItem("facemini:open-transactions-modal") ===
+        "1"
       ) {
         setShowTransactionsModal(true);
         window.sessionStorage.removeItem("facemini:open-transactions-modal");
@@ -3954,11 +4015,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     <img src={card.src} alt={card.title} loading="lazy" />
                   ) : (
                     <div className="fm-asset-placeholder">
-                      {card.isVideo ? (
-                        <Video size={28} />
-                      ) : (
-                        <Image size={28} />
-                      )}
+                      {card.isVideo ? <Video size={28} /> : <Image size={28} />}
                     </div>
                   )}
                   <span>{card.type}</span>
@@ -4132,7 +4189,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     邀请有礼
                   </button>
                   <button type="button" onClick={() => goToBillingView()}>
-                    账单明细
+                    充值与明细
                   </button>
                   <button type="button" className="is-muted">
                     账号设置
@@ -4176,7 +4233,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <h2>我的收藏</h2>
             </div>
             <div className="fm-assets-filter-row">
-              <div className="fm-assets-tabs fm-favorites-tabs" aria-label="我的收藏分类">
+              <div
+                className="fm-assets-tabs fm-favorites-tabs"
+                aria-label="我的收藏分类"
+              >
                 {favoriteModuleTabs.map((tab) => (
                   <button
                     className={tab === favoriteTab ? "is-active" : ""}
@@ -4329,7 +4389,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     <section className="assets-view-root fm-profile-billing-view">
       <header className="assets-toolbar fm-billing-toolbar">
         <div>
-          <h1>账单明细</h1>
+          <h1>充值与明细</h1>
           <p>积分充值、消费记录与订单查询</p>
         </div>
         <button
@@ -4346,7 +4406,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       {isGuest ? (
         <div className="assets-login-panel">
           <Wallet size={32} />
-          <strong>登录后查看账单明细</strong>
+          <strong>登录后查看充值与明细</strong>
           <p>登录后可查看积分余额、充值记录和消费明细</p>
           <button type="button" onClick={() => onOpenAuth("login")}>
             登录
@@ -4377,10 +4437,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
           </div>
 
           <div className="fm-billing-workspace">
-            <div
-              className="fm-billing-recharge-card"
-              id="fm-billing-recharge"
-            >
+            <div className="fm-billing-recharge-card" id="fm-billing-recharge">
               <div className="assets-section-title">
                 <Wallet size={18} />
                 <strong>在线充值</strong>
@@ -4627,7 +4684,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               </em>
               <span>到账积分</span>
               <strong>
-                {Number(paymentDialog.order?.points || 0).toLocaleString("zh-CN")}{" "}
+                {Number(paymentDialog.order?.points || 0).toLocaleString(
+                  "zh-CN",
+                )}{" "}
                 积分
               </strong>
             </div>
@@ -4671,14 +4730,19 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               </span>
               <strong>{paymentResultDialog.title}</strong>
             </div>
-            <p className="assets-result-message">{paymentResultDialog.message}</p>
+            <p className="assets-result-message">
+              {paymentResultDialog.message}
+            </p>
             {paymentResultDialog.order?.outTradeNo && (
               <div className="assets-dialog-meta-card">
                 <span>订单号</span>
                 <strong>{paymentResultDialog.order.outTradeNo}</strong>
                 <span>支付金额</span>
                 <em>
-                  ¥ {Number(paymentResultDialog.order.totalAmount || 0).toFixed(0)}
+                  ¥{" "}
+                  {Number(paymentResultDialog.order.totalAmount || 0).toFixed(
+                    0,
+                  )}
                 </em>
                 <span>订单状态</span>
                 <strong>{paymentStatusText(paymentResultDialog.status)}</strong>
@@ -4694,7 +4758,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     </section>
   );
 }
-
 
 function ResultCard({
   card,
@@ -4725,7 +4788,9 @@ function ResultCard({
         className={`result-preview ${card.grid ? "preview-grid" : ""} ${shouldShowPlaceholder ? "is-placeholder-preview" : ""}`}
         role={canPreview && isImageGallery ? "button" : undefined}
         tabIndex={canPreview && isImageGallery ? 0 : undefined}
-        onClick={canPreview && isImageGallery ? () => onPreview(card) : undefined}
+        onClick={
+          canPreview && isImageGallery ? () => onPreview(card) : undefined
+        }
         onKeyDown={
           canPreview && isImageGallery
             ? (event) => {
@@ -4778,25 +4843,27 @@ function ResultCard({
         )}
       </div>
       {!isImageGallery && (
-      <div className="result-meta">
-        <div className="tag-row">
-          {!isImageGallery && <span className="model-tag">{card.model}</span>}
-          {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
-          {!isImageGallery && (
-            <span className="quality-tag">{card.quality}</span>
-          )}
-          {card.referenceImageUrl && !isImageGallery && (
-            <span className="reference-tag">参考图</span>
-          )}
-          {card.count > 1 && <span className="count-tag">{card.count}张</span>}
-        </div>
-        {!isImageGallery && (
-          <div className="time-row">
-            <span>{card.time || "示例"}</span>
-            <strong>{card.price}</strong>
+        <div className="result-meta">
+          <div className="tag-row">
+            {!isImageGallery && <span className="model-tag">{card.model}</span>}
+            {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
+            {!isImageGallery && (
+              <span className="quality-tag">{card.quality}</span>
+            )}
+            {card.referenceImageUrl && !isImageGallery && (
+              <span className="reference-tag">参考图</span>
+            )}
+            {card.count > 1 && (
+              <span className="count-tag">{card.count}张</span>
+            )}
           </div>
-        )}
-        <>
+          {!isImageGallery && (
+            <div className="time-row">
+              <span>{card.time || "示例"}</span>
+              <strong>{card.price}</strong>
+            </div>
+          )}
+          <>
             <p>{card.error || card.prompt}</p>
             <div className="card-actions">
               <button
@@ -4841,7 +4908,7 @@ function ResultCard({
               </button>
             </div>
           </>
-      </div>
+        </div>
       )}
     </article>
   );
@@ -4913,7 +4980,13 @@ function ReferenceImageSlot({ image, isUploading, onRemove }) {
   );
 }
 
-function ReferenceMediaSlot({ image, video, isUploading, onRemoveImage, onRemoveVideo }) {
+function ReferenceMediaSlot({
+  image,
+  video,
+  isUploading,
+  onRemoveImage,
+  onRemoveVideo,
+}) {
   const media = image || video;
   const isVideo = Boolean(video);
   if (!media && !isUploading) return null;
@@ -4947,10 +5020,14 @@ function ReferenceMediaSlot({ image, video, isUploading, onRemoveImage, onRemove
           )}
         </span>
         <span className="image-reference-meta">
-          <strong title={media?.originalName || (isVideo ? "参考视频" : "参考图")}>
+          <strong
+            title={media?.originalName || (isVideo ? "参考视频" : "参考图")}
+          >
             {media?.originalName || (isVideo ? "参考视频" : "参考图")}
           </strong>
-          <small>{isVideo ? "视频参考素材" : formatReferenceImageSize(media?.size)}</small>
+          <small>
+            {isVideo ? "视频参考素材" : formatReferenceImageSize(media?.size)}
+          </small>
         </span>
         <button
           type="button"
@@ -5244,12 +5321,7 @@ function ImageGenerationWorkbench({
       scrollContextToLatest(isSubmitting ? "smooth" : "auto");
     }
     wasSubmittingRef.current = isSubmitting;
-  }, [
-    isSubmitting,
-    scrollContextToLatest,
-    submitError,
-    threadSignature,
-  ]);
+  }, [isSubmitting, scrollContextToLatest, submitError, threadSignature]);
 
   function getImageHistoryTime(task, thread) {
     const rawValue =
@@ -5470,7 +5542,9 @@ const imageGenerationThreadsKey = "jingchuang:image-generation-threads";
 function normalizeImageOptions(value) {
   return {
     ...emptyOptions,
-    ...(value && typeof value === "object" && !Array.isArray(value) ? value : {}),
+    ...(value && typeof value === "object" && !Array.isArray(value)
+      ? value
+      : {}),
     models: Array.isArray(value?.models) ? value.models : [],
     ratios: Array.isArray(value?.ratios) ? value.ratios : [],
     qualities: Array.isArray(value?.qualities) ? value.qualities : [],
@@ -6728,7 +6802,9 @@ function ImageGenerationView({
 
   useEffect(() => {
     if (!isLoggedInUser(authUser)) return;
-    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+    loadInspirationFavoriteIds()
+      .then(setFavoriteInspirationIds)
+      .catch(() => {});
   }, [authUser?.id]);
 
   const canvasStatus = useMemo(() => {
@@ -7762,7 +7838,9 @@ function VideoComposerBar({
   }
 
   useEffect(() => {
-    const hasSelectedModel = options.models.some((item) => item.value === model);
+    const hasSelectedModel = options.models.some(
+      (item) => item.value === model,
+    );
     if (!model || !hasSelectedModel) {
       const defaultModel = pickDefaultVideoModel(options.models);
       if (defaultModel) setModel(defaultModel);
@@ -7814,7 +7892,12 @@ function VideoComposerBar({
     count,
     models: options.models,
   });
-  const canSubmit = prompt.trim().length > 0 && model && ratio && duration && !isUploadingReference;
+  const canSubmit =
+    prompt.trim().length > 0 &&
+    model &&
+    ratio &&
+    duration &&
+    !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
@@ -8168,7 +8251,8 @@ function VideoGenerationView({
   );
   const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
-  const showVideoComposer = options.models.length > 0 && filter === "inspiration";
+  const showVideoComposer =
+    options.models.length > 0 && filter === "inspiration";
   const canRenderVideoInspirationGrid =
     filter !== "inspiration" || isVideoInspirationGridReady;
 
@@ -8289,7 +8373,10 @@ function VideoGenerationView({
       )}
       {filter === "inspiration" && canRenderVideoInspirationGrid ? (
         <>
-          <div className="video-inspiration-category-tabs" aria-label="视频分类">
+          <div
+            className="video-inspiration-category-tabs"
+            aria-label="视频分类"
+          >
             {videoInspirationCategoryTabs.map((category) => (
               <button
                 key={category.id}
@@ -8309,7 +8396,10 @@ function VideoGenerationView({
             maxColumns={4}
             items={visibleVideoInspirationItems.items}
             renderItem={(item) => (
-              <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
+              <VideoInspirationCard
+                item={item}
+                onOpen={setSelectedInspiration}
+              />
             )}
           />
           <IncrementalLoadMoreIndicator
@@ -8947,7 +9037,10 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
         <ChevronDown size={16} />
       </button>
       {isOpen && (
-        <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
+        <aside
+          className="history-rail chat-history-rail"
+          aria-label="AI 对话历史"
+        >
           <div className="history-rail-header">
             <span>历史对话</span>
             <strong>{conversations.length}</strong>
@@ -9254,7 +9347,9 @@ function readLocalAudioDurationMs(file) {
     const objectUrl = window.URL.createObjectURL(file);
     audio.preload = "metadata";
     audio.onloadedmetadata = () => {
-      const durationMs = Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0;
+      const durationMs = Number.isFinite(audio.duration)
+        ? Math.round(audio.duration * 1000)
+        : 0;
       window.URL.revokeObjectURL(objectUrl);
       resolve(durationMs);
     };
@@ -9786,14 +9881,27 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   }
 
   return (
-    <div className="dh-modal-backdrop" role="dialog" aria-modal="true" onMouseDown={onClose}>
-      <div className="dh-modal" onMouseDown={(event) => event.stopPropagation()}>
+    <div
+      className="dh-modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      onMouseDown={onClose}
+    >
+      <div
+        className="dh-modal"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="dh-modal-header">
           <div>
             <span>创建形象</span>
             <strong>上传形象图</strong>
           </div>
-          <button className="dh-modal-close-button" type="button" onClick={onClose} aria-label="关闭">
+          <button
+            className="dh-modal-close-button"
+            type="button"
+            onClick={onClose}
+            aria-label="关闭"
+          >
             <X size={18} />
           </button>
         </div>
@@ -9855,10 +9963,19 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
           {notice && <div className="dh-form-notice">{notice}</div>}
         </div>
         <div className="dh-modal-footer">
-          <button className="dh-modal-secondary-button" type="button" onClick={onClose}>
+          <button
+            className="dh-modal-secondary-button"
+            type="button"
+            onClick={onClose}
+          >
             取消
           </button>
-          <button className="dh-modal-primary-button" type="button" onClick={submit} disabled={isSubmitting}>
+          <button
+            className="dh-modal-primary-button"
+            type="button"
+            onClick={submit}
+            disabled={isSubmitting}
+          >
             {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
             创建形象
           </button>
@@ -9951,10 +10068,9 @@ function DigitalHumanConfigPanel({
   const isPreviewCurrent =
     voicePreviewInfo?.signature === currentPreviewSignature;
   const isAudioDrive = driveMode === "audio" && Boolean(audioFile);
-  const currentAudioTooLong =
-    isAudioDrive
-      ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
-      : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+  const currentAudioTooLong = isAudioDrive
+    ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
+    : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
   function showToast(message) {
     if (onToast) {
@@ -10030,7 +10146,7 @@ function DigitalHumanConfigPanel({
       setAudioFile({
         ...uploaded,
         name: uploaded.originalName || uploaded.name || file.name,
-        durationMs
+        durationMs,
       });
       setDriveMode("audio");
       setText("");
@@ -10226,8 +10342,12 @@ function DigitalHumanConfigPanel({
           type="button"
           onClick={submit}
           disabled={isSubmitting || isUploadingAudio || currentAudioTooLong}
-          data-tooltip={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
-          aria-label={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          data-tooltip={
+            isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"
+          }
+          aria-label={
+            isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"
+          }
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
           <span>生成</span>
@@ -10445,12 +10565,14 @@ function DigitalHumanGenerationView({
     setSelectedAvatar((current) => (current?.id === id ? null : current));
   }
 
-  const { requestDelete: deleteAvatar, deleteConfirmDialog: avatarDeleteDialog } =
-    useDeleteConfirmation({
-      onConfirm: performDeleteAvatar,
-      title: "删除数字人形象？",
-      message: "该形象会从我的形象库中移除，删除后无法恢复。",
-    });
+  const {
+    requestDelete: deleteAvatar,
+    deleteConfirmDialog: avatarDeleteDialog,
+  } = useDeleteConfirmation({
+    onConfirm: performDeleteAvatar,
+    title: "删除数字人形象？",
+    message: "该形象会从我的形象库中移除，删除后无法恢复。",
+  });
 
   async function renameAvatar(avatar) {
     const nextName = window.prompt("输入新的形象名称", avatar.name);
@@ -11201,7 +11323,8 @@ function MotionTransferUploadSlot({
           {cleanDisplayName(
             asset.fileName,
             kind === "image" ? "图片素材" : "视频素材",
-          )} · {formatBytes(asset.sizeBytes)}
+          )}{" "}
+          · {formatBytes(asset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -11218,7 +11341,11 @@ function MotionValidationDialog({ message, onClose }) {
   if (!message) return null;
 
   return (
-    <div className="face-swap-workbench__dialog-backdrop" role="presentation" onMouseDown={onClose}>
+    <div
+      className="face-swap-workbench__dialog-backdrop"
+      role="presentation"
+      onMouseDown={onClose}
+    >
       <section
         className="face-swap-workbench__dialog"
         role="dialog"
@@ -11227,7 +11354,12 @@ function MotionValidationDialog({ message, onClose }) {
         aria-describedby="motion-validation-desc"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button className="face-swap-workbench__dialog-close" type="button" aria-label="关闭提示" onClick={onClose}>
+        <button
+          className="face-swap-workbench__dialog-close"
+          type="button"
+          aria-label="关闭提示"
+          onClick={onClose}
+        >
           <X size={18} />
         </button>
         <div className="face-swap-workbench__dialog-icon">
@@ -11332,7 +11464,10 @@ function MotionTransferComposer({
     try {
       const uploadedAsset = await api.uploadImage(file);
       if (!activeRef.current) return;
-      setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
+      setImageAsset({
+        ...uploadedAsset,
+        fileName: file.name || uploadedAsset.fileName,
+      });
     } catch (error) {
       if (!activeRef.current) return;
       setImagePreview("");
@@ -11360,7 +11495,10 @@ function MotionTransferComposer({
     try {
       const uploadedAsset = await api.uploadVideo(file);
       if (!activeRef.current) return;
-      setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
+      setVideoAsset({
+        ...uploadedAsset,
+        fileName: file.name || uploadedAsset.fileName,
+      });
     } catch (error) {
       if (!activeRef.current) return;
       setVideoPreview("");
@@ -12108,7 +12246,11 @@ function WatermarkUploadSlot({
       )}
       {sourceAsset && (
         <small>
-          {cleanDisplayName(sourceAsset.fileName, isVideo ? "视频素材" : "图片素材")} · {formatBytes(sourceAsset.sizeBytes)}
+          {cleanDisplayName(
+            sourceAsset.fileName,
+            isVideo ? "视频素材" : "图片素材",
+          )}{" "}
+          · {formatBytes(sourceAsset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -13007,16 +13149,25 @@ function WorkbenchTopbar({
             邀请有礼
           </button>
           {isLoggedIn && (
-            <button
+            <div
               className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
-              type="button"
             >
-              <Zap size={17} />
-              {displayCredits ?? 0}
+              <span className="fm-credit-pill__balance">
+                积分余额{" "}
+                <strong>{(displayCredits ?? 0).toLocaleString("zh-CN")}</strong>
+              </span>
+              <button
+                type="button"
+                className="fm-credit-pill__recharge"
+                onClick={() => openBillingCenter()}
+                aria-label="充值"
+              >
+                充值
+              </button>
               {creditDelta && (
                 <span className="fm-credit-delta">+{creditDelta}</span>
               )}
-            </button>
+            </div>
           )}
           <button className="fm-top-bell" type="button" aria-label="通知">
             <Bell size={21} />
@@ -13059,7 +13210,7 @@ function WorkbenchTopbar({
                     role="menuitem"
                     onClick={() => openBillingCenter()}
                   >
-                    账单明细
+                    充值与明细
                   </button>
                   <span aria-hidden="true" />
                   <button
@@ -13161,7 +13312,10 @@ function ImageFeaturePage({
         window.history.pushState(null, "", `#/${nextId}`);
       }
       setActiveNav((current) => {
-        if (current !== nextId && Object.prototype.hasOwnProperty.call(audioResetSignals, current)) {
+        if (
+          current !== nextId &&
+          Object.prototype.hasOwnProperty.call(audioResetSignals, current)
+        ) {
           setAudioResetSignals((signals) => ({
             ...signals,
             [current]: signals[current] + 1,
@@ -13366,7 +13520,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView authUser={authUser} resetSignal={audioResetSignals.transcribe} />
+          <TranscribeView
+            authUser={authUser}
+            resetSignal={audioResetSignals.transcribe}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -13394,7 +13551,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ReplicateView authUser={authUser} onOpenFeature={handleOpenFeature} />
+          <ReplicateView
+            authUser={authUser}
+            onOpenFeature={handleOpenFeature}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="enhance"
