@@ -160,12 +160,12 @@ function UploadCard({
             <X size={14} />
           </span>
         )}
-        {asset && <small>{cleanDisplayName(asset.fileName, isPhoto ? "image asset" : "video asset")} · {formatBytes(asset.sizeBytes)}</small>}
+        {asset && !isUploading && <small>{cleanDisplayName(asset.fileName, isPhoto ? "image asset" : "video asset")} · {formatBytes(asset.sizeBytes)}</small>}
         {isUploading && (
-          <span className="face-swap-workbench__uploading">
-            <Loader2 size={14} />
-            上传中
-          </span>
+          <div className="face-swap-workbench__upload-overlay" aria-live="polite">
+            <span className="face-swap-workbench__upload-spinner" aria-hidden="true" />
+            <strong>{isPhoto ? "正在上传图片..." : "正在上传视频..."}</strong>
+          </div>
         )}
       </button>
     </section>
@@ -215,7 +215,11 @@ export function FaceSwapWorkbench({
   heading = "AI 换脸工具",
   privacyText = "您上传的内容仅用于处理，不会被用于其他用途。",
   onViewHistory,
-  isActive = true
+  isActive = true,
+  resultVideoUrl = "",
+  taskStatus = "idle",
+  taskError = "",
+  taskProgress = 0
 }) {
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
@@ -229,6 +233,7 @@ export function FaceSwapWorkbench({
   const [faceOptimize, setFaceOptimize] = useState(true);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
+  const [resultDismissed, setResultDismissed] = useState(false);
   const activeRef = useRef(isActive);
   const noticeTimerRef = useRef(null);
 
@@ -253,7 +258,32 @@ export function FaceSwapWorkbench({
     setVideoPreview("");
     setNotice("");
     setUploading("");
+    setResultDismissed(false);
   }, [isActive, imagePreview, videoPreview]);
+
+  useEffect(() => {
+    if (resultVideoUrl) setResultDismissed(false);
+  }, [resultVideoUrl]);
+
+  const previewResultUrl = resultDismissed ? "" : resultVideoUrl;
+  const isProcessingResult =
+    taskStatus === "processing" || (isSubmitting && taskStatus !== "failed");
+  const isMotionPreview = heading.includes("动作");
+  const previewTitle = isMotionPreview ? "迁移预览" : "换脸预览";
+  const previewEmptyLabel = isMotionPreview ? "等待动作视频" : "等待换脸结果";
+  const previewDraftText = previewResultUrl
+    ? isMotionPreview
+      ? "动作迁移视频已生成，可在上方预览或前往历史记录查看"
+      : "换脸视频已生成，可在上方预览或前往历史记录查看"
+    : isProcessingResult
+      ? isMotionPreview
+        ? "正在生成动作迁移视频，完成后将自动展示在预览区"
+        : "正在生成换脸视频，完成后将自动展示在预览区"
+      : taskStatus === "failed"
+        ? taskError || (isMotionPreview ? "动作迁移失败，请调整素材后重试" : "换脸生成失败，请调整素材后重试")
+        : isMotionPreview
+          ? "暂无草稿，上传素材后点击开始生成"
+          : "暂无草稿，上传照片和视频后点击生成换脸视频";
 
   useEffect(() => {
     return () => {
@@ -357,6 +387,7 @@ export function FaceSwapWorkbench({
     setImageAsset(null);
     if (imagePreview) window.URL.revokeObjectURL(imagePreview);
     setImagePreview("");
+    setResultDismissed(true);
     setNotice("");
   }
 
@@ -365,6 +396,7 @@ export function FaceSwapWorkbench({
     setSourceDuration("");
     if (videoPreview) window.URL.revokeObjectURL(videoPreview);
     setVideoPreview("");
+    setResultDismissed(true);
     setNotice("");
   }
 
@@ -482,36 +514,56 @@ export function FaceSwapWorkbench({
 
       <section className="face-swap-workbench__target-preview">
         <div className="face-swap-workbench__target-preview-header">
-          <h2>{heading.includes("\u52a8\u4f5c") ? "\u8fc1\u79fb\u9884\u89c8" : "\u6362\u8138\u9884\u89c8"}</h2>
+          <h2>{previewTitle}</h2>
           {onViewHistory && (
             <button type="button" onClick={onViewHistory}>
-              {"\u67e5\u770b\u5168\u90e8\u4f5c\u54c1 >"}
+              查看全部作品 &gt;
             </button>
           )}
         </div>
-        <div className={`face-swap-workbench__target-preview-media ${videoPreview ? "has-preview" : "is-empty"}`}>
-          {videoPreview ? (
-            <video src={videoPreview} controls playsInline preload="metadata" />
+        <div
+          className={`face-swap-workbench__target-preview-media ${
+            previewResultUrl
+              ? "has-preview"
+              : isProcessingResult
+                ? "is-processing"
+                : "is-empty"
+          }`}
+        >
+          {previewResultUrl ? (
+            <video src={previewResultUrl} controls playsInline preload="metadata" />
+          ) : isProcessingResult ? (
+            <div className="face-swap-workbench__target-processing">
+              <span className="face-swap-workbench__upload-spinner" aria-hidden="true" />
+              <strong>{copy.processingGenerate || "正在生成换脸视频"}</strong>
+              <small>{taskProgress ? `${taskProgress}%` : "任务处理中，请稍候"}</small>
+            </div>
           ) : (
             <div className="face-swap-workbench__target-empty">
               <Video size={34} />
-              <span>{heading.includes("\u52a8\u4f5c") ? "\u7b49\u5f85\u52a8\u4f5c\u89c6\u9891" : "\u7b49\u5f85\u76ee\u6807\u89c6\u9891"}</span>
+              <span>{previewEmptyLabel}</span>
             </div>
           )}
           <span className="face-swap-workbench__target-compare-line" />
           <span className="face-swap-workbench__target-compare-handle">{"< >"}</span>
           <div className="face-swap-workbench__target-player">
             <Play size={16} fill="currentColor" />
-            <span>{videoPreview ? (sourceDuration ? `00:00 / 00:${String(sourceDuration).padStart(2, "0")}` : "\u5df2\u4e0a\u4f20\u89c6\u9891") : "\u8bf7\u5148\u4e0a\u4f20\u76ee\u6807\u89c6\u9891"}</span>
+            <span>
+              {previewResultUrl
+                ? isMotionPreview
+                  ? "迁移结果"
+                  : "换脸结果"
+                : isProcessingResult
+                  ? "生成中"
+                  : isMotionPreview
+                    ? "等待迁移结果"
+                    : "等待换脸结果"}
+            </span>
             <i />
             <span>{resolution}</span>
           </div>
         </div>
-        <div className="face-swap-workbench__target-draft">
-          {videoPreview
-            ? "\u5df2\u52a0\u8f7d\u76ee\u6807\u89c6\u9891\u9884\u89c8\uff0c\u70b9\u51fb\u53f3\u4e0b\u89d2\u6309\u94ae\u5f00\u59cb\u751f\u6210"
-            : "\u6682\u65e0\u8349\u7a3f\uff0c\u4e0a\u4f20\u7167\u7247\u6216\u89c6\u9891\u540e\u5c06\u81ea\u52a8\u4fdd\u5b58"}
-        </div>
+        <div className="face-swap-workbench__target-draft">{previewDraftText}</div>
       </section>
 
       {notice && <div className="face-swap-workbench__notice">{notice}</div>}

@@ -5146,6 +5146,35 @@ function ComposerBarPlaceholder({
   );
 }
 
+function getImageTaskResults(task) {
+  if (Array.isArray(task?.images) && task.images.length) {
+    return task.images.filter(Boolean);
+  }
+  const primary = task?.imageUrl || task?.image;
+  return primary ? [primary] : [];
+}
+
+function ImageWorkbenchRequestBubble({ prompt }) {
+  return (
+    <div className="image-workbench-prompt">
+      <p>{prompt}</p>
+    </div>
+  );
+}
+
+function ImageWorkbenchGeneratingStatus() {
+  return (
+    <div
+      className="image-workbench-generation-status"
+      role="status"
+      aria-live="polite"
+    >
+      <ImageGeneratingSpinner size={18} />
+      <span>智能创意中...</span>
+    </div>
+  );
+}
+
 function ImageGenerationWorkbench({
   tasks,
   historyThreads,
@@ -5178,9 +5207,6 @@ function ImageGenerationWorkbench({
   const threadSignature = threadTasks
     .map((task) => `${task.id}:${task.status}:${task.image || ""}`)
     .join("|");
-  const hasThreadProcessing = threadTasks.some(
-    (task) => task.status === "pending" || task.status === "processing",
-  );
   const empty = threadTasks.length === 0 && !activePrompt && !submitError;
   const scrollContextToLatest = useCallback((behavior = "smooth") => {
     const context = contextRef.current;
@@ -5239,74 +5265,70 @@ function ImageGenerationWorkbench({
             return (
               <article className="image-workbench-thread-item" key={task.id}>
                 {task.prompt && (
-                  <div className="image-workbench-prompt">
-                    <p>{task.prompt}</p>
-                  </div>
+                  <ImageWorkbenchRequestBubble prompt={task.prompt} />
                 )}
 
-                {taskProcessing && (
-                  <div
-                    className="image-workbench-status is-processing"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <Loader2 size={18} />
-                    <strong>图片正在生成中</strong>
-                  </div>
-                )}
+                {taskProcessing && <ImageWorkbenchGeneratingStatus />}
 
                 {taskFailed && (
                   <div
                     className="image-workbench-status is-failed"
                     role="status"
                   >
-                    <CircleAlert size={24} />
-                    <strong>这次没有生成成功</strong>
+                    <CircleAlert size={20} />
+                    <strong>生成失败</strong>
                     <p>{task.error || "图片生成遇到问题，请稍后重试。"}</p>
                     <button type="button" onClick={() => onRegenerate(task.id)}>
-                      <RefreshCcw size={16} />
-                      重新生成
+                      <RefreshCcw size={15} />
+                      再次生成
                     </button>
                   </div>
                 )}
 
                 {taskCompleted && (
                   <div className="image-workbench-result">
-                    <button
-                      className="image-workbench-result-image"
-                      type="button"
-                      onClick={() => onPreview(task)}
-                      aria-label="查看生成图片"
+                    <div
+                      className={`image-workbench-result-grid ${getImageTaskResults(task).length > 1 ? "is-multi" : ""}`}
                     >
-                      <img
-                        src={task.imageUrl || task.image}
-                        alt={task.prompt}
-                      />
-                    </button>
-                    <div className="image-workbench-result-meta">
-                      <p>以上内容由 AI 生成，本次消耗 {task.price || "积分"}</p>
-                      <div className="image-workbench-actions">
-                        <a
-                          href={task.imageUrl || task.image}
-                          download
-                          onClick={() => onDownload?.(task)}
-                        >
-                          <Download size={16} />
-                          下载
-                        </a>
-                        <button type="button" onClick={() => onReference(task)}>
-                          <Copy size={16} />
-                          引用
-                        </button>
+                      {getImageTaskResults(task).map((imageSrc, index) => (
                         <button
+                          className="image-workbench-result-image"
+                          key={`${task.id}-${index}`}
                           type="button"
-                          onClick={() => onRegenerate(task.id)}
+                          onClick={() => onPreview(task)}
+                          aria-label="查看生成图片"
                         >
-                          <RefreshCcw size={16} />
-                          重新生成
+                          <img src={imageSrc} alt={task.prompt} />
+                          <span className="image-workbench-result-badge">
+                            AI生成
+                          </span>
                         </button>
-                      </div>
+                      ))}
                     </div>
+                    <div className="image-workbench-actions">
+                      <a
+                        href={task.imageUrl || task.image}
+                        download
+                        onClick={() => onDownload?.(task)}
+                      >
+                        <Download size={15} />
+                        下载
+                      </a>
+                      <button type="button" onClick={() => onReference(task)}>
+                        <Copy size={15} />
+                        引用
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRegenerate(task.id)}
+                      >
+                        <RefreshCcw size={15} />
+                        再次生成
+                      </button>
+                    </div>
+                    <p className="image-workbench-result-note">
+                      以上内容由 AI 生成，本次消耗 {task.price || "积分"}
+                    </p>
                   </div>
                 )}
               </article>
@@ -5316,21 +5338,11 @@ function ImageGenerationWorkbench({
           {isSubmitting &&
             activePrompt &&
             !threadTasks.some((task) => task.prompt === activePrompt) && (
-              <div className="image-workbench-prompt">
-                <p>{activePrompt}</p>
-              </div>
+              <article className="image-workbench-thread-item is-pending">
+                <ImageWorkbenchRequestBubble prompt={activePrompt} />
+                <ImageWorkbenchGeneratingStatus />
+              </article>
             )}
-
-          {isSubmitting && !hasThreadProcessing && (
-            <div
-              className="image-workbench-status is-processing"
-              role="status"
-              aria-live="polite"
-            >
-              <Loader2 size={18} />
-              <strong>图片正在生成中</strong>
-            </div>
-          )}
 
           {submitError && !contextTask && (
             <div className="image-workbench-status is-failed" role="status">
@@ -5388,7 +5400,7 @@ function ImageGenerationWorkbench({
                     {task.image && !isTaskFailed ? (
                       <img src={task.image} alt="" />
                     ) : isTaskProcessing ? (
-                      <Loader2 size={18} />
+                      <ImageGeneratingSpinner size={24} />
                     ) : (
                       <Image size={18} />
                     )}
@@ -5647,6 +5659,20 @@ function ExampleCanvas() {
   );
 }
 
+function ImageGeneratingSpinner({ size = 32, className = "" }) {
+  return (
+    <img
+      className={["image-generating-spinner", className].filter(Boolean).join(" ")}
+      src="/assets/svg/脸谱facemini定(1).svg"
+      alt=""
+      aria-hidden="true"
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
 function GeneratingCanvas({ prompt }) {
   return (
     <div className="image-canvas chat-canvas" aria-live="polite">
@@ -5662,7 +5688,7 @@ function GeneratingCanvas({ prompt }) {
           </div>
           <div className="chat-bubble waiting">
             <div className="chat-waiting-title">
-              <Loader2 size={18} />
+              <ImageGeneratingSpinner size={28} />
               <span>已收到你的请求，正在为你生成图片</span>
             </div>
             <div className="chat-waiting-card">
@@ -5685,8 +5711,7 @@ function ImageGeneratingFeedState({ prompt }) {
       aria-live="polite"
     >
       <div className="image-generating-orbit" aria-hidden="true">
-        <span />
-        <Loader2 size={30} />
+        <ImageGeneratingSpinner size={48} />
       </div>
       <div>
         <strong>图片正在生成中</strong>
@@ -7114,7 +7139,7 @@ function ImageGenerationView({
             />
           )}
           {!isComposerSticky && (
-            <div className="image-composer-heading">图片生成</div>
+            <div className="image-composer-heading">哇！大师，来做图啦</div>
           )}
           {showComposer ? (
             <ComposerBar
@@ -11552,6 +11577,7 @@ function MotionTransferView({
   const submittedTask =
     tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const isFaceSwapView = splitResults && navId === "face-swap";
+  const useSplitWorkbench = splitResults;
   const useWorkbenchView =
     isFaceSwapView || navId === "motion" || navId === "image-digital-human";
   const showCenterState = isSubmitting || submitError || submittedTask;
@@ -11692,7 +11718,7 @@ function MotionTransferView({
       >
         {useWorkbenchView &&
           (isFaceSwapView ? viewTab === "home" : showEmptyHero) &&
-          !showCenterState && (
+          (!showCenterState || useSplitWorkbench) && (
             <WorkbenchComponent
               options={options}
               onSubmit={createTask}
@@ -11718,6 +11744,20 @@ function MotionTransferView({
                   : undefined
               }
               isActive={isActive}
+              resultVideoUrl={
+                useSplitWorkbench && submittedTask?.status === "completed"
+                  ? submittedTask.resultUrl || ""
+                  : ""
+              }
+              taskStatus={
+                useSplitWorkbench
+                  ? submittedTask?.status || (isSubmitting ? "processing" : "idle")
+                  : "idle"
+              }
+              taskError={
+                useSplitWorkbench ? submitError || submittedTask?.error || "" : ""
+              }
+              taskProgress={useSplitWorkbench ? submittedTask?.progress || 0 : 0}
             />
           )}
         {!useWorkbenchView && showEmptyHero && (
@@ -11729,7 +11769,7 @@ function MotionTransferView({
             <p>{copy.emptyDescription}</p>
           </div>
         )}
-        {showCenterState && (
+        {showCenterState && !(useSplitWorkbench && viewTab === "home") && (
           <MotionTransferCenterState
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
@@ -12952,6 +12992,14 @@ function WorkbenchTopbar({
           )}
         </div>
         <div className="fm-top-actions">
+          <button
+            className="fm-top-library"
+            type="button"
+            onClick={() => onOpenLibrary?.()}
+          >
+            <Sparkles size={17} />
+            灵感库
+          </button>
           <button
             className="fm-top-invite"
             type="button"
