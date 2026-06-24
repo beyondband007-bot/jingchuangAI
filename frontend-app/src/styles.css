@@ -28087,7 +28087,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   height: 100% !important;
   max-height: none !important;
   margin-right: 0 !important;
-  padding: 18px 0 !important;
+  padding: 0 0 18px 0 !important;
   overflow: hidden !important;
   pointer-events: auto !important;
   background: transparent !important;

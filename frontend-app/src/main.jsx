@@ -12540,17 +12540,17 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
+/** Feature modules unmount when inactive so re-entering a page starts fresh. */
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
-  if (!visitedIds.has(id)) return null;
   const isActive = activeNav === id;
+  if (!isActive || !visitedIds.has(id)) return null;
   return (
     <div
       className="feature-module-keepalive"
-      style={{ display: isActive ? "contents" : "none" }}
-      aria-hidden={!isActive}
+      style={{ display: "contents" }}
+      aria-hidden="false"
       data-feature-module={id}
-      data-feature-active={isActive ? "true" : "false"}
+      data-feature-active="true"
     >
       {children}
     </div>
@@ -13159,6 +13159,7 @@ function ImageFeaturePage({
       }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
+        setVisitedIds((prev) => new Set(prev).add(nextId));
       }
       setActiveNav((current) => {
         if (current !== nextId && Object.prototype.hasOwnProperty.call(audioResetSignals, current)) {
