@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 function normalizeOption(item) {
   if (typeof item === "object" && item !== null) {
@@ -190,7 +190,6 @@ export function CustomSelect({
               {showRatioIcon ? <RatioPreviewIcon ratio={option.value} selected={isSelected} /> : null}
               <span>{option.label}</span>
             </span>
-            {isSelected ? <Check size={16} /> : null}
           </button>
         );
       })}

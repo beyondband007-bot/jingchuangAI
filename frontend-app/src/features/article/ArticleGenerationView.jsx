@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Check,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
@@ -1224,7 +1223,6 @@ export function ArticleGenerationView({
                           }}
                         >
                           <span>{item}</span>
-                          {form.copyTemplate === item && <Check size={16} />}
                         </button>
                       ))}
                     </div>
@@ -1365,7 +1363,6 @@ export function ArticleGenerationView({
                           }}
                         >
                           <span>{item.label || item.value}</span>
-                          {model === item.value && <Check size={16} />}
                         </button>
                       ))}
                     </div>

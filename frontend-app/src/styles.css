@@ -5465,7 +5465,7 @@ a:hover {
 .custom-select-menu button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
   width: 100%;
   min-height: 34px;
@@ -15859,7 +15859,7 @@ textarea:focus-visible {
 .custom-select-menu button {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 14px;
   width: 100%;
   min-height: 40px;
@@ -22303,8 +22303,7 @@ body {
 }
 
 .llm-menu button,
-.custom-select-menu button,
-.chatbot-ui-dropdown > div:not(:first-child) > div {
+.custom-select-menu button {
   color: #686679 !important;
   background: transparent !important;
   border: 0 !important;
@@ -28551,6 +28550,12 @@ textarea::placeholder {
   background: #f3f0ff !important;
 }
 
+.feature-page-shell .custom-select-menu button.is-selected,
+[data-feature-module="digital-human"] .custom-select-menu button.is-selected,
+[data-feature-module="chat"] .custom-select-menu button.is-selected {
+  font-weight: 800 !important;
+}
+
 .feature-sidebar .feature-nav-section--group .feature-nav-children {
   padding-left: 22px !important;
 }
@@ -28863,9 +28868,9 @@ textarea::placeholder {
 
 [data-feature-module="article"] .fm-popular-template-menu button {
   min-height: 42px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18px;
+  display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   padding: 0 14px;
   color: #6f6a7d;
@@ -28882,12 +28887,8 @@ textarea::placeholder {
 [data-feature-module="article"] .fm-popular-template-menu button.is-selected {
   color: #623bff;
   background: #f3f0ff;
+  font-weight: 800;
   outline: 0;
-}
-
-[data-feature-module="article"] .fm-popular-template-menu button svg {
-  justify-self: end;
-  color: #7b61ff;
 }
 
 [data-feature-module="article"] .article-result-card {

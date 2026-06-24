@@ -126,7 +126,7 @@ export function useRegenerateConfirmation({
   onConfirm,
   title = "确认再次生成？",
   message = "重新生成会开启新任务并扣除相应积分。您确定要继续吗？",
-  confirmText = "确认再次生成",
+  confirmText = "确认",
 } = {}) {
   const [pendingRegenerate, setPendingRegenerate] = useState(null);
   const [isRegenerating, setIsRegenerating] = useState(false);

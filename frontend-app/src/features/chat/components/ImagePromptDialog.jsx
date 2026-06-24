@@ -190,24 +190,34 @@ export function ImagePromptDialog({
     };
   }
 
-  function dropdownItemStyle(color) {
+  const selectedDropdownItemBackground = "#f2edff";
+
+  function dropdownItemStyle(color, isSelected = false) {
     return {
       padding: "10px 12px",
       borderRadius: "8px",
       cursor: "pointer",
-      color,
+      color: isSelected ? "#6d3cff" : "#686879",
       fontSize: "14px",
+      fontWeight: isSelected ? "700" : "400",
+      background: isSelected ? selectedDropdownItemBackground : "transparent",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "flex-start",
+      gap: "12px",
       transition: "all 0.15s ease",
     };
   }
 
   function highlightDropdownItem(event) {
-    event.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+    event.currentTarget.style.background = selectedDropdownItemBackground;
   }
 
-  function resetDropdownItem(color) {
+  function resetDropdownItem(color, isSelected = false) {
     return function (event) {
-      event.currentTarget.style.background = "transparent";
+      event.currentTarget.style.background = isSelected
+        ? selectedDropdownItemBackground
+        : "transparent";
     };
   }
 
@@ -439,34 +449,16 @@ export function ImagePromptDialog({
                     style={{
                       ...dropdownItemStyle(
                         item.value === model ? "#8f78ff" : "#cccccc",
+                        item.value === model,
                       ),
-                      fontWeight: item.value === model ? "500" : "400",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
                     }}
                     onMouseEnter={highlightDropdownItem}
                     onMouseLeave={resetDropdownItem(
                       item.value === model ? "#8f78ff" : "#cccccc",
+                      item.value === model,
                     )}
                   >
                     {item.label}
-                    {item.value === model && (
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                      >
-                        <path
-                          d="M2.5 7L5.5 10L11.5 4"
-                          stroke="#8f78ff"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
                   </div>
                 ))}
               </div>
@@ -528,16 +520,13 @@ export function ImagePromptDialog({
                       style={{
                         ...dropdownItemStyle(
                           isSelected ? "#8f78ff" : "#cccccc",
+                          isSelected,
                         ),
-                        fontWeight: isSelected ? "500" : "400",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "12px",
                       }}
                       onMouseEnter={highlightDropdownItem}
                       onMouseLeave={resetDropdownItem(
                         isSelected ? "#8f78ff" : "#cccccc",
+                        isSelected,
                       )}
                     >
                       <span
@@ -553,22 +542,6 @@ export function ImagePromptDialog({
                         />
                         {item.label || item}
                       </span>
-                      {isSelected && (
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 14 14"
-                          fill="none"
-                        >
-                          <path
-                            d="M2.5 7L5.5 10L11.5 4"
-                            stroke="#8f78ff"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      )}
                     </div>
                   );
                 })}
@@ -630,34 +603,16 @@ export function ImagePromptDialog({
                     style={{
                       ...dropdownItemStyle(
                         item.value === quality ? "#8f78ff" : "#cccccc",
+                        item.value === quality,
                       ),
-                      fontWeight: item.value === quality ? "500" : "400",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
                     }}
                     onMouseEnter={highlightDropdownItem}
                     onMouseLeave={resetDropdownItem(
                       item.value === quality ? "#8f78ff" : "#cccccc",
+                      item.value === quality,
                     )}
                   >
                     {item.label || item.value}
-                    {item.value === quality && (
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                      >
-                        <path
-                          d="M2.5 7L5.5 10L11.5 4"
-                          stroke="#8f78ff"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
                   </div>
                 ))}
               </div>
