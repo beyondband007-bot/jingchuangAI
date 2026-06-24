@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -37,7 +37,9 @@ export function mapVideoTask(row) {
     duration,
     mode: row.mode || "first-frame",
     count: row.video_count,
-    time: formatBeijingClock(row.created_at),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    time: formatBeijingDateTime(row.created_at),
     price: `${row.cost_points} 积分`,
     rmb: row.rmb_cost ? `¥${Number(row.rmb_cost).toFixed(1)}` : null,
     points: row.cost_points,

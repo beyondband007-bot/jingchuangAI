@@ -96,7 +96,7 @@ import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
-import { formatBeijingHistoryTime } from "./utils/time";
+import { formatBeijingDateTime, formatBeijingHistoryTime } from "./utils/time";
 import "./styles.css";
 
 const caseImageFiles = [
@@ -3189,9 +3189,7 @@ function CreditTransactionsPanel({
               const isIncome = Number(tx.amount || 0) > 0;
               return (
                 <div className="assets-transaction-row" key={tx.id}>
-                  <span>
-                    {new Date(tx.createdAt).toLocaleString("zh-CN")}
-                  </span>
+                  <span>{formatBeijingDateTime(tx.createdAt)}</span>
                   <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
                   <span
                     style={{
@@ -4300,12 +4298,7 @@ function AssetsPage({
       })()
     : "";
   const latestTimeLabel = latestTransaction
-    ? (() => {
-        const date = new Date(latestTransaction.createdAt);
-        if (Number.isNaN(date.getTime())) return "";
-        const pad = (value) => String(value).padStart(2, "0");
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-      })()
+    ? formatBeijingDateTime(latestTransaction.createdAt)
     : "";
 
   return (
@@ -6217,7 +6210,7 @@ function HistoryRail({
                 <div className="history-tags">
                   <span>{card.ratio}</span>
                   <span>{card.quality}</span>
-                  <span>{card.time}</span>
+                  <span>{formatBeijingDateTime(card.createdAt || card.created_at || card.time) || card.time}</span>
                 </div>
                 <div className="history-actions">
                   <button
@@ -7586,7 +7579,7 @@ function VideoResultCard({
           <span className="count-tag">首帧</span>
         </div>
         <div className="time-row">
-          <span>{card.time}</span>
+          <span>{formatBeijingDateTime(card.createdAt || card.created_at || card.time) || card.time}</span>
           <strong>{card.rmb || card.price}</strong>
         </div>
         <p>{card.error || card.prompt}</p>
@@ -8947,14 +8940,13 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
                   className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
                   key={conversation.id}
                   type="button"
-                  title={conversation.title}
                   onClick={() => onSelect(conversation.id)}
                 >
                   <span>{conversation.title || "未命名对话"}</span>
                   <small>
-                    {[conversation.model, conversation.time]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {formatBeijingDateTime(conversation.createdAt || conversation.created_at || conversation.time) ||
+                      conversation.time ||
+                      ""}
                   </small>
                 </button>
               ))
@@ -9582,7 +9574,7 @@ function DigitalHumanTaskCard({
         <div className="dh-progress-track">
           <i style={{ width: `${task.progress || 0}%` }} />
         </div>
-        <small>{task.createdAt}</small>
+        <small>{formatBeijingDateTime(task.createdAt || task.created_at) || task.createdAt}</small>
       </div>
       <div className="dh-task-actions">
         <button
@@ -11084,7 +11076,7 @@ function MotionTransferTaskCard({
       </div>
       <div className="motion-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions motion-card-actions">
@@ -12030,7 +12022,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
       </div>
       <div className="watermark-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">

@@ -7,6 +7,7 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
@@ -121,7 +122,7 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
       </div>
       <div className="watermark-task-meta remove-bg-task-meta">
         <div className="time-row">
-          <span>{task.time}</span>
+          <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">

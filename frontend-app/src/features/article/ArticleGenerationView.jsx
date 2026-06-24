@@ -21,6 +21,7 @@ import { downloadArticleImagesZip } from "./articleImageZip";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { formatBeijingDateTime } from "../../utils/time";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -1089,7 +1090,10 @@ export function ArticleGenerationView({
                   </button>
                   <div className="article-history-meta">
                     <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
-                    <p>{taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} · {task.time}</p>
+                    <p>
+                      {taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} ·{" "}
+                      {formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}
+                    </p>
                     <div className="article-history-actions">
                       <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
                         <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />

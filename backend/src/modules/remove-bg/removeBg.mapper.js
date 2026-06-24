@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 export function mapRemoveBgAsset(row) {
   if (!row) return null;
   return {
@@ -34,6 +34,8 @@ export function mapRemoveBgTask(row) {
     error: row.error_message || "",
     points,
     price: `${points} 积分`,
-    time: formatBeijingClock(row.created_at)
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    time: formatBeijingDateTime(row.created_at)
   };
 }

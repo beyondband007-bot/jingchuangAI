@@ -1,4 +1,4 @@
-import { formatBeijingClock } from "../../shared/time.js";
+import { formatBeijingDateTime } from "../../shared/time.js";
 export function mapWatermarkAsset(row) {
   if (!row) return null;
   return {
@@ -35,6 +35,8 @@ export function mapWatermarkTask(row) {
     error: row.error_message || "",
     points: Number(row.cost_points || 0),
     price: `${row.cost_points || 0} 积分`,
-    time: formatBeijingClock(row.created_at)
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    time: formatBeijingDateTime(row.created_at)
   };
 }

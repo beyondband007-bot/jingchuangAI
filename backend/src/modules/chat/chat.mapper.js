@@ -50,6 +50,8 @@ export function mapChatConversation(row) {
     title: row.title,
     model: formatChatModelName(row.display_name) || row.model_key,
     modelKey: row.model_key,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
     time: formatBeijingHistoryTime(row.updated_at || row.created_at)
   };
 }
