@@ -549,6 +549,7 @@ const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "creation", label: "创作中心", icon: Sparkles },
   { id: "assets", label: "我的资产", icon: Wallet },
+  { id: "billing", label: "积分充值", icon: Wallet },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
@@ -594,6 +595,7 @@ const navSections = [
     children: ["voice", "music", "voice-convert", "transcribe", "video-voice"],
   },
   { type: "item", id: "assets" },
+  { type: "item", id: "billing" },
 ];
 
 const homeFeatureRoutes = [
@@ -2708,7 +2710,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
   }, []);
 
   const sidebarSections = navSections.filter(
-    (section) => section.id !== "assets",
+    (section) => section.id !== "assets" && section.id !== "billing",
   );
   const assetsItem = getNavItem("assets");
   const AssetsIcon = assetsItem?.icon;
@@ -2864,7 +2866,7 @@ function ComingSoon({ activeNav }) {
 
 const rechargePresets = [1, 10, 30, 50, 100, 200];
 const paymentCodeTtlSeconds = 3 * 60;
-const paymentResultTtlSeconds = 5;
+const paymentResultTtlSeconds = 3;
 const paymentProviderOptions = [
   { value: "alipay", label: "支付宝支付" },
   { value: "wechat", label: "微信支付" },
@@ -2957,7 +2959,7 @@ function paymentResultInfo(status) {
       REFUNDED: {
         tone: "cancel",
         title: "订单已退款",
-        message: "订单已退款，积分变动以收支记录为准",
+        message: "订单已退款，积分变动以积分明细为准",
         icon: RefreshCcw,
       },
     }[status] || {
@@ -3147,12 +3149,10 @@ function CreditTransactionsPanel({
   transactionsTotalPages,
   transactionMeta,
   transactionFilter,
-  transactionKeyword,
   isLoading,
   onFilterChange,
-  onKeywordChange,
-  onSearchSubmit,
   onPageChange,
+  timeFilterControl,
 }) {
   return (
     <div className="fm-assets-transactions-view">
@@ -3169,15 +3169,7 @@ function CreditTransactionsPanel({
             </button>
           ))}
         </div>
-        <form className="fm-transaction-search" onSubmit={onSearchSubmit}>
-          <Search size={16} />
-          <input
-            value={transactionKeyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            placeholder="搜索备注或类型"
-          />
-          <button type="submit">查询</button>
-        </form>
+        {timeFilterControl}
       </div>
       {transactions.length ? (
         <>
@@ -3248,7 +3240,7 @@ function CreditTransactionsPanel({
       ) : (
         <div className="fm-assets-empty-state">
           <History size={34} />
-          <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
+          <strong>{isLoading ? "正在加载明细" : "暂无积分明细"}</strong>
           <p>
             {transactionFilter === "invitegift"
               ? "邀请奖励到账后会显示在这里"
@@ -3260,7 +3252,13 @@ function CreditTransactionsPanel({
   );
 }
 
-function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
+function AssetsPage({
+  authUser,
+  onOpenAuth,
+  onOpenFeature,
+  onOpenInvite,
+  pageMode = null,
+}) {
   const isGuest = !authUser || Boolean(authUser.isGuest);
   const [credits, setCredits] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -3278,7 +3276,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       const stored = window.sessionStorage.getItem(assetsViewModeStorageKey);
       if (
         stored === "profile" ||
-        stored === "billing" ||
         stored === "favorites" ||
         stored === "gallery"
       ) {
@@ -3299,8 +3296,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [transactionFilter, setTransactionFilter] = useState("all");
-  const [transactionKeyword, setTransactionKeyword] = useState("");
-  const [transactionSearch, setTransactionSearch] = useState("");
   const [assetTimePreset, setAssetTimePreset] = useState("all");
   const [assetStartDate, setAssetStartDate] = useState("");
   const [assetEndDate, setAssetEndDate] = useState("");
@@ -3323,6 +3318,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
+  const effectiveViewMode = pageMode || viewMode;
 
   const points = Math.max(1, Number(amount) || 1) * 100;
   const totalCreations = userAssets.length;
@@ -3389,7 +3385,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
           type: transactionFilter,
           page: transactionsPage,
           pageSize: transactionsPageSize,
-          keyword: transactionSearch,
           startDate: assetTimeRange.startDate,
           endDate: assetTimeRange.endDate,
         }),
@@ -3448,7 +3443,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     assetTimeRange.startDate,
     isGuest,
     transactionFilter,
-    transactionSearch,
     transactionsPage,
   ]);
 
@@ -3476,7 +3470,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   useEffect(() => {
     setTransactionsPage(1);
-  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter, transactionSearch]);
+  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -3662,7 +3656,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       const nextViewMode = window.sessionStorage.getItem(assetsViewModeStorageKey);
       if (
         nextViewMode === "profile" ||
-        nextViewMode === "billing" ||
         nextViewMode === "favorites" ||
         nextViewMode === "gallery"
       ) {
@@ -3689,7 +3682,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       if (assetGalleryTabs.includes(nextTab)) setActiveAssetTab(nextTab);
       if (
         nextViewMode === "profile" ||
-        nextViewMode === "billing" ||
         nextViewMode === "favorites" ||
         nextViewMode === "gallery"
       ) {
@@ -3731,12 +3723,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   function selectTransactionFilter(nextFilter) {
     setTransactionFilter(nextFilter);
-    setTransactionsPage(1);
-  }
-
-  function submitTransactionSearch(event) {
-    event.preventDefault();
-    setTransactionSearch(transactionKeyword.trim());
     setTransactionsPage(1);
   }
 
@@ -3857,8 +3843,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   }
 
   function goToBillingView({ openTransactions = false } = {}) {
-    setViewMode("billing");
-    if (openTransactions) setShowTransactionsModal(true);
+    try {
+      if (openTransactions) {
+        window.sessionStorage.setItem("facemini:open-transactions-modal", "1");
+      }
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+    onOpenFeature?.("billing");
   }
 
   async function copyInviteLink() {
@@ -3912,13 +3904,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     </div>
   );
 
-  if (viewMode === "gallery") {
+  if (effectiveViewMode === "gallery") {
     return (
       <section className="assets-view-root fm-assets-gallery-view">
         <div className="fm-assets-inner">
-          <div className="fm-assets-headline">
-            <h2>我的资产</h2>
-          </div>
           <div className="fm-assets-filter-row">
             <div className="fm-assets-tabs" aria-label="????">
               {assetGalleryTabs.map((tab) => (
@@ -4036,7 +4025,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     );
   }
 
-  if (viewMode === "profile") {
+  if (effectiveViewMode === "profile") {
     return (
       <section className="assets-view-root fm-profile-center-view">
         {isGuest ? (
@@ -4132,7 +4121,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     邀请有礼
                   </button>
                   <button type="button" onClick={() => goToBillingView()}>
-                    账单明细
+                    充值与明细
                   </button>
                   <button type="button" className="is-muted">
                     账号设置
@@ -4149,7 +4138,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     );
   }
 
-  if (viewMode === "favorites") {
+  if (effectiveViewMode === "favorites") {
     return (
       <section className="assets-view-root fm-assets-gallery-view fm-favorites-view">
         {isGuest ? (
@@ -4319,34 +4308,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       })()
     : "";
 
-  function scrollToRechargePanel() {
-    document
-      .getElementById("fm-billing-recharge")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <section className="assets-view-root fm-profile-billing-view">
-      <header className="assets-toolbar fm-billing-toolbar">
-        <div>
-          <h1>账单明细</h1>
-          <p>积分充值、消费记录与订单查询</p>
-        </div>
-        <button
-          className="assets-icon-button"
-          type="button"
-          onClick={refreshAssets}
-          disabled={isLoading || isGuest}
-          aria-label="刷新账单"
-        >
-          <RefreshCcw size={18} className={isLoading ? "is-spinning" : ""} />
-        </button>
-      </header>
-
       {isGuest ? (
         <div className="assets-login-panel">
           <Wallet size={32} />
-          <strong>登录后查看账单明细</strong>
+          <strong>登录后进行积分充值</strong>
           <p>登录后可查看积分余额、充值记录和消费明细</p>
           <button type="button" onClick={() => onOpenAuth("login")}>
             登录
@@ -4361,17 +4328,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <small>1 元 = 100 积分</small>
             </div>
             <div className="assets-balance-actions">
-              <button type="button" onClick={scrollToRechargePanel}>
-                <Wallet size={18} />
-                立即充值
-              </button>
               <button
-                className="is-ghost"
                 type="button"
                 onClick={() => setShowTransactionsModal(true)}
               >
                 <History size={18} />
-                收支记录
+                积分明细
               </button>
             </div>
           </div>
@@ -4454,7 +4416,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <div className="fm-billing-side-card fm-billing-records-card">
                 <div className="assets-section-title">
                   <History size={18} />
-                  <strong>收支记录</strong>
+                  <strong>最近支出</strong>
                 </div>
                 {latestTransaction ? (
                   <button
@@ -4485,14 +4447,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     </em>
                   </button>
                 ) : (
-                  <div className="assets-empty-state">暂无收支记录</div>
+                  <div className="assets-empty-state">暂无积分明细</div>
                 )}
                 <button
                   className="fm-billing-side-link"
                   type="button"
                   onClick={() => setShowTransactionsModal(true)}
                 >
-                  查看全部收支记录
+                  查看全部积分明细
                 </button>
               </div>
 
@@ -4543,12 +4505,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
             className="fm-transactions-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="收支记录"
+            aria-label="积分明细"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="fm-transactions-modal-head">
               <div>
-                <strong>收支记录</strong>
+                <strong>积分明细</strong>
                 <span>积分流水明细</span>
               </div>
               <button
@@ -4560,19 +4522,16 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                 <X size={18} />
               </button>
             </div>
-            {assetTimeFilterControl}
             <CreditTransactionsPanel
               transactions={visibleTransactions}
               transactionsPage={transactionsPage}
               transactionsTotalPages={transactionsTotalPages}
               transactionMeta={transactionMeta}
               transactionFilter={transactionFilter}
-              transactionKeyword={transactionKeyword}
               isLoading={isLoading}
               onFilterChange={selectTransactionFilter}
-              onKeywordChange={setTransactionKeyword}
-              onSearchSubmit={submitTransactionSearch}
               onPageChange={setTransactionsPage}
+              timeFilterControl={assetTimeFilterControl}
             />
           </div>
         </div>
@@ -4660,9 +4619,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
             >
               <X size={18} />
             </button>
-            <div className="assets-result-icon">
-              {React.createElement(paymentResultDialog.icon, { size: 30 })}
-            </div>
             <div className="assets-payment-dialog-head">
               <span>
                 {paymentProviderText(
@@ -12938,18 +12894,16 @@ function WorkbenchTopbar({
 
   function openBillingCenter({ openTransactions = false } = {}) {
     try {
-      window.sessionStorage.setItem(assetsViewModeStorageKey, "billing");
       if (openTransactions) {
         window.sessionStorage.setItem("facemini:open-transactions-modal", "1");
       }
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    onNavChange?.("assets");
+    onNavChange?.("billing");
     window.dispatchEvent(
       new CustomEvent("facemini-assets-tab-change", {
         detail: {
-          viewMode: "billing",
           openTransactionsModal: openTransactions,
         },
       }),
@@ -13010,6 +12964,8 @@ function WorkbenchTopbar({
             <button
               className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
               type="button"
+              aria-label="打开充值与明细"
+              onClick={() => openBillingCenter()}
             >
               <Zap size={17} />
               {displayCredits ?? 0}
@@ -13059,7 +13015,7 @@ function WorkbenchTopbar({
                     role="menuitem"
                     onClick={() => openBillingCenter()}
                   >
-                    账单明细
+                    充值与明细
                   </button>
                   <span aria-hidden="true" />
                   <button
@@ -13283,6 +13239,19 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
+          id="billing"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="billing"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
           id="image"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -13437,6 +13406,7 @@ function ImageFeaturePage({
         {![
           "creation",
           "assets",
+          "billing",
           "image",
           "video",
           "chat",
