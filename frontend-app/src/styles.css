@@ -5248,7 +5248,7 @@ a:hover {
   padding: 10px 12px;
   overflow: hidden;
   color: #24496f;
-  background: #f8fafc;
+  background: #f0eef7;
   border: 1px solid #edf1f5;
   border-radius: 8px;
   font-size: 14px;
@@ -12141,8 +12141,8 @@ select {
 .idh-result-actions small,
 .dh-voice-note,
 .processing-state {
-  color: var(--text-secondary);
-  background: rgba(176, 199, 226, 0.1);
+  color: #686879;
+  background: #f0eef7;
   border-color: rgba(176, 199, 226, 0.24);
 }
 
@@ -22001,6 +22001,7 @@ body {
   border-radius: 999px;
   background: #f2f0f8;
   color: #5f5c72;
+  font-size: 14px !important;
   font-weight: 700;
 }
 

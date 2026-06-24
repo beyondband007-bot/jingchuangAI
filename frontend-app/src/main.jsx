@@ -7565,6 +7565,11 @@ function VideoResultCard({
   onRegenerate,
   isExample = false,
 }) {
+  const isCompleted = card.status === "completed" && Boolean(card.video);
+  const isFailed = card.status === "failed";
+  const canUseCompletedActions = !isExample && isCompleted;
+  const canRetryOrDelete = !isExample && (isCompleted || isFailed);
+
   return (
     <article
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
@@ -7591,11 +7596,11 @@ function VideoResultCard({
             type="button"
             onClick={() => onFavorite(card.id)}
             aria-label="收藏"
-            disabled={isExample}
+            disabled={!canUseCompletedActions}
           >
             <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
           </button>
-          {card.video ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={card.video} download>
               <Download size={15} />
               下载
@@ -7609,7 +7614,7 @@ function VideoResultCard({
           <button
             type="button"
             onClick={() => onRegenerate(card.id)}
-            disabled={isExample}
+            disabled={!canRetryOrDelete}
           >
             <RefreshCcw size={15} />
             再次生成
@@ -7617,7 +7622,7 @@ function VideoResultCard({
           <button
             type="button"
             onClick={() => onDelete(card.id)}
-            disabled={isExample}
+            disabled={!canRetryOrDelete}
           >
             <Trash2 size={15} />
             删除

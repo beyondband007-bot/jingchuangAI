@@ -585,7 +585,6 @@ export function VideoPromptDialog({
               }}
             >
               <strong>{price}</strong>
-              {rmb && <small>{rmb}</small>}
             </span>
           )}
 
