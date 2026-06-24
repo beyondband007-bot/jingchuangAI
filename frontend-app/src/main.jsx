@@ -4660,6 +4660,9 @@ function ResultCard({
   const isFailed = card.status === "failed";
   const displaySrc = isImageGallery ? card.src || card.image : card.image;
   const displayFallback = isImageGallery ? card.fallbackSrc : undefined;
+  const isCompleted = card.status === "completed" && Boolean(displaySrc || card.hdSrc);
+  const canUseCompletedActions = !isExample && isCompleted;
+  const canRetryOrDelete = !isExample && (isCompleted || isFailed);
   const canPreview = Boolean(
     displaySrc && onPreview && !isProcessing && !isFailed,
   );
@@ -4753,11 +4756,11 @@ function ResultCard({
                 type="button"
                 onClick={() => onFavorite(card.id)}
                 aria-label="收藏"
-                disabled={isExample}
+                disabled={!canUseCompletedActions}
               >
                 <Star size={17} fill={card.favorite ? "#f8d545" : "none"} />
               </button>
-              {card.image || card.hdSrc ? (
+              {canUseCompletedActions ? (
                 <a
                   className="card-action-link"
                   href={card.hdSrc || card.imageUrl || card.image}
@@ -4775,7 +4778,7 @@ function ResultCard({
               <button
                 type="button"
                 onClick={() => onRegenerate(card.id)}
-                disabled={isExample}
+                disabled={!canRetryOrDelete}
               >
                 <RefreshCcw size={15} />
                 再次生成
@@ -4783,7 +4786,7 @@ function ResultCard({
               <button
                 type="button"
                 onClick={() => onDelete(card.id)}
-                disabled={isExample}
+                disabled={!canRetryOrDelete}
               >
                 <Trash2 size={15} />
                 删除
@@ -6174,6 +6177,9 @@ function HistoryRail({
           const isProcessing =
             card.status === "pending" || card.status === "processing";
           const isFailed = card.status === "failed";
+          const isCompleted = card.status === "completed" && Boolean(card.image);
+          const canUseCompletedActions = isCompleted;
+          const canRetryOrDelete = isCompleted || isFailed;
 
           return (
             <article
@@ -6217,10 +6223,11 @@ function HistoryRail({
                     type="button"
                     onClick={() => onFavorite(card.id)}
                     aria-label="收藏"
+                    disabled={!canUseCompletedActions}
                   >
                     <Star size={15} fill={card.favorite ? "#f8d545" : "none"} />
                   </button>
-                  {card.image && (
+                  {canUseCompletedActions ? (
                     <a
                       href={card.imageUrl || card.image}
                       download
@@ -6228,11 +6235,16 @@ function HistoryRail({
                     >
                       <Download size={15} />
                     </a>
+                  ) : (
+                    <button type="button" aria-label="下载图片" disabled>
+                      <Download size={15} />
+                    </button>
                   )}
                   <button
                     type="button"
                     onClick={() => onRegenerate(card.id)}
                     aria-label="再次生成"
+                    disabled={!canRetryOrDelete}
                   >
                     <RefreshCcw size={15} />
                   </button>
@@ -6240,6 +6252,7 @@ function HistoryRail({
                     type="button"
                     onClick={() => onDelete(card.id)}
                     aria-label="删除"
+                    disabled={!canRetryOrDelete}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -9535,14 +9548,17 @@ function DigitalHumanTaskCard({
 }) {
   const isProcessing =
     task.status === "processing" || task.status === "pending";
-  const isCompleted = task.status === "completed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl || task.thumbnailUrl);
   const isFailed = task.status === "failed";
+  const canOpenPreview = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   return (
     <article className={`dh-task-card ${selected ? "is-selected" : ""}`}>
       <button
         className="dh-task-preview"
         type="button"
         onClick={() => onSelect(task)}
+        disabled={!canOpenPreview}
       >
         {task.resultUrl ? (
           <video src={task.resultUrl} muted playsInline preload="metadata" />
@@ -9580,11 +9596,11 @@ function DigitalHumanTaskCard({
         <button
           type="button"
           onClick={() => onRegenerate(task.id)}
-          disabled={isProcessing}
+          disabled={!canRetryOrDelete}
         >
           <RefreshCcw size={14} />
         </button>
-        <button type="button" onClick={() => onDelete(task.id)}>
+        <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
           <Trash2 size={14} />
         </button>
       </div>
@@ -11054,6 +11070,9 @@ function MotionTransferTaskCard({
 }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   return (
     <article className={`motion-task-card status-${task.status}`}>
       <div className="motion-task-preview">
@@ -11084,11 +11103,12 @@ function MotionTransferTaskCard({
             className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
             type="button"
             onClick={() => onFavorite(task.id)}
+            disabled={!canUseCompletedActions}
             aria-label="收藏"
           >
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -11099,11 +11119,11 @@ function MotionTransferTaskCard({
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>
@@ -11985,6 +12005,9 @@ function WatermarkCenterState({
 function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -12030,11 +12053,12 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
             className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
             type="button"
             onClick={() => onFavorite(task.id)}
+            disabled={!canUseCompletedActions}
             aria-label="收藏"
           >
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -12045,11 +12069,11 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>

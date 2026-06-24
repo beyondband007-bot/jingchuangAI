@@ -130,6 +130,9 @@ function EnhanceCenterState({
 function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
+  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
+  const canUseCompletedActions = isCompleted;
+  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -154,10 +157,10 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <strong>{task.price}</strong>
         </div>
         <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏">
+          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
             <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
           </button>
-          {task.resultUrl ? (
+          {canUseCompletedActions ? (
             <a className="card-action-link" href={task.resultUrl} download>
               <Download size={15} />
               下载
@@ -168,11 +171,11 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
               下载
             </button>
           )}
-          <button type="button" onClick={() => onRepeat(task)}>
+          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
             <RefreshCcw size={15} />
             再次生成
           </button>
-          <button type="button" onClick={() => onDelete(task.id)}>
+          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
             <Trash2 size={15} />
             删除
           </button>

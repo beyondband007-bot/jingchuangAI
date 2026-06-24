@@ -1064,9 +1064,13 @@ export function ArticleGenerationView({
           <div className="article-history-grid">
             {historyCards.map((task) => {
               const taskImages = getArticleImages(task);
+              const isCompleted = ["completed", "partial_completed"].includes(task.status) && taskImages.length > 0;
+              const isFailed = task.status === "failed";
+              const canUseCompletedActions = isCompleted;
+              const canRetryOrDelete = isCompleted || isFailed;
               return (
                 <article className={`article-history-card status-${task.status}`} key={task.id}>
-                  <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)}>
+                  <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)} disabled={!canUseCompletedActions}>
                     <span className={`article-history-status-badge status-${task.status}`}>
                       {task.status === "failed" ? "生成失败" : task.status === "completed" ? "已完成" : "生成中"}
                     </span>
@@ -1095,13 +1099,13 @@ export function ArticleGenerationView({
                       {formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}
                     </p>
                     <div className="article-history-actions">
-                      <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏">
+                      <button className={task.favorite ? "is-favorite" : ""} type="button" onClick={() => toggleFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
                         <Star size={15} fill={task.favorite ? "#f8d545" : "none"} />
                       </button>
-                      <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成">
+                      <button type="button" onClick={() => regenerateTask(task)} aria-label="重新生成" disabled={!canRetryOrDelete}>
                         <RefreshCcw size={15} />
                       </button>
-                      <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除">
+                      <button type="button" onClick={() => deleteTask(task.id)} aria-label="删除" disabled={!canRetryOrDelete}>
                         <Trash2 size={15} />
                       </button>
                     </div>
