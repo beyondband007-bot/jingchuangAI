@@ -1592,7 +1592,7 @@ function loadTencentCaptchaScript() {
 }
 
 function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
-  const [loginMethod, setLoginMethod] = useState("phone-code");
+  const [loginMethod, setLoginMethod] = useState("password");
   const [phone, setPhone] = useState("");
   const [smsCode, setSmsCode] = useState("");
   const [identifier, setIdentifier] = useState("");
@@ -1618,7 +1618,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     if (!mode) return;
     setRenderMode(mode);
     setIsClosing(false);
-    setLoginMethod("phone-code");
+    setLoginMethod("password");
     setPhone("");
     setSmsCode("");
     setIdentifier("");
@@ -1962,17 +1962,17 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             >
               <button
                 type="button"
-                className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
-                onClick={() => setLoginMethod("phone-code")}
-              >
-                手机号登录
-              </button>
-              <button
-                type="button"
                 className={`auth-method-tab ${loginMethod === "password" ? "is-active" : ""}`}
                 onClick={() => setLoginMethod("password")}
               >
                 密码登录
+              </button>
+              <button
+                type="button"
+                className={`auth-method-tab ${loginMethod === "phone-code" ? "is-active" : ""}`}
+                onClick={() => setLoginMethod("phone-code")}
+              >
+                验证码登录
               </button>
             </div>
           )}
