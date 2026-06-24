@@ -16,6 +16,10 @@ import {
 import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
@@ -271,7 +275,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
   );
 }
 
-export function VideoDubbingView({ authUser, resetSignal = 0 }) {
+export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -496,6 +500,16 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
       return next;
     });
   }
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
 
   return (
     <section className="voice-conversion-view-root video-dub-view-root">
@@ -604,6 +618,15 @@ export function VideoDubbingView({ authUser, resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {showRechargeAlert && (
+        <CreditAlertDialog
+          title="这次没有完成配音"
+          message={notice}
+          icon={<Volume2 size={28} />}
+          onClose={closeRechargeAlert}
+          onRecharge={goToRecharge}
+        />
+      )}
       {deleteConfirmDialog}
     </section>
   );

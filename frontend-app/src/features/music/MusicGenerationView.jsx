@@ -7,6 +7,10 @@ import { MusicRecentGrid } from "./MusicRecentGrid";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile } from "../../api/mediaUrl.js";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -120,7 +124,7 @@ function randomMelodyDelayMs() {
   return 15000 + Math.floor(Math.random() * 15001);
 }
 
-export function MusicGenerationView({ resetSignal = 0 }) {
+export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [prompt, setPrompt] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
@@ -441,6 +445,16 @@ export function MusicGenerationView({ resetSignal = 0 }) {
   const displayRecent = recentResults.slice(0, 4);
   const showGeneratingPanel = viewTab === "home" && generationStep >= 1 && generationStep <= 4;
   const showFullPagePlayer = showPlayer && playerTask?.audioUrl && !showGeneratingPanel;
+  const showRechargeAlert = isRechargeRequiredMessage(notice);
+
+  function closeRechargeAlert() {
+    setNotice("");
+  }
+
+  function goToRecharge() {
+    closeRechargeAlert();
+    onOpenFeature?.("billing");
+  }
 
   return (
     <section className="voice-conversion-view-root music-generation-view">
@@ -533,6 +547,15 @@ export function MusicGenerationView({ resetSignal = 0 }) {
           {toast.message}
         </div>
       ) : null}
+      {showRechargeAlert && (
+        <CreditAlertDialog
+          title="这次没有生成音乐"
+          message={notice}
+          icon={<Music size={28} />}
+          onClose={closeRechargeAlert}
+          onRecharge={goToRecharge}
+        />
+      )}
     </section>
   );
 }

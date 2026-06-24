@@ -2,6 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { removeBgApi } from "./removeBgApi";
 
@@ -14,7 +18,15 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
+function RemoveBgCenterState({
+  task,
+  isSubmitting,
+  error,
+  onReset,
+  onRepeat,
+  onDismiss,
+  onRecharge,
+}) {
   if (task?.status === "completed" && task.resultUrl) {
     return (
       <section className="watermark-center-state remove-bg-center-state marketing-result-card is-completed">
@@ -51,13 +63,27 @@ function RemoveBgCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error || task?.error || "抠图服务返回了错误，积分会按任务状态自动处理。";
+    if (isRechargeRequiredMessage(message)) {
+      return (
+        <CreditAlertDialog
+          title="这次没有抠图成功"
+          message={message}
+          icon={<Layers size={28} />}
+          onClose={onDismiss}
+          onRecharge={onRecharge}
+        />
+      );
+    }
+
     return (
       <section className="watermark-center-state remove-bg-center-state is-failed">
         <span className="watermark-center-icon remove-bg-center-icon">
           <Layers size={24} />
         </span>
         <strong>这次没有抠图成功</strong>
-        <p>{error || task?.error || "抠图服务返回了错误，积分会按任务状态自动处理。"}</p>
+        <p>{message}</p>
       </section>
     );
   }
@@ -278,7 +304,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function RemoveBgView() {
+export function RemoveBgView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [credits, setCredits] = useState(null);
@@ -388,6 +414,16 @@ export function RemoveBgView() {
     });
   }
 
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root remove-bg-view-root">
       <div className="image-filter-tabs watermark-filter-tabs remove-bg-filter-tabs">
@@ -424,6 +460,8 @@ export function RemoveBgView() {
               setSubmittedTaskId(null);
             }}
             onRepeat={repeatTask}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (

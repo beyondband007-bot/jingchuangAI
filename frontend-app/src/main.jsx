@@ -11849,6 +11849,8 @@ function WatermarkCenterState({
   error,
   onReset,
   onRepeat,
+  onDismiss,
+  onRecharge,
 }) {
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
@@ -11920,18 +11922,49 @@ function WatermarkCenterState({
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error ||
+      task?.error ||
+      "处理服务返回了错误，积分会按任务状态自动处理。";
     return (
-      <section className="watermark-center-state is-failed">
-        <span className="watermark-center-icon">
-          <Eraser size={24} />
-        </span>
-        <strong>这次没有生成成功</strong>
-        <p>
-          {error ||
-            task?.error ||
-            "生成服务返回了错误，积分会按任务状态自动处理。"}
-        </p>
-      </section>
+      <div
+        className="remove-bg-alert-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-bg-alert-title"
+      >
+        <button
+          className="remove-bg-alert-backdrop"
+          type="button"
+          aria-label="关闭提醒"
+          onClick={onDismiss}
+        />
+        <section className="remove-bg-alert-dialog">
+          <button
+            className="remove-bg-alert-close"
+            type="button"
+            aria-label="关闭提醒"
+            onClick={onDismiss}
+          >
+            <X size={18} />
+          </button>
+          <span className="remove-bg-alert-icon" aria-hidden="true">
+            <Layers size={28} />
+          </span>
+          <div className="remove-bg-alert-copy">
+            <strong id="remove-bg-alert-title">这次没有抠图成功</strong>
+            <p>{message}</p>
+          </div>
+          <div className="remove-bg-alert-actions">
+            <button type="button" onClick={onDismiss}>
+              关闭
+            </button>
+            <button type="button" className="is-primary" onClick={onRecharge}>
+              去充值
+            </button>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -12306,7 +12339,12 @@ function WatermarkComposer({
   );
 }
 
-function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
+function WatermarkRemovalView({
+  authUser,
+  onOpenAuth,
+  onOpenFeature,
+  isActive = true,
+}) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [credits, setCredits] = useState(null);
@@ -12441,6 +12479,16 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
     });
   }
 
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root">
       <div className="image-filter-tabs watermark-filter-tabs">
@@ -12497,6 +12545,8 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
               setSubmittedTaskId(null);
             }}
             onRepeat={repeatTask}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (
@@ -13363,6 +13413,7 @@ function ImageFeaturePage({
           <WatermarkRemovalView
             authUser={authUser}
             onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
             isActive={activeNav === "watermark"}
           />
         </FeatureModuleKeepAlive>
@@ -13374,6 +13425,7 @@ function ImageFeaturePage({
           <VoiceSynthesisView
             authUser={authUser}
             onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
             resetSignal={audioResetSignals.voice}
           />
         </FeatureModuleKeepAlive>
@@ -13382,14 +13434,21 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <VoiceConvertView resetSignal={audioResetSignals["voice-convert"]} />
+          <VoiceConvertView
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals["voice-convert"]}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="transcribe"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView authUser={authUser} resetSignal={audioResetSignals.transcribe} />
+          <TranscribeView
+            authUser={authUser}
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals.transcribe}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -13410,7 +13469,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MusicGenerationView resetSignal={audioResetSignals.music} />
+          <MusicGenerationView
+            onOpenFeature={handleNavChange}
+            resetSignal={audioResetSignals.music}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="replicate"
@@ -13424,14 +13486,14 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <EnhanceView />
+          <EnhanceView onOpenFeature={handleNavChange} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="remove-bg"
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <RemoveBgView />
+          <RemoveBgView onOpenFeature={handleNavChange} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="video-voice"
@@ -13440,6 +13502,7 @@ function ImageFeaturePage({
         >
           <VideoDubbingView
             authUser={authUser}
+            onOpenFeature={handleNavChange}
             resetSignal={audioResetSignals["video-voice"]}
           />
         </FeatureModuleKeepAlive>

@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
+import {
+  CreditAlertDialog,
+  isRechargeRequiredMessage,
+} from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { enhanceApi } from "./enhanceApi";
 
@@ -27,7 +31,15 @@ function formatBytes(bytes) {
   return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
-function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
+function EnhanceCenterState({
+  task,
+  isSubmitting,
+  error,
+  onReset,
+  onRepeat,
+  onDismiss,
+  onRecharge,
+}) {
   const isVideo = task?.mediaType === "video";
 
   if (task?.status === "completed" && task.resultUrl) {
@@ -74,13 +86,27 @@ function EnhanceCenterState({ task, isSubmitting, error, onReset, onRepeat }) {
   }
 
   if (error || task?.status === "failed") {
+    const message =
+      error || task?.error || "画质增强服务返回错误，积分会按任务状态自动处理。";
+    if (isRechargeRequiredMessage(message)) {
+      return (
+        <CreditAlertDialog
+          title="这次没有提升成功"
+          message={message}
+          icon={<Wand2 size={28} />}
+          onClose={onDismiss}
+          onRecharge={onRecharge}
+        />
+      );
+    }
+
     return (
       <section className="watermark-center-state enhance-center-state is-failed">
         <span className="watermark-center-icon enhance-center-icon">
           <Wand2 size={24} />
         </span>
         <strong>这次没有增强成功</strong>
-        <p>{error || task?.error || "画质增强服务返回错误，积分会按任务状态自动处理。"}</p>
+        <p>{message}</p>
       </section>
     );
   }
@@ -335,7 +361,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   );
 }
 
-export function EnhanceView() {
+export function EnhanceView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [credits, setCredits] = useState(null);
@@ -446,6 +472,16 @@ export function EnhanceView() {
     });
   }
 
+  function dismissCenterState() {
+    setSubmitError("");
+    setSubmittedTaskId(null);
+  }
+
+  function goToRecharge() {
+    dismissCenterState();
+    onOpenFeature?.("billing");
+  }
+
   return (
     <section className="watermark-view-root enhance-view-root">
       <div className="image-filter-tabs watermark-filter-tabs enhance-filter-tabs">
@@ -482,6 +518,8 @@ export function EnhanceView() {
               setSubmittedTaskId(null);
             }}
             onRepeat={repeatTask}
+            onDismiss={dismissCenterState}
+            onRecharge={goToRecharge}
           />
         )}
         {showRecentEmpty && (

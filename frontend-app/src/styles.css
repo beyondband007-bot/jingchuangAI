@@ -39167,6 +39167,140 @@ section.video-gen-view-root .video-composer .chatbot-ui-dialog {
   padding: 12px !important;
 }
 
+.remove-bg-alert-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.remove-bg-alert-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 22, 34, 0.42);
+  border: 0;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.remove-bg-alert-dialog {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  width: min(420px, calc(100vw - 40px));
+  padding: 34px 26px 24px;
+  color: #292733;
+  text-align: center;
+  background: #fff;
+  border: 1px solid rgba(236, 234, 243, 0.96);
+  border-radius: 20px;
+  box-shadow:
+    0 28px 90px rgba(24, 20, 42, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.82) inset;
+  animation: logout-confirm-in 220ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.remove-bg-alert-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  color: #777586;
+  background: #fbfaff;
+  border: 1px solid #f0edf7;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.remove-bg-alert-close:hover,
+.remove-bg-alert-close:focus-visible {
+  color: #292733;
+  background: #fff;
+  border-color: #e5dff4;
+  outline: none;
+}
+
+.remove-bg-alert-icon {
+  display: grid;
+  width: 66px;
+  height: 66px;
+  place-items: center;
+  margin-bottom: 18px;
+  color: #ef4444;
+  background: linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%);
+  border: 1px solid #fecdd3;
+  border-radius: 20px;
+}
+
+.remove-bg-alert-copy {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.remove-bg-alert-copy strong {
+  color: #292733;
+  font-size: 20px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.remove-bg-alert-copy p {
+  margin: 0;
+  color: #817c91;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.remove-bg-alert-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.remove-bg-alert-actions button {
+  min-height: 44px;
+  color: #6d3cff;
+  background: #fff;
+  border: 1px solid #ded8f3;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.remove-bg-alert-actions button:hover,
+.remove-bg-alert-actions button:focus-visible {
+  border-color: #cfc1ff;
+  box-shadow: 0 10px 24px rgba(109, 60, 255, 0.12);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.remove-bg-alert-actions button.is-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #9a72ff 0%, #6d3cff 100%);
+  border-color: transparent;
+  box-shadow: 0 14px 30px rgba(109, 60, 255, 0.26);
+}
+
 section.video-gen-view
   .video-composer
   .chatbot-ui-dialog:not(.is-collapsed)
