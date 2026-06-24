@@ -35066,7 +35066,6 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 .delete-confirm-actions button:hover:not(:disabled),
 .delete-confirm-actions button:focus-visible {
-  color: #292733;
   background: #fbfaff;
   border-color: #dcd7ea;
   box-shadow: 0 14px 28px rgba(47, 42, 80, 0.1);
