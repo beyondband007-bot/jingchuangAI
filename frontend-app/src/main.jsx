@@ -479,18 +479,11 @@ function arrangeInspirationCards(cards, columnCount = 6) {
   return arranged;
 }
 
-function arrangeInspirationCardsByBatch(
-  cards,
-  columnCount = 6,
-  batchSize = 30,
-) {
+function arrangeInspirationCardsByBatch(cards, columnCount = 6, batchSize = 30) {
   const arranged = [];
   for (let index = 0; index < cards.length; index += batchSize) {
     arranged.push(
-      ...arrangeInspirationCards(
-        cards.slice(index, index + batchSize),
-        columnCount,
-      ),
+      ...arrangeInspirationCards(cards.slice(index, index + batchSize), columnCount),
     );
   }
   return arranged;
@@ -514,7 +507,8 @@ const exampleImages = imgInspirationManifest.map((item, index) => ({
   hdSrc: item.imageWebp || item.imageJpg,
   hdFallbackSrc: item.imageJpg || item.imageWebp,
   label:
-    item.title || `${item.categoryLabel} ${String(index + 1).padStart(2, "0")}`,
+    item.title ||
+    `${item.categoryLabel} ${String(index + 1).padStart(2, "0")}`,
   prompt: item.prompt || item.title || `${item.categoryLabel}灵感图`,
   description: item.description || "",
   style: item.categoryLabel || "",
@@ -555,6 +549,7 @@ const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "creation", label: "创作中心", icon: Sparkles },
   { id: "assets", label: "我的资产", icon: Wallet },
+  { id: "billing", label: "积分充值", icon: Wallet },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
@@ -600,6 +595,7 @@ const navSections = [
     children: ["voice", "music", "voice-convert", "transcribe", "video-voice"],
   },
   { type: "item", id: "assets" },
+  { type: "item", id: "billing" },
 ];
 
 const homeFeatureRoutes = [
@@ -625,8 +621,7 @@ const faceminiAsset = (path) => `/assets/facemini/${path}`;
 const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
 const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
 const inspirationFavoritesStorageKey = "facemini:inspiration-favorites";
-const inspirationFavoritesChangedEvent =
-  "facemini-inspiration-favorites-changed";
+const inspirationFavoritesChangedEvent = "facemini-inspiration-favorites-changed";
 
 function getInspirationFavoriteId(item) {
   return item?.id ? String(item.id) : "";
@@ -665,9 +660,7 @@ function publishInspirationFavoriteIds(ids) {
 async function loadInspirationFavoriteIds({ allowFallback = true } = {}) {
   try {
     const result = await imageApi.getInspirationFavorites();
-    const ids = new Set(
-      Array.isArray(result?.ids) ? result.ids.map(String) : [],
-    );
+    const ids = new Set(Array.isArray(result?.ids) ? result.ids.map(String) : []);
     publishInspirationFavoriteIds(ids);
     return ids;
   } catch (error) {
@@ -2250,19 +2243,10 @@ const AppHome = memo(function AppHome({
         <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
           <BrandWordmark />
         </button>
-        <div className="fm-home-nav-center">
+        <div>
           <a href="#why">关于我们</a>
           <a href="#modules">关于产品</a>
           <a href="#footer">探索我们</a>
-        </div>
-        <div className="fm-home-actions">
-          <button
-            type="button"
-            className="fm-primary fm-home-enter-creation"
-            onClick={() => onOpenFeature("creation")}
-          >
-            开始探索
-          </button>
         </div>
       </nav>
       <section className="fm-hero-section">
@@ -2405,9 +2389,9 @@ function CreationCenterView({
       ? fmImageGenerationInspirations
       : activeTab === "视频灵感"
         ? getFaceminiVideoInspirations()
-        : activeTab === "数字人形象"
-          ? fmDigitalHumanInspirations
-          : fmImageInspirations.filter((item) => item.category === activeTab);
+      : activeTab === "数字人形象"
+        ? fmDigitalHumanInspirations
+      : fmImageInspirations.filter((item) => item.category === activeTab);
   const visibleFilteredImages = useIncrementalItems(
     filteredImages,
     `creation-${activeTab}-${filteredImages.length}`,
@@ -2432,9 +2416,7 @@ function CreationCenterView({
 
   useEffect(() => {
     if (!isLoggedInUser(authUser)) return;
-    loadInspirationFavoriteIds()
-      .then(setFavoriteInspirationIds)
-      .catch(() => {});
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
   }, [authUser?.id]);
 
   const advanceHeroBanner = useCallback(() => {
@@ -2459,8 +2441,7 @@ function CreationCenterView({
       favorite: favoriteInspirationIds.has(favoriteId),
       image: resolveFaceminiInspirationImageUrl(item),
       material:
-        item.material ||
-        (item.category === "数字人形象" ? "视频封面" : "高清原图"),
+        item.material || (item.category === "数字人形象" ? "视频封面" : "高清原图"),
       model: item.model || route.model,
     });
   }
@@ -2476,8 +2457,7 @@ function CreationCenterView({
     const nextIds = readInspirationFavoriteIds();
     setFavoriteInspirationIds(nextIds);
     setModalItem((current) =>
-      current &&
-      getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
+      current && getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
         ? { ...current, favorite: nextValue }
         : current,
     );
@@ -2678,9 +2658,7 @@ function CreationCenterView({
           )}
         />
         <IncrementalLoadMoreIndicator
-          active={
-            visibleFilteredImages.isLoadingMore && visibleFilteredImages.hasMore
-          }
+          active={visibleFilteredImages.isLoadingMore && visibleFilteredImages.hasMore}
         />
       </section>
       <FaceminiInspirationModal
@@ -2731,24 +2709,8 @@ const FeatureSidebar = memo(function FeatureSidebar({
     setOpenGroups((current) => ({ ...current, [id]: !current[id] }));
   }, []);
 
-  const openAssetsGallery = useCallback(() => {
-    try {
-      window.sessionStorage.setItem(assetsViewModeStorageKey, "gallery");
-      window.sessionStorage.setItem(assetGalleryTabStorageKey, "全部");
-      window.sessionStorage.removeItem("facemini:assets-subtab");
-    } catch {
-      // Session storage can be unavailable in restricted browser contexts.
-    }
-    window.dispatchEvent(
-      new CustomEvent("facemini-assets-tab-change", {
-        detail: { tab: "全部", subTab: "", viewMode: "gallery" },
-      }),
-    );
-    onNavChange("assets");
-  }, [onNavChange]);
-
   const sidebarSections = navSections.filter(
-    (section) => section.id !== "assets",
+    (section) => section.id !== "assets" && section.id !== "billing",
   );
   const assetsItem = getNavItem("assets");
   const AssetsIcon = assetsItem?.icon;
@@ -2873,7 +2835,7 @@ const FeatureSidebar = memo(function FeatureSidebar({
             className={`feature-nav-item feature-nav-asset-bottom ${
               activeNav === "assets" ? "is-active" : ""
             }`}
-            onClick={openAssetsGallery}
+            onClick={() => onNavChange("assets")}
             type="button"
           >
             <AssetsIcon size={18} strokeWidth={1.9} />
@@ -2904,7 +2866,7 @@ function ComingSoon({ activeNav }) {
 
 const rechargePresets = [1, 10, 30, 50, 100, 200];
 const paymentCodeTtlSeconds = 3 * 60;
-const paymentResultTtlSeconds = 5;
+const paymentResultTtlSeconds = 3;
 const paymentProviderOptions = [
   { value: "alipay", label: "支付宝支付" },
   { value: "wechat", label: "微信支付" },
@@ -2997,7 +2959,7 @@ function paymentResultInfo(status) {
       REFUNDED: {
         tone: "cancel",
         title: "订单已退款",
-        message: "订单已退款，积分变动以收支记录为准",
+        message: "订单已退款，积分变动以积分明细为准",
         icon: RefreshCcw,
       },
     }[status] || {
@@ -3065,26 +3027,12 @@ function getAssetTimeRange(preset, startDate, endDate) {
     if (endDate) rangeEnd = new Date(`${endDate}T00:00:00`);
   }
 
-  const startMs =
-    rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
-      ? new Date(
-          rangeStart.getFullYear(),
-          rangeStart.getMonth(),
-          rangeStart.getDate(),
-        ).getTime()
-      : null;
-  const endMs =
-    rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime())
-      ? new Date(
-          rangeEnd.getFullYear(),
-          rangeEnd.getMonth(),
-          rangeEnd.getDate(),
-          23,
-          59,
-          59,
-          999,
-        ).getTime()
-      : null;
+  const startMs = rangeStart instanceof Date && Number.isFinite(rangeStart.getTime())
+    ? new Date(rangeStart.getFullYear(), rangeStart.getMonth(), rangeStart.getDate()).getTime()
+    : null;
+  const endMs = rangeEnd instanceof Date && Number.isFinite(rangeEnd.getTime())
+    ? new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), rangeEnd.getDate(), 23, 59, 59, 999).getTime()
+    : null;
 
   return {
     startDate: startMs !== null ? formatDateInputValue(new Date(startMs)) : "",
@@ -3201,12 +3149,10 @@ function CreditTransactionsPanel({
   transactionsTotalPages,
   transactionMeta,
   transactionFilter,
-  transactionKeyword,
   isLoading,
   onFilterChange,
-  onKeywordChange,
-  onSearchSubmit,
   onPageChange,
+  timeFilterControl,
 }) {
   return (
     <div className="fm-assets-transactions-view">
@@ -3223,15 +3169,7 @@ function CreditTransactionsPanel({
             </button>
           ))}
         </div>
-        <form className="fm-transaction-search" onSubmit={onSearchSubmit}>
-          <Search size={16} />
-          <input
-            value={transactionKeyword}
-            onChange={(event) => onKeywordChange(event.target.value)}
-            placeholder="搜索备注或类型"
-          />
-          <button type="submit">查询</button>
-        </form>
+        {timeFilterControl}
       </div>
       {transactions.length ? (
         <>
@@ -3251,10 +3189,10 @@ function CreditTransactionsPanel({
               const isIncome = Number(tx.amount || 0) > 0;
               return (
                 <div className="assets-transaction-row" key={tx.id}>
-                  <span>{new Date(tx.createdAt).toLocaleString("zh-CN")}</span>
-                  <span style={{ color: typeInfo.color }}>
-                    {typeInfo.label}
+                  <span>
+                    {new Date(tx.createdAt).toLocaleString("zh-CN")}
                   </span>
+                  <span style={{ color: typeInfo.color }}>{typeInfo.label}</span>
                   <span
                     style={{
                       color: isIncome ? "#16a34a" : "#dc2626",
@@ -3302,7 +3240,7 @@ function CreditTransactionsPanel({
       ) : (
         <div className="fm-assets-empty-state">
           <History size={34} />
-          <strong>{isLoading ? "正在加载账单" : "暂无收支记录"}</strong>
+          <strong>{isLoading ? "正在加载明细" : "暂无积分明细"}</strong>
           <p>
             {transactionFilter === "invitegift"
               ? "邀请奖励到账后会显示在这里"
@@ -3314,7 +3252,13 @@ function CreditTransactionsPanel({
   );
 }
 
-function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
+function AssetsPage({
+  authUser,
+  onOpenAuth,
+  onOpenFeature,
+  onOpenInvite,
+  pageMode = null,
+}) {
   const isGuest = !authUser || Boolean(authUser.isGuest);
   const [credits, setCredits] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -3332,7 +3276,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       const stored = window.sessionStorage.getItem(assetsViewModeStorageKey);
       if (
         stored === "profile" ||
-        stored === "billing" ||
         stored === "favorites" ||
         stored === "gallery"
       ) {
@@ -3353,8 +3296,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
   const [transactionFilter, setTransactionFilter] = useState("all");
-  const [transactionKeyword, setTransactionKeyword] = useState("");
-  const [transactionSearch, setTransactionSearch] = useState("");
   const [assetTimePreset, setAssetTimePreset] = useState("all");
   const [assetStartDate, setAssetStartDate] = useState("");
   const [assetEndDate, setAssetEndDate] = useState("");
@@ -3377,6 +3318,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
+  const effectiveViewMode = pageMode || viewMode;
 
   const points = Math.max(1, Number(amount) || 1) * 100;
   const totalCreations = userAssets.length;
@@ -3443,7 +3385,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
           type: transactionFilter,
           page: transactionsPage,
           pageSize: transactionsPageSize,
-          keyword: transactionSearch,
           startDate: assetTimeRange.startDate,
           endDate: assetTimeRange.endDate,
         }),
@@ -3464,10 +3405,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
       const monthlyConsumed = (monthDebitState.transactions || [])
-        .filter(
-          (tx) => new Date(tx.createdAt).getTime() >= monthStart.getTime(),
-        )
-        .reduce((sum, tx) => sum + Math.abs(Number(tx.amount) || 0), 0);
+        .filter((tx) => new Date(tx.createdAt).getTime() >= monthStart.getTime())
+        .reduce(
+          (sum, tx) => sum + Math.abs(Number(tx.amount) || 0),
+          0,
+        );
       setMonthlyConsumedCredits(monthlyConsumed);
       setCredits(creditsState);
       setOrders(orderState.orders || []);
@@ -3501,7 +3443,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     assetTimeRange.startDate,
     isGuest,
     transactionFilter,
-    transactionSearch,
     transactionsPage,
   ]);
 
@@ -3529,12 +3470,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   useEffect(() => {
     setTransactionsPage(1);
-  }, [
-    assetTimeRange.endDate,
-    assetTimeRange.startDate,
-    transactionFilter,
-    transactionSearch,
-  ]);
+  }, [assetTimeRange.endDate, assetTimeRange.startDate, transactionFilter]);
 
   function showPaymentResult(order, statusOverride) {
     const isExpiredClosedOrder =
@@ -3717,12 +3653,9 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       const nextSubTab = window.sessionStorage.getItem(
         "facemini:assets-subtab",
       );
-      const nextViewMode = window.sessionStorage.getItem(
-        assetsViewModeStorageKey,
-      );
+      const nextViewMode = window.sessionStorage.getItem(assetsViewModeStorageKey);
       if (
         nextViewMode === "profile" ||
-        nextViewMode === "billing" ||
         nextViewMode === "favorites" ||
         nextViewMode === "gallery"
       ) {
@@ -3732,8 +3665,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
         setActiveTab(nextSubTab);
       }
       if (
-        window.sessionStorage.getItem("facemini:open-transactions-modal") ===
-        "1"
+        window.sessionStorage.getItem("facemini:open-transactions-modal") === "1"
       ) {
         setShowTransactionsModal(true);
         window.sessionStorage.removeItem("facemini:open-transactions-modal");
@@ -3750,7 +3682,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       if (assetGalleryTabs.includes(nextTab)) setActiveAssetTab(nextTab);
       if (
         nextViewMode === "profile" ||
-        nextViewMode === "billing" ||
         nextViewMode === "favorites" ||
         nextViewMode === "gallery"
       ) {
@@ -3792,12 +3723,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
 
   function selectTransactionFilter(nextFilter) {
     setTransactionFilter(nextFilter);
-    setTransactionsPage(1);
-  }
-
-  function submitTransactionSearch(event) {
-    event.preventDefault();
-    setTransactionSearch(transactionKeyword.trim());
     setTransactionsPage(1);
   }
 
@@ -3918,8 +3843,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
   }
 
   function goToBillingView({ openTransactions = false } = {}) {
-    setViewMode("billing");
-    if (openTransactions) setShowTransactionsModal(true);
+    try {
+      if (openTransactions) {
+        window.sessionStorage.setItem("facemini:open-transactions-modal", "1");
+      }
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
+    onOpenFeature?.("billing");
   }
 
   async function copyInviteLink() {
@@ -3973,13 +3904,10 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     </div>
   );
 
-  if (viewMode === "gallery") {
+  if (effectiveViewMode === "gallery") {
     return (
       <section className="assets-view-root fm-assets-gallery-view">
         <div className="fm-assets-inner">
-          <div className="fm-assets-headline">
-            <h2>我的资产</h2>
-          </div>
           <div className="fm-assets-filter-row">
             <div className="fm-assets-tabs" aria-label="????">
               {assetGalleryTabs.map((tab) => (
@@ -4015,7 +3943,11 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     <img src={card.src} alt={card.title} loading="lazy" />
                   ) : (
                     <div className="fm-asset-placeholder">
-                      {card.isVideo ? <Video size={28} /> : <Image size={28} />}
+                      {card.isVideo ? (
+                        <Video size={28} />
+                      ) : (
+                        <Image size={28} />
+                      )}
                     </div>
                   )}
                   <span>{card.type}</span>
@@ -4093,7 +4025,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     );
   }
 
-  if (viewMode === "profile") {
+  if (effectiveViewMode === "profile") {
     return (
       <section className="assets-view-root fm-profile-center-view">
         {isGuest ? (
@@ -4206,7 +4138,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     );
   }
 
-  if (viewMode === "favorites") {
+  if (effectiveViewMode === "favorites") {
     return (
       <section className="assets-view-root fm-assets-gallery-view fm-favorites-view">
         {isGuest ? (
@@ -4233,10 +4165,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <h2>我的收藏</h2>
             </div>
             <div className="fm-assets-filter-row">
-              <div
-                className="fm-assets-tabs fm-favorites-tabs"
-                aria-label="我的收藏分类"
-              >
+              <div className="fm-assets-tabs fm-favorites-tabs" aria-label="我的收藏分类">
                 {favoriteModuleTabs.map((tab) => (
                   <button
                     className={tab === favoriteTab ? "is-active" : ""}
@@ -4379,34 +4308,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
       })()
     : "";
 
-  function scrollToRechargePanel() {
-    document
-      .getElementById("fm-billing-recharge")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
   return (
     <section className="assets-view-root fm-profile-billing-view">
-      <header className="assets-toolbar fm-billing-toolbar">
-        <div>
-          <h1>充值与明细</h1>
-          <p>积分充值、消费记录与订单查询</p>
-        </div>
-        <button
-          className="assets-icon-button"
-          type="button"
-          onClick={refreshAssets}
-          disabled={isLoading || isGuest}
-          aria-label="刷新账单"
-        >
-          <RefreshCcw size={18} className={isLoading ? "is-spinning" : ""} />
-        </button>
-      </header>
-
       {isGuest ? (
         <div className="assets-login-panel">
           <Wallet size={32} />
-          <strong>登录后查看充值与明细</strong>
+          <strong>登录后进行积分充值</strong>
           <p>登录后可查看积分余额、充值记录和消费明细</p>
           <button type="button" onClick={() => onOpenAuth("login")}>
             登录
@@ -4421,23 +4328,21 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <small>1 元 = 100 积分</small>
             </div>
             <div className="assets-balance-actions">
-              <button type="button" onClick={scrollToRechargePanel}>
-                <Wallet size={18} />
-                立即充值
-              </button>
               <button
-                className="is-ghost"
                 type="button"
                 onClick={() => setShowTransactionsModal(true)}
               >
                 <History size={18} />
-                收支记录
+                积分明细
               </button>
             </div>
           </div>
 
           <div className="fm-billing-workspace">
-            <div className="fm-billing-recharge-card" id="fm-billing-recharge">
+            <div
+              className="fm-billing-recharge-card"
+              id="fm-billing-recharge"
+            >
               <div className="assets-section-title">
                 <Wallet size={18} />
                 <strong>在线充值</strong>
@@ -4511,7 +4416,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               <div className="fm-billing-side-card fm-billing-records-card">
                 <div className="assets-section-title">
                   <History size={18} />
-                  <strong>收支记录</strong>
+                  <strong>最近支出</strong>
                 </div>
                 {latestTransaction ? (
                   <button
@@ -4542,14 +4447,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                     </em>
                   </button>
                 ) : (
-                  <div className="assets-empty-state">暂无收支记录</div>
+                  <div className="assets-empty-state">暂无积分明细</div>
                 )}
                 <button
                   className="fm-billing-side-link"
                   type="button"
                   onClick={() => setShowTransactionsModal(true)}
                 >
-                  查看全部收支记录
+                  查看全部积分明细
                 </button>
               </div>
 
@@ -4600,12 +4505,12 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
             className="fm-transactions-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="收支记录"
+            aria-label="积分明细"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="fm-transactions-modal-head">
               <div>
-                <strong>收支记录</strong>
+                <strong>积分明细</strong>
                 <span>积分流水明细</span>
               </div>
               <button
@@ -4617,19 +4522,16 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
                 <X size={18} />
               </button>
             </div>
-            {assetTimeFilterControl}
             <CreditTransactionsPanel
               transactions={visibleTransactions}
               transactionsPage={transactionsPage}
               transactionsTotalPages={transactionsTotalPages}
               transactionMeta={transactionMeta}
               transactionFilter={transactionFilter}
-              transactionKeyword={transactionKeyword}
               isLoading={isLoading}
               onFilterChange={selectTransactionFilter}
-              onKeywordChange={setTransactionKeyword}
-              onSearchSubmit={submitTransactionSearch}
               onPageChange={setTransactionsPage}
+              timeFilterControl={assetTimeFilterControl}
             />
           </div>
         </div>
@@ -4684,9 +4586,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               </em>
               <span>到账积分</span>
               <strong>
-                {Number(paymentDialog.order?.points || 0).toLocaleString(
-                  "zh-CN",
-                )}{" "}
+                {Number(paymentDialog.order?.points || 0).toLocaleString("zh-CN")}{" "}
                 积分
               </strong>
             </div>
@@ -4719,9 +4619,6 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
             >
               <X size={18} />
             </button>
-            <div className="assets-result-icon">
-              {React.createElement(paymentResultDialog.icon, { size: 30 })}
-            </div>
             <div className="assets-payment-dialog-head">
               <span>
                 {paymentProviderText(
@@ -4730,19 +4627,14 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
               </span>
               <strong>{paymentResultDialog.title}</strong>
             </div>
-            <p className="assets-result-message">
-              {paymentResultDialog.message}
-            </p>
+            <p className="assets-result-message">{paymentResultDialog.message}</p>
             {paymentResultDialog.order?.outTradeNo && (
               <div className="assets-dialog-meta-card">
                 <span>订单号</span>
                 <strong>{paymentResultDialog.order.outTradeNo}</strong>
                 <span>支付金额</span>
                 <em>
-                  ¥{" "}
-                  {Number(paymentResultDialog.order.totalAmount || 0).toFixed(
-                    0,
-                  )}
+                  ¥ {Number(paymentResultDialog.order.totalAmount || 0).toFixed(0)}
                 </em>
                 <span>订单状态</span>
                 <strong>{paymentStatusText(paymentResultDialog.status)}</strong>
@@ -4758,6 +4650,7 @@ function AssetsPage({ authUser, onOpenAuth, onOpenFeature, onOpenInvite }) {
     </section>
   );
 }
+
 
 function ResultCard({
   card,
@@ -4788,9 +4681,7 @@ function ResultCard({
         className={`result-preview ${card.grid ? "preview-grid" : ""} ${shouldShowPlaceholder ? "is-placeholder-preview" : ""}`}
         role={canPreview && isImageGallery ? "button" : undefined}
         tabIndex={canPreview && isImageGallery ? 0 : undefined}
-        onClick={
-          canPreview && isImageGallery ? () => onPreview(card) : undefined
-        }
+        onClick={canPreview && isImageGallery ? () => onPreview(card) : undefined}
         onKeyDown={
           canPreview && isImageGallery
             ? (event) => {
@@ -4843,27 +4734,25 @@ function ResultCard({
         )}
       </div>
       {!isImageGallery && (
-        <div className="result-meta">
-          <div className="tag-row">
-            {!isImageGallery && <span className="model-tag">{card.model}</span>}
-            {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
-            {!isImageGallery && (
-              <span className="quality-tag">{card.quality}</span>
-            )}
-            {card.referenceImageUrl && !isImageGallery && (
-              <span className="reference-tag">参考图</span>
-            )}
-            {card.count > 1 && (
-              <span className="count-tag">{card.count}张</span>
-            )}
-          </div>
+      <div className="result-meta">
+        <div className="tag-row">
+          {!isImageGallery && <span className="model-tag">{card.model}</span>}
+          {!isImageGallery && <span className="ratio-tag">{card.ratio}</span>}
           {!isImageGallery && (
-            <div className="time-row">
-              <span>{card.time || "示例"}</span>
-              <strong>{card.price}</strong>
-            </div>
+            <span className="quality-tag">{card.quality}</span>
           )}
-          <>
+          {card.referenceImageUrl && !isImageGallery && (
+            <span className="reference-tag">参考图</span>
+          )}
+          {card.count > 1 && <span className="count-tag">{card.count}张</span>}
+        </div>
+        {!isImageGallery && (
+          <div className="time-row">
+            <span>{card.time || "示例"}</span>
+            <strong>{card.price}</strong>
+          </div>
+        )}
+        <>
             <p>{card.error || card.prompt}</p>
             <div className="card-actions">
               <button
@@ -4908,7 +4797,7 @@ function ResultCard({
               </button>
             </div>
           </>
-        </div>
+      </div>
       )}
     </article>
   );
@@ -4980,13 +4869,7 @@ function ReferenceImageSlot({ image, isUploading, onRemove }) {
   );
 }
 
-function ReferenceMediaSlot({
-  image,
-  video,
-  isUploading,
-  onRemoveImage,
-  onRemoveVideo,
-}) {
+function ReferenceMediaSlot({ image, video, isUploading, onRemoveImage, onRemoveVideo }) {
   const media = image || video;
   const isVideo = Boolean(video);
   if (!media && !isUploading) return null;
@@ -5020,14 +4903,10 @@ function ReferenceMediaSlot({
           )}
         </span>
         <span className="image-reference-meta">
-          <strong
-            title={media?.originalName || (isVideo ? "参考视频" : "参考图")}
-          >
+          <strong title={media?.originalName || (isVideo ? "参考视频" : "参考图")}>
             {media?.originalName || (isVideo ? "参考视频" : "参考图")}
           </strong>
-          <small>
-            {isVideo ? "视频参考素材" : formatReferenceImageSize(media?.size)}
-          </small>
+          <small>{isVideo ? "视频参考素材" : formatReferenceImageSize(media?.size)}</small>
         </span>
         <button
           type="button"
@@ -5321,7 +5200,12 @@ function ImageGenerationWorkbench({
       scrollContextToLatest(isSubmitting ? "smooth" : "auto");
     }
     wasSubmittingRef.current = isSubmitting;
-  }, [isSubmitting, scrollContextToLatest, submitError, threadSignature]);
+  }, [
+    isSubmitting,
+    scrollContextToLatest,
+    submitError,
+    threadSignature,
+  ]);
 
   function getImageHistoryTime(task, thread) {
     const rawValue =
@@ -5542,9 +5426,7 @@ const imageGenerationThreadsKey = "jingchuang:image-generation-threads";
 function normalizeImageOptions(value) {
   return {
     ...emptyOptions,
-    ...(value && typeof value === "object" && !Array.isArray(value)
-      ? value
-      : {}),
+    ...(value && typeof value === "object" && !Array.isArray(value) ? value : {}),
     models: Array.isArray(value?.models) ? value.models : [],
     ratios: Array.isArray(value?.ratios) ? value.ratios : [],
     qualities: Array.isArray(value?.qualities) ? value.qualities : [],
@@ -6802,9 +6684,7 @@ function ImageGenerationView({
 
   useEffect(() => {
     if (!isLoggedInUser(authUser)) return;
-    loadInspirationFavoriteIds()
-      .then(setFavoriteInspirationIds)
-      .catch(() => {});
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
   }, [authUser?.id]);
 
   const canvasStatus = useMemo(() => {
@@ -7838,9 +7718,7 @@ function VideoComposerBar({
   }
 
   useEffect(() => {
-    const hasSelectedModel = options.models.some(
-      (item) => item.value === model,
-    );
+    const hasSelectedModel = options.models.some((item) => item.value === model);
     if (!model || !hasSelectedModel) {
       const defaultModel = pickDefaultVideoModel(options.models);
       if (defaultModel) setModel(defaultModel);
@@ -7892,12 +7770,7 @@ function VideoComposerBar({
     count,
     models: options.models,
   });
-  const canSubmit =
-    prompt.trim().length > 0 &&
-    model &&
-    ratio &&
-    duration &&
-    !isUploadingReference;
+  const canSubmit = prompt.trim().length > 0 && model && ratio && duration && !isUploadingReference;
 
   function clearPrompt() {
     setPrompt("");
@@ -8251,8 +8124,7 @@ function VideoGenerationView({
   );
   const isComposerSticky = filter === "inspiration" && isComposerPastThreshold;
   const isComposerCollapsed = isComposerSticky && !isComposerFocused;
-  const showVideoComposer =
-    options.models.length > 0 && filter === "inspiration";
+  const showVideoComposer = options.models.length > 0 && filter === "inspiration";
   const canRenderVideoInspirationGrid =
     filter !== "inspiration" || isVideoInspirationGridReady;
 
@@ -8373,10 +8245,7 @@ function VideoGenerationView({
       )}
       {filter === "inspiration" && canRenderVideoInspirationGrid ? (
         <>
-          <div
-            className="video-inspiration-category-tabs"
-            aria-label="视频分类"
-          >
+          <div className="video-inspiration-category-tabs" aria-label="视频分类">
             {videoInspirationCategoryTabs.map((category) => (
               <button
                 key={category.id}
@@ -8396,10 +8265,7 @@ function VideoGenerationView({
             maxColumns={4}
             items={visibleVideoInspirationItems.items}
             renderItem={(item) => (
-              <VideoInspirationCard
-                item={item}
-                onOpen={setSelectedInspiration}
-              />
+              <VideoInspirationCard item={item} onOpen={setSelectedInspiration} />
             )}
           />
           <IncrementalLoadMoreIndicator
@@ -9037,10 +8903,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
         <ChevronDown size={16} />
       </button>
       {isOpen && (
-        <aside
-          className="history-rail chat-history-rail"
-          aria-label="AI 对话历史"
-        >
+        <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
           <div className="history-rail-header">
             <span>历史对话</span>
             <strong>{conversations.length}</strong>
@@ -9347,9 +9210,7 @@ function readLocalAudioDurationMs(file) {
     const objectUrl = window.URL.createObjectURL(file);
     audio.preload = "metadata";
     audio.onloadedmetadata = () => {
-      const durationMs = Number.isFinite(audio.duration)
-        ? Math.round(audio.duration * 1000)
-        : 0;
+      const durationMs = Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0;
       window.URL.revokeObjectURL(objectUrl);
       resolve(durationMs);
     };
@@ -9881,27 +9742,14 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
   }
 
   return (
-    <div
-      className="dh-modal-backdrop"
-      role="dialog"
-      aria-modal="true"
-      onMouseDown={onClose}
-    >
-      <div
-        className="dh-modal"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
+    <div className="dh-modal-backdrop" role="dialog" aria-modal="true" onMouseDown={onClose}>
+      <div className="dh-modal" onMouseDown={(event) => event.stopPropagation()}>
         <div className="dh-modal-header">
           <div>
             <span>创建形象</span>
             <strong>上传形象图</strong>
           </div>
-          <button
-            className="dh-modal-close-button"
-            type="button"
-            onClick={onClose}
-            aria-label="关闭"
-          >
+          <button className="dh-modal-close-button" type="button" onClick={onClose} aria-label="关闭">
             <X size={18} />
           </button>
         </div>
@@ -9963,19 +9811,10 @@ function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
           {notice && <div className="dh-form-notice">{notice}</div>}
         </div>
         <div className="dh-modal-footer">
-          <button
-            className="dh-modal-secondary-button"
-            type="button"
-            onClick={onClose}
-          >
+          <button className="dh-modal-secondary-button" type="button" onClick={onClose}>
             取消
           </button>
-          <button
-            className="dh-modal-primary-button"
-            type="button"
-            onClick={submit}
-            disabled={isSubmitting}
-          >
+          <button className="dh-modal-primary-button" type="button" onClick={submit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
             创建形象
           </button>
@@ -10068,9 +9907,10 @@ function DigitalHumanConfigPanel({
   const isPreviewCurrent =
     voicePreviewInfo?.signature === currentPreviewSignature;
   const isAudioDrive = driveMode === "audio" && Boolean(audioFile);
-  const currentAudioTooLong = isAudioDrive
-    ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
-    : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
+  const currentAudioTooLong =
+    isAudioDrive
+      ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
+      : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
 
   function showToast(message) {
     if (onToast) {
@@ -10146,7 +9986,7 @@ function DigitalHumanConfigPanel({
       setAudioFile({
         ...uploaded,
         name: uploaded.originalName || uploaded.name || file.name,
-        durationMs,
+        durationMs
       });
       setDriveMode("audio");
       setText("");
@@ -10342,12 +10182,8 @@ function DigitalHumanConfigPanel({
           type="button"
           onClick={submit}
           disabled={isSubmitting || isUploadingAudio || currentAudioTooLong}
-          data-tooltip={
-            isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"
-          }
-          aria-label={
-            isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"
-          }
+          data-tooltip={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
+          aria-label={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
           <span>生成</span>
@@ -10565,14 +10401,12 @@ function DigitalHumanGenerationView({
     setSelectedAvatar((current) => (current?.id === id ? null : current));
   }
 
-  const {
-    requestDelete: deleteAvatar,
-    deleteConfirmDialog: avatarDeleteDialog,
-  } = useDeleteConfirmation({
-    onConfirm: performDeleteAvatar,
-    title: "删除数字人形象？",
-    message: "该形象会从我的形象库中移除，删除后无法恢复。",
-  });
+  const { requestDelete: deleteAvatar, deleteConfirmDialog: avatarDeleteDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteAvatar,
+      title: "删除数字人形象？",
+      message: "该形象会从我的形象库中移除，删除后无法恢复。",
+    });
 
   async function renameAvatar(avatar) {
     const nextName = window.prompt("输入新的形象名称", avatar.name);
@@ -11323,8 +11157,7 @@ function MotionTransferUploadSlot({
           {cleanDisplayName(
             asset.fileName,
             kind === "image" ? "图片素材" : "视频素材",
-          )}{" "}
-          · {formatBytes(asset.sizeBytes)}
+          )} · {formatBytes(asset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -11341,11 +11174,7 @@ function MotionValidationDialog({ message, onClose }) {
   if (!message) return null;
 
   return (
-    <div
-      className="face-swap-workbench__dialog-backdrop"
-      role="presentation"
-      onMouseDown={onClose}
-    >
+    <div className="face-swap-workbench__dialog-backdrop" role="presentation" onMouseDown={onClose}>
       <section
         className="face-swap-workbench__dialog"
         role="dialog"
@@ -11354,12 +11183,7 @@ function MotionValidationDialog({ message, onClose }) {
         aria-describedby="motion-validation-desc"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button
-          className="face-swap-workbench__dialog-close"
-          type="button"
-          aria-label="关闭提示"
-          onClick={onClose}
-        >
+        <button className="face-swap-workbench__dialog-close" type="button" aria-label="关闭提示" onClick={onClose}>
           <X size={18} />
         </button>
         <div className="face-swap-workbench__dialog-icon">
@@ -11464,10 +11288,7 @@ function MotionTransferComposer({
     try {
       const uploadedAsset = await api.uploadImage(file);
       if (!activeRef.current) return;
-      setImageAsset({
-        ...uploadedAsset,
-        fileName: file.name || uploadedAsset.fileName,
-      });
+      setImageAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       if (!activeRef.current) return;
       setImagePreview("");
@@ -11495,10 +11316,7 @@ function MotionTransferComposer({
     try {
       const uploadedAsset = await api.uploadVideo(file);
       if (!activeRef.current) return;
-      setVideoAsset({
-        ...uploadedAsset,
-        fileName: file.name || uploadedAsset.fileName,
-      });
+      setVideoAsset({ ...uploadedAsset, fileName: file.name || uploadedAsset.fileName });
     } catch (error) {
       if (!activeRef.current) return;
       setVideoPreview("");
@@ -12246,11 +12064,7 @@ function WatermarkUploadSlot({
       )}
       {sourceAsset && (
         <small>
-          {cleanDisplayName(
-            sourceAsset.fileName,
-            isVideo ? "视频素材" : "图片素材",
-          )}{" "}
-          · {formatBytes(sourceAsset.sizeBytes)}
+          {cleanDisplayName(sourceAsset.fileName, isVideo ? "视频素材" : "图片素材")} · {formatBytes(sourceAsset.sizeBytes)}
         </small>
       )}
       {isUploading && (
@@ -12682,17 +12496,17 @@ function WatermarkRemovalView({ authUser, onOpenAuth, isActive = true }) {
   );
 }
 
-/** 各功能模块首次进入后常驻 DOM锛屼粎鍒囨崲 display锛岄伩鍏嶄晶鏍忓垏鎹㈡椂鍗歌浇瀵艰嚧鐘舵€佷涪澶?*/
+/** Feature modules unmount when inactive so re-entering a page starts fresh. */
 function FeatureModuleKeepAlive({ id, activeNav, visitedIds, children }) {
-  if (!visitedIds.has(id)) return null;
   const isActive = activeNav === id;
+  if (!isActive || !visitedIds.has(id)) return null;
   return (
     <div
       className="feature-module-keepalive"
-      style={{ display: isActive ? "contents" : "none" }}
-      aria-hidden={!isActive}
+      style={{ display: "contents" }}
+      aria-hidden="false"
       data-feature-module={id}
-      data-feature-active={isActive ? "true" : "false"}
+      data-feature-active="true"
     >
       {children}
     </div>
@@ -13080,18 +12894,16 @@ function WorkbenchTopbar({
 
   function openBillingCenter({ openTransactions = false } = {}) {
     try {
-      window.sessionStorage.setItem(assetsViewModeStorageKey, "billing");
       if (openTransactions) {
         window.sessionStorage.setItem("facemini:open-transactions-modal", "1");
       }
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    onNavChange?.("assets");
+    onNavChange?.("billing");
     window.dispatchEvent(
       new CustomEvent("facemini-assets-tab-change", {
         detail: {
-          viewMode: "billing",
           openTransactionsModal: openTransactions,
         },
       }),
@@ -13149,25 +12961,18 @@ function WorkbenchTopbar({
             邀请有礼
           </button>
           {isLoggedIn && (
-            <div
+            <button
               className={`fm-credit-pill ${creditDelta ? "is-boosting" : ""}`}
+              type="button"
+              aria-label="打开充值与明细"
+              onClick={() => openBillingCenter()}
             >
-              <span className="fm-credit-pill__balance">
-                积分余额{" "}
-                <strong>{(displayCredits ?? 0).toLocaleString("zh-CN")}</strong>
-              </span>
-              <button
-                type="button"
-                className="fm-credit-pill__recharge"
-                onClick={() => openBillingCenter()}
-                aria-label="充值"
-              >
-                充值
-              </button>
+              <Zap size={17} />
+              {displayCredits ?? 0}
               {creditDelta && (
                 <span className="fm-credit-delta">+{creditDelta}</span>
               )}
-            </div>
+            </button>
           )}
           <button className="fm-top-bell" type="button" aria-label="通知">
             <Bell size={21} />
@@ -13310,12 +13115,10 @@ function ImageFeaturePage({
       }
       if (featureNavIdSet.has(nextId)) {
         window.history.pushState(null, "", `#/${nextId}`);
+        setVisitedIds((prev) => new Set(prev).add(nextId));
       }
       setActiveNav((current) => {
-        if (
-          current !== nextId &&
-          Object.prototype.hasOwnProperty.call(audioResetSignals, current)
-        ) {
+        if (current !== nextId && Object.prototype.hasOwnProperty.call(audioResetSignals, current)) {
           setAudioResetSignals((signals) => ({
             ...signals,
             [current]: signals[current] + 1,
@@ -13436,6 +13239,19 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
+          id="billing"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="billing"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
           id="image"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -13520,10 +13336,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <TranscribeView
-            authUser={authUser}
-            resetSignal={audioResetSignals.transcribe}
-          />
+          <TranscribeView authUser={authUser} resetSignal={audioResetSignals.transcribe} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="article"
@@ -13551,10 +13364,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <ReplicateView
-            authUser={authUser}
-            onOpenFeature={handleOpenFeature}
-          />
+          <ReplicateView authUser={authUser} onOpenFeature={handleOpenFeature} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="enhance"
@@ -13596,6 +13406,7 @@ function ImageFeaturePage({
         {![
           "creation",
           "assets",
+          "billing",
           "image",
           "video",
           "chat",

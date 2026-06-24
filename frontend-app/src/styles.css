@@ -15985,7 +15985,7 @@ textarea:focus-visible {
   height: 40px;
   place-items: center;
   color: var(--text-secondary);
-  background: var(--app-surface);
+  background: #f2f0f8;
   border: 1px solid var(--app-border);
   border-radius: 10px;
   cursor: pointer;
@@ -16527,6 +16527,7 @@ textarea:focus-visible {
   padding: 0 14px;
   color: #fff;
   background: #6d3cff;
+  border: none;
   border-radius: 999px;
   cursor: pointer;
   font-size: 13px;
@@ -16546,26 +16547,23 @@ textarea:focus-visible {
 .assets-payment-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 250;
   display: grid;
   place-items: center;
   padding: 20px;
-  background: var(--overlay-backdrop);
+  background: rgba(20, 18, 28, 0.42);
+  backdrop-filter: blur(2px);
 }
 
 .assets-payment-dialog {
   position: relative;
   width: min(420px, 100%);
   padding: 28px 24px 24px;
-  color: var(--text-primary);
-  background:
-    radial-gradient(circle at 22% 0, rgba(141, 99, 255, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(13, 13, 15, 0.98));
-  border: 1px solid var(--app-border);
+  color: #292733;
+  background: #fff;
+  border: 1px solid #e5e2ef;
   border-radius: 18px;
-  box-shadow:
-    0 30px 86px rgba(0, 0, 0, 0.58),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 28px 80px rgba(20, 18, 28, 0.18);
 }
 
 .assets-payment-result-dialog {
@@ -16574,51 +16572,23 @@ textarea:focus-visible {
   justify-items: center;
   width: min(420px, 100%);
   padding: 30px 24px 24px;
-  color: var(--text-primary);
-  background:
-    radial-gradient(circle at 50% 0, rgba(141, 99, 255, 0.2), transparent 38%),
-    linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(13, 13, 15, 0.98));
-  border: 1px solid var(--app-border);
+  color: #292733;
+  background: #fff;
+  border: 1px solid #e5e2ef;
   border-radius: 18px;
-  box-shadow:
-    0 30px 86px rgba(0, 0, 0, 0.58),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  box-shadow: 0 28px 80px rgba(20, 18, 28, 0.18);
 }
 
 .assets-payment-result-dialog.tone-success {
-  border-color: rgba(34, 197, 94, 0.34);
+  border-color: #bbf7d0;
 }
 
 .assets-payment-result-dialog.tone-danger {
-  border-color: rgba(239, 68, 68, 0.36);
+  border-color: #fecdd3;
 }
 
 .assets-payment-result-dialog.tone-cancel {
-  border-color: rgba(148, 163, 184, 0.28);
-}
-
-.assets-result-icon {
-  display: grid;
-  width: 64px;
-  height: 64px;
-  place-items: center;
-  margin-bottom: 18px;
-  color: #a78bfa;
-  background: rgba(141, 99, 255, 0.12);
-  border: 1px solid rgba(141, 99, 255, 0.28);
-  border-radius: 50%;
-}
-
-.assets-payment-result-dialog.tone-success .assets-result-icon {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.32);
-}
-
-.assets-payment-result-dialog.tone-danger .assets-result-icon {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.32);
+  border-color: #e5e2ef;
 }
 
 .assets-payment-result-dialog .assets-payment-dialog-head {
@@ -16629,7 +16599,7 @@ textarea:focus-visible {
 .assets-result-message {
   max-width: 310px;
   margin: 0 0 22px;
-  color: var(--text-muted);
+  color: #777387;
   font-size: 14px;
   line-height: 1.6;
   text-align: center;
@@ -16637,15 +16607,15 @@ textarea:focus-visible {
 
 .assets-dialog-close {
   position: absolute;
-  top: 22px;
-  right: 20px;
+  top: 18px;
+  right: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 42px;
   height: 42px;
-  color: var(--text-secondary);
-  background: var(--app-surface-muted);
+  color: #777387;
+  background: #f2f0f8;
   border: 1px solid var(--app-border);
   border-radius: 50%;
   cursor: pointer;
@@ -16656,9 +16626,9 @@ textarea:focus-visible {
 }
 
 .assets-dialog-close:hover {
-  color: var(--text-primary);
-  background: var(--app-surface-raised);
-  border-color: var(--brand-primary-border);
+  color: #ffffff;
+  background: var(--fm-brand);
+  border-color: var(--fm-brand);
 }
 
 .assets-payment-dialog-head {
@@ -16668,14 +16638,14 @@ textarea:focus-visible {
 }
 
 .assets-payment-dialog-head span {
-  color: var(--text-muted);
+  color: #9a97a8;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.15em;
 }
 
 .assets-payment-dialog-head strong {
-  color: var(--text-primary);
+  color: #292733;
   font-size: 25px;
   font-weight: 800;
   line-height: 1.2;
@@ -16688,11 +16658,11 @@ textarea:focus-visible {
   place-items: center;
   margin: 0 auto 28px;
   background: #ffffff;
-  border: 8px solid rgba(141, 99, 255, 0.18);
+  border: 8px solid #f2edff;
   border-radius: 18px;
   box-shadow:
-    0 18px 46px rgba(93, 30, 224, 0.26),
-    inset 0 0 0 1px rgba(141, 99, 255, 0.34);
+    0 18px 46px rgba(109, 60, 255, 0.16),
+    inset 0 0 0 1px #d8ccff;
 }
 
 .assets-qr-box img {
@@ -16707,20 +16677,20 @@ textarea:focus-visible {
   align-items: center;
   margin: 0 0 26px;
   padding: 18px 20px;
-  background: rgba(141, 99, 255, 0.1);
-  border: 1px solid rgba(141, 99, 255, 0.28);
+  background: #f8f7fc;
+  border: 1px solid #ece9f5;
   border-radius: 12px;
 }
 
 .assets-dialog-meta-card span {
-  color: var(--text-muted);
+  color: #9a97a8;
   font-size: 13px;
   font-weight: 500;
 }
 
 .assets-dialog-meta-card strong {
   min-width: 0;
-  color: var(--text-secondary);
+  color: #4d4b5d;
   font-size: 13px;
   font-weight: 500;
   text-align: right;
@@ -16728,7 +16698,7 @@ textarea:focus-visible {
 }
 
 .assets-dialog-meta-card em {
-  color: #a78bfa;
+  color: var(--fm-brand);
   font-size: 24px;
   font-weight: 600;
   font-style: normal;
@@ -16741,13 +16711,13 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: var(--text-muted);
+  color: #9a97a8;
   font-size: 14px;
   font-weight: 700;
 }
 
 .assets-dialog-countdown strong {
-  color: #a78bfa;
+  color: var(--fm-brand);
   font-weight: 800;
 }
 
@@ -22397,6 +22367,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 .feature-nav-assets-dock {
+  display: grid !important;
+  gap: 6px !important;
   flex: 0 0 auto !important;
   padding: 12px 12px !important;
   margin-top: auto !important;
@@ -28136,7 +28108,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   height: 100% !important;
   max-height: none !important;
   margin-right: 0 !important;
-  padding: 18px 0 !important;
+  padding: 0 0 18px 0 !important;
   overflow: hidden !important;
   pointer-events: auto !important;
   background: transparent !important;
@@ -35084,8 +35056,13 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   --fm-billing-line: #e5e2ef;
   --fm-billing-ink: #292733;
   --fm-billing-muted: #9a97a8;
-  min-height: calc(100vh - 80px);
-  padding: 42px 52px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 22px;
+  height: calc(100vh - 72px);
+  min-height: 0;
+  padding: 32px 32px;
+  overflow: hidden;
   color: var(--fm-billing-ink);
   background: #f6f7fb !important;
 }
@@ -35094,7 +35071,15 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-profile-billing-view .assets-balance-hero,
 .fm-profile-billing-view .fm-billing-workspace,
 .fm-profile-billing-view .assets-login-panel {
+  width: min(1180px, 100%);
   max-width: 1180px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.fm-profile-billing-view .assets-balance-hero {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .fm-profile-billing-view .assets-toolbar h1 {
@@ -35191,6 +35176,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 18px;
   align-items: stretch;
+  min-height: 0;
   margin: 0 auto;
 }
 
@@ -35207,7 +35193,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   display: flex;
   flex-direction: column;
   align-self: stretch;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 .fm-billing-recharge-card .assets-presets {
@@ -35223,9 +35210,10 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-billing-pay-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px;
+  gap: 50px;
   align-items: start;
-  margin-bottom: 16px;
+  margin-top: 16px;
+  margin-bottom: 32px;
 }
 
 .fm-billing-pay-row .fm-billing-custom-field,
@@ -35395,18 +35383,24 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 .fm-billing-records-card {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   min-height: 0;
+  padding-bottom: 16px;
 }
 
 .fm-billing-orders-card {
-  flex-shrink: 0;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .fm-billing-latest-tx {
@@ -35415,7 +35409,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   justify-content: space-between;
   gap: 14px;
   width: 100%;
-  padding: 14px 16px;
+  padding: 12px 14px;
   text-align: left;
   background: #f8f7fc;
   border: 1px solid #ece9f5;
@@ -35432,7 +35426,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-billing-latest-main {
   display: grid;
   flex: 1;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -35471,7 +35465,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-billing-latest-amount {
   flex-shrink: 0;
   font-style: normal;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.2;
   white-space: nowrap;
@@ -35480,7 +35474,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-billing-side-link {
   width: 100%;
   margin-top: auto;
-  padding: 12px 0 0;
+  padding: 10px 0 0;
   color: var(--fm-billing-brand);
   background: transparent;
   border: 0;
@@ -35491,7 +35485,18 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 .fm-billing-side-card .assets-order-list {
   display: grid;
+  flex: 1 1 auto;
+  align-content: start;
   gap: 10px;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 4px;
+  overscroll-behavior: contain;
+}
+
+.fm-billing-orders-card .assets-section-title {
+  flex: 0 0 auto;
 }
 
 .fm-billing-side-card .assets-order-row {
@@ -35558,7 +35563,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .fm-transactions-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 250;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -35566,8 +35571,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 }
 
 .fm-transactions-modal {
+  position: relative;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   width: min(1080px, calc(100vw - 48px));
   max-height: min(86vh, 860px);
   overflow: hidden;
@@ -35582,8 +35588,14 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px;
+  padding: 18px 72px 18px 20px;
   border-bottom: 1px solid #ece9f5;
+}
+
+.fm-transactions-modal .assets-dialog-close {
+  top: 16px;
+  right: 18px;
+  z-index: 2;
 }
 
 .fm-transactions-modal-head strong {
@@ -35600,20 +35612,10 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   font-weight: 600;
 }
 
-.fm-transactions-modal > .fm-assets-time-filter {
-  justify-content: flex-start;
-  padding: 14px 20px 0;
-}
-
-.fm-transactions-modal > .fm-assets-time-filter .fm-assets-time-presets {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
 .fm-transactions-modal .fm-assets-transactions-view {
   min-height: 0;
   margin: 0;
-  padding: 14px 20px 20px;
+  padding: 16px 20px 20px;
   overflow: auto;
   border: 0;
   border-radius: 0;
@@ -35622,23 +35624,28 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 .fm-transactions-modal .fm-transaction-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .fm-transactions-modal .fm-transaction-filters {
+  justify-self: start;
   min-width: 0;
   overflow-x: auto;
   flex-wrap: nowrap;
   padding-bottom: 2px;
 }
 
-.fm-transactions-modal .fm-transaction-search {
+.fm-transactions-modal .fm-assets-time-filter {
   justify-self: end;
-  width: 100%;
-  max-width: 360px;
+  justify-content: flex-end;
+}
+
+.fm-transactions-modal .fm-assets-time-presets {
+  max-width: min(100%, 430px);
+  overflow-x: auto;
 }
 
 .fm-transactions-modal .fm-transactions-table {
@@ -35650,9 +35657,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
     grid-template-columns: 1fr;
   }
 
-  .fm-transactions-modal .fm-transaction-search {
+  .fm-transactions-modal .fm-assets-time-filter {
     justify-self: stretch;
-    max-width: none;
+    justify-content: flex-start;
   }
 }
 
@@ -35699,7 +35706,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   --fm-profile-line: #e5e2ef;
   --fm-profile-ink: #292733;
   --fm-profile-muted: #9a97a8;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 72px);
   padding: 42px 52px;
   color: var(--fm-profile-ink);
   background: #f6f7fb !important;
@@ -37027,9 +37034,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .music-generation-view.voice-conversion-view-root:has(.music-ref-layout),
 .music-generation-view.voice-conversion-view-root:has(.music-gen-waiting-layout) {
   box-sizing: border-box;
-  min-height: calc(100vh - 80px);
-  height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
+  min-height: calc(100vh - 72px);
+  height: calc(100vh - 72px);
+  max-height: calc(100vh - 72px);
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -37041,9 +37048,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  min-height: calc(100vh - 80px);
-  height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
+  min-height: calc(100vh - 72px);
+  height: calc(100vh - 72px);
+  max-height: calc(100vh - 72px);
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -37665,9 +37672,9 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   .music-generation-view.voice-conversion-view-root:has(.music-ref-layout),
 .music-generation-view.voice-conversion-view-root:has(.music-gen-waiting-layout),
 .music-generation-view.voice-conversion-view-root:has(.music-full-player) {
-    min-height: calc(100vh - 80px);
-    height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
+    min-height: calc(100vh - 72px);
+    height: calc(100vh - 72px);
+    max-height: calc(100vh - 72px);
   }
 
   .music-generation-view .music-canvas:has(.music-ref-layout),

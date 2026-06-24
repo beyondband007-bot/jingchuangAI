@@ -1629,6 +1629,9 @@ export function ArticleGenerationView({
                             ) : (
                               <span className="article-image-pending">生成中</span>
                             )}
+                            <span className="article-cover-preview-badge">
+                              {form.copyTemplate || "小红书封面"}
+                            </span>
                           </div>
                           <h2>{draftCopy?.title || currentPreviewImage?.title || "未命名封面"}</h2>
                         </article>
