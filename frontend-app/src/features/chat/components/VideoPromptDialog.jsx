@@ -240,6 +240,7 @@ export function VideoPromptDialog({
 
         <textarea
           ref={textareaRef}
+          className="video-prompt-textarea"
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -314,6 +315,7 @@ export function VideoPromptDialog({
       <div style={{ marginBottom: "16px" }}>
         <textarea
           ref={textareaRef}
+          className="video-prompt-textarea"
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
