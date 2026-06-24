@@ -111,3 +111,12 @@ export async function updateMusicTaskAudioMeta(id, { musicSize, bitrate }) {
     [musicSize || null, bitrate || null, id]
   );
 }
+
+export async function deleteMusicTaskRow(id, userId) {
+  const [result] = await getPool().query(
+    `DELETE FROM music_tasks
+     WHERE user_id = ? AND id = ?`,
+    [userId, id]
+  );
+  return { ok: result.affectedRows > 0 };
+}

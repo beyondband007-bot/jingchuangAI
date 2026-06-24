@@ -198,16 +198,18 @@ export function MusicGenerationFaceSwapWorkbench({
 
           <div className="music-generation-face-swap-workbench__right">
             <div className="ai-music-workbench__bottom-options music-generation-face-swap-workbench__bottom-options">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={lyricsOptimizer}
-                  onChange={(event) => setLyricsOptimizer(event.target.checked)}
-                  disabled={isGenerating || isInstrumental}
-                />
-                <span>自动优化歌词</span>
-                <Info size={14} />
-              </label>
+              {!isInstrumental ? (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={lyricsOptimizer}
+                    onChange={(event) => setLyricsOptimizer(event.target.checked)}
+                    disabled={isGenerating}
+                  />
+                  <span>自动优化歌词</span>
+                  <Info size={14} />
+                </label>
+              ) : null}
               <button type="button" className="ai-music-workbench__model">
                 模型：music-2.6-free
                 <ChevronDown size={15} />

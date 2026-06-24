@@ -7,7 +7,7 @@ import {
 } from "./videoGenRawState";
 
 const DONE_HOLD_MS = 1000;
-const PROGRESS_TICK_MS = 1200;
+const PROGRESS_TICK_MS = 1000;
 
 /**
  * State machine: idle → generating → done → idle.
@@ -23,7 +23,6 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   const completedTaskRef = useRef(null);
   const progressTimerRef = useRef(null);
   const doneTimerRef = useRef(null);
-  const logEndRef = useRef(null);
   const onFailedRef = useRef(onFailed);
   const onReturnToListRef = useRef(onReturnToList);
 
@@ -31,8 +30,9 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   onReturnToListRef.current = onReturnToList;
 
   const derivedState = useMemo(
-    () => deriveVideoGenState(rawState),
-    [rawState],
+    () =>
+      deriveVideoGenState(rawState, { prompt: session?.prompt ?? "" }),
+    [rawState, session?.prompt],
   );
 
   const isGenStageActive = derivedState?.meta.isStageVisible ?? false;
@@ -70,7 +70,7 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
       duration: payload.duration,
       taskId: null,
     });
-    setRawState(createInitialRawState());
+    setRawState(createInitialRawState(Date.now()));
   }
 
   function attachTaskId(taskId) {
@@ -131,11 +131,6 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   }, [derivedState?.progress.value, isGenStageActive]);
 
   useEffect(() => {
-    if (!derivedState || derivedState.meta.isDone) return;
-    logEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [derivedState?.logs.lines.length, derivedState?.meta.isDone]);
-
-  useEffect(() => {
     const taskId = session?.taskId;
     if (rawState?.status !== "generating" || !taskId) return undefined;
 
@@ -151,6 +146,11 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
         if (task.status === "completed") {
           completedTaskRef.current = task;
           taskDoneRef.current = true;
+          setRawState((prev) =>
+            prev && prev.status === "generating"
+              ? tickRawState(prev, { taskComplete: true })
+              : prev,
+          );
         } else if (task.status === "failed") {
           failGeneration(task.error || "视频生成失败");
         }
@@ -179,7 +179,6 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   return {
     derivedState,
     isGenStageActive,
-    logEndRef,
     startGeneration,
     attachTaskId,
     failGeneration,

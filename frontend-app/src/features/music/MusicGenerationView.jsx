@@ -11,6 +11,7 @@ import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -134,21 +135,6 @@ async function syncLyricsAndGetTask(taskId, { force = false } = {}) {
   return task;
 }
 
-function generateCoverGradient(seed) {
-  const gradients = [
-    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-    "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-    "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-    "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
-    "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
-    "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)"
-  ];
-  const index = seed.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
-  return gradients[index];
-}
-
 function randomMelodyDelayMs() {
   return 15000 + Math.floor(Math.random() * 15001);
 }
@@ -219,6 +205,17 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
       toastTimerRef.current = null;
     }
   }, [resetSignal]);
+
+  useEffect(() => {
+    function handleMusicHome() {
+      setShowPlayer(false);
+      setPlayerTask(null);
+      setViewTab("home");
+    }
+
+    window.addEventListener("facemini:music-home", handleMusicHome);
+    return () => window.removeEventListener("facemini:music-home", handleMusicHome);
+  }, []);
 
   function clearGenerationTimers() {
     if (melodyTimerRef.current) {
@@ -510,8 +507,9 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   }
 
   async function openCompletedPlayer(item) {
-    if (!item?.audioUrl || item.status === "failed") return;
+    if (!item?.id || item.status === "failed") return;
     const mapped = mapTaskFromApi(await musicApi.getTask(item.id).catch(() => item), item);
+    if (!mapped.audioUrl || mapped.status === "failed") return;
     setPlayerTask(mapped);
     setShowPlayer(true);
     resetGenerationFlow();
@@ -534,6 +532,49 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     setPlayerTask(mapped);
     setRecentResults((items) => updateRecentItem(items, item.id, mapped));
     void syncLyricsInBackground(mapped, item);
+  }
+
+  async function downloadRecentItem(item) {
+    if (!item?.audioUrl) {
+      showToast("error", "音频尚未生成完成，暂无法下载。");
+      return;
+    }
+    try {
+      const safeName = String(item.prompt || "ai-music").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40);
+      await downloadMediaFile(item.audioUrl, `${safeName}-${formatBeijingStamp()}.mp3`);
+      showToast("success", "音乐已下载。");
+    } catch (error) {
+      showToast("error", error.message || "音乐下载失败。");
+    }
+  }
+
+  async function performDeleteMusicTask(id) {
+    await musicApi.deleteTask(id);
+    if (playerTask?.id === id) {
+      setShowPlayer(false);
+      setPlayerTask(null);
+    }
+    setRecentResults((items) => items.filter((item) => item.id !== id));
+    showToast("success", "已删除音乐记录。");
+  }
+
+  const { requestDelete: requestDeleteMusicTask, deleteConfirmDialog } = useDeleteConfirmation({
+    onConfirm: async (id) => {
+      try {
+        await performDeleteMusicTask(id);
+      } catch (error) {
+        showToast("error", error.message || "删除失败，请稍后重试。");
+        throw error;
+      }
+    },
+    title: "删除音乐记录？",
+    message: "删除后将无法恢复，请确认是否继续。",
+  });
+
+  function requestDeleteRecentItem(item) {
+    requestDeleteMusicTask(item.id, {
+      targetName: item.prompt || "AI 音乐",
+    });
   }
 
   const displayRecent = recentResults.slice(0, 4);
@@ -565,6 +606,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
             onBack={() => {
               setShowPlayer(false);
               setPlayerTask(null);
+              setViewTab("home");
             }}
             onSelectItem={selectPlayerTrack}
           />
@@ -576,10 +618,11 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               etaSeconds={etaSeconds}
               recentItems={displayRecent}
               generatingId={playerTask?.id || ""}
-              generateCoverGradient={generateCoverGradient}
               onCancel={cancelGeneration}
               onViewAll={() => setViewTab("recent")}
               onSelectItem={openCompletedPlayer}
+              onDownloadItem={downloadRecentItem}
+              onDeleteItem={requestDeleteRecentItem}
             />
           ) : (
             <div className="music-ref-layout">
@@ -620,7 +663,12 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
                     查看全部 <ChevronRight size={14} />
                   </button>
                 </div>
-                <MusicRecentGrid items={displayRecent} onSelectItem={openCompletedPlayer} />
+                <MusicRecentGrid
+                  items={displayRecent}
+                  onSelectItem={openCompletedPlayer}
+                  onDownloadItem={downloadRecentItem}
+                  onDeleteItem={requestDeleteRecentItem}
+                />
               </div>
             </div>
           )
@@ -630,7 +678,12 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               <div className="music-ref-section-head">
                 <h3><Clock size={18} /> 历史记录</h3>
               </div>
-              <MusicRecentGrid items={recentResults} onSelectItem={openCompletedPlayer} />
+              <MusicRecentGrid
+                items={recentResults}
+                onSelectItem={openCompletedPlayer}
+                onDownloadItem={downloadRecentItem}
+                onDeleteItem={requestDeleteRecentItem}
+              />
             </div>
           </div>
         )}
@@ -650,6 +703,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
           onRecharge={goToRecharge}
         />
       )}
+      {deleteConfirmDialog}
     </section>
   );
 }

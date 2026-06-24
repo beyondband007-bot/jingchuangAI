@@ -109,19 +109,21 @@ export function AiMusicGenerationWorkbenchCard({
         </div>
 
         {/* Options */}
-        <div className="ai-music-workbench__bottom-options">
-          <label className="ai-music-workbench__switch-label">
-            <input
-              type="checkbox"
-              checked={lyricsOptimizer}
-              onChange={(event) => onToggleLyricsOptimizer(event.target.checked)}
-              disabled={isGenerating || isInstrumental}
-            />
-            <span className="ai-music-workbench__switch" />
-            <span className="ai-music-workbench__switch-text">自动优化歌词</span>
-            <Info size={14} />
-          </label>
-        </div>
+        {!isInstrumental ? (
+          <div className="ai-music-workbench__bottom-options">
+            <label className="ai-music-workbench__switch-label">
+              <input
+                type="checkbox"
+                checked={lyricsOptimizer}
+                onChange={(event) => onToggleLyricsOptimizer(event.target.checked)}
+                disabled={isGenerating}
+              />
+              <span className="ai-music-workbench__switch" />
+              <span className="ai-music-workbench__switch-text">自动优化歌词</span>
+              <Info size={14} />
+            </label>
+          </div>
+        ) : null}
 
         {/* Submit */}
         <div className="ai-music-workbench__submit-row">

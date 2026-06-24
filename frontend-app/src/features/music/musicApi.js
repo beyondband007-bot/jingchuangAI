@@ -1,4 +1,4 @@
-﻿import { API_BASE } from "../../apiBase.js";
+import { API_BASE } from "../../apiBase.js";
 import { requestJson as request } from "../../api/request.js";
 
 function toApiUrl(url) {
@@ -40,6 +40,12 @@ export const musicApi = {
     const query = force ? "?force=1" : "";
     return request(`/api/music/tasks/${encodeURIComponent(id)}/sync-lyrics${query}`, {
       method: "POST"
+    });
+  },
+
+  async deleteTask(id) {
+    return request(`/api/music/tasks/${encodeURIComponent(id)}`, {
+      method: "DELETE"
     });
   }
 };

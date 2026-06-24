@@ -1,16 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
-  CheckCircle2,
+  ArrowLeft,
+  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
   Copy,
   Download,
+  Heart,
   Layers,
   Loader2,
+  MessageCircle,
   RefreshCcw,
+  Share2,
   Sparkles,
   Star,
   Trash2,
@@ -50,7 +54,7 @@ const copyTemplatesByPlatform = {
 };
 const wordCounts = ["短文案", "适中", "长笔记"];
 const copyTones = ["种草口语风", "干货测评风", "温柔分享风", "简洁硬广风"];
-const ratios = ["1:1", "3:4", "4:3", "9:16", "16:9"];
+const ratios = ["3:4", "1:1", "4:3", "9:16", "16:9"];
 const imageCounts = [1, 2, 3, 4];
 const fallbackModelOptions = [
   { value: "nano_banana2", label: "Nano Banana 2" },
@@ -158,6 +162,105 @@ const visualStyles = [
     image: "/assets/article/template-thumbs/黑板.png",
   },
 ];
+
+const freshStylePreviews = [
+  {
+    id: "book-share",
+    label: "读书分享",
+    image: "/assets/article/style-previews/fresh/book-share.png",
+  },
+  {
+    id: "ootd",
+    label: "穿搭 OOTD",
+    image: "/assets/article/style-previews/fresh/ootd.png",
+  },
+  {
+    id: "life-fragments",
+    label: "生活碎片收集",
+    image: "/assets/article/style-previews/fresh/life-fragments.png",
+  },
+  {
+    id: "skincare",
+    label: "护肤日常",
+    image: "/assets/article/style-previews/fresh/skincare.png",
+  },
+];
+
+const cuteStylePreviews = [
+  {
+    id: "life-fragments",
+    label: "日常碎片收集",
+    image: "/assets/article/style-previews/cute/life-fragments.png",
+  },
+  {
+    id: "ootd",
+    label: "穿搭 OOTD",
+    image: "/assets/article/style-previews/cute/ootd.png",
+  },
+  {
+    id: "skincare",
+    label: "护肤日常",
+    image: "/assets/article/style-previews/cute/skincare.png",
+  },
+  {
+    id: "study-check-in",
+    label: "学习打卡",
+    image: "/assets/article/style-previews/cute/study-check-in.png",
+  },
+];
+
+const minimalStylePreviews = [
+  {
+    id: "life-quote",
+    label: "慢生活金句",
+    image: "/assets/article/style-previews/minimal/life-quote.png",
+  },
+  {
+    id: "ootd",
+    label: "穿搭 OOTD",
+    image: "/assets/article/style-previews/minimal/ootd.png",
+  },
+  {
+    id: "weekend-explore",
+    label: "周末探店",
+    image: "/assets/article/style-previews/minimal/weekend-explore.png",
+  },
+  {
+    id: "book-list",
+    label: "书单分享",
+    image: "/assets/article/style-previews/minimal/book-list.png",
+  },
+];
+
+const boldStylePreviews = [
+  {
+    id: "bold-check-in",
+    label: "大胆打卡",
+    image: "/assets/article/style-previews/bold/bold-check-in.png",
+  },
+  {
+    id: "bold-life-color",
+    label: "活出色彩",
+    image: "/assets/article/style-previews/bold/bold-life-color.png",
+  },
+  {
+    id: "bold-jewel",
+    label: "首饰宣言",
+    image: "/assets/article/style-previews/bold/bold-jewel.png",
+  },
+  {
+    id: "bold-night",
+    label: "大胆美学夜",
+    image: "/assets/article/style-previews/bold/bold-night.png",
+  },
+];
+
+const styleTemplatePreviews = {
+  fresh: freshStylePreviews,
+  cute: cuteStylePreviews,
+  minimal: minimalStylePreviews,
+  bold: boldStylePreviews,
+};
 
 const contentTypes = [
   {
@@ -321,6 +424,167 @@ function RatioIcon({ ratio }) {
   );
 }
 
+function isLandscapeRatio(ratio) {
+  const [width, height] = String(ratio || "")
+    .split(":")
+    .map(Number);
+  return Number.isFinite(width) && Number.isFinite(height) && width > height;
+}
+
+function probeImageLandscape(src, ratioFallback) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(img.naturalWidth > img.naturalHeight);
+    };
+    img.onerror = () => {
+      resolve(isLandscapeRatio(ratioFallback));
+    };
+    img.src = src;
+  });
+}
+
+function useArticlePreviewLayout(images, ratioFallback) {
+  const imageKey = images.map((item) => item.image).join("|");
+  const [isLandscapePreview, setIsLandscapePreview] = useState(() =>
+    isLandscapeRatio(ratioFallback),
+  );
+
+  useEffect(() => {
+    if (!images.length) {
+      setIsLandscapePreview(isLandscapeRatio(ratioFallback));
+      return undefined;
+    }
+
+    let cancelled = false;
+    Promise.all(
+      images.map((item) => probeImageLandscape(item.image, ratioFallback)),
+    ).then((results) => {
+      if (cancelled) return;
+      setIsLandscapePreview(results.some(Boolean));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [imageKey, images, ratioFallback]);
+
+  return isLandscapePreview;
+}
+
+function ArticleFullPreviewMedia({
+  images,
+  ratioFallback,
+  title,
+  activeIndex,
+  onActiveIndexChange,
+  className = "",
+}) {
+  const carouselRef = useRef(null);
+  const isLandscapePreview = useArticlePreviewLayout(images, ratioFallback);
+  const mediaClassName = [
+    "article-result-full-media",
+    "article-history-full-media",
+    `count-${Math.min(images.length, 4)}`,
+    isLandscapePreview ? "is-landscape" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  function scrollToIndex(index) {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    carousel.scrollTo({
+      left: carousel.clientWidth * index,
+      behavior: "smooth",
+    });
+    onActiveIndexChange?.(index);
+  }
+
+  function handleCarouselScroll(event) {
+    const carousel = event.currentTarget;
+    if (!carousel.clientWidth) return;
+    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    if (images[nextIndex] && nextIndex !== activeIndex) {
+      onActiveIndexChange?.(nextIndex);
+    }
+  }
+
+  if (isLandscapePreview) {
+    return (
+      <section className={mediaClassName}>
+        <div className="article-history-full-gallery">
+          {images.map((item, index) => (
+            <figure key={item.id}>
+              <img
+                src={item.image}
+                alt={item.title || title || `配图 ${index + 1}`}
+                draggable="false"
+              />
+            </figure>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className={mediaClassName}>
+      <div
+        className="article-result-full-carousel"
+        ref={carouselRef}
+        onScroll={handleCarouselScroll}
+      >
+        {images.map((item, index) => (
+          <figure className="article-result-full-slide" key={item.id}>
+            <img
+              src={item.image}
+              alt={item.title || title || `配图 ${index + 1}`}
+              draggable="false"
+            />
+          </figure>
+        ))}
+      </div>
+      {images.length > 1 && (
+        <>
+          <button
+            className="article-history-image-nav is-prev"
+            type="button"
+            onClick={() =>
+              scrollToIndex((activeIndex - 1 + images.length) % images.length)
+            }
+            aria-label="上一张"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <button
+            className="article-history-image-nav is-next"
+            type="button"
+            onClick={() =>
+              scrollToIndex((activeIndex + 1) % images.length)
+            }
+            aria-label="下一张"
+          >
+            <ChevronRight size={22} />
+          </button>
+          <div className="article-history-preview-dots">
+            {images.map((item, index) => (
+              <button
+                className={index === activeIndex ? "is-active" : ""}
+                type="button"
+                key={item.id}
+                onClick={() => scrollToIndex(index)}
+                aria-label={`查看第 ${index + 1} 张`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 function ArticleVisualOptionGroup({
   title,
   options,
@@ -353,6 +617,83 @@ function ArticleVisualOptionGroup({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ArticleStyleTemplatePreview({ items }) {
+  return (
+    <div className="article-fresh-template-preview">
+      <div className="article-fresh-template-preview__track">
+        {items.map((item) => (
+          <figure className="article-fresh-template-preview__card" key={item.id}>
+            <div className="article-fresh-template-preview__card-media">
+              <img src={item.image} alt={item.label} loading="lazy" draggable="false" />
+            </div>
+          </figure>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuickTemplatePreviewDialog({ template, onClose, onApply }) {
+  useEffect(() => {
+    function onKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  if (!template) return null;
+
+  return (
+    <div className="article-quick-template-preview-overlay" role="presentation">
+      <button
+        className="article-quick-template-preview-backdrop"
+        type="button"
+        aria-label="关闭模板预览"
+        onClick={onClose}
+      />
+      <section
+        className="article-quick-template-preview-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="article-quick-template-preview-title"
+      >
+        <header className="article-quick-template-preview-head">
+          <strong id="article-quick-template-preview-title">快捷图文模板</strong>
+          <button type="button" onClick={onClose} aria-label="关闭模板预览">
+            <X size={18} />
+          </button>
+        </header>
+        <div className="article-quick-template-preview-body">
+          <div className="article-quick-template-preview-media">
+            <img src={template.image} alt={template.title} />
+          </div>
+          <div className="article-quick-template-preview-copy">
+            <h3>{template.title}</h3>
+            <p>{template.topic}</p>
+            <div className="article-quick-template-preview-meta">
+              <span>{template.copyTemplate}</span>
+              <span>{template.tone}</span>
+            </div>
+            {template.keyword ? (
+              <div className="article-quick-template-preview-keywords">
+                {template.keyword.split(",").map((item) => (
+                  <span key={item.trim()}>{item.trim()}</span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <footer className="article-quick-template-preview-foot">
+          <button type="button" className="article-quick-template-preview-apply" onClick={onApply}>
+            引用此模板
+          </button>
+        </footer>
+      </section>
     </div>
   );
 }
@@ -455,13 +796,26 @@ function getArticleImages(task) {
 }
 
 function ArticlePreview({ task, onClose }) {
-  const [copied, setCopied] = useState(false);
-  const copiedTimerRef = useRef(null);
+  const [previewMode, setPreviewMode] = useState("full");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isTextCopied, setIsTextCopied] = useState(false);
+  const copyTextTimerRef = useRef(null);
+  const xhsCarouselRef = useRef(null);
+  const xhsDragRef = useRef(null);
   const images = getArticleImages(task);
   const prompt = task?.prompt || "暂无提示词";
+  const articleTitle = task?.copy?.title || task?.title || "AI 图文创作";
+  const articleBody = task?.copy?.body || prompt;
+  const articleTags = Array.isArray(task?.copy?.tags) ? task.copy.tags : [];
+  const activeImage = images[activeImageIndex] || images[0];
+  const createdAt =
+    formatBeijingDateTime(task?.createdAt || task?.created_at || task?.time) ||
+    "刚刚";
 
   useEffect(() => {
-    setCopied(false);
+    setPreviewMode("full");
+    setActiveImageIndex(0);
+    setIsTextCopied(false);
   }, [task?.id]);
 
   useEffect(() => {
@@ -472,18 +826,21 @@ function ArticlePreview({ task, onClose }) {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      if (copiedTimerRef.current) {
-        window.clearTimeout(copiedTimerRef.current);
+      if (copyTextTimerRef.current) {
+        window.clearTimeout(copyTextTimerRef.current);
       }
     };
   }, [onClose, images.length]);
 
-  async function copyPrompt() {
+  async function copyArticleText() {
+    const tagsText = articleTags.map((tag) => `#${tag}`).join(" ");
+    const text = [articleTitle, articleBody, tagsText].filter(Boolean).join("\n\n");
+
     try {
-      await navigator.clipboard?.writeText(prompt);
+      await navigator.clipboard.writeText(text);
     } catch {
       const textarea = document.createElement("textarea");
-      textarea.value = prompt;
+      textarea.value = text;
       textarea.setAttribute("readonly", "");
       textarea.style.position = "fixed";
       textarea.style.opacity = "0";
@@ -492,11 +849,72 @@ function ArticlePreview({ task, onClose }) {
       document.execCommand("copy");
       document.body.removeChild(textarea);
     }
-    setCopied(true);
-    if (copiedTimerRef.current) {
-      window.clearTimeout(copiedTimerRef.current);
+
+    setIsTextCopied(true);
+    if (copyTextTimerRef.current) {
+      window.clearTimeout(copyTextTimerRef.current);
     }
-    copiedTimerRef.current = window.setTimeout(() => setCopied(false), 1600);
+    copyTextTimerRef.current = window.setTimeout(
+      () => setIsTextCopied(false),
+      1600,
+    );
+  }
+
+  function scrollXhsImageIntoView(index, behavior = "smooth") {
+    const carousel = xhsCarouselRef.current;
+    if (!carousel) return;
+    carousel.scrollTo({
+      left: carousel.clientWidth * index,
+      behavior,
+    });
+    setActiveImageIndex(index);
+  }
+
+  function handleXhsCarouselScroll(event) {
+    const carousel = event.currentTarget;
+    if (!carousel.clientWidth) return;
+    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    if (nextIndex !== activeImageIndex && images[nextIndex]) {
+      setActiveImageIndex(nextIndex);
+    }
+  }
+
+  function handleXhsPointerDown(event) {
+    if (event.button !== 0) return;
+    const carousel = event.currentTarget;
+    xhsDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: carousel.scrollLeft,
+    };
+    carousel.setPointerCapture(event.pointerId);
+    carousel.classList.add("is-dragging");
+  }
+
+  function handleXhsPointerMove(event) {
+    const drag = xhsDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.currentTarget.scrollLeft =
+      drag.scrollLeft - (event.clientX - drag.startX);
+  }
+
+  function handleXhsPointerEnd(event) {
+    const carousel = event.currentTarget;
+    const drag = xhsDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    xhsDragRef.current = null;
+    carousel.classList.remove("is-dragging");
+    if (carousel.hasPointerCapture(event.pointerId)) {
+      carousel.releasePointerCapture(event.pointerId);
+    }
+    const nextIndex = Math.max(
+      0,
+      Math.min(
+        images.length - 1,
+        Math.round(carousel.scrollLeft / carousel.clientWidth),
+      ),
+    );
+    scrollXhsImageIntoView(nextIndex);
   }
 
   if (!images.length) return null;
@@ -514,56 +932,165 @@ function ArticlePreview({ task, onClose }) {
         onClick={onClose}
         aria-label="关闭详情"
       />
-      <section className="fm-detail-modal article-detail-modal">
-        <div className="fm-detail-media article-detail-media">
-          <div className="article-detail-image-grid">
-            {images.map((item, index) => (
-              <figure key={item.id}>
-                <img src={item.image} alt={item.title || `爆款图文生成结果 ${index + 1}`} />
-              </figure>
-            ))}
-          </div>
-        </div>
-        <aside className="fm-detail-info article-detail-info">
+      <section className={`article-history-preview-dialog is-${previewMode}`}>
+        <div className="article-history-preview-tabs" aria-label="历史图文预览模式">
           <button
-            className="fm-detail-close"
+            className={previewMode === "full" ? "is-active" : ""}
             type="button"
-            onClick={onClose}
-            aria-label="关闭详情"
+            onClick={() => setPreviewMode("full")}
           >
-            <X size={20} />
+            全文预览
           </button>
-          <p className="fm-detail-eyebrow">爆款图文</p>
-          <h2>{task.copy?.title || task.title || prompt}</h2>
-          <label>提示词</label>
-          <p className="fm-detail-prompt article-detail-prompt">{prompt}</p>
-          <button className="fm-detail-copy" type="button" onClick={copyPrompt}>
-            <Copy size={15} />
-            {copied ? "已复制" : "复制提示词"}
+          <button
+            className={previewMode === "cover" ? "is-active" : ""}
+            type="button"
+            onClick={() => {
+              setActiveImageIndex(0);
+              setPreviewMode("cover");
+            }}
+          >
+            封面预览
           </button>
-          <dl>
-            <div>
-              <dt>比例</dt>
-              <dd>{task.ratio || "3:4"}</dd>
-            </div>
-            <div>
-              <dt>推荐模型</dt>
-              <dd>{task.model || task.modelKey || "AI 图文"}</dd>
-            </div>
-            <div>
-              <dt>素材</dt>
-              <dd>{images.length} 张 · {task.quality || "高清原图"}</dd>
-            </div>
-          </dl>
-          <div className="fm-detail-actions article-detail-actions">
-            {images.map((item, index) => (
-              <a href={item.image} download key={item.id}>
-                <Download size={16} />
-                下载第 {index + 1} 张
-              </a>
-            ))}
+        </div>
+        <button
+          className="article-history-preview-close"
+          type="button"
+          onClick={onClose}
+          aria-label="关闭详情"
+        >
+          <X size={20} />
+        </button>
+
+        {previewMode === "full" ? (
+          <div className="article-history-full-preview">
+            <ArticleFullPreviewMedia
+              images={images}
+              ratioFallback={task?.ratio}
+              title={articleTitle}
+              activeIndex={activeImageIndex}
+              onActiveIndexChange={setActiveImageIndex}
+            />
+            <article className="article-history-full-copy">
+              <div className="article-history-full-copy-head">
+                <span className="article-history-preview-kicker">爆款图文</span>
+                <button type="button" onClick={copyArticleText}>
+                  <Copy size={15} />
+                  {isTextCopied ? "已复制" : "复制文本"}
+                </button>
+              </div>
+              <h2>{articleTitle}</h2>
+              <div className="article-history-full-body">
+                {articleBody
+                  .split(/\n+/)
+                  .filter(Boolean)
+                  .map((paragraph, index) => (
+                    <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                  ))}
+              </div>
+              {articleTags.length > 0 && (
+                <div className="article-history-preview-tags">
+                  {articleTags.map((tag) => (
+                    <span key={tag}>#{tag}</span>
+                  ))}
+                </div>
+              )}
+              <div className="article-history-full-footer">
+                <span>{createdAt}</span>
+                <a href={activeImage.image} download>
+                  <Download size={16} />
+                  下载图片
+                </a>
+              </div>
+            </article>
           </div>
-        </aside>
+        ) : (
+          <div className="article-xhs-preview-stage">
+            <article className="article-xhs-phone">
+              <div className="article-xhs-statusbar">
+                <strong>9:41</strong>
+                <span className="article-xhs-status-icons">
+                  <i className="is-signal" />
+                  <i className="is-wifi" />
+                  <i className="is-battery" />
+                </span>
+              </div>
+              <header className="article-xhs-authorbar">
+                <ArrowLeft size={25} />
+                <span className="article-xhs-avatar">F</span>
+                <strong>Facemini AI</strong>
+                <button type="button">关注</button>
+                <Share2 size={23} />
+              </header>
+              <div className="article-xhs-scroll-content">
+                <div
+                  className="article-xhs-image-carousel"
+                  ref={xhsCarouselRef}
+                  onScroll={handleXhsCarouselScroll}
+                  onPointerDown={handleXhsPointerDown}
+                  onPointerMove={handleXhsPointerMove}
+                  onPointerUp={handleXhsPointerEnd}
+                  onPointerCancel={handleXhsPointerEnd}
+                >
+                  {images.map((item) => (
+                    <figure className="article-xhs-image-wrap" key={item.id}>
+                      <img
+                        src={item.image}
+                        alt={item.title || articleTitle}
+                        draggable="false"
+                      />
+                      <span>AI生成</span>
+                    </figure>
+                  ))}
+                </div>
+                {images.length > 1 && (
+                  <div className="article-xhs-image-dots">
+                    {images.map((item, index) => (
+                      <button
+                        className={index === activeImageIndex ? "is-active" : ""}
+                        type="button"
+                        key={item.id}
+                        onClick={() => scrollXhsImageIntoView(index)}
+                        aria-label={`查看第 ${index + 1} 张`}
+                      />
+                    ))}
+                  </div>
+                )}
+                <p className="article-xhs-publish-time">编辑于 {createdAt}</p>
+                <div className="article-xhs-caption">
+                  <h2>{articleTitle}</h2>
+                  {articleBody
+                    .split(/\n+/)
+                    .filter(Boolean)
+                    .map((paragraph, index) => (
+                      <p key={`${paragraph}-${index}`}>{paragraph}</p>
+                    ))}
+                  <div>
+                    {articleTags.map((tag) => (
+                      <span key={tag}>#{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="article-xhs-comment-prompt">
+                  <span className="article-xhs-avatar is-small">F</span>
+                  <p>说点什么，让 TA 也认识爱创作的你</p>
+                </div>
+                <div className="article-xhs-empty-comments">
+                  <MessageCircle size={35} />
+                  <p>这是一片荒草地，<strong>分享笔记</strong></p>
+                </div>
+              </div>
+              <footer className="article-xhs-toolbar">
+                <button type="button" className="article-xhs-comment-input">
+                  <span>说点什么...</span>
+                </button>
+                <button type="button"><Heart size={27} /><span>点赞</span></button>
+                <button type="button"><Bookmark size={27} /><span>收藏</span></button>
+                <button type="button"><MessageCircle size={27} /><span>评论</span></button>
+              </footer>
+              <span className="article-xhs-home-indicator" />
+            </article>
+          </div>
+        )}
       </section>
     </div>
   );
@@ -600,10 +1127,12 @@ export function ArticleGenerationView({
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
+  const [previewQuickTemplate, setPreviewQuickTemplate] = useState(null);
   const templateSelectRef = useRef(null);
   const modelSelectRef = useRef(null);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
+  const resultXhsCarouselRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function applyCredits(creditsValue) {
@@ -718,8 +1247,6 @@ export function ArticleGenerationView({
     selectedTask?.status === "pending" ||
     selectedTask?.status === "processing";
   const historyCards = cards;
-  const isCopyTemplatePlaceholder = !form.copyTemplate;
-  const displayStep = isCopyTemplatePlaceholder && step < 3 ? 1 : step;
   const copyTemplates = copyTemplatesByPlatform[form.platform] || copyTemplatesByPlatform["更多"];
   const hasCompletedArticle = selectedCompletedImages.length > 0 && ["completed", "partial_completed"].includes(selectedTask?.status);
   const hasFailedArticle = selectedTask?.status === "failed";
@@ -737,7 +1264,19 @@ export function ArticleGenerationView({
       title: `配图 ${index + 1}`
     }));
   }, [cards, selectedCompletedImages]);
-  const currentPreviewImage = previewImages[Math.min(activePreviewIndex, Math.max(previewImages.length - 1, 0))] || null;
+  const resultCreatedAt =
+    formatBeijingDateTime(
+      selectedTask?.createdAt || selectedTask?.created_at || selectedTask?.time,
+    ) || "刚刚";
+  const activeStyleTemplatePreviews = styleTemplatePreviews[form.visualStyle] || null;
+  const showStyleTemplatePreview =
+    step >= 3 &&
+    activeStyleTemplatePreviews &&
+    !isGenerating &&
+    !isDraftSubmitting &&
+    !hasCompletedArticle;
+  const activeVisualStyleLabel =
+    visualStyles.find((item) => item.id === form.visualStyle)?.label || "清新";
 
   useEffect(() => {
     setActivePreviewIndex((current) => Math.min(current, Math.max(previewImages.length - 1, 0)));
@@ -818,6 +1357,25 @@ export function ArticleGenerationView({
     showToast("文案已复制");
   }
 
+  function scrollResultXhsImage(index) {
+    const carousel = resultXhsCarouselRef.current;
+    if (!carousel) return;
+    carousel.scrollTo({
+      left: carousel.clientWidth * index,
+      behavior: "smooth",
+    });
+    setActivePreviewIndex(index);
+  }
+
+  function syncResultXhsImage(event) {
+    const carousel = event.currentTarget;
+    if (!carousel.clientWidth) return;
+    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    if (previewImages[nextIndex] && nextIndex !== activePreviewIndex) {
+      setActivePreviewIndex(nextIndex);
+    }
+  }
+
   async function downloadImagesAsZip() {
     const images = getArticleImages(selectedTask)
       .map((item) => item.image)
@@ -869,6 +1427,13 @@ export function ArticleGenerationView({
     setPreviewTask(null);
     setSubmitError("");
     onModeChange?.("home");
+  }
+
+  function applyQuickTemplateFromPreview() {
+    if (!previewQuickTemplate) return;
+    const template = previewQuickTemplate;
+    setPreviewQuickTemplate(null);
+    handleQuickTemplateClick(template);
   }
 
   function handleQuickTemplateClick(template) {
@@ -1141,30 +1706,6 @@ export function ArticleGenerationView({
 
   return (
     <section className="article-view-root article-popular-workbench">
-      <div className="fm-popular-stepper" aria-label="爆款图文生成步骤">
-        {[
-          ["1", "选择场景与模板"],
-          ["2", "填写创作主题与文案参数"],
-          ["3", "配置配图风格与规格"],
-          ["4", "生成并预览最终图文"],
-        ].map(([number, label], index) => {
-          const currentStep = index + 1;
-          const done = displayStep > currentStep;
-          const active =
-            displayStep === currentStep ||
-            (displayStep === 2 && currentStep <= 2);
-          return (
-            <div
-              className={`${done ? "is-done" : ""} ${active || done ? "is-active" : ""}`}
-              key={label}
-            >
-              <span>{done ? <CheckCircle2 size={24} /> : number}</span>
-              <p>{label}</p>
-            </div>
-          );
-        })}
-      </div>
-
       <div className="article-workspace">
         <aside className="article-form-panel">
           {step < 3 ? (
@@ -1271,6 +1812,26 @@ export function ArticleGenerationView({
                   </button>
                 ))}
               </div>
+              <section className="article-quick-section is-inline">
+                <header>
+                  <div>
+                    <strong>快捷图文模板</strong>
+                    <p>成套图文模板，一键填充文案+预设配图风格</p>
+                  </div>
+                </header>
+                <div className="article-quick-rail">
+                  {quickTemplates.map((item) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      aria-label={item.title}
+                      onClick={() => setPreviewQuickTemplate(item)}
+                    >
+                      <img src={item.image} alt="" />
+                    </button>
+                  ))}
+                </div>
+              </section>
               <div className="article-submit-row is-copy">
                 <input
                   value={form.keyword}
@@ -1290,6 +1851,22 @@ export function ArticleGenerationView({
               <h2>
                 <span>步骤 3 ·</span> 配图配置
               </h2>
+              <div className="article-choice-row is-ratio">
+                <strong>尺寸比例</strong>
+                <div className="article-choice-options">
+                  {ratios.map((item) => (
+                    <button
+                      className={form.ratio === item ? "is-selected" : ""}
+                      type="button"
+                      key={item}
+                      onClick={() => updateForm({ ratio: item })}
+                    >
+                      <RatioIcon ratio={item} />
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="article-visual-config">
                 <ArticleVisualOptionGroup
                   title="视觉风格"
@@ -1297,20 +1874,6 @@ export function ArticleGenerationView({
                   value={form.visualStyle}
                   onChange={(value) => updateForm({ visualStyle: value })}
                 />
-              </div>
-              <div className="article-choice-row is-ratio">
-                <strong>尺寸比例</strong>
-                {ratios.map((item) => (
-                  <button
-                    className={form.ratio === item ? "is-selected" : ""}
-                    type="button"
-                    key={item}
-                    onClick={() => updateForm({ ratio: item })}
-                  >
-                    <RatioIcon ratio={item} />
-                    {item}
-                  </button>
-                ))}
               </div>
               <div className="article-choice-row">
                 <strong>配图数量</strong>
@@ -1407,9 +1970,11 @@ export function ArticleGenerationView({
 
         <main className="article-result-card">
           <header>
-            <strong>生成结果</strong>
+            <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
-              {form.platform} · {form.ratio}
+              {showStyleTemplatePreview
+                ? `${activeVisualStyleLabel}风格 · 4 款示意`
+                : `${form.platform} · ${form.ratio}`}
             </span>
           </header>
           {isDraftSubmitting ? (
@@ -1514,20 +2079,24 @@ export function ArticleGenerationView({
                 </button>
               </div>
             </div>
+          ) : showStyleTemplatePreview ? (
+            <ArticleStyleTemplatePreview items={activeStyleTemplatePreviews} />
           ) : (
             <>
               <div className="article-image-result">
                 <div className="article-result-mode-tabs" aria-label="图文展示模式">
                   {[
                     ["full", "全文模式"],
-                    ["grid", "平铺展示"],
                     ["cover", "封面预览"]
                   ].map(([value, label]) => (
                     <button
                       className={resultViewMode === value ? "is-active" : ""}
                       type="button"
                       key={value}
-                      onClick={() => setResultViewMode(value)}
+                      onClick={() => {
+                        setActivePreviewIndex(0);
+                        setResultViewMode(value);
+                      }}
                     >
                       {label}
                     </button>
@@ -1557,144 +2126,172 @@ export function ArticleGenerationView({
                 {hasCompletedArticle && (
                   <>
                     {resultViewMode === "full" && (
-                      <article className="article-full-layout">
-                        <div className="article-full-carousel">
-                          <div className="article-full-carousel-scroll">
-                            {currentPreviewImage?.image ? (
-                              <img src={currentPreviewImage.image} alt={currentPreviewImage.title || "配图预览"} />
-                            ) : (
-                              <span className="article-image-pending">生成中</span>
-                            )}
+                      <div className="article-history-full-preview article-result-history-preview">
+                        <ArticleFullPreviewMedia
+                          images={previewImages}
+                          ratioFallback={selectedTask?.ratio || form.ratio}
+                          title={draftCopy?.title}
+                          activeIndex={activePreviewIndex}
+                          onActiveIndexChange={setActivePreviewIndex}
+                        />
+                        <article className="article-history-full-copy">
+                          <div className="article-history-full-copy-head">
+                            <span className="article-history-preview-kicker">
+                              爆款图文
+                            </span>
+                            <button type="button" onClick={copyArticleText}>
+                              <Copy size={15} />
+                              复制文本
+                            </button>
                           </div>
-                          {previewImages.length > 1 && (
-                            <>
-                              <button
-                                className="article-carousel-nav is-prev"
-                                type="button"
-                                aria-label="上一张"
-                                onClick={() => setActivePreviewIndex((current) => (current - 1 + previewImages.length) % previewImages.length)}
-                              >
-                                <ChevronLeft size={24} />
-                              </button>
-                              <button
-                                className="article-carousel-nav is-next"
-                                type="button"
-                                aria-label="下一张"
-                                onClick={() => setActivePreviewIndex((current) => (current + 1) % previewImages.length)}
-                              >
-                                <ChevronRight size={24} />
-                              </button>
-                            </>
-                          )}
-                          <div className="article-carousel-dots" aria-label="配图切换">
-                            {previewImages.map((item, index) => (
-                              <button
-                                className={index === activePreviewIndex ? "is-active" : ""}
-                                type="button"
-                                key={item.id}
-                                aria-label={`第 ${index + 1} 张`}
-                                onClick={() => setActivePreviewIndex(index)}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="article-full-copy-scroll">
-                          <div className="article-full-copy">
-                            <h2>{draftCopy?.title}</h2>
+                          <h2>{draftCopy?.title}</h2>
+                          <div className="article-history-full-body">
                             {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
                               <p key={`${paragraph}-${index}`}>{paragraph}</p>
                             ))}
-                            <div>
-                              {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
-                            </div>
                           </div>
-                        </div>
-                      </article>
-                    )}
-                    {resultViewMode === "grid" && (
-                      <div className="article-preview-strip is-grid">
-                        <div>
-                          {previewImages.map((item) => (
-                            <figure key={item.id}>
-                              {item.image ? (
-                                <img src={item.image} alt={item.title || "配图预览"} />
-                              ) : (
-                                <span className="article-image-pending">
-                                  {item.status === "failed" ? "生成失败" : "生成中"}
-                                </span>
-                              )}
-                            </figure>
-                          ))}
-                        </div>
-                        <article className="article-grid-copy">
-                          <h2>{draftCopy?.title}</h2>
-                          {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
-                            <p key={`${paragraph}-${index}`}>{paragraph}</p>
-                          ))}
-                          <div>
-                            {(draftCopy?.tags || []).map((tag) => <span key={tag}>#{tag}</span>)}
+                          <div className="article-history-preview-tags">
+                            {(draftCopy?.tags || []).map((tag) => (
+                              <span key={tag}>#{tag}</span>
+                            ))}
+                          </div>
+                          <div className="article-history-full-footer">
+                            <span>{resultCreatedAt}</span>
+                            <button type="button" onClick={downloadImagesAsZip}>
+                              <Download size={16} />
+                              下载图片
+                            </button>
                           </div>
                         </article>
                       </div>
                     )}
                     {resultViewMode === "cover" && (
-                      <div className="article-cover-preview-wrap">
-                        <article className="article-cover-preview-card">
-                          <div className="article-cover-preview-image">
-                            {currentPreviewImage?.image ? (
-                              <img src={currentPreviewImage.image} alt={draftCopy?.title || "封面预览"} />
-                            ) : (
-                              <span className="article-image-pending">生成中</span>
-                            )}
-                            <span className="article-cover-preview-badge">
-                              {form.copyTemplate || "小红书封面"}
+                      <div className="article-xhs-preview-stage article-result-xhs-stage">
+                        <article className="article-xhs-phone">
+                          <div className="article-xhs-statusbar">
+                            <strong>9:41</strong>
+                            <span className="article-xhs-status-icons">
+                              <i className="is-signal" />
+                              <i className="is-wifi" />
+                              <i className="is-battery" />
                             </span>
                           </div>
-                          <h2>{draftCopy?.title || currentPreviewImage?.title || "未命名封面"}</h2>
+                          <header className="article-xhs-authorbar">
+                            <ArrowLeft size={25} />
+                            <span className="article-xhs-avatar">F</span>
+                            <strong>Facemini AI</strong>
+                            <button type="button">关注</button>
+                            <Share2 size={23} />
+                          </header>
+                          <div className="article-xhs-scroll-content">
+                            <div
+                              className="article-xhs-image-carousel"
+                              ref={resultXhsCarouselRef}
+                              onScroll={syncResultXhsImage}
+                            >
+                              {previewImages.map((item) => (
+                                <figure
+                                  className="article-xhs-image-wrap"
+                                  key={item.id}
+                                >
+                                  <img
+                                    src={item.image}
+                                    alt={item.title || draftCopy?.title}
+                                    draggable="false"
+                                  />
+                                  <span>AI生成</span>
+                                </figure>
+                              ))}
+                            </div>
+                            {previewImages.length > 1 && (
+                              <div className="article-xhs-image-dots">
+                                {previewImages.map((item, index) => (
+                                  <button
+                                    className={
+                                      index === activePreviewIndex
+                                        ? "is-active"
+                                        : ""
+                                    }
+                                    type="button"
+                                    key={item.id}
+                                    onClick={() => scrollResultXhsImage(index)}
+                                    aria-label={`查看第 ${index + 1} 张`}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            <p className="article-xhs-publish-time">
+                              编辑于 {resultCreatedAt}
+                            </p>
+                            <div className="article-xhs-caption">
+                              <h2>{draftCopy?.title}</h2>
+                              {(draftCopy?.body || "")
+                                .split(/\n+/)
+                                .filter(Boolean)
+                                .map((paragraph, index) => (
+                                  <p key={`${paragraph}-${index}`}>
+                                    {paragraph}
+                                  </p>
+                                ))}
+                              <div>
+                                {(draftCopy?.tags || []).map((tag) => (
+                                  <span key={tag}>#{tag}</span>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="article-xhs-comment-prompt">
+                              <span className="article-xhs-avatar is-small">
+                                F
+                              </span>
+                              <p>说点什么，让 TA 也认识爱创作的你</p>
+                            </div>
+                            <div className="article-xhs-empty-comments">
+                              <MessageCircle size={35} />
+                              <p>
+                                这是一片荒草地，<strong>分享笔记</strong>
+                              </p>
+                            </div>
+                          </div>
+                          <footer className="article-xhs-toolbar">
+                            <button
+                              type="button"
+                              className="article-xhs-comment-input"
+                            >
+                              <span>说点什么...</span>
+                            </button>
+                            <button type="button">
+                              <Heart size={27} />
+                              <span>点赞</span>
+                            </button>
+                            <button type="button">
+                              <Bookmark size={27} />
+                              <span>收藏</span>
+                            </button>
+                            <button type="button">
+                              <MessageCircle size={27} />
+                              <span>评论</span>
+                            </button>
+                          </footer>
+                          <span className="article-xhs-home-indicator" />
                         </article>
                       </div>
                     )}
                   </>
-              )}
-              {hasCompletedArticle && (
-                <footer>
-                  <button className="article-footer-btn" type="button" onClick={copyArticleText}>
-                    <Copy size={16} />
-                    复制文案
-                  </button>
-                  <button className="article-footer-btn" type="button" onClick={downloadImagesAsZip}>
-                    <Download size={16} />
-                    下载图片
-                  </button>
-                </footer>
               )}
             </div>
             </>
           )}
         </main>
 
-      <section className="article-quick-section">
-        <header>
-          <div>
-            <strong>快捷图文模板</strong>
-            <p>成套图文模板，一键填充文案+预设配图风格</p>
-          </div>
-        </header>
-        <div className="article-quick-rail">
-          {quickTemplates.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              onClick={() => handleQuickTemplateClick(item)}
-            >
-              <img src={item.image} alt="" />
-              <span>{item.title}</span>
-            </button>
-          ))}
-        </div>
-      </section>
       </div>
       <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
+      {previewQuickTemplate && (
+        <QuickTemplatePreviewDialog
+          template={previewQuickTemplate}
+          onClose={() => setPreviewQuickTemplate(null)}
+          onApply={applyQuickTemplateFromPreview}
+        />
+      )}
       {pendingQuickTemplate && (
         <QuickTemplateConfirmDialog
           template={pendingQuickTemplate}

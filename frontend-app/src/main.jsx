@@ -97,6 +97,7 @@ import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { VideoGenStage } from "./features/video/VideoGenStage";
+import { VideoGenerationResultPlayer } from "./features/video/VideoGenerationResultPlayer";
 import { useVideoGenStateMachine } from "./features/video/useVideoGenStateMachine";
 import "./features/video/videoGenStage.css";
 import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
@@ -2218,10 +2219,19 @@ const AppHome = memo(function AppHome({
         <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
           <BrandWordmark />
         </button>
-        <div>
+        <div className="fm-home-nav-center">
           <a href="#why">关于我们</a>
           <a href="#modules">关于产品</a>
           <a href="#footer">探索我们</a>
+        </div>
+        <div className="fm-home-actions">
+          <button
+            type="button"
+            className="fm-primary fm-home-enter-creation"
+            onClick={() => onOpenFeature("creation")}
+          >
+            开始探索
+          </button>
         </div>
       </nav>
       <section className="fm-hero-section">
@@ -7934,6 +7944,7 @@ function VideoGenerationView({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [pageToastMessage, setPageToastMessage] = useState("");
+  const [playingTask, setPlayingTask] = useState(null);
   const [selectedInspiration, setSelectedInspiration] = useState(null);
   const [videoInspirationCategory, setVideoInspirationCategory] =
     useState("all");
@@ -7946,6 +7957,7 @@ function VideoGenerationView({
     useState(false);
   const videoComposerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
+  const previousVideoResetSignalRef = useRef(resetSignal);
   const isGuest = Boolean(authUser?.isGuest);
 
   const videoGen = useVideoGenStateMachine({
@@ -7953,8 +7965,12 @@ function VideoGenerationView({
       showVideoPageToast(message || "视频生成失败");
       setIsSubmitting(false);
     },
-    onReturnToList: () => {
-      setFilter("recent");
+    onReturnToList: (task) => {
+      if (task?.video) {
+        setPlayingTask(task);
+      } else {
+        setFilter("recent");
+      }
       setIsSubmitting(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
@@ -7970,6 +7986,15 @@ function VideoGenerationView({
     const timer = window.setTimeout(() => setPageToastMessage(""), 2000);
     return () => window.clearTimeout(timer);
   }, [pageToastMessage]);
+
+  useEffect(() => {
+    if (previousVideoResetSignalRef.current === resetSignal) return;
+    previousVideoResetSignalRef.current = resetSignal;
+    setPlayingTask(null);
+    setFilter("inspiration");
+    setIsSubmitting(false);
+    videoGen.resetToIdle();
+  }, [resetSignal]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -8085,6 +8110,7 @@ function VideoGenerationView({
     }
     setSubmitError("");
     setIsSubmitting(true);
+    setPlayingTask(null);
     videoGen.startGeneration({
       prompt: payload.prompt,
       duration: payload.duration,
@@ -8117,7 +8143,11 @@ function VideoGenerationView({
     });
 
   async function toggleFavorite(id) {
-    await videoApi.toggleFavorite(id);
+    const updated = await videoApi.toggleFavorite(id);
+    setCards((current) =>
+      current.map((item) => (item.id === id ? updated : item)),
+    );
+    setPlayingTask((current) => (current?.id === id ? updated : current));
   }
 
   async function regenerateTask(id) {
@@ -8127,17 +8157,28 @@ function VideoGenerationView({
     }
     setSubmitError("");
     setIsSubmitting(true);
+    const sourceTask =
+      playingTask?.id === id
+        ? playingTask
+        : cards.find((item) => item.id === id);
+    setPlayingTask(null);
+    videoGen.startGeneration({
+      prompt: sourceTask?.prompt || "",
+      duration: sourceTask?.duration || 5,
+    });
     try {
-      await videoApi.regenerateTask(id);
+      const task = await videoApi.regenerateTask(id);
+      videoGen.attachTaskId(task.id);
       videoApi
         .refreshCredits()
         .then((value) => applyCreditsUpdate(setCredits, value))
         .catch(() => {});
     } catch (error) {
+      videoGen.failGeneration(
+        error.message || "创建视频生成任务失败",
+      );
       setSubmitError("");
       showVideoPageToast(error.message || "创建视频生成任务失败");
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -8188,6 +8229,7 @@ function VideoGenerationView({
   }, [filter]);
 
   function openVideoInspiration() {
+    setPlayingTask(null);
     setFilter("inspiration");
     setIsComposerFocused(false);
     setIsComposerPastThreshold(false);
@@ -8216,17 +8258,28 @@ function VideoGenerationView({
     });
   }
 
+  if (videoGen.isGenStageActive && videoGen.derivedState) {
+    return <VideoGenStage derivedState={videoGen.derivedState} />;
+  }
+
+  if (playingTask?.video) {
+    return (
+      <section className="video-gen-view video-gen-view-root is-immersive">
+        <div className="video-gen-immersive-shell">
+          <VideoGenerationResultPlayer
+            task={playingTask}
+            onBack={openVideoInspiration}
+            onFavorite={() => toggleFavorite(playingTask.id)}
+            onRegenerate={() => requestRegenerate(playingTask.id)}
+          />
+        </div>
+        {regenerateConfirmDialog}
+      </section>
+    );
+  }
+
   return (
-    <section
-      className={`video-gen-view video-gen-view-root${videoGen.isGenStageActive ? " is-gen-stage" : ""}`}
-    >
-      {videoGen.isGenStageActive && videoGen.derivedState ? (
-        <VideoGenStage
-          derivedState={videoGen.derivedState}
-          logEndRef={videoGen.logEndRef}
-        />
-      ) : (
-        <>
+    <section className="video-gen-view video-gen-view-root">
       <div className="image-filter-tabs">
         <button
           className={filter === "inspiration" ? "selected" : ""}
@@ -8370,8 +8423,6 @@ function VideoGenerationView({
       />
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
-        </>
-      )}
     </section>
   );
 }
@@ -13062,7 +13113,20 @@ function WorkbenchTopbar({
         className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}
       >
         <div className="fm-topbar-title-row">
-          {!showArticleTabs && <h1>{title}</h1>}
+          {!showArticleTabs && (
+            <h1>
+              {activeNav === "music" ? (
+                <button
+                  type="button"
+                  className="fm-topbar-title-home"
+                  onClick={() => window.dispatchEvent(new Event("facemini:music-home"))}
+                  aria-label="返回 AI 音乐首页"
+                >
+                  {title}
+                </button>
+              ) : title}
+            </h1>
+          )}
           {showDigitalHumanTabs && (
             <div className="fm-digital-tabs" aria-label="数字人类型">
               <button

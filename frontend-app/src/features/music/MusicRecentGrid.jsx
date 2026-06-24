@@ -1,5 +1,5 @@
-import React from "react";
-import { MoreHorizontal, Music, Play } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Download, Loader2, MoreHorizontal, Music, Play, Trash2 } from "lucide-react";
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return "00:00";
@@ -29,42 +29,155 @@ function generateCoverGradient(seed) {
   return gradients[Math.abs(hash) % gradients.length];
 }
 
-export function MusicRecentGrid({ items = [], onSelectItem, emptyText = "还没有生成过音乐，快来创作第一首吧 ✨" }) {
+function isItemGenerating(item, generatingId) {
+  return item.id === generatingId || item.status === "processing";
+}
+
+export function MusicRecentGrid({
+  items = [],
+  generatingId = "",
+  onSelectItem,
+  onDownloadItem,
+  onDeleteItem,
+  emptyText = "还没有生成过音乐，快来创作第一首吧 ✨"
+}) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const menuWrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!openMenuId) return undefined;
+
+    function handlePointerDown(event) {
+      if (!menuWrapRef.current?.contains(event.target)) {
+        setOpenMenuId(null);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpenMenuId(null);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenuId]);
+
   if (!items.length) {
     return <div className="music-ref-empty">{emptyText}</div>;
   }
 
   return (
     <div className="music-ref-recent-list">
-      {items.map((item) => (
-        <div key={item.id} className="music-ref-recent-card" onClick={() => onSelectItem?.(item)}>
-          <div className="music-ref-recent-cover" style={{ background: generateCoverGradient(item.id) }}>
-            <Music size={28} />
-          </div>
-          <div className="music-ref-recent-body">
-            <div className="music-ref-recent-main">
-              <strong>{item.prompt || "AI 音乐"}</strong>
-              <span>{item.isInstrumental ? "纯音乐" : "带歌词"} · {formatDuration(item.durationMs)}</span>
+      {items.map((item) => {
+        const isGenerating = isItemGenerating(item, generatingId);
+        const isMenuOpen = openMenuId === item.id;
+
+        return (
+          <div
+            key={item.id}
+            className={`music-ref-recent-card${isGenerating ? " is-generating" : ""}`}
+            onClick={() => !isGenerating && onSelectItem?.(item)}
+          >
+            <button
+              type="button"
+              className="music-ref-recent-cover"
+              style={{ background: generateCoverGradient(item.id) }}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!isGenerating) onSelectItem?.(item);
+              }}
+              disabled={isGenerating}
+              aria-label={`打开 ${item.prompt || "AI 音乐"} 播放器`}
+            >
+              <Music size={28} />
+            </button>
+            <div className="music-ref-recent-body">
+              <div className="music-ref-recent-main">
+                <strong>{item.prompt || "AI 音乐"}</strong>
+                <span>
+                  {item.isInstrumental ? "纯音乐" : "带歌词"}
+                  {item.durationMs ? ` · ${formatDuration(item.durationMs)}` : ""}
+                </span>
+              </div>
+              <div className="music-ref-recent-actions">
+                {isGenerating ? (
+                  <span className="music-gen-waiting-recent-status">
+                    <Loader2 size={14} className="music-lyrics-sync-spinner" />
+                    生成中...
+                  </span>
+                ) : (
+                  <>
+                    {generatingId ? (
+                      <span className="music-gen-waiting-recent-duration">{formatDuration(item.durationMs)}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="music-ref-recent-play"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelectItem?.(item);
+                      }}
+                      aria-label="播放"
+                    >
+                      <Play size={14} fill="currentColor" />
+                    </button>
+                    <div
+                      className={`music-ref-recent-more-wrap${isMenuOpen ? " is-open" : ""}`}
+                      ref={isMenuOpen ? menuWrapRef : null}
+                    >
+                      <button
+                        type="button"
+                        className={`music-ref-recent-more${isMenuOpen ? " is-active" : ""}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenMenuId((current) => (current === item.id ? null : item.id));
+                        }}
+                        aria-label="更多操作"
+                        aria-expanded={isMenuOpen}
+                        aria-haspopup="menu"
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                      {isMenuOpen ? (
+                        <div className="music-ref-recent-menu" role="menu">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenMenuId(null);
+                              onDownloadItem?.(item);
+                            }}
+                          >
+                            <Download size={14} />
+                            下载
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="is-danger"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenMenuId(null);
+                              onDeleteItem?.(item);
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            删除
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="music-ref-recent-actions">
-              <button
-                type="button"
-                className="music-ref-recent-play"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onSelectItem?.(item);
-                }}
-                aria-label="播放"
-              >
-                <Play size={14} fill="currentColor" />
-              </button>
-              <button type="button" className="music-ref-recent-more" onClick={(event) => event.stopPropagation()} aria-label="更多">
-                <MoreHorizontal size={14} />
-              </button>
-            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -49,3 +49,11 @@ export async function syncLyrics(req, res) {
     sendError(res, error);
   }
 }
+
+export async function deleteTask(req, res) {
+  try {
+    res.json(await service.deleteMusicTask(req.params.id, req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}

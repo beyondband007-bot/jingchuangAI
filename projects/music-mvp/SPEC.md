@@ -39,6 +39,17 @@ Response body:
 }
 ```
 
+### `POST /api/music/tasks/:id/sync-lyrics`
+Sync lyrics timeline for a completed task. Optional query: `force=1`.
+
+### `DELETE /api/music/tasks/:id`
+Delete a music task for the current user.
+
+Response body:
+```json
+{ "ok": true }
+```
+
 ## Frontend
 - View: `frontend-app/src/features/music/MusicGenerationView.jsx`
 - API: `frontend-app/src/features/music/musicApi.js`

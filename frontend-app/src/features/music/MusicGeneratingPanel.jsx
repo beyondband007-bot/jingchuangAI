@@ -4,15 +4,13 @@ import {
   ChevronRight,
   Clock,
   FileText,
-  Loader2,
   Mic,
-  MoreHorizontal,
   Music,
-  Play,
   SlidersHorizontal,
   Sparkles,
   X
 } from "lucide-react";
+import { MusicRecentGrid } from "./MusicRecentGrid";
 
 const STEP_DEFINITIONS = [
   { id: "lyrics", label: "解析歌词", icon: FileText },
@@ -80,14 +78,6 @@ function RandomEqualizerBars({
   );
 }
 
-function formatDuration(ms) {
-  if (!ms || ms <= 0) return "00:00";
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
 function getStepStatusLabel(status) {
   if (status === "done") return "已完成";
   if (status === "active") return "进行中";
@@ -118,10 +108,11 @@ export function MusicGeneratingPanel({
   etaSeconds = 0,
   recentItems = [],
   generatingId = "",
-  generateCoverGradient,
   onCancel,
   onViewAll,
-  onSelectItem
+  onSelectItem,
+  onDownloadItem,
+  onDeleteItem
 }) {
   const steps = buildSteps(activeStep);
   const safeProgress = Math.max(0, Math.min(100, Math.round(progressPercent)));
@@ -206,57 +197,13 @@ export function MusicGeneratingPanel({
             查看全部 <ChevronRight size={14} />
           </button>
         </div>
-        {recentItems.length > 0 ? (
-          <div className="music-ref-recent-list">
-            {recentItems.map((item) => {
-              const isGenerating = item.id === generatingId || item.status === "processing";
-              return (
-                <div
-                  key={item.id}
-                  className={`music-ref-recent-card${isGenerating ? " is-generating" : ""}`}
-                  onClick={() => !isGenerating && onSelectItem?.(item)}
-                >
-                  <div className="music-ref-recent-cover" style={{ background: generateCoverGradient(item.id) }}>
-                    <Music size={28} />
-                  </div>
-                  <div className="music-ref-recent-body">
-                    <div className="music-ref-recent-main">
-                      <strong>{item.prompt || "AI 音乐"}</strong>
-                      <span>{item.isInstrumental ? "纯音乐" : "带歌词"}{item.durationMs ? ` · ${formatDuration(item.durationMs)}` : ""}</span>
-                    </div>
-                    <div className="music-ref-recent-actions">
-                      {isGenerating ? (
-                        <span className="music-gen-waiting-recent-status">
-                          <Loader2 size={14} className="music-lyrics-sync-spinner" />
-                          生成中...
-                        </span>
-                      ) : (
-                        <>
-                          <span className="music-gen-waiting-recent-duration">{formatDuration(item.durationMs)}</span>
-                          <button
-                            type="button"
-                            className="music-ref-recent-play"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onSelectItem?.(item);
-                            }}
-                          >
-                            <Play size={14} fill="currentColor" />
-                          </button>
-                          <button type="button" className="music-ref-recent-more" onClick={(event) => event.stopPropagation()}>
-                            <MoreHorizontal size={14} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="music-ref-empty">还没有生成过音乐，快来创作第一首吧 ✨</div>
-        )}
+        <MusicRecentGrid
+          items={recentItems}
+          generatingId={generatingId}
+          onSelectItem={onSelectItem}
+          onDownloadItem={onDownloadItem}
+          onDeleteItem={onDeleteItem}
+        />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { stat } from "fs/promises";
+import { stat, unlink } from "fs/promises";
 import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
 import { createHttpError } from "../../shared/http.js";
 import { mkdir, writeFile } from "fs/promises";
@@ -11,6 +11,7 @@ import {
   failMusicTaskRow,
   findMusicTaskRow,
   listMusicTaskRows,
+  deleteMusicTaskRow,
   updateMusicTaskAudioMeta
 } from "./music.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
@@ -111,6 +112,36 @@ export async function getRecentMusic(userId) {
 export async function getMusicTask(id, userId) {
   const row = await findMusicTaskRow({ id, userId });
   return row ? mapMusicTask(row) : null;
+}
+
+export async function deleteMusicTask(id, userId) {
+  const existing = await findMusicTaskRow({ id, userId });
+  if (!existing) {
+    throw createHttpError("音乐任务不存在", 404);
+  }
+
+  const result = await deleteMusicTaskRow(id, userId);
+  const audioUrl = String(existing.audio_url || "").trim();
+  if (audioUrl) {
+    const audioDir = path.resolve(
+      process.cwd(),
+      config.media.storageDir,
+      "music",
+      "audio",
+    );
+    const fileName = path.basename(audioUrl);
+    const filePath = path.resolve(audioDir, fileName);
+    const relativePath = path.relative(audioDir, filePath);
+    if (
+      fileName &&
+      !relativePath.startsWith("..") &&
+      !path.isAbsolute(relativePath)
+    ) {
+      await unlink(filePath).catch(() => {});
+    }
+  }
+
+  return result;
 }
 
 function cleanGenerationError(error) {

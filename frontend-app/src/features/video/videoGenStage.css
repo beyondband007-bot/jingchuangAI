@@ -1,218 +1,583 @@
-/* Loading UI — user-provided styles (scoped to .gen-stage) */
+/* Facemini generation-stage — full viewport fill below topbar */
 
-/* ── App shell when gen stage active ── */
+:root {
+  --primary: #705cff;
+  --primary-2: #9a88ff;
+  --primary-dark: #3b2a9f;
+  --text: #222640;
+  --muted: #777d98;
+  --line: rgba(112, 92, 255, 0.12);
+  --gen-stage-bg:
+    radial-gradient(circle at 50% 30%, rgba(134, 113, 255, 0.11), transparent 30%),
+    radial-gradient(circle at 72% 42%, rgba(112, 148, 255, 0.07), transparent 24%),
+    radial-gradient(circle at 28% 40%, rgba(177, 158, 255, 0.06), transparent 25%),
+    linear-gradient(180deg, #fbfbff 0%, #fbfbff 56%, #f7f4ff 100%);
+}
+
+/* ── Shell: lock viewport, no scroll ── */
 .feature-page-shell:has(.video-gen-view-root.is-gen-stage) {
-  overflow: hidden;
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
 }
 
 .feature-main:has(.video-gen-view-root.is-gen-stage) {
-  display: flex;
-  flex-direction: column;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
   height: 100vh !important;
   max-height: 100vh !important;
   min-height: 0 !important;
   overflow: hidden !important;
-  background: #f7f8ff;
+  background: var(--gen-stage-bg) !important;
+}
+
+.feature-module-keepalive:has(.video-gen-view-root.is-gen-stage) {
+  display: flex !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }
 
 .feature-main:has(.video-gen-view-root.is-gen-stage) .fm-workbench-topbar {
   flex: 0 0 auto;
 }
 
-.video-gen-view.is-gen-stage,
-.video-gen-view-root.is-gen-stage {
-  box-sizing: border-box;
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0 !important;
+/*
+ * Single root: generation-stage + video-gen-view (no nested sections).
+ * Overrides global styles.css min-height:100vh, padding-bottom:256px, background:#fff
+ */
+section.generation-stage.video-gen-view.video-gen-view-root.is-gen-stage {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
   min-height: 0 !important;
-  height: auto !important;
-  max-height: none !important;
-  overflow: hidden;
-  background: #f7f8ff;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  isolation: isolate;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "PingFang SC",
+    "Microsoft YaHei",
+    sans-serif;
+  background: var(--gen-stage-bg) !important;
 }
 
-/* ── Stage root ── */
-.gen-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  font-family: Arial, sans-serif;
-  background: #f7f8ff;
-}
-
-/* ============ 背景层 ============ */
-.gen-stage .bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(120, 140, 255, 0.12), transparent 40%),
-    radial-gradient(circle at 80% 60%, rgba(100, 180, 255, 0.08), transparent 45%),
-    linear-gradient(180deg, #f8faff, #ffffff);
-}
-
-.gen-stage .particles::before {
+.generation-stage::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(120, 130, 255, 0.25) 1px, transparent 1px);
-  background-size: 60px 60px;
-  animation: loading-float 18s linear infinite;
-  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.8), transparent 36%),
+    radial-gradient(ellipse at 50% 66%, rgba(134, 113, 255, 0.06), transparent 44%);
+  animation: fog-breathe 8s ease-in-out infinite;
 }
 
-@keyframes loading-float {
-  from {
-    transform: translateY(0);
+@keyframes fog-breathe {
+  0%,
+  100% {
+    opacity: 0.78;
+    transform: scale(1);
   }
-  to {
-    transform: translateY(-120px);
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
   }
 }
 
-/* ============ 中心容器 ============ */
-.gen-stage .container {
-  position: relative;
-  z-index: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-/* ============ 进度环 ============ */
-.gen-stage .progress-wrap {
-  position: relative;
-}
-
-.gen-stage .progress {
-  width: 220px;
-  height: 220px;
-  transform: rotate(-90deg);
-  display: block;
-}
-
-.gen-stage .progress circle {
-  fill: none;
-  stroke-width: 6;
-}
-
-.gen-stage .bg-circle {
-  stroke: rgba(120, 130, 255, 0.15);
-}
-
-.gen-stage .progress-circle {
-  stroke: #5b6cff;
-  stroke-linecap: round;
-  stroke-dasharray: 339;
-  transition: stroke-dashoffset 0.5s;
-}
-
-/* ============ 文案 ============ */
-.gen-stage .percent {
+.generation-stage::after {
+  content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  font-size: 40px;
-  font-weight: bold;
-  color: #2c2f3a;
+  left: 8%;
+  right: 8%;
   top: 50%;
-  transform: translateY(-50%);
-  text-align: center;
+  height: 34%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(128, 108, 255, 0.035), transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(130, 108, 255, 0.018) 62%, rgba(255, 255, 255, 0));
+  filter: blur(18px);
+  opacity: 0.9;
+}
+
+.generation-stage__ambient,
+.generation-stage__wave {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
-/* ============ step ============ */
-.gen-stage .steps {
-  margin-top: 40px;
+.generation-stage__ambient {
+  z-index: 1;
+}
+
+.generation-stage__wave {
+  z-index: 2;
+}
+
+.generation-content {
+  position: relative;
+  z-index: 5;
+  flex: 1 1 0;
+  width: 100%;
+  max-width: min(1100px, calc(100% - 64px));
+  min-height: 0;
+  margin: 0 auto;
   display: flex;
-  gap: 40px;
-  font-size: 13px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-}
-
-.gen-stage .step {
-  color: #999;
-  transition: 0.3s;
-}
-
-.gen-stage .step.active {
-  color: #5b6cff;
-  font-weight: bold;
-}
-
-/* ============ logs ============ */
-.gen-stage .logs {
-  margin-top: 30px;
-  width: 420px;
-  max-width: calc(100% - 32px);
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 12px;
-  color: #444;
-  max-height: 120px;
-  overflow: hidden;
+  gap: clamp(12px, 2vh, 24px);
+  padding: clamp(16px, 3vh, 40px) 32px;
   box-sizing: border-box;
 }
 
-.gen-stage .log-item {
-  opacity: 0.7;
-  animation: loading-fade-in 0.4s ease;
+.generation-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: clamp(32px, 3.2vw, 48px);
+  line-height: 1;
+  font-weight: 850;
+  color: #3c2aa9;
+  letter-spacing: -1px;
+  text-shadow: 0 8px 28px rgba(107, 83, 255, 0.08);
 }
 
-@keyframes loading-fade-in {
+.sparkle {
+  width: 22px;
+  height: 22px;
+  position: relative;
+  flex: 0 0 22px;
+}
+
+.sparkle::before,
+.sparkle::after {
+  content: "";
+  position: absolute;
+  background: linear-gradient(135deg, #7562ff, #b6aaff);
+  clip-path: polygon(50% 0%, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0% 50%, 38% 38%);
+  animation: sparkle 2.5s ease-in-out infinite;
+}
+
+.sparkle::before {
+  width: 18px;
+  height: 18px;
+  left: 0;
+  top: 0;
+}
+
+.sparkle::after {
+  width: 8px;
+  height: 8px;
+  right: -3px;
+  bottom: -1px;
+  animation-delay: 0.7s;
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.82) rotate(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08) rotate(15deg);
+  }
+}
+
+.generation-desc {
+  margin-top: 22px;
+  max-width: 720px;
+  text-align: center;
+  color: #5f657f;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.visual-core {
+  position: relative;
+  width: 100%;
+  height: clamp(260px, 36vh, 370px);
+  margin-top: 0;
+  display: grid;
+  place-items: center;
+  flex: 0 1 auto;
+}
+
+.orbit-svg {
+  position: absolute;
+  width: min(1020px, 96vw);
+  height: 370px;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px rgba(112, 95, 255, 0.07));
+}
+
+.orbit-line {
+  fill: none;
+  stroke-width: 1.3;
+  transform-origin: center;
+}
+
+.orbit-line.one {
+  stroke: rgba(112, 95, 255, 0.15);
+  animation: orbit-a 16s ease-in-out infinite alternate;
+}
+
+.orbit-line.two {
+  stroke: rgba(112, 95, 255, 0.095);
+  animation: orbit-b 20s ease-in-out infinite alternate;
+}
+
+.orbit-line.three {
+  stroke: rgba(158, 145, 255, 0.075);
+  animation: orbit-c 24s ease-in-out infinite alternate;
+}
+
+@keyframes orbit-a {
   from {
-    opacity: 0;
-    transform: translateY(5px);
+    transform: rotate(-2deg) scaleX(0.99);
   }
   to {
-    opacity: 0.7;
-    transform: translateY(0);
+    transform: rotate(2deg) scaleX(1.01);
   }
 }
 
-/* ============ 完成态 ============ */
-.gen-stage.is-done .progress-wrap {
+@keyframes orbit-b {
+  from {
+    transform: rotate(7deg) translateX(-3px);
+  }
+  to {
+    transform: rotate(10deg) translateX(4px);
+  }
+}
+
+@keyframes orbit-c {
+  from {
+    transform: rotate(-10deg) translateY(2px);
+  }
+  to {
+    transform: rotate(-7deg) translateY(-3px);
+  }
+}
+
+.orbit-node {
+  fill: #8c79ff;
+  opacity: 0.86;
+}
+
+.progress-shell {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 14px 42px rgba(107, 83, 255, 0.09));
+  z-index: 3;
+}
+
+.progress-shell::before {
+  content: "";
+  position: absolute;
+  inset: 29px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 45% 40%, rgba(255, 255, 255, 0.94), rgba(248, 247, 255, 0.56) 58%, rgba(232, 228, 255, 0.16) 100%);
+  box-shadow:
+    inset 0 0 70px rgba(137, 119, 255, 0.05),
+    0 0 70px rgba(137, 119, 255, 0.06);
+}
+
+.progress-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.progress-track {
+  fill: none;
+  stroke: rgba(113, 93, 255, 0.1);
+  stroke-width: 14;
+}
+
+.progress-value {
+  fill: none;
+  stroke: url(#genProgressGradient);
+  stroke-width: 14;
+  stroke-linecap: round;
+  filter: url(#genProgressGlow);
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.progress-copy {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.progress-label {
+  color: #7a809b;
+  font-size: 17px;
+  margin-bottom: 8px;
+}
+
+.progress-number {
+  color: #372897;
+  font-size: 66px;
+  line-height: 0.95;
+  font-weight: 850;
+  letter-spacing: -2px;
+}
+
+.progress-status {
+  color: #686e8c;
+  font-size: 18px;
+  margin-top: 11px;
+}
+
+.progress-eta {
+  margin-top: 7px;
+  color: #9297ad;
+  font-size: 13px;
+  letter-spacing: 0.1px;
+}
+
+.steps {
+  position: relative;
+  width: min(820px, 88%);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 22px;
+  z-index: 5;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.steps::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 23px;
+  height: 2px;
+  background: rgba(114, 95, 255, 0.11);
+  z-index: -1;
+}
+
+.steps-progress {
+  position: absolute;
+  left: 10%;
+  top: 23px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7863ff, #9a8aff);
+  box-shadow: 0 0 14px rgba(120, 99, 255, 0.24);
+  z-index: -1;
+  transition: width 0.6s cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+
+.step {
+  text-align: center;
+}
+
+.step-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  display: grid;
+  place-items: center;
+  color: #a7abc0;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(109, 92, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(93, 72, 170, 0.04);
+}
+
+.step-icon svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.step.active .step-icon {
+  color: #fff;
+  background: linear-gradient(135deg, #7662ff, #8f7bff);
+  box-shadow:
+    0 0 0 6px rgba(118, 98, 255, 0.08),
+    0 0 28px rgba(118, 98, 255, 0.4);
+  animation: active-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes active-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 6px rgba(118, 98, 255, 0.08),
+      0 0 26px rgba(118, 98, 255, 0.3);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow:
+      0 0 0 9px rgba(118, 98, 255, 0.05),
+      0 0 36px rgba(118, 98, 255, 0.4);
+  }
+}
+
+.step-name {
+  color: #252a46;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 800;
+}
+
+.step-state {
+  margin-top: 6px;
+  color: #a2a6b9;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.step.active .step-state {
+  color: #765fff;
+  font-weight: 700;
+}
+
+.tip-card {
+  position: relative;
+  z-index: 6;
+  width: min(680px, 84%);
+  min-height: 94px;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 20px 26px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(109, 92, 255, 0.1);
+  box-shadow:
+    0 20px 50px rgba(72, 52, 160, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px);
+  flex-shrink: 0;
+}
+
+.tip-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #40338f;
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.tip-icon {
+  color: #765fff;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tip-text {
+  color: #6e738e;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Done state */
+.generation-stage.is-done .progress-shell {
   transform: scale(0.55);
   opacity: 0;
   transition: transform 0.65s ease, opacity 0.65s ease;
 }
 
-.gen-stage.is-done .bg,
-.gen-stage.is-done .particles::before {
+.generation-stage.is-done::before,
+.generation-stage.is-done::after,
+.generation-stage.is-done .generation-stage__ambient,
+.generation-stage.is-done .generation-stage__wave {
   opacity: 0.4;
   transition: opacity 0.6s ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gen-stage .particles::before,
-  .gen-stage .log-item {
-    animation: none !important;
+.generation-stage.is-done .step.active .step-icon {
+  animation: none;
+}
+
+@media (max-height: 760px) {
+  .generation-content {
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .visual-core {
+    height: clamp(220px, 32vh, 300px);
+  }
+
+  .progress-shell {
+    width: 258px;
+    height: 258px;
+  }
+
+  .progress-number {
+    font-size: 54px;
   }
 }
 
 @media (max-width: 760px) {
-  .gen-stage .progress {
-    width: 190px;
-    height: 190px;
+  .generation-content {
+    width: calc(100% - 32px);
+    padding-top: 28px;
   }
 
-  .gen-stage .percent {
-    font-size: 34px;
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 20px;
   }
 
-  .gen-stage .steps {
-    margin-top: 28px;
-    gap: 24px;
+  .visual-core {
+    height: 280px;
   }
 
-  .gen-stage .logs {
-    margin-top: 24px;
+  .progress-shell {
+    width: 240px;
+    height: 240px;
+  }
+
+  .progress-number {
+    font-size: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .generation-stage *,
+  .generation-stage *::before,
+  .generation-stage *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
