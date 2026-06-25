@@ -1,0 +1,68 @@
+// 文章顶栏 Tab（爆款图文 / 历史图文），须在 styles.scss 之后导入
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-workbench-topbar.has-digital-tabs {
+  align-items: stretch !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-workbench-topbar.has-digital-tabs
+  .fm-topbar-title-row {
+  display: flex !important;
+  align-items: stretch !important;
+  align-self: stretch !important;
+  min-height: 72px !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-workbench-topbar.has-digital-tabs
+  .fm-article-top-tabs {
+  display: flex !important;
+  align-items: stretch !important;
+  align-self: stretch !important;
+  gap: 36px !important;
+  height: auto !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-workbench-topbar.has-digital-tabs
+  .fm-top-actions {
+  align-self: center !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-article-top-tabs
+  button {
+  display: inline-flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 72px !important;
+  padding: 0 2px !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 3px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #c1bfcc !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-article-top-tabs
+  button.is-active {
+  position: static !important;
+  color: #55535f !important;
+  border-bottom-color: #6b7cff !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  .fm-article-top-tabs
+  button.is-active::after {
+  content: none !important;
+  display: none !important;
+}

@@ -1,0 +1,149 @@
+// 必须在 main.jsx 中于 styles.scss 之后导入，才能覆盖全局 EOF 规则
+
+.feature-page-shell:has(
+    [data-feature-module="article"][data-feature-active="true"] .article-popular-workbench
+  ) {
+  align-items: stretch !important;
+  min-height: 100vh !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  background: #f5f6ff !important;
+}
+
+.feature-main:has(
+    [data-feature-module="article"][data-feature-active="true"] .article-popular-workbench
+  ) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  align-self: stretch !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: hidden !important;
+  background: #f5f6ff !important;
+}
+
+.feature-main:has([data-feature-module="article"][data-feature-active="true"])
+  > .article-view-root.article-popular-workbench,
+[data-feature-module="article"] .article-view-root.article-popular-workbench {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  grid-template-rows: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box;
+  padding: 16px !important;
+  background: #f5f6ff !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-workspace {
+  display: flex !important;
+  flex-direction: row !important;
+  flex: 1 1 auto !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-form-panel,
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  align-self: stretch !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-form-panel {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-card {
+  > header {
+    flex: 0 0 auto;
+  }
+
+  > :not(header) {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  justify-content: center;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-result {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-submit-row.is-copy,
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-step-action-row {
+  flex: 0 0 auto;
+  margin-top: 10px;
+  padding-top: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), #fff 32%);
+}
+
+@media (max-width: 1180px) {
+  .feature-page-shell:has(
+      [data-feature-module="article"][data-feature-active="true"] .article-popular-workbench
+    ) {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow: auto !important;
+  }
+
+  .feature-main:has(
+    [data-feature-module="article"][data-feature-active="true"] .article-popular-workbench
+  ) {
+    overflow: visible !important;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench {
+    flex: none !important;
+    min-height: calc(100vh - 72px) !important;
+    overflow: visible !important;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-workspace {
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-form-panel,
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-card {
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    min-height: 360px !important;
+    max-height: none !important;
+  }
+}
