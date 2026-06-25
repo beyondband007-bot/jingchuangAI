@@ -2026,7 +2026,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
                 },
                 this
               ),
-              /* @__PURE__ */ jsxDEV("div", { className: "auth-drawer-kicker", children: "JINGCHUANG AI ACCOUNT" }, void 0, false, {
+              /* @__PURE__ */ jsxDEV("div", { className: "auth-drawer-kicker", children: "Facemini AI ACCOUNT" }, void 0, false, {
                 fileName: "E:/CodeX/AI工作台/frontend-app/src/main.jsx",
                 lineNumber: 1955,
                 columnNumber: 9

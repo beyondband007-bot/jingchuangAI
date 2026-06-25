@@ -93,6 +93,10 @@ import {
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
+import {
+  privacyPolicyMarkdown,
+  userAgreementMarkdown,
+} from "./legalDocuments";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
@@ -757,6 +761,28 @@ function getPendingInviteCode() {
 
 function isLoggedInUser(authUser) {
   return Boolean(authUser && !authUser.isGuest);
+}
+
+const legalDocuments = {
+  "user-agreement": {
+    title: "用户协议",
+    subtitle: "Facemini 用户服务协议",
+    markdown: userAgreementMarkdown,
+  },
+  "privacy-policy": {
+    title: "隐私政策",
+    subtitle: "Facemini 隐私政策",
+    markdown: privacyPolicyMarkdown,
+  },
+};
+
+function getLegalDocumentKeyFromLocation() {
+  const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const path = window.location.pathname.replace(/^\/+/, "");
+  const legalKey = [hashView, path]
+    .map((value) => value.replace(/^legal\/?/, ""))
+    .find((value) => legalDocuments[value]);
+  return legalKey || "";
 }
 
 function clearPendingInviteCode() {
@@ -1546,6 +1572,8 @@ function buildImageLaunchSeedPayload(seed = {}) {
 
 function getRouteView() {
   const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const legalDocumentKey = getLegalDocumentKeyFromLocation();
+  if (legalDocumentKey) return `legal:${legalDocumentKey}`;
   if (appNavIdSet.has(hashView)) return hashView;
   if (window.location.pathname === "/chat" || hashView === "chat")
     return "chat";
@@ -1661,11 +1689,14 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [smsCooldown, setSmsCooldown] = useState(0);
   const [renderMode, setRenderMode] = useState(mode);
   const [isClosing, setIsClosing] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
   const isRegister = renderMode === "register";
   const isForgot = renderMode === "forgot";
   const isLogin = renderMode === "login";
   const isPasswordLogin = isLogin && loginMethod === "password";
   const isPhoneCodeLogin = isLogin && loginMethod === "phone-code";
+  const isSubmitDisabled =
+    isSubmitting || (isLogin && !agreementAccepted);
 
   useEffect(() => {
     if (!mode) return;
@@ -1685,6 +1716,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setIsSubmitting(false);
     setIsSendingCode(false);
     setSmsCooldown(0);
+    setAgreementAccepted(false);
   }, [mode]);
 
   useEffect(() => {
@@ -1796,6 +1828,11 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     event.preventDefault();
     setError("");
     setSuccessMessage("");
+
+    if (isLogin && !agreementAccepted) {
+      setError("请先阅读并同意用户协议和隐私政策");
+      return;
+    }
 
     if (isForgot) {
       if (resetPassword !== resetConfirmPassword) {
@@ -2003,7 +2040,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         >
           <X size={18} />
         </button>
-        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <div className="auth-drawer-kicker">Facemini AI ACCOUNT</div>
         <h2 id="auth-drawer-title">{getTitle()}</h2>
         <p>{getDescription()}</p>
         <form className="auth-form" onSubmit={submit}>
@@ -2104,7 +2141,30 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             <div className="auth-success">{successMessage}</div>
           )}
           {error && <div className="auth-error">{error}</div>}
-          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+          {isLogin && (
+            <div className="auth-agreement">
+              <label className="auth-agreement-check">
+                <input
+                  type="checkbox"
+                  checked={agreementAccepted}
+                  onChange={(event) =>
+                    setAgreementAccepted(event.target.checked)
+                  }
+                />
+                <span>
+                  已阅读并同意
+                  <a href="#/legal/user-agreement" onClick={requestClose}>
+                    用户协议
+                  </a>
+                  和
+                  <a href="#/legal/privacy-policy" onClick={requestClose}>
+                    隐私政策
+                  </a>
+                </span>
+              </label>
+            </div>
+          )}
+          <button className="auth-submit" type="submit" disabled={isSubmitDisabled}>
             {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
             <span>
               {renderMode === "register"
@@ -2205,6 +2265,46 @@ function LogoutConfirmDialog({ isSubmitting, onCancel, onConfirm }) {
         </div>
       </section>
     </div>
+  );
+}
+
+function LegalDocumentPage({ documentKey, onOpenHome }) {
+  const documentConfig =
+    legalDocuments[documentKey] || legalDocuments["user-agreement"];
+  const content = documentConfig.markdown.replace(
+    /\*\*(mail@facemini\.com)\*\*/g,
+    "[$1](mailto:$1)",
+  );
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [documentKey]);
+
+  return (
+    <main className="legal-page-shell">
+      <section className="legal-page-hero">
+        <div>
+          <span>Facemini Legal</span>
+          <h1>{documentConfig.title}</h1>
+        </div>
+      </section>
+      <article className="legal-markdown-card">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            a({ href = "", children, ...props }) {
+              return (
+                <a href={href} {...props}>
+                  {children}
+                </a>
+              );
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </article>
+    </main>
   );
 }
 
@@ -13927,6 +14027,15 @@ function App() {
   }, [isLoggingOut]);
 
   const page = (() => {
+    if (String(view).startsWith("legal:")) {
+      return (
+        <LegalDocumentPage
+          documentKey={String(view).slice("legal:".length)}
+          onOpenHome={openLanding}
+        />
+      );
+    }
+
     if (view === "home") {
       return (
         <AppHome

@@ -80,7 +80,7 @@ export async function ensureVirtualAssetGroup({ userId, feature }) {
   const result = await createArkAssetGroup({
     projectName: config.ark.projectName,
     name,
-    description: `Jingchuang AI AIGC assets for ${normalizedFeature}`
+    description: `Facemini AI AIGC assets for ${normalizedFeature}`
   });
   const providerGroupId = result.Id || result.id;
   if (!providerGroupId) {
