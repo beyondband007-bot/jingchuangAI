@@ -5802,11 +5802,10 @@ a:hover {
   color: #f6f6f7;
   text-align: left;
   background: #171717;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid #dedde8;
   border-radius: 8px;
   cursor: pointer;
   break-inside: avoid;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.26);
 }
 
 .video-inspiration-card:hover {
