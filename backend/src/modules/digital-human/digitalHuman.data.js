@@ -1,8 +1,8 @@
 export const digitalHumanModels = [
   {
-    value: "seedance-2.0",
-    label: "Seedance 2.0",
-    provider: "ark",
+    value: "kling-ai-avatar-pro",
+    label: "可灵数字人",
+    provider: "kie",
     basePoints: 30,
     configured: false
   }

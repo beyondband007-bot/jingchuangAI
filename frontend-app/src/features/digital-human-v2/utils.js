@@ -42,6 +42,13 @@ export function formatVoiceDuration(seconds = 0) {
   return `${value}s`;
 }
 
+export function formatSpeechDurationFromMs(durationMs = 0) {
+  const seconds = Number(durationMs || 0) / 1000;
+  if (!seconds) return "0s";
+  const rounded = Math.round(seconds * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}s` : `${rounded.toFixed(1)}s`;
+}
+
 export const SCRIPT_MAX_LENGTH = 500;
 
 /** 数字人视频生成当前已接入的音色（与历史配置一致） */

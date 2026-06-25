@@ -420,6 +420,9 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             text={text}
             onTextChange={setText}
             onOptimizeRequest={handleScriptOptimizeRequest}
+            voiceId={voiceId}
+            voiceSpeed={voiceSpeed}
+            voiceEmotion={voiceEmotion}
           />
           <GenerateFooter
             videoSpec={videoSpec}

@@ -1,6 +1,7 @@
 export const PHOTO_SCRIPT_MAX_LENGTH = 500;
 
 export const PHOTO_MODEL_LABELS = {
+  "kie-s2v-r2v": "可灵数字人",
   "seedance-2.0": "Seedance 2.0",
 };
 
@@ -30,5 +31,5 @@ export function estimatePhotoSpeechSeconds(text = "") {
 
 export function formatPhotoModelLabel(model) {
   if (!model?.value) return "可灵数字人";
-  return PHOTO_MODEL_LABELS[model.value] || model.label || model.value;
+  return model.label || PHOTO_MODEL_LABELS[model.value] || model.value;
 }

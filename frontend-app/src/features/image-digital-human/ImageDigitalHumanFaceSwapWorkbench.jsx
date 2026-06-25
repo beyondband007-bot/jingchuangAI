@@ -8,7 +8,7 @@ import "./ImageDigitalHumanFaceSwapWorkbench.css";
 
 const emptyImageDigitalHumanOptions = {
   models: [],
-  defaults: { model: "seedance-2.0", driveMode: "text" },
+  defaults: { model: "kie-s2v-r2v", driveMode: "text" },
   limits: { maxImageBytes: 10 * 1024 * 1024, maxAudioMs: 15000, maxTextLength: 2000 },
 };
 
