@@ -39,6 +39,7 @@ async function createTables() {
       email VARCHAR(254) NULL UNIQUE,
       password_hash VARCHAR(255) NULL,
       display_name VARCHAR(120) NOT NULL,
+      avatar_url VARCHAR(255) NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -66,6 +67,15 @@ async function createTables() {
   if (!userColumnNames.has("password_hash")) {
     await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email");
   }
+  if (!userColumnNames.has("avatar_url")) {
+    await pool.query("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) NULL AFTER display_name");
+  }
+
+  await pool.query(
+    `UPDATE users
+     SET avatar_url = CONCAT('/assets/avatars/', FLOOR(1 + RAND() * 25), '.jpg')
+     WHERE avatar_url IS NULL OR avatar_url = ''`
+  );
 
   const [usernameIndexes] = await pool.query(
     `SELECT INDEX_NAME
@@ -1051,6 +1061,29 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS voice_clone_assets (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      audio_sha256 CHAR(64) NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_name VARCHAR(160) NULL,
+      source_file_name VARCHAR(255) NULL,
+      source_mime_type VARCHAR(120) NULL,
+      source_size INT NOT NULL DEFAULT 0,
+      duration_ms INT NOT NULL DEFAULT 0,
+      demo_audio MEDIUMTEXT NULL,
+      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_voice_clone_user_hash (user_id, audio_sha256),
+      INDEX idx_voice_clone_user_created (user_id, created_at),
+      INDEX idx_voice_clone_voice_id (voice_id),
+      CONSTRAINT fk_voice_clone_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_convert_tasks (
       id VARCHAR(120) NOT NULL PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
@@ -1137,15 +1170,15 @@ async function seedDemoData() {
     await connection.beginTransaction();
 
     await connection.query(
-      `INSERT INTO users (external_id, display_name)
-       VALUES ('demo-user', '匿名用户')
-       ON DUPLICATE KEY UPDATE external_id = external_id`
+      `INSERT INTO users (external_id, display_name, avatar_url)
+       VALUES ('demo-user', '匿名用户', '/assets/avatars/1.jpg')
+       ON DUPLICATE KEY UPDATE avatar_url = IFNULL(NULLIF(avatar_url, ''), VALUES(avatar_url))`
     );
 
     await connection.query(
-      `INSERT INTO users (external_id, display_name)
-       VALUES ('guest-user', '游客')
-       ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)`
+      `INSERT INTO users (external_id, display_name, avatar_url)
+       VALUES ('guest-user', '游客', '/assets/avatars/2.jpg')
+       ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), avatar_url = IFNULL(NULLIF(avatar_url, ''), VALUES(avatar_url))`
     );
 
     const [users] = await connection.query("SELECT id FROM users WHERE external_id = 'demo-user' LIMIT 1");
@@ -1212,7 +1245,7 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 60),
         ('kling_3_4k', 'jobs', 'kling-3.0/video', 'Kling 3.0 4K', '4K', 'per_second', 235, 2.345,
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
-        ('seedance_2_0_720p', 'jobs', 'seedance/2.0-text-to-video', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
+        ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
         ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
@@ -1230,6 +1263,13 @@ async function seedDemoData() {
         default_duration = VALUES(default_duration),
         enabled = VALUES(enabled),
         sort_order = VALUES(sort_order)
+    `);
+
+    await connection.query("UPDATE image_model_prices SET base_points = 30");
+    await connection.query(`
+      UPDATE video_model_prices
+      SET base_points = CASE WHEN model_key = 'seedance_2_0_720p' THEN 120 ELSE base_points END,
+          enabled = CASE WHEN model_key = 'seedance_2_0_720p' THEN TRUE ELSE FALSE END
     `);
 
     await connection.query(`

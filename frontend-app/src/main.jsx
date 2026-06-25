@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   memo,
   useCallback,
   useEffect,
@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import BillingPoints from "./components/BillingPoints.jsx";
 import { createRoot } from "react-dom/client";
 import { ConfigProvider } from "@arco-design/web-react";
 import ReactMarkdown from "react-markdown";
@@ -94,6 +95,10 @@ import { ArticleGenerationView } from "./features/article/ArticleGenerationView"
 import { DigitalHumanHubView } from "./features/digital-human-hub/DigitalHumanHubView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
+import {
+  privacyPolicyMarkdown,
+  userAgreementMarkdown,
+} from "./legalDocuments";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
@@ -430,6 +435,8 @@ function arrangeInspirationCards(cards, columnCount = 6) {
     },
     { portrait: [], square: [], wide: [] },
   );
+  if (buckets.wide.length === cards.length) return cards;
+
   const nonWideCards = [];
   while (buckets.portrait.length || buckets.square.length) {
     nonWideCards.push(
@@ -563,6 +570,8 @@ const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "creation", label: "创作中心", icon: Sparkles },
   { id: "assets", label: "我的资产", icon: Wallet },
+  { id: "profile", label: "个人中心", icon: UserRound },
+  { id: "favorites", label: "我的收藏", icon: Star },
   { id: "billing", label: "积分充值", icon: Wallet },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
@@ -632,6 +641,7 @@ const homeFeatureRoutes = [
 ];
 
 const faceminiAsset = (path) => `/assets/facemini/${path}`;
+const defaultUserAvatarSrc = "/assets/avatars/1.jpg";
 const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
 const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
 const inspirationFavoritesStorageKey = "facemini:inspiration-favorites";
@@ -761,6 +771,28 @@ function getPendingInviteCode() {
 
 function isLoggedInUser(authUser) {
   return Boolean(authUser && !authUser.isGuest);
+}
+
+const legalDocuments = {
+  "user-agreement": {
+    title: "用户协议",
+    subtitle: "Facemini 用户服务协议",
+    markdown: userAgreementMarkdown,
+  },
+  "privacy-policy": {
+    title: "隐私政策",
+    subtitle: "Facemini 隐私政策",
+    markdown: privacyPolicyMarkdown,
+  },
+};
+
+function getLegalDocumentKeyFromLocation() {
+  const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const path = window.location.pathname.replace(/^\/+/, "");
+  const legalKey = [hashView, path]
+    .map((value) => value.replace(/^legal\/?/, ""))
+    .find((value) => legalDocuments[value]);
+  return legalKey || "";
 }
 
 function clearPendingInviteCode() {
@@ -1092,26 +1124,74 @@ const fmImageInspirations = [
 }));
 
 const fmDigitalHumanInspirations = [
-  ["public-anchor-dialogue", "主播对话"],
-  ["public-product", "产品讲解员"],
-  ["public-medical", "健康科普员", "健康科普员-safari"],
-  ["public-home-lady", "居家知性女性"],
-  ["public-real-estate", "房地产经纪人"],
-  ["public-travel", "文旅推荐官"],
-  ["public-fashion-host", "时尚类女主播"],
-  ["public-knowledge-host", "知识科普类女主播"],
-  ["public-executive-lady", "职场女高管"],
-  ["public-business-host", "职场轻商务女主播"],
-  ["public-finance", "财经主播"],
-  ["public-operations", "运营达人"],
-].map(([avatarId, title, assetName]) => {
+  [
+    "public-anchor-dialogue",
+    "主播对话",
+    "双主播围绕热点话题自然互动，一问一答拆解观点，节奏轻松、信息密度高，适合直播切片和访谈口播。",
+  ],
+  [
+    "public-product",
+    "产品讲解员",
+    "以亲和专业的语气介绍产品卖点，结合使用场景、核心功能和购买理由，像短视频带货主播一样清晰种草。",
+  ],
+  [
+    "public-medical",
+    "健康科普员",
+    "用通俗易懂的表达科普健康知识，先点出现象，再解释原因和日常建议，语气温和可信，避免夸大承诺。",
+  ],
+  [
+    "public-home-lady",
+    "居家知性女性",
+    "在温暖居家场景中分享生活经验、好物心得或情绪陪伴，表达自然细腻，营造松弛、可信赖的陪伴感。",
+  ],
+  [
+    "public-real-estate",
+    "房地产经纪人",
+    "以专业经纪人的口吻介绍房源亮点，讲清区位、户型、配套和适合人群，表达稳重利落，突出真实看房感。",
+  ],
+  [
+    "public-travel",
+    "文旅推荐官",
+    "像本地向导一样推荐目的地，串联景点亮点、路线体验和拍照氛围，语言有画面感，激发立即出发的兴趣。",
+  ],
+  [
+    "public-fashion-host",
+    "时尚类女主播",
+    "用精致自信的语气讲解穿搭、妆容或潮流单品，突出风格关键词、适配场景和细节质感，节奏轻快高级。",
+  ],
+  [
+    "public-knowledge-host",
+    "知识科普类女主播",
+    "把复杂知识拆成清楚的三点，用案例开场、逻辑递进、结尾总结，适合科普、教育和观点类短视频。",
+  ],
+  [
+    "public-executive-lady",
+    "职场女高管",
+    "以成熟干练的管理者视角分享商业判断、团队管理或职业成长建议，表达坚定克制，观点清晰有分量。",
+  ],
+  [
+    "public-business-host",
+    "职场轻商务女主播",
+    "用轻商务风格介绍办公工具、效率方法或品牌服务，语气专业但不生硬，突出解决问题和提升效率的价值。",
+  ],
+  [
+    "public-finance",
+    "财经主播",
+    "以财经主播口吻解读市场变化、行业趋势或投资常识，先给结论再讲逻辑，表达冷静理性，提醒风险边界。",
+  ],
+  [
+    "public-operations",
+    "运营达人",
+    "从运营实战角度拆解增长方法、活动策划或内容策略，强调目标、动作和复盘指标，语言直接、可执行。",
+  ],
+].map(([avatarId, title, prompt, assetName]) => {
   const fileName = assetName || title;
   return {
     id: `digital-human-${avatarId}`,
     avatarId,
     title,
     category: "数字人形象",
-    prompt: `今天也是充满希望的一天`,
+    prompt,
     thumbnail: `/assets/digital-human/posters/${fileName}.jpg`,
     poster: `/assets/digital-human/posters/${fileName}.jpg`,
     source: `/assets/digital-human/${fileName}.mp4`,
@@ -1122,6 +1202,19 @@ const fmDigitalHumanInspirations = [
     aspect: "wide",
   };
 });
+
+const digitalHumanOfficialAvatarFallbacks = fmDigitalHumanInspirations.map(
+  (item) => ({
+    id: item.avatarId,
+    name: item.title,
+    description: `适合${item.title}类数字人口播、讲解与短视频内容`,
+    language: "中文 / 通用",
+    status: "ready",
+    cover: item.source,
+    assetPath: item.source,
+    poster: item.poster,
+  }),
+);
 
 const fmCreationScenes = [
   [
@@ -1178,6 +1271,19 @@ const getCreationSceneImage = (image) =>
   image.includes("/")
     ? faceminiAsset(image)
     : faceminiAsset(`inspirations/image/thumbs/${image}.webp`);
+
+function getCreationCenterInspirations(activeTab) {
+  switch (activeTab) {
+    case "图片灵感":
+      return fmImageGenerationInspirations;
+    case "视频灵感":
+      return getFaceminiVideoInspirations();
+    case "数字人形象":
+      return fmDigitalHumanInspirations;
+    default:
+      return fmImageInspirations.filter((item) => item.category === activeTab);
+  }
+}
 
 const fmInspirationCategoryRouteMap = {
   图片灵感: { feature: "image", target: "image", model: "Kling Image" },
@@ -1476,6 +1582,8 @@ function buildImageLaunchSeedPayload(seed = {}) {
 
 function getRouteView() {
   const hashView = window.location.hash.replace(/^#\/?/, "").split("?")[0];
+  const legalDocumentKey = getLegalDocumentKeyFromLocation();
+  if (legalDocumentKey) return `legal:${legalDocumentKey}`;
   if (appNavIdSet.has(hashView)) return hashView;
   if (window.location.pathname === "/chat" || hashView === "chat")
     return "chat";
@@ -1591,11 +1699,14 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
   const [smsCooldown, setSmsCooldown] = useState(0);
   const [renderMode, setRenderMode] = useState(mode);
   const [isClosing, setIsClosing] = useState(false);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
   const isRegister = renderMode === "register";
   const isForgot = renderMode === "forgot";
   const isLogin = renderMode === "login";
   const isPasswordLogin = isLogin && loginMethod === "password";
   const isPhoneCodeLogin = isLogin && loginMethod === "phone-code";
+  const isSubmitDisabled =
+    isSubmitting || (isLogin && !agreementAccepted);
 
   useEffect(() => {
     if (!mode) return;
@@ -1615,6 +1726,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     setIsSubmitting(false);
     setIsSendingCode(false);
     setSmsCooldown(0);
+    setAgreementAccepted(false);
   }, [mode]);
 
   useEffect(() => {
@@ -1726,6 +1838,11 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
     event.preventDefault();
     setError("");
     setSuccessMessage("");
+
+    if (isLogin && !agreementAccepted) {
+      setError("请先阅读并同意用户协议和隐私政策");
+      return;
+    }
 
     if (isForgot) {
       if (resetPassword !== resetConfirmPassword) {
@@ -1933,7 +2050,7 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
         >
           <X size={18} />
         </button>
-        <div className="auth-drawer-kicker">JINGCHUANG AI ACCOUNT</div>
+        <div className="auth-drawer-kicker">Facemini AI ACCOUNT</div>
         <h2 id="auth-drawer-title">{getTitle()}</h2>
         <p>{getDescription()}</p>
         <form className="auth-form" onSubmit={submit}>
@@ -2034,7 +2151,30 @@ function AuthDrawer({ mode, onClose, onModeChange, onSuccess }) {
             <div className="auth-success">{successMessage}</div>
           )}
           {error && <div className="auth-error">{error}</div>}
-          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+          {isLogin && (
+            <div className="auth-agreement">
+              <label className="auth-agreement-check">
+                <input
+                  type="checkbox"
+                  checked={agreementAccepted}
+                  onChange={(event) =>
+                    setAgreementAccepted(event.target.checked)
+                  }
+                />
+                <span>
+                  已阅读并同意
+                  <a href="#/legal/user-agreement" onClick={requestClose}>
+                    用户协议
+                  </a>
+                  和
+                  <a href="#/legal/privacy-policy" onClick={requestClose}>
+                    隐私政策
+                  </a>
+                </span>
+              </label>
+            </div>
+          )}
+          <button className="auth-submit" type="submit" disabled={isSubmitDisabled}>
             {isSubmitting ? <Loader2 size={17} /> : <Sparkles size={17} />}
             <span>
               {renderMode === "register"
@@ -2135,6 +2275,46 @@ function LogoutConfirmDialog({ isSubmitting, onCancel, onConfirm }) {
         </div>
       </section>
     </div>
+  );
+}
+
+function LegalDocumentPage({ documentKey, onOpenHome }) {
+  const documentConfig =
+    legalDocuments[documentKey] || legalDocuments["user-agreement"];
+  const content = documentConfig.markdown.replace(
+    /\*\*(mail@facemini\.com)\*\*/g,
+    "[$1](mailto:$1)",
+  );
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [documentKey]);
+
+  return (
+    <main className="legal-page-shell">
+      <section className="legal-page-hero">
+        <div>
+          <span>Facemini Legal</span>
+          <h1>{documentConfig.title}</h1>
+        </div>
+      </section>
+      <article className="legal-markdown-card">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            a({ href = "", children, ...props }) {
+              return (
+                <a href={href} {...props}>
+                  {children}
+                </a>
+              );
+            },
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </article>
+    </main>
   );
 }
 
@@ -2376,14 +2556,7 @@ function CreationCenterView({
     },
   ];
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
-  const filteredImages =
-    activeTab === "图片灵感"
-      ? fmImageGenerationInspirations
-      : activeTab === "视频灵感"
-        ? getFaceminiVideoInspirations()
-      : activeTab === "数字人形象"
-        ? fmDigitalHumanInspirations
-      : fmImageInspirations.filter((item) => item.category === activeTab);
+  const filteredImages = getCreationCenterInspirations(activeTab);
   const visibleFilteredImages = useIncrementalItems(
     filteredImages,
     `creation-${activeTab}-${filteredImages.length}`,
@@ -2603,6 +2776,7 @@ function CreationCenterView({
           </div>
         </div>
         <WaterfallGrid
+          key={`creation-inspiration-${activeTab}`}
           className="fm-masonry"
           gap={12}
           maxColumns={5}
@@ -2629,15 +2803,6 @@ function CreationCenterView({
                     }
                   }}
                 />
-                {(item.category === "视频灵感" ||
-                  item.category === "数字人形象" ||
-                  item.videoSrc ||
-                  item.source?.endsWith?.(".mp4") ||
-                  item.source?.endsWith?.(".webm")) && (
-                  <span className="fm-image-card-play" aria-hidden="true">
-                    <Play size={18} fill="currentColor" />
-                  </span>
-                )}
               </button>
               <button
                 className="fm-image-card-remix"
@@ -3174,6 +3339,11 @@ function mapArticleAssets(tasks = []) {
   });
 }
 
+function canFavoriteAsset(card) {
+  const status = String(card?.status || "").toLowerCase();
+  return status !== "failed" && status !== "error";
+}
+
 function CreditTransactionsPanel({
   transactions,
   transactionsPage,
@@ -3346,6 +3516,7 @@ function AssetsPage({
     paymentResultTtlSeconds,
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
   const effectiveViewMode = pageMode || viewMode;
 
@@ -3353,7 +3524,6 @@ function AssetsPage({
   const totalCreations = userAssets.length;
   const profileDisplayName =
     authUser?.displayName || authUser?.username || "用户";
-  const profileAvatarChar = String(profileDisplayName).trim().charAt(0) || "用";
   const profileCredits = Number(
     credits?.balance ?? authUser?.credits ?? 0,
   ).toLocaleString("zh-CN");
@@ -3362,7 +3532,7 @@ function AssetsPage({
   const profileInviteLink =
     inviteProfile?.inviteLink || buildClientInviteLink(profileInviteCode);
   const favoriteAssets = useMemo(
-    () => userAssets.filter((asset) => asset.favorite),
+    () => userAssets.filter((asset) => asset.favorite && canFavoriteAsset(asset)),
     [userAssets],
   );
   const totalFavorites = favoriteAssets.length;
@@ -3481,7 +3651,7 @@ function AssetsPage({
   }, [refreshAssets]);
 
   useEffect(() => {
-    if (isGuest || viewMode !== "profile") return undefined;
+    if (isGuest || effectiveViewMode !== "profile") return undefined;
     let alive = true;
     invitationApi
       .me()
@@ -3492,7 +3662,7 @@ function AssetsPage({
     return () => {
       alive = false;
     };
-  }, [authUser?.id, isGuest, viewMode]);
+  }, [authUser?.id, effectiveViewMode, isGuest]);
 
   useEffect(() => {
     setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
@@ -3747,6 +3917,15 @@ function AssetsPage({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showTransactionsModal]);
 
+  useEffect(() => {
+    if (!showAccountSettings) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setShowAccountSettings(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showAccountSettings]);
+
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
   }
@@ -3802,6 +3981,7 @@ function AssetsPage({
 
   async function toggleAssetFavorite(item) {
     if (!item) return;
+    if (!canFavoriteAsset(item)) return;
     if (item.type === "AI 图片") await imageApi.toggleFavorite(item.rawId);
     if (item.type === "爆款图文") await articleApi.toggleFavorite(item.rawId);
     if (item.type === "AI 视频") await videoApi.toggleFavorite(item.rawId);
@@ -3820,6 +4000,7 @@ function AssetsPage({
 
   async function togglePreviewAssetFavorite(item) {
     if (!item) return Boolean(item?.favorite);
+    if (!canFavoriteAsset(item)) return false;
     const nextValue = !Boolean(item.favorite);
     setPreviewAsset((current) =>
       current?.id === item.id ? { ...current, favorite: nextValue } : current,
@@ -3866,10 +4047,12 @@ function AssetsPage({
   function goToFavoritesView() {
     setViewMode("favorites");
     setFavoriteTab("图片灵感");
+    onOpenFeature?.("favorites");
   }
 
   function goToGalleryView() {
     setViewMode("gallery");
+    onOpenFeature?.("assets");
   }
 
   function goToBillingView({ openTransactions = false } = {}) {
@@ -3955,7 +4138,9 @@ function AssetsPage({
           </div>
           {assetGalleryCards.length ? (
             <div className="fm-assets-grid">
-              {assetGalleryCards.map((card) => (
+              {assetGalleryCards.map((card) => {
+                const canFavorite = canFavoriteAsset(card);
+                return (
                 <article
                   className="fm-asset-card"
                   key={card.id}
@@ -4012,24 +4197,27 @@ function AssetsPage({
                         <Download size={16} />
                       </button>
                     )}
-                    <button
-                      type="button"
-                      aria-label="收藏"
-                      className={card.favorite ? "is-favorite" : ""}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        toggleAssetFavorite(card);
-                      }}
-                    >
-                      <Star
-                        size={16}
-                        fill={card.favorite ? "currentColor" : "none"}
-                      />
-                    </button>
+                    {canFavorite && (
+                      <button
+                        type="button"
+                        aria-label="收藏"
+                        className={card.favorite ? "is-favorite" : ""}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleAssetFavorite(card);
+                        }}
+                      >
+                        <Star
+                          size={16}
+                          fill={card.favorite ? "currentColor" : "none"}
+                        />
+                      </button>
+                    )}
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="fm-assets-empty-state">
@@ -4048,7 +4236,9 @@ function AssetsPage({
           onClose={() => setPreviewAsset(null)}
           onRemix={remixAsset}
           onReference={referenceAsset}
-          onFavorite={togglePreviewAssetFavorite}
+          onFavorite={
+            canFavoriteAsset(previewAsset) ? togglePreviewAssetFavorite : undefined
+          }
         />
         {deleteConfirmDialog}
       </section>
@@ -4071,9 +4261,11 @@ function AssetsPage({
           <div className="fm-profile-center-inner">
             <div className="fm-profile-user-card">
               <div className="fm-profile-user-main">
-                <div className="fm-profile-avatar" aria-hidden="true">
-                  {profileAvatarChar}
-                </div>
+                <img
+                  className="fm-profile-avatar"
+                  src={authUser?.avatarUrl || defaultUserAvatarSrc}
+                  alt={`${profileDisplayName}头像`}
+                />
                 <div className="fm-profile-user-meta">
                   <strong>{profileDisplayName}</strong>
                   <span>剩余 {profileCredits} 积分</span>
@@ -4144,22 +4336,59 @@ function AssetsPage({
               <div className="fm-profile-panel">
                 <h3>快捷入口</h3>
                 <div className="fm-profile-quick-links">
-                  <button type="button" className="is-muted">
-                    会员中心
-                  </button>
                   <button type="button" onClick={() => onOpenInvite?.()}>
                     邀请有礼
                   </button>
                   <button type="button" onClick={() => goToBillingView()}>
                     充值与明细
                   </button>
-                  <button type="button" className="is-muted">
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountSettings(true)}
+                  >
                     账号设置
                   </button>
                   <button type="button" onClick={goToGalleryView}>
                     我的资产
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showAccountSettings && (
+          <div
+            className="fm-account-settings-layer"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setShowAccountSettings(false);
+              }
+            }}
+          >
+            <div
+              className="fm-account-settings-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fm-account-settings-title"
+            >
+              <div className="fm-account-settings-head">
+                <h2 id="fm-account-settings-title">账号设置</h2>
+                <button
+                  type="button"
+                  aria-label="关闭账号设置"
+                  onClick={() => setShowAccountSettings(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="fm-account-settings-list">
+                {["修改头像", "修改昵称", "修改手机号", "修改密码"].map((item) => (
+                  <button type="button" key={item}>
+                    <span>{item}</span>
+                    <ChevronRight size={20} />
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -4182,18 +4411,6 @@ function AssetsPage({
           </div>
         ) : (
           <div className="fm-assets-inner fm-favorites-inner">
-            <div className="fm-favorites-nav-row">
-              <button
-                className="fm-favorites-back"
-                type="button"
-                onClick={() => setViewMode("profile")}
-              >
-                返回个人中心
-              </button>
-            </div>
-            <div className="fm-assets-headline fm-favorites-title-row">
-              <h2>我的收藏</h2>
-            </div>
             <div className="fm-assets-filter-row">
               <div className="fm-assets-tabs fm-favorites-tabs" aria-label="我的收藏分类">
                 {favoriteModuleTabs.map((tab) => (
@@ -4211,7 +4428,9 @@ function AssetsPage({
             </div>
             {visibleFavoriteCards.length ? (
               <div className="fm-assets-grid fm-favorites-grid">
-                {visibleFavoriteCards.map((card) => (
+                {visibleFavoriteCards.map((card) => {
+                  const canFavorite = canFavoriteAsset(card);
+                  return (
                   <article
                     className="fm-asset-card"
                     key={card.id}
@@ -4268,24 +4487,27 @@ function AssetsPage({
                           <Download size={16} />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        aria-label="收藏"
-                        className={card.favorite ? "is-favorite" : ""}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          toggleAssetFavorite(card);
-                        }}
-                      >
-                        <Star
-                          size={16}
-                          fill={card.favorite ? "currentColor" : "none"}
-                        />
-                      </button>
+                      {canFavorite && (
+                        <button
+                          type="button"
+                          aria-label="收藏"
+                          className={card.favorite ? "is-favorite" : ""}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleAssetFavorite(card);
+                          }}
+                        >
+                          <Star
+                            size={16}
+                            fill={card.favorite ? "currentColor" : "none"}
+                          />
+                        </button>
+                      )}
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="fm-assets-empty-state fm-favorites-empty-state">
@@ -7553,7 +7775,7 @@ function getVideoModelOptions(options, modelKey) {
   };
 }
 
-const defaultVideoModelKey = "kling_3_std";
+const defaultVideoModelKey = "seedance_2_0_720p";
 
 function pickDefaultVideoModel(models = []) {
   return (
@@ -7718,9 +7940,6 @@ function VideoInspirationCard({ item, onOpen }) {
           playsInline
           preload="metadata"
         />
-        <span className="video-inspiration-play">
-          <Play size={17} fill="currentColor" />
-        </span>
       </span>
     </button>
   );
@@ -8798,6 +9017,7 @@ function ChatComposerBar({
   onModelSwitchNotice,
   reasoningEffort,
   onReasoningEffortChange,
+  conversationRound = 1,
 }) {
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -9027,6 +9247,11 @@ function ChatComposerBar({
               aria-label="发送"
             >
               {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+              <BillingPoints
+                feature="chat"
+                payload={{ outputChars: 1000, conversationRound }}
+                fallbackPoints={1}
+              />
             </button>
           </div>
         </div>
@@ -9267,6 +9492,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
       onModelSwitchNotice={showModelSwitchNotice}
       reasoningEffort={selectedReasoningEffort}
       onReasoningEffortChange={setSelectedReasoningEffort}
+      conversationRound={Math.max(1, Math.ceil(messages.length / 2) + 1)}
     />
   );
 
@@ -9340,8 +9566,8 @@ function formatProviderLabel(value, fallback = "视频合成") {
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
   if (!text) return fallback;
-  const suspiciousCount = (text.match(/[�锟�]/g) || []).length;
-  if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
+  const suspiciousCount = (text.match(/[\uFFFD\u951F]/g) || []).length;
+  if (suspiciousCount >= 2 || /[\u00E3\u00C2]/.test(text)) return fallback;
   return text;
 }
 
@@ -9832,7 +10058,7 @@ function MotionTransferComposer({
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = selectedModel?.basePoints || 0;
   const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {
@@ -9976,7 +10202,9 @@ function MotionTransferComposer({
             emptyMotionTransferOptions.characterOrientations
           }
         />
-        <span className="price-pill">{price}</span>
+        <span className="price-pill">
+          <BillingPoints points={price} />
+        </span>
         <button
           className="send-button"
           type="button"
@@ -10744,7 +10972,7 @@ function WatermarkComposer({
     mode === "video"
       ? options.defaults?.videoResolution || "720p"
       : options.defaults?.imageResolution || "2K";
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = selectedModel?.basePoints || 0;
   const canSubmit = Boolean(
     !isGuest && sourceAsset && !uploading && !isSubmitting,
   );
@@ -10869,7 +11097,7 @@ function WatermarkComposer({
               ? "视频会保留原音频并尝试自然修复水印区域"
               : "图片会自动修复水印区域并保持主体内容")}
         </span>
-        <strong>{price}</strong>
+        <strong><BillingPoints points={price} /></strong>
         <button
           className="send-button"
           type="button"
@@ -11529,7 +11757,7 @@ function WorkbenchTopbar({
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    onNavChange?.("assets");
+    onNavChange?.("profile");
     window.dispatchEvent(
       new CustomEvent("facemini-assets-tab-change", {
         detail: { viewMode: "profile" },
@@ -11655,10 +11883,8 @@ function WorkbenchTopbar({
               >
                 <img
                   className="fm-top-avatar"
-                  src={faceminiAsset(
-                    "inspirations/image/thumbs/huaban-6703441531.webp",
-                  )}
-                  alt=""
+                  src={authUser?.avatarUrl || defaultUserAvatarSrc}
+                  alt={`${authUser?.displayName || authUser?.username || "用户"}头像`}
                 />
               </button>
               {showProfileMenu && (
@@ -11913,6 +12139,32 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
+          id="profile"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="profile"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
+          id="favorites"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="favorites"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
           id="billing"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -12089,6 +12341,8 @@ function ImageFeaturePage({
         {![
           "creation",
           "assets",
+          "profile",
+          "favorites",
           "billing",
           "image",
           "video",
@@ -12277,6 +12531,15 @@ function App() {
   }, [isLoggingOut]);
 
   const page = (() => {
+    if (String(view).startsWith("legal:")) {
+      return (
+        <LegalDocumentPage
+          documentKey={String(view).slice("legal:".length)}
+          onOpenHome={openLanding}
+        />
+      );
+    }
+
     if (view === "home") {
       return (
         <AppHome

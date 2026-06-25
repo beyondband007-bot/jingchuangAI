@@ -8,6 +8,8 @@ import { analyzeFramesWithQwen } from "../../providers/qwen/video.js";
 import { extractKeyFrames, composeFinalVideo, getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
+import { calculateBillingQuote } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 
 const maxVideoBytes = 2 * 1024 * 1024 * 1024; // 2GB per Qwen limit
 const allowedVideoTypes = new Set([
@@ -131,7 +133,7 @@ export async function uploadVideo({ file }) {
   return task;
 }
 
-export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled, bgmVolume, qwenMode }) {
+export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled, bgmVolume, qwenMode, userId }) {
   const task = tasks.get(sourceAssetId);
   if (!task) {
     throw createHttpError("源素材不存在，请重新上传", 404);
@@ -149,6 +151,13 @@ export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled,
     throw createHttpError("MiniMax API 未配置，请联系管理员", 500);
   }
 
+  const sourceDurationSeconds = await getVideoDuration(task.filePath);
+  const quote = calculateBillingQuote("video-dub", {
+    durationSeconds: sourceDurationSeconds,
+    bgmEnabled: bgmEnabled !== false
+  });
+  await chargeCredits({ userId, taskId: task.id, amount: quote.points, memo: "video dubbing debit" });
+
   task.status = "queued";
   task.stage = "queued";
   task.voiceId = voiceId || "male-qn-qingse";
@@ -157,12 +166,22 @@ export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled,
   task.bgmVolume = Math.min(0.35, Math.max(0.1, Number(bgmVolume) || 0.25));
   task.qwenMode = qwenMode || "auto";
   task.error = null;
+  task.userId = userId;
+  task.costPoints = quote.points;
+  task.billing = quote;
+  task.sourceDurationSeconds = sourceDurationSeconds;
 
   // Kick off async pipeline
   processPipeline(task).catch((err) => {
     console.error(`[VideoDub ${task.id}] Pipeline failed:`, err);
     task.status = "failed";
     task.stage = "failed";
+    refundChargedCredits({
+      userId: task.userId,
+      taskId: task.id,
+      amount: task.costPoints,
+      memo: "video dubbing failure refund"
+    }).catch((refundError) => console.error(`[VideoDub ${task.id}] Refund failed:`, refundError));
     task.error = err.message || "处理流程失败";
   });
 
@@ -175,7 +194,7 @@ async function processPipeline(task) {
   await mkdir(paths.voiceDir, { recursive: true });
   await mkdir(paths.bgmDir, { recursive: true });
   await mkdir(paths.resultsDir, { recursive: true });
-  const sourceDurationSeconds = await getVideoDuration(task.filePath);
+  const sourceDurationSeconds = task.sourceDurationSeconds || await getVideoDuration(task.filePath);
 
   // Step 1: Extract frames (Phase 3: FFmpeg required)
   task.stage = "extracting_frames";

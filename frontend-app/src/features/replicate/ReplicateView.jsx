@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { replicateApi } from "./replicateApi";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import { formatBeijingDateTime } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -509,7 +510,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                     ? "视频会分析镜头运动、节奏与动态变化，处理时间通常更长。"
                     : "图片用于反推画面风格和主体细节。"}
                 </span>
-                <strong>{mode === "video" ? 100 : 25} 积分</strong>
+                <strong><BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 10 : 5} /> 积分</strong>
                 <button
                   className="send-button"
                   type="button"

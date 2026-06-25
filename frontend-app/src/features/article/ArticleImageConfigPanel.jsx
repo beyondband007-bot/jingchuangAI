@@ -1,5 +1,6 @@
-import React from "react";
+﻿import React from "react";
 import { ChevronDown, Layers, Loader2, Sparkles } from "lucide-react";
+import BillingPoints from "../../components/BillingPoints.jsx";
 
 export function ArticleImageConfigPanel({
   form,
@@ -110,7 +111,7 @@ export function ArticleImageConfigPanel({
       </div>
       <div className="article-step-action-row">
         <p className="article-credit-hint">
-          预计消耗 <strong>{Math.max(30, form.imageCount * 30)}</strong>{" "}
+          预计消耗 <strong><BillingPoints feature="article" payload={{ imageCount: form.imageCount }} fallbackPoints={10 + Math.max(1, form.imageCount) * 30} /></strong>{" "}
           积分
         </p>
         <div className="article-step-buttons">

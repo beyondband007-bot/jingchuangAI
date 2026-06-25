@@ -22,6 +22,10 @@ export const voiceApi = {
     return request("/api/voice/config");
   },
 
+  async getVoices() {
+    return request("/api/voice/voices");
+  },
+
   async getTasks() {
     const items = await request("/api/voice/tasks");
     return items.map((item) => ({

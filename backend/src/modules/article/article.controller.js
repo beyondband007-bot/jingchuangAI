@@ -30,7 +30,7 @@ export async function listArticleTasks(req, res) {
 export async function createArticleCopyDraft(req, res) {
   try {
     requireLoggedIn(req.user);
-    res.json(await createCopyDraft(req.body || {}));
+    res.json(await createCopyDraft(req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);
   }

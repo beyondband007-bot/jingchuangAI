@@ -1,7 +1,7 @@
 import { requestJson as request } from "./request.js";
 import { createTaskPollingController } from "./taskPolling.js";
 const taskPolling = createTaskPollingController();
-const FORCED_VIDEO_MODEL = "kling_3_std";
+const FORCED_VIDEO_MODEL = "seedance_2_0_720p";
 let modelsPromise;
 let creditsPromise;
 

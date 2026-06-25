@@ -4,6 +4,8 @@ import { preprocessMinimaxMusicCover } from "../../providers/minimax/musicCover.
 import { cloneMinimaxVoice, uploadMinimaxVoiceFile } from "../../providers/minimax/voiceClone.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { createHttpError } from "../../shared/http.js";
+import { calculateBillingQuote } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 import { createVoiceConvertTaskRow, listVoiceConvertTaskRows } from "./voiceConvert.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 
@@ -269,6 +271,18 @@ export async function convert(payload, file, userId) {
     throw createHttpError("源音频时长需在 6 秒到 6 分钟之间", 400);
   }
 
+  const cloneAudioFileId = String(payload.cloneAudioFileId || payload.file_id || "").trim();
+  const providedVoiceId = String(payload.voiceId || payload.voice_id || "").trim();
+  const model = String(payload.model || config.minimax.ttsModel || "").trim();
+  const name = String(payload.name || "").trim();
+  const billingTaskId = `voice-convert-billing-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const quote = calculateBillingQuote("voice-convert", {
+    durationMs: sourceDurationMs,
+    newVoiceClone: !providedVoiceId
+  });
+  await chargeCredits({ userId, taskId: billingTaskId, amount: quote.points, memo: "voice convert debit" });
+
+  try {
   const preprocess = await preprocessMinimaxMusicCover({ audioBuffer: file.buffer });
   const lines = cleanFormattedLyrics(preprocess.formattedLyrics);
   if (!lines.length) {
@@ -279,11 +293,6 @@ export async function convert(payload, file, userId) {
   if (rhythm.text.length > 10000) {
     throw createHttpError("提取的文本过长，请缩短源音频或更换音频后重试", 400);
   }
-
-  const cloneAudioFileId = String(payload.cloneAudioFileId || payload.file_id || "").trim();
-  const providedVoiceId = String(payload.voiceId || payload.voice_id || "").trim();
-  const model = String(payload.model || config.minimax.ttsModel || "").trim();
-  const name = String(payload.name || "").trim();
 
   let voice = providedVoiceId ? convertedVoices.find((item) => item.id === providedVoiceId) || null : null;
   let voiceId = providedVoiceId;
@@ -370,5 +379,14 @@ export async function convert(payload, file, userId) {
     rhythmMeta
   });
 
-  return result;
+  return { ...result, points: quote.points, price: `${quote.points} 积分`, billing: quote };
+  } catch (error) {
+    await refundChargedCredits({
+      userId,
+      taskId: billingTaskId,
+      amount: quote.points,
+      memo: "voice convert failure refund"
+    });
+    throw error;
+  }
 }

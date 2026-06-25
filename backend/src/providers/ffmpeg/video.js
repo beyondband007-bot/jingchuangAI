@@ -1,13 +1,11 @@
 import { spawn } from "child_process";
 import { mkdir, readFile, stat } from "fs/promises";
 import path from "path";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-
-const FFMPEG_PATH = ffmpegInstaller.path;
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(FFMPEG_PATH, args, { windowsHide: true });
+    const proc = spawn(ffmpegPath, args, { windowsHide: true });
     let stderr = "";
     proc.stderr.on("data", (data) => { stderr += data.toString(); });
     proc.on("close", (code) => {
@@ -20,7 +18,7 @@ function runFfmpeg(args) {
 
 export async function getVideoDuration(videoPath) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(FFMPEG_PATH, ["-i", videoPath], { windowsHide: true });
+    const proc = spawn(ffmpegPath, ["-i", videoPath], { windowsHide: true });
     let stderr = "";
     proc.stderr.on("data", (data) => { stderr += data.toString(); });
     proc.on("close", () => {

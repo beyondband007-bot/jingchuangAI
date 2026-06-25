@@ -26469,7 +26469,7 @@ function Xy({ mode: i, onClose: r, onModeChange: u, onSuccess: o }) {
           }),
           a.jsx('div', {
             className: 'auth-drawer-kicker',
-            children: 'JINGCHUANG AI ACCOUNT',
+            children: 'Facemini AI ACCOUNT',
           }),
           a.jsx('h2', { id: 'auth-drawer-title', children: xe() }),
           a.jsx('p', { children: O() }),

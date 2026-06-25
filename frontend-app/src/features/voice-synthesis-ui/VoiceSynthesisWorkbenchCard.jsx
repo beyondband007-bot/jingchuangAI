@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { Clipboard, Mic2, SmilePlus, Trash2, Upload, Wand2 } from "lucide-react";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import "./voiceSynthesisWorkbenchCard.css";
 
 function SliderField({ label, displayValue, minLabel, maxLabel, ...props }) {
@@ -20,6 +21,7 @@ function SliderField({ label, displayValue, minLabel, maxLabel, ...props }) {
 
 export function VoiceSynthesisWorkbenchCard({
   cloneAudio,
+  currentVoice,
   text,
   speed,
   volume,
@@ -43,6 +45,7 @@ export function VoiceSynthesisWorkbenchCard({
 }) {
   const cloneInputRef = useRef(null);
   const hasCloneAudio = Boolean(cloneAudio);
+  const hasReadyVoice = Boolean(currentVoice?.id || cloneAudio);
 
   function pickCloneFile(file) {
     if (file && !uploading) onPickCloneAudio(file);
@@ -209,9 +212,14 @@ export function VoiceSynthesisWorkbenchCard({
                   type="button"
                   className="voice-synthesis-workspace__generate-button dh-generate-button"
                   onClick={onGenerate}
-                  disabled={isGenerating || uploading || !cloneAudio || !text.trim()}
+                  disabled={isGenerating || uploading || !hasReadyVoice || !text.trim()}
                 >
                   <Wand2 size={18} />
+                  <BillingPoints
+                    feature="voice"
+                    payload={{ text }}
+                    fallbackPoints={2000}
+                  />
                   {isGenerating ? "生成中..." : "生成语音"}
                 </button>
                 <p className="voice-synthesis-workspace__settings-note">{notice || "目标音色支持 mp3、m4a、wav，建议时长 10 秒到 5 分钟。"}</p>

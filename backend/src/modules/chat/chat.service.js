@@ -5,6 +5,7 @@ import { createKieChatResponse, createKieChatStream } from "../../providers/kie/
 import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { createQwenChatResponse, createQwenChatStream } from "../../providers/qwen/chat.js";
 import { debitCredits } from "../../shared/creditService.js";
+import { calculateTextPoints } from "../../shared/billingRules.js";
 import { createHttpError } from "../../shared/http.js";
 import { getUserCredits } from "../../shared/userService.js";
 import { mapChatConversation, mapChatMessage, mapChatModel } from "./chat.mapper.js";
@@ -32,10 +33,11 @@ function buildTitle(messages) {
   return title.length > 32 ? `${title.slice(0, 32)}...` : title;
 }
 
-function calculatePoints(model, kieCreditsConsumed) {
-  const credits = Number(kieCreditsConsumed || 0);
-  const multiplier = Number(model.points_per_kie_credit || 4);
-  return Math.max(1, Math.ceil(credits * multiplier));
+function calculatePoints(_model, _kieCreditsConsumed, text, messages = []) {
+  return calculateTextPoints({
+    outputChars: String(text || "").length,
+    conversationRound: messages.filter((message) => message.role === "user").length
+  });
 }
 
 async function createProviderChatResponse({ model, messages, reasoningEffort }) {
@@ -203,7 +205,7 @@ export async function sendMessage(payload, userId) {
     }
   }
 
-  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed);
+  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed, provider.text, messages);
   const chargeConnection = await pool.getConnection();
   let assistantMessageId;
   try {
@@ -303,8 +305,8 @@ async function prepareChatMessage(payload, userId) {
   return { conversationId: resolvedConversationId, modelPrice, messages, model, reasoningEffort };
 }
 
-async function persistAssistantMessage({ conversationId, model, modelPrice, provider, userId }) {
-  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed);
+async function persistAssistantMessage({ conversationId, model, modelPrice, provider, userId, messages }) {
+  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed, provider.text, messages);
   const chargeConnection = await getPool().getConnection();
   let assistantMessageId;
   try {
@@ -351,7 +353,8 @@ export async function streamMessage(payload, userId, { onDelta }) {
     model: prepared.model,
     modelPrice: prepared.modelPrice,
     provider,
-    userId
+    userId,
+    messages: prepared.messages
   });
 
   return {

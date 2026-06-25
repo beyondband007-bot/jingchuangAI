@@ -6,6 +6,8 @@ import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax, analyzeVideoFramesWithMinimax } from "../../providers/minimax/vision.js";
 import { createHttpError } from "../../shared/http.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
+import { BILLING_RULES } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 import {
   completeReplicateTaskRow,
   createReplicateTaskRow,
@@ -293,7 +295,7 @@ async function finishReplicateTask(taskId, result) {
   });
 }
 
-async function runImageAnalysis(taskId, file) {
+async function runImageAnalysis(taskId, file, userId, costPoints) {
   try {
     const imageBase64 = Buffer.from(file.buffer).toString("base64");
     const result = await analyzeImageWithMinimax({
@@ -303,16 +305,18 @@ async function runImageAnalysis(taskId, file) {
     await finishReplicateTask(taskId, result);
   } catch (error) {
     await failReplicateTaskRow(taskId, cleanAnalysisError(error));
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "image replicate failure refund" });
   }
 }
 
-async function runVideoAnalysis(taskId, file) {
+async function runVideoAnalysis(taskId, file, userId, costPoints) {
   try {
     const { framesBase64 } = await extractVideoFrames(file.buffer, file.originalname);
     const result = await analyzeVideoFramesWithMinimax({ framesBase64 });
     await finishReplicateTask(taskId, result);
   } catch (error) {
     await failReplicateTaskRow(taskId, cleanAnalysisError(error));
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "video replicate failure refund" });
   }
 }
 
@@ -320,14 +324,19 @@ export async function analyzeImage({ file, userId }) {
   assertImageFile(file);
 
   const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  await createReplicateTaskRow({
+  const costPoints = BILLING_RULES.replicateImagePoints;
+  await chargeCredits({ userId, taskId, amount: costPoints, memo: "image replicate debit" });
+  try { await createReplicateTaskRow({
     id: taskId,
     userId,
     source: "image",
     fileName: file.originalname
-  });
+  }); } catch (error) {
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "image replicate refund" });
+    throw error;
+  }
 
-  runImageAnalysis(taskId, file).catch((error) => {
+  runImageAnalysis(taskId, file, userId, costPoints).catch((error) => {
     console.error("background image replicate analysis failed:", error);
   });
 
@@ -344,14 +353,19 @@ export async function analyzeVideo({ file, userId }) {
   assertVideoFile(file);
 
   const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  await createReplicateTaskRow({
+  const costPoints = BILLING_RULES.replicateVideoPoints;
+  await chargeCredits({ userId, taskId, amount: costPoints, memo: "video replicate debit" });
+  try { await createReplicateTaskRow({
     id: taskId,
     userId,
     source: "video",
     fileName: file.originalname
-  });
+  }); } catch (error) {
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "video replicate refund" });
+    throw error;
+  }
 
-  runVideoAnalysis(taskId, file).catch((error) => {
+  runVideoAnalysis(taskId, file, userId, costPoints).catch((error) => {
     console.error("background video replicate analysis failed:", error);
   });
 

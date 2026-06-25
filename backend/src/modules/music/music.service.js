@@ -17,6 +17,8 @@ import {
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { compressMusicAudioFile, MUSIC_COMPRESS_THRESHOLD_BYTES } from "./musicAudio.js";
 import { syncMusicLyrics } from "./lyricsSync.service.js";
+import { calculateMusicPoints } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 
 function normalizeString(value) {
   return String(value || "").trim();
@@ -152,7 +154,11 @@ function cleanGenerationError(error) {
   return message;
 }
 
-async function runMusicGeneration(taskId, userId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }) {
+async function runMusicGeneration(
+  taskId,
+  userId,
+  { prompt, lyrics, model, isInstrumental, lyricsOptimizer, costPoints }
+) {
   try {
     const result = await generateMinimaxMusic({
       prompt,
@@ -196,6 +202,7 @@ async function runMusicGeneration(taskId, userId, { prompt, lyrics, model, isIns
     }
   } catch (error) {
     await failMusicTaskRow(taskId, cleanGenerationError(error));
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "music generation refund" });
   }
 }
 
@@ -206,17 +213,31 @@ export async function generateMusic(payload, userId) {
   const model = normalizeString(payload.model) || "music-2.6-free";
   const lyricsOptimizer = Boolean(payload.lyricsOptimizer);
   const taskId = `music-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const costPoints = calculateMusicPoints(payload.durationSeconds);
+  await chargeCredits({ userId, taskId, amount: costPoints, memo: "music generation debit" });
 
-  await createMusicTaskRow({
-    id: taskId,
-    userId,
+  try {
+    await createMusicTaskRow({
+      id: taskId,
+      userId,
+      prompt,
+      lyrics,
+      model,
+      isInstrumental
+    });
+  } catch (error) {
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "music generation refund" });
+    throw error;
+  }
+
+  runMusicGeneration(taskId, userId, {
     prompt,
     lyrics,
     model,
-    isInstrumental
-  });
-
-  runMusicGeneration(taskId, userId, { prompt, lyrics, model, isInstrumental, lyricsOptimizer }).catch((error) => {
+    isInstrumental,
+    lyricsOptimizer,
+    costPoints
+  }).catch((error) => {
     console.error("background music generation failed:", error);
   });
 
@@ -228,6 +249,8 @@ export async function generateMusic(payload, userId) {
     isInstrumental,
     audioUrl: "",
     durationMs: 0,
+    points: costPoints,
+    price: `${costPoints} 积分`,
     traceId: "",
     status: "processing",
     error: "",
