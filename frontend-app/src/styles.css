@@ -36614,16 +36614,14 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 }
 
 .fm-profile-avatar {
-  display: grid;
+  display: block;
   flex-shrink: 0;
-  place-items: center;
   width: 72px;
   height: 72px;
-  color: #fff;
-  background: linear-gradient(135deg, #b58aff 0%, var(--fm-profile-brand) 100%);
+  object-fit: cover;
+  background: #f2edff;
+  border: 1px solid rgba(109, 60, 255, 0.16);
   border-radius: 999px;
-  font-size: 30px;
-  font-weight: 800;
 }
 
 .fm-profile-user-meta {

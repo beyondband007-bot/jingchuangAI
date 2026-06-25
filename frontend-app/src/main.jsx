@@ -632,6 +632,7 @@ const homeFeatureRoutes = [
 ];
 
 const faceminiAsset = (path) => `/assets/facemini/${path}`;
+const defaultUserAvatarSrc = "/assets/avatars/1.jpg";
 const pendingInviteCodeStorageKey = "facemini:pending-invite-code";
 const pendingInviteBonusStorageKey = "facemini:pending-invite-bonus";
 const inspirationFavoritesStorageKey = "facemini:inspiration-favorites";
@@ -3469,7 +3470,6 @@ function AssetsPage({
   const totalCreations = userAssets.length;
   const profileDisplayName =
     authUser?.displayName || authUser?.username || "用户";
-  const profileAvatarChar = String(profileDisplayName).trim().charAt(0) || "用";
   const profileCredits = Number(
     credits?.balance ?? authUser?.credits ?? 0,
   ).toLocaleString("zh-CN");
@@ -4186,9 +4186,11 @@ function AssetsPage({
           <div className="fm-profile-center-inner">
             <div className="fm-profile-user-card">
               <div className="fm-profile-user-main">
-                <div className="fm-profile-avatar" aria-hidden="true">
-                  {profileAvatarChar}
-                </div>
+                <img
+                  className="fm-profile-avatar"
+                  src={authUser?.avatarUrl || defaultUserAvatarSrc}
+                  alt={`${profileDisplayName}头像`}
+                />
                 <div className="fm-profile-user-meta">
                   <strong>{profileDisplayName}</strong>
                   <span>剩余 {profileCredits} 积分</span>
@@ -13401,10 +13403,8 @@ function WorkbenchTopbar({
               >
                 <img
                   className="fm-top-avatar"
-                  src={faceminiAsset(
-                    "inspirations/image/thumbs/huaban-6703441531.webp",
-                  )}
-                  alt=""
+                  src={authUser?.avatarUrl || defaultUserAvatarSrc}
+                  alt={`${authUser?.displayName || authUser?.username || "用户"}头像`}
                 />
               </button>
               {showProfileMenu && (
