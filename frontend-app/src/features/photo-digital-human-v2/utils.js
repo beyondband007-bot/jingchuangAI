@@ -1,7 +1,7 @@
 export const PHOTO_SCRIPT_MAX_LENGTH = 500;
 
 export const PHOTO_MODEL_LABELS = {
-  "kie-s2v-r2v": "可灵数字人",
+  "seedance-2.0": "Seedance 2.0",
 };
 
 export const PHOTO_RESOLUTION_OPTIONS = [

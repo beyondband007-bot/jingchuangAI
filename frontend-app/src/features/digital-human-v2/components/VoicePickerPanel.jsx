@@ -5,8 +5,10 @@ import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import {
   VOICE_CATEGORIES,
   VOICE_EMOTION_OPTIONS,
+  VOICE_UNAVAILABLE_HINT,
   filterVoicesByCategory,
   getVoiceEmotionValue,
+  isDigitalHumanVoiceEnabled,
 } from "../utils";
 
 export function VoicePickerPanel({
@@ -98,20 +100,28 @@ export function VoicePickerPanel({
       <div className="dhv2-voice-picker__list">
         {filteredVoices.map((voice) => {
           const isActive = voice.id === voiceId;
+          const isEnabled = isDigitalHumanVoiceEnabled(voice.id);
           return (
             <div
               key={voice.id}
-              className={`dhv2-voice-picker__item${isActive ? " is-active" : ""}`}
+              className={`dhv2-voice-picker__item${isActive ? " is-active" : ""}${isEnabled ? "" : " is-disabled"}`}
+              title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
             >
               <button
                 type="button"
                 className="dhv2-voice-picker__item-main"
-                onClick={() => onVoiceIdChange?.(voice.id)}
+                disabled={!isEnabled}
+                aria-disabled={!isEnabled}
+                title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
+                onClick={() => {
+                  if (!isEnabled) return;
+                  onVoiceIdChange?.(voice.id);
+                }}
               >
                 <span className="dhv2-voice-picker__avatar" aria-hidden="true" />
                 <span className="dhv2-voice-picker__meta">
                   <strong>{voice.name}</strong>
-                  <em>{voice.description}</em>
+                  <em>{isEnabled ? voice.description : VOICE_UNAVAILABLE_HINT}</em>
                 </span>
               </button>
               <button

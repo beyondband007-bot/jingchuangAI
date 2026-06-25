@@ -3,9 +3,11 @@ import { Message } from "@arco-design/web-react";
 import { Play, Star, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import {
+  VOICE_UNAVAILABLE_HINT,
   getAvatarTags,
   getVoiceEmotionValue,
   getVoiceMatchHint,
+  isDigitalHumanVoiceEnabled,
   isVideoCover,
   matchVoiceForAvatar,
 } from "../utils";
@@ -80,6 +82,10 @@ export function AvatarConfirmOverlay({
   function handleConfirm() {
     if (!selectedVoice?.id) {
       Message.info("请先选择音色");
+      return;
+    }
+    if (!isDigitalHumanVoiceEnabled(selectedVoice.id)) {
+      Message.info(VOICE_UNAVAILABLE_HINT);
       return;
     }
     onConfirm?.({

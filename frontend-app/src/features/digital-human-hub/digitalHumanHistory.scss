@@ -57,11 +57,22 @@
 }
 
 .dh-history-card__media {
+  position: relative;
   width: 120px;
   height: 160px;
+  padding: 0;
   overflow: hidden;
+  border: 0;
   border-radius: 10px;
   background: #f3f2f8;
+}
+
+.dh-history-card__media.is-playable {
+  cursor: pointer;
+}
+
+.dh-history-card__media:disabled {
+  cursor: default;
 }
 
 .dh-history-card__media img,
@@ -70,6 +81,26 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  pointer-events: none;
+}
+
+.dh-history-card__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: rgba(18, 14, 32, 0.28);
+  transition: background 0.2s ease;
+}
+
+.dh-history-card__media.is-playable:hover .dh-history-card__play,
+.dh-history-card__media.is-playable:focus-visible .dh-history-card__play {
+  background: rgba(18, 14, 32, 0.42);
+}
+
+.dh-history-card__play svg {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.28));
 }
 
 .dh-history-card__placeholder {
@@ -146,6 +177,86 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.dh-history-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(12, 10, 20, 0.62);
+}
+
+.dh-history-preview__panel {
+  width: min(920px, 100%);
+  max-height: calc(100vh - 48px);
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(20, 16, 40, 0.28);
+}
+
+.dh-history-preview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dh-history-preview__head strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.dh-history-preview__head p {
+  margin: 4px 0 0;
+  color: #8d8999;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dh-history-preview__head button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #7d7890;
+  background: #f7f6fa;
+  border: 1px solid #ebe7f4;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dh-history-preview__video {
+  width: 100%;
+  max-height: calc(100vh - 220px);
+  border-radius: 12px;
+  background: #111018;
+}
+
+.dh-history-preview__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dh-history-preview__actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  color: #623bff;
+  background: #f6f2ff;
+  border: 1px solid #dfd6ff;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 @media (max-width: 860px) {

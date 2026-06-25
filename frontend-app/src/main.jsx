@@ -3230,26 +3230,35 @@ function getAssetTaskTitle(type, task) {
       "AI 图片": "AI 图片作品",
       "AI 视频": "AI 视频作品",
       数字人: "数字人作品",
+      照片数字人: "照片数字人作品",
       爆款图文: "爆款图文作品",
     }[type] ||
     "作品"
   );
 }
 
+function isVideoMediaUrl(url = "") {
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(url || "").split("#")[0]);
+}
+
+function firstImageMediaUrl(...urls) {
+  return urls.find((url) => url && !isVideoMediaUrl(url)) || "";
+}
+
 function getAssetTaskPreview(type, task) {
-  if (type === "AI 图片")
-    return (
-      task?.image ||
-      task?.imageUrl ||
-      task?.resultUrl ||
-      task?.thumbnailUrl ||
-      ""
+  if (type === "AI 图片") {
+    return firstImageMediaUrl(
+      task?.image,
+      task?.imageUrl,
+      task?.thumbnailUrl,
+      task?.resultUrl,
     );
+  }
   if (type === "AI 视频")
     return (
       task?.poster || task?.thumbnailUrl || task?.image || task?.cover || ""
     );
-  if (type === "数字人")
+  if (type === "数字人" || type === "照片数字人")
     return (
       task?.thumbnailUrl ||
       task?.poster ||
@@ -3261,17 +3270,30 @@ function getAssetTaskPreview(type, task) {
   return task?.image || task?.thumbnailUrl || task?.cover || "";
 }
 
+function isDigitalHumanAssetType(type) {
+  return type === "数字人" || type === "照片数字人";
+}
+
+function matchesAssetGalleryTab(item, tab) {
+  if (tab === "全部") return true;
+  if (tab === "数字人") return isDigitalHumanAssetType(item.type);
+  return item.type === tab;
+}
+
 function mapAssetTasks(type, tasks = []) {
   const source = Array.isArray(tasks) ? tasks : [];
   return source.map((task) => {
     const preview = getAssetTaskPreview(type, task);
     const video =
-      type === "AI 视频" || type === "数字人"
+      type === "AI 视频" || isDigitalHumanAssetType(type)
         ? task?.video || task?.resultUrl || task?.url || ""
         : "";
-    const isVideo = Boolean(video) || type === "AI 视频" || type === "数字人";
+    const isVideo =
+      Boolean(video) || type === "AI 视频" || isDigitalHumanAssetType(type);
     const highRes =
-      type === "AI 图片" ? task?.imageUrl || task?.resultUrl || preview : "";
+      type === "AI 图片"
+        ? firstImageMediaUrl(task?.imageUrl, task?.image, preview) || preview
+        : "";
     return {
       id: `${type}-${task.id}`,
       rawId: task.id,
@@ -3538,9 +3560,12 @@ function AssetsPage({
   const totalFavorites = favoriteAssets.length;
   const favoriteTabCards = useMemo(
     () =>
-      favoriteAssets.filter(
-        (asset) => asset.type === favoriteTabToAssetType[favoriteTab],
-      ),
+      favoriteAssets.filter((asset) => {
+        if (favoriteTab === "数字人形象") {
+          return isDigitalHumanAssetType(asset.type);
+        }
+        return asset.type === favoriteTabToAssetType[favoriteTab];
+      }),
     [favoriteAssets, favoriteTab],
   );
   const recentRechargeOrders = useMemo(() => {
@@ -3629,7 +3654,7 @@ function AssetsPage({
           ...mapAssetTasks("AI 图片", regularImageTasks),
           ...mapAssetTasks("AI 视频", videoTasks),
           ...mapAssetTasks("数字人", digitalHumanTasks),
-          ...mapAssetTasks("数字人", imageDigitalHumanTasks),
+          ...mapAssetTasks("照片数字人", imageDigitalHumanTasks),
           ...mapArticleAssets(articleTasks),
         ].sort((a, b) => b.sortTime - a.sortTime),
       );
@@ -3831,17 +3856,19 @@ function AssetsPage({
   }
 
   const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
-  const assetGalleryCards =
-    activeAssetTab === "全部"
-      ? userAssets.filter((item) => {
-          if (assetTimePreset === "all") return true;
-          return isTimestampInRange(item.sortTime, assetTimeRange);
-        })
-      : userAssets.filter((item) => {
-          if (item.type !== activeAssetTab) return false;
-          if (assetTimePreset === "all") return true;
-          return isTimestampInRange(item.sortTime, assetTimeRange);
-        });
+  const assetGalleryCards = useMemo(() => {
+    return userAssets
+      .filter((item) => matchesAssetGalleryTab(item, activeAssetTab))
+      .filter((item) => {
+        if (assetTimePreset === "all") return true;
+        return isTimestampInRange(item.sortTime, assetTimeRange);
+      })
+      .filter((item) => {
+        if (item.type !== "AI 图片") return true;
+        if (item.isVideo) return false;
+        return Boolean(item.src || item.image || item.imageUrl);
+      });
+  }, [activeAssetTab, assetTimePreset, assetTimeRange, userAssets]);
   const visibleFavoriteCards = favoriteTabCards.filter((item) => {
     if (assetTimePreset === "all") return true;
     return isTimestampInRange(item.sortTime, assetTimeRange);
@@ -3928,6 +3955,11 @@ function AssetsPage({
 
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
+    try {
+      window.sessionStorage.setItem(assetGalleryTabStorageKey, tab);
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
   }
 
   function selectTransactionFilter(nextFilter) {
@@ -3961,12 +3993,10 @@ function AssetsPage({
     if (item.type === "AI 图片") await imageApi.deleteTask(item.rawId);
     if (item.type === "爆款图文") await articleApi.deleteTask(item.rawId);
     if (item.type === "AI 视频") await videoApi.deleteTask(item.rawId);
-    if (item.type === "数字人") {
-      try {
-        await digitalHumanApi.deleteTask(item.rawId);
-      } catch {
-        await imageDigitalHumanApi.deleteTask(item.rawId);
-      }
+    if (item.type === "照片数字人") {
+      await imageDigitalHumanApi.deleteTask(item.rawId);
+    } else if (item.type === "数字人") {
+      await digitalHumanApi.deleteTask(item.rawId);
     }
     setPreviewAsset((current) => (current?.id === item.id ? null : current));
     await refreshAssets();
@@ -3985,7 +4015,7 @@ function AssetsPage({
     if (item.type === "AI 图片") await imageApi.toggleFavorite(item.rawId);
     if (item.type === "爆款图文") await articleApi.toggleFavorite(item.rawId);
     if (item.type === "AI 视频") await videoApi.toggleFavorite(item.rawId);
-    if (item.type === "数字人" || item.type === "爆款图文") {
+    if (item.type === "数字人" || item.type === "照片数字人" || item.type === "爆款图文") {
       setUserAssets((current) =>
         current.map((asset) =>
           asset.id === item.id
@@ -6206,7 +6236,9 @@ function FaceminiInspirationModal({
 
   if (!item) return null;
 
-  const isVideo = item.mediaType === "video" || item.video || item.videoSrc;
+  const isVideo = Boolean(
+    item.isVideo || item.mediaType === "video" || item.video || item.videoSrc || item.videoUrl,
+  );
   const primarySrc =
     item.videoSrc ||
     item.hdSrc ||
@@ -6217,7 +6249,8 @@ function FaceminiInspirationModal({
     item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
-  const videoSrc = item.videoSrc || item.video || item.preview || item.source;
+  const videoSrc =
+    item.videoSrc || item.video || item.videoUrl || item.preview || item.source;
 
   return (
     <div
@@ -12215,7 +12248,10 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <DigitalHumanHubView isActive={activeNav === "digital-human"} />
+          <DigitalHumanHubView
+            isActive={activeNav === "digital-human"}
+            onOpenFeature={handleNavChange}
+          />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="motion"

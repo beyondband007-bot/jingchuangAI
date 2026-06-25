@@ -3,6 +3,7 @@ import { Tabs } from "@arco-design/web-react";
 import { DigitalHumanV2View } from "../digital-human-v2/DigitalHumanV2View";
 import { PhotoDigitalHumanView } from "../photo-digital-human-v2/PhotoDigitalHumanView";
 import { DigitalHumanHistoryView } from "./DigitalHumanHistoryView";
+import { openAssetsGallery } from "../../utils/openAssetsGallery";
 import "./digitalHumanHub.scss";
 import "./digitalHumanHistory.scss";
 
@@ -12,8 +13,12 @@ const TAB_KEYS = {
   history: "history",
 };
 
-export function DigitalHumanHubView({ isActive = true }) {
+export function DigitalHumanHubView({ isActive = true, onOpenFeature }) {
   const [activeTab, setActiveTab] = useState(TAB_KEYS.avatar);
+
+  function handleOpenAssets() {
+    openAssetsGallery({ tab: "全部", onNavigate: onOpenFeature });
+  }
 
   return (
     <section className="dh-hub" aria-label="数字人创作">
@@ -36,6 +41,7 @@ export function DigitalHumanHubView({ isActive = true }) {
           <DigitalHumanV2View
             isActive={isActive && activeTab === TAB_KEYS.avatar}
             embedded
+            onOpenAssets={handleOpenAssets}
           />
         </div>
         <div

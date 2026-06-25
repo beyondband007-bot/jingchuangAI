@@ -44,6 +44,33 @@ export function formatVoiceDuration(seconds = 0) {
 
 export const SCRIPT_MAX_LENGTH = 500;
 
+/** 数字人视频生成当前已接入的音色（与历史配置一致） */
+export const ENABLED_DIGITAL_HUMAN_VOICE_IDS = [
+  "female-shaonv",
+  "female-yujie",
+  "female-tianmei",
+  "female-qn-qingse",
+  "female-chengshu",
+  "presenter_female",
+  "Chinese (Mandarin)_HK_Flight_Attendant",
+  "moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85",
+  "moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d",
+];
+
+export const VOICE_UNAVAILABLE_HINT = "当前音色暂未开放";
+
+export function isDigitalHumanVoiceEnabled(voiceId) {
+  return ENABLED_DIGITAL_HUMAN_VOICE_IDS.includes(String(voiceId || ""));
+}
+
+export function pickEnabledVoiceId(voices = [], preferredId = "") {
+  if (preferredId && isDigitalHumanVoiceEnabled(preferredId)) {
+    return preferredId;
+  }
+  const enabledVoice = voices.find((voice) => isDigitalHumanVoiceEnabled(voice.id));
+  return enabledVoice?.id || "";
+}
+
 export const SCRIPT_OPTIMIZE_TEMPLATES = [
   {
     id: "live-sales",
@@ -162,15 +189,31 @@ export function getAvatarTags(avatar) {
   return tags.length ? tags.slice(0, 2) : ["数字人"];
 }
 
+export function getAvatarCategoryLabel(avatar) {
+  if (avatar?.category) return avatar.category;
+  const tags = getAvatarTags(avatar);
+  return tags[0] || "数字人";
+}
+
+export function filterReadyMineAvatars(list = []) {
+  return (Array.isArray(list) ? list : []).filter((item) => {
+    const status = String(item?.status || "ready").toLowerCase();
+    return status === "ready" || status === "active";
+  });
+}
+
 export function matchVoiceForAvatar(avatar, voices = []) {
-  if (!voices.length) return null;
+  const enabledVoices = voices.filter((voice) => isDigitalHumanVoiceEnabled(voice.id));
+  if (!enabledVoices.length) return null;
   const text = `${avatar?.name || ""} ${avatar?.description || ""}`;
   for (const rule of VOICE_MATCH_RULES) {
     if (!rule.pattern.test(text)) continue;
-    const matched = voices.find((voice) => rule.voiceIds.includes(voice.id));
+    const matched = enabledVoices.find((voice) => rule.voiceIds.includes(voice.id));
     if (matched) return matched;
   }
-  return voices.find((voice) => voice.id === "female-qn-qingse") || voices[0];
+  return (
+    enabledVoices.find((voice) => voice.id === "female-qn-qingse") || enabledVoices[0]
+  );
 }
 
 export function getVoiceMatchHint(avatar) {
@@ -202,4 +245,169 @@ export const VOICE_EMOTION_VALUE_MAP = {
 
 export function getVoiceEmotionValue(emotionLabel = "中性") {
   return VOICE_EMOTION_VALUE_MAP[emotionLabel] || "";
+}
+
+export function getVoiceEmotionLabel(emotionValue = "") {
+  if (!emotionValue) return "中性";
+  const matched = Object.entries(VOICE_EMOTION_VALUE_MAP).find(
+    ([, value]) => value === emotionValue,
+  );
+  return matched?.[0] || "中性";
+}
+
+export function taskToMineLibraryItem(task) {
+  return {
+    libraryId: `task-${task.id}`,
+    sourceType: "task",
+    task,
+    id: task.avatarId,
+    avatarId: task.avatarId,
+    name: task.avatarName || "数字人形象",
+    cover: task.thumbnailUrl || task.resultUrl || "",
+    poster: task.thumbnailUrl || "",
+    category: task.voiceName || "数字人形象",
+    voiceId: task.voiceId,
+    voiceSpeed: Number(task.speed) || 1,
+    text: task.text || "",
+    resultUrl: task.resultUrl || "",
+  };
+}
+
+export function photoTaskToMineLibraryItem(task) {
+  const voiceName = task.voiceName || "自定义人像";
+  return {
+    libraryId: `photo-task-${task.id}`,
+    sourceType: "photo-task",
+    task,
+    id: `photo-task-${task.id}`,
+    name: "照片数字人",
+    cover: task.thumbnailUrl || task.resultUrl || task.portraitUrl || "",
+    poster: task.thumbnailUrl || task.portraitUrl || "",
+    category: voiceName,
+    voiceId: task.voiceId,
+    voiceSpeed: Number(task.speed) || 1,
+    text: task.text || "",
+    resultUrl: task.resultUrl || "",
+    portraitUrl: task.portraitUrl || "",
+  };
+}
+
+export function photoTaskToSelectedAvatar(item) {
+  const task = item?.task || item;
+  const portrait = task?.portraitUrl || item?.portraitUrl || "";
+  const preview = portrait || task?.thumbnailUrl || task?.resultUrl || item?.cover || "";
+  return {
+    id: item?.libraryId || `photo-task-${task?.id}`,
+    name: item?.name || "照片数字人",
+    cover: preview,
+    poster: task?.thumbnailUrl || portrait,
+    language: "照片数字人",
+    category: item?.category || task?.voiceName || "照片数字人",
+    tags: ["照片数字人"],
+    portraitUrl: portrait,
+    isPhotoPortrait: true,
+  };
+}
+
+export function getMineLibraryItems(photoTasks = []) {
+  return (Array.isArray(photoTasks) ? photoTasks : [])
+    .filter(
+      (task) =>
+        task?.status === "completed" &&
+        (task.thumbnailUrl || task.resultUrl || task.portraitUrl),
+    )
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .map(photoTaskToMineLibraryItem);
+}
+
+export function getDigitalHumanMineLibraryItems(tasks = [], mineAvatars = []) {
+  const completedTasks = (Array.isArray(tasks) ? tasks : [])
+    .filter(
+      (task) =>
+        task?.status === "completed" && (task.thumbnailUrl || task.resultUrl),
+    )
+    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
+    .map(taskToMineLibraryItem);
+
+  const usedAvatarIds = new Set(
+    completedTasks.map((item) => String(item.avatarId || "")).filter(Boolean),
+  );
+
+  const orphanAvatars = filterReadyMineAvatars(mineAvatars)
+    .filter((avatar) => !usedAvatarIds.has(String(avatar.id)))
+    .map((avatar) => ({
+      ...avatar,
+      libraryId: `avatar-${avatar.id}`,
+      sourceType: "avatar",
+    }));
+
+  return [...completedTasks, ...orphanAvatars];
+}
+
+export const DHV2_DRAFTS_STORAGE_KEY = "dhv2-workspace-drafts";
+export const DHV2_DRAFTS_MAX = 12;
+
+export function loadWorkspaceDrafts() {
+  try {
+    const raw = localStorage.getItem(DHV2_DRAFTS_STORAGE_KEY);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function persistWorkspaceDrafts(drafts = []) {
+  try {
+    localStorage.setItem(DHV2_DRAFTS_STORAGE_KEY, JSON.stringify(drafts));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function snapshotAvatar(avatar) {
+  if (!avatar?.id) return null;
+  return {
+    id: avatar.id,
+    name: avatar.name || "",
+    cover: avatar.cover || "",
+    poster: avatar.poster || "",
+    tags: Array.isArray(avatar.tags) ? avatar.tags.slice(0, 4) : [],
+    aspectRatio: avatar.aspectRatio || avatar.ratio || "",
+  };
+}
+
+export function createWorkspaceDraft(snapshot) {
+  return {
+    id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: Date.now(),
+    ...snapshot,
+  };
+}
+
+export function formatDraftTime(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${month}/${day} ${hours}:${minutes}`;
+}
+
+export function resolveAvatarFromDraft(draft, avatarData) {
+  if (!draft) return null;
+  const publicList = normalizePublicAvatars(avatarData?.public);
+  const mineList = Array.isArray(avatarData?.mine) ? avatarData.mine : [];
+  const matched = [...publicList, ...mineList].find(
+    (item) => String(item.id) === String(draft.avatarId),
+  );
+  if (matched) return matched;
+  if (draft.avatar?.id) {
+    return {
+      ...draft.avatar,
+      cover: draft.avatar.cover || "",
+      poster: draft.avatar.poster || "",
+    };
+  }
+  return null;
 }

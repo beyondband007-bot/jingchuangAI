@@ -963,12 +963,6 @@ function ArticlePreview({ task, onClose, authUser }) {
                 </button>
               </div>
               <h2>{articleTitle}</h2>
-              <div className="article-history-full-copy-body-actions">
-                <button type="button" onClick={copyArticleBody}>
-                  <Copy size={15} />
-                  {copiedField === "body" ? "已复制" : "复制正文"}
-                </button>
-              </div>
               <div className="article-history-full-body">
                 {articleBody
                   .split(/\n+/)
@@ -986,10 +980,20 @@ function ArticlePreview({ task, onClose, authUser }) {
               )}
               <div className="article-history-full-footer">
                 <span>{createdAt}</span>
-                <a href={activeImage.image} download>
-                  <Download size={16} />
-                  下载图片
-                </a>
+                <div className="article-history-full-footer-actions">
+                  <button
+                    type="button"
+                    className="article-history-full-copy-btn"
+                    onClick={copyArticleBody}
+                  >
+                    <Copy size={15} />
+                    {copiedField === "body" ? "已复制" : "复制正文"}
+                  </button>
+                  <a href={activeImage.image} download>
+                    <Download size={16} />
+                    下载图片
+                  </a>
+                </div>
               </div>
             </article>
           </div>
@@ -1388,21 +1392,34 @@ export function ArticleGenerationView({
     setSubmitError("");
   }
 
-  async function submitGeneration() {
+  async function submitGeneration(overrides = {}) {
     if (isGuest) {
       showToast("请先登录");
       onOpenAuth?.("login");
       return;
     }
 
-    const nextDraft = draftCopy || buildDraftCopy(form);
-    const selectedModel = model || pickDefaultModel(options.models);
+    const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
+    const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
+    const selectedModel =
+      overrides.model || model || pickDefaultModel(options.models);
     if (!selectedModel) {
       showToast("暂无可用图片模型");
       return;
     }
 
+    const generationForm = {
+      ...form,
+      ratio: overrides.ratio || form.ratio,
+      quality: overrides.quality || form.quality,
+      imageCount: overrides.imageCount || form.imageCount,
+      contentType: overrides.contentType || form.contentType,
+      visualStyle: overrides.visualStyle || form.visualStyle,
+      layoutStyle: overrides.layoutStyle || form.layoutStyle,
+    };
+
     setDraftCopy(nextDraft);
+    if (nextImagePromptPlan) setImagePromptPlan(nextImagePromptPlan);
     setSubmitError("");
     setIsSubmitting(true);
     setPreviewTask(null);
@@ -1412,31 +1429,46 @@ export function ArticleGenerationView({
     try {
       const item = await articleApi.createPackage({
         copy: nextDraft,
-        imagePromptPlan,
-        platform: form.platform,
-        copyTemplate: form.copyTemplate,
-        wordCount: form.wordCount,
-        tone: form.tone,
-        topic: form.topic,
-        keyword: form.keyword,
-        keywords: form.keyword,
-        contentType: form.contentType,
-        visualStyle: form.visualStyle,
-        layoutStyle: form.layoutStyle,
+        imagePromptPlan: nextImagePromptPlan,
+        platform: generationForm.platform,
+        copyTemplate: generationForm.copyTemplate,
+        wordCount: generationForm.wordCount,
+        tone: generationForm.tone,
+        topic: generationForm.topic,
+        keyword: generationForm.keyword,
+        keywords: generationForm.keyword,
+        contentType: generationForm.contentType,
+        visualStyle: generationForm.visualStyle,
+        layoutStyle: generationForm.layoutStyle,
         model: selectedModel,
-        ratio: form.ratio,
-        quality: form.quality,
-        imageCount: form.imageCount
+        ratio: generationForm.ratio,
+        quality: generationForm.quality,
+        imageCount: generationForm.imageCount,
       });
       setCards((current) => [item, ...current.filter((card) => card.id !== item.id)]);
       setSelectedTaskId(item.id);
-      setImagePromptPlan(item.imagePromptPlan || imagePromptPlan);
+      setImagePromptPlan(item.imagePromptPlan || nextImagePromptPlan);
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
       if (item.status === "failed") setIsSubmitting(false);
     } catch (error) {
       showToast(formatArticleError(error));
       setIsSubmitting(false);
     }
+  }
+
+  function buildPackageRegenerateOverrides(task) {
+    const plan = task?.imagePromptPlan;
+    return {
+      copy: task?.copy || draftCopy,
+      imagePromptPlan: plan || imagePromptPlan,
+      model: task?.modelKey || task?.model,
+      ratio: task?.ratio || plan?.ratio,
+      quality: task?.quality,
+      imageCount: plan?.count || task?.count,
+      contentType: plan?.contentType,
+      visualStyle: plan?.visualStyle,
+      layoutStyle: plan?.layoutStyle,
+    };
   }
 
   async function regenerateTask(task) {
@@ -1446,9 +1478,18 @@ export function ArticleGenerationView({
       return;
     }
     if (task?.type === "package" || task?.packageId) {
-      if (task.copy) setDraftCopy(task.copy);
-      if (task.imagePromptPlan) setImagePromptPlan(task.imagePromptPlan);
-      await submitGeneration();
+      const overrides = buildPackageRegenerateOverrides(task);
+      if (overrides.model) setModel(overrides.model);
+      setForm((current) => ({
+        ...current,
+        ratio: overrides.ratio || current.ratio,
+        quality: overrides.quality || current.quality,
+        imageCount: overrides.imageCount || current.imageCount,
+        contentType: overrides.contentType || current.contentType,
+        visualStyle: overrides.visualStyle || current.visualStyle,
+        layoutStyle: overrides.layoutStyle || current.layoutStyle,
+      }));
+      await submitGeneration(overrides);
       return;
     }
     setSubmitError("");
@@ -1872,6 +1913,7 @@ export function ArticleGenerationView({
                 selectedTask={selectedTask}
                 submitError={submitError}
                 onRequestRegenerate={requestRegenerate}
+                isRegenerating={isGenerating}
                 formatArticleError={formatArticleError}
                 previewImages={previewImages}
                 draftCopy={draftCopy}

@@ -1,13 +1,26 @@
 import React from "react";
-import { isVideoCover } from "../utils";
+import { getAvatarCategoryLabel, isVideoCover } from "../utils";
+import { Play } from "lucide-react";
 
-export function AvatarCard({ avatar, selected, onSelect }) {
+export function AvatarCard({
+  avatar,
+  selected,
+  onSelect,
+  variant = "default",
+  showPlayIcon = false,
+}) {
   const cover = avatar.cover;
   const isVideo = isVideoCover(cover);
-  const tag = avatar.category || avatar.language || "数字人";
+  const category = getAvatarCategoryLabel(avatar);
+  const overlayLabel =
+    variant === "mine" ? `${avatar.name || "我的形象"} · ${category}` : category;
 
   return (
-    <article className={`dhv2-avatar-card ${selected ? "is-selected" : ""}`}>
+    <article
+      className={`dhv2-avatar-card${selected ? " is-selected" : ""}${
+        variant === "mine" ? " dhv2-avatar-card--mine" : ""
+      }`}
+    >
       <button
         type="button"
         className="dhv2-avatar-card__cover"
@@ -29,9 +42,16 @@ export function AvatarCard({ avatar, selected, onSelect }) {
         ) : (
           <span className="dhv2-avatar-card__placeholder" />
         )}
-        <span className="dhv2-avatar-card__tag">{tag}</span>
+        {showPlayIcon ? (
+          <span className="dhv2-avatar-card__play" aria-hidden="true">
+            <Play size={18} fill="currentColor" />
+          </span>
+        ) : null}
+        <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
       </button>
-      <strong className="dhv2-avatar-card__name">{avatar.name}</strong>
+      {variant === "default" ? (
+        <strong className="dhv2-avatar-card__name">{avatar.name}</strong>
+      ) : null}
     </article>
   );
 }

@@ -6,7 +6,6 @@ import { VIDEO_SPEC_OPTIONS } from "../utils";
 export function GenerateFooter({
   videoSpec,
   onVideoSpecChange,
-  costPoints,
   canGenerate,
   isSubmitting,
   onGenerate,
@@ -20,7 +19,6 @@ export function GenerateFooter({
         options={VIDEO_SPEC_OPTIONS}
         aria-label="成片规格"
       />
-      <p className="dhv2-cost-line">消耗 {costPoints} 积分</p>
       <button
         type="button"
         className="dhv2-generate-button"

@@ -14,18 +14,35 @@ import { PreviewPanel } from "./components/PreviewPanel";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
 import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
-import { VIDEO_SPEC_OPTIONS, getVoiceEmotionValue, replaceScriptSegment } from "./utils";
+import {
+  VIDEO_SPEC_OPTIONS,
+  VOICE_UNAVAILABLE_HINT,
+  createWorkspaceDraft,
+  DHV2_DRAFTS_MAX,
+  getVoiceEmotionLabel,
+  getVoiceEmotionValue,
+  isDigitalHumanVoiceEnabled,
+  loadWorkspaceDrafts,
+  matchVoiceForAvatar,
+  persistWorkspaceDrafts,
+  photoTaskToSelectedAvatar,
+  pickEnabledVoiceId,
+  replaceScriptSegment,
+  resolveAvatarFromDraft,
+  snapshotAvatar,
+} from "./utils";
 import "./digitalHumanV2.css";
 
 const DEFAULT_SCRIPT =
   "大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。";
 
-export function DigitalHumanV2View({ isActive = true }) {
+export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const {
     options,
     avatars,
     voices,
     tasks,
+    photoTasks,
     credits,
     selectedAvatar,
     setSelectedAvatar,
@@ -51,17 +68,23 @@ export function DigitalHumanV2View({ isActive = true }) {
   const [aiGeneratingJob, setAiGeneratingJob] = useState(null);
   const [scriptOptimizeRequest, setScriptOptimizeRequest] = useState(null);
   const [toastMessage, setToastMessage] = useState("");
+  const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
+  const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
-  const selectedModel =
-    options.models.find((item) => item.value === model) || options.models[0];
-  const costPoints = Number(selectedModel?.basePoints || 30);
-  const canGenerate = Boolean(selectedAvatar?.id && text.trim() && model && voiceId);
+  const canGenerate = Boolean(
+    selectedAvatar?.id &&
+      text.trim() &&
+      model &&
+      voiceId &&
+      isDigitalHumanVoiceEnabled(voiceId),
+  );
 
   useEffect(() => {
-    if (!voiceId && voices[0]?.id) {
-      setVoiceId(voices[0].id);
+    const nextVoiceId = pickEnabledVoiceId(voices, voiceId);
+    if (nextVoiceId && nextVoiceId !== voiceId) {
+      setVoiceId(nextVoiceId);
     }
   }, [voiceId, voices]);
 
@@ -70,6 +93,10 @@ export function DigitalHumanV2View({ isActive = true }) {
       if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    persistWorkspaceDrafts(drafts);
+  }, [drafts]);
 
   function showToast(message) {
     setToastMessage(message);
@@ -84,15 +111,88 @@ export function DigitalHumanV2View({ isActive = true }) {
     setAvatarSource(nextSource);
     setRightView("library");
     setActiveTask(null);
+    setSelectedMineLibraryId(null);
+    if (nextSource === "mine") {
+      const mineList = avatars.mine || [];
+      const isOfficialSelection =
+        selectedAvatar?.id &&
+        !mineList.some((item) => String(item.id) === String(selectedAvatar.id));
+      if (isOfficialSelection) {
+        setSelectedAvatar(null);
+      }
+    }
   }
 
   function handleSelectAvatar(avatar) {
     setSelectedAvatar(avatar);
     setActiveTask(null);
+    if (avatarSource !== "mine") {
+      setSelectedMineLibraryId(null);
+    }
+  }
+
+  function handleSelectMineItem(item) {
+    if (!item) return;
+    setSelectedMineLibraryId(item.libraryId);
+
+    if (item.sourceType === "photo-task") {
+      setSelectedAvatar(photoTaskToSelectedAvatar(item));
+      setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
+      setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
+      setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
+      setText(item.text || item.task?.text || DEFAULT_SCRIPT);
+      setActiveTask(null);
+      return;
+    }
+
+    if (item.sourceType === "task") {
+      const avatar = resolveAvatarFromDraft(
+        { avatarId: item.avatarId, avatar: { id: item.avatarId, name: item.name } },
+        avatars,
+      );
+      if (avatar) {
+        setSelectedAvatar(avatar);
+      }
+      setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
+      setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
+      setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
+      setText(item.text || item.task?.text || DEFAULT_SCRIPT);
+      setActiveTask(null);
+      return;
+    }
+
+    const matchedVoice = matchVoiceForAvatar(item, voices);
+    if (matchedVoice?.id) {
+      setVoiceId(matchedVoice.id);
+    }
+    setSelectedAvatar(item);
+    setActiveTask(null);
   }
 
   function handleConfirmAvatar() {
-    setRightView("preview");
+    if (avatarSource !== "mine") {
+      setRightView("preview");
+    }
+  }
+
+  function handleResetWorkspace() {
+    setSelectedAvatar(null);
+    setAvatarSource("official");
+    setRightView("library");
+    setAspectRatio("all");
+    setFillMode("cover");
+    setVideoSpec(VIDEO_SPEC_OPTIONS[0].value);
+    setText(DEFAULT_SCRIPT);
+    setVoiceId(pickEnabledVoiceId(voices));
+    setVoiceSpeed(1);
+    setVoiceEmotion("中性");
+    setActiveTask(null);
+    setSelectedMineLibraryId(null);
+    setScriptOptimizeRequest(null);
+    setIsCreateOpen(false);
+    setAiGeneratingJob(null);
+    setError("");
+    Message.success("已恢复默认配置");
   }
 
   async function handleGenerate() {
@@ -104,9 +204,15 @@ export function DigitalHumanV2View({ isActive = true }) {
       showToast("请输入配音内容");
       return;
     }
+    if (!isDigitalHumanVoiceEnabled(voiceId)) {
+      showToast(VOICE_UNAVAILABLE_HINT);
+      return;
+    }
 
     setError("");
     setIsSubmitting(true);
+    setRightView("preview");
+    setActiveTask(null);
     try {
       const task = await digitalHumanApi.createTask({
         avatarId: selectedAvatar.id,
@@ -159,6 +265,7 @@ export function DigitalHumanV2View({ isActive = true }) {
       const avatar = await digitalHumanApi.createAvatar(payload);
       setSelectedAvatar(avatar);
       setAvatarSource("mine");
+      setSelectedMineLibraryId(`avatar-${avatar.id}`);
       setRightView("library");
       setIsCreateOpen(false);
       showToast("个人形象创建成功");
@@ -199,6 +306,9 @@ export function DigitalHumanV2View({ isActive = true }) {
   }, [activeTask?.id, tasks]);
 
   const resolvedTask = activeTask?.id ? activeTask : null;
+  const showMineLibrary =
+    avatarSource === "mine" && !isSubmitting && !resolvedTask;
+  const showLibrary = rightView === "library" || showMineLibrary;
 
   function handleScriptOptimizeRequest(request) {
     setScriptOptimizeRequest(request);
@@ -218,11 +328,65 @@ export function DigitalHumanV2View({ isActive = true }) {
 
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
-      Message.info("从历史作品选择功能即将开放");
+      setAvatarSource("mine");
+      setRightView("library");
+      Message.info("请从右侧照片数字人记录中选择");
       return;
     }
     setCreateMode(mode);
     setIsCreateOpen(true);
+  }
+
+  function handleSaveDraft() {
+    if (!selectedAvatar?.id) {
+      Message.info("请先选择形象");
+      return;
+    }
+
+    const voiceName =
+      voices.find((voice) => String(voice.id) === String(voiceId))?.name || "";
+    const draft = createWorkspaceDraft({
+      avatarSource,
+      avatarId: selectedAvatar.id,
+      avatar: snapshotAvatar(selectedAvatar),
+      voiceId,
+      voiceName,
+      voiceSpeed,
+      voiceEmotion,
+      text: text.trim(),
+      videoSpec,
+    });
+
+    setDrafts((current) => [draft, ...current].slice(0, DHV2_DRAFTS_MAX));
+    Message.success("已保存到草稿");
+  }
+
+  function handleApplyDraft(draft) {
+    if (avatarSource !== "official") {
+      Message.info("请切换到官方形象后使用草稿");
+      return;
+    }
+
+    const avatar = resolveAvatarFromDraft(draft, avatars);
+    if (!avatar) {
+      Message.error("草稿中的形象已不可用");
+      return;
+    }
+
+    setSelectedAvatar(avatar);
+    setVoiceId(pickEnabledVoiceId(voices, draft.voiceId));
+    setVoiceSpeed(Number(draft.voiceSpeed) || 1);
+    setVoiceEmotion(draft.voiceEmotion || "中性");
+    setText(draft.text || DEFAULT_SCRIPT);
+    setVideoSpec(draft.videoSpec || VIDEO_SPEC_OPTIONS[0].value);
+    setActiveTask(null);
+    setRightView("preview");
+    Message.success("已恢复草稿配置");
+  }
+
+  function handleDeleteDraft(draftId) {
+    setDrafts((current) => current.filter((item) => item.id !== draftId));
+    Message.success("已删除草稿");
   }
 
   if (loading) {
@@ -260,7 +424,6 @@ export function DigitalHumanV2View({ isActive = true }) {
           <GenerateFooter
             videoSpec={videoSpec}
             onVideoSpecChange={setVideoSpec}
-            costPoints={costPoints}
             canGenerate={canGenerate}
             isSubmitting={isSubmitting}
             onGenerate={handleGenerate}
@@ -268,11 +431,15 @@ export function DigitalHumanV2View({ isActive = true }) {
           {credits ? <p className="dhv2-credits">账户积分 {credits.balance}</p> : null}
         </aside>
 
-        {rightView === "library" ? (
+        {showLibrary ? (
           <AvatarLibraryPanel
             avatarSource={avatarSource}
             onAvatarSourceChange={handleAvatarSourceChange}
             avatars={avatars}
+            tasks={tasks}
+            photoTasks={photoTasks}
+            selectedMineLibraryId={selectedMineLibraryId}
+            onSelectMineItem={handleSelectMineItem}
             selectedAvatar={selectedAvatar}
             voices={voices}
             voiceId={voiceId}
@@ -294,8 +461,16 @@ export function DigitalHumanV2View({ isActive = true }) {
           <PreviewPanel
             selectedAvatar={selectedAvatar}
             activeTask={resolvedTask}
+            isSubmitting={isSubmitting}
             onDeleteTask={deleteTask}
             onRegenerateTask={requestRegenerate}
+            onReset={handleResetWorkspace}
+            onSaveDraft={handleSaveDraft}
+            drafts={drafts}
+            avatarSource={avatarSource}
+            onApplyDraft={handleApplyDraft}
+            onDeleteDraft={handleDeleteDraft}
+            onOpenAssets={onOpenAssets}
             scriptText={text}
             videoSpec={videoSpec}
           />

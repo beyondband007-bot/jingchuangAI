@@ -169,6 +169,68 @@
   border-color: #d8d0ff;
 }
 
+.pdhv2-audio-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #f3f0ff;
+  border: 1px solid #ddd4ff;
+  border-radius: 10px;
+}
+
+.pdhv2-audio-selected__meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pdhv2-audio-selected__meta strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pdhv2-audio-selected__meta span {
+  color: var(--pdhv2-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pdhv2-audio-selected__clear {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #7d7890;
+  background: #ffffff;
+  border: 1px solid #ebe7f4;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.pdhv2-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 1600;
+  transform: translateX(-50%);
+  max-width: min(420px, 90vw);
+  padding: 10px 16px;
+  color: #ffffff;
+  background: rgba(40, 37, 50, 0.92);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 12px 32px rgba(31, 28, 45, 0.24);
+  pointer-events: none;
+}
+
 .pdhv2-script-field {
   .arco-textarea {
     background: var(--pdhv2-field);

@@ -2,13 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Input,
-  Message,
   Select,
   Slider,
 } from "@arco-design/web-react";
-import { ImagePlus, Loader2, Upload as UploadIcon } from "lucide-react";
+import { ImagePlus, Loader2, Upload as UploadIcon, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import { usePhotoDigitalHumanData } from "./hooks/usePhotoDigitalHumanData";
+import {
+  VOICE_UNAVAILABLE_HINT,
+  isDigitalHumanVoiceEnabled,
+  pickEnabledVoiceId,
+} from "../digital-human-v2/utils";
 import {
   PHOTO_ASPECT_RATIO_OPTIONS,
   PHOTO_RESOLUTION_OPTIONS,
@@ -20,6 +24,21 @@ import "./photoDigitalHumanV2.scss";
 
 const DEFAULT_SCRIPT =
   "大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。";
+const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+
+function formatAudioDuration(seconds = 0) {
+  const value = Number(seconds || 0);
+  if (!value) return "0s";
+  return value >= 60
+    ? `${Math.floor(value / 60)}m${Math.round(value % 60)}s`
+    : `${Math.round(value)}s`;
+}
+
+function isAudioFile(file) {
+  if (!file) return false;
+  if (String(file.type || "").startsWith("audio/")) return true;
+  return /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(String(file.name || ""));
+}
 
 export function PhotoDigitalHumanView({ isActive = true }) {
   const {
@@ -34,8 +53,12 @@ export function PhotoDigitalHumanView({ isActive = true }) {
   } = usePhotoDigitalHumanData({ isActive });
 
   const fileInputRef = useRef(null);
+  const audioInputRef = useRef(null);
+  const toastTimerRef = useRef(null);
   const [portraitFile, setPortraitFile] = useState(null);
   const [portraitPreview, setPortraitPreview] = useState("");
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioDuration, setAudioDuration] = useState(0);
   const [text, setText] = useState(DEFAULT_SCRIPT);
   const [model, setModel] = useState("");
   const [voiceId, setVoiceId] = useState("");
@@ -44,14 +67,36 @@ export function PhotoDigitalHumanView({ isActive = true }) {
   const [aspectRatio, setAspectRatio] = useState(PHOTO_ASPECT_RATIO_OPTIONS[0].value);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTask, setActiveTask] = useState(null);
+  const [toastMessage, setToastMessage] = useState("");
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
   const costPoints = Number(selectedModel?.basePoints || 30);
-  const durationSeconds = estimatePhotoSpeechSeconds(text);
+  const durationSeconds = audioFile
+    ? Math.max(1, Math.round(audioDuration) || estimatePhotoSpeechSeconds(text))
+    : estimatePhotoSpeechSeconds(text);
   const canGenerate = Boolean(
-    portraitFile && text.trim() && model && voiceId && !isSubmitting,
+    portraitFile &&
+      (text.trim() || audioFile) &&
+      model &&
+      (audioFile || (voiceId && isDigitalHumanVoiceEnabled(voiceId))) &&
+      !isSubmitting,
   );
+
+  function showToast(message) {
+    setToastMessage(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage("");
+      toastTimerRef.current = null;
+    }, 2200);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeTask?.id) return;
@@ -63,8 +108,9 @@ export function PhotoDigitalHumanView({ isActive = true }) {
     if (!model && (options.defaults?.model || options.models[0]?.value)) {
       setModel(options.defaults?.model || options.models[0].value);
     }
-    if (!voiceId && voices[0]?.id) {
-      setVoiceId(voices[0].id);
+    const nextVoiceId = pickEnabledVoiceId(voices, voiceId);
+    if (nextVoiceId && nextVoiceId !== voiceId) {
+      setVoiceId(nextVoiceId);
     }
   }, [model, options, voiceId, voices]);
 
@@ -79,12 +125,12 @@ export function PhotoDigitalHumanView({ isActive = true }) {
   function selectPortrait(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      Message.warning("请上传图片文件");
+      showToast("请上传图片文件");
       return;
     }
     const maxBytes = options.limits?.maxImageBytes || 10 * 1024 * 1024;
     if (file.size > maxBytes) {
-      Message.warning("图片大小不能超过 10MB");
+      showToast("图片大小不能超过 10MB");
       return;
     }
     if (portraitPreview.startsWith("blob:")) {
@@ -95,13 +141,60 @@ export function PhotoDigitalHumanView({ isActive = true }) {
     setError("");
   }
 
-  async function handleGenerate() {
-    if (!portraitFile) {
-      Message.warning("请先上传人物正面图");
+  function selectAudio(file) {
+    if (!file) return;
+    if (!isAudioFile(file)) {
+      showToast("请上传音频文件");
       return;
     }
-    if (!text.trim()) {
-      Message.warning("请先填写口播文案");
+    if (file.size > MAX_AUDIO_BYTES) {
+      showToast("音频大小不能超过 20MB");
+      return;
+    }
+
+    setAudioFile(file);
+    setAudioDuration(0);
+    setError("");
+
+    const previewUrl = URL.createObjectURL(file);
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.src = previewUrl;
+    audio.addEventListener(
+      "loadedmetadata",
+      () => {
+        setAudioDuration(Number(audio.duration || 0));
+        URL.revokeObjectURL(previewUrl);
+      },
+      { once: true },
+    );
+    audio.addEventListener(
+      "error",
+      () => {
+        URL.revokeObjectURL(previewUrl);
+      },
+      { once: true },
+    );
+
+    showToast(`已选择音频：${file.name}`);
+  }
+
+  function clearAudio() {
+    setAudioFile(null);
+    setAudioDuration(0);
+  }
+
+  async function handleGenerate() {
+    if (!portraitFile) {
+      showToast("请先上传人物正面图");
+      return;
+    }
+    if (!text.trim() && !audioFile) {
+      showToast("请先填写口播文案或上传音频");
+      return;
+    }
+    if (!audioFile && !isDigitalHumanVoiceEnabled(voiceId)) {
+      showToast(VOICE_UNAVAILABLE_HINT);
       return;
     }
 
@@ -117,12 +210,13 @@ export function PhotoDigitalHumanView({ isActive = true }) {
         volume: 1,
         pitch: 0,
         emotion: "",
+        audio: audioFile,
       });
       await refreshCredits();
       setActiveTask(task);
-      Message.success("已提交生成任务");
+      showToast("已提交生成任务");
     } catch (submitError) {
-      Message.error(submitError.message || "照片数字人创建失败");
+      showToast(submitError.message || "照片数字人创建失败");
     } finally {
       setIsSubmitting(false);
     }
@@ -193,16 +287,46 @@ export function PhotoDigitalHumanView({ isActive = true }) {
                   <p>填写台词并选择合适音色，支持调节语速</p>
                 </div>
               </div>
+              <input
+                ref={audioInputRef}
+                type="file"
+                accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
+                hidden
+                onChange={(event) => {
+                  selectAudio(event.target.files?.[0] || null);
+                  event.target.value = "";
+                }}
+              />
               <Button
                 type="outline"
                 size="small"
                 className="pdhv2-upload-audio-btn"
                 icon={<UploadIcon size={14} />}
-                onClick={() => Message.info("上传音频功能即将开放")}
+                onClick={() => audioInputRef.current?.click()}
               >
                 上传音频
               </Button>
             </div>
+
+            {audioFile ? (
+              <div className="pdhv2-audio-selected">
+                <div className="pdhv2-audio-selected__meta">
+                  <strong>{audioFile.name}</strong>
+                  <span>
+                    {formatAudioDuration(audioDuration)}
+                    {audioDuration ? "" : " · 正在读取时长"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="pdhv2-audio-selected__clear"
+                  aria-label="移除音频"
+                  onClick={clearAudio}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : null}
 
             <div className="pdhv2-script-field">
               <Input.TextArea
@@ -228,6 +352,7 @@ export function PhotoDigitalHumanView({ isActive = true }) {
                   options={voices.map((voice) => ({
                     value: voice.id,
                     label: voice.name,
+                    disabled: !isDigitalHumanVoiceEnabled(voice.id),
                   }))}
                   placeholder="选择音色"
                 />
@@ -319,6 +444,8 @@ export function PhotoDigitalHumanView({ isActive = true }) {
           ) : null}
         </div>
       </div>
+
+      {toastMessage ? <div className="pdhv2-toast">{toastMessage}</div> : null}
     </section>
   );
 }

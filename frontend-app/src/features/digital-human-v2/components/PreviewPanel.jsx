@@ -10,8 +10,10 @@ import {
   Trash2,
   Undo2,
   Wand2,
+  X,
 } from "lucide-react";
 import {
+  formatDraftTime,
   getVideoResolutionLabel,
   isVideoCover,
 } from "../utils";
@@ -26,11 +28,46 @@ function GeneratingState({ task }) {
   );
 }
 
+function DraftThumb({ draft }) {
+  const cover = draft.avatar?.cover || draft.avatar?.poster;
+  const coverIsVideo = isVideoCover(cover);
+
+  if (!cover) {
+    return (
+      <span className="dhv2-preview__draft-thumb dhv2-preview__draft-thumb--empty">
+        <Bot size={18} />
+      </span>
+    );
+  }
+
+  if (coverIsVideo) {
+    return (
+      <video
+        className="dhv2-preview__draft-thumb"
+        src={cover}
+        poster={draft.avatar?.poster || undefined}
+        muted
+        playsInline
+      />
+    );
+  }
+
+  return <img className="dhv2-preview__draft-thumb" src={cover} alt={draft.avatar?.name || ""} />;
+}
+
 export function PreviewPanel({
   selectedAvatar,
   activeTask,
+  isSubmitting = false,
   onDeleteTask,
   onRegenerateTask,
+  onReset,
+  onSaveDraft,
+  drafts = [],
+  avatarSource,
+  onApplyDraft,
+  onDeleteDraft,
+  onOpenAssets,
   scriptText,
   videoSpec,
 }) {
@@ -38,37 +75,42 @@ export function PreviewPanel({
   const coverIsVideo = isVideoCover(cover);
   const isProcessing =
     activeTask && !["completed", "failed"].includes(activeTask.status);
+  const isGenerating = isSubmitting || isProcessing;
   const isFailed = activeTask?.status === "failed";
-  const resultUrl = activeTask?.resultUrl;
+  const resultUrl = !isGenerating ? activeTask?.resultUrl : null;
   const displayScript = (activeTask?.text || scriptText || "").trim();
   const resolutionLabel = getVideoResolutionLabel(videoSpec);
+  const canApplyDraft = avatarSource === "official";
+  const generatingProgress = isSubmitting ? 0 : activeTask?.progress || 0;
+  const generatingTask = {
+    avatarName: activeTask?.avatarName || selectedAvatar?.name || "数字人",
+    progress: generatingProgress,
+  };
 
-  async function handleCopyScript() {
-    if (!displayScript) {
-      Message.info("请在左侧编辑口播文案");
+  function handleSaveDraft() {
+    if (onSaveDraft) {
+      onSaveDraft();
       return;
     }
-    try {
-      await navigator.clipboard.writeText(displayScript);
-      Message.success("文案已复制");
-    } catch {
-      Message.error("复制失败，请手动复制");
-    }
+    Message.info("请先配置左侧内容");
   }
 
   return (
-    <main className="dhv2-preview" aria-label="预览区">
+    <main
+      className={`dhv2-preview${isGenerating ? " dhv2-preview--generating" : ""}`}
+      aria-label="预览区"
+    >
       <header className="dhv2-preview__top">
         <div className="dhv2-preview__toolbar">
           <div className="dhv2-preview__title-group">
             <h2>数字人 | {resolutionLabel}</h2>
-            {activeTask ? (
+            {isGenerating ? (
               <span className="dhv2-preview__status">
-                {isProcessing
-                  ? `生成中 ${activeTask.progress || 0}%`
-                  : isFailed
-                    ? "失败"
-                    : "完成"}
+                {isSubmitting ? "提交中..." : `生成中 ${generatingProgress}%`}
+              </span>
+            ) : activeTask ? (
+              <span className="dhv2-preview__status">
+                {isFailed ? "失败" : "完成"}
               </span>
             ) : null}
           </div>
@@ -83,12 +125,12 @@ export function PreviewPanel({
             </button>
             <button
               type="button"
-              aria-label="恢复文案"
-              onClick={() => Message.success("已恢复为左侧配音内容")}
+              aria-label="返回并重置"
+              onClick={() => onReset?.()}
             >
               <Undo2 size={15} />
             </button>
-            <button type="button" aria-label="复制文案" onClick={handleCopyScript}>
+            <button type="button" aria-label="保存草稿" onClick={handleSaveDraft}>
               <Copy size={15} />
             </button>
             <button
@@ -101,7 +143,7 @@ export function PreviewPanel({
             <button
               type="button"
               className="dhv2-preview__asset-btn"
-              onClick={() => Message.info("我的资产能力即将开放")}
+              onClick={() => onOpenAssets?.()}
             >
               我的资产
             </button>
@@ -119,10 +161,10 @@ export function PreviewPanel({
       </header>
 
       <div className="dhv2-preview__media">
-        {resultUrl ? (
+        {isGenerating ? (
+          <GeneratingState task={generatingTask} />
+        ) : resultUrl ? (
           <video src={resultUrl} controls playsInline />
-        ) : isProcessing ? (
-          <GeneratingState task={activeTask} />
         ) : isFailed ? (
           <div className="dhv2-preview__empty">
             <Bot size={40} />
@@ -149,7 +191,7 @@ export function PreviewPanel({
         )}
       </div>
 
-      {activeTask && activeTask.status === "completed" && resultUrl ? (
+      {activeTask && activeTask.status === "completed" && resultUrl && !isGenerating ? (
         <footer className="dhv2-preview__actions">
           <button type="button" onClick={() => onRegenerateTask?.(activeTask.id)} aria-label="重新生成">
             <RefreshCcw size={18} />
@@ -161,11 +203,66 @@ export function PreviewPanel({
             <Trash2 size={18} />
           </button>
         </footer>
-      ) : (
-        <footer className="dhv2-preview__draft">
-          暂无草稿，编辑形象或配置后将自动保存
+      ) : null}
+
+      {!isGenerating ? (
+        <footer className="dhv2-preview__drafts">
+          <div className="dhv2-preview__drafts-head">
+            <strong>草稿</strong>
+            <span>{drafts.length ? `共 ${drafts.length} 条` : "暂无草稿"}</span>
+          </div>
+          {drafts.length ? (
+            <div className="dhv2-preview__draft-list" role="list">
+              {drafts.map((draft) => {
+                const scriptPreview = (draft.text || "").trim();
+                const voiceLabel = draft.voiceName || "默认音色";
+                return (
+                  <article
+                    key={draft.id}
+                    className={`dhv2-preview__draft-item${canApplyDraft ? "" : " is-disabled"}`}
+                    role="listitem"
+                  >
+                    <button
+                      type="button"
+                      className="dhv2-preview__draft-main"
+                      onClick={() => onApplyDraft?.(draft)}
+                      aria-label={`恢复草稿 ${draft.avatar?.name || "未命名形象"}`}
+                    >
+                      <DraftThumb draft={draft} />
+                      <div className="dhv2-preview__draft-meta">
+                        <strong>{draft.avatar?.name || "未命名形象"}</strong>
+                        <p>{scriptPreview || "暂无配音内容"}</p>
+                        <span>
+                          {voiceLabel} · {Number(draft.voiceSpeed || 1).toFixed(1)}x ·{" "}
+                          {formatDraftTime(draft.createdAt)}
+                        </span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="dhv2-preview__draft-remove"
+                      aria-label="删除草稿"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDeleteDraft?.(draft.id);
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="dhv2-preview__draft-empty">
+              点击顶部复制按钮，可将左侧配置保存为草稿
+            </p>
+          )}
+          {!canApplyDraft && drafts.length ? (
+            <p className="dhv2-preview__draft-hint">切换到官方形象后可点击草稿恢复配置</p>
+          ) : null}
         </footer>
-      )}
+      ) : null}
     </main>
   );
 }

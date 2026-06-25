@@ -48,6 +48,7 @@ export const imageDigitalHumanApi = {
     formData.append("volume", String(payload.volume));
     formData.append("pitch", String(payload.pitch));
     formData.append("emotion", payload.emotion || "");
+    if (payload.audio) formData.append("audio", payload.audio);
 
     const task = await request("/api/image-digital-human/tasks", {
       method: "POST",

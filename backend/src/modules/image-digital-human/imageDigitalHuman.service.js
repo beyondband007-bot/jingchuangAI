@@ -1,12 +1,19 @@
 import path from "path";
 import { config } from "../../config/index.js";
 import {
-  createKieSpeechToVideoTask,
   extractKieImageDigitalHumanResult,
   getKieImageDigitalHumanTask,
   mapKieImageDigitalHumanState
 } from "../../providers/kie/imageDigitalHuman.js";
-import { uploadFileToKie } from "../../providers/kie/upload.js";
+import {
+  buildReferenceAudio,
+  buildReferenceImage,
+  createArkVideoGenerationTask,
+  extractArkVideoGenerationResult,
+  getArkVideoGenerationTask,
+  mapArkVideoGenerationState
+} from "../../providers/volcengine/videoGeneration.js";
+import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
@@ -14,6 +21,10 @@ import { calculateBillingQuote, estimateSpeechSeconds } from "../../shared/billi
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { voices } from "../digital-human/digitalHuman.data.js";
+import {
+  createVirtualAssetFromLocalFile,
+  waitForVirtualAssetReference
+} from "../digital-human/arkVirtualAssets.service.js";
 import {
   createImageDigitalHumanTaskRow,
   deleteImageDigitalHumanTaskRow,
@@ -30,10 +41,9 @@ import {
 } from "./imageDigitalHuman.repository.js";
 import { getPool } from "../../db/pool.js";
 
-const maxImageDigitalHumanAudioMs = 5 * 60 * 1000;
+const maxImageDigitalHumanAudioMs = 15 * 1000;
 const basePoints = 30;
 const maxTextLength = 2000;
-const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 const ttsEmotionOptions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
 
 function nowLabel(date = new Date()) {
@@ -86,13 +96,13 @@ function getModelByKey(modelKey) {
 function getModelDefinitions() {
   return [
     {
-      value: "kie-s2v-r2v",
-      label: "Kling AI Avatar Pro",
-      provider: "kie",
-      primaryModel: config.kie.imageDigitalHumanPrimaryModel,
-      fallbackModel: config.kie.imageDigitalHumanPrimaryModel,
-      resolution: config.kie.imageDigitalHumanResolution,
-      fallbackResolution: config.kie.imageDigitalHumanResolution,
+      value: "seedance-2.0",
+      label: "Seedance 2.0",
+      provider: "ark",
+      primaryModel: config.ark.videoModel,
+      fallbackModel: config.ark.videoModel,
+      resolution: "720p",
+      fallbackResolution: "720p",
       basePoints
     }
   ];
@@ -136,62 +146,118 @@ function mediaPathToFilePath(mediaPath = "") {
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, portraitFilePath, portraitFileName, portraitMimeType, model } = payload;
+  const {
+    text,
+    voiceId,
+    speed,
+    volume,
+    pitch,
+    emotion,
+    portraitFilePath,
+    portraitFileName,
+    portraitMimeType,
+    portraitPublicUrl,
+    uploadedAudio,
+    userId,
+    model
+  } = payload;
 
-  console.log(`[image-digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
-  const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
-  const audioDurationMs = getAudioDurationMs(speech, text);
-  if (audioDurationMs > maxImageDigitalHumanAudioMs) {
-    throw createHttpError("音频时长超过 5 分钟，请缩短文本后重试", 400);
+  let savedAudio;
+  let audioDurationMs;
+  let audioSizeBytes;
+
+  if (uploadedAudio) {
+    console.log(`[image-digital-human] task ${taskId}: using uploaded audio ${uploadedAudio.fileName}`);
+    savedAudio = {
+      fileName: uploadedAudio.fileName,
+      filePath: uploadedAudio.filePath,
+      publicPath: uploadedAudio.publicPath,
+      mimeType: uploadedAudio.mimeType
+    };
+    audioDurationMs = uploadedAudio.durationMs;
+    audioSizeBytes = uploadedAudio.sizeBytes;
+  } else {
+    console.log(`[image-digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
+    const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
+    savedAudio = await saveMinimaxSpeechAudio({
+      taskId,
+      audioBuffer: speech.audioBuffer,
+      featureDir: "image-digital-human"
+    });
+    audioDurationMs = getAudioDurationMs(speech, text);
+    audioSizeBytes = speech.audioBuffer.length;
   }
-  const savedAudio = await saveMinimaxSpeechAudio({
-    taskId,
-    audioBuffer: speech.audioBuffer,
-    featureDir: "image-digital-human"
-  });
 
-  console.log(`[image-digital-human] task ${taskId}: uploading portrait and audio`);
-  const [portraitUpload, audioUpload] = await Promise.all([
-    uploadFileToKie({
+  if (audioDurationMs > maxImageDigitalHumanAudioMs) {
+    throw createHttpError("音频时长不能超过 15 秒，请缩短文本后重试", 400);
+  }
+
+  console.log(`[image-digital-human] task ${taskId}: creating Ark portrait and audio assets`);
+  const [portraitAsset, audioAsset] = await Promise.all([
+    createVirtualAssetFromLocalFile({
+      userId,
+      feature: "image-digital-human-portrait",
+      localUrl: portraitPublicUrl,
       filePath: portraitFilePath,
-      fileName: portraitFileName,
+      originalName: portraitFileName,
       mimeType: portraitMimeType,
-      uploadPath: "image-digital-human/portrait"
+      sizeBytes: 0
     }),
-    uploadFileToKie({
+    createVirtualAssetFromLocalFile({
+      userId,
+      feature: "image-digital-human-audio",
+      localUrl: savedAudio.publicPath,
       filePath: savedAudio.filePath,
-      fileName: savedAudio.fileName,
+      originalName: savedAudio.fileName,
       mimeType: savedAudio.mimeType,
-      uploadPath: "image-digital-human/audio"
+      sizeBytes: audioSizeBytes
     })
   ]);
+  const [portraitReferenceUrl, audioReferenceUrl] = await Promise.all([
+    waitForVirtualAssetReference(portraitAsset.id),
+    waitForVirtualAssetReference(audioAsset.id)
+  ]);
 
-  console.log(`[image-digital-human] task ${taskId}: creating Kling AI Avatar Pro task`);
+  console.log(`[image-digital-human] task ${taskId}: creating Seedance 2.0 task`);
   const usedProviderModel = model.primaryModel;
-  const provider = await createKieSpeechToVideoTask({
+  const provider = await createArkVideoGenerationTask({
     model: usedProviderModel,
-    prompt: klingAvatarPrompt,
-    imageUrl: portraitUpload.url,
-    audioUrl: audioUpload.url,
-    resolution: model.resolution
+    content: [
+      {
+        type: "text",
+        text: `The person in image 1 speaks naturally in sync with audio 1. Preserve identity, facial features, clothing, framing, background, and lighting. Do not translate, rewrite, or add speech. Script: ${text}`
+      },
+      buildReferenceImage(portraitReferenceUrl),
+      buildReferenceAudio(audioReferenceUrl)
+    ],
+    resolution: model.resolution,
+    ratio: "adaptive",
+    duration: getVideoDurationSeconds(audioDurationMs, text),
+    generateAudio: true,
+    watermark: false
   });
 
   await setImageDigitalHumanTaskProviderStarted(taskId, {
     providerTaskId: provider.taskId,
     usedProviderModel,
     audioUrl: savedAudio.publicPath,
-    audioProviderUrl: audioUpload.url,
-    portraitProviderUrl: portraitUpload.url,
+    audioProviderUrl: audioReferenceUrl,
+    portraitProviderUrl: portraitReferenceUrl,
     audioDurationMs
   });
-  console.log(`[image-digital-human] task ${taskId}: task ${provider.taskId} created with ${usedProviderModel}`);
+  console.log(`[image-digital-human] task ${taskId}: Ark task ${provider.taskId} created with ${usedProviderModel}`);
 }
 
 export function getModels() {
   return {
     models: getModelDefinitions().map((model) => ({
       ...model,
-      configured: Boolean(config.kie.apiKey && config.minimax.apiKey)
+      configured: Boolean(
+        config.ark.apiKey &&
+          config.ark.accessKeyId &&
+          config.ark.secretAccessKey &&
+          config.minimax.apiKey
+      )
     })),
     defaults: {
       model: getModelDefinitions()[0].value,
@@ -247,8 +313,11 @@ export async function getTask(id) {
   return row ? mapTask(row) : null;
 }
 
-export async function createTask(payload, file) {
+export async function createTask(payload, file, audioFile = null) {
   if (!file) throw createHttpError("请上传肖像图片", 400);
+  if (Number(file.size || 0) > 10 * 1024 * 1024) {
+    throw createHttpError("肖像图片大小不能超过 10MB", 400);
+  }
 
   const text = String(payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
@@ -258,14 +327,38 @@ export async function createTask(payload, file) {
   const pitch = normalizeDecimal(payload.pitch, 0);
   const emotion = normalizeEmotion(payload.emotion);
 
-  if (!text) throw createHttpError("请输入文本", 400);
+  if (!text && !audioFile) throw createHttpError("请输入文本或上传音频", 400);
   if (text.length > maxTextLength) throw createHttpError(`文本长度不能超过 ${maxTextLength} 个字符`, 400);
 
+  let uploadedAudio = null;
+  if (audioFile) {
+    let durationSeconds;
+    try {
+      durationSeconds = await getVideoDuration(audioFile.path);
+    } catch {
+      throw createHttpError("无法读取音频时长，请更换音频文件后重试", 400);
+    }
+    const durationMs = Math.round(durationSeconds * 1000);
+    if (durationMs > maxImageDigitalHumanAudioMs) {
+      throw createHttpError("音频时长不能超过 15 秒，请裁剪后重试", 400);
+    }
+    uploadedAudio = {
+      fileName: audioFile.originalname || audioFile.filename,
+      filePath: audioFile.path,
+      publicPath: `/media/image-digital-human/audio/${audioFile.filename}`,
+      mimeType: audioFile.mimetype || "audio/mpeg",
+      sizeBytes: Number(audioFile.size || 0),
+      durationMs
+    };
+  }
+
   const model = getModelByKey(modelKey);
-  if (!model || model.provider !== "kie") throw createHttpError("图片数字人模型不存在", 400);
+  if (!model || model.provider !== "ark") throw createHttpError("图片数字人模型不存在", 400);
   const voice = getVoiceById(voiceId);
   const portraitUrl = `/media/image-digital-human/portraits/${file.filename}`;
-  const billingDuration = estimateSpeechSeconds(text);
+  const billingDuration = uploadedAudio
+    ? Math.max(1, Math.ceil(uploadedAudio.durationMs / 1000))
+    : estimateSpeechSeconds(text);
   const costPoints = calculateBillingQuote("image-digital-human", {
     durationSeconds: billingDuration,
     text
@@ -322,6 +415,9 @@ export async function createTask(payload, file) {
       portraitFilePath: file.path,
       portraitFileName: file.originalname || file.filename,
       portraitMimeType: file.mimetype || "image/png",
+      portraitPublicUrl: portraitUrl,
+      uploadedAudio,
+      userId,
       model
     });
   } catch (error) {
@@ -354,16 +450,28 @@ async function refreshTask(id) {
   if (!row || !row.provider_task_id || !["pending", "processing"].includes(row.status)) return;
 
   try {
-    const record = await getKieImageDigitalHumanTask({ taskId: row.provider_task_id });
-    const mapped = mapKieImageDigitalHumanState(record);
+    const isArkTask = row.provider_model === config.ark.videoModel || row.model_key === "seedance-2.0";
+    const record = isArkTask
+      ? await getArkVideoGenerationTask({ taskId: row.provider_task_id })
+      : await getKieImageDigitalHumanTask({ taskId: row.provider_task_id });
+    const mapped = isArkTask
+      ? mapArkVideoGenerationState(record)
+      : mapKieImageDigitalHumanState(record);
     if (mapped === "completed") {
-      const result = extractKieImageDigitalHumanResult(record);
+      const result = isArkTask
+        ? extractArkVideoGenerationResult(record)
+        : extractKieImageDigitalHumanResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "图片数字人结果缺少视频链接");
       } else {
         await setImageDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
+      if (isArkTask) {
+        const result = extractArkVideoGenerationResult(record);
+        await refundTask(id, null, null, result.errorMessage || "Seedance 2.0 generation failed");
+        return;
+      }
       await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "图片数字人任务失败");
     } else {
       await setImageDigitalHumanTaskProcessing(id);

@@ -195,6 +195,13 @@
       white-space: nowrap;
     }
 
+    &-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+
     .arco-btn {
       flex: 0 0 auto;
     }

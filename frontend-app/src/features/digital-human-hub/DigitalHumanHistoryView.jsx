@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button, Empty, Message, Spin, Tag } from "@arco-design/web-react";
-import { Download, Loader2, RefreshCcw, Trash2 } from "lucide-react";
+import { Download, Loader2, Play, RefreshCcw, Trash2, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
 import {
@@ -35,11 +35,75 @@ function getStatusTag(status) {
   return { color: "arcoblue", label: "生成中" };
 }
 
+function HistoryPreviewModal({ task, onClose }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (!task) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, task]);
+
+  useEffect(() => {
+    if (!task || !videoRef.current) return;
+    const video = videoRef.current;
+    const playPromise = video.play();
+    if (playPromise?.catch) {
+      playPromise.catch(() => {});
+    }
+  }, [task]);
+
+  if (!task?.resultUrl) return null;
+
+  return (
+    <div
+      className="dh-history-preview"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`预览 ${task.title}`}
+      onClick={onClose}
+    >
+      <div className="dh-history-preview__panel" onClick={(event) => event.stopPropagation()}>
+        <header className="dh-history-preview__head">
+          <div>
+            <strong>{task.title}</strong>
+            <p>{task.subtitle}</p>
+          </div>
+          <button type="button" aria-label="关闭预览" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </header>
+        <video
+          ref={videoRef}
+          className="dh-history-preview__video"
+          src={task.resultUrl}
+          poster={task.previewUrl || undefined}
+          controls
+          playsInline
+          preload="metadata"
+        />
+        <footer className="dh-history-preview__actions">
+          <a href={task.resultUrl} download target="_blank" rel="noreferrer">
+            <Download size={16} />
+            下载视频
+          </a>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export function DigitalHumanHistoryView({ isActive = true }) {
   const [loading, setLoading] = useState(true);
   const [avatarTasks, setAvatarTasks] = useState([]);
   const [photoTasks, setPhotoTasks] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [previewTask, setPreviewTask] = useState(null);
 
   const tasks = useMemo(() => {
     const merged = [
@@ -165,11 +229,32 @@ export function DigitalHumanHistoryView({ isActive = true }) {
           {tasks.map((task) => {
             const status = getStatusTag(task.status);
             const isProcessing = !["completed", "failed"].includes(task.status);
+            const canPreview = task.status === "completed" && Boolean(task.resultUrl);
             return (
               <article key={`${task.taskType}-${task.id}`} className="dh-history-card">
-                <div className="dh-history-card__media">
-                  {task.resultUrl && task.status === "completed" ? (
-                    <video src={task.resultUrl} poster={task.previewUrl || undefined} muted playsInline />
+                <button
+                  type="button"
+                  className={`dh-history-card__media${canPreview ? " is-playable" : ""}`}
+                  disabled={!canPreview}
+                  aria-label={canPreview ? `播放 ${task.title}` : `${task.title} 预览`}
+                  onClick={() => {
+                    if (canPreview) setPreviewTask(task);
+                  }}
+                >
+                  {canPreview ? (
+                    <>
+                      <video
+                        src={task.resultUrl}
+                        poster={task.previewUrl || undefined}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        tabIndex={-1}
+                      />
+                      <span className="dh-history-card__play" aria-hidden="true">
+                        <Play size={22} fill="currentColor" />
+                      </span>
+                    </>
                   ) : task.previewUrl ? (
                     <img src={task.previewUrl} alt={task.title} />
                   ) : (
@@ -177,7 +262,7 @@ export function DigitalHumanHistoryView({ isActive = true }) {
                       {isProcessing ? <Loader2 size={24} className="dh-history-card__spinner" /> : null}
                     </div>
                   )}
-                </div>
+                </button>
 
                 <div className="dh-history-card__body">
                   <div className="dh-history-card__tags">
@@ -224,6 +309,9 @@ export function DigitalHumanHistoryView({ isActive = true }) {
 
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      {previewTask ? (
+        <HistoryPreviewModal task={previewTask} onClose={() => setPreviewTask(null)} />
+      ) : null}
     </section>
   );
 }

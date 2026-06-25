@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
+import { imageDigitalHumanApi } from "../../../api/imageDigitalHumanApi";
 import { emitCreditsUpdated } from "../../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../../api/taskPolling";
 import { resolveAvatarSelection } from "../utils";
@@ -20,6 +21,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
   const [avatars, setAvatars] = useState({ public: [], mine: [] });
   const [voices, setVoices] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [photoTasks, setPhotoTasks] = useState([]);
   const [credits, setCredits] = useState(null);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,11 +54,13 @@ export function useDigitalHumanData({ isActive = true } = {}) {
       setLoading(true);
       setError("");
       try {
-        const [modelData, avatarData, voiceData, taskData, creditData] = await Promise.all([
+        const [modelData, avatarData, voiceData, taskData, photoTaskData, creditData] =
+          await Promise.all([
           digitalHumanApi.getModels(),
           digitalHumanApi.getAvatars(),
           digitalHumanApi.getVoices(),
           digitalHumanApi.getTasks(),
+          imageDigitalHumanApi.getTasks().catch(() => []),
           digitalHumanApi.getCredits().catch(() => null),
         ]);
         if (!mounted) return;
@@ -64,6 +68,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         setAvatars(avatarData);
         setVoices(voiceData.voices || []);
         applyTaskList(taskData);
+        setPhotoTasks(Array.isArray(photoTaskData) ? photoTaskData : []);
         applyCredits(setCredits, creditData);
         setSelectedAvatar((current) => resolveAvatarSelection(current, avatarData));
       } catch (loadError) {
@@ -89,9 +94,17 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         .catch(() => {});
     });
 
+    const unsubscribePhoto = imageDigitalHumanApi.subscribe(() => {
+      imageDigitalHumanApi
+        .getTasks()
+        .then((value) => mounted && setPhotoTasks(Array.isArray(value) ? value : []))
+        .catch(() => {});
+    });
+
     return () => {
       mounted = false;
       unsubscribe();
+      unsubscribePhoto();
     };
   }, [isActive]);
 
@@ -110,6 +123,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     avatars,
     voices,
     tasks,
+    photoTasks,
     credits,
     selectedAvatar,
     setSelectedAvatar,

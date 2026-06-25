@@ -13,6 +13,7 @@ export function ArticlePopularResultPanel({
   selectedTask,
   submitError,
   onRequestRegenerate,
+  isRegenerating = false,
   formatArticleError,
   previewImages,
   draftCopy,
@@ -114,14 +115,6 @@ export function ArticlePopularResultPanel({
                   <h2>{titleText}</h2>
                   <div className="article-popular-result-panel__copy-row">
                     <strong>正文内容：</strong>
-                    <Button
-                      type="outline"
-                      size="mini"
-                      icon={<Copy size={15} />}
-                      onClick={onCopyArticleBody}
-                    >
-                      复制正文
-                    </Button>
                   </div>
                   <div className="article-popular-result-panel__body">
                     {bodyText
@@ -140,14 +133,33 @@ export function ArticlePopularResultPanel({
                   </div>
                   <div className="article-popular-result-panel__footer">
                     <span>{resultCreatedAt}</span>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<Download size={16} />}
-                      onClick={onDownloadImagesAsZip}
-                    >
-                      下载图片
-                    </Button>
+                    <div className="article-popular-result-panel__footer-actions">
+                      <Button
+                        type="outline"
+                        size="small"
+                        icon={<RefreshCcw size={16} />}
+                        disabled={isRegenerating}
+                        onClick={() => onRequestRegenerate(selectedTask)}
+                      >
+                        重新生成
+                      </Button>
+                      <Button
+                        type="outline"
+                        size="small"
+                        icon={<Copy size={16} />}
+                        onClick={onCopyArticleBody}
+                      >
+                        复制正文
+                      </Button>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<Download size={16} />}
+                        onClick={onDownloadImagesAsZip}
+                      >
+                        下载图片
+                      </Button>
+                    </div>
                   </div>
                 </article>
               </section>
