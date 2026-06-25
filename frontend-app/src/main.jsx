@@ -8985,7 +8985,7 @@ function ChatComposerBar({
               <BillingPoints
                 feature="chat"
                 payload={{ outputChars: 1000, conversationRound }}
-                fallbackPoints={4}
+                fallbackPoints={1}
               />
             </button>
           </div>

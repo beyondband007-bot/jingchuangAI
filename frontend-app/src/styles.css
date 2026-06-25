@@ -35350,7 +35350,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   width: auto;
   min-width: 48px;
   padding-inline: 12px;
-  gap: 3px;
+  gap: 4px;
+  grid-auto-flow: column;
 }
 
 .llm-round.primary .billing-points,
