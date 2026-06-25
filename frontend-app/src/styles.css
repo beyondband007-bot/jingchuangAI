@@ -13432,9 +13432,10 @@ select {
 
 .llm-input {
   width: 100%;
-  min-height: 80px;
-  max-height: 160px;
-  margin: 0 0 18px;
+  min-height: 74px;
+  max-height: 216px;
+  margin: 0 0 16px;
+  padding: 0;
   resize: vertical;
   color: #eef1f7 !important;
   background: transparent !important;
@@ -13442,7 +13443,7 @@ select {
   outline: 0;
   font: inherit;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 24px !important;
 }
 
 .llm-input::placeholder {
@@ -13498,8 +13499,8 @@ select {
 }
 
 .llm-square {
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   font-size: 30px;
   line-height: 1;
@@ -13542,7 +13543,7 @@ select {
   align-items: center;
   justify-content: center;
   min-width: 142px;
-  height: 46px;
+  height: 44px;
   gap: 9px;
   padding: 0 14px;
   border-radius: 12px;
@@ -14221,7 +14222,7 @@ section.image-gen-view .image-composer-shell.is-workbench.is-collapsed {
 
 section.image-gen-view .image-prompt-dialog {
   display: grid !important;
-  gap: 14px !important;
+  gap: 6.5px !important;
   min-height: 152px !important;
   transform: translateZ(0);
   transition:
@@ -14248,7 +14249,7 @@ section.image-gen-view .image-prompt-main-row {
   display: flex;
   align-items: flex-start;
   min-height: 74px;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
   transition:
     min-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
     margin 260ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -31281,7 +31282,7 @@ textarea::placeholder {
 }
 
 [data-feature-module="chat"] .chat-composer {
-  min-height: 162px !important;
+  min-height: 152px !important;
   border-radius: 22px !important;
 }
 
@@ -31475,7 +31476,7 @@ textarea::placeholder {
     max-height: 112px;
     margin-bottom: 13px;
     font-size: 14px;
-    line-height: 1.6;
+    line-height: 24px;
   }
 
   .llm-intro-layout .llm-composer-footer {
@@ -39918,7 +39919,7 @@ section.video-gen-view-root
   display: flex !important;
   align-items: flex-start !important;
   min-height: 74px !important;
-  margin-bottom: 2px !important;
+  margin-bottom: 3px !important;
 }
 
 /* ---------- Video immersive (generating / result) ---------- */
