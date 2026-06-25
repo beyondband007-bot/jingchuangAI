@@ -424,6 +424,8 @@ function arrangeInspirationCards(cards, columnCount = 6) {
     },
     { portrait: [], square: [], wide: [] },
   );
+  if (buckets.wide.length === cards.length) return cards;
+
   const nonWideCards = [];
   while (buckets.portrait.length || buckets.square.length) {
     nonWideCards.push(
@@ -1086,26 +1088,74 @@ const fmImageInspirations = [
 }));
 
 const fmDigitalHumanInspirations = [
-  ["public-anchor-dialogue", "主播对话"],
-  ["public-product", "产品讲解员"],
-  ["public-medical", "健康科普员", "健康科普员-safari"],
-  ["public-home-lady", "居家知性女性"],
-  ["public-real-estate", "房地产经纪人"],
-  ["public-travel", "文旅推荐官"],
-  ["public-fashion-host", "时尚类女主播"],
-  ["public-knowledge-host", "知识科普类女主播"],
-  ["public-executive-lady", "职场女高管"],
-  ["public-business-host", "职场轻商务女主播"],
-  ["public-finance", "财经主播"],
-  ["public-operations", "运营达人"],
-].map(([avatarId, title, assetName]) => {
+  [
+    "public-anchor-dialogue",
+    "主播对话",
+    "双主播围绕热点话题自然互动，一问一答拆解观点，节奏轻松、信息密度高，适合直播切片和访谈口播。",
+  ],
+  [
+    "public-product",
+    "产品讲解员",
+    "以亲和专业的语气介绍产品卖点，结合使用场景、核心功能和购买理由，像短视频带货主播一样清晰种草。",
+  ],
+  [
+    "public-medical",
+    "健康科普员",
+    "用通俗易懂的表达科普健康知识，先点出现象，再解释原因和日常建议，语气温和可信，避免夸大承诺。",
+  ],
+  [
+    "public-home-lady",
+    "居家知性女性",
+    "在温暖居家场景中分享生活经验、好物心得或情绪陪伴，表达自然细腻，营造松弛、可信赖的陪伴感。",
+  ],
+  [
+    "public-real-estate",
+    "房地产经纪人",
+    "以专业经纪人的口吻介绍房源亮点，讲清区位、户型、配套和适合人群，表达稳重利落，突出真实看房感。",
+  ],
+  [
+    "public-travel",
+    "文旅推荐官",
+    "像本地向导一样推荐目的地，串联景点亮点、路线体验和拍照氛围，语言有画面感，激发立即出发的兴趣。",
+  ],
+  [
+    "public-fashion-host",
+    "时尚类女主播",
+    "用精致自信的语气讲解穿搭、妆容或潮流单品，突出风格关键词、适配场景和细节质感，节奏轻快高级。",
+  ],
+  [
+    "public-knowledge-host",
+    "知识科普类女主播",
+    "把复杂知识拆成清楚的三点，用案例开场、逻辑递进、结尾总结，适合科普、教育和观点类短视频。",
+  ],
+  [
+    "public-executive-lady",
+    "职场女高管",
+    "以成熟干练的管理者视角分享商业判断、团队管理或职业成长建议，表达坚定克制，观点清晰有分量。",
+  ],
+  [
+    "public-business-host",
+    "职场轻商务女主播",
+    "用轻商务风格介绍办公工具、效率方法或品牌服务，语气专业但不生硬，突出解决问题和提升效率的价值。",
+  ],
+  [
+    "public-finance",
+    "财经主播",
+    "以财经主播口吻解读市场变化、行业趋势或投资常识，先给结论再讲逻辑，表达冷静理性，提醒风险边界。",
+  ],
+  [
+    "public-operations",
+    "运营达人",
+    "从运营实战角度拆解增长方法、活动策划或内容策略，强调目标、动作和复盘指标，语言直接、可执行。",
+  ],
+].map(([avatarId, title, prompt, assetName]) => {
   const fileName = assetName || title;
   return {
     id: `digital-human-${avatarId}`,
     avatarId,
     title,
     category: "数字人形象",
-    prompt: `今天也是充满希望的一天`,
+    prompt,
     thumbnail: `/assets/digital-human/posters/${fileName}.jpg`,
     poster: `/assets/digital-human/posters/${fileName}.jpg`,
     source: `/assets/digital-human/${fileName}.mp4`,
@@ -1116,6 +1166,19 @@ const fmDigitalHumanInspirations = [
     aspect: "wide",
   };
 });
+
+const digitalHumanOfficialAvatarFallbacks = fmDigitalHumanInspirations.map(
+  (item) => ({
+    id: item.avatarId,
+    name: item.title,
+    description: `适合${item.title}类数字人口播、讲解与短视频内容`,
+    language: "中文 / 通用",
+    status: "ready",
+    cover: item.source,
+    assetPath: item.source,
+    poster: item.poster,
+  }),
+);
 
 const fmCreationScenes = [
   [
@@ -1172,6 +1235,19 @@ const getCreationSceneImage = (image) =>
   image.includes("/")
     ? faceminiAsset(image)
     : faceminiAsset(`inspirations/image/thumbs/${image}.webp`);
+
+function getCreationCenterInspirations(activeTab) {
+  switch (activeTab) {
+    case "图片灵感":
+      return fmImageGenerationInspirations;
+    case "视频灵感":
+      return getFaceminiVideoInspirations();
+    case "数字人形象":
+      return fmDigitalHumanInspirations;
+    default:
+      return fmImageInspirations.filter((item) => item.category === activeTab);
+  }
+}
 
 const fmInspirationCategoryRouteMap = {
   图片灵感: { feature: "image", target: "image", model: "Kling Image" },
@@ -2370,14 +2446,7 @@ function CreationCenterView({
     },
   ];
   const categories = ["图片灵感", "视频灵感", "数字人形象", "爆款图文"];
-  const filteredImages =
-    activeTab === "图片灵感"
-      ? fmImageGenerationInspirations
-      : activeTab === "视频灵感"
-        ? getFaceminiVideoInspirations()
-      : activeTab === "数字人形象"
-        ? fmDigitalHumanInspirations
-      : fmImageInspirations.filter((item) => item.category === activeTab);
+  const filteredImages = getCreationCenterInspirations(activeTab);
   const visibleFilteredImages = useIncrementalItems(
     filteredImages,
     `creation-${activeTab}-${filteredImages.length}`,
@@ -2597,6 +2666,7 @@ function CreationCenterView({
           </div>
         </div>
         <WaterfallGrid
+          key={`creation-inspiration-${activeTab}`}
           className="fm-masonry"
           gap={12}
           maxColumns={5}
@@ -2623,15 +2693,6 @@ function CreationCenterView({
                     }
                   }}
                 />
-                {(item.category === "视频灵感" ||
-                  item.category === "数字人形象" ||
-                  item.videoSrc ||
-                  item.source?.endsWith?.(".mp4") ||
-                  item.source?.endsWith?.(".webm")) && (
-                  <span className="fm-image-card-play" aria-hidden="true">
-                    <Play size={18} fill="currentColor" />
-                  </span>
-                )}
               </button>
               <button
                 className="fm-image-card-remix"
@@ -7672,9 +7733,6 @@ function VideoInspirationCard({ item, onOpen }) {
           playsInline
           preload="metadata"
         />
-        <span className="video-inspiration-play">
-          <Play size={17} fill="currentColor" />
-        </span>
       </span>
     </button>
   );
@@ -9343,8 +9401,8 @@ function formatProviderLabel(value, fallback = "视频合成") {
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
   if (!text) return fallback;
-  const suspiciousCount = (text.match(/[�锟�]/g) || []).length;
-  if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
+  const suspiciousCount = (text.match(/[\uFFFD\u951F]/g) || []).length;
+  if (suspiciousCount >= 2 || /[\u00E3\u00C2]/.test(text)) return fallback;
   return text;
 }
 
@@ -9373,7 +9431,23 @@ function getDigitalHumanPreviewSignature({
 }
 
 function getDigitalHumanPublicAvatars(list = []) {
-  return (Array.isArray(list) ? list : []).map((item) => ({
+  const merged = new Map();
+
+  digitalHumanOfficialAvatarFallbacks.forEach((item) => {
+    merged.set(String(item.id), item);
+  });
+
+  (Array.isArray(list) ? list : []).forEach((item) => {
+    const id = String(item?.id || item?.avatarId || "").trim();
+    if (!id) return;
+    merged.set(id, {
+      ...(merged.get(id) || {}),
+      ...item,
+      id,
+    });
+  });
+
+  return Array.from(merged.values()).map((item) => ({
     ...item,
     cover: item.cover || item.assetPath || item.imagePath || item.posterPath,
     poster:
