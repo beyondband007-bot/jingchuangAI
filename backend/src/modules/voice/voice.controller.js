@@ -5,6 +5,15 @@ export function getVoiceConfig(_req, res) {
   res.json(service.getConfig());
 }
 
+export async function listVoiceAssets(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await service.listVoices(req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 export async function listVoiceTasks(req, res) {
   try {
     res.json(await service.listTasks(req.user.id));
@@ -23,7 +32,7 @@ export async function uploadPromptAudio(req, res) {
 
 export async function uploadCloneAudio(req, res) {
   try {
-    res.status(201).json(await service.uploadAudio({ file: req.file, purpose: "voice_clone", durationMs: req.body?.durationMs }));
+    res.status(201).json(await service.uploadAudio({ file: req.file, purpose: "voice_clone", durationMs: req.body?.durationMs, userId: req.user?.id }));
   } catch (error) {
     sendError(res, error);
   }

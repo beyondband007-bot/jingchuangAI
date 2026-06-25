@@ -1051,6 +1051,29 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS voice_clone_assets (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      audio_sha256 CHAR(64) NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_name VARCHAR(160) NULL,
+      source_file_name VARCHAR(255) NULL,
+      source_mime_type VARCHAR(120) NULL,
+      source_size INT NOT NULL DEFAULT 0,
+      duration_ms INT NOT NULL DEFAULT 0,
+      demo_audio MEDIUMTEXT NULL,
+      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_voice_clone_user_hash (user_id, audio_sha256),
+      INDEX idx_voice_clone_user_created (user_id, created_at),
+      INDEX idx_voice_clone_voice_id (voice_id),
+      CONSTRAINT fk_voice_clone_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_convert_tasks (
       id VARCHAR(120) NOT NULL PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,

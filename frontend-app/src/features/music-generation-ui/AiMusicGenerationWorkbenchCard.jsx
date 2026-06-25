@@ -1,5 +1,6 @@
 import React from "react";
 import { AudioLines, FileAudio, FileText, Info, Music, Wand2 } from "lucide-react";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import "./aiMusicGenerationWorkbenchCard.css";
 
 const styleTags = ["流行", "民谣", "嘻哈", "电子", "摇滚", "R&B", "古典", "轻音乐", "国风", "更多"];
@@ -131,7 +132,7 @@ export function AiMusicGenerationWorkbenchCard({
             <Wand2 size={20} />
             {isGenerating ? "生成中..." : "立即生成音乐"}
           </button>
-          <p>本次生成预计消耗 <strong>30</strong> 积分</p>
+          <p>本次生成预计消耗 <strong><BillingPoints feature="music" payload={{ durationSeconds: 30 }} fallbackPoints={60} /></strong> 积分</p>
         </div>
 
         {notice ? <div className="ai-music-workbench__notice">{notice}</div> : null}

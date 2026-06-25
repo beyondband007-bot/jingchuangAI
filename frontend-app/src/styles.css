@@ -35333,6 +35333,39 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   }
 }
 
+.billing-points {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2em;
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.llm-round.primary:has(.billing-points) {
+  width: auto;
+  min-width: 48px;
+  padding-inline: 12px;
+  gap: 3px;
+}
+
+.llm-round.primary .billing-points,
+.send-button .billing-points,
+.dh-generate-button .billing-points {
+  opacity: .92;
+}
+
+.price-pill .billing-points,
+.watermark-composer-footer > strong .billing-points,
+.replicate-composer-footer > strong .billing-points {
+  color: inherit;
+  font-size: inherit;
+}
+
 @media (max-width: 1180px) {
   [data-feature-module="article"]
     .article-view-root.article-popular-workbench

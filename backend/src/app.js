@@ -23,6 +23,7 @@ import { musicRouter } from "./modules/music/music.routes.js";
 import { paymentPublicRouter, paymentRouter } from "./modules/payment/payment.routes.js";
 import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
+import { billingRouter } from "./modules/billing/billing.routes.js";
 import { sendError } from "./shared/http.js";
 import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
 import { fetchProxiedMedia } from "./shared/mediaProxy.js";
@@ -110,6 +111,7 @@ export function createApp() {
   app.use("/api/payment", paymentRouter);
   app.use("/api/replicate", replicateRouter);
   app.use("/api/video-dub", videoDubRouter);
+  app.use("/api/billing", billingRouter);
 
   app.use((req, res) => {
     res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });

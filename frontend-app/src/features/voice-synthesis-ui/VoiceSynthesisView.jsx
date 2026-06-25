@@ -125,8 +125,8 @@ export function VoiceSynthesisView({
 
   useEffect(() => {
     let mounted = true;
-    voiceApi.getConfig().then((data) => {
-      if (mounted) setVoices(data.voices || []);
+    voiceApi.getVoices().then((items) => {
+      if (mounted) setVoices(items || []);
     }).catch(() => {});
     return () => {
       mounted = false;
@@ -204,8 +204,14 @@ export function VoiceSynthesisView({
         size: file.size,
         durationMs
       });
-      setCurrentVoice(null);
-      setDemoAudio("");
+      if (result.cachedVoice?.id) {
+        setCurrentVoice(result.cachedVoice);
+        setVoices((items) => [result.cachedVoice, ...items.filter((item) => item.id !== result.cachedVoice.id)]);
+        setDemoAudio(result.cachedVoice.demoAudio || "");
+      } else {
+        setCurrentVoice(null);
+        setDemoAudio("");
+      }
       setResultAudio("");
       setResultUrl("");
       setNotice("目标音色上传完成。");
@@ -232,7 +238,9 @@ export function VoiceSynthesisView({
       return null;
     }
 
-    if (!cloneAudio?.fileId) {
+    if (currentVoice?.id) return currentVoice;
+
+    if (!currentVoice?.id && !cloneAudio?.fileId) {
       setNotice("请先上传目标音色。");
       return null;
     }
@@ -243,6 +251,11 @@ export function VoiceSynthesisView({
     try {
       const result = await voiceApi.createClone({
         cloneAudioFileId: cloneAudio.fileId,
+        audioHash: cloneAudio.audioHash || "",
+        durationMs: cloneAudio.durationMs || 0,
+        sourceFileName: cloneAudio.fileName || cloneAudio.localName || "",
+        sourceMimeType: cloneAudio.mimeType || "",
+        sourceSize: cloneAudio.size || 0,
         previewText: voicePreviewText,
         voiceId: makeVoiceId(),
         name: cloneAudio.fileName ? cloneAudio.fileName.replace(/\.[^.]+$/, "") : "我的目标音色"
@@ -265,7 +278,7 @@ export function VoiceSynthesisView({
       return;
     }
 
-    if (!cloneAudio?.fileId) {
+    if (!currentVoice?.id && !cloneAudio?.fileId) {
       setNotice("请先上传目标音色。");
       return;
     }

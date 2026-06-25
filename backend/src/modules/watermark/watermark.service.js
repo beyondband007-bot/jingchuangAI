@@ -9,8 +9,10 @@ import {
   mapKieWatermarkState
 } from "../../providers/kie/watermark.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { BILLING_RULES, calculateVideoPoints } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapWatermarkAsset, mapWatermarkTask } from "./watermark.mapper.js";
 import {
@@ -159,7 +161,12 @@ export async function createTask(payload, requestUser = null) {
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution, model.resolution);
-  const costPoints = Number(model.basePoints || 0);
+  const durationSeconds = sourceAsset.kind === "video"
+    ? await getVideoDuration(sourceAsset.file_path)
+    : 0;
+  const costPoints = sourceAsset.kind === "video"
+    ? calculateVideoPoints(durationSeconds)
+    : BILLING_RULES.imagePointsPerItem;
 
   const connection = await getPool().getConnection();
   let userId;

@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   createVoiceClone,
   getVoiceConfig,
+  listVoiceAssets,
   listVoiceTasks,
   synthesizeVoice,
   uploadCloneAudio,
@@ -28,6 +29,7 @@ function uploadSingle(req, res, next) {
 }
 
 voiceRouter.get("/config", getVoiceConfig);
+voiceRouter.get("/voices", listVoiceAssets);
 voiceRouter.get("/tasks", listVoiceTasks);
 voiceRouter.post("/uploads/prompt-audio", uploadSingle, uploadPromptAudio);
 voiceRouter.post("/uploads/clone-audio", uploadSingle, uploadCloneAudio);

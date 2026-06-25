@@ -32,7 +32,8 @@ export async function createTask(req, res) {
       language: req.body?.language,
       bgmEnabled: req.body?.bgmEnabled,
       bgmVolume: req.body?.bgmVolume,
-      qwenMode: req.body?.qwenMode
+      qwenMode: req.body?.qwenMode,
+      userId: req.user.id
     });
     res.status(202).json(result);
   } catch (error) {

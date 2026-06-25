@@ -25,6 +25,7 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 import { enhanceApi } from "./enhanceApi";
+import BillingPoints from "../../components/BillingPoints.jsx";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -359,7 +360,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
       />
       <div className="watermark-composer-footer enhance-composer-footer">
         <span>{notice || (mode === "video" ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音` : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}</span>
-        <strong>{price}</strong>
+        <strong><BillingPoints feature="enhance" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 0 : 30} /></strong>
         <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>

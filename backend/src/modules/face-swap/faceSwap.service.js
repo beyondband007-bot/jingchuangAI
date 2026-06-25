@@ -13,6 +13,7 @@ import {
 import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { calculateVideoPoints } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapFaceSwapAsset, mapFaceSwapTask } from "./faceSwap.mapper.js";
@@ -177,7 +178,7 @@ export async function createTask(payload) {
   const resolution = normalizeResolution(payload.resolution || model.resolution);
   await getSourceVideoDuration(videoAsset);
   const duration = getProviderDuration(model);
-  const costPoints = Number(model.basePoints || 100);
+  const costPoints = calculateVideoPoints(duration);
 
   const connection = await getPool().getConnection();
   let userId;

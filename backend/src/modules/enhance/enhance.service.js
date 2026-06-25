@@ -2,7 +2,7 @@ import path from "path";
 import { execFile } from "child_process";
 import { mkdir, readFile, rm } from "fs/promises";
 import { promisify } from "util";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
@@ -15,6 +15,7 @@ import {
 import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { BILLING_RULES } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapEnhanceAsset, mapEnhanceTask } from "./enhance.mapper.js";
 import {
@@ -209,7 +210,7 @@ export async function createTask(payload, requestUser = null) {
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const upscaleFactor = normalizeUpscaleFactor(payload.upscaleFactor, model.upscaleFactor);
-  const costPoints = Number(model.basePoints || 0);
+  const costPoints = sourceAsset.kind === "video" ? 0 : BILLING_RULES.imagePointsPerItem;
 
   const connection = await getPool().getConnection();
   let userId;
@@ -227,12 +228,14 @@ export async function createTask(payload, requestUser = null) {
       upscaleFactor,
       costPoints
     });
-    await debitCredits(connection, {
-      userId,
-      taskId,
-      amount: costPoints,
-      memo: "enhance generation debit"
-    });
+    if (costPoints > 0) {
+      await debitCredits(connection, {
+        userId,
+        taskId,
+        amount: costPoints,
+        memo: "enhance generation debit"
+      });
+    }
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -301,7 +304,7 @@ async function uploadEnhanceImageToKie(asset, uploadPath) {
   const convertedPath = path.join(convertedDir, `${Date.now()}-${asset.id}.jpg`);
 
   try {
-    await execFileAsync(ffmpegInstaller.path, [
+    await execFileAsync(ffmpegPath, [
       "-y",
       "-i",
       asset.file_path,

@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import BillingPoints from "./components/BillingPoints.jsx";
 import { createRoot } from "react-dom/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8751,6 +8752,7 @@ function ChatComposerBar({
   onModelSwitchNotice,
   reasoningEffort,
   onReasoningEffortChange,
+  conversationRound = 1,
 }) {
   const [prompt, setPrompt] = useState("");
   const [attachments, setAttachments] = useState([]);
@@ -8980,6 +8982,11 @@ function ChatComposerBar({
               aria-label="发送"
             >
               {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+              <BillingPoints
+                feature="chat"
+                payload={{ outputChars: 1000, conversationRound }}
+                fallbackPoints={4}
+              />
             </button>
           </div>
         </div>
@@ -9220,6 +9227,7 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
       onModelSwitchNotice={showModelSwitchNotice}
       reasoningEffort={selectedReasoningEffort}
       onReasoningEffortChange={setSelectedReasoningEffort}
+      conversationRound={Math.max(1, Math.ceil(messages.length / 2) + 1)}
     />
   );
 
@@ -10291,6 +10299,18 @@ function DigitalHumanConfigPanel({
           aria-label={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
         >
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+          <BillingPoints
+            feature="digital-human"
+            payload={{
+              durationMs: audioFile?.durationMs || 0,
+              durationSeconds: isAudioDrive
+                ? Math.max(1, Math.ceil(Number(audioFile?.durationMs || 0) / 1000))
+                : Math.max(1, Math.ceil(text.trim().length / 4)),
+              text,
+              uploadedAudio: isAudioDrive,
+            }}
+            fallbackPoints={121}
+          />
           <span>生成</span>
         </button>
       </div>
@@ -11382,7 +11402,7 @@ function MotionTransferComposer({
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = selectedModel?.basePoints || 0;
   const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {
@@ -11526,7 +11546,9 @@ function MotionTransferComposer({
             emptyMotionTransferOptions.characterOrientations
           }
         />
-        <span className="price-pill">{price}</span>
+        <span className="price-pill">
+          <BillingPoints points={price} />
+        </span>
         <button
           className="send-button"
           type="button"
@@ -12294,7 +12316,7 @@ function WatermarkComposer({
     mode === "video"
       ? options.defaults?.videoResolution || "720p"
       : options.defaults?.imageResolution || "2K";
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const price = selectedModel?.basePoints || 0;
   const canSubmit = Boolean(
     !isGuest && sourceAsset && !uploading && !isSubmitting,
   );
@@ -12419,7 +12441,7 @@ function WatermarkComposer({
               ? "视频会保留原音频并尝试自然修复水印区域"
               : "图片会自动修复水印区域并保持主体内容")}
         </span>
-        <strong>{price}</strong>
+        <strong><BillingPoints points={price} /></strong>
         <button
           className="send-button"
           type="button"

@@ -10,6 +10,7 @@ import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { calculateBillingQuote, estimateSpeechSeconds } from "../../shared/billingRules.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { voices } from "../digital-human/digitalHuman.data.js";
@@ -264,7 +265,11 @@ export async function createTask(payload, file) {
   if (!model || model.provider !== "kie") throw createHttpError("图片数字人模型不存在", 400);
   const voice = getVoiceById(voiceId);
   const portraitUrl = `/media/image-digital-human/portraits/${file.filename}`;
-  const costPoints = Number(model.basePoints || basePoints);
+  const billingDuration = estimateSpeechSeconds(text);
+  const costPoints = calculateBillingQuote("image-digital-human", {
+    durationSeconds: billingDuration,
+    text
+  }).points;
 
   const connection = await getPool().getConnection();
   let taskId;
