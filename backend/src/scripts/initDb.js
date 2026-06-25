@@ -39,6 +39,7 @@ async function createTables() {
       email VARCHAR(254) NULL UNIQUE,
       password_hash VARCHAR(255) NULL,
       display_name VARCHAR(120) NOT NULL,
+      avatar_url VARCHAR(255) NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -66,6 +67,15 @@ async function createTables() {
   if (!userColumnNames.has("password_hash")) {
     await pool.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER email");
   }
+  if (!userColumnNames.has("avatar_url")) {
+    await pool.query("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) NULL AFTER display_name");
+  }
+
+  await pool.query(
+    `UPDATE users
+     SET avatar_url = CONCAT('/assets/avatars/', FLOOR(1 + RAND() * 25), '.jpg')
+     WHERE avatar_url IS NULL OR avatar_url = ''`
+  );
 
   const [usernameIndexes] = await pool.query(
     `SELECT INDEX_NAME
@@ -1160,15 +1170,15 @@ async function seedDemoData() {
     await connection.beginTransaction();
 
     await connection.query(
-      `INSERT INTO users (external_id, display_name)
-       VALUES ('demo-user', '匿名用户')
-       ON DUPLICATE KEY UPDATE external_id = external_id`
+      `INSERT INTO users (external_id, display_name, avatar_url)
+       VALUES ('demo-user', '匿名用户', '/assets/avatars/1.jpg')
+       ON DUPLICATE KEY UPDATE avatar_url = IFNULL(NULLIF(avatar_url, ''), VALUES(avatar_url))`
     );
 
     await connection.query(
-      `INSERT INTO users (external_id, display_name)
-       VALUES ('guest-user', '游客')
-       ON DUPLICATE KEY UPDATE display_name = VALUES(display_name)`
+      `INSERT INTO users (external_id, display_name, avatar_url)
+       VALUES ('guest-user', '游客', '/assets/avatars/2.jpg')
+       ON DUPLICATE KEY UPDATE display_name = VALUES(display_name), avatar_url = IFNULL(NULLIF(avatar_url, ''), VALUES(avatar_url))`
     );
 
     const [users] = await connection.query("SELECT id FROM users WHERE external_id = 'demo-user' LIMIT 1");
