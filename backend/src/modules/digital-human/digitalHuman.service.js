@@ -122,6 +122,10 @@ function getVoiceById(voiceId) {
   return [...designedVoices, ...voices].find((item) => item.id === voiceId) || voices[0];
 }
 
+function getProviderVoiceId(voice) {
+  return String(voice?.providerVoiceId || voice?.id || voices[0].id).trim();
+}
+
 function mapVirtualAssetToAvatar(asset) {
   if (!asset) return null;
   const ready = asset.status === "active";
@@ -378,9 +382,11 @@ export function getModels() {
   return {
     models: digitalHumanModels.map((model) => ({
       ...model,
-      providerModel: config.ark.videoModel,
+      providerModel: model.provider === "kie" ? config.kie.digitalHumanModel : config.ark.videoModel,
       resolution: config.kie.digitalHumanResolution,
-      configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.minimax.apiKey)
+      configured: model.provider === "kie"
+        ? Boolean(config.kie.apiKey && config.minimax.apiKey)
+        : Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.minimax.apiKey)
     })),
     defaults: {
       model: digitalHumanModels[0].value,
@@ -443,10 +449,11 @@ export async function previewVoice(payload) {
   const text = String(payload.previewText || payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
   if (!text) throw createHttpError("previewText is required", 400);
+  const voice = getVoiceById(voiceId);
 
   const result = await synthesizeMinimaxSpeech({
     text,
-    voiceId,
+    voiceId: getProviderVoiceId(voice),
     speed: normalizeDecimal(payload.speed, 1),
     volume: normalizeVolume(payload.volume),
     pitch: normalizeDecimal(payload.pitch, 0),
@@ -584,7 +591,7 @@ export async function createTask(payload) {
   connection.release();
 
   try {
-    await createProviderTask(taskId, { text: taskText, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model, uploadedAudio });
+    await createProviderTask(taskId, { text: taskText, voiceId: getProviderVoiceId(voice), speed, volume, pitch, emotion, avatar, model, uploadedAudio });
   } catch (error) {
     console.error("Create digital human provider task failed:", error.message, error.body || "");
     await refundTask(taskId, userId, costPoints, `数字人任务创建失败：${error.message}`);

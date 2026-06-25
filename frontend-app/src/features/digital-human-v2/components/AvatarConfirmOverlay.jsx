@@ -3,55 +3,40 @@ import { Message } from "@arco-design/web-react";
 import { Play, Star, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import {
-  VOICE_CATEGORIES,
-  filterVoicesByCategory,
   getAvatarTags,
+  getVoiceEmotionValue,
   getVoiceMatchHint,
   isVideoCover,
   matchVoiceForAvatar,
 } from "../utils";
-
-const EMOTION_OPTIONS = ["中性", "高兴", "愤怒", "悲伤", "害怕", "厌恶", "惊讶"];
-const EMOTION_VALUE_MAP = {
-  中性: "",
-  高兴: "happy",
-  愤怒: "angry",
-  悲伤: "sad",
-  害怕: "fear",
-  厌恶: "disgust",
-  惊讶: "surprised",
-};
+import { VoicePickerPanel } from "./VoicePickerPanel";
 
 export function AvatarConfirmOverlay({
   avatar,
   voices = [],
   voiceId,
   onVoiceIdChange,
+  voiceSpeed = 1,
+  onVoiceSpeedChange,
+  voiceEmotion = "中性",
+  onVoiceEmotionChange,
   onClose,
   onConfirm,
 }) {
   const audioRef = useRef(null);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
-  const [voiceCategory, setVoiceCategory] = useState("all");
-  const [speed, setSpeed] = useState(1);
-  const [emotion, setEmotion] = useState("中性");
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const tags = useMemo(() => getAvatarTags(avatar), [avatar]);
   const voiceHint = useMemo(() => getVoiceMatchHint(avatar), [avatar]);
   const selectedVoice = voices.find((voice) => voice.id === voiceId) || voices[0];
-  const filteredVoices = useMemo(
-    () => filterVoicesByCategory(voices, voiceCategory),
-    [voiceCategory, voices],
-  );
 
   useEffect(() => {
     const matched = matchVoiceForAvatar(avatar, voices);
     if (matched?.id) onVoiceIdChange?.(matched.id);
     setShowVoicePicker(false);
-    setVoiceCategory("all");
-    setSpeed(1);
-    setEmotion("中性");
+    onVoiceSpeedChange?.(1);
+    onVoiceEmotionChange?.("中性");
   }, [avatar, voices]);
 
   useEffect(() => {
@@ -74,10 +59,10 @@ export function AvatarConfirmOverlay({
       const result = await digitalHumanApi.previewVoice({
         text: "你好，这是当前音色的试听效果。",
         voiceId: targetVoiceId,
-        speed,
+        speed: voiceSpeed,
         volume: 1,
         pitch: 0,
-        emotion: EMOTION_VALUE_MAP[emotion] || "",
+        emotion: getVoiceEmotionValue(voiceEmotion),
       });
       if (audioRef.current) {
         audioRef.current.pause();
@@ -97,7 +82,12 @@ export function AvatarConfirmOverlay({
       Message.info("请先选择音色");
       return;
     }
-    onConfirm?.({ avatar, voiceId: selectedVoice.id });
+    onConfirm?.({
+      avatar,
+      voiceId: selectedVoice.id,
+      speed: voiceSpeed,
+      emotion: voiceEmotion,
+    });
   }
 
   return (
@@ -189,100 +179,16 @@ export function AvatarConfirmOverlay({
         </section>
 
         {showVoicePicker ? (
-          <aside className="dhv2-voice-picker" aria-label="选择音色">
-            <header className="dhv2-voice-picker__head">
-              <strong>选择音色</strong>
-              <button
-                type="button"
-                className="dhv2-avatar-confirm__icon-btn"
-                aria-label="关闭音色选择"
-                onClick={() => setShowVoicePicker(false)}
-              >
-                <X size={14} />
-              </button>
-            </header>
-
-            <div className="dhv2-voice-picker__tabs">
-              {VOICE_CATEGORIES.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  className={voiceCategory === category.id ? "is-active" : ""}
-                  onClick={() => setVoiceCategory(category.id)}
-                >
-                  {category.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="dhv2-voice-picker__list">
-              {filteredVoices.map((voice) => {
-                const isActive = voice.id === voiceId;
-                return (
-                  <div
-                    key={voice.id}
-                    className={`dhv2-voice-picker__item${isActive ? " is-active" : ""}`}
-                  >
-                    <button
-                      type="button"
-                      className="dhv2-voice-picker__item-main"
-                      onClick={() => onVoiceIdChange?.(voice.id)}
-                    >
-                      <span className="dhv2-voice-picker__avatar" aria-hidden="true" />
-                      <span className="dhv2-voice-picker__meta">
-                        <strong>{voice.name}</strong>
-                        <em>{voice.description}</em>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="dhv2-voice-picker__play"
-                      aria-label={`试听${voice.name}`}
-                      disabled={isPreviewing}
-                      onClick={() => previewVoice(voice.id)}
-                    >
-                      <Play size={14} />
-                    </button>
-                  </div>
-                );
-              })}
-              {!filteredVoices.length ? (
-                <p className="dhv2-voice-picker__empty">该分类暂无音色</p>
-              ) : null}
-            </div>
-
-            <div className="dhv2-voice-picker__controls">
-              <div className="dhv2-voice-picker__control">
-                <div className="dhv2-voice-picker__control-head">
-                  <span>语速</span>
-                  <strong>{speed.toFixed(1)}x</strong>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="2"
-                  step="0.1"
-                  value={speed}
-                  onChange={(event) => setSpeed(Number(event.target.value))}
-                />
-              </div>
-              <div className="dhv2-voice-picker__control">
-                <span>情感</span>
-                <div className="dhv2-voice-picker__emotions">
-                  {EMOTION_OPTIONS.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className={emotion === item ? "is-active" : ""}
-                      onClick={() => setEmotion(item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
+          <VoicePickerPanel
+            voices={voices}
+            voiceId={voiceId}
+            onVoiceIdChange={onVoiceIdChange}
+            voiceSpeed={voiceSpeed}
+            onVoiceSpeedChange={onVoiceSpeedChange}
+            voiceEmotion={voiceEmotion}
+            onVoiceEmotionChange={onVoiceEmotionChange}
+            onClose={() => setShowVoicePicker(false)}
+          />
         ) : null}
       </div>
     </div>

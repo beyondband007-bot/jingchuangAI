@@ -91,7 +91,7 @@ import {
   useRegenerateConfirmation,
 } from "./components/DeleteConfirmDialog";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
-import { DigitalHumanV2View } from "./features/digital-human-v2/DigitalHumanV2View";
+import { DigitalHumanHubView } from "./features/digital-human-hub/DigitalHumanHubView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
@@ -11963,7 +11963,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <DigitalHumanV2View isActive={activeNav === "digital-human"} />
+          <DigitalHumanHubView isActive={activeNav === "digital-human"} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="motion"

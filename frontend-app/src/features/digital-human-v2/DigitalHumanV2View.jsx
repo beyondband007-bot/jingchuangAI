@@ -14,7 +14,7 @@ import { PreviewPanel } from "./components/PreviewPanel";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
 import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
-import { VIDEO_SPEC_OPTIONS, replaceScriptSegment } from "./utils";
+import { VIDEO_SPEC_OPTIONS, getVoiceEmotionValue, replaceScriptSegment } from "./utils";
 import "./digitalHumanV2.css";
 
 const DEFAULT_SCRIPT =
@@ -42,6 +42,8 @@ export function DigitalHumanV2View({ isActive = true }) {
   const [videoSpec, setVideoSpec] = useState(VIDEO_SPEC_OPTIONS[0].value);
   const [text, setText] = useState(DEFAULT_SCRIPT);
   const [voiceId, setVoiceId] = useState("");
+  const [voiceSpeed, setVoiceSpeed] = useState(1);
+  const [voiceEmotion, setVoiceEmotion] = useState("中性");
   const [activeTask, setActiveTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -114,11 +116,14 @@ export function DigitalHumanV2View({ isActive = true }) {
         performance: "",
         voiceId,
         model,
-        speed: 1,
+        speed: voiceSpeed,
         volume: 1,
         pitch: 0,
-        emotion: "",
+        emotion: getVoiceEmotionValue(voiceEmotion),
       });
+      if (task?.status === "failed") {
+        throw new Error(task.error || "数字人视频创建失败");
+      }
       await refreshCredits();
       setActiveTask(task);
       setRightView("preview");
@@ -238,6 +243,13 @@ export function DigitalHumanV2View({ isActive = true }) {
             avatarSource={avatarSource}
             onAvatarSourceChange={handleAvatarSourceChange}
             selectedAvatar={selectedAvatar}
+            voices={voices}
+            voiceId={voiceId}
+            onVoiceIdChange={setVoiceId}
+            voiceSpeed={voiceSpeed}
+            onVoiceSpeedChange={setVoiceSpeed}
+            voiceEmotion={voiceEmotion}
+            onVoiceEmotionChange={setVoiceEmotion}
             onOpenCreate={openCreateModal}
           />
           <ScriptCard
@@ -265,6 +277,10 @@ export function DigitalHumanV2View({ isActive = true }) {
             voices={voices}
             voiceId={voiceId}
             onVoiceIdChange={setVoiceId}
+            voiceSpeed={voiceSpeed}
+            onVoiceSpeedChange={setVoiceSpeed}
+            voiceEmotion={voiceEmotion}
+            onVoiceEmotionChange={setVoiceEmotion}
             aspectRatio={aspectRatio}
             onAspectRatioChange={setAspectRatio}
             fillMode={fillMode}

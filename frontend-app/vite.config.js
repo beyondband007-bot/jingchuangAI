@@ -4,10 +4,16 @@ import { resolve } from "path";
 import { defineConfig } from "vite";
 import { mediaProxyPlugin } from "./viteMediaProxyPlugin.js";
 
-function readPortFromEnvFile(filePath) {
+function readEnvValue(filePath, key) {
   if (!existsSync(filePath)) return null;
-  const match = readFileSync(filePath, "utf8").match(/^PORT=(\d+)\s*$/m);
-  return match ? Number(match[1]) : null;
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = readFileSync(filePath, "utf8").match(new RegExp(`^${escapedKey}=(.*)\\s*$`, "m"));
+  return match ? match[1].trim() : null;
+}
+
+function readPortFromEnvFile(filePath, key) {
+  const value = readEnvValue(filePath, key);
+  return value && /^\d+$/.test(value) ? Number(value) : null;
 }
 
 function resolveDevProxyTarget() {
@@ -15,10 +21,13 @@ function resolveDevProxyTarget() {
     return process.env.VITE_DEV_PROXY_TARGET.trim();
   }
 
+  const rootEnvPath = resolve(process.cwd(), "../.env");
+  const rootProxyTarget = readEnvValue(rootEnvPath, "VITE_DEV_PROXY_TARGET");
+  if (rootProxyTarget) return rootProxyTarget;
+
   const port =
-    readPortFromEnvFile(resolve(process.cwd(), "../backend/.env")) ||
-    readPortFromEnvFile(resolve(process.cwd(), "../.env")) ||
-    Number(process.env.PORT || 0) ||
+    readPortFromEnvFile(rootEnvPath, "BACKEND_DEV_PORT") ||
+    Number(process.env.BACKEND_DEV_PORT || 0) ||
     3006;
 
   return `http://127.0.0.1:${port}`;

@@ -187,3 +187,19 @@ export function filterVoicesByCategory(voices = [], categoryId = "all") {
     category.pattern.test(`${voice.name || ""} ${voice.description || ""}`),
   );
 }
+
+export const VOICE_EMOTION_OPTIONS = ["中性", "高兴", "愤怒", "悲伤", "害怕", "厌恶", "惊讶"];
+
+export const VOICE_EMOTION_VALUE_MAP = {
+  中性: "",
+  高兴: "happy",
+  愤怒: "angry",
+  悲伤: "sad",
+  害怕: "fear",
+  厌恶: "disgust",
+  惊讶: "surprised",
+};
+
+export function getVoiceEmotionValue(emotionLabel = "中性") {
+  return VOICE_EMOTION_VALUE_MAP[emotionLabel] || "";
+}

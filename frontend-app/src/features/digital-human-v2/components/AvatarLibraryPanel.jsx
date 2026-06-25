@@ -17,6 +17,10 @@ export function AvatarLibraryPanel({
   voices,
   voiceId,
   onVoiceIdChange,
+  voiceSpeed,
+  onVoiceSpeedChange,
+  voiceEmotion,
+  onVoiceEmotionChange,
   aspectRatio,
   onAspectRatioChange,
   fillMode,
@@ -146,9 +150,15 @@ export function AvatarLibraryPanel({
           voices={voices}
           voiceId={voiceId}
           onVoiceIdChange={onVoiceIdChange}
+          voiceSpeed={voiceSpeed}
+          onVoiceSpeedChange={onVoiceSpeedChange}
+          voiceEmotion={voiceEmotion}
+          onVoiceEmotionChange={onVoiceEmotionChange}
           onClose={() => setPreviewAvatar(null)}
-          onConfirm={({ avatar, voiceId: nextVoiceId }) => {
+          onConfirm={({ avatar, voiceId: nextVoiceId, speed, emotion }) => {
             onVoiceIdChange?.(nextVoiceId);
+            onVoiceSpeedChange?.(speed);
+            onVoiceEmotionChange?.(emotion);
             onSelectAvatar?.(avatar);
             onConfirmAvatar?.(avatar);
             setPreviewAvatar(null);
