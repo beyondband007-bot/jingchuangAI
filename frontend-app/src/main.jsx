@@ -3293,6 +3293,11 @@ function mapAssetTasks(type, tasks = []) {
   });
 }
 
+function canFavoriteAsset(card) {
+  const status = String(card?.status || "").toLowerCase();
+  return status !== "failed" && status !== "error";
+}
+
 function CreditTransactionsPanel({
   transactions,
   transactionsPage,
@@ -3481,7 +3486,7 @@ function AssetsPage({
   const profileInviteLink =
     inviteProfile?.inviteLink || buildClientInviteLink(profileInviteCode);
   const favoriteAssets = useMemo(
-    () => userAssets.filter((asset) => asset.favorite),
+    () => userAssets.filter((asset) => asset.favorite && canFavoriteAsset(asset)),
     [userAssets],
   );
   const totalFavorites = favoriteAssets.length;
@@ -3929,6 +3934,7 @@ function AssetsPage({
 
   async function toggleAssetFavorite(item) {
     if (!item) return;
+    if (!canFavoriteAsset(item)) return;
     if (item.type === "AI 图片") await imageApi.toggleFavorite(item.rawId);
     if (item.type === "爆款图文") await articleApi.toggleFavorite(item.rawId);
     if (item.type === "AI 视频") await videoApi.toggleFavorite(item.rawId);
@@ -3947,6 +3953,7 @@ function AssetsPage({
 
   async function togglePreviewAssetFavorite(item) {
     if (!item) return Boolean(item?.favorite);
+    if (!canFavoriteAsset(item)) return false;
     const nextValue = !Boolean(item.favorite);
     setPreviewAsset((current) =>
       current?.id === item.id ? { ...current, favorite: nextValue } : current,
@@ -4084,7 +4091,9 @@ function AssetsPage({
           </div>
           {assetGalleryCards.length ? (
             <div className="fm-assets-grid">
-              {assetGalleryCards.map((card) => (
+              {assetGalleryCards.map((card) => {
+                const canFavorite = canFavoriteAsset(card);
+                return (
                 <article
                   className="fm-asset-card"
                   key={card.id}
@@ -4141,24 +4150,27 @@ function AssetsPage({
                         <Download size={16} />
                       </button>
                     )}
-                    <button
-                      type="button"
-                      aria-label="收藏"
-                      className={card.favorite ? "is-favorite" : ""}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        toggleAssetFavorite(card);
-                      }}
-                    >
-                      <Star
-                        size={16}
-                        fill={card.favorite ? "currentColor" : "none"}
-                      />
-                    </button>
+                    {canFavorite && (
+                      <button
+                        type="button"
+                        aria-label="收藏"
+                        className={card.favorite ? "is-favorite" : ""}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          toggleAssetFavorite(card);
+                        }}
+                      >
+                        <Star
+                          size={16}
+                          fill={card.favorite ? "currentColor" : "none"}
+                        />
+                      </button>
+                    )}
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="fm-assets-empty-state">
@@ -4177,7 +4189,9 @@ function AssetsPage({
           onClose={() => setPreviewAsset(null)}
           onRemix={remixAsset}
           onReference={referenceAsset}
-          onFavorite={togglePreviewAssetFavorite}
+          onFavorite={
+            canFavoriteAsset(previewAsset) ? togglePreviewAssetFavorite : undefined
+          }
         />
         {deleteConfirmDialog}
       </section>
@@ -4367,7 +4381,9 @@ function AssetsPage({
             </div>
             {visibleFavoriteCards.length ? (
               <div className="fm-assets-grid fm-favorites-grid">
-                {visibleFavoriteCards.map((card) => (
+                {visibleFavoriteCards.map((card) => {
+                  const canFavorite = canFavoriteAsset(card);
+                  return (
                   <article
                     className="fm-asset-card"
                     key={card.id}
@@ -4424,24 +4440,27 @@ function AssetsPage({
                           <Download size={16} />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        aria-label="收藏"
-                        className={card.favorite ? "is-favorite" : ""}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          toggleAssetFavorite(card);
-                        }}
-                      >
-                        <Star
-                          size={16}
-                          fill={card.favorite ? "currentColor" : "none"}
-                        />
-                      </button>
+                      {canFavorite && (
+                        <button
+                          type="button"
+                          aria-label="收藏"
+                          className={card.favorite ? "is-favorite" : ""}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleAssetFavorite(card);
+                          }}
+                        >
+                          <Star
+                            size={16}
+                            fill={card.favorite ? "currentColor" : "none"}
+                          />
+                        </button>
+                      )}
                     </div>
                   </article>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="fm-assets-empty-state fm-favorites-empty-state">
