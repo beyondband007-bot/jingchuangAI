@@ -563,6 +563,8 @@ const navItems = [
   { id: "home", label: "首页", icon: Home },
   { id: "creation", label: "创作中心", icon: Sparkles },
   { id: "assets", label: "我的资产", icon: Wallet },
+  { id: "profile", label: "个人中心", icon: UserRound },
+  { id: "favorites", label: "我的收藏", icon: Star },
   { id: "billing", label: "积分充值", icon: Wallet },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
@@ -3463,6 +3465,7 @@ function AssetsPage({
     paymentResultTtlSeconds,
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [previewAsset, setPreviewAsset] = useState(null);
   const effectiveViewMode = pageMode || viewMode;
 
@@ -3596,7 +3599,7 @@ function AssetsPage({
   }, [refreshAssets]);
 
   useEffect(() => {
-    if (isGuest || viewMode !== "profile") return undefined;
+    if (isGuest || effectiveViewMode !== "profile") return undefined;
     let alive = true;
     invitationApi
       .me()
@@ -3607,7 +3610,7 @@ function AssetsPage({
     return () => {
       alive = false;
     };
-  }, [authUser?.id, isGuest, viewMode]);
+  }, [authUser?.id, effectiveViewMode, isGuest]);
 
   useEffect(() => {
     setTransactionsPage((page) => Math.min(page, transactionsTotalPages));
@@ -3862,6 +3865,15 @@ function AssetsPage({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showTransactionsModal]);
 
+  useEffect(() => {
+    if (!showAccountSettings) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setShowAccountSettings(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showAccountSettings]);
+
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
   }
@@ -3981,10 +3993,12 @@ function AssetsPage({
   function goToFavoritesView() {
     setViewMode("favorites");
     setFavoriteTab("图片灵感");
+    onOpenFeature?.("favorites");
   }
 
   function goToGalleryView() {
     setViewMode("gallery");
+    onOpenFeature?.("assets");
   }
 
   function goToBillingView({ openTransactions = false } = {}) {
@@ -4261,22 +4275,59 @@ function AssetsPage({
               <div className="fm-profile-panel">
                 <h3>快捷入口</h3>
                 <div className="fm-profile-quick-links">
-                  <button type="button" className="is-muted">
-                    会员中心
-                  </button>
                   <button type="button" onClick={() => onOpenInvite?.()}>
                     邀请有礼
                   </button>
                   <button type="button" onClick={() => goToBillingView()}>
                     充值与明细
                   </button>
-                  <button type="button" className="is-muted">
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountSettings(true)}
+                  >
                     账号设置
                   </button>
                   <button type="button" onClick={goToGalleryView}>
                     我的资产
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {showAccountSettings && (
+          <div
+            className="fm-account-settings-layer"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setShowAccountSettings(false);
+              }
+            }}
+          >
+            <div
+              className="fm-account-settings-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fm-account-settings-title"
+            >
+              <div className="fm-account-settings-head">
+                <h2 id="fm-account-settings-title">账号设置</h2>
+                <button
+                  type="button"
+                  aria-label="关闭账号设置"
+                  onClick={() => setShowAccountSettings(false)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="fm-account-settings-list">
+                {["修改头像", "修改昵称", "修改手机号", "修改密码"].map((item) => (
+                  <button type="button" key={item}>
+                    <span>{item}</span>
+                    <ChevronRight size={20} />
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -4299,18 +4350,6 @@ function AssetsPage({
           </div>
         ) : (
           <div className="fm-assets-inner fm-favorites-inner">
-            <div className="fm-favorites-nav-row">
-              <button
-                className="fm-favorites-back"
-                type="button"
-                onClick={() => setViewMode("profile")}
-              >
-                返回个人中心
-              </button>
-            </div>
-            <div className="fm-assets-headline fm-favorites-title-row">
-              <h2>我的收藏</h2>
-            </div>
             <div className="fm-assets-filter-row">
               <div className="fm-assets-tabs fm-favorites-tabs" aria-label="我的收藏分类">
                 {favoriteModuleTabs.map((tab) => (
@@ -13277,7 +13316,7 @@ function WorkbenchTopbar({
     } catch {
       // Session storage can be unavailable in restricted browser contexts.
     }
-    onNavChange?.("assets");
+    onNavChange?.("profile");
     window.dispatchEvent(
       new CustomEvent("facemini-assets-tab-change", {
         detail: { viewMode: "profile" },
@@ -13659,6 +13698,32 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
+          id="profile"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="profile"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
+          id="favorites"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <AssetsPage
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+            onOpenInvite={openInviteDialog}
+            pageMode="favorites"
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
           id="billing"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -13839,6 +13904,8 @@ function ImageFeaturePage({
         {![
           "creation",
           "assets",
+          "profile",
+          "favorites",
           "billing",
           "image",
           "video",

@@ -23037,7 +23037,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 .fm-assets-inner {
-  width: min(1380px, 100%);
+  width: min(1480px, 100%);
   margin: 0 auto;
 }
 
@@ -36848,6 +36848,101 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   color: var(--fm-profile-muted);
 }
 
+.fm-account-settings-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 22, 34, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.fm-account-settings-dialog {
+  width: min(460px, 100%);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e5e2ef;
+  border-radius: 18px;
+  box-shadow: 0 28px 70px rgba(35, 29, 52, 0.22);
+}
+
+.fm-account-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #f0edf7;
+}
+
+.fm-account-settings-head h2 {
+  margin: 0;
+  color: #292733;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.fm-account-settings-head button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #8d889e;
+  background: #f8f6ff;
+  border: 1px solid #ece7ff;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.fm-account-settings-head button:hover {
+  color: #6d3cff;
+  background: #f2edff;
+}
+
+.fm-account-settings-list {
+  display: grid;
+  padding: 8px 0;
+}
+
+.fm-account-settings-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 58px;
+  padding: 0 24px;
+  color: #292733;
+  text-align: left;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #f0edf7;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.fm-account-settings-list button:last-child {
+  border-bottom: 0;
+}
+
+.fm-account-settings-list button:hover {
+  color: #6d3cff;
+  background: #fbfaff;
+}
+
+.fm-account-settings-list svg {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
 @media (max-width: 900px) {
   .fm-profile-center-view {
     padding: 28px 20px;
@@ -36865,6 +36960,15 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   .fm-profile-bottom-grid {
     grid-template-columns: 1fr;
   }
+
+  .fm-account-settings-layer {
+    align-items: end;
+    padding: 16px;
+  }
+
+  .fm-account-settings-dialog {
+    border-radius: 18px;
+  }
 }
 
 .fm-favorites-view {
@@ -36874,7 +36978,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 }
 
 .fm-favorites-inner {
-  width: min(1380px, 100%);
+  width: min(1480px, 100%);
   max-width: none;
   margin: 0 auto;
 }
