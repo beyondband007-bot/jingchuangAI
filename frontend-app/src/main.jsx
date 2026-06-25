@@ -5919,6 +5919,7 @@ function FaceminiInspirationModal({
   copied = false,
 }) {
   const [activeSrc, setActiveSrc] = useState(null);
+  const [activeVideoSrc, setActiveVideoSrc] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
@@ -5932,6 +5933,7 @@ function FaceminiInspirationModal({
 
   useEffect(() => {
     setActiveSrc(null);
+    setActiveVideoSrc(null);
     setIsFavorite(Boolean(item?.favorite) || isInspirationFavorite(item));
   }, [item?.id]);
 
@@ -5948,7 +5950,10 @@ function FaceminiInspirationModal({
     item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
-  const videoSrc = item.videoSrc || item.video || item.preview || item.source;
+  const primaryVideoSrc = item.videoSrc || item.video || item.preview || item.source;
+  const fallbackVideoSrc =
+    item.videoFallbackSrc || item.videoFallback || item.mp4 || null;
+  const videoSrc = activeVideoSrc || primaryVideoSrc;
 
   return (
     <div
@@ -5973,6 +5978,11 @@ function FaceminiInspirationModal({
               playsInline
               autoPlay
               muted
+              onError={() => {
+                if (fallbackVideoSrc && videoSrc !== fallbackVideoSrc) {
+                  setActiveVideoSrc(fallbackVideoSrc);
+                }
+              }}
             />
           ) : (
             <img
@@ -7486,6 +7496,7 @@ const videoInspirationItems = videoInspirationCategoryTabs
         ratio: "16:9",
         duration: 5,
         video: `/assets/videoInspiration/${category.folder}/${slug}.webm?v=20260623`,
+        videoFallbackSrc: `/assets/videoInspiration/${category.folder}/${slug}.mp4?v=20260623`,
         preview: `/assets/videoInspiration/previews/${slug}-preview.webm?v=20260613`,
         poster: `/assets/videoInspiration/posters/${slug}.jpg?v=20260613`,
       };
