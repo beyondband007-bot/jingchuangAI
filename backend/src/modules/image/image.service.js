@@ -10,6 +10,7 @@ import { uploadFileToKie } from '../../providers/kie/upload.js'
 import { debitCredits, refundCredits } from '../../shared/creditService.js'
 import { createHttpError } from '../../shared/http.js'
 import { getUserCredits } from '../../shared/userService.js'
+import { calculateImagePoints } from '../../shared/billingRules.js'
 import { mapImageTask } from './image.mapper.js'
 import {
   createImageTask,
@@ -148,9 +149,7 @@ export async function createTask(payload, userId) {
       throw createHttpError('model not found', 400)
     }
 
-    costPoints = Math.ceil(
-      modelPrice.base_points * qualityMultiplier(quality) * Number(count),
-    )
+    costPoints = calculateImagePoints(count)
     taskId = await createImageTask(connection, {
       userId,
       modelKey: model,

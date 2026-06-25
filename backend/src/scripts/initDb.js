@@ -1212,7 +1212,7 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 60),
         ('kling_3_4k', 'jobs', 'kling-3.0/video', 'Kling 3.0 4K', '4K', 'per_second', 235, 2.345,
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
-        ('seedance_2_0_720p', 'jobs', 'seedance/2.0-text-to-video', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
+        ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
         ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
@@ -1230,6 +1230,13 @@ async function seedDemoData() {
         default_duration = VALUES(default_duration),
         enabled = VALUES(enabled),
         sort_order = VALUES(sort_order)
+    `);
+
+    await connection.query("UPDATE image_model_prices SET base_points = 30");
+    await connection.query(`
+      UPDATE video_model_prices
+      SET base_points = CASE WHEN model_key = 'seedance_2_0_720p' THEN 120 ELSE base_points END,
+          enabled = CASE WHEN model_key = 'seedance_2_0_720p' THEN TRUE ELSE FALSE END
     `);
 
     await connection.query(`

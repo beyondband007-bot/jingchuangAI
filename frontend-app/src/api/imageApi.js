@@ -45,17 +45,12 @@ export const imageApi = {
   },
 
   calculatePrice({ model, quality, count, models = [], qualities = [] }) {
-    const selectedModel = models.find((item) => item.value === model) || models[0];
-    const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
-    if (!selectedModel || !selectedQuality) return "0 积分";
-    return `${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
+    return `${Math.max(1, Math.ceil(Number(count) || 1)) * 30} 积分`;
   },
 
   calculatePriceDetail({ model, quality, count, models = [], qualities = [] }) {
-    const selectedModel = models.find((item) => item.value === model) || models[0];
-    const selectedQuality = qualities.find((item) => item.value === quality) || qualities[0];
-    if (!selectedModel || !selectedQuality) return "扣费标准：模型基础积分 × 清晰度倍率 × 张数";
-    return `扣费标准：${selectedModel.basePoints} × ${selectedQuality.multiplier} × ${count} = ${Math.ceil(selectedModel.basePoints * selectedQuality.multiplier * count)} 积分`;
+    const imageCount = Math.max(1, Math.ceil(Number(count) || 1));
+    return `扣费标准：30 × ${imageCount} = ${imageCount * 30} 积分`;
   },
 
   getRandomPrompt() {

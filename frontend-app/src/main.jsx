@@ -7506,7 +7506,7 @@ function getVideoModelOptions(options, modelKey) {
   };
 }
 
-const defaultVideoModelKey = "kling_3_std";
+const defaultVideoModelKey = "seedance_2_0_720p";
 
 function pickDefaultVideoModel(models = []) {
   return (
