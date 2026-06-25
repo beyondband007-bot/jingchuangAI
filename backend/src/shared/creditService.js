@@ -26,6 +26,14 @@ const CREDIT_MEMO_TEXT = new Map([
   ["enhance generation refund", "\u753b\u8d28\u63d0\u5347\u9000\u6b3e"],
   ["remove background generation debit", "\u53bb\u80cc\u666f\u6263\u8d39"],
   ["remove background generation refund", "\u53bb\u80cc\u666f\u9000\u6b3e"],
+  ["music generation debit", "\u97f3\u4e50\u751f\u6210\u6263\u8d39"],
+  ["music generation refund", "\u97f3\u4e50\u751f\u6210\u9000\u6b3e"],
+  ["article copy debit", "\u56fe\u6587\u6587\u6848\u6263\u8d39"],
+  ["article copy refund", "\u56fe\u6587\u6587\u6848\u9000\u6b3e"],
+  ["image replicate debit", "\u89c6\u89c9\u590d\u523b\u6263\u8d39"],
+  ["image replicate failure refund", "\u89c6\u89c9\u590d\u523b\u9000\u6b3e"],
+  ["video replicate debit", "\u89c6\u9891\u590d\u523b\u6263\u8d39"],
+  ["video replicate failure refund", "\u89c6\u9891\u590d\u523b\u9000\u6b3e"],
   ["invite gift inviter reward", "\u9080\u8bf7\u6709\u793c\u5956\u52b1"],
   ["invite gift invitee reward", "\u53d7\u9080\u6ce8\u518c\u5956\u52b1"]
 ]);

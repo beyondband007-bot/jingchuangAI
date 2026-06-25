@@ -150,7 +150,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS credit_transactions (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
-      task_id BIGINT UNSIGNED NULL,
+      task_id VARCHAR(64) NULL,
       type ENUM('grant','debit','refund','recharge','invitegift') NOT NULL,
       amount INT NOT NULL,
       balance_after INT NOT NULL,
@@ -187,6 +187,22 @@ async function createTables() {
   }
   if (!creditTransactionColumnNames.has("invite_binding_id")) {
     await pool.query("ALTER TABLE credit_transactions ADD COLUMN invite_binding_id BIGINT UNSIGNED NULL AFTER related_user_id");
+  }
+
+  const [creditTransactionTaskIdColumn] = await pool.query(
+    `SELECT DATA_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'credit_transactions' AND COLUMN_NAME = 'task_id'
+     LIMIT 1`,
+    [config.db.database]
+  );
+  if (
+    creditTransactionTaskIdColumn.length &&
+    ["bigint", "int", "mediumint", "smallint", "tinyint"].includes(
+      String(creditTransactionTaskIdColumn[0].DATA_TYPE).toLowerCase()
+    )
+  ) {
+    await pool.query("ALTER TABLE credit_transactions MODIFY COLUMN task_id VARCHAR(64) NULL");
   }
 
   await pool.query(`
