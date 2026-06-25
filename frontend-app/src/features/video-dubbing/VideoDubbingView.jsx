@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import {
   CheckCircle2,
   Download,
@@ -573,7 +574,7 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
             </div>
 
             <div className="voice-composer-footer">
-              <strong className="audio-credit-hint">本次生成预计消耗 <em>30</em> 积分</strong>
+              <strong className="audio-credit-hint">本次生成预计消耗 <em><BillingPoints feature="video-dub" payload={{ durationMs: videoFile?.durationMs || 0, bgmEnabled: true }} fallbackPoints={35} /></em> 积分</strong>
               <div className="voice-actions">
                 <button
                   className="voice-generate-button"

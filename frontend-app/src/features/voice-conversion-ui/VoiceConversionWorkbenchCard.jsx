@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Download, FileAudio, Mic2, Play } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import "./voiceConversionWorkbenchCard.css";
 
 const voiceConversionModelOptions = [
@@ -310,6 +311,11 @@ export function VoiceConversionWorkbenchCard({
               disabled={isConverting || !targetAudio || !sourceAudio}
             >
               <Play size={18} />
+              <BillingPoints
+                feature="voice-convert"
+                payload={{ durationMs: sourceAudio?.durationMs || 0 }}
+                fallbackPoints={2000}
+              />
               {isConverting ? "转换中..." : "开始转换"}
             </button>
 

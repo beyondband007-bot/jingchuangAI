@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
 import { transcribeMinimaxAudio } from "../../providers/minimax/transcribe.js";
 import { createHttpError } from "../../shared/http.js";
+import { calculateTranscribePoints } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 import { createTranscribeTaskRow, listTranscribeTaskRows } from "./transcribe.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 
@@ -105,8 +107,16 @@ export async function getRecentTranscriptions(userId) {
 export async function transcribeAudio({ file, durationMs, userId }) {
   assertAudioFile(file);
   assertDuration(durationMs);
+  const costPoints = calculateTranscribePoints({ durationMs });
+  await chargeCredits({ userId, amount: costPoints, memo: "transcription debit" });
 
-  const result = await transcribeMinimaxAudio({ audioBuffer: file.buffer });
+  let result;
+  try {
+    result = await transcribeMinimaxAudio({ audioBuffer: file.buffer });
+  } catch (error) {
+    await refundChargedCredits({ userId, amount: costPoints, memo: "transcription refund" });
+    throw error;
+  }
 
   const transcription = {
     id: `transcribe-${Date.now()}-${randomUUID().slice(0, 8)}`,
@@ -120,6 +130,8 @@ export async function transcribeAudio({ file, durationMs, userId }) {
     traceId: result.traceId,
     createdAt: formatBeijingDateTime()
   };
+  transcription.points = costPoints;
+  transcription.price = `${costPoints} 积分`;
 
   await createTranscribeTaskRow({
     ...transcription,

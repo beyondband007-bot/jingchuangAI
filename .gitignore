@@ -6,6 +6,7 @@ node_modules/
 dist/
 build/
 .vite/
+frontend-app/.codex-build-*/
 
 # Environment and secrets
 .env

@@ -10,6 +10,7 @@ import {
 import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { BILLING_RULES } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapRemoveBgAsset, mapRemoveBgTask } from "./removeBg.mapper.js";
 import {
@@ -133,7 +134,7 @@ export async function createTask(payload, requestUser = null) {
   if (!sourceAsset) throw createHttpError("源素材不存在，请重新上传", 400);
 
   const model = getModel(payload.model);
-  const costPoints = Number(model.basePoints || 0);
+  const costPoints = BILLING_RULES.imagePointsPerItem;
 
   const connection = await getPool().getConnection();
   let userId;

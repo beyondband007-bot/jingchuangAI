@@ -12,6 +12,7 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
+import BillingPoints from "../../components/BillingPoints.jsx";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
 
@@ -302,7 +303,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
       />
       <div className="watermark-composer-footer remove-bg-composer-footer">
         <span>{notice || "AI 将自动识别主体并输出透明背景图片"}</span>
-        <strong>{price}</strong>
+        <strong><BillingPoints feature="remove-bg" payload={{}} fallbackPoints={30} /></strong>
         <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>

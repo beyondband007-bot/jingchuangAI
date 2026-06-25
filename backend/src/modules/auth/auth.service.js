@@ -27,6 +27,11 @@ const SMS_SEND_INTERVAL_MS = 60 * 1000;
 const SMS_MAX_ATTEMPTS = 5;
 const SMS_SCENES = new Set(["register", "login", "password_reset"]);
 const CAPTCHA_TYPE_SLIDER = 9;
+const defaultAvatarCount = 25;
+
+function createRandomAvatarUrl() {
+  return `/assets/avatars/${randomInt(1, defaultAvatarCount + 1)}.jpg`;
+}
 
 function assertPassword(password) {
   const normalizedPassword = String(password || "");
@@ -101,6 +106,7 @@ function publicUser(user, credits) {
     id: user.externalId,
     username: user.username || null,
     displayName: user.displayName || "游客",
+    avatarUrl: user.avatarUrl || null,
     phone: user.phone || null,
     email: user.email || null,
     inviteCode: user.inviteCode || null,
@@ -138,13 +144,14 @@ function isUserIdentityDuplicate(error) {
 async function createPhoneUser(phone, connection, passwordHash = null) {
   let result;
   let externalId;
+  const avatarUrl = createRandomAvatarUrl();
   for (let attempt = 0; attempt < 8; attempt += 1) {
     externalId = createRandomExternalId();
     try {
       [result] = await connection.query(
-        `INSERT INTO users (external_id, username, phone, password_hash, display_name)
-         VALUES (?, ?, ?, ?, ?)`,
-        [externalId, phone, phone, passwordHash, phone]
+        `INSERT INTO users (external_id, username, phone, password_hash, display_name, avatar_url)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [externalId, phone, phone, passwordHash, phone, avatarUrl]
       );
       break;
     } catch (error) {
@@ -166,6 +173,7 @@ async function createPhoneUser(phone, connection, passwordHash = null) {
     inviteCode,
     username: phone,
     displayName: phone,
+    avatarUrl,
     phone,
     email: null,
     isGuest: false

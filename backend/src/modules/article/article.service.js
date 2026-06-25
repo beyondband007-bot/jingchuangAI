@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { getPool } from "../../db/pool.js";
 import { createDeepSeekChatResponse } from "../../providers/deepseek/chat.js";
 import { createHttpError } from "../../shared/http.js";
+import { BILLING_RULES } from "../../shared/billingRules.js";
+import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 import { findChatModel } from "../chat/chat.repository.js";
 import {
   createTask as createImageTask,
@@ -353,9 +355,12 @@ export async function getModels() {
   return getImageModels();
 }
 
-export async function createCopyDraft(payload) {
+export async function createCopyDraft(payload, userId) {
   const copyPrompt = buildCopyPrompt(payload);
   const model = await getDeepSeekCopyModel();
+  const taskId = `article-copy-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  const costPoints = BILLING_RULES.articleTextPoints;
+  await chargeCredits({ userId, taskId, amount: costPoints, memo: "article copy debit" });
   let provider;
   try {
     provider = await createDeepSeekChatResponse({
@@ -367,15 +372,17 @@ export async function createCopyDraft(payload) {
       reasoningEffort: "none"
     });
   } catch (error) {
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "article copy refund" });
     throw createHttpError(`DeepSeek 文案生成失败：${error.message}`, error.status || 502);
   }
   const parsed = extractJsonObject(provider.text);
   if (!parsed) {
+    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "article copy invalid response refund" });
     throw createHttpError("DeepSeek copy response is not valid JSON", 502);
   }
   const copy = normalizeCopyDraft(parsed, copyPrompt);
   const imagePromptPlan = buildImagePromptPlan({ copy, payload: { ...payload, ...copyPrompt } });
-  return { copy, imagePromptPlan };
+  return { copy, imagePromptPlan, points: costPoints, price: `${costPoints} 积分` };
 }
 
 export async function listTasks({ userId, filter = "all" } = {}) {

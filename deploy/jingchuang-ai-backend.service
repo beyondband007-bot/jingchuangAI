@@ -1,5 +1,5 @@
 [Unit]
-Description=Jingchuang AI backend
+Description=Facemini AI backend
 After=network.target mysql.service mysqld.service
 
 [Service]

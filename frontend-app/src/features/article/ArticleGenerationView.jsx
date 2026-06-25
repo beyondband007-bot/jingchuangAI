@@ -29,6 +29,7 @@ import {
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
+import BillingPoints from "../../components/BillingPoints.jsx";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -1935,7 +1936,7 @@ export function ArticleGenerationView({
               </div>
               <div className="article-step-action-row">
                 <p className="article-credit-hint">
-                  预计消耗 <strong>{Math.max(30, form.imageCount * 30)}</strong>{" "}
+                  预计消耗 <strong><BillingPoints feature="article" payload={{ imageCount: form.imageCount }} fallbackPoints={10 + Math.max(1, form.imageCount) * 30} /></strong>{" "}
                   积分
                 </p>
                 <div className="article-step-buttons">

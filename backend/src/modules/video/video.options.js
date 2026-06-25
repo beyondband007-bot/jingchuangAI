@@ -1,4 +1,5 @@
 import { createHttpError } from "../../shared/http.js";
+import { calculateVideoPoints as calculateUnifiedVideoPoints } from "../../shared/billingRules.js";
 
 export const videoCountOptions = [1];
 
@@ -21,9 +22,7 @@ export function getModelDurations(model) {
 }
 
 export function calculateVideoPoints(model, duration, count = 1) {
-  const base = Number(model.base_points || 0);
-  const total = model.price_unit === "per_task" ? base : base * Number(duration);
-  return Math.ceil(total * Number(count));
+  return calculateUnifiedVideoPoints(duration) * Number(count);
 }
 
 export function validateVideoPayload({ prompt, model, ratio, duration, count, referenceImageUrl, referenceVideoUrl }) {

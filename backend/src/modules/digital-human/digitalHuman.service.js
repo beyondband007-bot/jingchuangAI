@@ -3,16 +3,9 @@ import { execFile } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import path from "path";
 import { promisify } from "util";
-import ffmpeg from "@ffmpeg-installer/ffmpeg";
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
-import {
-  createKieDigitalHumanTask,
-  extractKieDigitalHumanResult,
-  getKieDigitalHumanTask,
-  mapKieDigitalHumanState
-} from "../../providers/kie/digitalHuman.js";
-import { uploadFileToKie } from "../../providers/kie/upload.js";
 import {
   buildReferenceAudio,
   buildReferenceImage,
@@ -25,6 +18,7 @@ import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers
 import { designMinimaxVoice } from "../../providers/minimax/voiceDesign.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { calculateBillingQuote, estimateSpeechSeconds } from "../../shared/billingRules.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
@@ -54,7 +48,6 @@ const designedVoices = [];
 const uploadedDriveAudios = new Map();
 const execFileAsync = promisify(execFile);
 const maxDigitalHumanAudioMs = 15 * 1000;
-const klingAvatarPrompt = "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 
 function nowLabel(date = new Date()) {
   return formatBeijingDateTime(date);
@@ -74,8 +67,8 @@ function getAudioDurationMs(speech, text = "") {
   return estimateSeconds(text) * 1000;
 }
 
-function getKieDurationSeconds(audioDurationMs) {
-  return Math.max(2, Math.min(300, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+function getVideoDurationSeconds(audioDurationMs) {
+  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
 }
 
 function getArkDurationSeconds(audioDurationMs) {
@@ -152,7 +145,7 @@ async function getMyAvatars() {
 
 async function getAvatarById(avatarId) {
   const staticAvatar = publicAvatars.find((item) => item.id === avatarId);
-  if (staticAvatar) return staticAvatar;
+  if (staticAvatar) return { ...staticAvatar, provider: "ark" };
 
   const match = /^ark-asset-(\d+)$/.exec(String(avatarId || ""));
   if (!match) return null;
@@ -184,7 +177,7 @@ function mapTask(row) {
     audioUrl: row.audio_url || "",
     status,
     progress,
-    duration: row.audio_duration_ms ? getKieDurationSeconds(row.audio_duration_ms) : estimateSeconds(row.text || ""),
+    duration: row.audio_duration_ms ? getVideoDurationSeconds(row.audio_duration_ms) : estimateSeconds(row.text || ""),
     audioDurationMs: Number(row.audio_duration_ms || 0),
     costPoints: row.cost_points,
     resultUrl: row.result_url || "",
@@ -235,7 +228,7 @@ async function getVideoPosterPath(filePath) {
     return outputPath;
   } catch {}
 
-  await execFileAsync(ffmpeg.path, [
+  await execFileAsync(ffmpegPath, [
     "-y",
     "-ss",
     "0.1",
@@ -250,8 +243,8 @@ async function getVideoPosterPath(filePath) {
   return outputPath;
 }
 
-async function getAvatarImageProviderUrl(avatar) {
-  if (avatar.providerImageUrl) return avatar.providerImageUrl;
+async function getAvatarArkReference(avatar, userId) {
+  if (avatar.arkAssetId) return waitForVirtualAssetReference(avatar.arkAssetId);
   const assetPath = avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
   if (!assetPath) {
     throw createHttpError("selected avatar does not have an image asset", 400);
@@ -262,23 +255,26 @@ async function getAvatarImageProviderUrl(avatar) {
   const imagePath = isImagePath(filePath)
     ? filePath
     : isVideoPath(filePath)
-      ? (await getCompanionPosterPath(filePath)) || (await getVideoPosterPath(filePath))
+      ? await getVideoPosterPath(filePath)
       : "";
   if (!imagePath) {
     throw createHttpError("selected avatar asset must be an image or video", 400);
   }
 
-  const upload = await uploadFileToKie({
+  const asset = await createVirtualAssetFromLocalFile({
+    userId,
+    feature: "digital-human-avatar",
+    localUrl: `/media/digital-human/avatar-frames/${path.basename(imagePath)}`,
     filePath: imagePath,
-    fileName: path.basename(imagePath),
+    originalName: path.basename(imagePath),
     mimeType: "image/jpeg",
-    uploadPath: "digital-human/avatar-image"
+    sizeBytes: 0
   });
-  return upload.url;
+  return waitForVirtualAssetReference(asset.id);
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, avatar, uploadedAudio } = payload;
+  const { text, voiceId, speed, volume, pitch, emotion, avatar, uploadedAudio, userId } = payload;
   let savedAudio;
   let audioDurationMs;
   let audioSizeBytes;
@@ -301,13 +297,11 @@ async function createProviderTask(taskId, payload) {
     audioSizeBytes = speech.audioBuffer.length;
   }
   if (audioDurationMs > maxDigitalHumanAudioMs) {
-    throw createHttpError("音频时长超过 5 分钟，请缩短文本或切片后分段生成", 400);
+    throw createHttpError("音频时长不能超过 15 秒，请缩短文本或切片后分段生成", 400);
   }
-  if (avatar.provider === "ark") {
-    console.log(`[digital-human] task ${taskId}: creating Ark audio asset and Seedance task`);
-    const user = await getDemoUser();
+  console.log(`[digital-human] task ${taskId}: creating Ark audio asset and Seedance task`);
     const audioAsset = await createVirtualAssetFromLocalFile({
-      userId: user.id,
+      userId,
       feature: "digital-human-audio",
       localUrl: savedAudio.publicPath,
       filePath: savedAudio.filePath,
@@ -315,8 +309,10 @@ async function createProviderTask(taskId, payload) {
       mimeType: savedAudio.mimeType,
       sizeBytes: audioSizeBytes
     });
-    const avatarReferenceUrl = await waitForVirtualAssetReference(avatar.arkAssetId);
-    const audioReferenceUrl = await waitForVirtualAssetReference(audioAsset.id);
+    const [avatarReferenceUrl, audioReferenceUrl] = await Promise.all([
+      getAvatarArkReference(avatar, userId),
+      waitForVirtualAssetReference(audioAsset.id)
+    ]);
     const provider = await createArkVideoGenerationTask({
       model: config.ark.videoModel,
       content: [
@@ -342,36 +338,7 @@ async function createProviderTask(taskId, payload) {
       audioDurationMs
     });
     console.log(`[digital-human] task ${taskId}: Ark task ${provider.taskId} created`);
-    return;
-  }
-
-  console.log(`[digital-human] task ${taskId}: uploading audio and avatar assets to KIE`);
-  const [audioUpload, avatarImageProviderUrl] = await Promise.all([
-    uploadFileToKie({
-      filePath: savedAudio.filePath,
-      fileName: savedAudio.fileName,
-      mimeType: savedAudio.mimeType,
-      uploadPath: "digital-human/audio"
-    }),
-    getAvatarImageProviderUrl(avatar)
-  ]);
-
-  console.log(`[digital-human] task ${taskId}: creating ${config.kie.digitalHumanModel} task`);
-  const provider = await createKieDigitalHumanTask({
-    model: config.kie.digitalHumanModel,
-    imageUrl: avatarImageProviderUrl,
-    audioUrl: audioUpload.url,
-    prompt: klingAvatarPrompt
-  });
-
-  await setDigitalHumanTaskProviderStarted(taskId, {
-    providerTaskId: provider.taskId,
-    audioUrl: savedAudio.publicPath,
-    audioProviderUrl: audioUpload.url,
-    avatarProviderUrl: avatarImageProviderUrl,
-    audioDurationMs
-  });
-  console.log(`[digital-human] task ${taskId}: task ${provider.taskId} created`);
+  return;
 }
 
 export function getModels() {
@@ -461,7 +428,7 @@ export async function previewVoice(payload) {
     durationMs,
     maxDurationMs: maxDigitalHumanAudioMs,
     isTooLong: durationMs > maxDigitalHumanAudioMs,
-    videoDuration: getKieDurationSeconds(durationMs)
+    videoDuration: getVideoDurationSeconds(durationMs)
   };
 }
 
@@ -532,14 +499,22 @@ export async function createTask(payload) {
   if (avatar.status !== "ready") throw createHttpError("avatar is not ready", 400);
 
   const model = getModelByKey(modelKey);
-  if (!model || model.provider !== "kie") throw createHttpError("digital human model not found", 400);
+  if (!model || model.provider !== "ark") throw createHttpError("digital human model not found", 400);
 
   const voice = driveMode === "audio"
     ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
     : getVoiceById(voiceId);
   const taskText = driveMode === "audio" ? audioName || uploadedAudio.originalName || "用户上传音频" : text;
-  const costPoints = Number(model.basePoints || 30);
-  const providerModel = avatar.provider === "ark" ? config.ark.videoModel : config.kie.digitalHumanModel;
+  const billingDuration = driveMode === "audio"
+    ? Math.ceil(Number(uploadedAudio?.durationMs || 0) / 1000)
+    : estimateSpeechSeconds(text);
+  const costPoints = calculateBillingQuote("digital-human", {
+    durationSeconds: billingDuration,
+    durationMs: uploadedAudio?.durationMs || 0,
+    text,
+    uploadedAudio: driveMode === "audio"
+  }).points;
+  const providerModel = config.ark.videoModel;
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -584,7 +559,18 @@ export async function createTask(payload) {
   connection.release();
 
   try {
-    await createProviderTask(taskId, { text: taskText, voiceId: voice.id, speed, volume, pitch, emotion, avatar, model, uploadedAudio });
+    await createProviderTask(taskId, {
+      text: taskText,
+      voiceId: voice.id,
+      speed,
+      volume,
+      pitch,
+      emotion,
+      avatar,
+      model,
+      uploadedAudio,
+      userId
+    });
   } catch (error) {
     console.error("Create digital human provider task failed:", error.message, error.body || "");
     await refundTask(taskId, userId, costPoints, `数字人任务创建失败：${error.message}`);
@@ -603,20 +589,17 @@ async function refreshTask(id) {
   if (!row || !row.provider_task_id || !["pending", "processing"].includes(row.status)) return;
 
   try {
-    const isArkTask = String(row.provider_model || "").startsWith("doubao-seedance");
-    const record = isArkTask
-      ? await getArkVideoGenerationTask({ taskId: row.provider_task_id })
-      : await getKieDigitalHumanTask({ taskId: row.provider_task_id });
-    const mapped = isArkTask ? mapArkVideoGenerationState(record) : mapKieDigitalHumanState(record);
+    const record = await getArkVideoGenerationTask({ taskId: row.provider_task_id });
+    const mapped = mapArkVideoGenerationState(record);
     if (mapped === "completed") {
-      const result = isArkTask ? extractArkVideoGenerationResult(record) : extractKieDigitalHumanResult(record);
+      const result = extractArkVideoGenerationResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "digital human result missing video URL");
       } else {
         await setDigitalHumanTaskCompleted(id, result);
       }
     } else if (mapped === "failed") {
-      const result = isArkTask ? extractArkVideoGenerationResult(record) : {};
+      const result = extractArkVideoGenerationResult(record);
       await refundTask(id, null, null, result.errorMessage || record.data?.failMsg || record.data?.errorMessage || "digital human task failed");
     } else {
       await setDigitalHumanTaskProcessing(id);

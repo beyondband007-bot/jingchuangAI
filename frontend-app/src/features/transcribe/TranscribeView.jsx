@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -403,7 +404,7 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
               <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
             </div>
             <div className="voice-composer-footer">
-              <strong className="audio-credit-hint">本次生成预计消耗 <em>30</em> 积分</strong>
+              <strong className="audio-credit-hint">本次生成预计消耗 <em><BillingPoints feature="transcribe" payload={{ durationMs: audioFile?.durationMs || 0 }} fallbackPoints={1} /></em> 积分</strong>
               <div className="voice-actions">
                 {result && (
                   <button className="voice-download" type="button" onClick={() => downloadText(result)}>
