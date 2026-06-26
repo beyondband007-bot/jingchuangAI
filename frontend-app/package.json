@@ -11,6 +11,7 @@
     "check:mojibake": "node ./scripts/check-mojibake.mjs"
   },
   "dependencies": {
+    "@arco-design/web-react": "^2.66.15",
     "@emotion/is-prop-valid": "^1.4.0",
     "@vitejs/plugin-react": "^5.1.1",
     "jszip": "^3.10.1",
@@ -21,5 +22,8 @@
     "remark-gfm": "^4.0.1",
     "typescript": "^5.9.3",
     "vite": "^7.2.7"
+  },
+  "devDependencies": {
+    "sass": "^1.101.0"
   }
 }

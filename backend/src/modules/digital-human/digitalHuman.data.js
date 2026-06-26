@@ -1,8 +1,8 @@
 export const digitalHumanModels = [
   {
-    value: "seedance-2.0",
-    label: "Seedance 2.0",
-    provider: "ark",
+    value: "kling-ai-avatar-pro",
+    label: "可灵数字人",
+    provider: "kie",
     basePoints: 30,
     configured: false
   }
@@ -123,6 +123,7 @@ export const publicAvatars = [
 export const voices = [
   {
     id: "female-shaonv",
+    providerVoiceId: "Chinese (Mandarin)_Warm_Girl",
     name: "萝莉音",
     description: "甜美、轻快、年轻感强，适合少儿内容和活泼口播",
     language: "中文普通话",
@@ -130,6 +131,7 @@ export const voices = [
   },
   {
     id: "female-yujie",
+    providerVoiceId: "Chinese (Mandarin)_Mature_Woman",
     name: "御姐音",
     description: "成熟、自信、有气场，适合品牌介绍和时尚内容",
     language: "中文普通话",
@@ -137,6 +139,7 @@ export const voices = [
   },
   {
     id: "female-tianmei",
+    providerVoiceId: "Chinese (Mandarin)_Sweet_Lady",
     name: "甜美女生",
     description: "明亮、亲切、感染力强，适合种草和短视频口播",
     language: "中文普通话",
@@ -144,6 +147,7 @@ export const voices = [
   },
   {
     id: "female-qn-qingse",
+    providerVoiceId: "Chinese (Mandarin)_Soft_Girl",
     name: "温柔女生",
     description: "柔和、清澈、自然，适合课程讲解和生活方式内容",
     language: "中文普通话",
@@ -151,6 +155,7 @@ export const voices = [
   },
   {
     id: "female-chengshu",
+    providerVoiceId: "Chinese (Mandarin)_News_Anchor",
     name: "新闻女声",
     description: "清晰、稳定、适合正式讲解",
     language: "中文普通话",
@@ -158,6 +163,7 @@ export const voices = [
   },
   {
     id: "presenter_female",
+    providerVoiceId: "Chinese (Mandarin)_News_Anchor",
     name: "专业女主播",
     description: "标准、稳重、播报感强，适合新闻和政企内容",
     language: "中文普通话",
@@ -172,6 +178,7 @@ export const voices = [
   },
   {
     id: "moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85",
+    providerVoiceId: "Chinese (Mandarin)_Sincere_Adult",
     name: "自然中文声 A",
     description: "MiniMax 最新中文系统音色，适合自然口播",
     language: "中文普通话",
@@ -179,6 +186,7 @@ export const voices = [
   },
   {
     id: "moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d",
+    providerVoiceId: "Chinese (Mandarin)_Radio_Host",
     name: "自然中文声 B",
     description: "MiniMax 最新中文系统音色，适合讲解和短视频",
     language: "中文普通话",
@@ -186,6 +194,7 @@ export const voices = [
   },
   {
     id: "male-qn-jingying",
+    providerVoiceId: "Chinese (Mandarin)_Gentleman",
     name: "沉稳男生",
     description: "低沉、可信、适合企业介绍",
     language: "中文普通话",
@@ -193,6 +202,7 @@ export const voices = [
   },
   {
     id: "male-qn-qingse",
+    providerVoiceId: "Chinese (Mandarin)_Gentle_Youth",
     name: "清爽男生",
     description: "年轻、干净、语气自然，适合知识分享和轻商务内容",
     language: "中文普通话",
@@ -200,6 +210,7 @@ export const voices = [
   },
   {
     id: "male-qn-badao",
+    providerVoiceId: "Chinese (Mandarin)_Unrestrained_Young_Man",
     name: "磁性男声",
     description: "低频、厚实、有力量感，适合广告和品牌大片旁白",
     language: "中文普通话",
@@ -207,6 +218,7 @@ export const voices = [
   },
   {
     id: "presenter_male",
+    providerVoiceId: "Chinese (Mandarin)_Male_Announcer",
     name: "专业男主播",
     description: "端正、清晰、权威，适合新闻播报和活动串词",
     language: "中文普通话",
@@ -214,6 +226,7 @@ export const voices = [
   },
   {
     id: "audiobook_male_1",
+    providerVoiceId: "Chinese (Mandarin)_Radio_Host",
     name: "纪录片旁白",
     description: "沉着、叙事感强，适合科普、财经和纪录片风格口播",
     language: "中文普通话",
@@ -221,6 +234,7 @@ export const voices = [
   },
   {
     id: "clever_boy",
+    providerVoiceId: "Chinese (Mandarin)_Pure-hearted_Boy",
     name: "少年音",
     description: "清亮、灵动、少年感，适合校园、动漫和少儿内容",
     language: "中文普通话",
@@ -228,6 +242,7 @@ export const voices = [
   },
   {
     id: "cute_boy",
+    providerVoiceId: "Chinese (Mandarin)_Cute_Spirit",
     name: "可爱男孩",
     description: "童趣、轻松、亲近，适合儿童故事和互动内容",
     language: "中文普通话",
@@ -235,6 +250,7 @@ export const voices = [
   },
   {
     id: "cute_girl",
+    providerVoiceId: "Chinese (Mandarin)_Crisp_Girl",
     name: "可爱女孩",
     description: "稚嫩、可爱、活泼，适合少儿故事和卡通形象",
     language: "中文普通话",
@@ -242,6 +258,7 @@ export const voices = [
   },
   {
     id: "male-qn-daxuesheng",
+    providerVoiceId: "Chinese (Mandarin)_Straightforward_Boy",
     name: "阳光男生",
     description: "自然、开朗、年轻，适合探店、旅游和社媒内容",
     language: "中文普通话",

@@ -57,5 +57,50 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(payload)
     });
+  },
+
+  async updateProfile(payload) {
+    return request("/api/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async selectAvatar(payload) {
+    return request("/api/auth/avatar/select", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async uploadAvatar({ file, owner }) {
+    const formData = new FormData();
+    if (owner) formData.append("owner", owner);
+    formData.append("file", file);
+    return request("/api/auth/avatar/upload", {
+      method: "POST",
+      body: formData
+    });
+  },
+
+  async changePhone(payload) {
+    return request("/api/auth/phone/change", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async verifyCurrentPhone(payload) {
+    return request("/api/auth/phone/verify-current", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async changePassword(payload) {
+    return request("/api/auth/password/change", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
   }
 };

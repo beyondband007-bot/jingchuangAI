@@ -1,20 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
-  ArrowLeft,
-  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
   Copy,
   Download,
-  Heart,
   Layers,
   Loader2,
-  MessageCircle,
   RefreshCcw,
-  Share2,
   Sparkles,
   Star,
   Trash2,
@@ -22,6 +17,10 @@ import {
 } from "lucide-react";
 import { articleApi } from "./articleApi";
 import { downloadArticleImagesZip } from "./articleImageZip";
+import { ArticleXhsNotePreview } from "./ArticleXhsNotePreview";
+import { ArticlePopularResultPanel } from "./ArticlePopularResultPanel";
+import { ArticleImageConfigPanel } from "./ArticleImageConfigPanel";
+import { ArticleStyleTemplatePreview } from "./ArticleStyleTemplatePreview";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import {
@@ -29,7 +28,6 @@ import {
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
-import BillingPoints from "../../components/BillingPoints.jsx";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -367,6 +365,12 @@ function pickDefaultModel(models) {
   );
 }
 
+function formatHistoryStatus(status) {
+  if (status === "failed") return "生成失败";
+  if (status === "completed" || status === "partial_completed") return "已完成";
+  return "生成中";
+}
+
 function formatArticleError(error, fallback = "创建爆款图文任务失败") {
   const message = typeof error === "string" ? error : error?.message || "";
   if (message.toLowerCase().includes("invalid generation options")) {
@@ -480,18 +484,40 @@ function ArticleFullPreviewMedia({
   activeIndex,
   onActiveIndexChange,
   className = "",
+  stacked = false,
+  variant = "history",
 }) {
   const carouselRef = useRef(null);
   const isLandscapePreview = useArticlePreviewLayout(images, ratioFallback);
+  const isPopular = variant === "popular";
   const mediaClassName = [
-    "article-result-full-media",
-    "article-history-full-media",
+    isPopular ? "article-popular-media" : "article-result-full-media",
+    isPopular ? "" : "article-history-full-media",
     `count-${Math.min(images.length, 4)}`,
     isLandscapePreview ? "is-landscape" : "",
+    stacked ? "is-stacked" : "",
     className,
   ]
     .filter(Boolean)
     .join(" ");
+  const stackedGalleryClass = isPopular
+    ? "article-popular-media-gallery"
+    : "article-result-stacked-gallery";
+  const landscapeGalleryClass = isPopular
+    ? "article-popular-media-gallery"
+    : "article-history-full-gallery";
+  const carouselClass = isPopular
+    ? "article-popular-media-carousel"
+    : "article-result-full-carousel";
+  const slideClass = isPopular
+    ? "article-popular-media-slide"
+    : "article-result-full-slide";
+  const navButtonClass = isPopular
+    ? "article-popular-media-nav"
+    : "article-history-image-nav";
+  const dotsClass = isPopular
+    ? "article-popular-media-dots"
+    : "article-history-preview-dots";
 
   function scrollToIndex(index) {
     const carousel = carouselRef.current;
@@ -512,10 +538,28 @@ function ArticleFullPreviewMedia({
     }
   }
 
+  if (stacked) {
+    return (
+      <section className={mediaClassName}>
+        <div className={stackedGalleryClass}>
+          {images.map((item, index) => (
+            <figure key={item.id}>
+              <img
+                src={item.image}
+                alt={item.title || title || `配图 ${index + 1}`}
+                draggable="false"
+              />
+            </figure>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (isLandscapePreview) {
     return (
       <section className={mediaClassName}>
-        <div className="article-history-full-gallery">
+        <div className={landscapeGalleryClass}>
           {images.map((item, index) => (
             <figure key={item.id}>
               <img
@@ -533,12 +577,12 @@ function ArticleFullPreviewMedia({
   return (
     <section className={mediaClassName}>
       <div
-        className="article-result-full-carousel"
+        className={carouselClass}
         ref={carouselRef}
         onScroll={handleCarouselScroll}
       >
         {images.map((item, index) => (
-          <figure className="article-result-full-slide" key={item.id}>
+          <figure className={slideClass} key={item.id}>
             <img
               src={item.image}
               alt={item.title || title || `配图 ${index + 1}`}
@@ -550,7 +594,7 @@ function ArticleFullPreviewMedia({
       {images.length > 1 && (
         <>
           <button
-            className="article-history-image-nav is-prev"
+            className={`${navButtonClass} is-prev`}
             type="button"
             onClick={() =>
               scrollToIndex((activeIndex - 1 + images.length) % images.length)
@@ -560,7 +604,7 @@ function ArticleFullPreviewMedia({
             <ChevronLeft size={22} />
           </button>
           <button
-            className="article-history-image-nav is-next"
+            className={`${navButtonClass} is-next`}
             type="button"
             onClick={() =>
               scrollToIndex((activeIndex + 1) % images.length)
@@ -569,7 +613,7 @@ function ArticleFullPreviewMedia({
           >
             <ChevronRight size={22} />
           </button>
-          <div className="article-history-preview-dots">
+          <div className={dotsClass}>
             {images.map((item, index) => (
               <button
                 className={index === activeIndex ? "is-active" : ""}
@@ -616,22 +660,6 @@ function ArticleVisualOptionGroup({
             )}
             {item.label}
           </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ArticleStyleTemplatePreview({ items }) {
-  return (
-    <div className="article-fresh-template-preview">
-      <div className="article-fresh-template-preview__track">
-        {items.map((item) => (
-          <figure className="article-fresh-template-preview__card" key={item.id}>
-            <div className="article-fresh-template-preview__card-media">
-              <img src={item.image} alt={item.label} loading="lazy" draggable="false" />
-            </div>
-          </figure>
         ))}
       </div>
     </div>
@@ -796,13 +824,32 @@ function getArticleImages(task) {
   return task.image ? [{ id: task.id, image: task.image, title: "配图 1", status: task.status }] : [];
 }
 
-function ArticlePreview({ task, onClose }) {
+async function copyTextToClipboard(text) {
+  try {
+    await navigator.clipboard?.writeText(text);
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+  }
+}
+
+function buildArticleBodyCopy(body, tags = []) {
+  const tagsText = tags.map((tag) => `#${tag}`).join(" ");
+  return [body, tagsText].filter(Boolean).join("\n\n");
+}
+
+function ArticlePreview({ task, onClose, authUser }) {
   const [previewMode, setPreviewMode] = useState("full");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isTextCopied, setIsTextCopied] = useState(false);
+  const [copiedField, setCopiedField] = useState(null);
   const copyTextTimerRef = useRef(null);
-  const xhsCarouselRef = useRef(null);
-  const xhsDragRef = useRef(null);
   const images = getArticleImages(task);
   const prompt = task?.prompt || "暂无提示词";
   const articleTitle = task?.copy?.title || task?.title || "AI 图文创作";
@@ -816,7 +863,7 @@ function ArticlePreview({ task, onClose }) {
   useEffect(() => {
     setPreviewMode("full");
     setActiveImageIndex(0);
-    setIsTextCopied(false);
+    setCopiedField(null);
   }, [task?.id]);
 
   useEffect(() => {
@@ -833,89 +880,25 @@ function ArticlePreview({ task, onClose }) {
     };
   }, [onClose, images.length]);
 
-  async function copyArticleText() {
-    const tagsText = articleTags.map((tag) => `#${tag}`).join(" ");
-    const text = [articleTitle, articleBody, tagsText].filter(Boolean).join("\n\n");
-
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
-
-    setIsTextCopied(true);
+  function markCopiedField(field) {
+    setCopiedField(field);
     if (copyTextTimerRef.current) {
       window.clearTimeout(copyTextTimerRef.current);
     }
-    copyTextTimerRef.current = window.setTimeout(
-      () => setIsTextCopied(false),
-      1600,
-    );
+    copyTextTimerRef.current = window.setTimeout(() => setCopiedField(null), 1600);
   }
 
-  function scrollXhsImageIntoView(index, behavior = "smooth") {
-    const carousel = xhsCarouselRef.current;
-    if (!carousel) return;
-    carousel.scrollTo({
-      left: carousel.clientWidth * index,
-      behavior,
-    });
-    setActiveImageIndex(index);
+  async function copyArticleTitle() {
+    if (!articleTitle) return;
+    await copyTextToClipboard(articleTitle);
+    markCopiedField("title");
   }
 
-  function handleXhsCarouselScroll(event) {
-    const carousel = event.currentTarget;
-    if (!carousel.clientWidth) return;
-    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
-    if (nextIndex !== activeImageIndex && images[nextIndex]) {
-      setActiveImageIndex(nextIndex);
-    }
-  }
-
-  function handleXhsPointerDown(event) {
-    if (event.button !== 0) return;
-    const carousel = event.currentTarget;
-    xhsDragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      scrollLeft: carousel.scrollLeft,
-    };
-    carousel.setPointerCapture(event.pointerId);
-    carousel.classList.add("is-dragging");
-  }
-
-  function handleXhsPointerMove(event) {
-    const drag = xhsDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    event.currentTarget.scrollLeft =
-      drag.scrollLeft - (event.clientX - drag.startX);
-  }
-
-  function handleXhsPointerEnd(event) {
-    const carousel = event.currentTarget;
-    const drag = xhsDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    xhsDragRef.current = null;
-    carousel.classList.remove("is-dragging");
-    if (carousel.hasPointerCapture(event.pointerId)) {
-      carousel.releasePointerCapture(event.pointerId);
-    }
-    const nextIndex = Math.max(
-      0,
-      Math.min(
-        images.length - 1,
-        Math.round(carousel.scrollLeft / carousel.clientWidth),
-      ),
-    );
-    scrollXhsImageIntoView(nextIndex);
+  async function copyArticleBody() {
+    const text = buildArticleBodyCopy(articleBody, articleTags);
+    if (!text) return;
+    await copyTextToClipboard(text);
+    markCopiedField("body");
   }
 
   if (!images.length) return null;
@@ -974,9 +957,9 @@ function ArticlePreview({ task, onClose }) {
             <article className="article-history-full-copy">
               <div className="article-history-full-copy-head">
                 <span className="article-history-preview-kicker">爆款图文</span>
-                <button type="button" onClick={copyArticleText}>
+                <button type="button" onClick={copyArticleTitle}>
                   <Copy size={15} />
-                  {isTextCopied ? "已复制" : "复制文本"}
+                  {copiedField === "title" ? "已复制" : "复制标题"}
                 </button>
               </div>
               <h2>{articleTitle}</h2>
@@ -997,100 +980,34 @@ function ArticlePreview({ task, onClose }) {
               )}
               <div className="article-history-full-footer">
                 <span>{createdAt}</span>
-                <a href={activeImage.image} download>
-                  <Download size={16} />
-                  下载图片
-                </a>
+                <div className="article-history-full-footer-actions">
+                  <button
+                    type="button"
+                    className="article-history-full-copy-btn"
+                    onClick={copyArticleBody}
+                  >
+                    <Copy size={15} />
+                    {copiedField === "body" ? "已复制" : "复制正文"}
+                  </button>
+                  <a href={activeImage.image} download>
+                    <Download size={16} />
+                    下载图片
+                  </a>
+                </div>
               </div>
             </article>
           </div>
         ) : (
-          <div className="article-xhs-preview-stage">
-            <article className="article-xhs-phone">
-              <div className="article-xhs-statusbar">
-                <strong>9:41</strong>
-                <span className="article-xhs-status-icons">
-                  <i className="is-signal" />
-                  <i className="is-wifi" />
-                  <i className="is-battery" />
-                </span>
-              </div>
-              <header className="article-xhs-authorbar">
-                <ArrowLeft size={25} />
-                <span className="article-xhs-avatar">F</span>
-                <strong>Facemini AI</strong>
-                <button type="button">关注</button>
-                <Share2 size={23} />
-              </header>
-              <div className="article-xhs-scroll-content">
-                <div
-                  className="article-xhs-image-carousel"
-                  ref={xhsCarouselRef}
-                  onScroll={handleXhsCarouselScroll}
-                  onPointerDown={handleXhsPointerDown}
-                  onPointerMove={handleXhsPointerMove}
-                  onPointerUp={handleXhsPointerEnd}
-                  onPointerCancel={handleXhsPointerEnd}
-                >
-                  {images.map((item) => (
-                    <figure className="article-xhs-image-wrap" key={item.id}>
-                      <img
-                        src={item.image}
-                        alt={item.title || articleTitle}
-                        draggable="false"
-                      />
-                      <span>AI生成</span>
-                    </figure>
-                  ))}
-                </div>
-                {images.length > 1 && (
-                  <div className="article-xhs-image-dots">
-                    {images.map((item, index) => (
-                      <button
-                        className={index === activeImageIndex ? "is-active" : ""}
-                        type="button"
-                        key={item.id}
-                        onClick={() => scrollXhsImageIntoView(index)}
-                        aria-label={`查看第 ${index + 1} 张`}
-                      />
-                    ))}
-                  </div>
-                )}
-                <p className="article-xhs-publish-time">编辑于 {createdAt}</p>
-                <div className="article-xhs-caption">
-                  <h2>{articleTitle}</h2>
-                  {articleBody
-                    .split(/\n+/)
-                    .filter(Boolean)
-                    .map((paragraph, index) => (
-                      <p key={`${paragraph}-${index}`}>{paragraph}</p>
-                    ))}
-                  <div>
-                    {articleTags.map((tag) => (
-                      <span key={tag}>#{tag}</span>
-                    ))}
-                  </div>
-                </div>
-                <div className="article-xhs-comment-prompt">
-                  <span className="article-xhs-avatar is-small">F</span>
-                  <p>说点什么，让 TA 也认识爱创作的你</p>
-                </div>
-                <div className="article-xhs-empty-comments">
-                  <MessageCircle size={35} />
-                  <p>这是一片荒草地，<strong>分享笔记</strong></p>
-                </div>
-              </div>
-              <footer className="article-xhs-toolbar">
-                <button type="button" className="article-xhs-comment-input">
-                  <span>说点什么...</span>
-                </button>
-                <button type="button"><Heart size={27} /><span>点赞</span></button>
-                <button type="button"><Bookmark size={27} /><span>收藏</span></button>
-                <button type="button"><MessageCircle size={27} /><span>评论</span></button>
-              </footer>
-              <span className="article-xhs-home-indicator" />
-            </article>
-          </div>
+          <ArticleXhsNotePreview
+            images={images}
+            title={articleTitle}
+            body={articleBody}
+            tags={articleTags}
+            createdAt={createdAt}
+            authorName={authUser?.displayName || authUser?.username || "Facemini AI"}
+            activeIndex={activeImageIndex}
+            onActiveIndexChange={setActiveImageIndex}
+          />
         )}
       </section>
     </div>
@@ -1133,7 +1050,6 @@ export function ArticleGenerationView({
   const modelSelectRef = useRef(null);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
-  const resultXhsCarouselRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function applyCredits(creditsValue) {
@@ -1333,48 +1249,18 @@ export function ArticleGenerationView({
     }, 2000);
   }
 
-  async function copyArticleText() {
+  async function copyArticleTitle() {
+    if (!draftCopy?.title) return;
+    await copyTextToClipboard(draftCopy.title);
+    showToast("标题已复制");
+  }
+
+  async function copyArticleBody() {
     if (!draftCopy) return;
-    const text = [
-      draftCopy.title,
-      "",
-      draftCopy.body,
-      "",
-      (draftCopy.tags || []).map((tag) => `#${tag}`).join(" "),
-    ].join("\n");
-    try {
-      await navigator.clipboard?.writeText(text);
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-    }
-    showToast("文案已复制");
-  }
-
-  function scrollResultXhsImage(index) {
-    const carousel = resultXhsCarouselRef.current;
-    if (!carousel) return;
-    carousel.scrollTo({
-      left: carousel.clientWidth * index,
-      behavior: "smooth",
-    });
-    setActivePreviewIndex(index);
-  }
-
-  function syncResultXhsImage(event) {
-    const carousel = event.currentTarget;
-    if (!carousel.clientWidth) return;
-    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
-    if (previewImages[nextIndex] && nextIndex !== activePreviewIndex) {
-      setActivePreviewIndex(nextIndex);
-    }
+    const text = buildArticleBodyCopy(draftCopy.body, draftCopy.tags);
+    if (!text) return;
+    await copyTextToClipboard(text);
+    showToast("正文已复制");
   }
 
   async function downloadImagesAsZip() {
@@ -1506,21 +1392,34 @@ export function ArticleGenerationView({
     setSubmitError("");
   }
 
-  async function submitGeneration() {
+  async function submitGeneration(overrides = {}) {
     if (isGuest) {
       showToast("请先登录");
       onOpenAuth?.("login");
       return;
     }
 
-    const nextDraft = draftCopy || buildDraftCopy(form);
-    const selectedModel = model || pickDefaultModel(options.models);
+    const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
+    const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
+    const selectedModel =
+      overrides.model || model || pickDefaultModel(options.models);
     if (!selectedModel) {
       showToast("暂无可用图片模型");
       return;
     }
 
+    const generationForm = {
+      ...form,
+      ratio: overrides.ratio || form.ratio,
+      quality: overrides.quality || form.quality,
+      imageCount: overrides.imageCount || form.imageCount,
+      contentType: overrides.contentType || form.contentType,
+      visualStyle: overrides.visualStyle || form.visualStyle,
+      layoutStyle: overrides.layoutStyle || form.layoutStyle,
+    };
+
     setDraftCopy(nextDraft);
+    if (nextImagePromptPlan) setImagePromptPlan(nextImagePromptPlan);
     setSubmitError("");
     setIsSubmitting(true);
     setPreviewTask(null);
@@ -1530,31 +1429,46 @@ export function ArticleGenerationView({
     try {
       const item = await articleApi.createPackage({
         copy: nextDraft,
-        imagePromptPlan,
-        platform: form.platform,
-        copyTemplate: form.copyTemplate,
-        wordCount: form.wordCount,
-        tone: form.tone,
-        topic: form.topic,
-        keyword: form.keyword,
-        keywords: form.keyword,
-        contentType: form.contentType,
-        visualStyle: form.visualStyle,
-        layoutStyle: form.layoutStyle,
+        imagePromptPlan: nextImagePromptPlan,
+        platform: generationForm.platform,
+        copyTemplate: generationForm.copyTemplate,
+        wordCount: generationForm.wordCount,
+        tone: generationForm.tone,
+        topic: generationForm.topic,
+        keyword: generationForm.keyword,
+        keywords: generationForm.keyword,
+        contentType: generationForm.contentType,
+        visualStyle: generationForm.visualStyle,
+        layoutStyle: generationForm.layoutStyle,
         model: selectedModel,
-        ratio: form.ratio,
-        quality: form.quality,
-        imageCount: form.imageCount
+        ratio: generationForm.ratio,
+        quality: generationForm.quality,
+        imageCount: generationForm.imageCount,
       });
       setCards((current) => [item, ...current.filter((card) => card.id !== item.id)]);
       setSelectedTaskId(item.id);
-      setImagePromptPlan(item.imagePromptPlan || imagePromptPlan);
+      setImagePromptPlan(item.imagePromptPlan || nextImagePromptPlan);
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
       if (item.status === "failed") setIsSubmitting(false);
     } catch (error) {
       showToast(formatArticleError(error));
       setIsSubmitting(false);
     }
+  }
+
+  function buildPackageRegenerateOverrides(task) {
+    const plan = task?.imagePromptPlan;
+    return {
+      copy: task?.copy || draftCopy,
+      imagePromptPlan: plan || imagePromptPlan,
+      model: task?.modelKey || task?.model,
+      ratio: task?.ratio || plan?.ratio,
+      quality: task?.quality,
+      imageCount: plan?.count || task?.count,
+      contentType: plan?.contentType,
+      visualStyle: plan?.visualStyle,
+      layoutStyle: plan?.layoutStyle,
+    };
   }
 
   async function regenerateTask(task) {
@@ -1564,9 +1478,18 @@ export function ArticleGenerationView({
       return;
     }
     if (task?.type === "package" || task?.packageId) {
-      if (task.copy) setDraftCopy(task.copy);
-      if (task.imagePromptPlan) setImagePromptPlan(task.imagePromptPlan);
-      await submitGeneration();
+      const overrides = buildPackageRegenerateOverrides(task);
+      if (overrides.model) setModel(overrides.model);
+      setForm((current) => ({
+        ...current,
+        ratio: overrides.ratio || current.ratio,
+        quality: overrides.quality || current.quality,
+        imageCount: overrides.imageCount || current.imageCount,
+        contentType: overrides.contentType || current.contentType,
+        visualStyle: overrides.visualStyle || current.visualStyle,
+        layoutStyle: overrides.layoutStyle || current.layoutStyle,
+      }));
+      await submitGeneration(overrides);
       return;
     }
     setSubmitError("");
@@ -1627,13 +1550,7 @@ export function ArticleGenerationView({
       <section className="article-view-root article-history-mode">
         <section className="article-history-section article-history-page">
           <div className="article-section-head">
-            <div>
-              <span>历史图文</span>
-              <h2>最近生成</h2>
-            </div>
-            {credits && (
-              <span className="credits-chip">积分 {credits.balance}</span>
-            )}
+            <h2>最近生成</h2>
           </div>
           <div className="article-history-grid">
             {historyCards.map((task) => {
@@ -1646,7 +1563,7 @@ export function ArticleGenerationView({
                 <article className={`article-history-card status-${task.status}`} key={task.id}>
                   <button className="article-history-preview" type="button" onClick={() => setPreviewTask(task)} disabled={!canUseCompletedActions}>
                     <span className={`article-history-status-badge status-${task.status}`}>
-                      {task.status === "failed" ? "生成失败" : task.status === "completed" ? "已完成" : "生成中"}
+                      {formatHistoryStatus(task.status)}
                     </span>
                     {taskImages.length ? (
                       <span className={`article-history-image-stack count-${Math.min(taskImages.length, 4)}`}>
@@ -1698,6 +1615,7 @@ export function ArticleGenerationView({
         <ArticlePreview
           task={previewTask}
           onClose={() => setPreviewTask(null)}
+          authUser={authUser}
         />
         {deleteConfirmDialog}
         {regenerateConfirmDialog}
@@ -1847,122 +1765,25 @@ export function ArticleGenerationView({
               </div>
             </>
           ) : (
-            <>
-              <h2>
-                <span>步骤 3 ·</span> 配图配置
-              </h2>
-              <div className="article-choice-row is-ratio">
-                <strong>尺寸比例</strong>
-                <div className="article-choice-options">
-                  {ratios.map((item) => (
-                    <button
-                      className={form.ratio === item ? "is-selected" : ""}
-                      type="button"
-                      key={item}
-                      onClick={() => updateForm({ ratio: item })}
-                    >
-                      <RatioIcon ratio={item} />
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="article-visual-config">
-                <ArticleVisualOptionGroup
-                  title="视觉风格"
-                  options={visualStyles}
-                  value={form.visualStyle}
-                  onChange={(value) => updateForm({ visualStyle: value })}
-                />
-              </div>
-              <div className="article-choice-row">
-                <strong>配图数量</strong>
-                {imageCounts.map((item) => (
-                  <button
-                    className={form.imageCount === item ? "is-selected" : ""}
-                    type="button"
-                    key={item}
-                    onClick={() => updateForm({ imageCount: item })}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <div className="article-model-select-row">
-                <strong>模型选项</strong>
-                <span
-                  className={`fm-popular-template-wrap article-model-select ${isModelOpen ? "is-open" : ""}`}
-                  ref={modelSelectRef}
-                >
-                  <button
-                    className="fm-popular-template-trigger"
-                    type="button"
-                    aria-haspopup="listbox"
-                    aria-expanded={isModelOpen}
-                    onClick={() => setIsModelOpen((value) => !value)}
-                  >
-                    <Layers size={17} />
-                    <span>
-                      {selectedModelOption?.label ||
-                        selectedModelOption?.value ||
-                        "请选择模型"}
-                    </span>
-                    <ChevronDown size={16} />
-                  </button>
-                  {isModelOpen && (
-                    <div
-                      className="fm-popular-template-menu"
-                      role="listbox"
-                      aria-label="模型选项"
-                    >
-                      {modelOptions.map((item) => (
-                        <button
-                          className={model === item.value ? "is-selected" : ""}
-                          type="button"
-                          key={item.value}
-                          role="option"
-                          aria-selected={model === item.value}
-                          onClick={() => {
-                            setModel(item.value);
-                            setIsModelOpen(false);
-                          }}
-                        >
-                          <span>{item.label || item.value}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </span>
-              </div>
-              <div className="article-step-action-row">
-                <p className="article-credit-hint">
-                  预计消耗 <strong><BillingPoints feature="article" payload={{ imageCount: form.imageCount }} fallbackPoints={10 + Math.max(1, form.imageCount) * 30} /></strong>{" "}
-                  积分
-                </p>
-                <div className="article-step-buttons">
-                  <button
-                    className="article-back-step"
-                    type="button"
-                    onClick={() => setStep(2)}
-                  >
-                    上一步
-                  </button>
-                  <button
-                    className="article-generate-full"
-                    type="button"
-                    onClick={submitGeneration}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
-                      <Loader2 size={17} className="is-spinning" />
-                    ) : (
-                      <Sparkles size={17} />
-                    )}
-                    {isGenerating ? "生成中" : "生成完整图文"}
-                  </button>
-                </div>
-              </div>
-            </>
+            <ArticleImageConfigPanel
+              form={form}
+              ratios={ratios}
+              imageCounts={imageCounts}
+              visualStyles={visualStyles}
+              onUpdateForm={updateForm}
+              RatioIcon={RatioIcon}
+              VisualOptionGroup={ArticleVisualOptionGroup}
+              isModelOpen={isModelOpen}
+              setIsModelOpen={setIsModelOpen}
+              modelSelectRef={modelSelectRef}
+              selectedModelOption={selectedModelOption}
+              modelOptions={modelOptions}
+              model={model}
+              setModel={setModel}
+              isGenerating={isGenerating}
+              onBackStep={() => setStep(2)}
+              onSubmitGeneration={submitGeneration}
+            />
           )}
           {submitError && <div className="article-error">{submitError}</div>}
         </aside>
@@ -2082,208 +1903,37 @@ export function ArticleGenerationView({
             <ArticleStyleTemplatePreview items={activeStyleTemplatePreviews} />
           ) : (
             <>
-              <div className="article-image-result">
-                <div className="article-result-mode-tabs" aria-label="图文展示模式">
-                  {[
-                    ["full", "全文模式"],
-                    ["cover", "封面预览"]
-                  ].map(([value, label]) => (
-                    <button
-                      className={resultViewMode === value ? "is-active" : ""}
-                      type="button"
-                      key={value}
-                      onClick={() => {
-                        setActivePreviewIndex(0);
-                        setResultViewMode(value);
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {hasFailedArticle && (
-                  <div className="article-generation-failed" role="alert">
-                    <CircleAlert size={26} />
-                    <div>
-                      <strong>图片生成失败</strong>
-                      <p>
-                        {formatArticleError(
-                          selectedTask?.error || submitError,
-                          "本次生成没有成功，请调整模型、比例或稍后重试。",
-                        )}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => requestRegenerate(selectedTask)}
-                    >
-                      <RefreshCcw size={15} />
-                      重新生成
-                    </button>
-                  </div>
-                )}
-                {hasCompletedArticle && (
-                  <>
-                    {resultViewMode === "full" && (
-                      <div className="article-history-full-preview article-result-history-preview">
-                        <ArticleFullPreviewMedia
-                          images={previewImages}
-                          ratioFallback={selectedTask?.ratio || form.ratio}
-                          title={draftCopy?.title}
-                          activeIndex={activePreviewIndex}
-                          onActiveIndexChange={setActivePreviewIndex}
-                        />
-                        <article className="article-history-full-copy">
-                          <div className="article-history-full-copy-head">
-                            <span className="article-history-preview-kicker">
-                              爆款图文
-                            </span>
-                            <button type="button" onClick={copyArticleText}>
-                              <Copy size={15} />
-                              复制文本
-                            </button>
-                          </div>
-                          <h2>{draftCopy?.title}</h2>
-                          <div className="article-history-full-body">
-                            {(draftCopy?.body || "").split(/\n+/).filter(Boolean).map((paragraph, index) => (
-                              <p key={`${paragraph}-${index}`}>{paragraph}</p>
-                            ))}
-                          </div>
-                          <div className="article-history-preview-tags">
-                            {(draftCopy?.tags || []).map((tag) => (
-                              <span key={tag}>#{tag}</span>
-                            ))}
-                          </div>
-                          <div className="article-history-full-footer">
-                            <span>{resultCreatedAt}</span>
-                            <button type="button" onClick={downloadImagesAsZip}>
-                              <Download size={16} />
-                              下载图片
-                            </button>
-                          </div>
-                        </article>
-                      </div>
-                    )}
-                    {resultViewMode === "cover" && (
-                      <div className="article-xhs-preview-stage article-result-xhs-stage">
-                        <article className="article-xhs-phone">
-                          <div className="article-xhs-statusbar">
-                            <strong>9:41</strong>
-                            <span className="article-xhs-status-icons">
-                              <i className="is-signal" />
-                              <i className="is-wifi" />
-                              <i className="is-battery" />
-                            </span>
-                          </div>
-                          <header className="article-xhs-authorbar">
-                            <ArrowLeft size={25} />
-                            <span className="article-xhs-avatar">F</span>
-                            <strong>Facemini AI</strong>
-                            <button type="button">关注</button>
-                            <Share2 size={23} />
-                          </header>
-                          <div className="article-xhs-scroll-content">
-                            <div
-                              className="article-xhs-image-carousel"
-                              ref={resultXhsCarouselRef}
-                              onScroll={syncResultXhsImage}
-                            >
-                              {previewImages.map((item) => (
-                                <figure
-                                  className="article-xhs-image-wrap"
-                                  key={item.id}
-                                >
-                                  <img
-                                    src={item.image}
-                                    alt={item.title || draftCopy?.title}
-                                    draggable="false"
-                                  />
-                                  <span>AI生成</span>
-                                </figure>
-                              ))}
-                            </div>
-                            {previewImages.length > 1 && (
-                              <div className="article-xhs-image-dots">
-                                {previewImages.map((item, index) => (
-                                  <button
-                                    className={
-                                      index === activePreviewIndex
-                                        ? "is-active"
-                                        : ""
-                                    }
-                                    type="button"
-                                    key={item.id}
-                                    onClick={() => scrollResultXhsImage(index)}
-                                    aria-label={`查看第 ${index + 1} 张`}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                            <p className="article-xhs-publish-time">
-                              编辑于 {resultCreatedAt}
-                            </p>
-                            <div className="article-xhs-caption">
-                              <h2>{draftCopy?.title}</h2>
-                              {(draftCopy?.body || "")
-                                .split(/\n+/)
-                                .filter(Boolean)
-                                .map((paragraph, index) => (
-                                  <p key={`${paragraph}-${index}`}>
-                                    {paragraph}
-                                  </p>
-                                ))}
-                              <div>
-                                {(draftCopy?.tags || []).map((tag) => (
-                                  <span key={tag}>#{tag}</span>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="article-xhs-comment-prompt">
-                              <span className="article-xhs-avatar is-small">
-                                F
-                              </span>
-                              <p>说点什么，让 TA 也认识爱创作的你</p>
-                            </div>
-                            <div className="article-xhs-empty-comments">
-                              <MessageCircle size={35} />
-                              <p>
-                                这是一片荒草地，<strong>分享笔记</strong>
-                              </p>
-                            </div>
-                          </div>
-                          <footer className="article-xhs-toolbar">
-                            <button
-                              type="button"
-                              className="article-xhs-comment-input"
-                            >
-                              <span>说点什么...</span>
-                            </button>
-                            <button type="button">
-                              <Heart size={27} />
-                              <span>点赞</span>
-                            </button>
-                            <button type="button">
-                              <Bookmark size={27} />
-                              <span>收藏</span>
-                            </button>
-                            <button type="button">
-                              <MessageCircle size={27} />
-                              <span>评论</span>
-                            </button>
-                          </footer>
-                          <span className="article-xhs-home-indicator" />
-                        </article>
-                      </div>
-                    )}
-                  </>
-              )}
-            </div>
+              <ArticlePopularResultPanel
+                hasFailedArticle={hasFailedArticle}
+                hasCompletedArticle={hasCompletedArticle}
+                resultViewMode={resultViewMode}
+                onChangeResultViewMode={setResultViewMode}
+                activePreviewIndex={activePreviewIndex}
+                onActivePreviewIndexChange={setActivePreviewIndex}
+                selectedTask={selectedTask}
+                submitError={submitError}
+                onRequestRegenerate={requestRegenerate}
+                isRegenerating={isGenerating}
+                formatArticleError={formatArticleError}
+                previewImages={previewImages}
+                draftCopy={draftCopy}
+                resultCreatedAt={resultCreatedAt}
+                onCopyArticleTitle={copyArticleTitle}
+                onCopyArticleBody={copyArticleBody}
+                onDownloadImagesAsZip={downloadImagesAsZip}
+                authorName={authUser?.displayName || authUser?.username || "Facemini AI"}
+                FullPreviewMedia={ArticleFullPreviewMedia}
+              />
             </>
           )}
         </main>
 
       </div>
-      <ArticlePreview task={previewTask} onClose={() => setPreviewTask(null)} />
+      <ArticlePreview
+        task={previewTask}
+        onClose={() => setPreviewTask(null)}
+        authUser={authUser}
+      />
       {previewQuickTemplate && (
         <QuickTemplatePreviewDialog
           template={previewQuickTemplate}

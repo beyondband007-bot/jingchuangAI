@@ -150,7 +150,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS credit_transactions (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
-      task_id BIGINT UNSIGNED NULL,
+      task_id VARCHAR(64) NULL,
       type ENUM('grant','debit','refund','recharge','invitegift') NOT NULL,
       amount INT NOT NULL,
       balance_after INT NOT NULL,
@@ -189,6 +189,22 @@ async function createTables() {
     await pool.query("ALTER TABLE credit_transactions ADD COLUMN invite_binding_id BIGINT UNSIGNED NULL AFTER related_user_id");
   }
 
+  const [creditTransactionTaskIdColumn] = await pool.query(
+    `SELECT DATA_TYPE
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'credit_transactions' AND COLUMN_NAME = 'task_id'
+     LIMIT 1`,
+    [config.db.database]
+  );
+  if (
+    creditTransactionTaskIdColumn.length &&
+    ["bigint", "int", "mediumint", "smallint", "tinyint"].includes(
+      String(creditTransactionTaskIdColumn[0].DATA_TYPE).toLowerCase()
+    )
+  ) {
+    await pool.query("ALTER TABLE credit_transactions MODIFY COLUMN task_id VARCHAR(64) NULL");
+  }
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS invite_events (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -222,7 +238,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS auth_verification_codes (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       channel ENUM('sms') NOT NULL DEFAULT 'sms',
-      scene ENUM('register','login','password_reset') NOT NULL,
+      scene ENUM('register','login','password_reset','change_phone_old','change_phone_new','change_password') NOT NULL,
       target VARCHAR(64) NOT NULL,
       code_hash CHAR(64) NOT NULL,
       salt VARCHAR(64) NOT NULL,
@@ -235,6 +251,11 @@ async function createTables() {
       INDEX idx_auth_verification_lookup (channel, scene, target, consumed_at, expires_at),
       INDEX idx_auth_verification_sent (channel, scene, target, sent_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    ALTER TABLE auth_verification_codes
+    MODIFY scene ENUM('register','login','password_reset','change_phone_old','change_phone_new','change_password') NOT NULL
   `);
 
   await pool.query(`

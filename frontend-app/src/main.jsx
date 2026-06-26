@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   memo,
   useCallback,
   useEffect,
@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import BillingPoints from "./components/BillingPoints.jsx";
 import { createRoot } from "react-dom/client";
+import { ConfigProvider } from "@arco-design/web-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -91,6 +92,7 @@ import {
   useRegenerateConfirmation,
 } from "./components/DeleteConfirmDialog";
 import { ArticleGenerationView } from "./features/article/ArticleGenerationView";
+import { DigitalHumanHubView } from "./features/digital-human-hub/DigitalHumanHubView";
 import { articleApi } from "./features/article/articleApi";
 import { EnhanceView } from "./features/enhance/EnhanceView";
 import {
@@ -109,7 +111,12 @@ import { ViralGraphicGeneratorShowcaseCard } from "./features/viral-graphic-gene
 import imgInspirationManifest from "./data/imgInspirationManifest.json";
 import { StudioLanding } from "./StudioLanding";
 import { formatBeijingDateTime, formatBeijingHistoryTime } from "./utils/time";
-import "./styles.css";
+import "@arco-design/web-react/dist/css/arco.css";
+import "./styles.scss";
+import "./features/article/articleTopTabs.scss";
+import "./features/article/articlePopularWorkbench.scss";
+import "./features/article/articleHistory.scss";
+import "./features/article/ArticlePopularResultPanel.scss";
 
 const caseImageFiles = [
   "001.webp",
@@ -3223,26 +3230,35 @@ function getAssetTaskTitle(type, task) {
       "AI 图片": "AI 图片作品",
       "AI 视频": "AI 视频作品",
       数字人: "数字人作品",
+      照片数字人: "照片数字人作品",
       爆款图文: "爆款图文作品",
     }[type] ||
     "作品"
   );
 }
 
+function isVideoMediaUrl(url = "") {
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(String(url || "").split("#")[0]);
+}
+
+function firstImageMediaUrl(...urls) {
+  return urls.find((url) => url && !isVideoMediaUrl(url)) || "";
+}
+
 function getAssetTaskPreview(type, task) {
-  if (type === "AI 图片")
-    return (
-      task?.image ||
-      task?.imageUrl ||
-      task?.resultUrl ||
-      task?.thumbnailUrl ||
-      ""
+  if (type === "AI 图片") {
+    return firstImageMediaUrl(
+      task?.image,
+      task?.imageUrl,
+      task?.thumbnailUrl,
+      task?.resultUrl,
     );
+  }
   if (type === "AI 视频")
     return (
       task?.poster || task?.thumbnailUrl || task?.image || task?.cover || ""
     );
-  if (type === "数字人")
+  if (type === "数字人" || type === "照片数字人")
     return (
       task?.thumbnailUrl ||
       task?.poster ||
@@ -3254,17 +3270,30 @@ function getAssetTaskPreview(type, task) {
   return task?.image || task?.thumbnailUrl || task?.cover || "";
 }
 
+function isDigitalHumanAssetType(type) {
+  return type === "数字人" || type === "照片数字人";
+}
+
+function matchesAssetGalleryTab(item, tab) {
+  if (tab === "全部") return true;
+  if (tab === "数字人") return isDigitalHumanAssetType(item.type);
+  return item.type === tab;
+}
+
 function mapAssetTasks(type, tasks = []) {
   const source = Array.isArray(tasks) ? tasks : [];
   return source.map((task) => {
     const preview = getAssetTaskPreview(type, task);
     const video =
-      type === "AI 视频" || type === "数字人"
+      type === "AI 视频" || isDigitalHumanAssetType(type)
         ? task?.video || task?.resultUrl || task?.url || ""
         : "";
-    const isVideo = Boolean(video) || type === "AI 视频" || type === "数字人";
+    const isVideo =
+      Boolean(video) || type === "AI 视频" || isDigitalHumanAssetType(type);
     const highRes =
-      type === "AI 图片" ? task?.imageUrl || task?.resultUrl || preview : "";
+      type === "AI 图片"
+        ? firstImageMediaUrl(task?.imageUrl, task?.image, preview) || preview
+        : "";
     return {
       id: `${type}-${task.id}`,
       rawId: task.id,
@@ -3293,9 +3322,54 @@ function mapAssetTasks(type, tasks = []) {
   });
 }
 
+function mapArticleAssets(tasks = []) {
+  const source = Array.isArray(tasks) ? tasks : [];
+  return source.map((task) => {
+    const preview =
+      task?.image ||
+      task?.imageUrl ||
+      task?.images?.[0] ||
+      task?.imageTasks?.[0]?.imageUrl ||
+      task?.imageTasks?.[0]?.image ||
+      "";
+    const title =
+      task?.copy?.title ||
+      task?.title ||
+      String(task?.copy?.body || "").trim().slice(0, 40) ||
+      "爆款图文作品";
+    return {
+      id: `爆款图文-${task.id}`,
+      rawId: task.id,
+      type: "爆款图文",
+      src: preview,
+      image: preview,
+      imageUrl: preview,
+      poster: preview,
+      video: "",
+      videoUrl: "",
+      posterUrl: preview,
+      prompt: task?.copy?.body || task?.prompt || title,
+      title,
+      category: "爆款图文",
+      model: task.model || task.modelKey || "",
+      ratio: task.ratio || "",
+      isVideo: false,
+      favorite: Boolean(task.favorite),
+      status: task.status || "",
+      sortTime: getAssetTaskTime(task),
+    };
+  });
+}
+
 function canFavoriteAsset(card) {
   const status = String(card?.status || "").toLowerCase();
   return status !== "failed" && status !== "error";
+}
+
+function isBuiltInAvatarUrl(value) {
+  return /^\/assets\/avatars\/(?:[1-9]|1\d|2[0-5])\.jpg$/.test(
+    String(value || ""),
+  );
 }
 
 function CreditTransactionsPanel({
@@ -3471,6 +3545,38 @@ function AssetsPage({
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [accountSettingsPanel, setAccountSettingsPanel] = useState("list");
+  const [accountSettingsTab, setAccountSettingsTab] = useState("built-in");
+  const [accountSettingsError, setAccountSettingsError] = useState("");
+  const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
+  const [accountSettingsToast, setAccountSettingsToast] = useState(null);
+  const [accountSettingsSubmitting, setAccountSettingsSubmitting] =
+    useState(false);
+  const [accountSmsSending, setAccountSmsSending] = useState("");
+  const [accountSmsCooldowns, setAccountSmsCooldowns] = useState({});
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState("");
+  const [avatarUploadSrc, setAvatarUploadSrc] = useState("");
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffset, setAvatarOffset] = useState({ x: 0, y: 0 });
+  const [avatarDragState, setAvatarDragState] = useState(null);
+  const avatarImageRef = useRef(null);
+  const accountToastTimerRef = useRef(null);
+  const accountSettingsCloseTimerRef = useRef(null);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [phoneDraft, setPhoneDraft] = useState({
+    oldPhoneCode: "",
+    newPhone: "",
+    newPhoneCode: "",
+    phoneChangeToken: "",
+  });
+  const [phoneChangeStep, setPhoneChangeStep] = useState("old");
+  const [passwordMode, setPasswordMode] = useState("password");
+  const [passwordDraft, setPasswordDraft] = useState({
+    oldPassword: "",
+    smsCode: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [previewAsset, setPreviewAsset] = useState(null);
   const effectiveViewMode = pageMode || viewMode;
 
@@ -3492,9 +3598,12 @@ function AssetsPage({
   const totalFavorites = favoriteAssets.length;
   const favoriteTabCards = useMemo(
     () =>
-      favoriteAssets.filter(
-        (asset) => asset.type === favoriteTabToAssetType[favoriteTab],
-      ),
+      favoriteAssets.filter((asset) => {
+        if (favoriteTab === "数字人形象") {
+          return isDigitalHumanAssetType(asset.type);
+        }
+        return asset.type === favoriteTabToAssetType[favoriteTab];
+      }),
     [favoriteAssets, favoriteTab],
   );
   const recentRechargeOrders = useMemo(() => {
@@ -3531,6 +3640,7 @@ function AssetsPage({
         videoTasks,
         digitalHumanTasks,
         imageDigitalHumanTasks,
+        articleTasks,
       ] = await Promise.all([
         paymentApi.getCredits(),
         paymentApi.listOrders(),
@@ -3553,6 +3663,7 @@ function AssetsPage({
         videoApi.getTasks({ filter: "all" }).catch(() => []),
         digitalHumanApi.getTasks().catch(() => []),
         imageDigitalHumanApi.getTasks().catch(() => []),
+        articleApi.getTasks({ filter: "all" }).catch(() => []),
       ]);
       const monthStart = new Date();
       monthStart.setDate(1);
@@ -3573,7 +3684,6 @@ function AssetsPage({
         total: txState.total || 0,
         totalPages: txState.totalPages || 1,
       });
-      const articleImageTasks = imageTasks.filter(isArticleImageTask);
       const regularImageTasks = imageTasks.filter(
         (task) => !isArticleImageTask(task),
       );
@@ -3582,8 +3692,8 @@ function AssetsPage({
           ...mapAssetTasks("AI 图片", regularImageTasks),
           ...mapAssetTasks("AI 视频", videoTasks),
           ...mapAssetTasks("数字人", digitalHumanTasks),
-          ...mapAssetTasks("数字人", imageDigitalHumanTasks),
-          ...mapAssetTasks("爆款图文", articleImageTasks),
+          ...mapAssetTasks("照片数字人", imageDigitalHumanTasks),
+          ...mapArticleAssets(articleTasks),
         ].sort((a, b) => b.sortTime - a.sortTime),
       );
     } catch (nextError) {
@@ -3784,17 +3894,19 @@ function AssetsPage({
   }
 
   const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
-  const assetGalleryCards =
-    activeAssetTab === "全部"
-      ? userAssets.filter((item) => {
-          if (assetTimePreset === "all") return true;
-          return isTimestampInRange(item.sortTime, assetTimeRange);
-        })
-      : userAssets.filter((item) => {
-          if (item.type !== activeAssetTab) return false;
-          if (assetTimePreset === "all") return true;
-          return isTimestampInRange(item.sortTime, assetTimeRange);
-        });
+  const assetGalleryCards = useMemo(() => {
+    return userAssets
+      .filter((item) => matchesAssetGalleryTab(item, activeAssetTab))
+      .filter((item) => {
+        if (assetTimePreset === "all") return true;
+        return isTimestampInRange(item.sortTime, assetTimeRange);
+      })
+      .filter((item) => {
+        if (item.type !== "AI 图片") return true;
+        if (item.isVideo) return false;
+        return Boolean(item.src || item.image || item.imageUrl);
+      });
+  }, [activeAssetTab, assetTimePreset, assetTimeRange, userAssets]);
   const visibleFavoriteCards = favoriteTabCards.filter((item) => {
     if (assetTimePreset === "all") return true;
     return isTimestampInRange(item.sortTime, assetTimeRange);
@@ -3872,15 +3984,105 @@ function AssetsPage({
 
   useEffect(() => {
     if (!showAccountSettings) return undefined;
+    setAccountSettingsPanel("list");
+    setAccountSettingsTab("built-in");
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(false);
+    setSelectedAvatarUrl(
+      isBuiltInAvatarUrl(authUser?.avatarUrl)
+        ? authUser.avatarUrl
+        : defaultUserAvatarSrc,
+    );
+    setNicknameDraft(profileDisplayName);
+    setPhoneDraft({
+      oldPhoneCode: "",
+      newPhone: "",
+      newPhoneCode: "",
+      phoneChangeToken: "",
+    });
+    setPhoneChangeStep("old");
+    setPasswordMode("password");
+    setPasswordDraft({
+      oldPassword: "",
+      smsCode: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+  }, [authUser?.avatarUrl, profileDisplayName, showAccountSettings]);
+
+  function closeAccountSettings() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+      accountSettingsCloseTimerRef.current = null;
+    }
+    setShowAccountSettings(false);
+  }
+
+  function closeAccountSettingsAfterSuccess() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+    }
+    accountSettingsCloseTimerRef.current = window.setTimeout(() => {
+      accountSettingsCloseTimerRef.current = null;
+      closeAccountSettings();
+    }, 1200);
+  }
+
+  useEffect(() => {
+    if (!showAccountSettings) return undefined;
     function handleKeyDown(event) {
-      if (event.key === "Escape") setShowAccountSettings(false);
+      if (event.key === "Escape") closeAccountSettings();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showAccountSettings]);
 
+  useEffect(() => {
+    if (!avatarUploadSrc) return undefined;
+    return () => {
+      URL.revokeObjectURL(avatarUploadSrc);
+    };
+  }, [avatarUploadSrc]);
+
+  useEffect(() => {
+    const hasCooldown = Object.values(accountSmsCooldowns).some(
+      (value) => Number(value) > 0,
+    );
+    if (!hasCooldown) return undefined;
+    const timer = window.setTimeout(() => {
+      setAccountSmsCooldowns((current) =>
+        Object.fromEntries(
+          Object.entries(current).map(([key, value]) => [
+            key,
+            Math.max(0, Number(value) - 1),
+          ]),
+        ),
+      );
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [accountSmsCooldowns]);
+
+  useEffect(() => {
+    return () => {
+      if (accountToastTimerRef.current) {
+        window.clearTimeout(accountToastTimerRef.current);
+      }
+      if (accountSettingsCloseTimerRef.current) {
+        window.clearTimeout(accountSettingsCloseTimerRef.current);
+      }
+    };
+  }, []);
+
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
+    try {
+      window.sessionStorage.setItem(assetGalleryTabStorageKey, tab);
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
   }
 
   function selectTransactionFilter(nextFilter) {
@@ -3914,12 +4116,10 @@ function AssetsPage({
     if (item.type === "AI 图片") await imageApi.deleteTask(item.rawId);
     if (item.type === "爆款图文") await articleApi.deleteTask(item.rawId);
     if (item.type === "AI 视频") await videoApi.deleteTask(item.rawId);
-    if (item.type === "数字人") {
-      try {
-        await digitalHumanApi.deleteTask(item.rawId);
-      } catch {
-        await imageDigitalHumanApi.deleteTask(item.rawId);
-      }
+    if (item.type === "照片数字人") {
+      await imageDigitalHumanApi.deleteTask(item.rawId);
+    } else if (item.type === "数字人") {
+      await digitalHumanApi.deleteTask(item.rawId);
     }
     setPreviewAsset((current) => (current?.id === item.id ? null : current));
     await refreshAssets();
@@ -3938,7 +4138,7 @@ function AssetsPage({
     if (item.type === "AI 图片") await imageApi.toggleFavorite(item.rawId);
     if (item.type === "爆款图文") await articleApi.toggleFavorite(item.rawId);
     if (item.type === "AI 视频") await videoApi.toggleFavorite(item.rawId);
-    if (item.type === "数字人" || item.type === "爆款图文") {
+    if (item.type === "数字人" || item.type === "照片数字人" || item.type === "爆款图文") {
       setUserAssets((current) =>
         current.map((asset) =>
           asset.id === item.id
@@ -4032,6 +4232,790 @@ function AssetsPage({
       setInviteLinkCopied(true);
       window.setTimeout(() => setInviteLinkCopied(false), 1800);
     }
+  }
+
+  function publishAuthUserUpdate(user) {
+    if (!user) return;
+    window.dispatchEvent(
+      new CustomEvent("facemini-auth-user-updated", { detail: { user } }),
+    );
+  }
+
+  function accountErrorMessage(error, fallback) {
+    if (Number(error?.status) === 404) {
+      return "账号设置接口未生效，请重启后端服务后重试";
+    }
+    return error?.message || fallback;
+  }
+
+  function showAccountToast(message, type = "error") {
+    if (!message) return;
+    if (accountToastTimerRef.current) {
+      window.clearTimeout(accountToastTimerRef.current);
+    }
+    setAccountSettingsToast({
+      message,
+      type,
+      id: Date.now(),
+    });
+    accountToastTimerRef.current = window.setTimeout(() => {
+      setAccountSettingsToast(null);
+      accountToastTimerRef.current = null;
+    }, 2000);
+  }
+
+  function openAccountSettingsPanel(panel) {
+    setAccountSettingsPanel(panel);
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (panel === "avatar") {
+      setSelectedAvatarUrl(
+        isBuiltInAvatarUrl(authUser?.avatarUrl)
+          ? authUser.avatarUrl
+          : defaultUserAvatarSrc,
+      );
+      setAccountSettingsTab("built-in");
+    }
+    if (panel === "nickname") {
+      setNicknameDraft(profileDisplayName);
+    }
+    if (panel === "phone") {
+      setPhoneDraft({
+        oldPhoneCode: "",
+        newPhone: "",
+        newPhoneCode: "",
+        phoneChangeToken: "",
+      });
+      setPhoneChangeStep("old");
+    }
+    if (panel === "password") {
+      setPasswordMode("password");
+      setPasswordDraft({
+        oldPassword: "",
+        smsCode: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    }
+  }
+
+  async function runAccountTencentCaptcha() {
+    const captchaConfig = await authApi.captchaConfig();
+    if (
+      captchaConfig.provider !== "tencent" ||
+      !captchaConfig.enabled ||
+      !captchaConfig.appId
+    ) {
+      throw new Error("验证码服务未配置完整");
+    }
+    await loadTencentCaptchaScript();
+    if (!window.TencentCaptcha) {
+      throw new Error("验证码组件加载失败，请稍后重试");
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const captcha = new window.TencentCaptcha(
+          String(captchaConfig.appId),
+          (result) => {
+            if (
+              Number(result?.ret) === 0 &&
+              result?.ticket &&
+              result?.randstr
+            ) {
+              resolve({
+                provider: "tencent",
+                ticket: result.ticket,
+                randstr: result.randstr,
+              });
+              return;
+            }
+            resolve(null);
+          },
+          { enableDarkMode: "force" },
+        );
+        captcha.show();
+      } catch (captchaError) {
+        reject(captchaError);
+      }
+    });
+  }
+
+  async function sendAccountSmsCode({ key, scene, phone }) {
+    const targetPhone = String(phone || "").trim();
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (!targetPhone) {
+      showAccountToast("请输入手机号", "error");
+      return;
+    }
+    setAccountSmsSending(key);
+    try {
+      const captcha = await runAccountTencentCaptcha();
+      if (!captcha) return;
+      const result = await authApi.sendSmsCode({
+        phone: targetPhone,
+        scene,
+        captcha,
+      });
+      setAccountSmsCooldowns((current) => ({ ...current, [key]: 60 }));
+      showAccountToast(
+        result.debugCode
+          ? `短信验证码已发送，调试码：${result.debugCode}`
+          : "短信验证码已发送",
+        "success",
+      );
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "验证码发送失败"), "error");
+    } finally {
+      setAccountSmsSending("");
+    }
+  }
+
+  function updateAvatarUploadSrc(file) {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type || "")) {
+      showAccountToast("请选择 JPG、PNG 或 WebP 图片", "error");
+      return;
+    }
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAvatarUploadSrc((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+  }
+
+  function drawCroppedAvatarBlob() {
+    return new Promise((resolve, reject) => {
+      const image = avatarImageRef.current;
+      if (!image?.naturalWidth || !image?.naturalHeight) {
+        reject(new Error("请先选择头像图片"));
+        return;
+      }
+      const previewSize = 220;
+      const canvasSize = 120;
+      const minSide = Math.min(image.naturalWidth, image.naturalHeight);
+      const scale = (previewSize / minSide) * avatarZoom;
+      const sourceSize = previewSize / scale;
+      const centerX =
+        image.naturalWidth / 2 - avatarOffset.x / scale;
+      const centerY =
+        image.naturalHeight / 2 - avatarOffset.y / scale;
+      const half = sourceSize / 2;
+      const sourceX = Math.min(
+        Math.max(0, centerX - half),
+        image.naturalWidth - sourceSize,
+      );
+      const sourceY = Math.min(
+        Math.max(0, centerY - half),
+        image.naturalHeight - sourceSize,
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        canvasSize,
+        canvasSize,
+      );
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("头像压缩失败，请重试"));
+            return;
+          }
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.95,
+      );
+    });
+  }
+
+  async function saveBuiltInAvatar() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.selectAvatar({ avatarUrl: selectedAvatarUrl });
+      publishAuthUserUpdate(result.user);
+      showAccountToast("头像已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "头像保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function saveUploadedAvatar() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const blob = await drawCroppedAvatarBlob();
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      const result = await authApi.uploadAvatar({
+        file,
+        owner: authUser?.id || "user",
+      });
+      publishAuthUserUpdate(result.user);
+      setSelectedAvatarUrl(result.user?.avatarUrl || selectedAvatarUrl);
+      showAccountToast("头像已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "头像保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function saveNickname() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.updateProfile({
+        displayName: nicknameDraft,
+      });
+      publishAuthUserUpdate(result.user);
+      showAccountToast("昵称已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "昵称保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function savePhone() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.changePhone(phoneDraft);
+      publishAuthUserUpdate(result.user);
+      setPhoneDraft({
+        oldPhoneCode: "",
+        newPhone: "",
+        newPhoneCode: "",
+        phoneChangeToken: "",
+      });
+      setPhoneChangeStep("old");
+      showAccountToast("手机号已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "手机号保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function verifyOldPhone() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.verifyCurrentPhone({
+        oldPhoneCode: phoneDraft.oldPhoneCode,
+      });
+      setPhoneDraft((current) => ({
+        ...current,
+        phoneChangeToken: result.phoneChangeToken || "",
+      }));
+      setPhoneChangeStep("new");
+      showAccountToast("当前手机号验证通过", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "当前手机号验证失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function savePassword() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (passwordDraft.newPassword !== passwordDraft.confirmPassword) {
+      showAccountToast("两次输入的新密码不一致", "error");
+      return;
+    }
+    setAccountSettingsSubmitting(true);
+    try {
+      await authApi.changePassword({
+        mode: passwordMode,
+        oldPassword: passwordDraft.oldPassword,
+        code: passwordDraft.smsCode,
+        newPassword: passwordDraft.newPassword,
+      });
+      setPasswordDraft({
+        oldPassword: "",
+        smsCode: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      showAccountToast("密码已更新", "success");
+      closeAccountSettingsAfterSuccess();
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "密码保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  function renderAccountActionRow({
+    primaryLabel,
+    submittingLabel = "保存中...",
+    onPrimary,
+    primaryDisabled = false,
+  }) {
+    return (
+      <div className="fm-account-action-row">
+        <button
+          className="fm-account-secondary"
+          type="button"
+          onClick={() => openAccountSettingsPanel("list")}
+        >
+          返回
+        </button>
+        <button
+          className="fm-account-primary"
+          type="button"
+          disabled={accountSettingsSubmitting || primaryDisabled}
+          onClick={onPrimary}
+        >
+          {accountSettingsSubmitting ? submittingLabel : primaryLabel}
+        </button>
+      </div>
+    );
+  }
+
+  function getAccountSettingsTitle() {
+    return (
+      {
+        avatar: "修改头像",
+        nickname: "修改昵称",
+        phone: "修改手机号",
+        password: "修改密码",
+      }[accountSettingsPanel] || "账号设置"
+    );
+  }
+
+  function renderAccountSettingsContent() {
+    const builtInAvatars = Array.from(
+      { length: 25 },
+      (_, index) => `/assets/avatars/${index + 1}.jpg`,
+    );
+    const currentPhone = authUser?.phone || "";
+    const oldPhoneCooldown = Number(accountSmsCooldowns.oldPhone || 0);
+    const newPhoneCooldown = Number(accountSmsCooldowns.newPhone || 0);
+    const passwordCooldown = Number(accountSmsCooldowns.password || 0);
+
+    if (accountSettingsPanel === "avatar") {
+      return (
+        <>
+          <div className="fm-account-settings-tabs" role="tablist">
+            <button
+              type="button"
+              className={accountSettingsTab === "built-in" ? "is-active" : ""}
+              onClick={() => {
+                setAccountSettingsTab("built-in");
+                setSelectedAvatarUrl((current) =>
+                  isBuiltInAvatarUrl(current) ? current : defaultUserAvatarSrc,
+                );
+              }}
+            >
+              内置头像
+            </button>
+            <button
+              type="button"
+              className={accountSettingsTab === "upload" ? "is-active" : ""}
+              onClick={() => setAccountSettingsTab("upload")}
+            >
+              上传头像
+            </button>
+          </div>
+          {accountSettingsTab === "built-in" ? (
+            <>
+              <div className="fm-avatar-choice-grid">
+                {builtInAvatars.map((avatarUrl) => (
+                  <button
+                    type="button"
+                    key={avatarUrl}
+                    className={selectedAvatarUrl === avatarUrl ? "is-selected" : ""}
+                    onClick={() => setSelectedAvatarUrl(avatarUrl)}
+                  >
+                    <img src={avatarUrl} alt="" />
+                  </button>
+                ))}
+              </div>
+              {renderAccountActionRow({
+                primaryLabel: "保存头像",
+                onPrimary: saveBuiltInAvatar,
+              })}
+            </>
+          ) : (
+            <>
+              <label className="fm-avatar-upload-picker">
+                <UploadCloud size={20} />
+                <span>{avatarUploadSrc ? "重新选择图片" : "选择头像图片"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) =>
+                    updateAvatarUploadSrc(event.target.files?.[0])
+                  }
+                />
+              </label>
+              <div className="fm-avatar-crop-wrap">
+                {avatarUploadSrc ? (
+                  <div
+                    className="fm-avatar-crop-box"
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      setAvatarDragState({
+                        x: event.clientX,
+                        y: event.clientY,
+                        offset: avatarOffset,
+                      });
+                    }}
+                    onPointerMove={(event) => {
+                      if (!avatarDragState) return;
+                      setAvatarOffset({
+                        x:
+                          avatarDragState.offset.x +
+                          event.clientX -
+                          avatarDragState.x,
+                        y:
+                          avatarDragState.offset.y +
+                          event.clientY -
+                          avatarDragState.y,
+                      });
+                    }}
+                    onPointerUp={() => setAvatarDragState(null)}
+                    onPointerCancel={() => setAvatarDragState(null)}
+                  >
+                    <img
+                      ref={avatarImageRef}
+                      src={avatarUploadSrc}
+                      alt="头像裁剪预览"
+                      style={{
+                        transform: `translate(${avatarOffset.x}px, ${avatarOffset.y}px) scale(${avatarZoom})`,
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                ) : (
+                  <div className="fm-avatar-crop-empty">
+                    <Camera size={30} />
+                    <span>选择图片后在这里拖拽裁剪</span>
+                  </div>
+                )}
+              </div>
+              <label className="fm-avatar-zoom-control">
+                <span>缩放</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="2.5"
+                  step="0.05"
+                  value={avatarZoom}
+                  onChange={(event) => setAvatarZoom(Number(event.target.value))}
+                  disabled={!avatarUploadSrc}
+                />
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "保存裁剪头像",
+                onPrimary: saveUploadedAvatar,
+                primaryDisabled: !avatarUploadSrc,
+              })}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "nickname") {
+      return (
+        <>
+          <label className="fm-account-field">
+            <span>昵称</span>
+            <input
+              value={nicknameDraft}
+              maxLength={20}
+              onChange={(event) => setNicknameDraft(event.target.value)}
+              placeholder="请输入昵称"
+            />
+          </label>
+          {renderAccountActionRow({
+            primaryLabel: "保存昵称",
+            onPrimary: saveNickname,
+          })}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "phone") {
+      return (
+        <>
+          <div className="fm-account-step-indicator" aria-label="修改手机号步骤">
+            <span className={phoneChangeStep === "old" ? "is-active" : ""}>
+              1 验证当前手机号
+            </span>
+            <span className={phoneChangeStep === "new" ? "is-active" : ""}>
+              2 绑定新手机号
+            </span>
+          </div>
+          <label className="fm-account-field">
+            <span>当前手机号</span>
+            <input value={currentPhone || "未绑定手机号"} disabled />
+          </label>
+          {phoneChangeStep === "old" ? (
+            <>
+              <label className="fm-account-field">
+                <span>当前手机号验证码</span>
+                <div className="fm-account-code-row">
+                  <input
+                    value={phoneDraft.oldPhoneCode}
+                    name="fm-old-phone-code"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    onChange={(event) =>
+                      setPhoneDraft((current) => ({
+                        ...current,
+                        oldPhoneCode: event.target.value,
+                      }))
+                    }
+                    placeholder="请输入验证码"
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      !currentPhone ||
+                      accountSmsSending === "oldPhone" ||
+                      oldPhoneCooldown > 0
+                    }
+                    onClick={() =>
+                      sendAccountSmsCode({
+                        key: "oldPhone",
+                        scene: "change_phone_old",
+                        phone: currentPhone,
+                      })
+                    }
+                  >
+                    {oldPhoneCooldown > 0 ? `${oldPhoneCooldown}s` : "获取验证码"}
+                  </button>
+                </div>
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "下一步",
+                submittingLabel: "验证中...",
+                onPrimary: verifyOldPhone,
+              })}
+            </>
+          ) : (
+            <>
+              <label className="fm-account-field">
+                <span>新手机号</span>
+                <input
+                  value={phoneDraft.newPhone}
+                  name="fm-new-phone"
+                  autoComplete="off"
+                  onChange={(event) =>
+                    setPhoneDraft((current) => ({
+                      ...current,
+                      newPhone: event.target.value,
+                    }))
+                  }
+                  placeholder="请输入新手机号"
+                />
+              </label>
+              <label className="fm-account-field">
+                <span>新手机号验证码</span>
+                <div className="fm-account-code-row">
+                  <input
+                    value={phoneDraft.newPhoneCode}
+                    name="fm-new-phone-code"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    onChange={(event) =>
+                      setPhoneDraft((current) => ({
+                        ...current,
+                        newPhoneCode: event.target.value,
+                      }))
+                    }
+                    placeholder="请输入验证码"
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      accountSmsSending === "newPhone" || newPhoneCooldown > 0
+                    }
+                    onClick={() =>
+                      sendAccountSmsCode({
+                        key: "newPhone",
+                        scene: "change_phone_new",
+                        phone: phoneDraft.newPhone,
+                      })
+                    }
+                  >
+                    {newPhoneCooldown > 0 ? `${newPhoneCooldown}s` : "获取验证码"}
+                  </button>
+                </div>
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "保存手机号",
+                onPrimary: savePhone,
+              })}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "password") {
+      return (
+        <>
+          <div className="fm-account-settings-tabs" role="tablist">
+            <button
+              type="button"
+              className={passwordMode === "password" ? "is-active" : ""}
+              onClick={() => setPasswordMode("password")}
+            >
+              原密码
+            </button>
+            <button
+              type="button"
+              className={passwordMode === "sms" ? "is-active" : ""}
+              onClick={() => setPasswordMode("sms")}
+            >
+              短信验证码
+            </button>
+          </div>
+          {passwordMode === "password" ? (
+            <label className="fm-account-field">
+              <span>原密码</span>
+              <input
+                key="account-old-password"
+                type="password"
+                name="fm-no-autofill-current-password"
+                autoComplete="off"
+                value={passwordDraft.oldPassword}
+                onChange={(event) =>
+                  setPasswordDraft((current) => ({
+                    ...current,
+                    oldPassword: event.target.value,
+                  }))
+                }
+                placeholder="请输入原密码"
+              />
+            </label>
+          ) : (
+            <label className="fm-account-field">
+              <span>当前手机号验证码</span>
+              <div className="fm-account-code-row">
+                <input
+                  key="account-password-sms-code"
+                  name="fm-password-sms-code"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  value={passwordDraft.smsCode}
+                  onChange={(event) =>
+                    setPasswordDraft((current) => ({
+                      ...current,
+                      smsCode: event.target.value,
+                    }))
+                  }
+                  placeholder="请输入验证码"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !currentPhone ||
+                    accountSmsSending === "password" ||
+                    passwordCooldown > 0
+                  }
+                  onClick={() =>
+                    sendAccountSmsCode({
+                      key: "password",
+                      scene: "change_password",
+                      phone: currentPhone,
+                    })
+                  }
+                >
+                  {passwordCooldown > 0 ? `${passwordCooldown}s` : "获取验证码"}
+                </button>
+              </div>
+            </label>
+          )}
+          <label className="fm-account-field">
+            <span>新密码</span>
+            <input
+              key={`account-new-password-${passwordMode}`}
+              type="password"
+              name="fm-no-autofill-new-password"
+              autoComplete="off"
+              value={passwordDraft.newPassword}
+              onChange={(event) =>
+                setPasswordDraft((current) => ({
+                  ...current,
+                  newPassword: event.target.value,
+                }))
+              }
+              placeholder="6-128 个字符"
+            />
+          </label>
+          <label className="fm-account-field">
+            <span>确认新密码</span>
+            <input
+              key={`account-confirm-password-${passwordMode}`}
+              type="password"
+              name="fm-no-autofill-confirm-password"
+              autoComplete="off"
+              value={passwordDraft.confirmPassword}
+              onChange={(event) =>
+                setPasswordDraft((current) => ({
+                  ...current,
+                  confirmPassword: event.target.value,
+                }))
+              }
+              placeholder="请再次输入新密码"
+            />
+          </label>
+          {renderAccountActionRow({
+            primaryLabel: "保存密码",
+            onPrimary: savePassword,
+          })}
+        </>
+      );
+    }
+
+    return (
+      <div className="fm-account-settings-list">
+        {[
+          ["avatar", "修改头像"],
+          ["nickname", "修改昵称"],
+          ["phone", "修改手机号"],
+          ["password", "修改密码"],
+        ].map(([panel, label]) => (
+          <button
+            type="button"
+            key={panel}
+            onClick={() => openAccountSettingsPanel(panel)}
+          >
+            <span>{label}</span>
+            <ChevronRight size={20} />
+          </button>
+        ))}
+      </div>
+    );
   }
 
   const assetTimeFilterControl = (
@@ -4315,10 +5299,20 @@ function AssetsPage({
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
-                setShowAccountSettings(false);
+                closeAccountSettings();
               }
             }}
           >
+            {accountSettingsToast && (
+              <div
+                key={accountSettingsToast.id}
+                className={`fm-account-toast is-${accountSettingsToast.type}`}
+                role="status"
+                aria-live="polite"
+              >
+                {accountSettingsToast.message}
+              </div>
+            )}
             <div
               className="fm-account-settings-dialog"
               role="dialog"
@@ -4326,22 +5320,17 @@ function AssetsPage({
               aria-labelledby="fm-account-settings-title"
             >
               <div className="fm-account-settings-head">
-                <h2 id="fm-account-settings-title">账号设置</h2>
+                <h2 id="fm-account-settings-title">{getAccountSettingsTitle()}</h2>
                 <button
                   type="button"
                   aria-label="关闭账号设置"
-                  onClick={() => setShowAccountSettings(false)}
+                  onClick={closeAccountSettings}
                 >
                   <X size={18} />
                 </button>
               </div>
-              <div className="fm-account-settings-list">
-                {["修改头像", "修改昵称", "修改手机号", "修改密码"].map((item) => (
-                  <button type="button" key={item}>
-                    <span>{item}</span>
-                    <ChevronRight size={20} />
-                  </button>
-                ))}
+              <div className="fm-account-settings-body">
+                {renderAccountSettingsContent()}
               </div>
             </div>
           </div>
@@ -6161,7 +7150,9 @@ function FaceminiInspirationModal({
 
   if (!item) return null;
 
-  const isVideo = item.mediaType === "video" || item.video || item.videoSrc;
+  const isVideo = Boolean(
+    item.isVideo || item.mediaType === "video" || item.video || item.videoSrc || item.videoUrl,
+  );
   const primarySrc =
     item.videoSrc ||
     item.hdSrc ||
@@ -6172,7 +7163,8 @@ function FaceminiInspirationModal({
     item.src;
   const fallbackSrc = item.hdFallbackSrc || item.fallbackSrc;
   const imageSrc = activeSrc || primarySrc;
-  const primaryVideoSrc = item.videoSrc || item.video || item.preview || item.source;
+  const primaryVideoSrc =
+    item.videoSrc || item.video || item.videoUrl || item.preview || item.source;
   const fallbackVideoSrc =
     item.videoFallbackSrc || item.videoFallback || item.mp4 || null;
   const videoSrc = activeVideoSrc || primaryVideoSrc;
@@ -9519,48 +10511,6 @@ function ChatGenerationView({ authUser, onOpenAuth }) {
   );
 }
 
-const emptyDigitalHumanOptions = {
-  models: [],
-  defaults: { model: "", driveMode: "text" },
-};
-const digitalHumanMaxAudioMs = 15000;
-const ttsEmotionOptions = [
-  { value: "", label: "自动" },
-  { value: "calm", label: "平静" },
-  { value: "happy", label: "开心" },
-  { value: "sad", label: "悲伤" },
-  { value: "angry", label: "愤怒" },
-  { value: "fearful", label: "害怕" },
-  { value: "disgusted", label: "厌恶" },
-  { value: "surprised", label: "惊讶" },
-];
-
-function formatDurationMs(durationMs = 0) {
-  return `${(Number(durationMs || 0) / 1000).toFixed(1)} 秒`;
-}
-
-function readLocalAudioDurationMs(file) {
-  return new Promise((resolve) => {
-    if (!file) {
-      resolve(0);
-      return;
-    }
-    const audio = document.createElement("audio");
-    const objectUrl = window.URL.createObjectURL(file);
-    audio.preload = "metadata";
-    audio.onloadedmetadata = () => {
-      const durationMs = Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0;
-      window.URL.revokeObjectURL(objectUrl);
-      resolve(durationMs);
-    };
-    audio.onerror = () => {
-      window.URL.revokeObjectURL(objectUrl);
-      resolve(0);
-    };
-    audio.src = objectUrl;
-  });
-}
-
 function formatProviderLabel(value, fallback = "视频合成") {
   const text = String(value || "").trim();
   if (!text || /\bkie\b/i.test(text)) {
@@ -9581,1589 +10531,6 @@ function applyCreditsUpdate(setCredits, credits) {
   if (!credits) return;
   setCredits(credits);
   emitCreditsUpdated(credits);
-}
-
-function getDigitalHumanPreviewSignature({
-  text,
-  voiceId,
-  speed,
-  volume,
-  pitch,
-  emotion,
-}) {
-  return JSON.stringify({
-    text: String(text || "").trim(),
-    voiceId,
-    speed: Number(speed),
-    volume: Number(volume),
-    pitch: Number(pitch),
-    emotion: emotion || "",
-  });
-}
-
-function getDigitalHumanPublicAvatars(list = []) {
-  const merged = new Map();
-
-  digitalHumanOfficialAvatarFallbacks.forEach((item) => {
-    merged.set(String(item.id), item);
-  });
-
-  (Array.isArray(list) ? list : []).forEach((item) => {
-    const id = String(item?.id || item?.avatarId || "").trim();
-    if (!id) return;
-    merged.set(id, {
-      ...(merged.get(id) || {}),
-      ...item,
-      id,
-    });
-  });
-
-  return Array.from(merged.values()).map((item) => ({
-    ...item,
-    cover: item.cover || item.assetPath || item.imagePath || item.posterPath,
-    poster:
-      item.poster ||
-      item.posterPath ||
-      getDigitalHumanPosterPath(item.cover || item.assetPath),
-  }));
-}
-
-function isDigitalHumanVideoCover(value) {
-  const source = String(value || "").split(/[?#]/)[0];
-  return /\.(mp4|webm|mov)$/i.test(source);
-}
-
-function getDigitalHumanPosterPath(value) {
-  const source = String(value || "").split(/[?#]/)[0];
-  const match = source.match(/^(.+)\/([^/]+)\.(mp4|webm|mov)$/i);
-  if (!match) return "";
-  return `${match[1]}/posters/${match[2]}.jpg`;
-}
-
-function resolveDigitalHumanAvatarSelection(current, avatarData) {
-  const allAvatars = getDigitalHumanPublicAvatars(avatarData.public);
-  const myAvatars = Array.isArray(avatarData.mine) ? avatarData.mine : [];
-  const matchedAvatar = current?.id
-    ? [...allAvatars, ...myAvatars].find(
-        (item) => String(item.id) === String(current.id),
-      )
-    : null;
-  if (matchedAvatar) return matchedAvatar;
-  if (current) return current;
-  return null;
-}
-
-function DigitalHumanEmptyMedia({
-  title,
-  description,
-  icon: Icon = UserRound,
-}) {
-  return (
-    <div className="dh-empty-media">
-      <span className="dh-empty-media-icon">
-        <Icon size={24} />
-      </span>
-      <strong>{title}</strong>
-      <p>{description}</p>
-    </div>
-  );
-}
-
-function DigitalHumanCoverSkeleton({ label = "封面加载中" }) {
-  return (
-    <div className="dh-cover-skeleton" aria-label={label}>
-      <Loader2 size={24} />
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function DigitalHumanPreloadCover({ avatar, isVideoCover }) {
-  const [loadState, setLoadState] = useState("loading");
-  const cover = avatar?.cover || "";
-
-  useEffect(() => {
-    setLoadState(cover ? "loading" : "empty");
-  }, [cover]);
-
-  if (!cover) {
-    return (
-      <DigitalHumanEmptyMedia
-        title="形象素材位"
-        description="等待补充数字人视频或封面"
-      />
-    );
-  }
-
-  const isLoading = loadState === "loading";
-  const isFailed = loadState === "failed";
-
-  if (isFailed) {
-    return (
-      <DigitalHumanEmptyMedia
-        title="封面暂不可用"
-        description="稍后刷新或选择其他数字人模板"
-      />
-    );
-  }
-
-  return (
-    <>
-      {isVideoCover ? (
-        <video
-          className={isLoading ? "is-cover-loading" : ""}
-          src={cover}
-          poster={avatar.poster || getDigitalHumanPosterPath(cover)}
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          onLoadedMetadata={() => setLoadState("ready")}
-          onLoadedData={() => setLoadState("ready")}
-          onCanPlay={() => setLoadState("ready")}
-          onError={() => setLoadState("failed")}
-          onMouseEnter={(event) => {
-            if (loadState !== "failed") {
-              event.currentTarget.play().catch(() => {});
-            }
-          }}
-          onMouseLeave={(event) => event.currentTarget.pause()}
-        />
-      ) : (
-        <img
-          className={isLoading ? "is-cover-loading" : ""}
-          src={cover}
-          alt={avatar.name}
-          onLoad={() => setLoadState("ready")}
-          onError={() => setLoadState("failed")}
-        />
-      )}
-    </>
-  );
-}
-
-function DigitalHumanPosterCover({ avatar }) {
-  const [isFailed, setIsFailed] = useState(false);
-  const cover = avatar?.cover || "";
-  const poster = avatar?.poster || getDigitalHumanPosterPath(cover) || cover;
-
-  if (!poster || isFailed) {
-    return <UserRound size={32} />;
-  }
-
-  return (
-    <img
-      src={poster}
-      alt={avatar?.name || "数字人形象封面"}
-      onError={() => setIsFailed(true)}
-    />
-  );
-}
-
-function DigitalHumanAvatarCard({
-  avatar,
-  selected,
-  onSelect,
-  onPreview,
-  onRename,
-  onDelete,
-  mine = false,
-}) {
-  const isTraining = avatar.status === "training";
-  const isVideoCover = isDigitalHumanVideoCover(avatar.cover);
-  return (
-    <article
-      className={`dh-avatar-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}
-    >
-      <button
-        className="dh-avatar-cover"
-        type="button"
-        onClick={() => onSelect(avatar)}
-        aria-label={`选择 ${avatar.name}`}
-      >
-        <DigitalHumanPreloadCover avatar={avatar} isVideoCover={isVideoCover} />
-        <span className="dh-avatar-badge">
-          {selected
-            ? "已选中"
-            : isTraining
-              ? "训练中"
-              : avatar.cover
-                ? "模板"
-                : "占位"}
-        </span>
-      </button>
-      <div className="dh-avatar-info">
-        <strong>{avatar.name}</strong>
-        <span>{avatar.language}</span>
-        <p>{avatar.description}</p>
-      </div>
-      <div className="dh-avatar-actions">
-        <button type="button" onClick={() => onPreview(avatar)}>
-          <Play size={14} />
-          预览
-        </button>
-        {mine && (
-          <>
-            <button type="button" onClick={() => onRename(avatar)}>
-              <FileText size={14} />
-              改名
-            </button>
-            <button type="button" onClick={() => onDelete(avatar.id)}>
-              <Trash2 size={14} />
-              删除
-            </button>
-          </>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function DigitalHumanAvatarPreviewModal({ avatar, onClose }) {
-  const isVideoCover = isDigitalHumanVideoCover(avatar?.cover);
-
-  if (!avatar) return null;
-
-  return (
-    <div className="dh-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="dh-avatar-preview-modal">
-        <div className="dh-modal-header">
-          <div>
-            <span>形象预览</span>
-            <strong>{avatar.name}</strong>
-          </div>
-          <button type="button" onClick={onClose} aria-label="关闭">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="dh-avatar-preview-body">
-          {isVideoCover ? (
-            <video
-              src={avatar.cover}
-              poster={avatar.poster || getDigitalHumanPosterPath(avatar.cover)}
-              controls
-              autoPlay
-              playsInline
-            />
-          ) : avatar.cover ? (
-            <img src={avatar.cover} alt={avatar.name} />
-          ) : (
-            <DigitalHumanEmptyMedia
-              title="暂无预览素材"
-              description="等待补充数字人视频或封面"
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DigitalHumanTaskCard({
-  task,
-  selected,
-  onSelect,
-  onDelete,
-  onRegenerate,
-}) {
-  const isProcessing =
-    task.status === "processing" || task.status === "pending";
-  const isCompleted = task.status === "completed" && Boolean(task.resultUrl || task.thumbnailUrl);
-  const isFailed = task.status === "failed";
-  const canOpenPreview = isCompleted;
-  const canRetryOrDelete = isCompleted || isFailed;
-  return (
-    <article className={`dh-task-card ${selected ? "is-selected" : ""}`}>
-      <button
-        className="dh-task-preview"
-        type="button"
-        onClick={() => onSelect(task)}
-        disabled={!canOpenPreview}
-      >
-        {task.resultUrl ? (
-          <video src={task.resultUrl} muted playsInline preload="metadata" />
-        ) : task.thumbnailUrl ? (
-          <img src={task.thumbnailUrl} alt={task.avatarName} />
-        ) : (
-          <DigitalHumanEmptyMedia
-            icon={Video}
-            title={
-              isFailed ? "生成失败" : isCompleted ? "结果待返回" : "生成中"
-            }
-            description={
-              isFailed
-                ? task.error || "任务失败，积分已退回"
-                : isCompleted
-                  ? "点击查看生成结果"
-                  : `${task.progress || 0}%`
-            }
-          />
-        )}
-      </button>
-      <div className="dh-task-meta">
-        <strong>{task.avatarName}</strong>
-        <span>
-          {task.voiceName} 路{" "}
-          {task.driveMode === "audio" ? "音频驱动" : "文本驱动"} 路{" "}
-          {formatProviderLabel(task.providerModel)}
-        </span>
-        <div className="dh-progress-track">
-          <i style={{ width: `${task.progress || 0}%` }} />
-        </div>
-        <small>{formatBeijingDateTime(task.createdAt || task.created_at) || task.createdAt}</small>
-      </div>
-      <div className="dh-task-actions">
-        <button
-          type="button"
-          onClick={() => onRegenerate(task.id)}
-          disabled={!canRetryOrDelete}
-        >
-          <RefreshCcw size={14} />
-        </button>
-        <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
-          <Trash2 size={14} />
-        </button>
-      </div>
-    </article>
-  );
-}
-
-function DigitalHumanLibraryCard({
-  avatar,
-  selected,
-  mine,
-  onSelect,
-  onPreview,
-  onRename,
-  onDelete,
-}) {
-  const isTraining = avatar.status === "training";
-  const isVideoCover = isDigitalHumanVideoCover(avatar.cover);
-  return (
-    <article
-      className={`dh-library-card ${selected ? "is-selected" : ""} ${isTraining ? "is-training" : ""}`}
-    >
-      <button
-        className="dh-library-card-cover"
-        type="button"
-        onClick={() => onSelect(avatar)}
-        aria-label={`使用 ${avatar.name}`}
-      >
-        <DigitalHumanPreloadCover avatar={avatar} isVideoCover={isVideoCover} />
-        <span>
-          {isTraining
-            ? "AI生成中"
-            : avatar.category || avatar.language || "数字人"}
-        </span>
-      </button>
-      <div className="dh-library-card-meta">
-        <strong>{avatar.name}</strong>
-        <small>{avatar.description || avatar.language || "数字人形象"}</small>
-      </div>
-      <div className="dh-library-card-actions">
-        <button type="button" onClick={() => onPreview(avatar)}>
-          预览
-        </button>
-        {mine && (
-          <>
-            <button type="button" onClick={() => onRename(avatar)}>
-              改名
-            </button>
-            <button type="button" onClick={() => onDelete(avatar.id)}>
-              删除
-            </button>
-          </>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function DigitalHumanLibraryPanel({
-  mode,
-  avatars,
-  selectedAvatar,
-  onClose,
-  onModeChange,
-  onSelect,
-  onPreview,
-  onRename,
-  onDelete,
-  onCreate,
-}) {
-  const isMine = mode === "my-library";
-  const list = isMine
-    ? avatars.mine
-    : getDigitalHumanPublicAvatars(avatars.public);
-  return (
-    <main className={`dh-library-stage ${isMine ? "is-mine" : "is-official"}`}>
-      <header className="dh-library-stage-head">
-        <div>
-          <h2>形象库</h2>
-          <div
-            className="dh-library-source-tabs"
-            role="tablist"
-            aria-label="形象库来源"
-          >
-            <button
-              type="button"
-              className={!isMine ? "is-active" : ""}
-              onClick={() => onModeChange("official-library")}
-            >
-              官方形象
-            </button>
-            <button
-              type="button"
-              className={isMine ? "is-active" : ""}
-              onClick={() => onModeChange("my-library")}
-            >
-              我的形象
-            </button>
-          </div>
-        </div>
-        <button
-          className="dh-library-close"
-          type="button"
-          onClick={onClose}
-          aria-label="关闭形象库"
-        >
-          <X size={26} />
-        </button>
-      </header>
-      <div className="dh-library-grid">
-        {isMine && (
-          <button
-            className="dh-my-avatar-create"
-            type="button"
-            onClick={onCreate}
-          >
-            <Plus size={44} />
-            <strong>创建我的形象</strong>
-          </button>
-        )}
-        {list.map((avatar) => (
-          <DigitalHumanLibraryCard
-            key={avatar.id}
-            avatar={avatar}
-            selected={selectedAvatar?.id === avatar.id}
-            mine={isMine}
-            onSelect={(nextAvatar) => {
-              onSelect(nextAvatar);
-              onClose();
-            }}
-            onPreview={onPreview}
-            onRename={onRename}
-            onDelete={onDelete}
-          />
-        ))}
-        {!list.length && !isMine && (
-          <DigitalHumanEmptyMedia
-            title="暂无官方形象"
-            description="后台未返回可用模板，请稍后刷新或检查数字人素材配置"
-          />
-        )}
-      </div>
-    </main>
-  );
-}
-
-function DigitalHumanGeneratingState({ task }) {
-  return (
-    <div className="dh-generating-state">
-      <span className="dh-spinner" aria-hidden="true" />
-      <strong>正在生成口型视频</strong>
-      <p>驱动音频已生成，正在合成数字人口播成片。</p>
-      <div className="dh-generation-progress">
-        <i style={{ width: `${task?.progress || 0}%` }} />
-      </div>
-      <small>{task?.progress || 0}% · 完成后会自动回填到这里</small>
-    </div>
-  );
-}
-
-function DigitalHumanCreateAvatarModal({ onClose, onCreate, isSubmitting }) {
-  const fileInputRef = useRef(null);
-  const [name, setName] = useState("");
-  const [file, setFile] = useState(null);
-  const [notice, setNotice] = useState("");
-
-  function submit() {
-    if (!name.trim()) {
-      setNotice("请输入形象名称");
-      return;
-    }
-    if (!file) {
-      setNotice("请选择虚拟人像图片素材");
-      return;
-    }
-    onCreate({ name: name.trim(), file });
-  }
-
-  return (
-    <div className="dh-modal-backdrop" role="dialog" aria-modal="true" onMouseDown={onClose}>
-      <div className="dh-modal" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="dh-modal-header">
-          <div>
-            <span>创建形象</span>
-            <strong>上传形象图</strong>
-          </div>
-          <button className="dh-modal-close-button" type="button" onClick={onClose} aria-label="关闭">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="dh-modal-body">
-          <label className="dh-field">
-            <span>形象名称</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="例如：产品讲解员"
-            />
-          </label>
-          <button
-            className="dh-upload-zone"
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={(event) => {
-                setFile(event.target.files?.[0] || null);
-                event.target.value = "";
-              }}
-            />
-            {file && (
-              <span
-                className="upload-clear-button"
-                role="button"
-                tabIndex={0}
-                title="取消上传"
-                aria-label="取消上传"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setFile(null);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setFile(null);
-                  }
-                }}
-              >
-                <X size={13} />
-              </span>
-            )}
-            <Camera size={24} />
-            <strong>{file ? file.name : "选择虚拟人像图片"}</strong>
-            <span>
-              {file
-                ? "提交后会上传并进入火山方舟审核"
-                : "请上传 AI / 虚拟形象图片，不要上传真人肖像"}
-            </span>
-          </button>
-          {notice && <div className="dh-form-notice">{notice}</div>}
-        </div>
-        <div className="dh-modal-footer">
-          <button className="dh-modal-secondary-button" type="button" onClick={onClose}>
-            取消
-          </button>
-          <button className="dh-modal-primary-button" type="button" onClick={submit} disabled={isSubmitting}>
-            {isSubmitting ? <Loader2 size={16} /> : <Plus size={16} />}
-            创建形象
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DigitalHumanFloatingToast({ message }) {
-  if (!message) return null;
-  return (
-    <div className="dh-floating-toast" role="alert">
-      {message}
-    </div>
-  );
-}
-
-function getDigitalHumanErrorToast(error, fallback) {
-  const message = error?.message || String(error || "");
-  if (/voice id not exist/i.test(message)) return "音色不存在，请重新选择音色";
-  return fallback;
-}
-
-function DigitalHumanConfigPanel({
-  options,
-  voices,
-  selectedAvatar,
-  seed,
-  onSubmit,
-  isSubmitting,
-  onToast,
-}) {
-  const audioInputRef = useRef(null);
-  const defaultDigitalHumanScript =
-    "请根据选择的数字人形象和音色，使用中文撰写一段不超过15秒的口播文本，内容可以是产品介绍、新闻播报、故事讲述等，要求生动有趣，能够展示数字人的表现力和特点。";
-  const [driveMode, setDriveMode] = useState("text");
-  const [text, setText] = useState("");
-  const [audioFile, setAudioFile] = useState(null);
-  const [model, setModel] = useState(
-    options.defaults?.model || options.models[0]?.value || "",
-  );
-  const [voiceId, setVoiceId] = useState(voices[0]?.id || "");
-  const [ttsSpeed, setTtsSpeed] = useState(1);
-  const [ttsVolume, setTtsVolume] = useState(1);
-  const [ttsPitch, setTtsPitch] = useState(0);
-  const [ttsEmotion, setTtsEmotion] = useState("");
-  const [isDesigningVoice, setIsDesigningVoice] = useState(false);
-  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
-  const [voicePreviewUrl, setVoicePreviewUrl] = useState("");
-  const [voicePreviewInfo, setVoicePreviewInfo] = useState(null);
-  const [notice, setNotice] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
-  const toastTimerRef = useRef(null);
-
-  useEffect(() => {
-    if (!model && (options.defaults?.model || options.models[0]?.value)) {
-      setModel(options.defaults?.model || options.models[0].value);
-    }
-    if (!voiceId && voices[0]?.id) setVoiceId(voices[0].id);
-  }, [model, options, voiceId, voices]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!seed) return;
-    setDriveMode("text");
-    setAudioFile(null);
-    resetVoicePreview();
-    setText(seed.prompt || "");
-    setNotice(seed.notice || "");
-  }, [seed]);
-
-  const selectedModel =
-    options.models.find((item) => item.value === model) || options.models[0];
-  const selectedVoice = voices.find((item) => item.id === voiceId) || voices[0];
-  const estimate = Math.max(1, Math.ceil(text.length / 180));
-  const currentPreviewSignature = getDigitalHumanPreviewSignature({
-    text,
-    voiceId,
-    speed: ttsSpeed,
-    volume: ttsVolume,
-    pitch: ttsPitch,
-    emotion: ttsEmotion,
-  });
-  const isPreviewCurrent =
-    voicePreviewInfo?.signature === currentPreviewSignature;
-  const isAudioDrive = driveMode === "audio" && Boolean(audioFile);
-  const currentAudioTooLong =
-    isAudioDrive
-      ? Number(audioFile?.durationMs || 0) > digitalHumanMaxAudioMs
-      : isPreviewCurrent && voicePreviewInfo.durationMs > digitalHumanMaxAudioMs;
-
-  function showToast(message) {
-    if (onToast) {
-      onToast(message);
-      return;
-    }
-    setToastMessage(message);
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage("");
-      toastTimerRef.current = null;
-    }, 2000);
-  }
-
-  function resetVoicePreview() {
-    setVoicePreviewUrl("");
-    setVoicePreviewInfo(null);
-    setNotice("");
-  }
-
-  async function previewVoice() {
-    if (isAudioDrive) {
-      showToast("上传音频会直接用于生成");
-      return;
-    }
-    if (!text.trim()) {
-      showToast("请输入用于试听的文本脚本");
-      return;
-    }
-    setNotice("");
-    setIsDesigningVoice(true);
-    try {
-      const result = await digitalHumanApi.previewVoice({
-        previewText: text.trim(),
-        voiceId,
-        speed: ttsSpeed,
-        volume: ttsVolume,
-        pitch: ttsPitch,
-        emotion: ttsEmotion,
-      });
-      if (result.audioDataUrl) setVoicePreviewUrl(result.audioDataUrl);
-      const durationMs = Number(result.durationMs || 0);
-      setVoicePreviewInfo({
-        signature: currentPreviewSignature,
-        durationMs,
-        videoDuration: result.videoDuration || Math.ceil(durationMs / 1000),
-      });
-      setNotice("");
-    } catch (error) {
-      setNotice("");
-      showToast(getDigitalHumanErrorToast(error, "音色试听失败"));
-    } finally {
-      setIsDesigningVoice(false);
-    }
-  }
-
-  async function handleAudioSelect(event) {
-    const file = event.target.files?.[0] || null;
-    event.target.value = "";
-    if (!file) return;
-
-    setIsUploadingAudio(true);
-    setNotice("");
-    try {
-      const durationMs = await readLocalAudioDurationMs(file);
-      if (durationMs > digitalHumanMaxAudioMs) {
-        setAudioFile(null);
-        setDriveMode("text");
-        showToast("当前音频超过 15 秒，请切片后上传");
-        return;
-      }
-      const uploaded = await digitalHumanApi.uploadAudio(file, { durationMs });
-      setAudioFile({
-        ...uploaded,
-        name: uploaded.originalName || uploaded.name || file.name,
-        durationMs
-      });
-      setDriveMode("audio");
-      setText("");
-      resetVoicePreview();
-      showToast("驱动音频已上传");
-    } catch (error) {
-      setNotice("");
-      showToast(getDigitalHumanErrorToast(error, "音频上传失败，请重试"));
-    } finally {
-      setIsUploadingAudio(false);
-    }
-  }
-
-  function submit() {
-    if (!selectedAvatar) {
-      showToast("请先选择数字人形象");
-      return;
-    }
-    if (driveMode === "text" && !text.trim()) {
-      showToast("请输入文本脚本");
-      return;
-    }
-    if (driveMode === "audio" && !audioFile) {
-      setNotice("请上传音频文件");
-      return;
-    }
-    if (isAudioDrive && !audioFile.audioFileId && !audioFile.id) {
-      setNotice("音频尚未上传完成");
-      return;
-    }
-    if (!isAudioDrive && (!voicePreviewInfo || !isPreviewCurrent)) {
-      showToast("请先试听音色");
-      return;
-    }
-    if (currentAudioTooLong) {
-      showToast("当前音频超过 15 秒，请缩短文本或切片后分段生成");
-      return;
-    }
-    setNotice("");
-    onSubmit({
-      avatarId: selectedAvatar.id,
-      avatarName: selectedAvatar.name,
-      driveMode,
-      text,
-      audioName: audioFile?.name || "",
-      audioFileId: audioFile?.audioFileId || audioFile?.id || "",
-      audioDurationMs: audioFile?.durationMs || 0,
-      voiceId,
-      model,
-      speed: ttsSpeed,
-      volume: ttsVolume,
-      pitch: ttsPitch,
-      emotion: ttsEmotion,
-    });
-  }
-
-  return (
-    <aside className="dh-config-panel">
-      <div className="dh-config-header dh-config-header-inline">
-        <strong>配音内容</strong>
-        <button
-          type="button"
-          onClick={() => audioInputRef.current?.click()}
-          disabled={isUploadingAudio}
-          title="上传音频"
-        >
-          {isUploadingAudio ? <Loader2 size={15} /> : <UploadCloud size={15} />}
-          上传音频
-        </button>
-      </div>
-      <input
-        ref={audioInputRef}
-        type="file"
-        accept="audio/*"
-        hidden
-        onChange={handleAudioSelect}
-      />
-      {driveMode === "text" ? (
-        <label className="dh-field dh-script-field">
-          <textarea
-            value={text}
-            maxLength={200}
-            onChange={(event) => setText(event.target.value)}
-            placeholder={defaultDigitalHumanScript}
-          />
-          <small>{text.length} / 200</small>
-        </label>
-      ) : (
-        <div className="dh-audio-upload is-compact">
-          {audioFile && (
-            <span
-              className="upload-clear-button"
-              role="button"
-              tabIndex={0}
-              title="取消上传"
-              aria-label="取消上传"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setAudioFile(null);
-                setDriveMode("text");
-                resetVoicePreview();
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setAudioFile(null);
-                  setDriveMode("text");
-                  resetVoicePreview();
-                }
-              }}
-            >
-              <X size={13} />
-            </span>
-          )}
-          <Mic size={22} />
-          <strong>{audioFile ? audioFile.name : "上传驱动音频"}</strong>
-          <span>
-            {audioFile
-              ? `将直接使用该音频生成${audioFile.durationMs ? `，${formatDurationMs(audioFile.durationMs)}` : ""}`
-              : "限制 15 秒以内，支持常见音频格式"}
-          </span>
-        </div>
-      )}
-      <div className="dh-voice-chip-grid">
-        {voices.slice(0, 9).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={item.id === voiceId ? "is-active" : ""}
-            disabled={isAudioDrive}
-            onClick={() => {
-              if (isAudioDrive) return;
-              if (item.id !== voiceId) resetVoicePreview();
-              setVoiceId(item.id);
-            }}
-          >
-            {item.name}
-          </button>
-        ))}
-      </div>
-      <div className="dh-speed-chip-row">
-        <span>语速</span>
-        {[0.8, 1.0, 1.2, 1.35, 1.5, 1.75, 2.0].map((value) => (
-          <button
-            key={value}
-            type="button"
-            className={ttsSpeed === value ? "is-active" : ""}
-            disabled={isAudioDrive}
-            onClick={() => {
-              if (isAudioDrive) return;
-              if (ttsSpeed !== value) resetVoicePreview();
-              setTtsSpeed(value);
-            }}
-          >
-            {value}x
-          </button>
-        ))}
-      </div>
-      <div className="dh-inline-controls">
-        <CustomSelect
-          className="custom-select-theme-dh"
-          ariaLabel="成片模型"
-          value={model}
-          disabled={isAudioDrive}
-          onChange={setModel}
-          options={options.models}
-        />
-        <CustomSelect
-          className="custom-select-theme-dh dh-emotion-select"
-          ariaLabel="情绪"
-          value={ttsEmotion}
-          disabled={isAudioDrive}
-          onChange={(value) => {
-            if (isAudioDrive) return;
-            if (value !== ttsEmotion) resetVoicePreview();
-            setTtsEmotion(value);
-          }}
-          options={ttsEmotionOptions}
-        />
-        <button
-          className="dh-preview-voice-button"
-          type="button"
-          onClick={previewVoice}
-          disabled={isDesigningVoice || isAudioDrive}
-        >
-          {isDesigningVoice ? <Loader2 size={14} /> : <Mic size={14} />}
-          试听音色
-        </button>
-        <button
-          className="dh-generate-button"
-          type="button"
-          onClick={submit}
-          disabled={isSubmitting || isUploadingAudio || currentAudioTooLong}
-          data-tooltip={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
-          aria-label={isAudioDrive || isPreviewCurrent ? "生成数字人视频" : "请先试听音色"}
-        >
-          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
-          <BillingPoints
-            feature="digital-human"
-            payload={{
-              durationMs: audioFile?.durationMs || 0,
-              durationSeconds: isAudioDrive
-                ? Math.max(1, Math.ceil(Number(audioFile?.durationMs || 0) / 1000))
-                : Math.max(1, Math.ceil(text.trim().length / 4)),
-              text,
-              uploadedAudio: isAudioDrive,
-            }}
-            fallbackPoints={121}
-          />
-          <span>生成</span>
-        </button>
-      </div>
-      <DigitalHumanFloatingToast message={toastMessage} />
-      {voicePreviewUrl && isPreviewCurrent ? (
-        <div
-          className={`dh-voice-preview-panel ${currentAudioTooLong ? "is-warning" : ""}`}
-        >
-          <audio className="dh-voice-preview" src={voicePreviewUrl} controls />
-          <div className="dh-voice-preview-meta">
-            <span>
-              {selectedVoice
-                ? `${selectedVoice.description || selectedVoice.name}`
-                : ""}
-            </span>
-            <strong>
-              当前音频 {formatDurationMs(voicePreviewInfo.durationMs)}
-              {currentAudioTooLong
-                ? "，超过 15 秒，需要切片"
-                : `，视频将生成 ${voicePreviewInfo.videoDuration} 秒`}
-            </strong>
-          </div>
-        </div>
-      ) : (
-        <div className="dh-duration-check">
-          <span>
-            {isAudioDrive
-              ? `已使用上传音频${audioFile?.durationMs ? `，${formatDurationMs(audioFile.durationMs)}` : ""}`
-              : selectedVoice
-                ? `${selectedVoice.description || selectedVoice.name}`
-                : ""}
-          </span>
-        </div>
-      )}
-      {notice && <div className="dh-form-notice">{notice}</div>}
-    </aside>
-  );
-}
-
-function DigitalHumanGenerationView({
-  onReturnHome,
-  onOpenFeature,
-  isActive = true,
-}) {
-  const [tab, setTab] = useState("public");
-  const [avatars, setAvatars] = useState({ public: [], mine: [] });
-  const [tasks, setTasks] = useState([]);
-  const [voices, setVoices] = useState([]);
-  const [options, setOptions] = useState(emptyDigitalHumanOptions);
-  const [credits, setCredits] = useState(null);
-  const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [previewAvatar, setPreviewAvatar] = useState(null);
-  const [rightMode, setRightMode] = useState("preview");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
-  const [favoriteTaskIds, setFavoriteTaskIds] = useState(() => new Set());
-  const [composerSeed, setComposerSeed] = useState(null);
-  const taskStatusSignatureRef = useRef("");
-  const toastTimerRef = useRef(null);
-
-  useEffect(() => {
-    if (!isActive) return;
-    const pendingSeed = takePendingGenerationSeed("digital-human");
-    if (!pendingSeed) return;
-    setSelectedTask(null);
-    setRightMode("preview");
-    if (pendingSeed.avatarId) {
-      setSelectedAvatar((current) => ({
-        ...(current || {}),
-        id: pendingSeed.avatarId,
-        name: pendingSeed.title || current?.name || "",
-      }));
-    }
-    setComposerSeed({
-      id: `pending-digital-human-${Date.now()}`,
-      prompt: pendingSeed.prompt || "",
-      notice: pendingSeed.notice || "",
-    });
-  }, [isActive]);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
-
-  function showToast(message) {
-    setToastMessage(message);
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage("");
-      toastTimerRef.current = null;
-    }, 2000);
-  }
-
-  // 模块由外层保活挂载，此处始终订阅数字人任务与形象
-  useEffect(() => {
-    let mounted = true;
-    function applyTaskList(value) {
-      if (!mounted) return;
-      const nextSignature = taskStatusSignature(value);
-      const didStatusChange =
-        taskStatusSignatureRef.current &&
-        taskStatusSignatureRef.current !== nextSignature;
-      taskStatusSignatureRef.current = nextSignature;
-      digitalHumanApi.setHasRunningTasks(hasRunningTasks(value));
-      setTasks(value);
-      setSelectedTask((current) => {
-        if (!current) return current;
-        return (
-          value.find((task) => String(task.id) === String(current.id)) ||
-          current
-        );
-      });
-      if (didStatusChange) {
-        digitalHumanApi
-          .getCredits()
-          .then(
-            (creditsValue) =>
-              mounted && applyCreditsUpdate(setCredits, creditsValue),
-          )
-          .catch(() => {});
-      }
-    }
-    async function load() {
-      try {
-        const [modelData, avatarData, voiceData, taskData, creditData] =
-          await Promise.all([
-            digitalHumanApi.getModels(),
-            digitalHumanApi.getAvatars(),
-            digitalHumanApi.getVoices(),
-            digitalHumanApi.getTasks(),
-            digitalHumanApi.getCredits().catch(() => null),
-          ]);
-        if (!mounted) return;
-        setOptions(modelData);
-        setAvatars(avatarData);
-        setVoices(voiceData.voices || []);
-        applyTaskList(taskData);
-        applyCreditsUpdate(setCredits, creditData);
-        setSelectedAvatar((current) =>
-          resolveDigitalHumanAvatarSelection(current, avatarData),
-        );
-      } catch (loadError) {
-        if (mounted) setError(loadError.message || "加载数字人功能失败");
-      }
-    }
-    load();
-    const unsubscribe = digitalHumanApi.subscribe(() => {
-      digitalHumanApi
-        .getTasks()
-        .then(applyTaskList)
-        .catch(() => {});
-      digitalHumanApi
-        .getAvatars()
-        .then((value) => mounted && setAvatars(value))
-        .then((value) => {
-          if (!mounted || !value) return;
-          setSelectedAvatar((current) =>
-            resolveDigitalHumanAvatarSelection(current, value),
-          );
-        })
-        .catch(() => {});
-    });
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
-  }, []);
-
-  async function createTask(payload) {
-    setError("");
-    setIsSubmitting(true);
-    try {
-      const task = await digitalHumanApi.createTask(payload);
-      digitalHumanApi
-        .getCredits()
-        .then((value) => applyCreditsUpdate(setCredits, value))
-        .catch(() => {});
-      setSelectedTask(task);
-      setRightMode("preview");
-      setTab("history");
-    } catch (submitError) {
-      setError("");
-      showToast(getDigitalHumanErrorToast(submitError, "数字人视频创建失败"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function createAvatar(payload) {
-    setIsSubmitting(true);
-    try {
-      const avatar = await digitalHumanApi.createAvatar(payload);
-      setSelectedAvatar(avatar);
-      setTab("mine");
-      setRightMode("my-library");
-      setIsCreateOpen(false);
-    } catch (submitError) {
-      setError("");
-      setIsCreateOpen(false);
-      showToast("个人形象创建失败");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function performDeleteAvatar(id) {
-    await digitalHumanApi.deleteAvatar(id);
-    setSelectedAvatar((current) => (current?.id === id ? null : current));
-  }
-
-  const { requestDelete: deleteAvatar, deleteConfirmDialog: avatarDeleteDialog } =
-    useDeleteConfirmation({
-      onConfirm: performDeleteAvatar,
-      title: "删除数字人形象？",
-      message: "该形象会从我的形象库中移除，删除后无法恢复。",
-    });
-
-  async function renameAvatar(avatar) {
-    const nextName = window.prompt("输入新的形象名称", avatar.name);
-    if (!nextName?.trim()) return;
-    const updated = await digitalHumanApi.updateAvatar(avatar.id, {
-      name: nextName.trim(),
-    });
-    setSelectedAvatar(updated);
-  }
-
-  async function performDeleteTask(id) {
-    await digitalHumanApi.deleteTask(id);
-    setSelectedTask((current) => (current?.id === id ? null : current));
-  }
-
-  const { requestDelete: deleteTask, deleteConfirmDialog: taskDeleteDialog } =
-    useDeleteConfirmation({
-      onConfirm: performDeleteTask,
-      title: "删除历史记录？",
-      message: "该数字人生成记录会被移除，删除后无法恢复。",
-    });
-
-  async function regenerateTask(id) {
-    const task = await digitalHumanApi.regenerateTask(id);
-    digitalHumanApi
-      .getCredits()
-      .then((value) => applyCreditsUpdate(setCredits, value))
-      .catch(() => {});
-    setSelectedTask(task);
-    setRightMode("preview");
-  }
-
-  const { requestRegenerate, regenerateConfirmDialog } =
-    useRegenerateConfirmation({
-      onConfirm: regenerateTask,
-    });
-
-  function openDigitalHumanAssets() {
-    try {
-      window.sessionStorage.setItem(assetGalleryTabStorageKey, "数字人");
-    } catch {
-      // Session storage can be unavailable in restricted browser contexts.
-    }
-    window.dispatchEvent(
-      new CustomEvent("facemini-assets-tab-change", {
-        detail: { tab: "数字人" },
-      }),
-    );
-    onOpenFeature?.("assets");
-  }
-
-  const currentPreviewTask = selectedTask;
-  const previewAvatarMedia = selectedAvatar || null;
-  const selectedAvatarIsVideoCover = isDigitalHumanVideoCover(
-    selectedAvatar?.cover,
-  );
-  const isPreviewProcessing =
-    currentPreviewTask &&
-    !["completed", "failed"].includes(currentPreviewTask.status);
-  const canUsePreviewTaskActions =
-    Boolean(currentPreviewTask?.resultUrl) &&
-    currentPreviewTask?.status === "completed";
-  const isCurrentTaskFavorite = currentPreviewTask
-    ? favoriteTaskIds.has(String(currentPreviewTask.id))
-    : false;
-
-  function toggleTaskFavorite(id) {
-    setFavoriteTaskIds((current) => {
-      const next = new Set(current);
-      const key = String(id);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }
-
-  return (
-    <section className="dh-view-root">
-      <div className="dh-topbar">
-        <div>
-          <span>数字人</span>
-          <h1>创建会说话的数字人视频</h1>
-        </div>
-        {credits && (
-          <span className="credits-chip">积分 {credits.balance}</span>
-        )}
-      </div>
-      {error && <div className="video-submit-error">{error}</div>}
-      <div className="dh-workspace is-browsing">
-        <section className="dh-library-panel">
-          <div className="dh-avatar-agent-face-row">
-            <div className="dh-avatar-agent-thumb-wrap">
-              <button
-                className="dh-avatar-agent-thumb"
-                type="button"
-                onClick={() =>
-                  selectedAvatar && setPreviewAvatar(selectedAvatar)
-                }
-                aria-label="当前形象预览"
-              >
-                {selectedAvatar?.cover ? (
-                  <DigitalHumanPosterCover avatar={selectedAvatar} />
-                ) : (
-                  <UserRound size={32} />
-                )}
-              </button>
-            </div>
-            <div className="dh-avatar-agent-actions">
-              <p>{selectedAvatar?.name || "选择形象"}</p>
-              <div>
-                <button
-                  className={
-                    rightMode === "official-library" ? "is-active" : ""
-                  }
-                  type="button"
-                  onClick={() => {
-                    setTab("public");
-                    setRightMode("official-library");
-                    setSelectedTask(null);
-                  }}
-                >
-                  <Layers size={16} />
-                  公共形象
-                </button>
-                <button
-                  className={rightMode === "my-library" ? "is-active" : ""}
-                  type="button"
-                  onClick={() => {
-                    setTab("mine");
-                    setRightMode("my-library");
-                    setSelectedTask(null);
-                  }}
-                >
-                  <UserRound size={16} />
-                  个人形象
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            className="dh-avatar-upload-zone"
-            role="button"
-            tabIndex={0}
-            onClick={() => setIsCreateOpen(true)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setIsCreateOpen(true);
-              }
-            }}
-          >
-            {selectedAvatar && (
-              <button
-                className="dh-avatar-cover-clear-button"
-                type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setSelectedAvatar(null);
-                }}
-                aria-label="清空当前形象"
-                title="清空当前形象"
-              >
-                <X size={14} />
-              </button>
-            )}
-            {selectedAvatar?.cover ? (
-              <DigitalHumanPreloadCover
-                avatar={selectedAvatar}
-                isVideoCover={selectedAvatarIsVideoCover}
-              />
-            ) : (
-              <>
-                <span className="dh-avatar-upload-icon" aria-hidden="true">
-                  <UploadCloud size={30} />
-                </span>
-                <strong>创建个人形象</strong>
-                <small>上传虚拟人像图片，生成可用于口播任务的数字人资产</small>
-              </>
-            )}
-            {!selectedAvatar && (
-              <button
-                className="dh-history-create-button"
-                type="button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  openDigitalHumanAssets();
-                }}
-              >
-                历史创作
-              </button>
-            )}
-          </div>
-          <DigitalHumanConfigPanel
-            options={options}
-            voices={voices}
-            selectedAvatar={selectedAvatar}
-            seed={composerSeed}
-            onSubmit={createTask}
-            isSubmitting={isSubmitting}
-            onToast={showToast}
-          />
-        </section>
-        {currentPreviewTask || rightMode === "preview" ? (
-          <main className="dh-preview-stage dh-avatar-preview-stage">
-            <div className="dh-preview-header">
-              <div>
-                <span>{currentPreviewTask ? "生成预览" : "数字人"}</span>
-                <strong>
-                  {currentPreviewTask?.avatarName ||
-                    previewAvatarMedia?.name ||
-                    "开启你的图片数字人"}
-                </strong>
-              </div>
-              <div className="dh-preview-header-actions">
-                {currentPreviewTask && (
-                  <button
-                    className="dh-preview-back"
-                    type="button"
-                    onClick={() => setSelectedTask(null)}
-                  >
-                    <Layers size={14} />
-                    返回
-                  </button>
-                )}
-                {currentPreviewTask && (
-                  <small>
-                    {currentPreviewTask.status === "failed"
-                      ? "失败"
-                      : currentPreviewTask.status === "completed"
-                        ? "完成"
-                        : `生成中 ${currentPreviewTask.progress || 0}%`}
-                  </small>
-                )}
-                <button type="button" aria-label="编辑">
-                  <SquarePen size={14} />
-                  编辑
-                </button>
-                <button type="button" aria-label="撤销">
-                  <RefreshCcw size={14} />
-                  撤销
-                </button>
-                <button type="button" aria-label="复制">
-                  <Copy size={14} />
-                  复制
-                </button>
-              </div>
-            </div>
-            <div className="dh-video-shell">
-              {currentPreviewTask?.resultUrl ? (
-                <video src={currentPreviewTask.resultUrl} controls />
-              ) : isPreviewProcessing ? (
-                <DigitalHumanGeneratingState task={currentPreviewTask} />
-              ) : currentPreviewTask ? (
-                <DigitalHumanEmptyMedia
-                  icon={Film}
-                  title={
-                    currentPreviewTask.status === "failed"
-                      ? "生成失败"
-                      : "视频结果待返回"
-                  }
-                  description={
-                    currentPreviewTask.status === "failed"
-                      ? currentPreviewTask.error
-                      : "任务完成后没有返回视频地址，请稍后刷新或重新生成"
-                  }
-                />
-              ) : previewAvatarMedia?.cover ? (
-                isDigitalHumanVideoCover(previewAvatarMedia.cover) ? (
-                  <video
-                    src={previewAvatarMedia.cover}
-                    poster={
-                      previewAvatarMedia.poster ||
-                      getDigitalHumanPosterPath(previewAvatarMedia.cover)
-                    }
-                    controls
-                    playsInline
-                  />
-                ) : (
-                  <img
-                    src={previewAvatarMedia.cover}
-                    alt={previewAvatarMedia.name}
-                  />
-                )
-              ) : (
-                <DigitalHumanEmptyMedia
-                  icon={Bot}
-                  title="尚未生成数字人视频"
-                  description=""
-                />
-              )}
-              {currentPreviewTask && (
-                <div
-                  className="dh-preview-task-actions"
-                  aria-label="生成结果操作"
-                >
-                  <button
-                    type="button"
-                    data-tooltip="重新生成"
-                    onClick={() => requestRegenerate(currentPreviewTask.id)}
-                    disabled={!canUsePreviewTaskActions}
-                  >
-                    <RefreshCcw size={18} />
-                  </button>
-                  {canUsePreviewTaskActions ? (
-                    <a
-                      href={currentPreviewTask.resultUrl}
-                      download
-                      target="_blank"
-                      rel="noreferrer"
-                      data-tooltip="下载"
-                    >
-                      <Download size={18} />
-                    </a>
-                  ) : (
-                    <button type="button" data-tooltip="下载" disabled>
-                      <Download size={18} />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    data-tooltip="删除"
-                    onClick={() => deleteTask(currentPreviewTask.id)}
-                    disabled={!canUsePreviewTaskActions}
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    data-tooltip="收藏"
-                    className={isCurrentTaskFavorite ? "is-active" : ""}
-                    onClick={() => toggleTaskFavorite(currentPreviewTask.id)}
-                    disabled={!canUsePreviewTaskActions}
-                  >
-                    <Star
-                      size={18}
-                      fill={isCurrentTaskFavorite ? "currentColor" : "none"}
-                    />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="dh-draft-box">
-              暂无草稿，编辑形象或配音后将自动保存
-            </div>
-          </main>
-        ) : (
-          <DigitalHumanLibraryPanel
-            mode={rightMode}
-            avatars={avatars}
-            selectedAvatar={selectedAvatar}
-            onClose={() => setRightMode("preview")}
-            onModeChange={(mode) => {
-              setRightMode(mode);
-              setTab(mode === "my-library" ? "mine" : "public");
-            }}
-            onSelect={setSelectedAvatar}
-            onPreview={setPreviewAvatar}
-            onRename={renameAvatar}
-            onDelete={deleteAvatar}
-            onCreate={() => setIsCreateOpen(true)}
-          />
-        )}
-      </div>
-      {isCreateOpen && (
-        <DigitalHumanCreateAvatarModal
-          onClose={() => setIsCreateOpen(false)}
-          onCreate={createAvatar}
-          isSubmitting={isSubmitting}
-        />
-      )}
-      {previewAvatar && (
-        <DigitalHumanAvatarPreviewModal
-          avatar={previewAvatar}
-          onClose={() => setPreviewAvatar(null)}
-        />
-      )}
-      {avatarDeleteDialog}
-      {taskDeleteDialog}
-      {regenerateConfirmDialog}
-      <DigitalHumanFloatingToast message={toastMessage} />
-    </section>
-  );
 }
 
 const emptyMotionTransferOptions = {
@@ -13804,10 +13171,9 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <DigitalHumanGenerationView
-            onReturnHome={() => handleNavChange("home")}
-            onOpenFeature={handleNavChange}
+          <DigitalHumanHubView
             isActive={activeNav === "digital-human"}
+            onOpenFeature={handleNavChange}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
@@ -14024,9 +13390,24 @@ function App() {
       setAuthUser((current) =>
         current && !current.isGuest
           ? { ...current, credits: nextCredits }
-          : current,
+        : current,
       );
     });
+  }, []);
+
+  useEffect(() => {
+    function handleAuthUserUpdated(event) {
+      const user = event.detail?.user;
+      if (!user) return;
+      setAuthUser(user);
+    }
+    window.addEventListener("facemini-auth-user-updated", handleAuthUserUpdated);
+    return () => {
+      window.removeEventListener(
+        "facemini-auth-user-updated",
+        handleAuthUserUpdated,
+      );
+    };
   }, []);
 
   useEffect(() => {
@@ -14189,6 +13570,8 @@ function App() {
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    <ConfigProvider>
+      <App />
+    </ConfigProvider>
   </React.StrictMode>,
 );

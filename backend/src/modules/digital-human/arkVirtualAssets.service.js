@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import crypto, { randomUUID } from "crypto";
 import { readFile } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
@@ -47,6 +47,14 @@ async function hashFile(filePath) {
 
 function getGroupName(feature) {
   return `${config.ark.virtualAssetGroupName}-${feature}`;
+}
+
+export function isArkOpenApiConfigured() {
+  return Boolean(config.ark.accessKeyId && config.ark.secretAccessKey);
+}
+
+function isLocalProviderAssetId(providerAssetId = "") {
+  return String(providerAssetId || "").startsWith("local-");
 }
 
 export function mapArkVirtualAsset(row) {
@@ -103,6 +111,16 @@ export async function ensureVirtualAssetGroup({ userId, feature }) {
 export async function refreshVirtualAssetByRow(row, { force = false } = {}) {
   if (!row?.provider_asset_id || (!force && row.status !== "processing")) return row;
 
+  if (!isArkOpenApiConfigured() || isLocalProviderAssetId(row.provider_asset_id)) {
+    if (row.status !== "active") {
+      await updateArkVirtualAssetStatus(row.id, {
+        status: "active",
+        publicUrl: row.public_url || buildPublicMediaUrl(row.local_url || "")
+      });
+    }
+    return findArkVirtualAssetByInternalId(row.id);
+  }
+
   const asset = await getArkAsset({ assetId: row.provider_asset_id, projectName: row.project_name || config.ark.projectName });
   const status = mapArkAssetStatus(asset.Status || asset.status);
   const errorMessage = status === "failed" ? getArkAssetError(asset) || "Ark asset processing failed" : "";
@@ -131,6 +149,75 @@ export async function listVirtualAssets({ feature = "digital-human" } = {}) {
   return rows.map(mapArkVirtualAsset);
 }
 
+async function ensureLocalVirtualAssetGroup({ userId, feature }) {
+  const normalizedFeature = normalizeFeature(feature);
+  const existing = await findArkVirtualAssetGroupByFeature(userId, normalizedFeature, config.ark.projectName);
+  if (existing) return existing;
+
+  const providerGroupId = `local-${normalizedFeature}`;
+  const id = await createArkVirtualAssetGroupRow({
+    userId,
+    feature: normalizedFeature,
+    name: getGroupName(normalizedFeature),
+    providerGroupId,
+    projectName: config.ark.projectName
+  });
+  return (
+    (await findArkVirtualAssetGroupByFeature(userId, normalizedFeature, config.ark.projectName)) || {
+      id,
+      provider_group_id: providerGroupId,
+      project_name: config.ark.projectName
+    }
+  );
+}
+
+async function createLocalOnlyVirtualAssetFromLocalFile({
+  userId,
+  feature = "digital-human",
+  localUrl,
+  filePath,
+  originalName,
+  mimeType,
+  sizeBytes
+}) {
+  const normalizedFeature = normalizeFeature(feature);
+  const assetType = getAssetTypeFromMime(mimeType);
+  if (!assetType) throw createHttpError("unsupported asset file type", 400);
+
+  const sourceHash = await hashFile(filePath);
+  const reusable = await findReusableArkVirtualAsset({
+    userId,
+    feature: normalizedFeature,
+    assetType,
+    sourceHash,
+    projectName: config.ark.projectName
+  });
+  if (reusable) {
+    const refreshed = await refreshVirtualAssetByRow(reusable, { force: true });
+    return mapArkVirtualAsset(refreshed);
+  }
+
+  const group = await ensureLocalVirtualAssetGroup({ userId, feature: normalizedFeature });
+  const publicUrl = buildPublicMediaUrl(localUrl);
+  const providerAssetId = `local-${randomUUID()}`;
+  const id = await createArkVirtualAssetRow({
+    userId,
+    groupId: group.id,
+    feature: normalizedFeature,
+    assetType,
+    localUrl,
+    publicUrl,
+    filePath,
+    originalName,
+    mimeType,
+    sizeBytes,
+    sourceHash,
+    providerAssetId
+  });
+  await updateArkVirtualAssetStatus(id, { status: "active", publicUrl });
+  return mapArkVirtualAsset(await findArkVirtualAssetByInternalId(id));
+}
+
 export async function createVirtualAssetFromLocalFile({
   userId,
   feature = "digital-human",
@@ -143,6 +230,18 @@ export async function createVirtualAssetFromLocalFile({
   const normalizedFeature = normalizeFeature(feature);
   const assetType = getAssetTypeFromMime(mimeType);
   if (!assetType) throw createHttpError("unsupported asset file type", 400);
+
+  if (!isArkOpenApiConfigured()) {
+    return createLocalOnlyVirtualAssetFromLocalFile({
+      userId,
+      feature: normalizedFeature,
+      localUrl,
+      filePath,
+      originalName,
+      mimeType,
+      sizeBytes
+    });
+  }
 
   const sourceHash = await hashFile(filePath);
   const reusable = await findReusableArkVirtualAsset({
