@@ -66,7 +66,7 @@ const quickTemplates = [
   {
     id: "single-product-review",
     title: "《单品测评种草》",
-    image: "/assets/article/quick-templates/template-1.png",
+    image: "/assets/article/quick-templates/template-1.webp",
     copyTemplate: "测评种草模板",
     topic: "平价单品真实实测分享，突出产品质地、使用感受、外观细节与性价比，适合早八人、学生党日常种草测评，输出小红书吸睛标题 + 闺蜜安利式短种草正文，附带实用避坑小贴士与垂直好物话题标签",
     keyword: "平价单品,真实实测,质地,使用感受,性价比",
@@ -75,7 +75,7 @@ const quickTemplates = [
   {
     id: "mom-baby-review",
     title: "《母婴好物实测》",
-    image: "/assets/article/quick-templates/template-2.png",
+    image: "/assets/article/quick-templates/template-2.webp",
     copyTemplate: "测评种草模板",
     topic: "宝妈自用母婴好物真实测评，重点突出材质安全、带娃减负、使用便捷性，温柔真实分享风格，适配新手宝妈种草笔记，附带母婴选购避坑提醒与母婴垂直话题标签",
     keyword: "母婴好物,材质安全,带娃减负,使用便捷,新手宝妈",
@@ -84,7 +84,7 @@ const quickTemplates = [
   {
     id: "sensitive-skin-list",
     title: "《敏感肌护肤合集》",
-    image: "/assets/article/quick-templates/template-3.jpg",
+    image: "/assets/article/quick-templates/template-3.webp",
     copyTemplate: "清单攻略模板",
     topic: "换季敏感肌全套护肤好物合集，分别讲解每款护肤品补水、舒缓、修护屏障核心功效，干货清单式排版，分享长期维稳护肤心得，附带护肤叠加避坑指南与护肤赛道话题标签",
     keyword: "敏感肌,换季护肤,补水舒缓,修护屏障,护肤清单",
@@ -93,7 +93,7 @@ const quickTemplates = [
   {
     id: "kitchen-appliance-list",
     title: "《厨房小家电合集》",
-    image: "/assets/article/quick-templates/template-4.png",
+    image: "/assets/article/quick-templates/template-4.webp",
     copyTemplate: "清单攻略模板",
     topic: "小户型租房党厨房小家电全套合集，突出机身小巧不占地、操作简单易清洗、三餐多场景适配，生活化接地气种草，附带家电保养清洁小贴士与家居好物话题标签",
     keyword: "厨房小家电,小户型,租房党,易清洗,家居好物",
@@ -102,7 +102,7 @@ const quickTemplates = [
   {
     id: "digital-accessory-review",
     title: "《平价数码配件测评》",
-    image: "/assets/article/quick-templates/template-5.png",
+    image: "/assets/article/quick-templates/template-5.webp",
     copyTemplate: "测评种草模板",
     topic: "高性价比手机、电脑数码配件单品实测，突出续航、质感、实用功能，对比百元平替与大牌差异，学生党、打工人刚需，附带数码选购避坑提醒",
     keyword: "数码配件,高性价比,续航,质感,百元平替",
@@ -111,7 +111,7 @@ const quickTemplates = [
   {
     id: "pet-care-list",
     title: "《猫狗宠物养护好物》",
-    image: "/assets/article/quick-templates/template-6.png",
+    image: "/assets/article/quick-templates/template-6.webp",
     copyTemplate: "清单攻略模板",
     topic: "新手养猫养狗全套养护好物清单，侧重安全无刺激、清洁省力，分喂食、洗护、玩具类单品讲解，真实养宠实测分享，附带宠物用品选购避坑贴士",
     keyword: "宠物养护,新手养宠,安全无刺激,清洁省力,宠物用品",
