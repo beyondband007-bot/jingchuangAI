@@ -7,7 +7,7 @@ export function getFaceSwapModels(_req, res) {
 
 export async function uploadFaceSwapImage(req, res) {
   try {
-    res.status(201).json(await service.createAsset({ kind: "image", file: req.file }));
+    res.status(201).json(await service.createAsset({ kind: "image", file: req.file, user: req.user }));
   } catch (error) {
     sendError(res, error);
   }
@@ -15,7 +15,7 @@ export async function uploadFaceSwapImage(req, res) {
 
 export async function uploadFaceSwapVideo(req, res) {
   try {
-    res.status(201).json(await service.createAsset({ kind: "video", file: req.file }));
+    res.status(201).json(await service.createAsset({ kind: "video", file: req.file, user: req.user }));
   } catch (error) {
     sendError(res, error);
   }

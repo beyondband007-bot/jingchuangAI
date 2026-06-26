@@ -9,6 +9,11 @@ export function useBillingQuote(feature, payload = {}, fallbackPoints = null) {
   const [points, setPoints] = useState(() => quoteCache.get(cacheKey) ?? fallbackPoints);
 
   useEffect(() => {
+    if (!feature) {
+      setPoints(fallbackPoints);
+      return undefined;
+    }
+
     let cancelled = false;
     const cached = quoteCache.get(cacheKey);
     if (typeof cached === "number") {
@@ -47,10 +52,9 @@ export default function BillingPoints({
   fallbackPoints = null,
   className = "",
 }) {
-  const quotedPoints = useBillingQuote(feature, payload, fallbackPoints);
-  const points = Number.isFinite(Number(explicitPoints))
-    ? Number(explicitPoints)
-    : quotedPoints;
+  const hasExplicitPoints = Number.isFinite(Number(explicitPoints));
+  const quotedPoints = useBillingQuote(hasExplicitPoints ? null : feature, payload, fallbackPoints);
+  const points = hasExplicitPoints ? Number(explicitPoints) : quotedPoints;
 
   if (!Number.isFinite(Number(points))) return null;
 

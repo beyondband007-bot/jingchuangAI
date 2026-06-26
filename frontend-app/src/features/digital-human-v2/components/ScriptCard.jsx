@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { Loader2, Pause, Play, Sparkles } from "lucide-react";
+import { Loader2, Pause, Play, Sparkles, Upload } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
+import { voiceApi } from "../../voice/voiceApi";
 import {
   SCRIPT_MAX_LENGTH,
   VOICE_UNAVAILABLE_HINT,
@@ -11,8 +12,12 @@ import {
   getVoiceEmotionValue,
   isDigitalHumanVoiceEnabled,
 } from "../utils";
+import { VOICE_DUBBING_MODES } from "./VoiceDubbingModeCard";
 
 const DEFAULT_PLACEHOLDER = "请输入你希望角色说的内容";
+const CLONE_AUDIO_ACCEPT = "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a";
+const CLONE_AUDIO_MIN_MS = 10000;
+const CLONE_AUDIO_MAX_MS = 5 * 60 * 1000;
 
 export function ScriptCard({
   text,
@@ -21,16 +26,23 @@ export function ScriptCard({
   voiceId,
   voiceSpeed = 1,
   voiceEmotion = "中性",
+  voiceMode = VOICE_DUBBING_MODES.system,
+  showCloneUpload = false,
+  cloneAudio,
+  onCloneAudioChange,
 }) {
   const textareaRef = useRef(null);
   const audioRef = useRef(null);
+  const cloneInputRef = useRef(null);
   const lastPreviewKeyRef = useRef("");
   const [selection, setSelection] = useState({ start: 0, end: 0, text: "" });
   const [previewDurationMs, setPreviewDurationMs] = useState(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isUploadingClone, setIsUploadingClone] = useState(false);
   const estimatedSeconds = estimateSpeechSeconds(text);
   const canOptimize = Boolean(selection.text.trim());
+  const isCloneMode = showCloneUpload && voiceMode === VOICE_DUBBING_MODES.clone;
 
   useEffect(() => {
     setPreviewDurationMs(null);
@@ -40,7 +52,80 @@ export function ScriptCard({
       audioRef.current = null;
     }
     setIsPlaying(false);
-  }, [text, voiceId, voiceSpeed, voiceEmotion]);
+  }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, isCloneMode]);
+
+  function openCloneFilePicker() {
+    cloneInputRef.current?.click();
+  }
+
+  function readAudioDurationMs(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+      audio.addEventListener("loadedmetadata", () => {
+        const durationMs = Math.round(Number(audio.duration || 0) * 1000);
+        URL.revokeObjectURL(url);
+        resolve(durationMs > 0 ? durationMs : 0);
+      });
+      audio.addEventListener("error", () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      });
+    });
+  }
+
+  async function handleCloneFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!/\.(mp3|wav|m4a)$/i.test(file.name) && !/^audio\//i.test(file.type)) {
+      Message.warning("请上传 MP3、WAV 或 M4A 格式音频");
+      return;
+    }
+
+    setIsUploadingClone(true);
+    try {
+      const durationMs = await readAudioDurationMs(file);
+      if (durationMs > 0 && durationMs < CLONE_AUDIO_MIN_MS) {
+        Message.warning("参考音频建议不少于 10 秒");
+        return;
+      }
+      if (durationMs > CLONE_AUDIO_MAX_MS) {
+        Message.warning("参考音频不能超过 5 分钟");
+        return;
+      }
+      const uploaded = await voiceApi.uploadCloneAudio(file, durationMs);
+      if (uploaded.cachedVoice) {
+        onCloneAudioChange?.({
+          fileId: uploaded.cachedVoice.id,
+          audioHash: uploaded.audioHash,
+          name: uploaded.cachedVoice.name || file.name,
+          durationMs: uploaded.durationMs || durationMs,
+          cachedVoice: uploaded.cachedVoice,
+          reused: true,
+        });
+      } else {
+        onCloneAudioChange?.({
+          fileId: uploaded.fileId || uploaded.file_id,
+          audioHash: uploaded.audioHash,
+          name: uploaded.localName || file.name,
+          durationMs: uploaded.durationMs || durationMs,
+          mimeType: uploaded.mimeType,
+          size: uploaded.size,
+        });
+      }
+      Message.success("参考音频上传成功");
+    } catch (error) {
+      Message.error(error?.message || "音频上传失败");
+    } finally {
+      setIsUploadingClone(false);
+    }
+  }
+
+  function clearCloneAudio() {
+    onCloneAudioChange?.(null);
+  }
 
   function bindPreviewAudio(audio) {
     audioRef.current = audio;
@@ -95,6 +180,15 @@ export function ScriptCard({
       setPreviewDurationMs(null);
       if (shouldPlay) {
         Message.info("请先输入配音内容");
+      }
+      return;
+    }
+    if (isCloneMode) {
+      if (cloneAudio?.durationMs) {
+        setPreviewDurationMs(cloneAudio.durationMs);
+      }
+      if (shouldPlay) {
+        Message.info("音色克隆模式下请使用参考音频驱动口播");
       }
       return;
     }
@@ -164,13 +258,84 @@ export function ScriptCard({
 
   const durationLabel = previewDurationMs
     ? `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
-    : "试听后可获取准确的说话时长";
+    : isCloneMode
+      ? "上传参考音频后可查看时长"
+      : "试听后可获取准确的说话时长";
 
   return (
     <section className="dhv2-card dhv2-script-card" aria-label="配音内容">
-      <header className="dhv2-card__head">
+      <header className="dhv2-card__head dhv2-script-card__head">
         <h2>配音内容</h2>
+        {isCloneMode ? (
+          <button
+            type="button"
+            className="dhv2-script-upload-btn"
+            disabled={isUploadingClone}
+            onClick={openCloneFilePicker}
+          >
+            <Upload size={14} />
+            {isUploadingClone ? "上传中..." : "上传音频"}
+          </button>
+        ) : null}
       </header>
+
+      <input
+        ref={cloneInputRef}
+        type="file"
+        accept={CLONE_AUDIO_ACCEPT}
+        hidden
+        onChange={handleCloneFileChange}
+      />
+
+      {isCloneMode ? (
+        <button
+          type="button"
+          className={`dhv2-clone-audio-upload${cloneAudio ? " has-file" : ""}`}
+          disabled={isUploadingClone}
+          onClick={openCloneFilePicker}
+        >
+          <span className="dhv2-clone-audio-upload__icon" aria-hidden="true">
+            <Upload size={18} />
+          </span>
+          <span className="dhv2-clone-audio-upload__text">
+            {cloneAudio ? (
+              <>
+                <strong>{cloneAudio.name}</strong>
+                <span>
+                  {cloneAudio.durationMs
+                    ? formatSpeechDurationFromMs(cloneAudio.durationMs)
+                    : "已上传参考音频"}
+                </span>
+              </>
+            ) : (
+              <>
+                <strong>上传本人人声参考音频，复刻专属音色</strong>
+                <span>支持 MP3、WAV、M4A 格式，建议 10 秒以上</span>
+              </>
+            )}
+          </span>
+          {cloneAudio ? (
+            <span
+              className="dhv2-clone-audio-upload__clear"
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
+                event.stopPropagation();
+                clearCloneAudio();
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  clearCloneAudio();
+                }
+              }}
+            >
+              移除
+            </span>
+          ) : null}
+        </button>
+      ) : null}
 
       <div className="dhv2-script-field">
         <textarea
@@ -201,7 +366,7 @@ export function ScriptCard({
         className={`dhv2-script-preview${previewDurationMs ? " has-duration" : ""}${
           isPlaying ? " is-playing" : ""
         }`}
-        disabled={isPreviewing || !text.trim()}
+        disabled={isPreviewing || !text.trim() || isCloneMode}
         aria-label={isPlaying ? "暂停试听" : "播放试听"}
         onClick={handlePreviewClick}
       >
@@ -221,7 +386,9 @@ export function ScriptCard({
         <span>
           {previewDurationMs
             ? `试听时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
-            : `预估时长 ${formatVoiceDuration(estimatedSeconds)}`}
+            : isCloneMode && cloneAudio?.durationMs
+              ? `参考音频 ${formatSpeechDurationFromMs(cloneAudio.durationMs)}`
+              : `预估时长 ${formatVoiceDuration(estimatedSeconds)}`}
         </span>
         <span>
           {text.length} / {SCRIPT_MAX_LENGTH}

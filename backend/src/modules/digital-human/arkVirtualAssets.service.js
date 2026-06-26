@@ -9,7 +9,7 @@ import {
   getArkAssetError,
   mapArkAssetStatus
 } from "../../providers/volcengine/assets.js";
-import { buildPublicMediaUrl } from "../../shared/publicMedia.js";
+import { buildPublicMediaUrl, assertPublicMediaUrlAccessible } from "../../shared/publicMedia.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
@@ -255,6 +255,7 @@ export async function createVirtualAssetFromLocalFile({
 
   const group = await ensureVirtualAssetGroup({ userId, feature: normalizedFeature });
   const publicUrl = buildPublicMediaUrl(localUrl);
+  await assertPublicMediaUrlAccessible(publicUrl, assetType === "Video" ? "视频" : assetType === "Image" ? "图片" : "素材");
   const result = await createArkAsset({
     projectName: config.ark.projectName,
     groupId: group.provider_group_id,
@@ -331,11 +332,20 @@ export async function waitForVirtualAssetReference(assetId, options = {}) {
   row = await refreshVirtualAssetByRow(row, { force: true });
   if (row.status !== "active") {
     const asset = await waitForVirtualAssetActive(assetId, options);
+    if (!asset.assetUri && !asset.publicUrl) {
+      throw createHttpError("Ark virtual asset missing reference URL", 502);
+    }
+    if (asset.publicUrl && !asset.assetUri?.startsWith("asset://")) {
+      return asset.publicUrl;
+    }
     return asset.assetUri || asset.publicUrl;
   }
 
   const asset = mapArkVirtualAsset(row);
-  const referenceUrl = asset.assetUri || asset.publicUrl;
+  if (asset.status === "failed") {
+    throw createHttpError(asset.error || "Ark virtual asset failed", 422);
+  }
+  const referenceUrl = asset.publicUrl?.startsWith("http") ? asset.publicUrl : (asset.assetUri || asset.publicUrl);
   if (!referenceUrl) throw createHttpError("Ark virtual asset missing reference URL", 502);
   return referenceUrl;
 }

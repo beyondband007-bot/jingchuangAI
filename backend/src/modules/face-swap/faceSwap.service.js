@@ -22,6 +22,7 @@ import {
   createFaceSwapTask,
   deleteFaceSwapTask,
   findFaceSwapAsset,
+  findFaceSwapAssetByIdForUser,
   findFaceSwapTaskRow,
   findFaceSwapTaskStatus,
   findRefreshableFaceSwapTasks,
@@ -94,6 +95,8 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
+      estimatedPoints: calculateVideoPoints(getProviderDuration(model)),
+      price: `${calculateVideoPoints(getProviderDuration(model))} 积分`,
       configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.media.publicBaseUrl)
     })),
     defaults: {
@@ -109,8 +112,9 @@ export function getModels() {
   };
 }
 
-export async function createAsset({ kind, file }) {
+export async function createAsset({ kind, file, user }) {
   if (!file) throw createHttpError(`${kind} file is required`, 400);
+  if (!user?.id) throw createHttpError("请先登录", 401);
 
   if (kind === "video") {
     try {
@@ -124,11 +128,11 @@ export async function createAsset({ kind, file }) {
   const localUrl = `/media/face-swap/${kind === "image" ? "images" : "videos"}/${file.filename}`;
   const connection = await getPool().getConnection();
   let assetId;
+  const userId = user.id;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
     assetId = await createFaceSwapAsset(connection, {
-      userId: user.id,
+      userId,
       kind,
       localUrl,
       filePath: file.path,
@@ -145,7 +149,9 @@ export async function createAsset({ kind, file }) {
     connection.release();
   }
 
-  return mapFaceSwapAsset(await findFaceSwapAsset(assetId, kind));
+  const asset = mapFaceSwapAsset(await findFaceSwapAssetByIdForUser(assetId, kind, userId));
+  if (!asset) throw createHttpError("上传资源保存失败，请重试", 500);
+  return asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {
@@ -176,8 +182,7 @@ export async function createTask(payload) {
   const model = getModelByKey(payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution);
-  await getSourceVideoDuration(videoAsset);
-  const duration = getProviderDuration(model);
+  const duration = await getSourceVideoDuration(videoAsset);
   const costPoints = calculateVideoPoints(duration);
 
   const connection = await getPool().getConnection();
@@ -221,6 +226,7 @@ export async function createTask(payload) {
       model: model.providerModel,
       resolution,
       ratio: "adaptive",
+      duration,
       generateAudio: false,
       watermark: false,
       content: [
