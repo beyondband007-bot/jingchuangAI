@@ -25,9 +25,17 @@ import {
 const REGISTER_GRANT_POINTS = 200;
 const SMS_SEND_INTERVAL_MS = 60 * 1000;
 const SMS_MAX_ATTEMPTS = 5;
-const SMS_SCENES = new Set(["register", "login", "password_reset"]);
+const SMS_SCENES = new Set([
+  "register",
+  "login",
+  "password_reset",
+  "change_phone_old",
+  "change_phone_new",
+  "change_password"
+]);
 const CAPTCHA_TYPE_SLIDER = 9;
 const defaultAvatarCount = 25;
+const PHONE_CHANGE_TOKEN_TTL_MS = 10 * 60 * 1000;
 
 function createRandomAvatarUrl() {
   return `/assets/avatars/${randomInt(1, defaultAvatarCount + 1)}.jpg`;
@@ -113,6 +121,97 @@ function publicUser(user, credits) {
     isGuest: Boolean(user.isGuest),
     credits
   };
+}
+
+async function requireAccountUser(req, connection = getPool()) {
+  const user = await resolveCurrentUser(req);
+  if (!user?.id || user.isGuest) {
+    throw createHttpError("请先登录", 401);
+  }
+  const [rows] = await connection.query(
+    `SELECT id, external_id AS externalId, invite_code AS inviteCode, display_name AS displayName, avatar_url AS avatarUrl, username, phone, email,
+       password_hash AS passwordHash
+     FROM users
+     WHERE id = ?
+     LIMIT 1`,
+    [user.id]
+  );
+  const current = rows[0] || null;
+  if (!current) {
+    throw createHttpError("用户不存在", 404);
+  }
+  return current;
+}
+
+async function buildPublicUser(user, connection = getPool()) {
+  const credits = await getUserCredits(user.id);
+  return publicUser({ ...user, isGuest: false }, credits.balance);
+}
+
+function assertDisplayName(value) {
+  const displayName = String(value || "").trim();
+  if (!displayName) {
+    throw createHttpError("请输入昵称", 400);
+  }
+  if (displayName.length > 20) {
+    throw createHttpError("昵称不能超过 20 个字符", 400);
+  }
+  return displayName;
+}
+
+function normalizeBuiltInAvatarUrl(value) {
+  const avatarUrl = String(value || "").trim();
+  if (!/^\/assets\/avatars\/(?:[1-9]|1\d|2[0-5])\.jpg$/.test(avatarUrl)) {
+    throw createHttpError("头像路径无效", 400);
+  }
+  return avatarUrl;
+}
+
+function getAccountTokenSecret() {
+  return (
+    config.tencentCloud.secretKey ||
+    config.captcha.tencentAppSecretKey ||
+    "facemini-account-settings-local-secret"
+  );
+}
+
+function createPhoneChangeToken(user) {
+  const payload = {
+    userId: user.id,
+    phone: user.phone,
+    expiresAt: Date.now() + PHONE_CHANGE_TOKEN_TTL_MS
+  };
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = createHmac("sha256", getAccountTokenSecret())
+    .update(encodedPayload)
+    .digest("base64url");
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifyPhoneChangeToken(token, user) {
+  const [encodedPayload, signature] = String(token || "").split(".");
+  if (!encodedPayload || !signature) {
+    throw createHttpError("请先验证当前手机号", 400);
+  }
+  const expectedSignature = createHmac("sha256", getAccountTokenSecret())
+    .update(encodedPayload)
+    .digest("base64url");
+  if (signature !== expectedSignature) {
+    throw createHttpError("当前手机号验证已失效，请重新验证", 400);
+  }
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+  } catch {
+    throw createHttpError("当前手机号验证已失效，请重新验证", 400);
+  }
+  if (
+    Number(payload.userId) !== Number(user.id) ||
+    String(payload.phone || "") !== String(user.phone || "") ||
+    Number(payload.expiresAt || 0) < Date.now()
+  ) {
+    throw createHttpError("当前手机号验证已失效，请重新验证", 400);
+  }
 }
 
 async function grantInitialCredits(userId, connection) {
@@ -375,15 +474,20 @@ export async function sendSmsCode(payload, req) {
   await verifyTencentCaptcha(payload, req);
 
   const code = String(randomInt(100000, 1000000));
-  await sendVerificationSms(phone, code, scene);
-
   const salt = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + getSmsCodeTtlMs());
-  await pool.query(
+  const [insertResult] = await pool.query(
     `INSERT INTO auth_verification_codes (channel, scene, target, code_hash, salt, expires_at, sent_at)
      VALUES ('sms', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     [scene, phone, hashCode(scene, phone, code, salt), salt, expiresAt]
   );
+
+  try {
+    await sendVerificationSms(phone, code, scene);
+  } catch (error) {
+    await pool.query("UPDATE auth_verification_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?", [insertResult.insertId]);
+    throw error;
+  }
 
   return {
     ok: true,
@@ -542,11 +646,147 @@ export async function resetPasswordWithSmsCode(payload) {
   }
 }
 
+export async function updateAccountProfile(req) {
+  const displayName = assertDisplayName(req.body?.displayName);
+  const pool = getPool();
+  const user = await requireAccountUser(req, pool);
+  await pool.query("UPDATE users SET display_name = ? WHERE id = ?", [displayName, user.id]);
+  return {
+    user: await buildPublicUser({ ...user, displayName }, pool)
+  };
+}
+
+export async function selectAccountAvatar(req) {
+  const avatarUrl = normalizeBuiltInAvatarUrl(req.body?.avatarUrl);
+  const pool = getPool();
+  const user = await requireAccountUser(req, pool);
+  await pool.query("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, user.id]);
+  return {
+    user: await buildPublicUser({ ...user, avatarUrl }, pool)
+  };
+}
+
+export async function uploadAccountAvatar(req) {
+  if (!req.file) {
+    throw createHttpError("请上传头像图片", 400);
+  }
+  const pool = getPool();
+  const user = await requireAccountUser(req, pool);
+  const avatarUrl = `/assets/avatars/upload/${req.file.filename}`;
+  await pool.query("UPDATE users SET avatar_url = ? WHERE id = ?", [avatarUrl, user.id]);
+  return {
+    user: await buildPublicUser({ ...user, avatarUrl }, pool)
+  };
+}
+
+export async function verifyAccountCurrentPhone(req) {
+  const oldPhoneCode = assertSmsCode(req.body?.oldPhoneCode);
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const user = await requireAccountUser(req, connection);
+    if (!user.phone) {
+      throw createHttpError("当前账号未绑定手机号", 400);
+    }
+    await verifySmsCode("change_phone_old", user.phone, oldPhoneCode, connection);
+    await connection.commit();
+    return {
+      ok: true,
+      phoneChangeToken: createPhoneChangeToken(user)
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function changeAccountPhone(req) {
+  const newPhone = normalizePhone(req.body?.newPhone);
+  const newPhoneCode = assertSmsCode(req.body?.newPhoneCode);
+  const phoneChangeToken = String(req.body?.phoneChangeToken || "");
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const user = await requireAccountUser(req, connection);
+    if (!user.phone) {
+      throw createHttpError("当前账号未绑定手机号", 400);
+    }
+    verifyPhoneChangeToken(phoneChangeToken, user);
+    if (user.phone === newPhone) {
+      throw createHttpError("新手机号不能与当前手机号相同", 400);
+    }
+    const existing = await findUserByLoginIdentifier(newPhone, connection);
+    if (existing && existing.id !== user.id) {
+      throw createHttpError("手机号已被占用", 409);
+    }
+    await verifySmsCode("change_phone_new", newPhone, newPhoneCode, connection);
+    const nextUsername = user.username === user.phone ? newPhone : user.username;
+    await connection.query("UPDATE users SET phone = ?, username = ? WHERE id = ?", [
+      newPhone,
+      nextUsername,
+      user.id
+    ]);
+    await connection.commit();
+    return {
+      user: await buildPublicUser({ ...user, phone: newPhone, username: nextUsername }, pool)
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function changeAccountPassword(req) {
+  const mode = String(req.body?.mode || "").trim();
+  const newPassword = assertPassword(req.body?.newPassword);
+  const pool = getPool();
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const user = await requireAccountUser(req, connection);
+    if (mode === "password") {
+      const oldPassword = assertPassword(req.body?.oldPassword);
+      if (!user.passwordHash || !(await verifyPassword(oldPassword, user.passwordHash))) {
+        throw createHttpError("原密码错误", 400);
+      }
+    } else if (mode === "sms") {
+      if (!user.phone) {
+        throw createHttpError("当前账号未绑定手机号", 400);
+      }
+      const code = assertSmsCode(req.body?.code);
+      await verifySmsCode("change_password", user.phone, code, connection);
+    } else {
+      throw createHttpError("修改密码方式无效", 400);
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await connection.query("UPDATE users SET password_hash = ? WHERE id = ?", [passwordHash, user.id]);
+    await connection.commit();
+    return {
+      user: await buildPublicUser({ ...user, passwordHash }, pool)
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function sendVerificationSms(phone, code, scene) {
   const templateId =
     scene === "register"
       ? config.sms.registerTemplateId
-      : scene === "password_reset"
+      : scene === "password_reset" || scene === "change_password"
         ? config.sms.reviseTemplateId
         : config.sms.loginTemplateId;
 

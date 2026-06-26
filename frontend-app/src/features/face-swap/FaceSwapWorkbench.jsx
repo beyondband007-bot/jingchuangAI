@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
+import BillingPoints from "../../components/BillingPoints.jsx";
 import "./FaceSwapWorkbench.css";
 
 const faceSamples = [
@@ -305,7 +306,22 @@ export function FaceSwapWorkbench({
   }, [imagePreview, videoPreview]);
 
   const selectedModel = options.models.find((item) => item.value === model) || options.models[0] || null;
-  const price = `${selectedModel?.basePoints || 0} 积分`;
+  const estimatedDurationSeconds = videoAsset && sourceDuration ? Number(sourceDuration) : 0;
+  const billingFeature = isMotionPreview ? "motion-transfer" : "face-swap";
+  const fallbackPoints =
+    Number(selectedModel?.estimatedPoints ?? selectedModel?.points ?? selectedModel?.basePoints ?? 0) || null;
+  const price = estimatedDurationSeconds
+    ? (
+        <>
+          <BillingPoints
+            feature={billingFeature}
+            payload={{ durationSeconds: estimatedDurationSeconds }}
+            fallbackPoints={fallbackPoints}
+          />
+          {" 积分"}
+        </>
+      )
+    : "上传视频后预估";
 
   const resolutionOptions = useMemo(() => {
     const values = new Set();
@@ -504,6 +520,9 @@ export function FaceSwapWorkbench({
           </div>
 
           <div className="face-swap-workbench__action-area">
+            <span className="face-swap-workbench__dynamic-price">
+              {estimatedDurationSeconds ? <>预计消耗 {price}</> : "上传视频后预估积分消耗"}
+            </span>
             <button className="face-swap-workbench__start-button" type="button" onClick={submit} disabled={isSubmitting || !!uploading}>
               {isSubmitting ? <Loader2 size={18} /> : <Sparkles size={18} />}
               {copy.submitLabel}

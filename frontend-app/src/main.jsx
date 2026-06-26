@@ -2554,7 +2554,7 @@ function CreationCenterView({
       label: "打开大模型",
     },
     {
-      image: faceminiAsset("creation/banners/home-top-slider-2.png"),
+      image: faceminiAsset("creation/banners/home-top-slider-2.jpg"),
       action: "invite",
       label: "打开邀请有礼",
     },
@@ -2724,14 +2724,14 @@ function CreationCenterView({
           type="button"
           onClick={() => onOpenFeature("image")}
         >
-          <img src={faceminiAsset("creation/banners/banner-01.png")} alt="" />
+          <img src={faceminiAsset("creation/banners/banner-01.jpg")} alt="" />
         </button>
         <button
           className="fm-banner-card"
           type="button"
           onClick={() => onOpenFeature("digital-human")}
         >
-          <img src={faceminiAsset("creation/banners/banner-02.png")} alt="" />
+          <img src={faceminiAsset("creation/banners/banner-02.jpg")} alt="" />
         </button>
       </div>
       <section className="fm-section-block">
@@ -3370,6 +3370,12 @@ function canFavoriteAsset(card) {
   return status !== "failed" && status !== "error";
 }
 
+function isBuiltInAvatarUrl(value) {
+  return /^\/assets\/avatars\/(?:[1-9]|1\d|2[0-5])\.jpg$/.test(
+    String(value || ""),
+  );
+}
+
 function CreditTransactionsPanel({
   transactions,
   transactionsPage,
@@ -3543,6 +3549,38 @@ function AssetsPage({
   );
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  const [accountSettingsPanel, setAccountSettingsPanel] = useState("list");
+  const [accountSettingsTab, setAccountSettingsTab] = useState("built-in");
+  const [accountSettingsError, setAccountSettingsError] = useState("");
+  const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
+  const [accountSettingsToast, setAccountSettingsToast] = useState(null);
+  const [accountSettingsSubmitting, setAccountSettingsSubmitting] =
+    useState(false);
+  const [accountSmsSending, setAccountSmsSending] = useState("");
+  const [accountSmsCooldowns, setAccountSmsCooldowns] = useState({});
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState("");
+  const [avatarUploadSrc, setAvatarUploadSrc] = useState("");
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffset, setAvatarOffset] = useState({ x: 0, y: 0 });
+  const [avatarDragState, setAvatarDragState] = useState(null);
+  const avatarImageRef = useRef(null);
+  const accountToastTimerRef = useRef(null);
+  const accountSettingsCloseTimerRef = useRef(null);
+  const [nicknameDraft, setNicknameDraft] = useState("");
+  const [phoneDraft, setPhoneDraft] = useState({
+    oldPhoneCode: "",
+    newPhone: "",
+    newPhoneCode: "",
+    phoneChangeToken: "",
+  });
+  const [phoneChangeStep, setPhoneChangeStep] = useState("old");
+  const [passwordMode, setPasswordMode] = useState("password");
+  const [passwordDraft, setPasswordDraft] = useState({
+    oldPassword: "",
+    smsCode: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [previewAsset, setPreviewAsset] = useState(null);
   const effectiveViewMode = pageMode || viewMode;
 
@@ -3950,12 +3988,97 @@ function AssetsPage({
 
   useEffect(() => {
     if (!showAccountSettings) return undefined;
+    setAccountSettingsPanel("list");
+    setAccountSettingsTab("built-in");
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(false);
+    setSelectedAvatarUrl(
+      isBuiltInAvatarUrl(authUser?.avatarUrl)
+        ? authUser.avatarUrl
+        : defaultUserAvatarSrc,
+    );
+    setNicknameDraft(profileDisplayName);
+    setPhoneDraft({
+      oldPhoneCode: "",
+      newPhone: "",
+      newPhoneCode: "",
+      phoneChangeToken: "",
+    });
+    setPhoneChangeStep("old");
+    setPasswordMode("password");
+    setPasswordDraft({
+      oldPassword: "",
+      smsCode: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+  }, [authUser?.avatarUrl, profileDisplayName, showAccountSettings]);
+
+  function closeAccountSettings() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+      accountSettingsCloseTimerRef.current = null;
+    }
+    setShowAccountSettings(false);
+  }
+
+  function closeAccountSettingsAfterSuccess() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+    }
+    accountSettingsCloseTimerRef.current = window.setTimeout(() => {
+      accountSettingsCloseTimerRef.current = null;
+      closeAccountSettings();
+    }, 1200);
+  }
+
+  useEffect(() => {
+    if (!showAccountSettings) return undefined;
     function handleKeyDown(event) {
-      if (event.key === "Escape") setShowAccountSettings(false);
+      if (event.key === "Escape") closeAccountSettings();
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showAccountSettings]);
+
+  useEffect(() => {
+    if (!avatarUploadSrc) return undefined;
+    return () => {
+      URL.revokeObjectURL(avatarUploadSrc);
+    };
+  }, [avatarUploadSrc]);
+
+  useEffect(() => {
+    const hasCooldown = Object.values(accountSmsCooldowns).some(
+      (value) => Number(value) > 0,
+    );
+    if (!hasCooldown) return undefined;
+    const timer = window.setTimeout(() => {
+      setAccountSmsCooldowns((current) =>
+        Object.fromEntries(
+          Object.entries(current).map(([key, value]) => [
+            key,
+            Math.max(0, Number(value) - 1),
+          ]),
+        ),
+      );
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [accountSmsCooldowns]);
+
+  useEffect(() => {
+    return () => {
+      if (accountToastTimerRef.current) {
+        window.clearTimeout(accountToastTimerRef.current);
+      }
+      if (accountSettingsCloseTimerRef.current) {
+        window.clearTimeout(accountSettingsCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   function selectAssetTab(tab) {
     setActiveAssetTab(tab);
@@ -4113,6 +4236,790 @@ function AssetsPage({
       setInviteLinkCopied(true);
       window.setTimeout(() => setInviteLinkCopied(false), 1800);
     }
+  }
+
+  function publishAuthUserUpdate(user) {
+    if (!user) return;
+    window.dispatchEvent(
+      new CustomEvent("facemini-auth-user-updated", { detail: { user } }),
+    );
+  }
+
+  function accountErrorMessage(error, fallback) {
+    if (Number(error?.status) === 404) {
+      return "账号设置接口未生效，请重启后端服务后重试";
+    }
+    return error?.message || fallback;
+  }
+
+  function showAccountToast(message, type = "error") {
+    if (!message) return;
+    if (accountToastTimerRef.current) {
+      window.clearTimeout(accountToastTimerRef.current);
+    }
+    setAccountSettingsToast({
+      message,
+      type,
+      id: Date.now(),
+    });
+    accountToastTimerRef.current = window.setTimeout(() => {
+      setAccountSettingsToast(null);
+      accountToastTimerRef.current = null;
+    }, 2000);
+  }
+
+  function openAccountSettingsPanel(panel) {
+    setAccountSettingsPanel(panel);
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (panel === "avatar") {
+      setSelectedAvatarUrl(
+        isBuiltInAvatarUrl(authUser?.avatarUrl)
+          ? authUser.avatarUrl
+          : defaultUserAvatarSrc,
+      );
+      setAccountSettingsTab("built-in");
+    }
+    if (panel === "nickname") {
+      setNicknameDraft(profileDisplayName);
+    }
+    if (panel === "phone") {
+      setPhoneDraft({
+        oldPhoneCode: "",
+        newPhone: "",
+        newPhoneCode: "",
+        phoneChangeToken: "",
+      });
+      setPhoneChangeStep("old");
+    }
+    if (panel === "password") {
+      setPasswordMode("password");
+      setPasswordDraft({
+        oldPassword: "",
+        smsCode: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    }
+  }
+
+  async function runAccountTencentCaptcha() {
+    const captchaConfig = await authApi.captchaConfig();
+    if (
+      captchaConfig.provider !== "tencent" ||
+      !captchaConfig.enabled ||
+      !captchaConfig.appId
+    ) {
+      throw new Error("验证码服务未配置完整");
+    }
+    await loadTencentCaptchaScript();
+    if (!window.TencentCaptcha) {
+      throw new Error("验证码组件加载失败，请稍后重试");
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const captcha = new window.TencentCaptcha(
+          String(captchaConfig.appId),
+          (result) => {
+            if (
+              Number(result?.ret) === 0 &&
+              result?.ticket &&
+              result?.randstr
+            ) {
+              resolve({
+                provider: "tencent",
+                ticket: result.ticket,
+                randstr: result.randstr,
+              });
+              return;
+            }
+            resolve(null);
+          },
+          { enableDarkMode: "force" },
+        );
+        captcha.show();
+      } catch (captchaError) {
+        reject(captchaError);
+      }
+    });
+  }
+
+  async function sendAccountSmsCode({ key, scene, phone }) {
+    const targetPhone = String(phone || "").trim();
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (!targetPhone) {
+      showAccountToast("请输入手机号", "error");
+      return;
+    }
+    setAccountSmsSending(key);
+    try {
+      const captcha = await runAccountTencentCaptcha();
+      if (!captcha) return;
+      const result = await authApi.sendSmsCode({
+        phone: targetPhone,
+        scene,
+        captcha,
+      });
+      setAccountSmsCooldowns((current) => ({ ...current, [key]: 60 }));
+      showAccountToast(
+        result.debugCode
+          ? `短信验证码已发送，调试码：${result.debugCode}`
+          : "短信验证码已发送",
+        "success",
+      );
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "验证码发送失败"), "error");
+    } finally {
+      setAccountSmsSending("");
+    }
+  }
+
+  function updateAvatarUploadSrc(file) {
+    if (!file) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type || "")) {
+      showAccountToast("请选择 JPG、PNG 或 WebP 图片", "error");
+      return;
+    }
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAvatarUploadSrc((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+  }
+
+  function drawCroppedAvatarBlob() {
+    return new Promise((resolve, reject) => {
+      const image = avatarImageRef.current;
+      if (!image?.naturalWidth || !image?.naturalHeight) {
+        reject(new Error("请先选择头像图片"));
+        return;
+      }
+      const previewSize = 220;
+      const canvasSize = 120;
+      const minSide = Math.min(image.naturalWidth, image.naturalHeight);
+      const scale = (previewSize / minSide) * avatarZoom;
+      const sourceSize = previewSize / scale;
+      const centerX =
+        image.naturalWidth / 2 - avatarOffset.x / scale;
+      const centerY =
+        image.naturalHeight / 2 - avatarOffset.y / scale;
+      const half = sourceSize / 2;
+      const sourceX = Math.min(
+        Math.max(0, centerX - half),
+        image.naturalWidth - sourceSize,
+      );
+      const sourceY = Math.min(
+        Math.max(0, centerY - half),
+        image.naturalHeight - sourceSize,
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const context = canvas.getContext("2d");
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        canvasSize,
+        canvasSize,
+      );
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("头像压缩失败，请重试"));
+            return;
+          }
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.95,
+      );
+    });
+  }
+
+  async function saveBuiltInAvatar() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.selectAvatar({ avatarUrl: selectedAvatarUrl });
+      publishAuthUserUpdate(result.user);
+      showAccountToast("头像已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "头像保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function saveUploadedAvatar() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const blob = await drawCroppedAvatarBlob();
+      const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      const result = await authApi.uploadAvatar({
+        file,
+        owner: authUser?.id || "user",
+      });
+      publishAuthUserUpdate(result.user);
+      setSelectedAvatarUrl(result.user?.avatarUrl || selectedAvatarUrl);
+      showAccountToast("头像已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "头像保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function saveNickname() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.updateProfile({
+        displayName: nicknameDraft,
+      });
+      publishAuthUserUpdate(result.user);
+      showAccountToast("昵称已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "昵称保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function savePhone() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.changePhone(phoneDraft);
+      publishAuthUserUpdate(result.user);
+      setPhoneDraft({
+        oldPhoneCode: "",
+        newPhone: "",
+        newPhoneCode: "",
+        phoneChangeToken: "",
+      });
+      setPhoneChangeStep("old");
+      showAccountToast("手机号已更新", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "手机号保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function verifyOldPhone() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setAccountSettingsSubmitting(true);
+    try {
+      const result = await authApi.verifyCurrentPhone({
+        oldPhoneCode: phoneDraft.oldPhoneCode,
+      });
+      setPhoneDraft((current) => ({
+        ...current,
+        phoneChangeToken: result.phoneChangeToken || "",
+      }));
+      setPhoneChangeStep("new");
+      showAccountToast("当前手机号验证通过", "success");
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "当前手机号验证失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  async function savePassword() {
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    if (passwordDraft.newPassword !== passwordDraft.confirmPassword) {
+      showAccountToast("两次输入的新密码不一致", "error");
+      return;
+    }
+    setAccountSettingsSubmitting(true);
+    try {
+      await authApi.changePassword({
+        mode: passwordMode,
+        oldPassword: passwordDraft.oldPassword,
+        code: passwordDraft.smsCode,
+        newPassword: passwordDraft.newPassword,
+      });
+      setPasswordDraft({
+        oldPassword: "",
+        smsCode: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      showAccountToast("密码已更新", "success");
+      closeAccountSettingsAfterSuccess();
+    } catch (nextError) {
+      showAccountToast(accountErrorMessage(nextError, "密码保存失败"), "error");
+    } finally {
+      setAccountSettingsSubmitting(false);
+    }
+  }
+
+  function renderAccountActionRow({
+    primaryLabel,
+    submittingLabel = "保存中...",
+    onPrimary,
+    primaryDisabled = false,
+  }) {
+    return (
+      <div className="fm-account-action-row">
+        <button
+          className="fm-account-secondary"
+          type="button"
+          onClick={() => openAccountSettingsPanel("list")}
+        >
+          返回
+        </button>
+        <button
+          className="fm-account-primary"
+          type="button"
+          disabled={accountSettingsSubmitting || primaryDisabled}
+          onClick={onPrimary}
+        >
+          {accountSettingsSubmitting ? submittingLabel : primaryLabel}
+        </button>
+      </div>
+    );
+  }
+
+  function getAccountSettingsTitle() {
+    return (
+      {
+        avatar: "修改头像",
+        nickname: "修改昵称",
+        phone: "修改手机号",
+        password: "修改密码",
+      }[accountSettingsPanel] || "账号设置"
+    );
+  }
+
+  function renderAccountSettingsContent() {
+    const builtInAvatars = Array.from(
+      { length: 25 },
+      (_, index) => `/assets/avatars/${index + 1}.jpg`,
+    );
+    const currentPhone = authUser?.phone || "";
+    const oldPhoneCooldown = Number(accountSmsCooldowns.oldPhone || 0);
+    const newPhoneCooldown = Number(accountSmsCooldowns.newPhone || 0);
+    const passwordCooldown = Number(accountSmsCooldowns.password || 0);
+
+    if (accountSettingsPanel === "avatar") {
+      return (
+        <>
+          <div className="fm-account-settings-tabs" role="tablist">
+            <button
+              type="button"
+              className={accountSettingsTab === "built-in" ? "is-active" : ""}
+              onClick={() => {
+                setAccountSettingsTab("built-in");
+                setSelectedAvatarUrl((current) =>
+                  isBuiltInAvatarUrl(current) ? current : defaultUserAvatarSrc,
+                );
+              }}
+            >
+              内置头像
+            </button>
+            <button
+              type="button"
+              className={accountSettingsTab === "upload" ? "is-active" : ""}
+              onClick={() => setAccountSettingsTab("upload")}
+            >
+              上传头像
+            </button>
+          </div>
+          {accountSettingsTab === "built-in" ? (
+            <>
+              <div className="fm-avatar-choice-grid">
+                {builtInAvatars.map((avatarUrl) => (
+                  <button
+                    type="button"
+                    key={avatarUrl}
+                    className={selectedAvatarUrl === avatarUrl ? "is-selected" : ""}
+                    onClick={() => setSelectedAvatarUrl(avatarUrl)}
+                  >
+                    <img src={avatarUrl} alt="" />
+                  </button>
+                ))}
+              </div>
+              {renderAccountActionRow({
+                primaryLabel: "保存头像",
+                onPrimary: saveBuiltInAvatar,
+              })}
+            </>
+          ) : (
+            <>
+              <label className="fm-avatar-upload-picker">
+                <UploadCloud size={20} />
+                <span>{avatarUploadSrc ? "重新选择图片" : "选择头像图片"}</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) =>
+                    updateAvatarUploadSrc(event.target.files?.[0])
+                  }
+                />
+              </label>
+              <div className="fm-avatar-crop-wrap">
+                {avatarUploadSrc ? (
+                  <div
+                    className="fm-avatar-crop-box"
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      setAvatarDragState({
+                        x: event.clientX,
+                        y: event.clientY,
+                        offset: avatarOffset,
+                      });
+                    }}
+                    onPointerMove={(event) => {
+                      if (!avatarDragState) return;
+                      setAvatarOffset({
+                        x:
+                          avatarDragState.offset.x +
+                          event.clientX -
+                          avatarDragState.x,
+                        y:
+                          avatarDragState.offset.y +
+                          event.clientY -
+                          avatarDragState.y,
+                      });
+                    }}
+                    onPointerUp={() => setAvatarDragState(null)}
+                    onPointerCancel={() => setAvatarDragState(null)}
+                  >
+                    <img
+                      ref={avatarImageRef}
+                      src={avatarUploadSrc}
+                      alt="头像裁剪预览"
+                      style={{
+                        transform: `translate(${avatarOffset.x}px, ${avatarOffset.y}px) scale(${avatarZoom})`,
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                ) : (
+                  <div className="fm-avatar-crop-empty">
+                    <Camera size={30} />
+                    <span>选择图片后在这里拖拽裁剪</span>
+                  </div>
+                )}
+              </div>
+              <label className="fm-avatar-zoom-control">
+                <span>缩放</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="2.5"
+                  step="0.05"
+                  value={avatarZoom}
+                  onChange={(event) => setAvatarZoom(Number(event.target.value))}
+                  disabled={!avatarUploadSrc}
+                />
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "保存裁剪头像",
+                onPrimary: saveUploadedAvatar,
+                primaryDisabled: !avatarUploadSrc,
+              })}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "nickname") {
+      return (
+        <>
+          <label className="fm-account-field">
+            <span>昵称</span>
+            <input
+              value={nicknameDraft}
+              maxLength={20}
+              onChange={(event) => setNicknameDraft(event.target.value)}
+              placeholder="请输入昵称"
+            />
+          </label>
+          {renderAccountActionRow({
+            primaryLabel: "保存昵称",
+            onPrimary: saveNickname,
+          })}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "phone") {
+      return (
+        <>
+          <div className="fm-account-step-indicator" aria-label="修改手机号步骤">
+            <span className={phoneChangeStep === "old" ? "is-active" : ""}>
+              1 验证当前手机号
+            </span>
+            <span className={phoneChangeStep === "new" ? "is-active" : ""}>
+              2 绑定新手机号
+            </span>
+          </div>
+          <label className="fm-account-field">
+            <span>当前手机号</span>
+            <input value={currentPhone || "未绑定手机号"} disabled />
+          </label>
+          {phoneChangeStep === "old" ? (
+            <>
+              <label className="fm-account-field">
+                <span>当前手机号验证码</span>
+                <div className="fm-account-code-row">
+                  <input
+                    value={phoneDraft.oldPhoneCode}
+                    name="fm-old-phone-code"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    onChange={(event) =>
+                      setPhoneDraft((current) => ({
+                        ...current,
+                        oldPhoneCode: event.target.value,
+                      }))
+                    }
+                    placeholder="请输入验证码"
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      !currentPhone ||
+                      accountSmsSending === "oldPhone" ||
+                      oldPhoneCooldown > 0
+                    }
+                    onClick={() =>
+                      sendAccountSmsCode({
+                        key: "oldPhone",
+                        scene: "change_phone_old",
+                        phone: currentPhone,
+                      })
+                    }
+                  >
+                    {oldPhoneCooldown > 0 ? `${oldPhoneCooldown}s` : "获取验证码"}
+                  </button>
+                </div>
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "下一步",
+                submittingLabel: "验证中...",
+                onPrimary: verifyOldPhone,
+              })}
+            </>
+          ) : (
+            <>
+              <label className="fm-account-field">
+                <span>新手机号</span>
+                <input
+                  value={phoneDraft.newPhone}
+                  name="fm-new-phone"
+                  autoComplete="off"
+                  onChange={(event) =>
+                    setPhoneDraft((current) => ({
+                      ...current,
+                      newPhone: event.target.value,
+                    }))
+                  }
+                  placeholder="请输入新手机号"
+                />
+              </label>
+              <label className="fm-account-field">
+                <span>新手机号验证码</span>
+                <div className="fm-account-code-row">
+                  <input
+                    value={phoneDraft.newPhoneCode}
+                    name="fm-new-phone-code"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    onChange={(event) =>
+                      setPhoneDraft((current) => ({
+                        ...current,
+                        newPhoneCode: event.target.value,
+                      }))
+                    }
+                    placeholder="请输入验证码"
+                  />
+                  <button
+                    type="button"
+                    disabled={
+                      accountSmsSending === "newPhone" || newPhoneCooldown > 0
+                    }
+                    onClick={() =>
+                      sendAccountSmsCode({
+                        key: "newPhone",
+                        scene: "change_phone_new",
+                        phone: phoneDraft.newPhone,
+                      })
+                    }
+                  >
+                    {newPhoneCooldown > 0 ? `${newPhoneCooldown}s` : "获取验证码"}
+                  </button>
+                </div>
+              </label>
+              {renderAccountActionRow({
+                primaryLabel: "保存手机号",
+                onPrimary: savePhone,
+              })}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (accountSettingsPanel === "password") {
+      return (
+        <>
+          <div className="fm-account-settings-tabs" role="tablist">
+            <button
+              type="button"
+              className={passwordMode === "password" ? "is-active" : ""}
+              onClick={() => setPasswordMode("password")}
+            >
+              原密码
+            </button>
+            <button
+              type="button"
+              className={passwordMode === "sms" ? "is-active" : ""}
+              onClick={() => setPasswordMode("sms")}
+            >
+              短信验证码
+            </button>
+          </div>
+          {passwordMode === "password" ? (
+            <label className="fm-account-field">
+              <span>原密码</span>
+              <input
+                key="account-old-password"
+                type="password"
+                name="fm-no-autofill-current-password"
+                autoComplete="off"
+                value={passwordDraft.oldPassword}
+                onChange={(event) =>
+                  setPasswordDraft((current) => ({
+                    ...current,
+                    oldPassword: event.target.value,
+                  }))
+                }
+                placeholder="请输入原密码"
+              />
+            </label>
+          ) : (
+            <label className="fm-account-field">
+              <span>当前手机号验证码</span>
+              <div className="fm-account-code-row">
+                <input
+                  key="account-password-sms-code"
+                  name="fm-password-sms-code"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  value={passwordDraft.smsCode}
+                  onChange={(event) =>
+                    setPasswordDraft((current) => ({
+                      ...current,
+                      smsCode: event.target.value,
+                    }))
+                  }
+                  placeholder="请输入验证码"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !currentPhone ||
+                    accountSmsSending === "password" ||
+                    passwordCooldown > 0
+                  }
+                  onClick={() =>
+                    sendAccountSmsCode({
+                      key: "password",
+                      scene: "change_password",
+                      phone: currentPhone,
+                    })
+                  }
+                >
+                  {passwordCooldown > 0 ? `${passwordCooldown}s` : "获取验证码"}
+                </button>
+              </div>
+            </label>
+          )}
+          <label className="fm-account-field">
+            <span>新密码</span>
+            <input
+              key={`account-new-password-${passwordMode}`}
+              type="password"
+              name="fm-no-autofill-new-password"
+              autoComplete="off"
+              value={passwordDraft.newPassword}
+              onChange={(event) =>
+                setPasswordDraft((current) => ({
+                  ...current,
+                  newPassword: event.target.value,
+                }))
+              }
+              placeholder="6-128 个字符"
+            />
+          </label>
+          <label className="fm-account-field">
+            <span>确认新密码</span>
+            <input
+              key={`account-confirm-password-${passwordMode}`}
+              type="password"
+              name="fm-no-autofill-confirm-password"
+              autoComplete="off"
+              value={passwordDraft.confirmPassword}
+              onChange={(event) =>
+                setPasswordDraft((current) => ({
+                  ...current,
+                  confirmPassword: event.target.value,
+                }))
+              }
+              placeholder="请再次输入新密码"
+            />
+          </label>
+          {renderAccountActionRow({
+            primaryLabel: "保存密码",
+            onPrimary: savePassword,
+          })}
+        </>
+      );
+    }
+
+    return (
+      <div className="fm-account-settings-list">
+        {[
+          ["avatar", "修改头像"],
+          ["nickname", "修改昵称"],
+          ["phone", "修改手机号"],
+          ["password", "修改密码"],
+        ].map(([panel, label]) => (
+          <button
+            type="button"
+            key={panel}
+            onClick={() => openAccountSettingsPanel(panel)}
+          >
+            <span>{label}</span>
+            <ChevronRight size={20} />
+          </button>
+        ))}
+      </div>
+    );
   }
 
   const assetTimeFilterControl = (
@@ -4396,10 +5303,20 @@ function AssetsPage({
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
-                setShowAccountSettings(false);
+                closeAccountSettings();
               }
             }}
           >
+            {accountSettingsToast && (
+              <div
+                key={accountSettingsToast.id}
+                className={`fm-account-toast is-${accountSettingsToast.type}`}
+                role="status"
+                aria-live="polite"
+              >
+                {accountSettingsToast.message}
+              </div>
+            )}
             <div
               className="fm-account-settings-dialog"
               role="dialog"
@@ -4407,22 +5324,17 @@ function AssetsPage({
               aria-labelledby="fm-account-settings-title"
             >
               <div className="fm-account-settings-head">
-                <h2 id="fm-account-settings-title">账号设置</h2>
+                <h2 id="fm-account-settings-title">{getAccountSettingsTitle()}</h2>
                 <button
                   type="button"
                   aria-label="关闭账号设置"
-                  onClick={() => setShowAccountSettings(false)}
+                  onClick={closeAccountSettings}
                 >
                   <X size={18} />
                 </button>
               </div>
-              <div className="fm-account-settings-list">
-                {["修改头像", "修改昵称", "修改手机号", "修改密码"].map((item) => (
-                  <button type="button" key={item}>
-                    <span>{item}</span>
-                    <ChevronRight size={20} />
-                  </button>
-                ))}
+              <div className="fm-account-settings-body">
+                {renderAccountSettingsContent()}
               </div>
             </div>
           </div>
@@ -10095,7 +11007,13 @@ function MotionTransferComposer({
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
-  const price = selectedModel?.basePoints || 0;
+  const price =
+    Number(
+      selectedModel?.estimatedPoints ??
+        selectedModel?.points ??
+        selectedModel?.basePoints ??
+        0,
+    ) || 0;
   const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {
@@ -12465,9 +13383,24 @@ function App() {
       setAuthUser((current) =>
         current && !current.isGuest
           ? { ...current, credits: nextCredits }
-          : current,
+        : current,
       );
     });
+  }, []);
+
+  useEffect(() => {
+    function handleAuthUserUpdated(event) {
+      const user = event.detail?.user;
+      if (!user) return;
+      setAuthUser(user);
+    }
+    window.addEventListener("facemini-auth-user-updated", handleAuthUserUpdated);
+    return () => {
+      window.removeEventListener(
+        "facemini-auth-user-updated",
+        handleAuthUserUpdated,
+      );
+    };
   }, []);
 
   useEffect(() => {

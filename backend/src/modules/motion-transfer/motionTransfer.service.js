@@ -100,6 +100,8 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
+      estimatedPoints: calculateVideoPoints(getProviderDuration()),
+      price: `${calculateVideoPoints(getProviderDuration())} 积分`,
       configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.media.publicBaseUrl)
     })),
     defaults: {
@@ -191,8 +193,7 @@ export async function createTask(payload) {
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
   const resolution = normalizeResolution(payload.resolution || model.resolution);
   const characterOrientation = normalizeCharacterOrientation(payload.characterOrientation || model.characterOrientation);
-  await getSourceVideoDuration(videoAsset);
-  const duration = getProviderDuration();
+  const duration = await getSourceVideoDuration(videoAsset);
   const costPoints = calculateVideoPoints(duration);
 
   const connection = await getPool().getConnection();
@@ -245,6 +246,7 @@ export async function createTask(payload) {
       ],
       resolution,
       ratio: "adaptive",
+      duration,
       generateAudio: false,
       watermark: false
     });

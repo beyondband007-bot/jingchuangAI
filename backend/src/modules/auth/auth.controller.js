@@ -1,6 +1,8 @@
 import { sendError } from "../../shared/http.js";
 import { SESSION_COOKIE_NAME } from "../../shared/userService.js";
 import {
+  changeAccountPassword,
+  changeAccountPhone,
   createPasswordResetChallenge,
   getCaptchaClientConfig,
   getAuthState,
@@ -10,7 +12,11 @@ import {
   logoutUser,
   registerUser,
   resetPasswordWithSecurityAnswer,
-  sendSmsCode
+  selectAccountAvatar,
+  sendSmsCode,
+  updateAccountProfile,
+  uploadAccountAvatar,
+  verifyAccountCurrentPhone
 } from "./auth.service.js";
 
 function isSecureRequest(req) {
@@ -127,6 +133,54 @@ export async function passwordResetChallenge(req, res) {
 export async function passwordReset(req, res) {
   try {
     res.json(await resetPasswordWithSecurityAnswer(req.body));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function updateProfile(req, res) {
+  try {
+    res.json(await updateAccountProfile(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function selectAvatar(req, res) {
+  try {
+    res.json(await selectAccountAvatar(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadAvatar(req, res) {
+  try {
+    res.status(201).json(await uploadAccountAvatar(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function changePhone(req, res) {
+  try {
+    res.json(await changeAccountPhone(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function verifyCurrentPhone(req, res) {
+  try {
+    res.json(await verifyAccountCurrentPhone(req));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function changePassword(req, res) {
+  try {
+    res.json(await changeAccountPassword(req));
   } catch (error) {
     sendError(res, error);
   }
