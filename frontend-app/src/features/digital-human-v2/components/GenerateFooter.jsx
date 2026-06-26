@@ -8,17 +8,24 @@ export function GenerateFooter({
   onVideoSpecChange,
   canGenerate,
   isSubmitting,
+  isCloneMode = false,
+  credits,
   onGenerate,
 }) {
   return (
     <footer className="dhv2-generate-footer">
-      <Select
-        className="dhv2-spec-select"
-        value={videoSpec}
-        onChange={onVideoSpecChange}
-        options={VIDEO_SPEC_OPTIONS}
-        aria-label="成片规格"
-      />
+      <div className="dhv2-generate-footer__left">
+        <Select
+          className="dhv2-spec-select"
+          value={videoSpec}
+          onChange={onVideoSpecChange}
+          options={VIDEO_SPEC_OPTIONS}
+          aria-label="成片规格"
+        />
+        {typeof credits === "number" ? (
+          <p className="dhv2-generate-footer__credits">剩余 {credits.toLocaleString()} 积分</p>
+        ) : null}
+      </div>
       <button
         type="button"
         className="dhv2-generate-button"
@@ -26,7 +33,7 @@ export function GenerateFooter({
         onClick={onGenerate}
       >
         {isSubmitting ? <Loader2 size={18} className="dhv2-spinner" /> : <Zap size={18} />}
-        生成口播视频
+        {isCloneMode ? "克隆音色并生成" : "生成口播视频"}
       </button>
     </footer>
   );

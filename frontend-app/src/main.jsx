@@ -8,7 +8,7 @@
 } from "react";
 import BillingPoints from "./components/BillingPoints.jsx";
 import { createRoot } from "react-dom/client";
-import { ConfigProvider } from "@arco-design/web-react";
+import { Button, ConfigProvider } from "@arco-design/web-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -102,6 +102,8 @@ import {
 import { RemoveBgView } from "./features/remove-bg/RemoveBgView";
 import { VideoDubbingView } from "./features/video-dubbing/VideoDubbingView";
 import { FaceSwapWorkbench } from "./features/face-swap/FaceSwapWorkbench";
+import { FaceSwapWorkflowView } from "./features/face-swap/FaceSwapWorkflowView";
+import { MotionTransferWorkflowView } from "./features/motion-transfer/MotionTransferWorkflowView";
 import { WaterfallGrid } from "./features/waterfall/WaterfallGrid";
 import { VideoGenStage } from "./features/video/VideoGenStage";
 import { VideoGenerationResultPlayer } from "./features/video/VideoGenerationResultPlayer";
@@ -2403,22 +2405,24 @@ const AppHome = memo(function AppHome({
   return (
     <main className="home-feature-main fm-home-page">
       <nav className="fm-home-nav" aria-label="首页导航">
-        <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
-          <BrandWordmark />
-        </button>
-        <div className="fm-home-nav-center">
-          <a href="#why">关于我们</a>
-          <a href="#modules">关于产品</a>
-          <a href="#footer">探索我们</a>
+        <div className="fm-home-nav-left">
+          <button type="button" onClick={onOpenLanding} aria-label="返回落地页">
+            <BrandWordmark />
+          </button>
+          <div className="fm-home-nav-links">
+            <a href="#why">关于我们</a>
+            <a href="#modules">关于产品</a>
+            <a href="#footer">探索我们</a>
+          </div>
         </div>
         <div className="fm-home-actions">
-          <button
-            type="button"
-            className="fm-primary fm-home-enter-creation"
+          <Button
+            type="text"
+            className="fm-home-enter-creation"
             onClick={() => onOpenFeature("creation")}
           >
-            开始探索
-          </button>
+            创作中心
+          </Button>
         </div>
       </nav>
       <section className="fm-hero-section">
@@ -12258,7 +12262,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView splitResults isActive={activeNav === "motion"} />
+          <MotionTransferWorkflowView isActive={activeNav === "motion"} />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
           id="watermark"
@@ -12366,13 +12370,7 @@ function ImageFeaturePage({
           activeNav={activeNav}
           visitedIds={visitedIds}
         >
-          <MotionTransferView
-            navId="face-swap"
-            api={faceSwapApi}
-            copy={faceSwapCopy}
-            splitResults
-            isActive={activeNav === "face-swap"}
-          />
+          <FaceSwapWorkflowView isActive={activeNav === "face-swap"} />
         </FeatureModuleKeepAlive>
         {![
           "creation",

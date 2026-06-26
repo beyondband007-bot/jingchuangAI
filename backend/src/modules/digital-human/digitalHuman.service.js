@@ -122,7 +122,11 @@ function normalizeEmotion(value) {
 }
 
 function getVoiceById(voiceId) {
-  return [...designedVoices, ...voices].find((item) => item.id === voiceId) || voices[0];
+  const id = String(voiceId || "").trim();
+  const found = [...designedVoices, ...voices].find((item) => item.id === id);
+  if (found) return found;
+  if (id) return { id, name: "自定义音色", providerVoiceId: id };
+  return voices[0];
 }
 
 function getProviderVoiceId(voice) {

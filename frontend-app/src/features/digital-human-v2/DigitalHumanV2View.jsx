@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
+import { voiceApi } from "../voice/voiceApi";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { AvatarSelectionCard } from "./components/AvatarSelectionCard";
+import { VoiceDubbingModeCard, VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { ScriptCard } from "./components/ScriptCard";
 import { GenerateFooter } from "./components/GenerateFooter";
 import { AvatarLibraryPanel } from "./components/AvatarLibraryPanel";
@@ -70,15 +72,20 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [toastMessage, setToastMessage] = useState("");
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
+  const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
+  const [cloneAudio, setCloneAudio] = useState(null);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
+  const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
+  const isCloneMode = isMineAvatar && voiceMode === VOICE_DUBBING_MODES.clone;
   const canGenerate = Boolean(
     selectedAvatar?.id &&
       text.trim() &&
       model &&
-      voiceId &&
-      isDigitalHumanVoiceEnabled(voiceId),
+      (isCloneMode
+        ? cloneAudio?.fileId || cloneAudio?.cachedVoice?.id
+        : voiceId && isDigitalHumanVoiceEnabled(voiceId)),
   );
 
   useEffect(() => {
@@ -112,6 +119,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setRightView("library");
     setActiveTask(null);
     setSelectedMineLibraryId(null);
+    setVoiceMode(VOICE_DUBBING_MODES.system);
+    setCloneAudio(null);
     if (nextSource === "mine") {
       const mineList = avatars.mine || [];
       const isOfficialSelection =
@@ -186,6 +195,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setVoiceId(pickEnabledVoiceId(voices));
     setVoiceSpeed(1);
     setVoiceEmotion("中性");
+    setVoiceMode(VOICE_DUBBING_MODES.system);
+    setCloneAudio(null);
     setActiveTask(null);
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
@@ -204,7 +215,14 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       showToast("请输入配音内容");
       return;
     }
-    if (!isDigitalHumanVoiceEnabled(voiceId)) {
+
+    let resolvedVoiceId = voiceId;
+    if (isCloneMode) {
+      if (!cloneAudio?.fileId && !cloneAudio?.cachedVoice?.id) {
+        showToast("请先上传参考音频");
+        return;
+      }
+    } else if (!isDigitalHumanVoiceEnabled(voiceId)) {
       showToast(VOICE_UNAVAILABLE_HINT);
       return;
     }
@@ -214,13 +232,34 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setRightView("preview");
     setActiveTask(null);
     try {
+      if (isCloneMode) {
+        if (cloneAudio.cachedVoice?.id) {
+          resolvedVoiceId = cloneAudio.cachedVoice.id;
+        } else {
+          const cloneResult = await voiceApi.createClone({
+            cloneAudioFileId: cloneAudio.fileId,
+            audioHash: cloneAudio.audioHash,
+            durationMs: cloneAudio.durationMs,
+            sourceFileName: cloneAudio.name,
+            sourceMimeType: cloneAudio.mimeType,
+            sourceSize: cloneAudio.size,
+            previewText: text.trim().slice(0, 200),
+            name: selectedAvatar.name ? `${selectedAvatar.name}专属音色` : "我的专属音色",
+          });
+          resolvedVoiceId = cloneResult?.voice?.id;
+          if (!resolvedVoiceId) {
+            throw new Error("音色克隆失败，请重试");
+          }
+        }
+      }
+
       const task = await digitalHumanApi.createTask({
         avatarId: selectedAvatar.id,
         avatarName: selectedAvatar.name,
         driveMode: "text",
         text: text.trim(),
         performance: "",
-        voiceId,
+        voiceId: resolvedVoiceId,
         model,
         speed: voiceSpeed,
         volume: 1,
@@ -407,15 +446,23 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             avatarSource={avatarSource}
             onAvatarSourceChange={handleAvatarSourceChange}
             selectedAvatar={selectedAvatar}
-            voices={voices}
-            voiceId={voiceId}
-            onVoiceIdChange={setVoiceId}
-            voiceSpeed={voiceSpeed}
-            onVoiceSpeedChange={setVoiceSpeed}
-            voiceEmotion={voiceEmotion}
-            onVoiceEmotionChange={setVoiceEmotion}
             onOpenCreate={openCreateModal}
           />
+          {selectedAvatar ? (
+            <VoiceDubbingModeCard
+              voiceMode={voiceMode}
+              onVoiceModeChange={setVoiceMode}
+              showCloneTab={isMineAvatar}
+              selectedAvatar={selectedAvatar}
+              voices={voices}
+              voiceId={voiceId}
+              onVoiceIdChange={setVoiceId}
+              voiceSpeed={voiceSpeed}
+              onVoiceSpeedChange={setVoiceSpeed}
+              voiceEmotion={voiceEmotion}
+              onVoiceEmotionChange={setVoiceEmotion}
+            />
+          ) : null}
           <ScriptCard
             text={text}
             onTextChange={setText}
@@ -423,15 +470,20 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             voiceId={voiceId}
             voiceSpeed={voiceSpeed}
             voiceEmotion={voiceEmotion}
+            voiceMode={voiceMode}
+            showCloneUpload={isMineAvatar}
+            cloneAudio={cloneAudio}
+            onCloneAudioChange={setCloneAudio}
           />
           <GenerateFooter
             videoSpec={videoSpec}
             onVideoSpecChange={setVideoSpec}
             canGenerate={canGenerate}
             isSubmitting={isSubmitting}
+            isCloneMode={isCloneMode}
+            credits={credits?.balance}
             onGenerate={handleGenerate}
           />
-          {credits ? <p className="dhv2-credits">账户积分 {credits.balance}</p> : null}
         </aside>
 
         {showLibrary ? (

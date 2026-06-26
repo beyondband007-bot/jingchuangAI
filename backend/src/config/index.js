@@ -2,8 +2,10 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load project root env first as defaults, then backend-specific env to take precedence.
+const runtimeEnv = { ...process.env };
 dotenv.config({ path: path.resolve(process.cwd(), "..", ".env") });
 dotenv.config({ override: true });
+Object.assign(process.env, runtimeEnv);
 
 const projectRoot = path.resolve(process.cwd(), "..");
 

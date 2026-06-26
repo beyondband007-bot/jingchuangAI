@@ -22,6 +22,7 @@ import {
   createFaceSwapTask,
   deleteFaceSwapTask,
   findFaceSwapAsset,
+  findFaceSwapAssetByIdForUser,
   findFaceSwapTaskRow,
   findFaceSwapTaskStatus,
   findRefreshableFaceSwapTasks,
@@ -109,8 +110,9 @@ export function getModels() {
   };
 }
 
-export async function createAsset({ kind, file }) {
+export async function createAsset({ kind, file, user }) {
   if (!file) throw createHttpError(`${kind} file is required`, 400);
+  if (!user?.id) throw createHttpError("请先登录", 401);
 
   if (kind === "video") {
     try {
@@ -124,11 +126,11 @@ export async function createAsset({ kind, file }) {
   const localUrl = `/media/face-swap/${kind === "image" ? "images" : "videos"}/${file.filename}`;
   const connection = await getPool().getConnection();
   let assetId;
+  const userId = user.id;
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
     assetId = await createFaceSwapAsset(connection, {
-      userId: user.id,
+      userId,
       kind,
       localUrl,
       filePath: file.path,
@@ -145,7 +147,9 @@ export async function createAsset({ kind, file }) {
     connection.release();
   }
 
-  return mapFaceSwapAsset(await findFaceSwapAsset(assetId, kind));
+  const asset = mapFaceSwapAsset(await findFaceSwapAssetByIdForUser(assetId, kind, userId));
+  if (!asset) throw createHttpError("上传资源保存失败，请重试", 500);
+  return asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {

@@ -34,6 +34,10 @@ function resolveDevProxyTarget() {
 }
 
 const proxyTarget = resolveDevProxyTarget();
+const rootEnvPath = resolve(process.cwd(), "../.env");
+const devPort =
+  Number(process.env.FRONTEND_DEV_PORT || 0) ||
+  readPortFromEnvFile(rootEnvPath, "FRONTEND_DEV_PORT");
 
 export default defineConfig({
   plugins: [react(), mediaProxyPlugin()],
@@ -43,6 +47,7 @@ export default defineConfig({
     emptyOutDir: false,
   },
   server: {
+    ...(devPort ? { port: devPort, strictPort: true } : {}),
     proxy: {
       "/api": {
         target: proxyTarget,
