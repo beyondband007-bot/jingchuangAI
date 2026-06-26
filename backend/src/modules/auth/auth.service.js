@@ -474,15 +474,20 @@ export async function sendSmsCode(payload, req) {
   await verifyTencentCaptcha(payload, req);
 
   const code = String(randomInt(100000, 1000000));
-  await sendVerificationSms(phone, code, scene);
-
   const salt = randomBytes(16).toString("hex");
   const expiresAt = new Date(Date.now() + getSmsCodeTtlMs());
-  await pool.query(
+  const [insertResult] = await pool.query(
     `INSERT INTO auth_verification_codes (channel, scene, target, code_hash, salt, expires_at, sent_at)
      VALUES ('sms', ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     [scene, phone, hashCode(scene, phone, code, salt), salt, expiresAt]
   );
+
+  try {
+    await sendVerificationSms(phone, code, scene);
+  } catch (error) {
+    await pool.query("UPDATE auth_verification_codes SET consumed_at = CURRENT_TIMESTAMP WHERE id = ?", [insertResult.insertId]);
+    throw error;
+  }
 
   return {
     ok: true,
@@ -781,7 +786,7 @@ async function sendVerificationSms(phone, code, scene) {
   const templateId =
     scene === "register"
       ? config.sms.registerTemplateId
-      : scene === "password_reset"
+      : scene === "password_reset" || scene === "change_password"
         ? config.sms.reviseTemplateId
         : config.sms.loginTemplateId;
 

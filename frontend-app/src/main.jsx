@@ -3561,6 +3561,7 @@ function AssetsPage({
   const [avatarDragState, setAvatarDragState] = useState(null);
   const avatarImageRef = useRef(null);
   const accountToastTimerRef = useRef(null);
+  const accountSettingsCloseTimerRef = useRef(null);
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [phoneDraft, setPhoneDraft] = useState({
     oldPhoneCode: "",
@@ -3983,15 +3984,6 @@ function AssetsPage({
 
   useEffect(() => {
     if (!showAccountSettings) return undefined;
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setShowAccountSettings(false);
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [showAccountSettings]);
-
-  useEffect(() => {
-    if (!showAccountSettings) return undefined;
     setAccountSettingsPanel("list");
     setAccountSettingsTab("built-in");
     setAccountSettingsError("");
@@ -4020,6 +4012,33 @@ function AssetsPage({
     setAvatarZoom(1);
     setAvatarOffset({ x: 0, y: 0 });
   }, [authUser?.avatarUrl, profileDisplayName, showAccountSettings]);
+
+  function closeAccountSettings() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+      accountSettingsCloseTimerRef.current = null;
+    }
+    setShowAccountSettings(false);
+  }
+
+  function closeAccountSettingsAfterSuccess() {
+    if (accountSettingsCloseTimerRef.current) {
+      window.clearTimeout(accountSettingsCloseTimerRef.current);
+    }
+    accountSettingsCloseTimerRef.current = window.setTimeout(() => {
+      accountSettingsCloseTimerRef.current = null;
+      closeAccountSettings();
+    }, 1200);
+  }
+
+  useEffect(() => {
+    if (!showAccountSettings) return undefined;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") closeAccountSettings();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showAccountSettings]);
 
   useEffect(() => {
     if (!avatarUploadSrc) return undefined;
@@ -4050,6 +4069,9 @@ function AssetsPage({
     return () => {
       if (accountToastTimerRef.current) {
         window.clearTimeout(accountToastTimerRef.current);
+      }
+      if (accountSettingsCloseTimerRef.current) {
+        window.clearTimeout(accountSettingsCloseTimerRef.current);
       }
     };
   }, []);
@@ -4540,6 +4562,7 @@ function AssetsPage({
         confirmPassword: "",
       });
       showAccountToast("密码已更新", "success");
+      closeAccountSettingsAfterSuccess();
     } catch (nextError) {
       showAccountToast(accountErrorMessage(nextError, "密码保存失败"), "error");
     } finally {
@@ -5276,7 +5299,7 @@ function AssetsPage({
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
-                setShowAccountSettings(false);
+                closeAccountSettings();
               }
             }}
           >
@@ -5301,7 +5324,7 @@ function AssetsPage({
                 <button
                   type="button"
                   aria-label="关闭账号设置"
-                  onClick={() => setShowAccountSettings(false)}
+                  onClick={closeAccountSettings}
                 >
                   <X size={18} />
                 </button>

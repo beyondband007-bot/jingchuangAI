@@ -238,7 +238,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS auth_verification_codes (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       channel ENUM('sms') NOT NULL DEFAULT 'sms',
-      scene ENUM('register','login','password_reset') NOT NULL,
+      scene ENUM('register','login','password_reset','change_phone_old','change_phone_new','change_password') NOT NULL,
       target VARCHAR(64) NOT NULL,
       code_hash CHAR(64) NOT NULL,
       salt VARCHAR(64) NOT NULL,
@@ -251,6 +251,11 @@ async function createTables() {
       INDEX idx_auth_verification_lookup (channel, scene, target, consumed_at, expires_at),
       INDEX idx_auth_verification_sent (channel, scene, target, sent_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    ALTER TABLE auth_verification_codes
+    MODIFY scene ENUM('register','login','password_reset','change_phone_old','change_phone_new','change_password') NOT NULL
   `);
 
   await pool.query(`
