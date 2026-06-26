@@ -11003,7 +11003,13 @@ function MotionTransferComposer({
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
-  const price = selectedModel?.basePoints || 0;
+  const price =
+    Number(
+      selectedModel?.estimatedPoints ??
+        selectedModel?.points ??
+        selectedModel?.basePoints ??
+        0,
+    ) || 0;
   const canSubmit = imageAsset && videoAsset && !uploading && !isSubmitting;
 
   async function selectImage(file) {

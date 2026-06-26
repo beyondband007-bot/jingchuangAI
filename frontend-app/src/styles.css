@@ -42471,3 +42471,72 @@ section.video-gen-view-root
     overflow: hidden !important;
   }
 }
+
+/* EOF override: align motion/face-swap history actions with watermark cards. */
+.motion-view-root .motion-task-card .motion-card-actions,
+.face-swap-view-root .motion-task-card .motion-card-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions .icon-circle,
+.face-swap-view-root .motion-task-card .motion-card-actions .icon-circle {
+  flex: 0 0 34px !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button,
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.face-swap-view-root .motion-task-card .motion-card-actions > button,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 6px 4px !important;
+  color: #272331 !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe5ef !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button:hover:not(:disabled),
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.face-swap-view-root .motion-task-card .motion-card-actions > button:hover:not(:disabled),
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link:hover {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: var(--app-border-strong) !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button:disabled,
+.face-swap-view-root .motion-task-card .motion-card-actions > button:disabled {
+  color: #9cb9df !important;
+  background: #ffffff !important;
+  border-color: #dbe5ef !important;
+  opacity: 0.55;
+}
+
+/* EOF override: keep these visual-tool history download buttons solid. */
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.watermark-view-root .watermark-task-card .watermark-card-actions > .card-action-link,
+.enhance-task-card .watermark-card-actions > .card-action-link,
+.remove-bg-task-card .watermark-card-actions > .card-action-link {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: transparent !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.watermark-view-root .watermark-task-card .watermark-card-actions > .card-action-link:hover,
+.enhance-task-card .watermark-card-actions > .card-action-link:hover,
+.remove-bg-task-card .watermark-card-actions > .card-action-link:hover {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: transparent !important;
+}

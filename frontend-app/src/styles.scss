@@ -28528,15 +28528,27 @@ textarea::placeholder {
   gap: 16px;
 }
 
-.face-swap-view-root .face-swap-workbench__settings-body::before {
-  content: "预计消耗 100 积分";
+.motion-view-root .face-swap-workbench__dynamic-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex: 1;
   color: #9a99b2;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
-.face-swap-view-root .face-swap-workbench__action-area {
+.motion-view-root .face-swap-workbench__dynamic-price .billing-points {
+  color: #6d3cff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.motion-view-root .face-swap-workbench__action-area {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 16px;
   margin: 0;
 }
 
@@ -41096,4 +41108,105 @@ section.video-gen-view-root
   border-radius: 999px;
   background: #111;
   transform: translateX(-50%);
+}
+
+/* EOF override: align motion/face-swap history actions with watermark cards. */
+.motion-view-root .motion-task-card .motion-card-actions,
+.face-swap-view-root .motion-task-card .motion-card-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions .icon-circle,
+.face-swap-view-root .motion-task-card .motion-card-actions .icon-circle {
+  flex: 0 0 34px !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button,
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.face-swap-view-root .motion-task-card .motion-card-actions > button,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  min-height: 36px !important;
+  padding: 6px 4px !important;
+  color: #272331 !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe5ef !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button:hover:not(:disabled),
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.face-swap-view-root .motion-task-card .motion-card-actions > button:hover:not(:disabled),
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link:hover {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: var(--app-border-strong) !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > button:disabled,
+.face-swap-view-root .motion-task-card .motion-card-actions > button:disabled {
+  color: #9cb9df !important;
+  background: #ffffff !important;
+  border-color: #dbe5ef !important;
+  opacity: 0.55;
+}
+
+/* EOF override: keep these visual-tool history download buttons solid. */
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link,
+.watermark-view-root .watermark-task-card .watermark-card-actions > .card-action-link,
+.enhance-task-card .watermark-card-actions > .card-action-link,
+.remove-bg-task-card .watermark-card-actions > .card-action-link {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: transparent !important;
+}
+
+.motion-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.face-swap-view-root .motion-task-card .motion-card-actions > .card-action-link:hover,
+.watermark-view-root .watermark-task-card .watermark-card-actions > .card-action-link:hover,
+.enhance-task-card .watermark-card-actions > .card-action-link:hover,
+.remove-bg-task-card .watermark-card-actions > .card-action-link:hover {
+  color: #ffffff !important;
+  background: #6d3cff !important;
+  border-color: transparent !important;
+}
+
+/* EOF override: unify estimated point value styling across visual marketing tools. */
+.watermark-composer-footer > strong,
+.remove-bg-composer-footer > strong,
+.enhance-composer-footer > strong,
+.replicate-composer-footer > strong {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: #6d3cff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+}
+
+.watermark-composer-footer > strong::before,
+.remove-bg-composer-footer > strong::before,
+.enhance-composer-footer > strong::before,
+.replicate-composer-footer > strong::before {
+  color: #aaa6b8 !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+.watermark-composer-footer > strong .billing-points,
+.remove-bg-composer-footer > strong .billing-points,
+.enhance-composer-footer > strong .billing-points,
+.replicate-composer-footer > strong .billing-points {
+  color: #6d3cff !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
 }
