@@ -2550,7 +2550,7 @@ function CreationCenterView({
       label: "打开大模型",
     },
     {
-      image: faceminiAsset("creation/banners/home-top-slider-2.png"),
+      image: faceminiAsset("creation/banners/home-top-slider-2.jpg"),
       action: "invite",
       label: "打开邀请有礼",
     },
@@ -2720,14 +2720,14 @@ function CreationCenterView({
           type="button"
           onClick={() => onOpenFeature("image")}
         >
-          <img src={faceminiAsset("creation/banners/banner-01.png")} alt="" />
+          <img src={faceminiAsset("creation/banners/banner-01.jpg")} alt="" />
         </button>
         <button
           className="fm-banner-card"
           type="button"
           onClick={() => onOpenFeature("digital-human")}
         >
-          <img src={faceminiAsset("creation/banners/banner-02.png")} alt="" />
+          <img src={faceminiAsset("creation/banners/banner-02.jpg")} alt="" />
         </button>
       </div>
       <section className="fm-section-block">
