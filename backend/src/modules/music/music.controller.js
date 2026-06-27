@@ -57,3 +57,16 @@ export async function deleteTask(req, res) {
     sendError(res, error);
   }
 }
+
+export async function updateTaskCover(req, res) {
+  try {
+    const task = await service.updateMusicTaskCover(req.params.id, req.user.id, req.body || {});
+    if (!task) {
+      res.status(404).json({ error: "音乐任务不存在" });
+      return;
+    }
+    res.json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}

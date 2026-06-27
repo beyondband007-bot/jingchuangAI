@@ -243,11 +243,6 @@ export function ScriptCard({
     }
   }
 
-  function handleBlur() {
-    if (!text.trim()) return;
-    previewScript({ shouldPlay: false });
-  }
-
   function handlePreviewClick() {
     if (isPlaying) {
       audioRef.current?.pause();
@@ -347,7 +342,6 @@ export function ScriptCard({
           onSelect={syncSelection}
           onMouseUp={syncSelection}
           onKeyUp={syncSelection}
-          onBlur={handleBlur}
         />
         <button
           type="button"

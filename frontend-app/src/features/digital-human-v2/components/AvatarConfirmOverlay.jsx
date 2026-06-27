@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Message } from "@arco-design/web-react";
 import { Play, Star, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
@@ -26,7 +27,6 @@ export function AvatarConfirmOverlay({
   onConfirm,
 }) {
   const audioRef = useRef(null);
-  const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
 
   const tags = useMemo(() => getAvatarTags(avatar), [avatar]);
@@ -36,10 +36,18 @@ export function AvatarConfirmOverlay({
   useEffect(() => {
     const matched = matchVoiceForAvatar(avatar, voices);
     if (matched?.id) onVoiceIdChange?.(matched.id);
-    setShowVoicePicker(false);
     onVoiceSpeedChange?.(1);
     onVoiceEmotionChange?.("中性");
   }, [avatar, voices]);
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     return () => {
@@ -96,15 +104,18 @@ export function AvatarConfirmOverlay({
     });
   }
 
-  return (
+  return createPortal(
     <div
-      className="dhv2-library__overlay"
+      className="dhv2-avatar-confirm-backdrop"
       role="dialog"
       aria-modal="true"
       aria-label="形象确认"
       onClick={onClose}
     >
-      <div className="dhv2-avatar-confirm-stage" onClick={(event) => event.stopPropagation()}>
+      <div
+        className="dhv2-avatar-confirm-stage"
+        onClick={(event) => event.stopPropagation()}
+      >
         <section className="dhv2-avatar-confirm">
           <header className="dhv2-avatar-confirm__head">
             <div className="dhv2-avatar-confirm__title-block">
@@ -130,47 +141,34 @@ export function AvatarConfirmOverlay({
             </div>
           </header>
 
-          <div className="dhv2-avatar-confirm__media">
-            <span className="dhv2-avatar-confirm__badge">适配视频 / 直播</span>
-            {isVideoCover(avatar.cover) ? (
-              <video
-                src={avatar.cover}
-                poster={avatar.poster || undefined}
-                muted
-                playsInline
-                autoPlay
-                loop
-              />
-            ) : (
-              <img src={avatar.cover} alt={avatar.name} />
-            )}
-          </div>
-
-          <div className="dhv2-avatar-confirm__voice-panel">
-            <div className="dhv2-avatar-confirm__voice-head">
-              <strong>绑定音色</strong>
-              <p>{voiceHint}</p>
+          <div className="dhv2-avatar-confirm__body">
+            <div className="dhv2-avatar-confirm__media">
+              <span className="dhv2-avatar-confirm__badge">适配视频 / 直播</span>
+              {isVideoCover(avatar.cover) ? (
+                <video
+                  src={avatar.cover}
+                  poster={avatar.poster || undefined}
+                  muted
+                  playsInline
+                  autoPlay
+                  loop
+                />
+              ) : (
+                <img src={avatar.cover} alt={avatar.name} />
+              )}
             </div>
-            <div className="dhv2-avatar-confirm__voice-row">
-              <div className="dhv2-avatar-confirm__voice-current">
-                <span>{selectedVoice?.name || "未选择音色"}</span>
-                <button
-                  type="button"
-                  className="dhv2-avatar-confirm__voice-play"
-                  aria-label="试听音色"
-                  disabled={!selectedVoice || isPreviewing}
-                  onClick={() => previewVoice(selectedVoice?.id)}
-                >
-                  <Play size={12} />
-                </button>
-              </div>
-              <button
-                type="button"
-                className="dhv2-avatar-confirm__voice-change"
-                onClick={() => setShowVoicePicker((current) => !current)}
-              >
-                更换音色
-              </button>
+
+            <div className="dhv2-avatar-confirm__aside">
+              <VoicePickerPanel
+                voices={voices}
+                voiceId={voiceId}
+                onVoiceIdChange={onVoiceIdChange}
+                voiceSpeed={voiceSpeed}
+                onVoiceSpeedChange={onVoiceSpeedChange}
+                voiceEmotion={voiceEmotion}
+                onVoiceEmotionChange={onVoiceEmotionChange}
+                onClose={onClose}
+              />
             </div>
           </div>
 
@@ -183,20 +181,8 @@ export function AvatarConfirmOverlay({
             </button>
           </footer>
         </section>
-
-        {showVoicePicker ? (
-          <VoicePickerPanel
-            voices={voices}
-            voiceId={voiceId}
-            onVoiceIdChange={onVoiceIdChange}
-            voiceSpeed={voiceSpeed}
-            onVoiceSpeedChange={onVoiceSpeedChange}
-            voiceEmotion={voiceEmotion}
-            onVoiceEmotionChange={onVoiceEmotionChange}
-            onClose={() => setShowVoicePicker(false)}
-          />
-        ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

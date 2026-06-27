@@ -112,6 +112,7 @@ export function MusicGeneratingPanel({
   onViewAll,
   onSelectItem,
   onDownloadItem,
+  onEditCoverItem,
   onDeleteItem
 }) {
   const steps = buildSteps(activeStep);
@@ -202,6 +203,7 @@ export function MusicGeneratingPanel({
           generatingId={generatingId}
           onSelectItem={onSelectItem}
           onDownloadItem={onDownloadItem}
+          onEditCoverItem={onEditCoverItem}
           onDeleteItem={onDeleteItem}
         />
       </div>
