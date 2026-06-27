@@ -1967,7 +1967,7 @@ export function ArticleGenerationView({
             <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
               {showStyleTemplatePreview
-                ? `${activeVisualStyleLabel}风格 · 4 款精选`
+                ? `${activeVisualStyleLabel}风格 · 2 款示意 · ${form.imageCount}图 · ${form.ratio}`
                 : `${form.platform} · ${form.ratio}`}
             </span>
           </header>
@@ -2077,6 +2077,8 @@ export function ArticleGenerationView({
             <ArticleStyleTemplatePreview
               items={activeStyleTemplatePreviews}
               selectedId={selectedStyleTemplateId}
+              imageCount={form.imageCount}
+              ratio={form.ratio}
               onSelect={(id) => {
                 setSelectedStyleTemplateId(id);
                 setImagePromptPlan(null);
