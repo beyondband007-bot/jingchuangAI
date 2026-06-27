@@ -57,6 +57,12 @@ function isLocalProviderAssetId(providerAssetId = "") {
   return String(providerAssetId || "").startsWith("local-");
 }
 
+function isArkDownloadFailure(error) {
+  const code = error?.body?.ResponseMetadata?.Error?.Code || "";
+  const message = `${error?.message || ""} ${error?.body?.ResponseMetadata?.Error?.Message || ""}`;
+  return code === "InvalidParameter.DownloadFailed" || /download.*failed|bad gateway/i.test(message);
+}
+
 export function mapArkVirtualAsset(row) {
   if (!row) return null;
   return {
@@ -256,13 +262,28 @@ export async function createVirtualAssetFromLocalFile({
   const group = await ensureVirtualAssetGroup({ userId, feature: normalizedFeature });
   const publicUrl = buildPublicMediaUrl(localUrl);
   await assertPublicMediaUrlAccessible(publicUrl, assetType === "Video" ? "视频" : assetType === "Image" ? "图片" : "素材");
-  const result = await createArkAsset({
-    projectName: config.ark.projectName,
-    groupId: group.provider_group_id,
-    url: publicUrl,
-    assetType,
-    name: originalName || path.basename(filePath)
-  });
+  let result;
+  try {
+    result = await createArkAsset({
+      projectName: config.ark.projectName,
+      groupId: group.provider_group_id,
+      url: publicUrl,
+      assetType,
+      name: originalName || path.basename(filePath)
+    });
+  } catch (error) {
+    if (!isArkDownloadFailure(error)) throw error;
+    console.warn(`[ark-assets] Ark could not download ${publicUrl}; saving local-only virtual asset`);
+    return createLocalOnlyVirtualAssetFromLocalFile({
+      userId,
+      feature: normalizedFeature,
+      localUrl,
+      filePath,
+      originalName,
+      mimeType,
+      sizeBytes
+    });
+  }
   const providerAssetId = result.Id || result.id;
   if (!providerAssetId) {
     const error = new Error("CreateAsset response missing asset id");

@@ -16,7 +16,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/主播对话.mp4",
-    assetPath: "/assets/digital-human/主播对话.mp4"
+    assetPath: "/assets/digital-human/主播对话.mp4",
+    threeView: "/assets/digital-human/three-view/主播对话.png"
   },
   {
     id: "public-product",
@@ -25,7 +26,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/产品讲解员.mp4",
-    assetPath: "/assets/digital-human/产品讲解员.mp4"
+    assetPath: "/assets/digital-human/产品讲解员.mp4",
+    threeView: "/assets/digital-human/three-view/产品讲解员.png"
   },
   {
     id: "public-medical",
@@ -35,7 +37,8 @@ export const publicAvatars = [
     status: "ready",
     cover: "/assets/digital-human/健康科普员.mp4",
     assetPath: "/assets/digital-human/健康科普员.mp4",
-    poster: "/assets/digital-human/posters/健康科普员.jpg"
+    poster: "/assets/digital-human/posters/健康科普员.jpg",
+    threeView: "/assets/digital-human/three-view/健康科普员.png"
   },
   {
     id: "public-home-lady",
@@ -44,7 +47,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/居家知性女性.mp4",
-    assetPath: "/assets/digital-human/居家知性女性.mp4"
+    assetPath: "/assets/digital-human/居家知性女性.mp4",
+    threeView: "/assets/digital-human/three-view/居家知性女性.png"
   },
   {
     id: "public-real-estate",
@@ -53,7 +57,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/房地产经纪人.mp4",
-    assetPath: "/assets/digital-human/房地产经纪人.mp4"
+    assetPath: "/assets/digital-human/房地产经纪人.mp4",
+    threeView: "/assets/digital-human/three-view/房地产经纪人.png"
   },
   {
     id: "public-travel",
@@ -62,7 +67,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/文旅推荐官.mp4",
-    assetPath: "/assets/digital-human/文旅推荐官.mp4"
+    assetPath: "/assets/digital-human/文旅推荐官.mp4",
+    threeView: "/assets/digital-human/three-view/文旅推荐官.png"
   },
   {
     id: "public-fashion-host",
@@ -71,7 +77,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/时尚类女主播.mp4",
-    assetPath: "/assets/digital-human/时尚类女主播.mp4"
+    assetPath: "/assets/digital-human/时尚类女主播.mp4",
+    threeView: "/assets/digital-human/three-view/时尚类女主播.png"
   },
   {
     id: "public-knowledge-host",
@@ -80,7 +87,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/知识科普类女主播.mp4",
-    assetPath: "/assets/digital-human/知识科普类女主播.mp4"
+    assetPath: "/assets/digital-human/知识科普类女主播.mp4",
+    threeView: "/assets/digital-human/three-view/知识科普类女主播.png"
   },
   {
     id: "public-executive-lady",
@@ -89,7 +97,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/职场女高管.mp4",
-    assetPath: "/assets/digital-human/职场女高管.mp4"
+    assetPath: "/assets/digital-human/职场女高管.mp4",
+    threeView: "/assets/digital-human/three-view/职场女高管.png"
   },
   {
     id: "public-business-host",
@@ -98,7 +107,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/职场轻商务女主播.mp4",
-    assetPath: "/assets/digital-human/职场轻商务女主播.mp4"
+    assetPath: "/assets/digital-human/职场轻商务女主播.mp4",
+    threeView: "/assets/digital-human/three-view/职场轻商务女主播.png"
   },
   {
     id: "public-finance",
@@ -107,7 +117,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/财经主播.mp4",
-    assetPath: "/assets/digital-human/财经主播.mp4"
+    assetPath: "/assets/digital-human/财经主播.mp4",
+    threeView: "/assets/digital-human/three-view/财经主播.png"
   },
   {
     id: "public-operations",
@@ -116,7 +127,8 @@ export const publicAvatars = [
     language: "中文 / 通用",
     status: "ready",
     cover: "/assets/digital-human/运营达人.mp4",
-    assetPath: "/assets/digital-human/运营达人.mp4"
+    assetPath: "/assets/digital-human/运营达人.mp4",
+    threeView: "/assets/digital-human/three-view/运营达人.png"
   }
 ];
 

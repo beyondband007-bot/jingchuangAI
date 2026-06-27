@@ -1,4 +1,4 @@
-import { sendError } from "../../shared/http.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
 import * as service from "./digitalHuman.service.js";
 
 export function getDigitalHumanModels(_req, res) {
@@ -90,6 +90,35 @@ export async function regenerateDigitalHumanTask(req, res) {
 export async function createDigitalHumanAvatar(req, res) {
   try {
     res.status(201).json(await service.createArkAvatar(req.body || {}, req.file));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function createDigitalHumanAiAvatar(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.status(201).json(await service.createAiCustomAvatarTask(req.body || {}, req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function getDigitalHumanAiAvatarTask(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    const task = await service.getAiCustomAvatarTask(req.params.id, req.user.id);
+    if (!task) return res.status(404).json({ error: "AI avatar task not found" });
+    return res.json(task);
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function saveDigitalHumanAiAvatar(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.status(201).json(await service.saveAiCustomAvatarTask(req.params.id, req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);
   }
