@@ -19785,7 +19785,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 .feature-main:has([data-feature-active="true"] .replicate-view) .fm-workbench-topbar {
   position: relative !important;
   top: auto !important;
-  flex: 0 0 80px !important;
+  flex: 0 0 72px !important;
 }
 
 .watermark-view-root,

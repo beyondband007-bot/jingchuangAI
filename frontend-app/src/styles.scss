@@ -19801,7 +19801,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 .feature-main:has([data-feature-active="true"] .replicate-view) .fm-workbench-topbar {
   position: relative !important;
   top: auto !important;
-  flex: 0 0 80px !important;
+  flex: 0 0 72px !important;
 }
 
 .watermark-view-root,
@@ -22705,8 +22705,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
     border-bottom: 1px solid var(--fm-line) !important;
   }
 
-  section.image-gen-view .image-composer-shell.is-inline,
-  .video-gen-view-root .video-composer.is-inline {
+    section.image-gen-view .image-composer-shell.is-inline,
+    .video-gen-view-root .video-composer.is-inline {
     width: calc(100vw - 32px) !important;
     max-width: calc(100vw - 32px) !important;
     left: auto !important;
@@ -22809,6 +22809,74 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 
 .fm-digital-tabs button.is-active {
   color: #55535f;
+}
+
+.feature-view-tabs {
+  position: fixed;
+  top: 0;
+  left: calc(var(--feature-sidebar-width) + 32px);
+  right: 430px;
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  height: 72px;
+  pointer-events: auto;
+}
+
+.feature-view-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0;
+  color: #9694a4;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.feature-view-tabs button:hover,
+.feature-view-tabs button:focus-visible,
+.feature-view-tabs button.is-active {
+  color: #55535f;
+  outline: 0;
+}
+
+.feature-view-tabs button:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 7px;
+}
+
+.fm-workbench-topbar.has-feature-view-tabs .fm-topbar-title-row > h1 {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .feature-view-tabs {
+    position: sticky;
+    top: 0;
+    left: auto;
+    right: auto;
+    z-index: 250;
+    width: 100%;
+    height: auto;
+    padding: 12px 20px;
+    overflow-x: auto;
+    gap: 24px;
+    background: #fff;
+    border-bottom: 1px solid var(--fm-line);
+  }
+
+  .feature-view-tabs button {
+    flex: 0 0 auto;
+    font-size: 16px;
+  }
 }
 
 .fm-invite-backdrop {

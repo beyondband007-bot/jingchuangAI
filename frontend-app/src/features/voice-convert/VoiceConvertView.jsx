@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Heart, Loader2, Mic, Music, Star, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Heart, Loader2, Mic, Music, Trash2 } from "lucide-react";
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceConvertApi } from "./voiceConvertApi";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { normalizeUploadFileName, stripFileExtension } from "../../utils/fileName";
 import {
@@ -403,14 +404,12 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
 
   return (
     <section className="voice-conversion-view-root voice-convert-view-root">
-      <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
-        <button type="button" disabled>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-      </div>
+      <FeatureViewTabs
+        currentLabel="音色转换"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => setViewTab("recent")}
+      />
 
       <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" && (

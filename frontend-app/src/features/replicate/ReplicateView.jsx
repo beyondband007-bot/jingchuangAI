@@ -8,12 +8,12 @@ import {
   FileVideo,
   Loader2,
   Sparkles,
-  Star,
   Upload,
   X,
 } from "lucide-react";
 import { replicateApi } from "./replicateApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -434,19 +434,12 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
   return (
     <section className="voice-conversion-view-root replicate-view">
-      <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>
-          主页
-        </button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>
-          历史记录
-          {recentResults.length > 0 && <span className="tab-badge">{recentResults.length}</span>}
-        </button>
-        <button type="button" disabled>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-      </div>
+      <FeatureViewTabs
+        currentLabel="反推提示词"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => setViewTab("recent")}
+      />
 
       <div className={`voice-conversion-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" ? (

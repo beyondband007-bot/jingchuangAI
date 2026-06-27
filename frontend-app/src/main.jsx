@@ -7,6 +7,7 @@
   useState,
 } from "react";
 import BillingPoints from "./components/BillingPoints.jsx";
+import { FeatureViewTabs } from "./components/FeatureViewTabs.jsx";
 import { createRoot } from "react-dom/client";
 import { Button, ConfigProvider } from "@arco-design/web-react";
 import ReactMarkdown from "react-markdown";
@@ -12224,39 +12225,15 @@ function WatermarkRemovalView({
 
   return (
     <section className="watermark-view-root">
-      <div className="image-filter-tabs watermark-filter-tabs">
-        <button
-          className={viewTab === "home" ? "selected" : ""}
-          type="button"
-          onClick={() => setViewTab("home")}
-        >
-          主页
-        </button>
-        <button
-          className={viewTab === "recent" ? "selected" : ""}
-          type="button"
-          onClick={() => {
-            setViewTab("recent");
-            setSubmittedTaskId(null);
-          }}
-        >
-          历史记录
-        </button>
-        <button
-          className={viewTab === "favorite" ? "selected" : ""}
-          type="button"
-          onClick={() => {
-            setViewTab("favorite");
-            setSubmittedTaskId(null);
-          }}
-        >
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-        {credits && (
-          <span className="credits-chip">积分 {credits.balance}</span>
-        )}
-      </div>
+      <FeatureViewTabs
+        currentLabel="去水印"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => {
+          setViewTab("recent");
+          setSubmittedTaskId(null);
+        }}
+      />
       <div
         className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}
       >
@@ -12634,6 +12611,17 @@ function WorkbenchTopbar({
   const showDigitalHumanTabs = activeNav === "digital-human";
   const showArticleTabs = activeNav === "article";
   const showVideoWorkflowHistory = activeNav === "motion" || activeNav === "face-swap";
+  const hideStandaloneTitleTabs = [
+    "watermark",
+    "remove-bg",
+    "enhance",
+    "replicate",
+    "voice",
+    "music",
+    "voice-convert",
+    "transcribe",
+    "video-voice",
+  ].includes(activeNav);
 
   useEffect(() => {
     setShowProfileMenu(false);
@@ -12762,7 +12750,7 @@ function WorkbenchTopbar({
           showDigitalHumanTabs || showArticleTabs || showVideoWorkflowHistory
             ? "has-digital-tabs"
             : ""
-        }${showVideoWorkflowHistory ? " has-video-workflow-tabs" : ""}`}
+        }${showVideoWorkflowHistory ? " has-video-workflow-tabs" : ""}${hideStandaloneTitleTabs ? " has-feature-view-tabs" : ""}`}
       >
         <div className="fm-topbar-title-row">
           {!showArticleTabs && !showVideoWorkflowHistory && (
@@ -13100,7 +13088,7 @@ function ImageFeaturePage({
       {isGuest && (
         <div
           className="feature-guest-auth-actions"
-          aria-label="游客璐﹀彿鍏ュ彛"
+          aria-label="游客账号入口"
         >
           <button type="button" onClick={() => onOpenAuth("login")}>
             登录

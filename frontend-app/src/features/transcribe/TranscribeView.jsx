@@ -1,7 +1,8 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Star, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -329,14 +330,12 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
 
   return (
     <section className="voice-conversion-view-root transcribe-view-root">
-      <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
-        <button type="button" disabled>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-      </div>
+      <FeatureViewTabs
+        currentLabel="语音转文字"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => setViewTab("recent")}
+      />
 
       <div className={`voice-conversion-canvas transcribe-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" && !result && (
