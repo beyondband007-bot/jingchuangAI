@@ -9,13 +9,25 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import "./digitalHumanHistory.scss";
 
+function getAvatarSource(task) {
+  if (task?.taskType === "photo") return "mine";
+  const avatarId = String(task?.avatarId || "");
+  return avatarId.startsWith("public-") ? "official" : "mine";
+}
+
+function getAvatarSourceLabel(source) {
+  return source === "official" ? "官方形象" : "我的形象";
+}
+
 function normalizeAvatarTask(task) {
+  const avatarSource = getAvatarSource(task);
   return {
     ...task,
     taskType: "avatar",
+    avatarSource,
     title: task.avatarName || "数字人形象",
     previewUrl: task.thumbnailUrl || "",
-    subtitle: task.voiceName || "官方形象",
+    subtitle: task.voiceName || getAvatarSourceLabel(avatarSource),
   };
 }
 
@@ -23,9 +35,10 @@ function normalizePhotoTask(task) {
   return {
     ...task,
     taskType: "photo",
-    title: "照片数字人",
+    avatarSource: "mine",
+    title: task.avatarName || "我的形象",
     previewUrl: task.thumbnailUrl || task.portraitUrl || "",
-    subtitle: task.voiceName || "自定义人像",
+    subtitle: task.voiceName || "我的形象",
   };
 }
 
@@ -113,7 +126,7 @@ export function DigitalHumanHistoryView({ isActive = true }) {
     const filtered =
       filter === "all"
         ? merged
-        : merged.filter((task) => task.taskType === filter);
+        : merged.filter((task) => task.avatarSource === filter);
     return filtered.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   }, [avatarTasks, filter, photoTasks]);
 
@@ -203,18 +216,18 @@ export function DigitalHumanHistoryView({ isActive = true }) {
             全部
           </Button>
           <Button
-            type={filter === "avatar" ? "primary" : "secondary"}
+            type={filter === "official" ? "primary" : "secondary"}
             size="small"
-            onClick={() => setFilter("avatar")}
+            onClick={() => setFilter("official")}
           >
-            数字人形象
+            官方形象
           </Button>
           <Button
-            type={filter === "photo" ? "primary" : "secondary"}
+            type={filter === "mine" ? "primary" : "secondary"}
             size="small"
-            onClick={() => setFilter("photo")}
+            onClick={() => setFilter("mine")}
           >
-            照片数字人
+            我的形象
           </Button>
         </div>
         <span className="dh-history__count">共 {tasks.length} 条记录</span>
@@ -266,8 +279,8 @@ export function DigitalHumanHistoryView({ isActive = true }) {
 
                 <div className="dh-history-card__body">
                   <div className="dh-history-card__tags">
-                    <Tag color={task.taskType === "photo" ? "purple" : "arcoblue"}>
-                      {task.taskType === "photo" ? "照片数字人" : "数字人形象"}
+                    <Tag color={task.avatarSource === "mine" ? "purple" : "arcoblue"}>
+                      {getAvatarSourceLabel(task.avatarSource)}
                     </Tag>
                     <Tag color={status.color}>{status.label}</Tag>
                   </div>

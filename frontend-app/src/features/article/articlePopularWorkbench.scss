@@ -528,6 +528,102 @@
   cursor: not-allowed;
 }
 
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview {
+  overflow: hidden !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__track {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  contain: none !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__card {
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: stretch;
+  justify-items: stretch;
+  overflow: hidden !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(36, 33, 45, 0.06);
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__card-media {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 10px 10px 0;
+  display: grid !important;
+  place-items: center;
+  aspect-ratio: auto !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__card img {
+  width: auto !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  border-radius: 6px !important;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy {
+  min-height: 116px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid #ece9f2;
+  background: #fff;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy strong {
+  display: block;
+  overflow: hidden;
+  color: #24212d;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy p {
+  display: -webkit-box;
+  min-height: 36px;
+  margin: 5px 0 8px;
+  overflow: hidden;
+  color: #6f6a7c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 24px;
+  overflow: hidden;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__tags span {
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #7a82ff;
+  background: #f1f2ff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 /* Beat styles.scss content-driven + keepalive overrides */
 [data-feature-module="article"].feature-module-keepalive
   > .article-view-root.article-popular-workbench,
@@ -643,6 +739,12 @@
     height: auto !important;
     overflow: hidden !important;
   }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__track {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: none !important;
+    grid-auto-rows: minmax(360px, auto);
+  }
 }
 
 /* 12 寸 / 矮屏：1366×768、1280×800 等 */
@@ -679,6 +781,25 @@
 
   [data-feature-module="article"] .article-view-root.article-popular-workbench .fm-popular-stepper.is-three-steps p {
     font-size: 11px !important;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__track {
+    gap: 10px !important;
+    padding: 10px !important;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy {
+    min-height: 102px;
+    padding: 8px 10px 10px;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy strong {
+    font-size: 13px;
+  }
+
+  [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy p {
+    margin-bottom: 6px;
+    font-size: 11px;
   }
 }
 

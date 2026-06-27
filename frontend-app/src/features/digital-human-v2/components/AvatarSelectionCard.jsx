@@ -1,6 +1,7 @@
 import React from "react";
 import { Drama, History, Sparkles, Upload, UserRound } from "lucide-react";
 import {
+  getPosterPath,
   isVideoCover,
 } from "../utils";
 
@@ -12,6 +13,7 @@ export function AvatarSelectionCard({
 }) {
   const cover = selectedAvatar?.cover;
   const isVideo = isVideoCover(cover);
+  const previewCover = isVideo ? selectedAvatar?.poster || getPosterPath(cover) : cover;
   const isMine = avatarSource === "mine";
 
   return (
@@ -46,18 +48,8 @@ export function AvatarSelectionCard({
         {selectedAvatar ? (
           <>
             <div className="dhv2-avatar-preview__media">
-              {cover ? (
-                isVideo ? (
-                  <video
-                    src={cover}
-                    poster={selectedAvatar.poster || undefined}
-                    muted
-                    playsInline
-                    controls
-                  />
-                ) : (
-                  <img src={cover} alt={selectedAvatar.name} />
-                )
+              {previewCover ? (
+                <img src={previewCover} alt={selectedAvatar.name} />
               ) : (
                 <div className="dhv2-avatar-preview__empty">
                   <UserRound size={40} />

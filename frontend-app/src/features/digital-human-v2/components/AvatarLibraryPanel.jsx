@@ -12,7 +12,6 @@ import {
 
 export function AvatarLibraryPanel({
   avatars,
-  tasks = [],
   selectedAvatar,
   selectedMineLibraryId,
   avatarSource = "official",
@@ -45,8 +44,8 @@ export function AvatarLibraryPanel({
     });
   }, [aspectRatio, avatars.public]);
   const mineList = useMemo(
-    () => getDigitalHumanMineLibraryItems(tasks, avatars.mine),
-    [avatars.mine, tasks],
+    () => getDigitalHumanMineLibraryItems(avatars.mine),
+    [avatars.mine],
   );
   const list = isMine ? mineList : officialList;
 
@@ -124,7 +123,7 @@ export function AvatarLibraryPanel({
 
       {isMine ? (
         <div className="dhv2-library__banner">
-          上传本地图或从历史作品导入，创建专属数字人形象
+          使用 AI 定制创建专属数字人形象，生成后会展示在这里
         </div>
       ) : null}
 
@@ -155,7 +154,7 @@ export function AvatarLibraryPanel({
         ) : null}
         {!list.length && isMine ? (
           <div className="dhv2-library__mine-empty">
-            <p>暂无我的形象，可上传照片或使用 AI 定制创建</p>
+            <p>暂无我的形象，可使用 AI 定制创建</p>
           </div>
         ) : null}
       </div>

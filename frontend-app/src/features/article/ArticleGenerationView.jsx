@@ -1147,7 +1147,7 @@ export function ArticleGenerationView({
       selectedTask?.createdAt || selectedTask?.created_at || selectedTask?.time,
     ) || "刚刚";
   const activeStyleTemplatePreviews = useMemo(
-    () => pickRandomStyleTemplates(form.visualStyle, 6),
+    () => pickRandomStyleTemplates(form.visualStyle, 4),
     [form.visualStyle],
   );
   const showStyleTemplatePreview =
@@ -1786,7 +1786,7 @@ export function ArticleGenerationView({
             <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
               {showStyleTemplatePreview
-                ? `${activeVisualStyleLabel}风格 · 6 款示意`
+                ? `${activeVisualStyleLabel}风格 · 4 款精选`
                 : `${form.platform} · ${form.ratio}`}
             </span>
           </header>

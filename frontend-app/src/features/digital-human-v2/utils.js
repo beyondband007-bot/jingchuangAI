@@ -217,6 +217,27 @@ export function filterReadyMineAvatars(list = []) {
   });
 }
 
+export function isAiCustomMineAvatar(avatar) {
+  const sourceText = [
+    avatar?.source,
+    avatar?.sourceType,
+    avatar?.avatarType,
+    avatar?.type,
+    avatar?.origin,
+    avatar?.category,
+    avatar?.name,
+    avatar?.cover,
+    avatar?.localUrl,
+  ].join(" ").toLowerCase();
+
+  return (
+    sourceText.includes("ai-custom") ||
+    sourceText.includes("ai custom") ||
+    sourceText.includes("ai 定制") ||
+    sourceText.includes("/digital-human/avatars/ai/")
+  );
+}
+
 export function matchVoiceForAvatar(avatar, voices = []) {
   const enabledVoices = voices.filter((voice) => isDigitalHumanVoiceEnabled(voice.id));
   if (!enabledVoices.length) return null;
@@ -335,28 +356,15 @@ export function getMineLibraryItems(photoTasks = []) {
     .map(photoTaskToMineLibraryItem);
 }
 
-export function getDigitalHumanMineLibraryItems(tasks = [], mineAvatars = []) {
-  const completedTasks = (Array.isArray(tasks) ? tasks : [])
-    .filter(
-      (task) =>
-        task?.status === "completed" && (task.thumbnailUrl || task.resultUrl),
-    )
+export function getDigitalHumanMineLibraryItems(mineAvatars = []) {
+  return filterReadyMineAvatars(mineAvatars)
+    .filter(isAiCustomMineAvatar)
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
-    .map(taskToMineLibraryItem);
-
-  const usedAvatarIds = new Set(
-    completedTasks.map((item) => String(item.avatarId || "")).filter(Boolean),
-  );
-
-  const orphanAvatars = filterReadyMineAvatars(mineAvatars)
-    .filter((avatar) => !usedAvatarIds.has(String(avatar.id)))
     .map((avatar) => ({
       ...avatar,
       libraryId: `avatar-${avatar.id}`,
       sourceType: "avatar",
     }));
-
-  return [...completedTasks, ...orphanAvatars];
 }
 
 export const DHV2_DRAFTS_STORAGE_KEY = "dhv2-workspace-drafts";

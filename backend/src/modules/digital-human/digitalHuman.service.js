@@ -159,6 +159,8 @@ function mapVirtualAssetToAvatar(asset) {
     status: ready ? "ready" : asset.status === "failed" ? "failed" : "training",
     cover: asset.localUrl,
     provider: "kie",
+    source: isAiCustom ? "ai-custom" : "upload",
+    avatarType: isAiCustom ? "ai-custom" : "upload",
     arkAssetId: asset.id,
     providerAssetId: asset.providerAssetId,
     assetUri: asset.assetUri,
@@ -168,7 +170,10 @@ function mapVirtualAssetToAvatar(asset) {
 
 async function getMyAvatars() {
   const assets = await listVirtualAssets({ feature: "digital-human" });
-  return assets.filter((asset) => asset.assetType === "Image").map(mapVirtualAssetToAvatar).filter(Boolean);
+  return assets
+    .filter((asset) => asset.assetType === "Image" && isAiCustomAvatarAsset(asset))
+    .map(mapVirtualAssetToAvatar)
+    .filter(Boolean);
 }
 
 async function getAvatarById(avatarId) {

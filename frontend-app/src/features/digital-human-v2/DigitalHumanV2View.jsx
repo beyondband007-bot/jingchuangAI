@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import { voiceApi } from "../voice/voiceApi";
@@ -21,6 +21,7 @@ import {
   VOICE_UNAVAILABLE_HINT,
   createWorkspaceDraft,
   DHV2_DRAFTS_MAX,
+  estimateSpeechSeconds,
   getVoiceEmotionLabel,
   getVoiceEmotionValue,
   isDigitalHumanVoiceEnabled,
@@ -45,7 +46,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     voices,
     tasks,
     photoTasks,
-    credits,
     selectedAvatar,
     setSelectedAvatar,
     loading,
@@ -74,6 +74,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
   const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
   const [cloneAudio, setCloneAudio] = useState(null);
+  const [speechDurationMs, setSpeechDurationMs] = useState(0);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
@@ -86,6 +87,16 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       (isCloneMode
         ? cloneAudio?.fileId || cloneAudio?.cachedVoice?.id
         : voiceId && isDigitalHumanVoiceEnabled(voiceId)),
+  );
+  const estimatedGenerateCredits = useMemo(
+    () => {
+      if (speechDurationMs > 0) {
+        const speechSeconds = Math.round((speechDurationMs / 1000) * 10) / 10;
+        return Math.ceil(speechSeconds * 120);
+      }
+      return estimateSpeechSeconds(text) * 120;
+    },
+    [speechDurationMs, text],
   );
 
   useEffect(() => {
@@ -533,6 +544,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               showCloneUpload={isMineAvatar}
               cloneAudio={cloneAudio}
               onCloneAudioChange={setCloneAudio}
+              onSpeechDurationMsChange={setSpeechDurationMs}
             />
             <VideoSpecField
               videoSpec={videoSpec}
@@ -543,7 +555,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             canGenerate={canGenerate}
             isSubmitting={isSubmitting}
             isCloneMode={isCloneMode}
-            credits={credits?.balance}
+            estimatedCredits={estimatedGenerateCredits}
             onGenerate={handleGenerate}
           />
         </aside>
@@ -551,7 +563,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         {showLibrary ? (
           <AvatarLibraryPanel
             avatars={avatars}
-            tasks={tasks}
             selectedAvatar={selectedAvatar}
             selectedMineLibraryId={selectedMineLibraryId}
             avatarSource={avatarSource}

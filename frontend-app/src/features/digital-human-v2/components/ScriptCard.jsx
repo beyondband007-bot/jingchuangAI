@@ -28,6 +28,7 @@ export function ScriptCard({
   showCloneUpload = false,
   cloneAudio,
   onCloneAudioChange,
+  onSpeechDurationMsChange,
 }) {
   const textareaRef = useRef(null);
   const audioRef = useRef(null);
@@ -41,8 +42,14 @@ export function ScriptCard({
   const canOptimize = Boolean(selection.text.trim());
   const isCloneMode = showCloneUpload && voiceMode === VOICE_DUBBING_MODES.clone;
 
+  function updatePreviewDurationMs(value) {
+    const durationMs = Number(value || 0);
+    setPreviewDurationMs(durationMs > 0 ? durationMs : null);
+    onSpeechDurationMsChange?.(durationMs > 0 ? durationMs : 0);
+  }
+
   useEffect(() => {
-    setPreviewDurationMs(null);
+    updatePreviewDurationMs(0);
     lastPreviewKeyRef.current = "";
     if (audioRef.current) {
       audioRef.current.pause();
@@ -50,6 +57,12 @@ export function ScriptCard({
     }
     setIsPlaying(false);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, isCloneMode]);
+
+  useEffect(() => {
+    if (isCloneMode && cloneAudio?.durationMs) {
+      updatePreviewDurationMs(cloneAudio.durationMs);
+    }
+  }, [cloneAudio?.durationMs, isCloneMode]);
 
   function openCloneFilePicker() {
     cloneInputRef.current?.click();
@@ -174,7 +187,7 @@ export function ScriptCard({
   async function previewScript({ shouldPlay = false } = {}) {
     const trimmed = text.trim();
     if (!trimmed) {
-      setPreviewDurationMs(null);
+      updatePreviewDurationMs(0);
       if (shouldPlay) {
         Message.info("请先输入配音内容");
       }
@@ -182,7 +195,7 @@ export function ScriptCard({
     }
     if (isCloneMode) {
       if (cloneAudio?.durationMs) {
-        setPreviewDurationMs(cloneAudio.durationMs);
+        updatePreviewDurationMs(cloneAudio.durationMs);
       }
       if (shouldPlay) {
         Message.info("音色克隆模式下请使用参考音频驱动口播");
@@ -218,7 +231,7 @@ export function ScriptCard({
         emotion: getVoiceEmotionValue(voiceEmotion),
       });
       lastPreviewKeyRef.current = previewKey;
-      setPreviewDurationMs(result.durationMs || 0);
+      updatePreviewDurationMs(result.durationMs || 0);
 
       if (audioRef.current) {
         audioRef.current.pause();
@@ -251,8 +264,8 @@ export function ScriptCard({
   const durationLabel = previewDurationMs
     ? `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
     : isCloneMode
-      ? "上传参考音频后可查看时长"
-      : "试听后可获取准确的说话时长";
+      ? "上传参考音频后可查看时长和消耗积分"
+      : "试听后可获取准确的说话时长和消耗积分";
 
   return (
     <section className="dhv2-card dhv2-script-card" aria-label="配音内容">
