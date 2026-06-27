@@ -11,9 +11,10 @@ export function AvatarCard({
 }) {
   const cover = avatar.cover;
   const isVideo = isVideoCover(cover);
-  const category = getAvatarCategoryLabel(avatar);
-  const overlayLabel =
-    variant === "mine" ? `${avatar.name || "我的形象"} · ${category}` : category;
+  const isAiCustom = String(cover || "").includes("/digital-human/avatars/ai/");
+  const category = isAiCustom ? "AI Custom" : getAvatarCategoryLabel(avatar);
+  const name = isAiCustom ? "AI Custom Avatar" : avatar.name || "My Avatar";
+  const overlayLabel = variant === "mine" ? `${name} · ${category}` : category;
 
   return (
     <article
@@ -25,7 +26,7 @@ export function AvatarCard({
         type="button"
         className="dhv2-avatar-card__cover"
         onClick={() => onSelect?.(avatar)}
-        aria-label={`选择 ${avatar.name}`}
+        aria-label={`Select ${name}`}
       >
         {cover ? (
           isVideo ? (
@@ -37,7 +38,7 @@ export function AvatarCard({
               preload="metadata"
             />
           ) : (
-            <img src={cover} alt={avatar.name} loading="lazy" />
+            <img src={cover} alt={name} loading="lazy" />
           )
         ) : (
           <span className="dhv2-avatar-card__placeholder" />
@@ -50,7 +51,7 @@ export function AvatarCard({
         <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
       </button>
       {variant === "default" ? (
-        <strong className="dhv2-avatar-card__name">{avatar.name}</strong>
+        <strong className="dhv2-avatar-card__name">{name}</strong>
       ) : null}
     </article>
   );

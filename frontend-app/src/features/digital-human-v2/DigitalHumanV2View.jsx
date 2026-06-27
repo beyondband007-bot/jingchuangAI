@@ -244,15 +244,30 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   async function handleCreateAvatar(payload) {
     if (payload?.mode === "ai") {
       setIsCreateOpen(false);
+      const request = { ...payload };
       setAiGeneratingJob({
-        prompt: payload.prompt,
-        gender: payload.gender,
-        age: payload.age,
-        style: payload.style,
-        ratio: payload.ratio,
+        ...request,
+        request,
+        status: "creating",
       });
       setAvatarSource("mine");
       setRightView("library");
+      try {
+        const task = await digitalHumanApi.createAiAvatar(request);
+        await refreshCredits();
+        setAiGeneratingJob({
+          ...request,
+          ...task,
+          request,
+        });
+      } catch (createError) {
+        setAiGeneratingJob((current) => current ? {
+          ...current,
+          status: "failed",
+          error: createError.message || "AI avatar generation failed",
+        } : null);
+        await refreshCredits();
+      }
       return;
     }
 
@@ -273,6 +288,52 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       showToast("个人形象创建失败");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleRegenerateAiAvatar(request) {
+    if (!request) return;
+    setAiGeneratingJob({
+      ...request,
+      request,
+      status: "creating",
+    });
+    try {
+      const task = await digitalHumanApi.createAiAvatar(request);
+      await refreshCredits();
+      setAiGeneratingJob({
+        ...request,
+        ...task,
+        request,
+      });
+    } catch (createError) {
+      setAiGeneratingJob((current) => current ? {
+        ...current,
+        status: "failed",
+        error: createError.message || "AI avatar generation failed",
+      } : null);
+      await refreshCredits();
+    }
+  }
+
+  async function handleSaveAiAvatar(task) {
+    if (!task?.id) return;
+    try {
+      const result = await digitalHumanApi.saveAiAvatarTask(task.id, {
+        name: "AI Custom Avatar",
+      });
+      if (result?.avatar) {
+        setSelectedAvatar(result.avatar);
+        setAvatarSource("mine");
+        setSelectedMineLibraryId(`avatar-${result.avatar.id}`);
+      }
+      setAiGeneratingJob(null);
+      showToast("涓汉褰㈣薄鍒涘缓鎴愬姛");
+    } catch (saveError) {
+      setAiGeneratingJob((current) => current ? {
+        ...current,
+        error: saveError.message || "Save avatar failed",
+      } : null);
     }
   }
 
@@ -493,6 +554,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         <AvatarGeneratingModal
           job={aiGeneratingJob}
           onClose={() => setAiGeneratingJob(null)}
+          onRegenerate={handleRegenerateAiAvatar}
+          onSave={handleSaveAiAvatar}
         />
       ) : null}
 

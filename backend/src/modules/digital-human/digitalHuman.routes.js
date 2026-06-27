@@ -5,9 +5,11 @@ import multer from "multer";
 import { config } from "../../config/index.js";
 import {
   createDigitalHumanAvatar,
+  createDigitalHumanAiAvatar,
   createDigitalHumanTask,
   deleteDigitalHumanAvatar,
   deleteDigitalHumanTask,
+  getDigitalHumanAiAvatarTask,
   designDigitalHumanVoice,
   getDigitalHumanAvatars,
   getDigitalHumanModels,
@@ -16,6 +18,7 @@ import {
   listDigitalHumanTasks,
   previewDigitalHumanVoice,
   regenerateDigitalHumanTask,
+  saveDigitalHumanAiAvatar,
   uploadDigitalHumanAudio,
   updateDigitalHumanAvatar
 } from "./digitalHuman.controller.js";
@@ -90,6 +93,9 @@ function uploadAudio(req, res, next) {
 digitalHumanRouter.get("/models", getDigitalHumanModels);
 digitalHumanRouter.get("/avatars", getDigitalHumanAvatars);
 digitalHumanRouter.post("/avatars", uploadAvatar, createDigitalHumanAvatar);
+digitalHumanRouter.post("/avatars/ai-custom", createDigitalHumanAiAvatar);
+digitalHumanRouter.get("/avatars/ai-custom/:id", getDigitalHumanAiAvatarTask);
+digitalHumanRouter.post("/avatars/ai-custom/:id/save", saveDigitalHumanAiAvatar);
 digitalHumanRouter.put("/avatars/:id", updateDigitalHumanAvatar);
 digitalHumanRouter.delete("/avatars/:id", deleteDigitalHumanAvatar);
 digitalHumanRouter.get("/voices", getDigitalHumanVoices);

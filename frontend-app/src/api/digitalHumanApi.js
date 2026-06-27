@@ -98,6 +98,29 @@ export const digitalHumanApi = {
     return avatar;
   },
 
+  async createAiAvatar(payload) {
+    const task = await request("/api/digital-human/avatars/ai-custom", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    taskPolling.notifyNow();
+    return task;
+  },
+
+  async getAiAvatarTask(id) {
+    return request(`/api/digital-human/avatars/ai-custom/${id}`);
+  },
+
+  async saveAiAvatarTask(id, payload = {}) {
+    const result = await request(`/api/digital-human/avatars/ai-custom/${id}/save`, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    avatarsPromise = undefined;
+    taskPolling.notifyNow();
+    return result;
+  },
+
   async updateAvatar(id, payload) {
     const avatar = await request(`/api/digital-human/avatars/${id}`, {
       method: "PUT",
