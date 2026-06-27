@@ -10,7 +10,7 @@ import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { AvatarSelectionCard } from "./components/AvatarSelectionCard";
 import { VoiceDubbingModeCard, VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { ScriptCard } from "./components/ScriptCard";
-import { GenerateFooter } from "./components/GenerateFooter";
+import { GenerateFooter, VideoSpecField } from "./components/GenerateFooter";
 import { AvatarLibraryPanel } from "./components/AvatarLibraryPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
@@ -115,6 +115,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   }
 
   function handleAvatarSourceChange(nextSource) {
+    if (nextSource !== "official") return;
     setAvatarSource(nextSource);
     setRightView("library");
     setActiveTask(null);
@@ -367,9 +368,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
-      setAvatarSource("mine");
-      setRightView("library");
-      Message.info("请从右侧照片数字人记录中选择");
+      Message.info("开发中");
       return;
     }
     setCreateMode(mode);
@@ -442,42 +441,43 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
       <div className="dhv2-workspace">
         <aside className="dhv2-sidebar">
-          <AvatarSelectionCard
-            avatarSource={avatarSource}
-            onAvatarSourceChange={handleAvatarSourceChange}
-            selectedAvatar={selectedAvatar}
-            onOpenCreate={openCreateModal}
-          />
-          {selectedAvatar ? (
-            <VoiceDubbingModeCard
-              voiceMode={voiceMode}
-              onVoiceModeChange={setVoiceMode}
-              showCloneTab={isMineAvatar}
-              selectedAvatar={selectedAvatar}
-              voices={voices}
+          <div className="dhv2-sidebar__scroll">
+            {!selectedAvatar ? (
+              <AvatarSelectionCard selectedAvatar={selectedAvatar} />
+            ) : null}
+            {selectedAvatar ? (
+              <VoiceDubbingModeCard
+                voiceMode={voiceMode}
+                onVoiceModeChange={setVoiceMode}
+                showCloneTab={isMineAvatar}
+                selectedAvatar={selectedAvatar}
+                voices={voices}
+                voiceId={voiceId}
+                onVoiceIdChange={setVoiceId}
+                voiceSpeed={voiceSpeed}
+                onVoiceSpeedChange={setVoiceSpeed}
+                voiceEmotion={voiceEmotion}
+                onVoiceEmotionChange={setVoiceEmotion}
+              />
+            ) : null}
+            <ScriptCard
+              text={text}
+              onTextChange={setText}
+              onOptimizeRequest={handleScriptOptimizeRequest}
               voiceId={voiceId}
-              onVoiceIdChange={setVoiceId}
               voiceSpeed={voiceSpeed}
-              onVoiceSpeedChange={setVoiceSpeed}
               voiceEmotion={voiceEmotion}
-              onVoiceEmotionChange={setVoiceEmotion}
+              voiceMode={voiceMode}
+              showCloneUpload={isMineAvatar}
+              cloneAudio={cloneAudio}
+              onCloneAudioChange={setCloneAudio}
             />
-          ) : null}
-          <ScriptCard
-            text={text}
-            onTextChange={setText}
-            onOptimizeRequest={handleScriptOptimizeRequest}
-            voiceId={voiceId}
-            voiceSpeed={voiceSpeed}
-            voiceEmotion={voiceEmotion}
-            voiceMode={voiceMode}
-            showCloneUpload={isMineAvatar}
-            cloneAudio={cloneAudio}
-            onCloneAudioChange={setCloneAudio}
-          />
+            <VideoSpecField
+              videoSpec={videoSpec}
+              onVideoSpecChange={setVideoSpec}
+            />
+          </div>
           <GenerateFooter
-            videoSpec={videoSpec}
-            onVideoSpecChange={setVideoSpec}
             canGenerate={canGenerate}
             isSubmitting={isSubmitting}
             isCloneMode={isCloneMode}
@@ -488,13 +488,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
         {showLibrary ? (
           <AvatarLibraryPanel
-            avatarSource={avatarSource}
-            onAvatarSourceChange={handleAvatarSourceChange}
             avatars={avatars}
-            tasks={tasks}
-            photoTasks={photoTasks}
-            selectedMineLibraryId={selectedMineLibraryId}
-            onSelectMineItem={handleSelectMineItem}
             selectedAvatar={selectedAvatar}
             voices={voices}
             voiceId={voiceId}
@@ -509,8 +503,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             onFillModeChange={setFillMode}
             onSelectAvatar={handleSelectAvatar}
             onConfirmAvatar={handleConfirmAvatar}
-            onClose={() => setRightView("preview")}
-            onCreateAvatar={openCreateModal}
           />
         ) : (
           <PreviewPanel

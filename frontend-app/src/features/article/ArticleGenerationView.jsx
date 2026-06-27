@@ -8,7 +8,6 @@ import {
   CircleAlert,
   Copy,
   Download,
-  ImagePlus,
   Layers,
   Loader2,
   RefreshCcw,
@@ -23,6 +22,10 @@ import { ArticleXhsNotePreview } from "./ArticleXhsNotePreview";
 import { ArticlePopularResultPanel } from "./ArticlePopularResultPanel";
 import { ArticleImageConfigPanel } from "./ArticleImageConfigPanel";
 import { ArticleStyleTemplatePreview } from "./ArticleStyleTemplatePreview";
+import {
+  pickRandomStyleTemplates,
+  visualStyles,
+} from "./articleStyleTemplateAssets";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import {
@@ -138,148 +141,6 @@ const quickTemplates = [
     tone: "温柔分享风"
   }
 ];
-
-const visualStyles = [
-  {
-    id: "fresh",
-    label: "清新",
-    image: "/assets/article/template-thumbs/清新.png",
-  },
-  {
-    id: "cute",
-    label: "可爱",
-    image: "/assets/article/template-thumbs/可爱.png",
-  },
-  {
-    id: "minimal",
-    label: "极简",
-    image: "/assets/article/template-thumbs/极简.png",
-  },
-  {
-    id: "bold",
-    label: "大胆",
-    image: "/assets/article/template-thumbs/大胆.png",
-  },
-  {
-    id: "handdrawn",
-    label: "手绘笔记",
-    image: "/assets/article/template-thumbs/手绘.png",
-  },
-  {
-    id: "retro",
-    label: "复古",
-    image: "/assets/article/template-thumbs/复古.png",
-  },
-  {
-    id: "notion",
-    label: "Notion 风",
-    image: "/assets/article/template-thumbs/Notion.png",
-  },
-  {
-    id: "blackboard",
-    label: "黑板风",
-    image: "/assets/article/template-thumbs/黑板.png",
-  },
-];
-
-const freshStylePreviews = [
-  {
-    id: "book-share",
-    label: "读书分享",
-    image: "/assets/article/style-previews/fresh/book-share.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/fresh/ootd.png",
-  },
-  {
-    id: "life-fragments",
-    label: "生活碎片收集",
-    image: "/assets/article/style-previews/fresh/life-fragments.png",
-  },
-  {
-    id: "skincare",
-    label: "护肤日常",
-    image: "/assets/article/style-previews/fresh/skincare.png",
-  },
-];
-
-const cuteStylePreviews = [
-  {
-    id: "life-fragments",
-    label: "日常碎片收集",
-    image: "/assets/article/style-previews/cute/life-fragments.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/cute/ootd.png",
-  },
-  {
-    id: "skincare",
-    label: "护肤日常",
-    image: "/assets/article/style-previews/cute/skincare.png",
-  },
-  {
-    id: "study-check-in",
-    label: "学习打卡",
-    image: "/assets/article/style-previews/cute/study-check-in.png",
-  },
-];
-
-const minimalStylePreviews = [
-  {
-    id: "life-quote",
-    label: "慢生活金句",
-    image: "/assets/article/style-previews/minimal/life-quote.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/minimal/ootd.png",
-  },
-  {
-    id: "weekend-explore",
-    label: "周末探店",
-    image: "/assets/article/style-previews/minimal/weekend-explore.png",
-  },
-  {
-    id: "book-list",
-    label: "书单分享",
-    image: "/assets/article/style-previews/minimal/book-list.png",
-  },
-];
-
-const boldStylePreviews = [
-  {
-    id: "bold-check-in",
-    label: "大胆打卡",
-    image: "/assets/article/style-previews/bold/bold-check-in.png",
-  },
-  {
-    id: "bold-life-color",
-    label: "活出色彩",
-    image: "/assets/article/style-previews/bold/bold-life-color.png",
-  },
-  {
-    id: "bold-jewel",
-    label: "首饰宣言",
-    image: "/assets/article/style-previews/bold/bold-jewel.png",
-  },
-  {
-    id: "bold-night",
-    label: "大胆美学夜",
-    image: "/assets/article/style-previews/bold/bold-night.png",
-  },
-];
-
-const styleTemplatePreviews = {
-  fresh: freshStylePreviews,
-  cute: cuteStylePreviews,
-  minimal: minimalStylePreviews,
-  bold: boldStylePreviews,
-};
 
 const contentTypes = [
   {
@@ -1175,12 +1036,9 @@ export function ArticleGenerationView({
   const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
   const [previewQuickTemplate, setPreviewQuickTemplate] = useState(null);
   const [isCopyParamsOpen, setIsCopyParamsOpen] = useState(true);
-  const [referenceImageName, setReferenceImageName] = useState("");
   const templateSelectRef = useRef(null);
   const morePlatformRef = useRef(null);
   const modelSelectRef = useRef(null);
-  const quickRailRef = useRef(null);
-  const referenceImageInputRef = useRef(null);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
@@ -1322,10 +1180,13 @@ export function ArticleGenerationView({
     formatBeijingDateTime(
       selectedTask?.createdAt || selectedTask?.created_at || selectedTask?.time,
     ) || "刚刚";
-  const activeStyleTemplatePreviews = styleTemplatePreviews[form.visualStyle] || null;
+  const activeStyleTemplatePreviews = useMemo(
+    () => pickRandomStyleTemplates(form.visualStyle, 6),
+    [form.visualStyle],
+  );
   const showStyleTemplatePreview =
     step >= 3 &&
-    activeStyleTemplatePreviews &&
+    activeStyleTemplatePreviews.length > 0 &&
     !isGenerating &&
     !isDraftSubmitting &&
     !hasCompletedArticle;
@@ -1432,18 +1293,6 @@ export function ArticleGenerationView({
 
   function selectMorePlatform(platform) {
     changePlatform(platform);
-  }
-
-  function scrollQuickRailToEnd() {
-    const rail = quickRailRef.current;
-    if (!rail) return;
-    rail.scrollTo({ left: rail.scrollWidth, behavior: "smooth" });
-  }
-
-  function handleReferenceImageChange(event) {
-    const file = event.target.files?.[0];
-    setReferenceImageName(file?.name || "");
-    event.target.value = "";
   }
 
   function applyQuickTemplate(
@@ -1895,22 +1744,6 @@ export function ArticleGenerationView({
                     }
                     placeholder="城市宝藏小店探店，氛围感满满的美食打卡文案"
                   />
-                  <div className="article-ref-upload is-inline">
-                    <input
-                      ref={referenceImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={handleReferenceImageChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => referenceImageInputRef.current?.click()}
-                    >
-                      <ImagePlus size={18} />
-                      {referenceImageName || "上传参考图"}
-                    </button>
-                  </div>
                 </div>
               </label>
               <section className="article-quick-section is-inline">
@@ -1918,11 +1751,8 @@ export function ArticleGenerationView({
                   <div>
                     <strong>快捷图文模版</strong>
                   </div>
-                  <button type="button" onClick={scrollQuickRailToEnd}>
-                    查看更多 →
-                  </button>
                 </header>
-                <div className="article-quick-rail" ref={quickRailRef}>
+                <div className="article-quick-rail">
                   {quickTemplates.map((item) => (
                     <button
                       className="article-quick-card__thumb"
@@ -1997,7 +1827,7 @@ export function ArticleGenerationView({
             <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
               {showStyleTemplatePreview
-                ? `${activeVisualStyleLabel}风格 · 4 款示意`
+                ? `${activeVisualStyleLabel}风格 · 6 款示意`
                 : `${form.platform} · ${form.ratio}`}
             </span>
           </header>

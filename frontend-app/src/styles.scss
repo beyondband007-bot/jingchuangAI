@@ -30973,8 +30973,9 @@ textarea::placeholder {
 [data-feature-module="article"]
   .article-view-root.article-popular-workbench
   .article-form-panel__scroll {
-  flex: 1 1 0 !important;
+  grid-row: 1;
   min-height: 0 !important;
+  max-height: 100% !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
@@ -31440,7 +31441,7 @@ textarea::placeholder {
   height: auto;
   max-height: 100%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 8px;

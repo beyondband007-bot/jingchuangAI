@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Message } from "@arco-design/web-react";
-import { Play, Star, X } from "lucide-react";
+import { Play, Star } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import {
   VOICE_UNAVAILABLE_HINT,
@@ -117,45 +117,37 @@ export function AvatarConfirmOverlay({
         onClick={(event) => event.stopPropagation()}
       >
         <section className="dhv2-avatar-confirm">
-          <header className="dhv2-avatar-confirm__head">
-            <div className="dhv2-avatar-confirm__title-block">
-              <strong>{avatar.name}</strong>
-              <div className="dhv2-avatar-confirm__tags">
-                {tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
-              </div>
-            </div>
-            <div className="dhv2-avatar-confirm__head-actions">
-              <button type="button" className="dhv2-avatar-confirm__icon-btn" aria-label="收藏">
-                <Star size={14} />
-              </button>
-              <button
-                type="button"
-                className="dhv2-avatar-confirm__icon-btn"
-                aria-label="关闭"
-                onClick={onClose}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </header>
-
           <div className="dhv2-avatar-confirm__body">
-            <div className="dhv2-avatar-confirm__media">
-              <span className="dhv2-avatar-confirm__badge">适配视频 / 直播</span>
-              {isVideoCover(avatar.cover) ? (
-                <video
-                  src={avatar.cover}
-                  poster={avatar.poster || undefined}
-                  muted
-                  playsInline
-                  autoPlay
-                  loop
-                />
-              ) : (
-                <img src={avatar.cover} alt={avatar.name} />
-              )}
+            <div className="dhv2-avatar-confirm__left">
+              <header className="dhv2-avatar-confirm__head">
+                <div className="dhv2-avatar-confirm__title-block">
+                  <strong>{avatar.name}</strong>
+                  <div className="dhv2-avatar-confirm__tags">
+                    {tags.map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <button type="button" className="dhv2-avatar-confirm__icon-btn" aria-label="收藏">
+                  <Star size={14} />
+                </button>
+              </header>
+
+              <div className="dhv2-avatar-confirm__media">
+                <span className="dhv2-avatar-confirm__badge">适配视频 / 直播</span>
+                {isVideoCover(avatar.cover) ? (
+                  <video
+                    src={avatar.cover}
+                    poster={avatar.poster || undefined}
+                    muted
+                    playsInline
+                    autoPlay
+                    loop
+                  />
+                ) : (
+                  <img src={avatar.cover} alt={avatar.name} />
+                )}
+              </div>
             </div>
 
             <div className="dhv2-avatar-confirm__aside">

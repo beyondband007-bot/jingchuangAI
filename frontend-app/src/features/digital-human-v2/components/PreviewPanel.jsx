@@ -4,7 +4,6 @@ import {
   Bot,
   Copy,
   Download,
-  LayoutGrid,
   Loader2,
   RefreshCcw,
   Trash2,
@@ -132,13 +131,6 @@ export function PreviewPanel({
             </button>
             <button type="button" aria-label="保存草稿" onClick={handleSaveDraft}>
               <Copy size={15} />
-            </button>
-            <button
-              type="button"
-              aria-label="布局能力"
-              onClick={() => Message.info("功能即将开放")}
-            >
-              <LayoutGrid size={15} />
             </button>
             <button
               type="button"

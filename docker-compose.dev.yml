@@ -11,10 +11,8 @@ services:
       backend:
         condition: service_healthy
     environment:
-      VITE_DEV_PROXY_TARGET: http://host.docker.internal:3006
+      VITE_DEV_PROXY_TARGET: http://backend:3006
       CHOKIDAR_USEPOLLING: "true"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "${FRONTEND_DEV_BIND_ADDRESS:-0.0.0.0}:${FRONTEND_DEV_PORT:-5173}:5173"
     volumes:

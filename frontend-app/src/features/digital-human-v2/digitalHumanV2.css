@@ -33,9 +33,19 @@
   gap: 16px;
   min-height: 0;
   padding: 20px;
-  overflow-y: auto;
+  overflow: hidden;
   border-right: 1px solid var(--dhv2-border);
   background: #faf9fc;
+}
+
+.dhv2-sidebar__scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding-bottom: 4px;
+  overflow-y: auto;
 }
 
 .dhv2-card {
@@ -87,6 +97,19 @@
   color: var(--dhv2-brand);
   background: var(--dhv2-brand-soft);
   border-color: var(--dhv2-brand);
+}
+
+.dhv2-segmented-tabs button.is-disabled,
+.dhv2-library__tabs button.is-disabled {
+  color: #b8b4c4;
+  background: #f7f6fa;
+  border-color: #ebe8f2;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.dhv2-tab-disabled-wrap {
+  display: inline-flex;
 }
 
 .dhv2-badge {
@@ -587,12 +610,20 @@
   background: #ebe6ff;
 }
 
+.dhv2-script-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .dhv2-script-preview {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  margin-top: 10px;
+  min-width: 0;
+  flex: 1;
   padding: 0;
   color: var(--dhv2-muted);
   background: transparent;
@@ -653,22 +684,35 @@
   flex-shrink: 0;
 }
 
-.dhv2-script-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
+.dhv2-script-count {
+  flex-shrink: 0;
   color: var(--dhv2-muted);
   font-size: 12px;
   font-weight: 700;
 }
 
+.dhv2-video-spec {
+  display: grid;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dhv2-generate-button__credits {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0.88;
+}
+
+.dhv2-generate-button:disabled .dhv2-generate-button__credits {
+  opacity: 0.65;
+}
+
 .dhv2-generate-footer {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 4px;
 }
 
 .dhv2-generate-footer__left {
@@ -1082,11 +1126,11 @@
 }
 
 .dhv2-avatar-confirm {
-  --dhv2-ac-media-w: 320px;
-  width: 600px;
-  max-width: min(600px, 94vw);
-  height: 800px;
-  max-height: min(800px, 90dvh);
+  --dhv2-ac-media-w: 280px;
+  width: min(680px, 94vw);
+  max-width: min(680px, 94vw);
+  height: min(720px, 90dvh);
+  max-height: min(720px, 90dvh);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -1102,9 +1146,9 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 12px 14px 8px;
+  padding: 14px 14px 0;
 }
 
 .dhv2-avatar-confirm__title-block {
@@ -1137,17 +1181,12 @@
   font-weight: 800;
 }
 
-.dhv2-avatar-confirm__head-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
 .dhv2-avatar-confirm__icon-btn {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
+  flex-shrink: 0;
   color: #9a97a8;
   background: #ffffff;
   border: 1px solid var(--dhv2-border);
@@ -1156,23 +1195,28 @@
 }
 
 .dhv2-avatar-confirm__body {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  display: grid;
+  grid-template-columns: var(--dhv2-ac-media-w) minmax(0, 1fr);
   flex: 1;
   min-height: 0;
-  padding: 12px 0;
+  overflow: hidden;
+}
+
+.dhv2-avatar-confirm__left {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dhv2-avatar-confirm__media {
   position: relative;
-  width: var(--dhv2-ac-media-w);
-  min-width: var(--dhv2-ac-media-w);
-  aspect-ratio: 3 / 4;
-  max-height: 100%;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
+  margin: 10px 14px 14px;
   overflow: hidden;
   background: #000000;
+  border-radius: 10px;
 }
 
 .dhv2-avatar-confirm__badge {
@@ -1200,10 +1244,8 @@
 .dhv2-avatar-confirm__aside {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
-  align-self: stretch;
-  height: 100%;
+  min-height: 0;
   overflow: hidden;
   border-left: 1px solid #ece8f3;
 }
@@ -1346,7 +1388,6 @@
   .dhv2-avatar-confirm {
     --dhv2-ac-media-w: 100%;
     width: 100%;
-    height: 100%;
     max-width: 100%;
     max-height: 100%;
     border-radius: 0;
@@ -1357,20 +1398,22 @@
   }
 
   .dhv2-avatar-confirm__body {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0;
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .dhv2-avatar-confirm__left {
+    flex-shrink: 0;
   }
 
   .dhv2-avatar-confirm__media {
-    width: 100%;
-    min-width: 0;
     aspect-ratio: 16 / 9;
-    max-height: 45%;
+    max-height: 45vh;
   }
 
   .dhv2-avatar-confirm__aside {
     flex: 1;
+    min-height: 320px;
     border-left: 0;
     border-top: 1px solid #ece8f3;
   }

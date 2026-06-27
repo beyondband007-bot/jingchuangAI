@@ -115,6 +115,14 @@ export function ArticlePopularResultPanel({
                   <h2>{titleText}</h2>
                   <div className="article-popular-result-panel__copy-row">
                     <strong>正文内容：</strong>
+                    <Button
+                      type="outline"
+                      size="mini"
+                      icon={<Copy size={15} />}
+                      onClick={onCopyArticleBody}
+                    >
+                      复制正文
+                    </Button>
                   </div>
                   <div className="article-popular-result-panel__body">
                     {bodyText
@@ -142,14 +150,6 @@ export function ArticlePopularResultPanel({
                         onClick={() => onRequestRegenerate(selectedTask)}
                       >
                         重新生成
-                      </Button>
-                      <Button
-                        type="outline"
-                        size="small"
-                        icon={<Copy size={16} />}
-                        onClick={onCopyArticleBody}
-                      >
-                        复制正文
                       </Button>
                       <Button
                         type="primary"
