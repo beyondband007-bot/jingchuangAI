@@ -87,7 +87,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-1.webp",
     copyTemplate: "测评种草模板",
     topic: "平价单品真实实测分享，突出产品质地、使用感受、外观细节与性价比，适合早八人、学生党日常种草测评，输出小红书吸睛标题 + 闺蜜安利式短种草正文，附带实用避坑小贴士与垂直好物话题标签",
-    keyword: "平价单品,真实实测,质地,使用感受,性价比",
     tone: "种草口语风"
   },
   {
@@ -97,7 +96,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-2.webp",
     copyTemplate: "测评种草模板",
     topic: "宝妈自用母婴好物真实测评，重点突出材质安全、带娃减负、使用便捷性，温柔真实分享风格，适配新手宝妈种草笔记，附带母婴选购避坑提醒与母婴垂直话题标签",
-    keyword: "母婴好物,材质安全,带娃减负,使用便捷,新手宝妈",
     tone: "温柔分享风"
   },
   {
@@ -107,7 +105,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-3.webp",
     copyTemplate: "清单攻略模板",
     topic: "换季敏感肌全套护肤好物合集，分别讲解每款护肤品补水、舒缓、修护屏障核心功效，干货清单式排版，分享长期维稳护肤心得，附带护肤叠加避坑指南与护肤赛道话题标签",
-    keyword: "敏感肌,换季护肤,补水舒缓,修护屏障,护肤清单",
     tone: "干货测评风"
   },
   {
@@ -117,7 +114,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-4.webp",
     copyTemplate: "清单攻略模板",
     topic: "小户型租房党厨房小家电全套合集，突出机身小巧不占地、操作简单易清洗、三餐多场景适配，生活化接地气种草，附带家电保养清洁小贴士与家居好物话题标签",
-    keyword: "厨房小家电,小户型,租房党,易清洗,家居好物",
     tone: "种草口语风"
   },
   {
@@ -127,7 +123,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-5.webp",
     copyTemplate: "测评种草模板",
     topic: "高性价比手机、电脑数码配件单品实测，突出续航、质感、实用功能，对比百元平替与大牌差异，学生党、打工人刚需，附带数码选购避坑提醒",
-    keyword: "数码配件,高性价比,续航,质感,百元平替",
     tone: "干货测评风"
   },
   {
@@ -137,7 +132,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-6.webp",
     copyTemplate: "清单攻略模板",
     topic: "新手养猫养狗全套养护好物清单，侧重安全无刺激、清洁省力，分喂食、洗护、玩具类单品讲解，真实养宠实测分享，附带宠物用品选购避坑贴士",
-    keyword: "宠物养护,新手养宠,安全无刺激,清洁省力,宠物用品",
     tone: "温柔分享风"
   }
 ];
@@ -214,7 +208,6 @@ const defaultForm = {
   topic: "",
   wordCount: "短文案",
   tone: "种草口语风",
-  keyword: "",
   contentType: "xiaohongshu-cover",
   visualStyle: "fresh",
   layoutStyle: "balanced",
@@ -273,7 +266,7 @@ function buildDraftCopy(form) {
     "我会从核心卖点、适合人群、使用感受和避坑提醒几个角度拆开讲，让大家快速判断值不值得入手。",
     "有问题欢迎评论区聊聊，也可以先收藏起来，下次需要的时候直接照着选。",
   ].join("\n\n");
-  const tags = (form.keyword || "种草,好物,分享")
+  const tags = "种草,好物,分享"
     .split(/[,，\s]+/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -589,13 +582,6 @@ function QuickTemplatePreviewDialog({ template, onClose, onApply }) {
               <span>{template.copyTemplate}</span>
               <span>{template.tone}</span>
             </div>
-            {template.keyword ? (
-              <div className="article-quick-template-preview-keywords">
-                {template.keyword.split(",").map((item) => (
-                  <span key={item.trim()}>{item.trim()}</span>
-                ))}
-              </div>
-            ) : null}
           </div>
         </div>
         <footer className="article-quick-template-preview-foot">
@@ -767,68 +753,50 @@ function CopyParamsPanel({
   form,
   wordCounts,
   copyTones,
-  isOpen,
-  onToggle,
   onUpdateForm,
 }) {
   return (
-    <section className={`article-copy-params ${isOpen ? "is-open" : ""}`}>
-      <button
-        className="article-copy-params__head"
-        type="button"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-      >
-        <span className="article-copy-params__title">文案参数</span>
+    <section className="article-copy-params">
+      <div className="article-copy-params__head">
+        <strong className="article-copy-params__title">文案参数</strong>
         <span className="article-copy-params__summary">
           {form.wordCount} · {form.tone}
         </span>
-        <ChevronDown size={16} aria-hidden="true" />
-      </button>
-      {isOpen && (
-        <div className="article-copy-params__body">
-          <div className="article-copy-params__group">
-            <strong>期望字数</strong>
-            <div className="article-copy-params__options">
-              {wordCounts.map((item) => (
-                <button
-                  className={form.wordCount === item ? "is-selected" : ""}
-                  type="button"
-                  key={item}
-                  onClick={() => onUpdateForm({ wordCount: item })}
-                >
-                  <span aria-hidden="true" />
-                  {item}
-                </button>
-              ))}
-            </div>
+      </div>
+      <div className="article-copy-params__body">
+        <div className="article-copy-params__group">
+          <strong>期望字数</strong>
+          <div className="article-copy-params__options">
+            {wordCounts.map((item) => (
+              <button
+                className={form.wordCount === item ? "is-selected" : ""}
+                type="button"
+                key={item}
+                onClick={() => onUpdateForm({ wordCount: item })}
+              >
+                <span aria-hidden="true" />
+                {item}
+              </button>
+            ))}
           </div>
-          <div className="article-copy-params__group">
-            <strong>文案语气</strong>
-            <div className="article-copy-params__options is-wrap">
-              {copyTones.map((item) => (
-                <button
-                  className={form.tone === item ? "is-selected" : ""}
-                  type="button"
-                  key={item}
-                  onClick={() => onUpdateForm({ tone: item })}
-                >
-                  <span aria-hidden="true" />
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="article-copy-params__keyword">
-            <span>核心关键词补充</span>
-            <input
-              value={form.keyword}
-              onChange={(event) => onUpdateForm({ keyword: event.target.value })}
-              placeholder="填入商品/卖点关键词，逗号分隔"
-            />
-          </label>
         </div>
-      )}
+        <div className="article-copy-params__group">
+          <strong>文案语气</strong>
+          <div className="article-copy-params__options is-wrap">
+            {copyTones.map((item) => (
+              <button
+                className={form.tone === item ? "is-selected" : ""}
+                type="button"
+                key={item}
+                onClick={() => onUpdateForm({ tone: item })}
+              >
+                <span aria-hidden="true" />
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1035,7 +1003,6 @@ export function ArticleGenerationView({
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
   const [previewQuickTemplate, setPreviewQuickTemplate] = useState(null);
-  const [isCopyParamsOpen, setIsCopyParamsOpen] = useState(true);
   const templateSelectRef = useRef(null);
   const morePlatformRef = useRef(null);
   const modelSelectRef = useRef(null);
@@ -1056,7 +1023,6 @@ export function ArticleGenerationView({
     setForm((current) => ({
       ...current,
       topic: pendingSeed.prompt || current.topic,
-      keyword: pendingSeed.title || current.keyword,
     }));
     setDraftCopy(null);
     setImagePromptPlan(null);
@@ -1304,7 +1270,6 @@ export function ArticleGenerationView({
       platform: "小红书种草",
       copyTemplate: template.copyTemplate || "完整图文模板",
       topic: preserveDraftAndTopic ? current.topic : template.topic,
-      keyword: preserveDraftAndTopic ? current.keyword : template.keyword,
       tone: template.tone || current.tone,
       ratio: "3:4",
     }));
@@ -1366,8 +1331,6 @@ export function ArticleGenerationView({
         tone: form.tone,
         copyExpectation: form.tone,
         topic: form.topic,
-        keyword: form.keyword,
-        keywords: form.keyword,
         imageCount: form.imageCount,
         ratio: form.ratio,
         contentType: form.contentType,
@@ -1438,8 +1401,6 @@ export function ArticleGenerationView({
         wordCount: generationForm.wordCount,
         tone: generationForm.tone,
         topic: generationForm.topic,
-        keyword: generationForm.keyword,
-        keywords: generationForm.keyword,
         contentType: generationForm.contentType,
         visualStyle: generationForm.visualStyle,
         layoutStyle: generationForm.layoutStyle,
@@ -1770,8 +1731,6 @@ export function ArticleGenerationView({
                 form={form}
                 wordCounts={wordCounts}
                 copyTones={copyTones}
-                isOpen={isCopyParamsOpen}
-                onToggle={() => setIsCopyParamsOpen((value) => !value)}
                 onUpdateForm={updateForm}
               />
               </div>

@@ -12629,12 +12629,27 @@ function WorkbenchTopbar({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
+  const [isVideoWorkflowHistoryOpen, setIsVideoWorkflowHistoryOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const showDigitalHumanTabs = activeNav === "digital-human";
   const showArticleTabs = activeNav === "article";
+  const showVideoWorkflowHistory = activeNav === "motion" || activeNav === "face-swap";
 
   useEffect(() => {
     setShowProfileMenu(false);
+    setIsVideoWorkflowHistoryOpen(false);
+  }, [activeNav]);
+
+  useEffect(() => {
+    function handleHistoryState(event) {
+      if (event.detail?.moduleId !== activeNav) return;
+      setIsVideoWorkflowHistoryOpen(Boolean(event.detail?.open));
+    }
+
+    window.addEventListener("facemini:video-workflow-history-state", handleHistoryState);
+    return () => {
+      window.removeEventListener("facemini:video-workflow-history-state", handleHistoryState);
+    };
   }, [activeNav]);
 
   function flashCreditDelta(amount) {
@@ -12743,10 +12758,14 @@ function WorkbenchTopbar({
   return (
     <>
       <header
-        className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}
+        className={`fm-workbench-topbar ${
+          showDigitalHumanTabs || showArticleTabs || showVideoWorkflowHistory
+            ? "has-digital-tabs"
+            : ""
+        }${showVideoWorkflowHistory ? " has-video-workflow-tabs" : ""}`}
       >
         <div className="fm-topbar-title-row">
-          {!showArticleTabs && (
+          {!showArticleTabs && !showVideoWorkflowHistory && (
             <h1>
               {activeNav === "music" ? (
                 <button
@@ -12773,7 +12792,7 @@ function WorkbenchTopbar({
           )}
           {showArticleTabs && (
             <div
-              className="fm-digital-tabs fm-article-top-tabs"
+              className="fm-digital-tabs fm-video-workflow-tabs"
               aria-label="爆款图文类型"
             >
               <button
@@ -12789,6 +12808,41 @@ function WorkbenchTopbar({
                 onClick={() => onArticleModeChange?.("history")}
               >
                 历史图文
+              </button>
+            </div>
+          )}
+          {showVideoWorkflowHistory && (
+            <div
+              className="fm-digital-tabs fm-article-top-tabs"
+              aria-label={`${title}页面`}
+            >
+              <button
+                type="button"
+                className={!isVideoWorkflowHistoryOpen ? "is-active" : ""}
+                onClick={() => {
+                  setIsVideoWorkflowHistoryOpen(false);
+                  window.dispatchEvent(
+                    new CustomEvent("facemini:video-workflow-history", {
+                      detail: { moduleId: activeNav, open: false },
+                    }),
+                  );
+                }}
+              >
+                {title}
+              </button>
+              <button
+                type="button"
+                className={isVideoWorkflowHistoryOpen ? "is-active" : ""}
+                onClick={() => {
+                  setIsVideoWorkflowHistoryOpen(true);
+                  window.dispatchEvent(
+                    new CustomEvent("facemini:video-workflow-history", {
+                      detail: { moduleId: activeNav, open: true },
+                    }),
+                  );
+                }}
+              >
+                历史
               </button>
             </div>
           )}

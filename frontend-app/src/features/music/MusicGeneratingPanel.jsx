@@ -184,11 +184,6 @@ export function MusicGeneratingPanel({
           <strong>{safeProgress}%</strong>
           <span>{getEtaLabel(activeStep, etaSeconds)}</span>
         </div>
-
-        <button type="button" className="music-gen-waiting-cancel" onClick={onCancel}>
-          <X size={16} />
-          取消生成
-        </button>
       </div>
 
       <div className="music-ref-recent music-gen-waiting-recent">

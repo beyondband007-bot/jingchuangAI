@@ -225,11 +225,15 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     }
   }, [resetSignal]);
 
+  function closePlayerAndGoHome() {
+    setShowPlayer(false);
+    setPlayerTask(null);
+    setViewTab("home");
+  }
+
   useEffect(() => {
     function handleMusicHome() {
-      setShowPlayer(false);
-      setPlayerTask(null);
-      setViewTab("home");
+      closePlayerAndGoHome();
     }
 
     window.addEventListener("facemini:music-home", handleMusicHome);
@@ -672,7 +676,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   return (
     <section className="voice-conversion-view-root music-generation-view">
       <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
+        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={closePlayerAndGoHome}>主页</button>
         <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
       </div>
 
@@ -681,11 +685,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
           <MusicFullPagePlayer
             item={playerTask}
             items={recentResults}
-            onBack={() => {
-              setShowPlayer(false);
-              setPlayerTask(null);
-              setViewTab("home");
-            }}
+            onBack={closePlayerAndGoHome}
             onSelectItem={selectPlayerTrack}
           />
         ) : viewTab === "home" ? (

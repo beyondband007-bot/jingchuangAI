@@ -22203,6 +22203,39 @@ body {
   pointer-events: auto;
 }
 
+.fm-topbar-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fm-workbench-topbar.has-video-workflow-tabs {
+  align-items: stretch;
+}
+
+.fm-workbench-topbar.has-video-workflow-tabs .fm-topbar-title-row,
+.fm-workbench-topbar.has-video-workflow-tabs .fm-video-workflow-tabs {
+  align-items: stretch;
+  align-self: stretch;
+}
+
+.fm-workbench-topbar.has-video-workflow-tabs .fm-top-actions {
+  align-self: center;
+}
+
+.fm-workbench-topbar .fm-video-workflow-tabs button {
+  min-height: 72px;
+  padding: 0 2px;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.fm-workbench-topbar .fm-video-workflow-tabs button.is-active {
+  border-bottom-color: #6b7cff;
+}
+
 .fm-top-actions {
   display: flex;
   align-items: center;
@@ -37125,6 +37158,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .music-ref-recent-cover-image {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -37716,14 +37750,15 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 .music-full-player__body {
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: clamp(28px, 5vw, 80px);
   position: relative;
   z-index: 1;
   min-height: 0;
   overflow: hidden;
-  padding: 18px 22px;
+  padding: clamp(28px, 4vw, 52px);
   background:
     radial-gradient(circle at 18% 12%, rgba(139, 125, 247, 0.1), transparent 42%),
     radial-gradient(circle at 82% 88%, rgba(107, 92, 231, 0.08), transparent 38%),
@@ -37739,6 +37774,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   flex-direction: column;
   gap: 18px;
   align-items: center;
+  flex: 0 0 clamp(220px, 28vw, 360px);
+  min-width: 0;
 }
 
 .music-full-player__cover {
@@ -37746,12 +37783,21 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   display: grid;
   place-items: center;
   width: 100%;
-  max-width: 240px;
+  max-width: 360px;
   aspect-ratio: 1;
   color: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   box-shadow: 0 24px 48px rgba(107, 92, 231, 0.28);
   overflow: hidden;
+}
+
+.music-full-player__cover-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .music-full-player__disc {
@@ -37782,8 +37828,8 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 }
 
 .music-full-player__lyrics {
-  width: 100%;
   flex: 1 1 auto;
+  width: auto;
   min-height: 0;
   max-height: 100%;
   overflow: auto;
@@ -37930,6 +37976,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 .music-full-player__cover-mini {
   flex-shrink: 0;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -37938,6 +37985,14 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   color: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(107, 92, 231, 0.2);
+  overflow: hidden;
+}
+
+.music-full-player__cover-mini-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .music-full-player__song-name {
@@ -38534,7 +38589,16 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
 
 @media (max-width: 900px) {
   .music-full-player__body {
+    flex-direction: column;
     gap: 20px;
+    justify-content: flex-start;
+    padding: 20px 16px;
+    overflow: auto;
+  }
+
+  .music-full-player__cover-wrap {
+    flex: 0 0 auto;
+    width: min(220px, 70vw);
   }
 
   .music-full-player__cover {

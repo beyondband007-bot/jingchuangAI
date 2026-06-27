@@ -82,7 +82,7 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-form-panel {
-  flex: 4 1 0 !important;
+  flex: 4.5 1 0 !important;
   display: grid !important;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0 !important;
@@ -123,7 +123,7 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-card {
-  flex: 6 1 0 !important;
+  flex: 5.5 1 0 !important;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-result-card {
@@ -391,24 +391,16 @@
   border-radius: 8px;
   background: #fafaff;
   flex-shrink: 0;
-}
-
-[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params.is-open {
   overflow: visible;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__head {
-  width: 100%;
-  min-height: 44px;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
   padding: 0 14px;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__title {
@@ -418,22 +410,15 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__summary {
-  justify-self: end;
+  flex: 0 1 auto;
+  min-width: 0;
   padding: 4px 10px;
   border-radius: 999px;
   color: #7a82ff;
   background: #eef0ff;
   font-size: 11px;
   font-weight: 800;
-}
-
-[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__head svg {
-  color: #8d8799;
-  transition: transform 0.2s ease;
-}
-
-[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params.is-open .article-copy-params__head svg {
-  transform: rotate(180deg);
+  white-space: nowrap;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__body {
@@ -443,20 +428,36 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__group {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 
   > strong {
+    flex: 0 0 72px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
     color: #24212d;
     font-size: 13px;
     font-weight: 900;
+    white-space: nowrap;
   }
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__options {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px 16px;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__options.is-wrap {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  align-items: center;
+  gap: 14px 22px;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__options button {
@@ -491,30 +492,6 @@
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__options button.is-selected span {
   border-color: #7a82ff;
   box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px #7a82ff;
-}
-
-[data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__keyword {
-  display: grid;
-  gap: 8px;
-
-  span {
-    color: #24212d;
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  input {
-    width: 100%;
-    min-height: 40px;
-    padding: 0 14px;
-    border: 1px solid #d9d6e2;
-    border-radius: 999px;
-    outline: none;
-    background: #fff;
-    color: #5f5a6d;
-    font-size: 12px;
-    font-weight: 700;
-  }
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-generate-fab-wrap {
@@ -585,7 +562,7 @@
   display: grid !important;
   grid-template-rows: minmax(0, 1fr) auto !important;
   flex-direction: unset !important;
-  flex: 4 1 0 !important;
+  flex: 4.5 1 0 !important;
   height: 100% !important;
   min-height: 0 !important;
   max-height: 100% !important;

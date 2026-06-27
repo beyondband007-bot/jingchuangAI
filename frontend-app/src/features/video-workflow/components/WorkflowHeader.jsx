@@ -1,5 +1,4 @@
 import React from "react";
-import { History } from "lucide-react";
 import { WORKFLOW_STATUS_LABELS } from "../utils";
 
 export function WorkflowHeader({
@@ -7,8 +6,6 @@ export function WorkflowHeader({
   title,
   description,
   workflowStatus,
-  credits,
-  onOpenHistory,
 }) {
   const statusLabel = WORKFLOW_STATUS_LABELS[workflowStatus] || workflowStatus;
 
@@ -21,15 +18,6 @@ export function WorkflowHeader({
           <span className={`vgw-status-pill is-${workflowStatus}`}>{statusLabel}</span>
         </div>
         {description && <p>{description}</p>}
-      </div>
-      <div className="vgw-header__actions">
-        {credits && <span className="vgw-credits">积分 {credits.balance}</span>}
-        {onOpenHistory && (
-          <button type="button" className="vgw-history-btn" onClick={onOpenHistory}>
-            <History size={16} />
-            历史
-          </button>
-        )}
       </div>
     </header>
   );
