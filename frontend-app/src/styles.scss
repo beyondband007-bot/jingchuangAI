@@ -29888,7 +29888,7 @@ textarea::placeholder {
   border-radius: 18px !important;
   box-shadow: 0 8px 22px rgba(38, 35, 58, 0.08) !important;
   font-size: 15px !important;
-  font-weight: 650 !important;
+  font-weight: 400 !important;
   line-height: 38px !important;
   letter-spacing: 0 !important;
   transition:
@@ -29943,7 +29943,7 @@ textarea::placeholder {
   color: #6d4aff !important;
   background: #f4f0ff !important;
   border: 1px solid #ded3ff !important;
-  font-weight: 750 !important;
+  font-weight: 400 !important;
   box-shadow: 0 10px 28px rgba(109, 74, 255, 0.16) !important;
   transform: none !important;
 }
@@ -30076,30 +30076,36 @@ textarea::placeholder {
   min-height: 40px !important;
   margin: 0 0 12px !important;
   color: #6f6b7a !important;
-  font-size: 12px !important;
+  font-size: 10px !important;
   line-height: 1.55 !important;
   letter-spacing: 0 !important;
 }
 
 .fm-creation-page .fm-scene-tags {
   display: flex !important;
-  gap: 6px !important;
+  gap: 4px !important;
   margin-top: auto !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
+  overflow: hidden !important;
 }
 
 .fm-creation-page .fm-scene-tags span {
   display: inline-flex !important;
   align-items: center !important;
-  height: 22px !important;
-  padding: 0 7px !important;
+  min-width: 0 !important;
+  height: 20px !important;
+  padding: 0 4px !important;
+  flex: 0 1 auto !important;
   color: #716c80 !important;
   background: #f7f6fb !important;
   border: 1px solid #ece8f4 !important;
   border-radius: 7px !important;
-  font-size: 11px !important;
-  font-weight: 650 !important;
-  line-height: 20px !important;
+  font-size: 9px !important;
+  font-weight: 400 !important;
+  line-height: 18px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .fm-creation-page .fm-scene-tags span:hover {
@@ -39480,9 +39486,9 @@ section.video-gen-view-root
   min-width: 0;
   margin: 0;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
   border-radius: 8px;
-  background: #ece9f2;
+  background: transparent;
 }
 
 .article-history-full-media.is-landscape .article-history-full-gallery figure {
@@ -39506,10 +39512,10 @@ section.video-gen-view-root
 
 .article-history-full-gallery img {
   display: block;
-  width: 100%;
+  width: auto;
   height: auto;
   max-width: 100%;
-  max-height: 100%;
+  max-height: none;
   border-radius: 8px;
   object-fit: contain;
   box-shadow: 0 18px 46px rgba(53, 45, 73, 0.12);
@@ -39659,7 +39665,7 @@ section.video-gen-view-root
 .article-history-full-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
   margin-top: 20px;
   padding-top: 18px;

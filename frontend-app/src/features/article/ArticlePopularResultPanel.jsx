@@ -140,7 +140,6 @@ export function ArticlePopularResultPanel({
                     ))}
                   </div>
                   <div className="article-popular-result-panel__footer">
-                    <span>{resultCreatedAt}</span>
                     <div className="article-popular-result-panel__footer-actions">
                       <Button
                         type="outline"

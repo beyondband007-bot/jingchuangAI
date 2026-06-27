@@ -967,7 +967,6 @@ function ArticlePreview({ task, onClose, authUser }) {
                 </div>
               )}
               <div className="article-history-full-footer">
-                <span>{createdAt}</span>
                 <div className="article-history-full-footer-actions">
                   <button
                     type="button"

@@ -1127,8 +1127,8 @@
 
 .dhv2-avatar-confirm {
   --dhv2-ac-media-w: 280px;
-  width: min(680px, 94vw);
-  max-width: min(680px, 94vw);
+  width: min(710px, 94vw);
+  max-width: min(710px, 94vw);
   height: min(720px, 90dvh);
   max-height: min(720px, 90dvh);
   display: flex;
