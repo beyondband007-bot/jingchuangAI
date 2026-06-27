@@ -39,6 +39,15 @@ export const articleApi = {
     });
   },
 
+  async uploadReferenceImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request("/api/image/uploads/reference", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   async createPackage(payload) {
     const item = await request("/api/article/packages", {
       method: "POST",

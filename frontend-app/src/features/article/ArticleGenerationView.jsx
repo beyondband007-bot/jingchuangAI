@@ -8,6 +8,7 @@ import {
   CircleAlert,
   Copy,
   Download,
+  ImagePlus,
   Layers,
   Loader2,
   RefreshCcw,
@@ -36,6 +37,7 @@ import { formatBeijingDateTime } from "../../utils/time";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
+const MAX_ARTICLE_REFERENCE_ASSETS = 6;
 
 const platformTabs = [
   "小红书种草",
@@ -989,6 +991,9 @@ export function ArticleGenerationView({
   const [cards, setCards] = useState([]);
   const [draftCopy, setDraftCopy] = useState(null);
   const [imagePromptPlan, setImagePromptPlan] = useState(null);
+  const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState(null);
+  const [referenceAssets, setReferenceAssets] = useState([]);
+  const [isReferenceUploading, setIsReferenceUploading] = useState(false);
   const [resultViewMode, setResultViewMode] = useState("full");
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [step, setStep] = useState(2);
@@ -1006,6 +1011,8 @@ export function ArticleGenerationView({
   const templateSelectRef = useRef(null);
   const morePlatformRef = useRef(null);
   const modelSelectRef = useRef(null);
+  const referenceInputRef = useRef(null);
+  const referenceAssetsRef = useRef([]);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
@@ -1032,6 +1039,20 @@ export function ArticleGenerationView({
     onModeChange?.("home");
     if (pendingSeed.notice) showToast(pendingSeed.notice);
   }, [isActive, onModeChange]);
+
+  useEffect(() => {
+    referenceAssetsRef.current = referenceAssets;
+  }, [referenceAssets]);
+
+  useEffect(() => {
+    return () => {
+      referenceAssetsRef.current.forEach((asset) => {
+        if (asset?.previewUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(asset.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -1160,6 +1181,14 @@ export function ArticleGenerationView({
     visualStyles.find((item) => item.id === form.visualStyle)?.label || "清新";
 
   useEffect(() => {
+    setSelectedStyleTemplateId((current) =>
+      activeStyleTemplatePreviews.some((item) => item.id === current)
+        ? current
+        : activeStyleTemplatePreviews[0]?.id || null,
+    );
+  }, [activeStyleTemplatePreviews]);
+
+  useEffect(() => {
     setActivePreviewIndex((current) => Math.min(current, Math.max(previewImages.length - 1, 0)));
   }, [previewImages.length]);
 
@@ -1169,6 +1198,14 @@ export function ArticleGenerationView({
       if (selectedTask.status === "completed" || selectedTask.status === "partial_completed") setStep(4);
       if (selectedTask.copy && !draftCopy) setDraftCopy(selectedTask.copy);
       if (selectedTask.imagePromptPlan && !imagePromptPlan) setImagePromptPlan(selectedTask.imagePromptPlan);
+      const planReferenceAssets =
+        selectedTask.imagePromptPlan?.referenceAssets ||
+        (selectedTask.imagePromptPlan?.referenceAsset
+          ? [selectedTask.imagePromptPlan.referenceAsset]
+          : []);
+      if (planReferenceAssets.length && !referenceAssets.length) {
+        setReferenceAssets(planReferenceAssets);
+      }
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
 
       if (
@@ -1188,7 +1225,7 @@ export function ArticleGenerationView({
           .catch(() => {});
       }
     }
-  }, [selectedTask, draftCopy, imagePromptPlan]);
+  }, [selectedTask, draftCopy, imagePromptPlan, referenceAssets.length]);
 
   function updateForm(patch) {
     setForm((current) => ({ ...current, ...patch }));
@@ -1202,6 +1239,81 @@ export function ArticleGenerationView({
       setImagePromptPlan(null);
     }
     setSubmitError("");
+  }
+
+  function addReferenceAssets(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const validFiles = [];
+    for (const file of files) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type || "")) {
+        showToast("请上传 JPG、PNG 或 WebP 图片");
+        continue;
+      }
+      validFiles.push(file);
+    }
+    if (!validFiles.length) return;
+    setReferenceAssets((current) => {
+      const slots = Math.max(0, MAX_ARTICLE_REFERENCE_ASSETS - current.length);
+      const nextFiles = validFiles.slice(0, slots);
+      if (validFiles.length > slots) {
+        showToast(`最多上传 ${MAX_ARTICLE_REFERENCE_ASSETS} 张参考素材`);
+      }
+      return [
+        ...current,
+        ...nextFiles.map((file) => ({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          file,
+          name: file.name,
+          mimeType: file.type,
+          size: file.size,
+          previewUrl: URL.createObjectURL(file),
+          status: "local",
+        })),
+      ];
+    });
+    setImagePromptPlan(null);
+    if (referenceInputRef.current) referenceInputRef.current.value = "";
+  }
+
+  function removeReferenceAsset(assetKey) {
+    setReferenceAssets((current) => {
+      const removed = current.find((asset) => (asset.id || asset.referenceImageUrl) === assetKey);
+      if (removed?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return current.filter((asset) => (asset.id || asset.referenceImageUrl) !== assetKey);
+    });
+    setImagePromptPlan(null);
+  }
+
+  async function ensureReferenceAssetsUploaded() {
+    if (!referenceAssets.length) return [];
+    setIsReferenceUploading(true);
+    try {
+      const uploadedAssets = [];
+      for (const asset of referenceAssets) {
+        if (asset.referenceImageUrl) {
+          uploadedAssets.push(asset);
+          continue;
+        }
+        if (!asset.file) continue;
+        const uploaded = await articleApi.uploadReferenceImage(asset.file);
+        uploadedAssets.push({
+          ...asset,
+          ...uploaded,
+          name: uploaded.originalName || asset.name,
+          status: "uploaded",
+        });
+      }
+      setReferenceAssets(uploadedAssets);
+      return uploadedAssets;
+    } catch (error) {
+      showToast(error.message || "参考素材上传失败");
+      throw error;
+    } finally {
+      setIsReferenceUploading(false);
+    }
   }
 
   function showToast(message) {
@@ -1324,6 +1436,7 @@ export function ArticleGenerationView({
     setIsDraftSubmitting(true);
     setPreviewTask(null);
     try {
+      const uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
       const result = await articleApi.createCopyDraft({
         platform: form.platform,
         copyTemplate: form.copyTemplate,
@@ -1335,7 +1448,9 @@ export function ArticleGenerationView({
         ratio: form.ratio,
         contentType: form.contentType,
         layoutStyle: form.layoutStyle,
-        visualStyle: form.visualStyle
+        visualStyle: form.visualStyle,
+        templateId: selectedStyleTemplateId,
+        referenceAssets: uploadedReferenceAssets,
       });
       setDraftCopy(result.copy);
       setImagePromptPlan(result.imagePromptPlan);
@@ -1365,6 +1480,15 @@ export function ArticleGenerationView({
       return;
     }
 
+    let uploadedReferenceAssets = overrides.referenceAssets || referenceAssets;
+    try {
+      if (!overrides.referenceAssets) {
+        uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
+      }
+    } catch {
+      return;
+    }
+
     const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
     const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
     const selectedModel =
@@ -1382,6 +1506,8 @@ export function ArticleGenerationView({
       contentType: overrides.contentType || form.contentType,
       visualStyle: overrides.visualStyle || form.visualStyle,
       layoutStyle: overrides.layoutStyle || form.layoutStyle,
+      templateId: overrides.templateId || selectedStyleTemplateId,
+      referenceAssets: uploadedReferenceAssets,
     };
 
     setDraftCopy(nextDraft);
@@ -1408,6 +1534,8 @@ export function ArticleGenerationView({
         ratio: generationForm.ratio,
         quality: generationForm.quality,
         imageCount: generationForm.imageCount,
+        templateId: generationForm.templateId,
+        referenceAssets: generationForm.referenceAssets,
       });
       setCards((current) => [item, ...current.filter((card) => card.id !== item.id)]);
       setSelectedTaskId(item.id);
@@ -1432,6 +1560,10 @@ export function ArticleGenerationView({
       contentType: plan?.contentType,
       visualStyle: plan?.visualStyle,
       layoutStyle: plan?.layoutStyle,
+      templateId: plan?.template?.id || plan?.template?.legacyId,
+      referenceAssets:
+        plan?.referenceAssets ||
+        (plan?.referenceAsset ? [plan.referenceAsset] : []),
     };
   }
 
@@ -1444,6 +1576,7 @@ export function ArticleGenerationView({
     if (task?.type === "package" || task?.packageId) {
       const overrides = buildPackageRegenerateOverrides(task);
       if (overrides.model) setModel(overrides.model);
+      if (overrides.referenceAssets?.length) setReferenceAssets(overrides.referenceAssets);
       setForm((current) => ({
         ...current,
         ratio: overrides.ratio || current.ratio,
@@ -1453,6 +1586,7 @@ export function ArticleGenerationView({
         visualStyle: overrides.visualStyle || current.visualStyle,
         layoutStyle: overrides.layoutStyle || current.layoutStyle,
       }));
+      if (overrides.templateId) setSelectedStyleTemplateId(overrides.templateId);
       await submitGeneration(overrides);
       return;
     }
@@ -1705,6 +1839,53 @@ export function ArticleGenerationView({
                     }
                     placeholder="城市宝藏小店探店，氛围感满满的美食打卡文案"
                   />
+                  <div className={`article-reference-upload${referenceAssets.length ? " has-asset" : ""}`}>
+                    <input
+                      ref={referenceInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      onChange={(event) => addReferenceAssets(event.target.files)}
+                    />
+                    <button
+                      className="article-reference-upload__pick"
+                      type="button"
+                      disabled={isReferenceUploading || referenceAssets.length >= MAX_ARTICLE_REFERENCE_ASSETS}
+                      onClick={() => referenceInputRef.current?.click()}
+                    >
+                      {isReferenceUploading ? <Loader2 size={16} className="is-spinning" /> : <ImagePlus size={16} />}
+                    </button>
+                    <div className="article-reference-upload__text">
+                      <strong>{referenceAssets.length ? `已添加 ${referenceAssets.length} 张参考素材` : "上传参考素材"}</strong>
+                      <span>
+                        {isReferenceUploading
+                          ? "正在上传素材..."
+                          : referenceAssets.length
+                            ? "生成图片会强制包含这些素材主体"
+                            : `可上传多张，最多 ${MAX_ARTICLE_REFERENCE_ASSETS} 张`}
+                      </span>
+                    </div>
+                    {!!referenceAssets.length && (
+                      <div className="article-reference-upload__thumbs">
+                        {referenceAssets.map((asset) => (
+                          <figure className="article-reference-upload__thumb" key={asset.id || asset.referenceImageUrl}>
+                            {asset.previewUrl || asset.referenceImageUrl ? (
+                              <img src={asset.previewUrl || asset.referenceImageUrl} alt="" />
+                            ) : (
+                              <ImagePlus size={14} />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeReferenceAsset(asset.id || asset.referenceImageUrl)}
+                              aria-label="移除参考素材"
+                            >
+                              <X size={12} />
+                            </button>
+                          </figure>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </label>
               <section className="article-quick-section is-inline">
@@ -1739,7 +1920,7 @@ export function ArticleGenerationView({
                   className="article-generate-fab"
                   type="button"
                   onClick={generateDraft}
-                  disabled={isDraftSubmitting}
+                  disabled={isDraftSubmitting || isReferenceUploading}
                 >
                   {isDraftSubmitting ? (
                     <Loader2 size={17} className="is-spinning" />
@@ -1893,7 +2074,15 @@ export function ArticleGenerationView({
               </div>
             </div>
           ) : showStyleTemplatePreview ? (
-            <ArticleStyleTemplatePreview items={activeStyleTemplatePreviews} />
+            <ArticleStyleTemplatePreview
+              items={activeStyleTemplatePreviews}
+              selectedId={selectedStyleTemplateId}
+              onSelect={(id) => {
+                setSelectedStyleTemplateId(id);
+                setImagePromptPlan(null);
+                setSubmitError("");
+              }}
+            />
           ) : (
             <>
               <ArticlePopularResultPanel

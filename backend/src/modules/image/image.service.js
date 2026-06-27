@@ -67,6 +67,19 @@ function normalizeContextTaskIds(value) {
   ]
 }
 
+function normalizeReferenceImageUrls(payload = {}) {
+  const values = []
+  const push = (value) => {
+    const text = typeof value === 'string' ? value.trim() : ''
+    if (text) values.push(text)
+  }
+  push(payload.referenceImageUrl)
+  if (Array.isArray(payload.referenceImageUrls)) {
+    payload.referenceImageUrls.forEach(push)
+  }
+  return [...new Set(values)].slice(0, 6)
+}
+
 export async function getCredits(userId) {
   return getUserCredits(userId)
 }
@@ -114,10 +127,8 @@ export async function getTask(id, userId) {
 
 export async function createTask(payload, userId) {
   const { prompt, ratio, quality, count = 1, source } = payload
-  const referenceImageUrl =
-    typeof payload.referenceImageUrl === 'string'
-      ? payload.referenceImageUrl.trim()
-      : ''
+  const referenceImageUrls = normalizeReferenceImageUrls(payload)
+  const referenceImageUrl = referenceImageUrls[0] || ''
   const threadId = normalizeThreadId(payload.threadId)
   const contextTaskIds = normalizeContextTaskIds(payload.contextTaskIds)
   const requestedModel = payload.model
@@ -196,7 +207,7 @@ export async function createTask(payload, userId) {
         modelKey: model,
         ratio,
         quality,
-        referenceImageUrls: referenceImageUrl ? [referenceImageUrl] : [],
+        referenceImageUrls,
       })
     } catch (primaryError) {
       if (!fallbackModel) throw primaryError
@@ -210,7 +221,7 @@ export async function createTask(payload, userId) {
         modelKey: fallbackModel,
         ratio,
         quality,
-        referenceImageUrls: referenceImageUrl ? [referenceImageUrl] : [],
+        referenceImageUrls,
       })
       providerModel = fallbackModel
     }
