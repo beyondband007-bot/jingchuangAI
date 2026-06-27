@@ -175,6 +175,7 @@ export function ArticlePopularResultPanel({
                 activeIndex={activePreviewIndex}
                 onActiveIndexChange={onActivePreviewIndexChange}
                 stageClassName="article-popular-note-stage"
+                ratioFallback={selectedTask?.ratio}
               />
             )}
           </>

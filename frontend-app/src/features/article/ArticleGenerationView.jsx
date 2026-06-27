@@ -995,6 +995,7 @@ function ArticlePreview({ task, onClose, authUser }) {
             authorName={authUser?.displayName || authUser?.username || "Facemini AI"}
             activeIndex={activeImageIndex}
             onActiveIndexChange={setActiveImageIndex}
+            ratioFallback={task?.ratio}
           />
         )}
       </section>
