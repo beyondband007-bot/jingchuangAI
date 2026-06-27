@@ -112,6 +112,17 @@
   display: inline-flex;
 }
 
+.dhv2-avatar-source-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dhv2-avatar-source-tabs button {
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+}
+
 .dhv2-badge {
   padding: 1px 6px;
   color: #ffffff;
@@ -183,6 +194,41 @@
   gap: 12px;
   align-content: start;
   padding: 12px;
+}
+
+.dhv2-avatar-preview.is-mine:not(.has-avatar) {
+  min-height: 132px;
+  background: #f4f1ff;
+  border: 1px dashed #d9d1ff;
+}
+
+.dhv2-avatar-preview__mine-actions {
+  display: grid;
+  gap: 8px;
+  width: min(180px, 100%);
+}
+
+.dhv2-avatar-preview__mine-actions button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #625b78;
+  background: #ffffff;
+  border: 1px solid #e0dcf0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dhv2-avatar-preview__mine-actions button:hover {
+  color: var(--dhv2-brand);
+  border-color: #c9bfff;
+  background: #fbfaff;
 }
 
 .dhv2-avatar-preview__media {
@@ -869,6 +915,34 @@
   gap: 10px;
 }
 
+.dhv2-mine-create-btn {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 14px;
+  color: #5f5a6d;
+  background: #ffffff;
+  border: 1px solid var(--dhv2-border);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dhv2-mine-create-btn:hover {
+  color: var(--dhv2-brand);
+  border-color: #cbc1ef;
+  background: #fbf9ff;
+}
+
+.dhv2-mine-create-btn.is-primary {
+  color: #ffffff;
+  background: var(--dhv2-brand);
+  border-color: var(--dhv2-brand);
+}
+
 .dhv2-filter-select {
   min-width: 120px;
 }
@@ -1047,22 +1121,37 @@
 
 .dhv2-library__grid--mine .dhv2-avatar-card,
 .dhv2-library__grid--mine .dhv2-create-card {
-  flex: 0 0 180px;
-  width: 180px;
+  flex: 0 0 170px;
+  width: 170px;
 }
 
 .dhv2-create-card--mine {
   gap: 12px;
   aspect-ratio: 3 / 4;
-  color: var(--dhv2-text);
-  background: var(--dhv2-field);
-  border: 1px dashed var(--dhv2-border);
+  color: #2f2a3b;
+  background: #f5f2ff;
+  border: 1px dashed #cfc5ff;
   border-radius: 14px;
+}
+
+.dhv2-create-card--mine svg {
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  color: var(--dhv2-brand);
+  background: #e9e3ff;
+  border-radius: 10px;
+}
+
+.dhv2-create-card--mine:hover {
+  color: var(--dhv2-brand);
+  border-color: #9f90ff;
+  background: #f2eeff;
 }
 
 .dhv2-create-card--mine span {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 900;
 }
 
 .dhv2-avatar-card--mine .dhv2-avatar-card__cover {

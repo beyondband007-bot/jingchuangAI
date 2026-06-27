@@ -1,5 +1,5 @@
 import React from "react";
-import { Drama, UserRound } from "lucide-react";
+import { Drama, History, Sparkles, Upload, UserRound } from "lucide-react";
 import {
   getAvatarTags,
   isVideoCover,
@@ -7,18 +7,44 @@ import {
 
 export function AvatarSelectionCard({
   selectedAvatar,
+  avatarSource = "official",
+  onAvatarSourceChange,
+  onCreateAvatar,
 }) {
   const cover = selectedAvatar?.cover;
   const isVideo = isVideoCover(cover);
   const tags = selectedAvatar ? getAvatarTags(selectedAvatar) : [];
+  const isMine = avatarSource === "mine";
 
   return (
     <section className="dhv2-card dhv2-avatar-card-panel" aria-label="选择形象">
       <header className="dhv2-card__head">
-        <h2>选择官方形象</h2>
+        <h2>{isMine ? "选择我的形象" : "选择官方形象"}</h2>
       </header>
 
-      <div className={`dhv2-avatar-preview ${selectedAvatar ? "has-avatar" : ""}`}>
+      <div className="dhv2-segmented-tabs dhv2-avatar-source-tabs" role="tablist" aria-label="形象来源">
+        <button
+          type="button"
+          role="tab"
+          className={!isMine ? "is-active" : ""}
+          aria-selected={!isMine}
+          onClick={() => onAvatarSourceChange?.("official")}
+        >
+          官方形象
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={isMine ? "is-active" : ""}
+          aria-selected={isMine}
+          onClick={() => onAvatarSourceChange?.("mine")}
+        >
+          我的形象
+          <span className="dhv2-badge">AI 定制</span>
+        </button>
+      </div>
+
+      <div className={`dhv2-avatar-preview ${selectedAvatar ? "has-avatar" : ""}${isMine ? " is-mine" : ""}`}>
         {selectedAvatar ? (
           <>
             <div className="dhv2-avatar-preview__media">
@@ -51,9 +77,24 @@ export function AvatarSelectionCard({
             </div>
 
             <p className="dhv2-avatar-preview__official-hint">
-              选择形象后，可在下方配置系统音色
+              {isMine ? "我的形象可配置配音方式后生成视频" : "选择形象后，可在下方配置系统音色"}
             </p>
           </>
+        ) : isMine ? (
+          <div className="dhv2-avatar-preview__mine-actions">
+            <button type="button" onClick={() => onCreateAvatar?.("ai")}>
+              <Sparkles size={14} />
+              <span>AI 定制</span>
+            </button>
+            <button type="button" onClick={() => onCreateAvatar?.("upload")}>
+              <Upload size={14} />
+              <span>本地上传</span>
+            </button>
+            <button type="button" onClick={() => onCreateAvatar?.("history")}>
+              <History size={14} />
+              <span>从历史作品选择</span>
+            </button>
+          </div>
         ) : (
           <div className="dhv2-avatar-preview__placeholder">
             <Drama size={36} />

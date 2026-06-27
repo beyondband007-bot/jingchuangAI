@@ -115,21 +115,18 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   }
 
   function handleAvatarSourceChange(nextSource) {
-    if (nextSource !== "official") return;
+    if (nextSource !== "official" && nextSource !== "mine") return;
+    const isSourceChanged = nextSource !== avatarSource;
     setAvatarSource(nextSource);
     setRightView("library");
     setActiveTask(null);
-    setSelectedMineLibraryId(null);
     setVoiceMode(VOICE_DUBBING_MODES.system);
     setCloneAudio(null);
-    if (nextSource === "mine") {
-      const mineList = avatars.mine || [];
-      const isOfficialSelection =
-        selectedAvatar?.id &&
-        !mineList.some((item) => String(item.id) === String(selectedAvatar.id));
-      if (isOfficialSelection) {
-        setSelectedAvatar(null);
-      }
+    if (nextSource === "official") {
+      setSelectedMineLibraryId(null);
+    }
+    if (isSourceChanged && selectedAvatar?.id) {
+      setSelectedAvatar(null);
     }
   }
 
@@ -143,6 +140,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
   function handleSelectMineItem(item) {
     if (!item) return;
+    setAvatarSource("mine");
     setSelectedMineLibraryId(item.libraryId);
 
     if (item.sourceType === "photo-task") {
@@ -504,7 +502,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         <aside className="dhv2-sidebar">
           <div className="dhv2-sidebar__scroll">
             {!selectedAvatar ? (
-              <AvatarSelectionCard selectedAvatar={selectedAvatar} />
+              <AvatarSelectionCard
+                selectedAvatar={selectedAvatar}
+                avatarSource={avatarSource}
+                onAvatarSourceChange={handleAvatarSourceChange}
+                onCreateAvatar={openCreateModal}
+              />
             ) : null}
             {selectedAvatar ? (
               <VoiceDubbingModeCard
@@ -550,7 +553,11 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         {showLibrary ? (
           <AvatarLibraryPanel
             avatars={avatars}
+            tasks={tasks}
             selectedAvatar={selectedAvatar}
+            selectedMineLibraryId={selectedMineLibraryId}
+            avatarSource={avatarSource}
+            onAvatarSourceChange={handleAvatarSourceChange}
             voices={voices}
             voiceId={voiceId}
             onVoiceIdChange={setVoiceId}
@@ -563,7 +570,10 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             fillMode={fillMode}
             onFillModeChange={setFillMode}
             onSelectAvatar={handleSelectAvatar}
+            onSelectMineItem={handleSelectMineItem}
             onConfirmAvatar={handleConfirmAvatar}
+            onCreateAvatar={openCreateModal}
+            onClose={selectedAvatar ? () => setRightView("preview") : null}
           />
         ) : (
           <PreviewPanel
