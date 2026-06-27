@@ -10,6 +10,7 @@ import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
@@ -315,7 +316,6 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
 export function RemoveBgView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
-  const [credits, setCredits] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -324,7 +324,6 @@ export function RemoveBgView({ onOpenFeature }) {
 
   function applyCredits(creditsValue) {
     if (!creditsValue) return;
-    setCredits(creditsValue);
     emitCreditsUpdated(creditsValue);
   }
 
@@ -439,21 +438,15 @@ export function RemoveBgView({ onOpenFeature }) {
 
   return (
     <section className="watermark-view-root remove-bg-view-root">
-      <div className="image-filter-tabs watermark-filter-tabs remove-bg-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => {
+      <FeatureViewTabs
+        currentLabel="智能抠图"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => {
           setViewTab("recent");
           setSubmittedTaskId(null);
-        }}>历史记录</button>
-        <button className={viewTab === "favorite" ? "selected" : ""} type="button" onClick={() => {
-          setViewTab("favorite");
-          setSubmittedTaskId(null);
-        }}>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-        {credits && <span className="credits-chip">积分 {credits.balance}</span>}
-      </div>
+        }}
+      />
       <div className={`watermark-canvas remove-bg-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
         {showEmptyHero && (
           <div className="watermark-hero-empty remove-bg-hero-empty">
