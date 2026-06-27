@@ -1,7 +1,6 @@
 import React from "react";
 import { Drama, History, Sparkles, Upload, UserRound } from "lucide-react";
 import {
-  getAvatarTags,
   isVideoCover,
 } from "../utils";
 
@@ -13,7 +12,6 @@ export function AvatarSelectionCard({
 }) {
   const cover = selectedAvatar?.cover;
   const isVideo = isVideoCover(cover);
-  const tags = selectedAvatar ? getAvatarTags(selectedAvatar) : [];
   const isMine = avatarSource === "mine";
 
   return (
@@ -66,19 +64,6 @@ export function AvatarSelectionCard({
                 </div>
               )}
             </div>
-
-            <div className="dhv2-avatar-preview__summary">
-              <strong>{selectedAvatar.name}</strong>
-              <div className="dhv2-avatar-preview__tags">
-                {tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
-              </div>
-            </div>
-
-            <p className="dhv2-avatar-preview__official-hint">
-              {isMine ? "我的形象可配置配音方式后生成视频" : "选择形象后，可在下方配置系统音色"}
-            </p>
           </>
         ) : isMine ? (
           <div className="dhv2-avatar-preview__mine-actions">

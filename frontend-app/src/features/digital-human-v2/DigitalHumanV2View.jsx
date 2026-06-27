@@ -501,14 +501,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       <div className="dhv2-workspace">
         <aside className="dhv2-sidebar">
           <div className="dhv2-sidebar__scroll">
-            {!selectedAvatar ? (
-              <AvatarSelectionCard
-                selectedAvatar={selectedAvatar}
-                avatarSource={avatarSource}
-                onAvatarSourceChange={handleAvatarSourceChange}
-                onCreateAvatar={openCreateModal}
-              />
-            ) : null}
+            <AvatarSelectionCard
+              selectedAvatar={selectedAvatar}
+              avatarSource={avatarSource}
+              onAvatarSourceChange={handleAvatarSourceChange}
+              onCreateAvatar={openCreateModal}
+            />
             {selectedAvatar ? (
               <VoiceDubbingModeCard
                 voiceMode={voiceMode}
