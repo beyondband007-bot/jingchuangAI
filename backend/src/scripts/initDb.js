@@ -1061,6 +1061,12 @@ async function createTables() {
   if (!musicColumnNames.has("lyrics_sync_error")) {
     await pool.query("ALTER TABLE music_tasks ADD COLUMN lyrics_sync_error TEXT NULL AFTER lyrics_sync_status");
   }
+  if (!musicColumnNames.has("title")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN title VARCHAR(200) NULL AFTER prompt");
+  }
+  if (!musicColumnNames.has("cover_url")) {
+    await pool.query("ALTER TABLE music_tasks ADD COLUMN cover_url VARCHAR(1000) NULL AFTER title");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_synthesis_tasks (

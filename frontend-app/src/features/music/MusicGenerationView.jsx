@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronRight, Clock, Music, Sparkles } from "lucide-react";
 import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
+import { MusicCoverCropModal } from "../music-generation-ui/MusicCoverCropModal";
 import { MusicGeneratingPanel } from "./MusicGeneratingPanel";
 import { MusicFullPagePlayer } from "./MusicFullPagePlayer";
 import { MusicRecentGrid } from "./MusicRecentGrid";
@@ -44,6 +45,15 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("封面图片读取失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function isInstrumentalFlag(value) {
   return value === true || value === 1 || value === "1";
 }
@@ -52,6 +62,8 @@ function mapTaskFromApi(task, fallback = {}) {
   return {
     id: task.id,
     prompt: task.prompt || fallback.prompt || "",
+    title: task.title || fallback.title || "",
+    coverUrl: task.coverUrl || fallback.coverUrl || "",
     lyrics: task.lyrics || fallback.lyrics || "",
     model: task.model || fallback.model || "music-2.6-free",
     isInstrumental: isInstrumentalFlag(task.isInstrumental ?? fallback.isInstrumental),
@@ -141,6 +153,9 @@ function randomMelodyDelayMs() {
 
 export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [prompt, setPrompt] = useState("");
+  const [title, setTitle] = useState("");
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
   const [lyricsOptimizer, setLyricsOptimizer] = useState(false);
@@ -155,6 +170,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [progressPercent, setProgressPercent] = useState(0);
   const [etaSeconds, setEtaSeconds] = useState(0);
   const [syncingIds, setSyncingIds] = useState({});
+  const [coverEditItem, setCoverEditItem] = useState(null);
   const toastTimerRef = useRef(null);
   const pollTokenRef = useRef(0);
   const melodyTimerRef = useRef(null);
@@ -189,6 +205,9 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     if (!resetSignal) return;
     pollTokenRef.current += 1;
     setPrompt("");
+    setTitle("");
+    setCoverFile(null);
+    setCoverPreview("");
     setLyrics("");
     setIsInstrumental(false);
     setLyricsOptimizer(false);
@@ -393,6 +412,8 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
     const fallback = {
       prompt: prompt.trim(),
+      title: title.trim(),
+      coverUrl: "",
       lyrics: isInstrumental ? "" : lyrics.trim(),
       model: "music-2.6-free",
       isInstrumental
@@ -415,8 +436,11 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     setShowPlayer(false);
 
     try {
+      const cover = coverFile ? await readFileAsDataUrl(coverFile) : "";
       const data = await musicApi.generate({
         prompt: fallback.prompt,
+        title: fallback.title,
+        cover,
         lyrics: fallback.lyrics,
         model: fallback.model,
         isInstrumental,
@@ -465,6 +489,36 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   function appendPrompt(textToAppend) {
     setPrompt((current) => [current.trim(), textToAppend].filter(Boolean).join("，").slice(0, 200));
   }
+
+  function handleCoverChange(file) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("请上传图片格式的封面文件。");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setNotice("封面图片大小不能超过 5MB。");
+      return;
+    }
+    setNotice("");
+    setCoverFile(file);
+    setCoverPreview((current) => {
+      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function handleCoverRemove() {
+    setCoverFile(null);
+    setCoverPreview((current) => {
+      if (current?.startsWith("blob:")) URL.revokeObjectURL(current);
+      return "";
+    });
+  }
+
+  useEffect(() => () => {
+    if (coverPreview?.startsWith("blob:")) URL.revokeObjectURL(coverPreview);
+  }, [coverPreview]);
 
   function cancelGeneration() {
     pollTokenRef.current += 1;
@@ -548,6 +602,30 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     }
   }
 
+  function requestEditCoverItem(item) {
+    if (!item?.id || item.status === "processing") return;
+    setCoverEditItem(item);
+  }
+
+  async function handleCoverEditConfirm(file) {
+    if (!coverEditItem?.id || !file) return;
+
+    const taskId = coverEditItem.id;
+    try {
+      const cover = await readFileAsDataUrl(file);
+      const updated = await musicApi.updateTaskCover(taskId, cover);
+      const coverUrl = updated.coverUrl
+        ? `${updated.coverUrl}${updated.coverUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
+        : "";
+      applyTaskUpdate(taskId, { ...updated, coverUrl });
+      showToast("success", "封面已更新");
+    } catch (error) {
+      showToast("error", error.message || "封面更新失败，请稍后重试");
+    } finally {
+      setCoverEditItem(null);
+    }
+  }
+
   async function performDeleteMusicTask(id) {
     await musicApi.deleteTask(id);
     if (playerTask?.id === id) {
@@ -622,6 +700,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               onViewAll={() => setViewTab("recent")}
               onSelectItem={openCompletedPlayer}
               onDownloadItem={downloadRecentItem}
+              onEditCoverItem={requestEditCoverItem}
               onDeleteItem={requestDeleteRecentItem}
             />
           ) : (
@@ -636,6 +715,8 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               <div className="music-ref-form">
                 <AiMusicGenerationWorkbenchCard
                   prompt={prompt}
+                  title={title}
+                  coverPreview={coverPreview}
                   lyrics={lyrics}
                   isInstrumental={isInstrumental}
                   lyricsOptimizer={lyricsOptimizer}
@@ -645,6 +726,9 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
                   notice={notice}
                   currentResult={null}
                   onPromptChange={setPrompt}
+                  onTitleChange={setTitle}
+                  onCoverChange={handleCoverChange}
+                  onCoverRemove={handleCoverRemove}
                   onLyricsChange={setLyrics}
                   onToggleInstrumental={setIsInstrumental}
                   onToggleLyricsOptimizer={setLyricsOptimizer}
@@ -667,6 +751,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
                   items={displayRecent}
                   onSelectItem={openCompletedPlayer}
                   onDownloadItem={downloadRecentItem}
+                  onEditCoverItem={requestEditCoverItem}
                   onDeleteItem={requestDeleteRecentItem}
                 />
               </div>
@@ -682,6 +767,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
                 items={recentResults}
                 onSelectItem={openCompletedPlayer}
                 onDownloadItem={downloadRecentItem}
+                onEditCoverItem={requestEditCoverItem}
                 onDeleteItem={requestDeleteRecentItem}
               />
             </div>
@@ -704,6 +790,12 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
         />
       )}
       {deleteConfirmDialog}
+      <MusicCoverCropModal
+        open={Boolean(coverEditItem)}
+        initialPreview={coverEditItem?.coverUrl || ""}
+        onClose={() => setCoverEditItem(null)}
+        onConfirm={handleCoverEditConfirm}
+      />
     </section>
   );
 }

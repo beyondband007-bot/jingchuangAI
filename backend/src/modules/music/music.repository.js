@@ -4,15 +4,17 @@ export async function createMusicTaskRow({
   id,
   userId,
   prompt,
+  title = "",
+  coverUrl = "",
   lyrics,
   model,
   isInstrumental
 }) {
   await getPool().query(
     `INSERT INTO music_tasks
-     (id, user_id, prompt, lyrics, model, is_instrumental, audio_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, '', 'processing')`,
-    [id, userId, prompt, lyrics, model, isInstrumental]
+     (id, user_id, prompt, title, cover_url, lyrics, model, is_instrumental, audio_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', 'processing')`,
+    [id, userId, prompt, title || null, coverUrl || null, lyrics, model, isInstrumental]
   );
 }
 
@@ -109,6 +111,15 @@ export async function updateMusicTaskAudioMeta(id, { musicSize, bitrate }) {
      SET music_size = ?, bitrate = ?
      WHERE id = ?`,
     [musicSize || null, bitrate || null, id]
+  );
+}
+
+export async function updateMusicTaskCoverUrl(id, coverUrl) {
+  await getPool().query(
+    `UPDATE music_tasks
+     SET cover_url = ?
+     WHERE id = ?`,
+    [coverUrl || null, id]
   );
 }
 

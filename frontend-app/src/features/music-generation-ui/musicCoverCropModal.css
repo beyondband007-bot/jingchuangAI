@@ -1,0 +1,244 @@
+.music-cover-crop-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: rgba(16, 14, 24, 0.52);
+  backdrop-filter: blur(6px);
+}
+
+.music-cover-crop-modal {
+  width: min(100%, 420px);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(36, 32, 43, 0.22);
+  overflow: visible;
+  animation: music-cover-crop-modal-in 180ms ease both;
+}
+
+@keyframes music-cover-crop-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.music-cover-crop-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f0edf8;
+}
+
+.music-cover-crop-modal__head h2 {
+  margin: 0;
+  color: #16131f;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.music-cover-crop-modal__close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6b6578;
+  cursor: pointer;
+}
+
+.music-cover-crop-modal__body {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 8px;
+  overflow: visible;
+}
+
+.music-cover-crop-modal__stage {
+  --canvas-width: 320px;
+  --canvas-height: 240px;
+  --crop-size: 240px;
+  --margin-x: calc((var(--canvas-width) - var(--crop-size)) / 2);
+  --margin-y: 0px;
+
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: var(--canvas-height);
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: visible;
+  background: #f2f2f4;
+  isolation: isolate;
+}
+
+.music-cover-crop-modal__stage.is-empty {
+  display: grid;
+}
+
+.music-cover-crop-modal__canvas {
+  position: relative;
+  width: var(--canvas-width);
+  height: var(--canvas-height);
+  overflow: visible;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.music-cover-crop-modal__canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: #f2f2f4;
+  z-index: 0;
+}
+
+.music-cover-crop-modal__canvas:active {
+  cursor: grabbing;
+}
+
+.music-cover-crop-modal__canvas img {
+  position: absolute;
+  z-index: 1;
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
+  will-change: left, top, width, height;
+}
+
+.music-cover-crop-modal__crop-frame {
+  position: absolute;
+  left: var(--margin-x);
+  top: var(--margin-y);
+  z-index: 3;
+  width: var(--crop-size);
+  height: var(--crop-size);
+  border: 2px solid #6b5ce7;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
+}
+
+.music-cover-crop-modal__stage.is-empty .music-cover-crop-modal__empty {
+  width: 100%;
+  height: 100%;
+}
+
+.music-cover-crop-modal__empty {
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 16px;
+  border: 0;
+  background: linear-gradient(180deg, #faf9ff 0%, #f3f0ff 100%);
+  color: #6b5ce7;
+  cursor: pointer;
+  font: inherit;
+}
+
+.music-cover-crop-modal__empty strong {
+  color: #24202b;
+  font-size: 15px;
+}
+
+.music-cover-crop-modal__empty span {
+  color: #9e99a9;
+  font-size: 12px;
+}
+
+.music-cover-crop-modal__zoom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.music-cover-crop-modal__zoom-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f0edf8;
+  color: #6b5ce7;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.music-cover-crop-modal__zoom-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.music-cover-crop-modal__zoom input {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: #6b5ce7;
+}
+
+.music-cover-crop-modal__hint {
+  margin: 0;
+  color: #9e99a9;
+  font-size: 12px;
+  text-align: center;
+}
+
+.music-cover-crop-modal__error {
+  margin: 0;
+  padding: 10px 12px;
+  color: #b42318;
+  background: #fef3f2;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.music-cover-crop-modal__foot {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px 18px;
+}
+
+.music-cover-crop-modal__btn {
+  min-width: 120px;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.music-cover-crop-modal__btn.is-ghost {
+  border: 1px solid #e8e5f5;
+  background: #ffffff;
+  color: #5b5664;
+}
+
+.music-cover-crop-modal__btn.is-primary {
+  border: 0;
+  background: linear-gradient(135deg, #8b7df7, #6b5ce7);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(107, 92, 231, 0.24);
+}
+
+.music-cover-crop-modal__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

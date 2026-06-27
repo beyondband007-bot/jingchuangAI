@@ -12,7 +12,8 @@ import {
   findMusicTaskRow,
   listMusicTaskRows,
   deleteMusicTaskRow,
-  updateMusicTaskAudioMeta
+  updateMusicTaskAudioMeta,
+  updateMusicTaskCoverUrl
 } from "./music.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { compressMusicAudioFile, MUSIC_COMPRESS_THRESHOLD_BYTES } from "./musicAudio.js";
@@ -38,6 +39,8 @@ function mapMusicTask(row) {
   return {
     id: row.id,
     prompt: row.prompt,
+    title: row.title || "",
+    coverUrl: row.cover_url || "",
     lyrics: row.lyrics || "",
     model: row.model,
     isInstrumental: row.is_instrumental === 1 || row.is_instrumental === true,
@@ -88,6 +91,74 @@ async function saveMusicAudio({ taskId, audioBuffer }) {
     publicPath: `/media/music/audio/${fileName}`,
     mimeType: "audio/mpeg"
   };
+}
+
+const COVER_MIME_EXT = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif"
+};
+
+function parseCoverDataUrl(value) {
+  const trimmed = normalizeString(value);
+  const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/i.exec(trimmed);
+  if (!match) return null;
+  const mimeType = match[1].toLowerCase();
+  const buffer = Buffer.from(match[2].replace(/\s/g, ""), "base64");
+  if (!buffer.length) return null;
+  return { mimeType, buffer };
+}
+
+function assertTitle(title) {
+  const trimmed = normalizeString(title);
+  if (!trimmed) return "";
+  if (trimmed.length > 100) throw createHttpError("歌曲标题长度不能超过 100 个字符", 400);
+  return trimmed;
+}
+
+async function saveMusicCover({ taskId, cover }) {
+  const parsed = parseCoverDataUrl(cover);
+  if (!parsed) {
+    throw createHttpError("封面图片格式不支持，请上传 JPG / PNG / WebP 图片", 400);
+  }
+  if (parsed.buffer.length > 5 * 1024 * 1024) {
+    throw createHttpError("封面图片大小不能超过 5MB", 400);
+  }
+
+  const ext = COVER_MIME_EXT[parsed.mimeType] || ".jpg";
+  const coverDir = path.resolve(process.cwd(), config.media.storageDir, "music", "covers");
+  await mkdir(coverDir, { recursive: true });
+  const fileName = `${taskId}${ext}`;
+  const filePath = path.join(coverDir, fileName);
+  await writeFile(filePath, parsed.buffer);
+
+  return {
+    filePath,
+    publicPath: `/media/music/covers/${fileName}`
+  };
+}
+
+async function unlinkMusicCoverFile(coverUrl) {
+  const normalized = String(coverUrl || "").trim();
+  if (!normalized) return;
+
+  const coverDir = path.resolve(
+    process.cwd(),
+    config.media.storageDir,
+    "music",
+    "covers",
+  );
+  const fileName = path.basename(normalized);
+  const filePath = path.resolve(coverDir, fileName);
+  const relativePath = path.relative(coverDir, filePath);
+  if (
+    fileName &&
+    !relativePath.startsWith("..") &&
+    !path.isAbsolute(relativePath)
+  ) {
+    await unlink(filePath).catch(() => {});
+  }
 }
 
 export function getConfig() {
@@ -143,7 +214,37 @@ export async function deleteMusicTask(id, userId) {
     }
   }
 
+  const coverUrl = String(existing.cover_url || "").trim();
+  if (coverUrl) {
+    await unlinkMusicCoverFile(coverUrl);
+  }
+
   return result;
+}
+
+export async function updateMusicTaskCover(id, userId, payload = {}) {
+  const existing = await findMusicTaskRow({ id, userId });
+  if (!existing) {
+    throw createHttpError("音乐任务不存在", 404);
+  }
+
+  const coverPayload = normalizeString(payload.cover);
+  if (!coverPayload) {
+    throw createHttpError("请上传封面图片", 400);
+  }
+
+  const savedCover = await saveMusicCover({ taskId: id, cover: coverPayload });
+  const previousCoverUrl = String(existing.cover_url || "").trim();
+  if (previousCoverUrl && previousCoverUrl !== savedCover.publicPath) {
+    await unlinkMusicCoverFile(previousCoverUrl);
+  }
+
+  await updateMusicTaskCoverUrl(id, savedCover.publicPath);
+
+  return mapMusicTask({
+    ...existing,
+    cover_url: savedCover.publicPath
+  });
 }
 
 function cleanGenerationError(error) {
@@ -208,25 +309,48 @@ async function runMusicGeneration(
 
 export async function generateMusic(payload, userId) {
   const prompt = assertPrompt(payload.prompt);
+  const title = assertTitle(payload.title);
   const isInstrumental = Boolean(payload.isInstrumental);
   const lyrics = assertLyrics(payload.lyrics, isInstrumental);
   const model = normalizeString(payload.model) || "music-2.6-free";
   const lyricsOptimizer = Boolean(payload.lyricsOptimizer);
   const taskId = `music-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const costPoints = calculateMusicPoints(payload.durationSeconds);
+  const coverPayload = normalizeString(payload.cover);
+  if (coverPayload) {
+    const parsedCover = parseCoverDataUrl(coverPayload);
+    if (!parsedCover) {
+      throw createHttpError("封面图片格式不支持，请上传 JPG / PNG / WebP 图片", 400);
+    }
+    if (parsedCover.buffer.length > 5 * 1024 * 1024) {
+      throw createHttpError("封面图片大小不能超过 5MB", 400);
+    }
+  }
   await chargeCredits({ userId, taskId, amount: costPoints, memo: "music generation debit" });
 
+  let coverUrl = "";
   try {
+    if (normalizeString(payload.cover)) {
+      const savedCover = await saveMusicCover({ taskId, cover: coverPayload });
+      coverUrl = savedCover.publicPath;
+    }
+
     await createMusicTaskRow({
       id: taskId,
       userId,
       prompt,
+      title,
+      coverUrl,
       lyrics,
       model,
       isInstrumental
     });
   } catch (error) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "music generation refund" });
+    if (coverUrl) {
+      const coverDir = path.resolve(process.cwd(), config.media.storageDir, "music", "covers");
+      await unlink(path.join(coverDir, path.basename(coverUrl))).catch(() => {});
+    }
     throw error;
   }
 
@@ -244,6 +368,8 @@ export async function generateMusic(payload, userId) {
   return {
     id: taskId,
     prompt,
+    title,
+    coverUrl,
     lyrics,
     model,
     isInstrumental,

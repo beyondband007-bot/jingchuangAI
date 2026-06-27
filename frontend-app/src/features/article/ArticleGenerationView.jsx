@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowUp,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -21,6 +22,10 @@ import { ArticleXhsNotePreview } from "./ArticleXhsNotePreview";
 import { ArticlePopularResultPanel } from "./ArticlePopularResultPanel";
 import { ArticleImageConfigPanel } from "./ArticleImageConfigPanel";
 import { ArticleStyleTemplatePreview } from "./ArticleStyleTemplatePreview";
+import {
+  pickRandomStyleTemplates,
+  visualStyles,
+} from "./articleStyleTemplateAssets";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import {
@@ -37,6 +42,12 @@ const platformTabs = [
   "抖音封面",
   "视频号封面",
   "公众号头图",
+];
+const morePlatformOptions = [
+  "朋友圈海报",
+  "B站封面",
+  "知乎图文",
+  "商品详情长图",
 ];
 const COPY_TEMPLATE_PLACEHOLDER = "请选择文案模板";
 const copyTemplatesByPlatform = {
@@ -62,10 +73,17 @@ const fallbackModelOptions = [
   { value: "seedream_45", label: "Seedream 4.5" },
 ];
 
+const popularSteps = [
+  { num: 1, label: "选择平台 & 创作主题" },
+  { num: 2, label: "AI 生成种草文案" },
+  { num: 3, label: "配图风格与版式配置" },
+];
+
 const quickTemplates = [
   {
     id: "single-product-review",
     title: "《单品测评种草》",
+    subtitle: "单品实测 · 闺蜜安利风",
     image: "/assets/article/quick-templates/template-1.webp",
     copyTemplate: "测评种草模板",
     topic: "平价单品真实实测分享，突出产品质地、使用感受、外观细节与性价比，适合早八人、学生党日常种草测评，输出小红书吸睛标题 + 闺蜜安利式短种草正文，附带实用避坑小贴士与垂直好物话题标签",
@@ -75,6 +93,7 @@ const quickTemplates = [
   {
     id: "mom-baby-review",
     title: "《母婴好物实测》",
+    subtitle: "宝妈实测 · 温柔分享风",
     image: "/assets/article/quick-templates/template-2.webp",
     copyTemplate: "测评种草模板",
     topic: "宝妈自用母婴好物真实测评，重点突出材质安全、带娃减负、使用便捷性，温柔真实分享风格，适配新手宝妈种草笔记，附带母婴选购避坑提醒与母婴垂直话题标签",
@@ -84,6 +103,7 @@ const quickTemplates = [
   {
     id: "sensitive-skin-list",
     title: "《敏感肌护肤合集》",
+    subtitle: "换季维稳 · 干货清单风",
     image: "/assets/article/quick-templates/template-3.webp",
     copyTemplate: "清单攻略模板",
     topic: "换季敏感肌全套护肤好物合集，分别讲解每款护肤品补水、舒缓、修护屏障核心功效，干货清单式排版，分享长期维稳护肤心得，附带护肤叠加避坑指南与护肤赛道话题标签",
@@ -93,6 +113,7 @@ const quickTemplates = [
   {
     id: "kitchen-appliance-list",
     title: "《厨房小家电合集》",
+    subtitle: "小户型厨房 · 生活种草风",
     image: "/assets/article/quick-templates/template-4.webp",
     copyTemplate: "清单攻略模板",
     topic: "小户型租房党厨房小家电全套合集，突出机身小巧不占地、操作简单易清洗、三餐多场景适配，生活化接地气种草，附带家电保养清洁小贴士与家居好物话题标签",
@@ -102,6 +123,7 @@ const quickTemplates = [
   {
     id: "digital-accessory-review",
     title: "《平价数码配件测评》",
+    subtitle: "百元平替 · 干货测评风",
     image: "/assets/article/quick-templates/template-5.webp",
     copyTemplate: "测评种草模板",
     topic: "高性价比手机、电脑数码配件单品实测，突出续航、质感、实用功能，对比百元平替与大牌差异，学生党、打工人刚需，附带数码选购避坑提醒",
@@ -111,6 +133,7 @@ const quickTemplates = [
   {
     id: "pet-care-list",
     title: "《猫狗宠物养护好物》",
+    subtitle: "新手养宠 · 温柔分享风",
     image: "/assets/article/quick-templates/template-6.webp",
     copyTemplate: "清单攻略模板",
     topic: "新手养猫养狗全套养护好物清单，侧重安全无刺激、清洁省力，分喂食、洗护、玩具类单品讲解，真实养宠实测分享，附带宠物用品选购避坑贴士",
@@ -118,148 +141,6 @@ const quickTemplates = [
     tone: "温柔分享风"
   }
 ];
-
-const visualStyles = [
-  {
-    id: "fresh",
-    label: "清新",
-    image: "/assets/article/template-thumbs/清新.png",
-  },
-  {
-    id: "cute",
-    label: "可爱",
-    image: "/assets/article/template-thumbs/可爱.png",
-  },
-  {
-    id: "minimal",
-    label: "极简",
-    image: "/assets/article/template-thumbs/极简.png",
-  },
-  {
-    id: "bold",
-    label: "大胆",
-    image: "/assets/article/template-thumbs/大胆.png",
-  },
-  {
-    id: "handdrawn",
-    label: "手绘笔记",
-    image: "/assets/article/template-thumbs/手绘.png",
-  },
-  {
-    id: "retro",
-    label: "复古",
-    image: "/assets/article/template-thumbs/复古.png",
-  },
-  {
-    id: "notion",
-    label: "Notion 风",
-    image: "/assets/article/template-thumbs/Notion.png",
-  },
-  {
-    id: "blackboard",
-    label: "黑板风",
-    image: "/assets/article/template-thumbs/黑板.png",
-  },
-];
-
-const freshStylePreviews = [
-  {
-    id: "book-share",
-    label: "读书分享",
-    image: "/assets/article/style-previews/fresh/book-share.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/fresh/ootd.png",
-  },
-  {
-    id: "life-fragments",
-    label: "生活碎片收集",
-    image: "/assets/article/style-previews/fresh/life-fragments.png",
-  },
-  {
-    id: "skincare",
-    label: "护肤日常",
-    image: "/assets/article/style-previews/fresh/skincare.png",
-  },
-];
-
-const cuteStylePreviews = [
-  {
-    id: "life-fragments",
-    label: "日常碎片收集",
-    image: "/assets/article/style-previews/cute/life-fragments.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/cute/ootd.png",
-  },
-  {
-    id: "skincare",
-    label: "护肤日常",
-    image: "/assets/article/style-previews/cute/skincare.png",
-  },
-  {
-    id: "study-check-in",
-    label: "学习打卡",
-    image: "/assets/article/style-previews/cute/study-check-in.png",
-  },
-];
-
-const minimalStylePreviews = [
-  {
-    id: "life-quote",
-    label: "慢生活金句",
-    image: "/assets/article/style-previews/minimal/life-quote.png",
-  },
-  {
-    id: "ootd",
-    label: "穿搭 OOTD",
-    image: "/assets/article/style-previews/minimal/ootd.png",
-  },
-  {
-    id: "weekend-explore",
-    label: "周末探店",
-    image: "/assets/article/style-previews/minimal/weekend-explore.png",
-  },
-  {
-    id: "book-list",
-    label: "书单分享",
-    image: "/assets/article/style-previews/minimal/book-list.png",
-  },
-];
-
-const boldStylePreviews = [
-  {
-    id: "bold-check-in",
-    label: "大胆打卡",
-    image: "/assets/article/style-previews/bold/bold-check-in.png",
-  },
-  {
-    id: "bold-life-color",
-    label: "活出色彩",
-    image: "/assets/article/style-previews/bold/bold-life-color.png",
-  },
-  {
-    id: "bold-jewel",
-    label: "首饰宣言",
-    image: "/assets/article/style-previews/bold/bold-jewel.png",
-  },
-  {
-    id: "bold-night",
-    label: "大胆美学夜",
-    image: "/assets/article/style-previews/bold/bold-night.png",
-  },
-];
-
-const styleTemplatePreviews = {
-  fresh: freshStylePreviews,
-  cute: cuteStylePreviews,
-  minimal: minimalStylePreviews,
-  bold: boldStylePreviews,
-};
 
 const contentTypes = [
   {
@@ -845,6 +726,113 @@ function buildArticleBodyCopy(body, tags = []) {
   return [body, tagsText].filter(Boolean).join("\n\n");
 }
 
+function getPopularStepState(currentStep, hasDraftCopy) {
+  if (currentStep >= 3) {
+    return { activeStep: 3, doneSteps: [1, 2] };
+  }
+  if (hasDraftCopy) {
+    return { activeStep: 2, doneSteps: [1] };
+  }
+  return { activeStep: 1, doneSteps: [] };
+}
+
+function PopularStepper({ currentStep, hasDraftCopy }) {
+  const { activeStep, doneSteps } = getPopularStepState(currentStep, hasDraftCopy);
+
+  return (
+    <div
+      className="fm-popular-stepper is-three-steps is-flat"
+      aria-label="爆款图文生成步骤"
+    >
+      {popularSteps.map((item) => {
+        const isDone = doneSteps.includes(item.num);
+        const isActive = item.num === activeStep || isDone;
+        return (
+          <div
+            className={`${isDone ? "is-done" : ""} ${isActive ? "is-active" : ""}`}
+            key={item.num}
+          >
+            <span>
+              {isDone ? <Check size={16} strokeWidth={2.5} /> : item.num}
+            </span>
+            <p>{item.label}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CopyParamsPanel({
+  form,
+  wordCounts,
+  copyTones,
+  isOpen,
+  onToggle,
+  onUpdateForm,
+}) {
+  return (
+    <section className={`article-copy-params ${isOpen ? "is-open" : ""}`}>
+      <button
+        className="article-copy-params__head"
+        type="button"
+        aria-expanded={isOpen}
+        onClick={onToggle}
+      >
+        <span className="article-copy-params__title">文案参数</span>
+        <span className="article-copy-params__summary">
+          {form.wordCount} · {form.tone}
+        </span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </button>
+      {isOpen && (
+        <div className="article-copy-params__body">
+          <div className="article-copy-params__group">
+            <strong>期望字数</strong>
+            <div className="article-copy-params__options">
+              {wordCounts.map((item) => (
+                <button
+                  className={form.wordCount === item ? "is-selected" : ""}
+                  type="button"
+                  key={item}
+                  onClick={() => onUpdateForm({ wordCount: item })}
+                >
+                  <span aria-hidden="true" />
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="article-copy-params__group">
+            <strong>文案语气</strong>
+            <div className="article-copy-params__options is-wrap">
+              {copyTones.map((item) => (
+                <button
+                  className={form.tone === item ? "is-selected" : ""}
+                  type="button"
+                  key={item}
+                  onClick={() => onUpdateForm({ tone: item })}
+                >
+                  <span aria-hidden="true" />
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="article-copy-params__keyword">
+            <span>核心关键词补充</span>
+            <input
+              value={form.keyword}
+              onChange={(event) => onUpdateForm({ keyword: event.target.value })}
+              placeholder="填入商品/卖点关键词，逗号分隔"
+            />
+          </label>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ArticlePreview({ task, onClose, authUser }) {
   const [previewMode, setPreviewMode] = useState("full");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -1007,6 +995,7 @@ function ArticlePreview({ task, onClose, authUser }) {
             authorName={authUser?.displayName || authUser?.username || "Facemini AI"}
             activeIndex={activeImageIndex}
             onActiveIndexChange={setActiveImageIndex}
+            ratioFallback={task?.ratio}
           />
         )}
       </section>
@@ -1043,10 +1032,13 @@ export function ArticleGenerationView({
   const [submitError, setSubmitError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
   const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+  const [isMorePlatformOpen, setIsMorePlatformOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
   const [previewQuickTemplate, setPreviewQuickTemplate] = useState(null);
+  const [isCopyParamsOpen, setIsCopyParamsOpen] = useState(true);
   const templateSelectRef = useRef(null);
+  const morePlatformRef = useRef(null);
   const modelSelectRef = useRef(null);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
@@ -1137,6 +1129,9 @@ export function ArticleGenerationView({
       if (!templateSelectRef.current?.contains(event.target)) {
         setIsTemplateOpen(false);
       }
+      if (!morePlatformRef.current?.contains(event.target)) {
+        setIsMorePlatformOpen(false);
+      }
       if (!modelSelectRef.current?.contains(event.target)) {
         setIsModelOpen(false);
       }
@@ -1165,6 +1160,7 @@ export function ArticleGenerationView({
     selectedTask?.status === "processing";
   const historyCards = cards;
   const copyTemplates = copyTemplatesByPlatform[form.platform] || copyTemplatesByPlatform["更多"];
+  const isMorePlatformActive = morePlatformOptions.includes(form.platform);
   const hasCompletedArticle = selectedCompletedImages.length > 0 && ["completed", "partial_completed"].includes(selectedTask?.status);
   const hasFailedArticle = selectedTask?.status === "failed";
   const modelOptions = options.models.length
@@ -1185,10 +1181,13 @@ export function ArticleGenerationView({
     formatBeijingDateTime(
       selectedTask?.createdAt || selectedTask?.created_at || selectedTask?.time,
     ) || "刚刚";
-  const activeStyleTemplatePreviews = styleTemplatePreviews[form.visualStyle] || null;
+  const activeStyleTemplatePreviews = useMemo(
+    () => pickRandomStyleTemplates(form.visualStyle, 6),
+    [form.visualStyle],
+  );
   const showStyleTemplatePreview =
     step >= 3 &&
-    activeStyleTemplatePreviews &&
+    activeStyleTemplatePreviews.length > 0 &&
     !isGenerating &&
     !isDraftSubmitting &&
     !hasCompletedArticle;
@@ -1290,6 +1289,11 @@ export function ArticleGenerationView({
     setStep(2);
     setSubmitError("");
     setIsTemplateOpen(false);
+    setIsMorePlatformOpen(false);
+  }
+
+  function selectMorePlatform(platform) {
+    changePlatform(platform);
   }
 
   function applyQuickTemplate(
@@ -1629,20 +1633,60 @@ export function ArticleGenerationView({
         <aside className="article-form-panel">
           {step < 3 ? (
             <>
-              <h2>
-                <span>步骤 1 ·</span> 场景与模板
-              </h2>
-              <div className="fm-popular-platform-tabs" aria-label="平台类型">
-                {platformTabs.map((item) => (
-                  <button
-                    className={form.platform === item ? "is-active" : ""}
-                    type="button"
-                    key={item}
-                    onClick={() => changePlatform(item)}
+              <div className="article-form-panel__scroll">
+                <div className="article-form-top">
+                  <PopularStepper currentStep={step} hasDraftCopy={Boolean(draftCopy)} />
+                  <div className="fm-popular-platform-tabs" aria-label="平台类型">
+                  {platformTabs.map((item) => (
+                    <button
+                      className={
+                        form.platform === item && !isMorePlatformActive
+                          ? "is-active"
+                          : ""
+                      }
+                      type="button"
+                      key={item}
+                      onClick={() => changePlatform(item)}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                  <span
+                    className={`fm-popular-platform-more ${isMorePlatformOpen ? "is-open" : ""}`}
+                    ref={morePlatformRef}
                   >
-                    {item}
-                  </button>
-                ))}
+                    <button
+                      className={isMorePlatformActive ? "is-active" : ""}
+                      type="button"
+                      aria-haspopup="listbox"
+                      aria-expanded={isMorePlatformOpen}
+                      onClick={() => setIsMorePlatformOpen((value) => !value)}
+                    >
+                      <span>{isMorePlatformActive ? form.platform : "更多"}</span>
+                      <ChevronDown size={14} />
+                    </button>
+                    {isMorePlatformOpen && (
+                      <div
+                        className="fm-popular-platform-more-menu"
+                        role="listbox"
+                        aria-label="更多平台"
+                      >
+                        {morePlatformOptions.map((item) => (
+                          <button
+                            className={form.platform === item ? "is-selected" : ""}
+                            type="button"
+                            key={item}
+                            role="option"
+                            aria-selected={form.platform === item}
+                            onClick={() => selectMorePlatform(item)}
+                          >
+                            <span>{item}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </span>
+                </div>
               </div>
               <label className="fm-popular-template-select">
                 <span>文案模板</span>
@@ -1690,56 +1734,29 @@ export function ArticleGenerationView({
                   )}
                 </span>
               </label>
-              <h2>
-                <span>步骤 2 ·</span> 文案配置
-              </h2>
-              <label className="article-field">
+              <label className="article-field article-topic-field">
                 <span>创作主题</span>
                 <em>{form.topic.length}/500</em>
-                <textarea
-                  value={form.topic}
-                  onChange={(event) =>
-                    updateForm({ topic: event.target.value.slice(0, 500) })
-                  }
-                  placeholder="电商爆款标题，突出核心卖点与优惠信息，吸引点击，适合直播带货场景"
-                />
+                <div className="article-topic-box">
+                  <textarea
+                    value={form.topic}
+                    onChange={(event) =>
+                      updateForm({ topic: event.target.value.slice(0, 500) })
+                    }
+                    placeholder="城市宝藏小店探店，氛围感满满的美食打卡文案"
+                  />
+                </div>
               </label>
-              <div className="article-choice-row">
-                <strong>期望字数</strong>
-                {wordCounts.map((item) => (
-                  <button
-                    className={form.wordCount === item ? "is-selected" : ""}
-                    type="button"
-                    key={item}
-                    onClick={() => updateForm({ wordCount: item })}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <div className="article-choice-row">
-                <strong>文案语气</strong>
-                {copyTones.map((item) => (
-                  <button
-                    className={form.tone === item ? "is-selected" : ""}
-                    type="button"
-                    key={item}
-                    onClick={() => updateForm({ tone: item })}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
               <section className="article-quick-section is-inline">
                 <header>
                   <div>
-                    <strong>快捷图文模板</strong>
-                    <p>成套图文模板，一键填充文案+预设配图风格</p>
+                    <strong>快捷图文模版</strong>
                   </div>
                 </header>
                 <div className="article-quick-rail">
                   {quickTemplates.map((item) => (
                     <button
+                      className="article-quick-card__thumb"
                       type="button"
                       key={item.id}
                       aria-label={item.title}
@@ -1750,22 +1767,38 @@ export function ArticleGenerationView({
                   ))}
                 </div>
               </section>
-              <div className="article-submit-row is-copy">
-                <input
-                  value={form.keyword}
-                  onChange={(event) =>
-                    updateForm({ keyword: event.target.value })
-                  }
-                  placeholder="填入商品/卖点关键词，逗号分隔"
-                />
-                <button type="button" onClick={generateDraft} disabled={isDraftSubmitting}>
-                  {isDraftSubmitting ? <Loader2 size={17} className="is-spinning" /> : <Sparkles size={17} />}
-                  {isDraftSubmitting ? "生成中" : "生成标题 & 正文"}
+              <CopyParamsPanel
+                form={form}
+                wordCounts={wordCounts}
+                copyTones={copyTones}
+                isOpen={isCopyParamsOpen}
+                onToggle={() => setIsCopyParamsOpen((value) => !value)}
+                onUpdateForm={updateForm}
+              />
+              </div>
+              <div className="article-generate-fab-wrap">
+                <button
+                  className="article-generate-fab"
+                  type="button"
+                  onClick={generateDraft}
+                  disabled={isDraftSubmitting}
+                >
+                  {isDraftSubmitting ? (
+                    <Loader2 size={17} className="is-spinning" />
+                  ) : (
+                    <ArrowUp size={17} />
+                  )}
+                  {isDraftSubmitting ? "生成中" : "生成标题&正文"}
                 </button>
               </div>
             </>
           ) : (
-            <ArticleImageConfigPanel
+            <>
+              <div className="article-form-panel__scroll">
+                <div className="article-form-top">
+                  <PopularStepper currentStep={step} hasDraftCopy={Boolean(draftCopy)} />
+                </div>
+                <ArticleImageConfigPanel
               form={form}
               ratios={ratios}
               imageCounts={imageCounts}
@@ -1784,6 +1817,8 @@ export function ArticleGenerationView({
               onBackStep={() => setStep(2)}
               onSubmitGeneration={submitGeneration}
             />
+              </div>
+            </>
           )}
           {submitError && <div className="article-error">{submitError}</div>}
         </aside>
@@ -1793,7 +1828,7 @@ export function ArticleGenerationView({
             <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
               {showStyleTemplatePreview
-                ? `${activeVisualStyleLabel}风格 · 4 款示意`
+                ? `${activeVisualStyleLabel}风格 · 6 款示意`
                 : `${form.platform} · ${form.ratio}`}
             </span>
           </header>

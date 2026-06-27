@@ -1,6 +1,7 @@
-import React from "react";
-import { AudioLines, FileAudio, FileText, Info, Music, Wand2 } from "lucide-react";
+import React, { useState } from "react";
+import { AudioLines, FileAudio, FileText, ImagePlus, Info, Music, Type, Wand2, X } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
+import { MusicCoverCropModal } from "./MusicCoverCropModal.jsx";
 import "./aiMusicGenerationWorkbenchCard.css";
 
 const styleTags = ["流行", "民谣", "嘻哈", "电子", "摇滚", "R&B", "古典", "轻音乐", "国风", "更多"];
@@ -16,6 +17,8 @@ function isStyleTagSelected(prompt, tag) {
 
 export function AiMusicGenerationWorkbenchCard({
   prompt,
+  title,
+  coverPreview,
   lyrics,
   isInstrumental,
   lyricsOptimizer,
@@ -25,6 +28,9 @@ export function AiMusicGenerationWorkbenchCard({
   notice,
   currentResult,
   onPromptChange,
+  onTitleChange,
+  onCoverChange,
+  onCoverRemove,
   onLyricsChange,
   onToggleInstrumental,
   onToggleLyricsOptimizer,
@@ -33,6 +39,8 @@ export function AiMusicGenerationWorkbenchCard({
   onDownloadMp3,
   onDownloadLyrics
 }) {
+  const [coverModalOpen, setCoverModalOpen] = useState(false);
+
   return (
     <section className="ai-music-workbench ai-music-workbench--ref">
       <div className="ai-music-workbench__card ai-music-workbench__studio">
@@ -85,6 +93,54 @@ export function AiMusicGenerationWorkbenchCard({
                   );
                 })}
               </div>
+            </div>
+
+            <label className="ai-music-workbench__field-title ai-music-workbench__field-title--compact">
+              <Type size={17} />
+              歌曲标题
+              <small>选填</small>
+            </label>
+            <div className="ai-music-workbench__title-input">
+              <input
+                type="text"
+                value={title}
+                onChange={(event) => onTitleChange(event.target.value)}
+                placeholder="为你的作品取个名字"
+                maxLength={100}
+                disabled={isGenerating}
+              />
+              <em>{title.length} / 100</em>
+            </div>
+
+            <label className="ai-music-workbench__field-title ai-music-workbench__field-title--compact">
+              <ImagePlus size={17} />
+              封面图片
+              <small>选填</small>
+            </label>
+            <div className="ai-music-workbench__cover-actions">
+              {coverPreview ? (
+                <div className="ai-music-workbench__cover-thumb">
+                  <img src={coverPreview} alt="封面预览" />
+                  <button
+                    type="button"
+                    className="ai-music-workbench__cover-thumb-remove"
+                    onClick={onCoverRemove}
+                    disabled={isGenerating}
+                    aria-label="移除封面"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="ai-music-workbench__cover-btn"
+                onClick={() => setCoverModalOpen(true)}
+                disabled={isGenerating}
+              >
+                <ImagePlus size={16} />
+                {coverPreview ? "更换封面" : "上传封面"}
+              </button>
             </div>
           </div>
 
@@ -150,6 +206,16 @@ export function AiMusicGenerationWorkbenchCard({
           </div>
         ) : null}
       </div>
+
+      <MusicCoverCropModal
+        open={coverModalOpen}
+        initialPreview={coverPreview}
+        onClose={() => setCoverModalOpen(false)}
+        onConfirm={(file) => {
+          onCoverChange(file);
+          setCoverModalOpen(false);
+        }}
+      />
     </section>
   );
 }

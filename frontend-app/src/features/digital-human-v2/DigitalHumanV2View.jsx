@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
+import { voiceApi } from "../voice/voiceApi";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { AvatarSelectionCard } from "./components/AvatarSelectionCard";
+import { VoiceDubbingModeCard, VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { ScriptCard } from "./components/ScriptCard";
-import { GenerateFooter } from "./components/GenerateFooter";
+import { GenerateFooter, VideoSpecField } from "./components/GenerateFooter";
 import { AvatarLibraryPanel } from "./components/AvatarLibraryPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
@@ -70,15 +72,20 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [toastMessage, setToastMessage] = useState("");
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
+  const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
+  const [cloneAudio, setCloneAudio] = useState(null);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
+  const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
+  const isCloneMode = isMineAvatar && voiceMode === VOICE_DUBBING_MODES.clone;
   const canGenerate = Boolean(
     selectedAvatar?.id &&
       text.trim() &&
       model &&
-      voiceId &&
-      isDigitalHumanVoiceEnabled(voiceId),
+      (isCloneMode
+        ? cloneAudio?.fileId || cloneAudio?.cachedVoice?.id
+        : voiceId && isDigitalHumanVoiceEnabled(voiceId)),
   );
 
   useEffect(() => {
@@ -108,10 +115,13 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   }
 
   function handleAvatarSourceChange(nextSource) {
+    if (nextSource !== "official") return;
     setAvatarSource(nextSource);
     setRightView("library");
     setActiveTask(null);
     setSelectedMineLibraryId(null);
+    setVoiceMode(VOICE_DUBBING_MODES.system);
+    setCloneAudio(null);
     if (nextSource === "mine") {
       const mineList = avatars.mine || [];
       const isOfficialSelection =
@@ -186,6 +196,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setVoiceId(pickEnabledVoiceId(voices));
     setVoiceSpeed(1);
     setVoiceEmotion("中性");
+    setVoiceMode(VOICE_DUBBING_MODES.system);
+    setCloneAudio(null);
     setActiveTask(null);
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
@@ -204,7 +216,14 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       showToast("请输入配音内容");
       return;
     }
-    if (!isDigitalHumanVoiceEnabled(voiceId)) {
+
+    let resolvedVoiceId = voiceId;
+    if (isCloneMode) {
+      if (!cloneAudio?.fileId && !cloneAudio?.cachedVoice?.id) {
+        showToast("请先上传参考音频");
+        return;
+      }
+    } else if (!isDigitalHumanVoiceEnabled(voiceId)) {
       showToast(VOICE_UNAVAILABLE_HINT);
       return;
     }
@@ -214,13 +233,34 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setRightView("preview");
     setActiveTask(null);
     try {
+      if (isCloneMode) {
+        if (cloneAudio.cachedVoice?.id) {
+          resolvedVoiceId = cloneAudio.cachedVoice.id;
+        } else {
+          const cloneResult = await voiceApi.createClone({
+            cloneAudioFileId: cloneAudio.fileId,
+            audioHash: cloneAudio.audioHash,
+            durationMs: cloneAudio.durationMs,
+            sourceFileName: cloneAudio.name,
+            sourceMimeType: cloneAudio.mimeType,
+            sourceSize: cloneAudio.size,
+            previewText: text.trim().slice(0, 200),
+            name: selectedAvatar.name ? `${selectedAvatar.name}专属音色` : "我的专属音色",
+          });
+          resolvedVoiceId = cloneResult?.voice?.id;
+          if (!resolvedVoiceId) {
+            throw new Error("音色克隆失败，请重试");
+          }
+        }
+      }
+
       const task = await digitalHumanApi.createTask({
         avatarId: selectedAvatar.id,
         avatarName: selectedAvatar.name,
         driveMode: "text",
         text: text.trim(),
         performance: "",
-        voiceId,
+        voiceId: resolvedVoiceId,
         model,
         speed: voiceSpeed,
         volume: 1,
@@ -389,9 +429,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
-      setAvatarSource("mine");
-      setRightView("library");
-      Message.info("请从右侧照片数字人记录中选择");
+      Message.info("开发中");
       return;
     }
     setCreateMode(mode);
@@ -464,46 +502,54 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
       <div className="dhv2-workspace">
         <aside className="dhv2-sidebar">
-          <AvatarSelectionCard
-            avatarSource={avatarSource}
-            onAvatarSourceChange={handleAvatarSourceChange}
-            selectedAvatar={selectedAvatar}
-            voices={voices}
-            voiceId={voiceId}
-            onVoiceIdChange={setVoiceId}
-            voiceSpeed={voiceSpeed}
-            onVoiceSpeedChange={setVoiceSpeed}
-            voiceEmotion={voiceEmotion}
-            onVoiceEmotionChange={setVoiceEmotion}
-            onOpenCreate={openCreateModal}
-          />
-          <ScriptCard
-            text={text}
-            onTextChange={setText}
-            onOptimizeRequest={handleScriptOptimizeRequest}
-            voiceId={voiceId}
-            voiceSpeed={voiceSpeed}
-            voiceEmotion={voiceEmotion}
-          />
+          <div className="dhv2-sidebar__scroll">
+            {!selectedAvatar ? (
+              <AvatarSelectionCard selectedAvatar={selectedAvatar} />
+            ) : null}
+            {selectedAvatar ? (
+              <VoiceDubbingModeCard
+                voiceMode={voiceMode}
+                onVoiceModeChange={setVoiceMode}
+                showCloneTab={isMineAvatar}
+                selectedAvatar={selectedAvatar}
+                voices={voices}
+                voiceId={voiceId}
+                onVoiceIdChange={setVoiceId}
+                voiceSpeed={voiceSpeed}
+                onVoiceSpeedChange={setVoiceSpeed}
+                voiceEmotion={voiceEmotion}
+                onVoiceEmotionChange={setVoiceEmotion}
+              />
+            ) : null}
+            <ScriptCard
+              text={text}
+              onTextChange={setText}
+              onOptimizeRequest={handleScriptOptimizeRequest}
+              voiceId={voiceId}
+              voiceSpeed={voiceSpeed}
+              voiceEmotion={voiceEmotion}
+              voiceMode={voiceMode}
+              showCloneUpload={isMineAvatar}
+              cloneAudio={cloneAudio}
+              onCloneAudioChange={setCloneAudio}
+            />
+            <VideoSpecField
+              videoSpec={videoSpec}
+              onVideoSpecChange={setVideoSpec}
+            />
+          </div>
           <GenerateFooter
-            videoSpec={videoSpec}
-            onVideoSpecChange={setVideoSpec}
             canGenerate={canGenerate}
             isSubmitting={isSubmitting}
+            isCloneMode={isCloneMode}
+            credits={credits?.balance}
             onGenerate={handleGenerate}
           />
-          {credits ? <p className="dhv2-credits">账户积分 {credits.balance}</p> : null}
         </aside>
 
         {showLibrary ? (
           <AvatarLibraryPanel
-            avatarSource={avatarSource}
-            onAvatarSourceChange={handleAvatarSourceChange}
             avatars={avatars}
-            tasks={tasks}
-            photoTasks={photoTasks}
-            selectedMineLibraryId={selectedMineLibraryId}
-            onSelectMineItem={handleSelectMineItem}
             selectedAvatar={selectedAvatar}
             voices={voices}
             voiceId={voiceId}
@@ -518,8 +564,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             onFillModeChange={setFillMode}
             onSelectAvatar={handleSelectAvatar}
             onConfirmAvatar={handleConfirmAvatar}
-            onClose={() => setRightView("preview")}
-            onCreateAvatar={openCreateModal}
           />
         ) : (
           <PreviewPanel

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Heart, Loader2, LockKeyhole, Mic, Music, Star, Trash2 } from "lucide-react";
 import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
+import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceApi } from "../voice/voiceApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
@@ -13,6 +14,13 @@ import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
 const maxCloneAudioBytes = 20 * 1024 * 1024;
+
+const SYNTHESIS_STAGE_TEXTS = [
+  "正在读取目标音色",
+  "正在分析文本内容",
+  "正在进行语音合成",
+  "正在生成音频文件",
+];
 
 function formatVoiceDuration(ms) {
   const seconds = Math.round(Number(ms || 0) / 1000);
@@ -95,6 +103,9 @@ export function VoiceSynthesisView({
   const [pitch, setPitch] = useState(0);
   const [isCloning, setIsCloning] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
+  const [synthesisProgress, setSynthesisProgress] = useState(0);
+  const [synthesisStageText, setSynthesisStageText] = useState("");
+  const [showSynthesisComplete, setShowSynthesisComplete] = useState(false);
   const [currentVoice, setCurrentVoice] = useState(null);
   const [voices, setVoices] = useState([]);
   const [demoAudio, setDemoAudio] = useState("");
@@ -107,6 +118,8 @@ export function VoiceSynthesisView({
   const [toast, setToast] = useState(null);
   const toastTimerRef = useRef(null);
   const uploadVersionRef = useRef(0);
+  const synthesisProgressTimerRef = useRef(null);
+  const synthesisStageTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function showToast(type, message) {
@@ -164,6 +177,9 @@ export function VoiceSynthesisView({
     setPitch(0);
     setIsCloning(false);
     setIsSynthesizing(false);
+    setSynthesisProgress(0);
+    setSynthesisStageText("");
+    setShowSynthesisComplete(false);
     setCurrentVoice(null);
     setDemoAudio("");
     setResultAudio("");
@@ -180,6 +196,8 @@ export function VoiceSynthesisView({
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (synthesisProgressTimerRef.current) window.clearInterval(synthesisProgressTimerRef.current);
+    if (synthesisStageTimerRef.current) window.clearInterval(synthesisStageTimerRef.current);
   }, []);
 
   async function uploadFile(file) {
@@ -272,6 +290,41 @@ export function VoiceSynthesisView({
     }
   }
 
+  function startSynthesisProgress() {
+    setSynthesisProgress(6);
+    setSynthesisStageText(SYNTHESIS_STAGE_TEXTS[0]);
+    setShowSynthesisComplete(false);
+
+    if (synthesisProgressTimerRef.current) window.clearInterval(synthesisProgressTimerRef.current);
+    if (synthesisStageTimerRef.current) window.clearInterval(synthesisStageTimerRef.current);
+
+    synthesisProgressTimerRef.current = window.setInterval(() => {
+      setSynthesisProgress((prev) => {
+        if (prev >= 90) return prev;
+        const increment = Math.random() * 1.2 + 0.3;
+        return Math.min(90, Math.round((prev + increment) * 10) / 10);
+      });
+    }, 220);
+
+    synthesisStageTimerRef.current = window.setInterval(() => {
+      setSynthesisStageText((prev) => {
+        const idx = SYNTHESIS_STAGE_TEXTS.indexOf(prev);
+        return SYNTHESIS_STAGE_TEXTS[(idx + 1) % SYNTHESIS_STAGE_TEXTS.length];
+      });
+    }, 2800);
+  }
+
+  function stopSynthesisProgress() {
+    if (synthesisProgressTimerRef.current) {
+      window.clearInterval(synthesisProgressTimerRef.current);
+      synthesisProgressTimerRef.current = null;
+    }
+    if (synthesisStageTimerRef.current) {
+      window.clearInterval(synthesisStageTimerRef.current);
+      synthesisStageTimerRef.current = null;
+    }
+  }
+
   async function generateSpeech() {
     if (isGuest) {
       requestLoginForGeneration();
@@ -287,11 +340,19 @@ export function VoiceSynthesisView({
       return;
     }
 
-    const voice = await ensureVoiceClone();
-    if (!voice?.id) return;
-
     setNotice("");
     setIsSynthesizing(true);
+    startSynthesisProgress();
+
+    const voice = await ensureVoiceClone();
+    if (!voice?.id) {
+      stopSynthesisProgress();
+      setIsSynthesizing(false);
+      setSynthesisProgress(0);
+      setSynthesisStageText("");
+      return;
+    }
+
     try {
       const result = await voiceApi.synthesize({
         voiceId: voice.id,
@@ -301,6 +362,16 @@ export function VoiceSynthesisView({
         volume,
         pitch
       });
+
+      stopSynthesisProgress();
+      setSynthesisProgress(100);
+      setSynthesisStageText(SYNTHESIS_STAGE_TEXTS[SYNTHESIS_STAGE_TEXTS.length - 1]);
+      setShowSynthesisComplete(true);
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+
       const fileName = makeVoiceDownloadName();
       setResultAudio(result.audioDataUrl);
       setResultUrl(result.audioUrl || "");
@@ -318,10 +389,14 @@ export function VoiceSynthesisView({
       showToast("success", "语音生成成功");
       setNotice("语音生成完成。");
     } catch (error) {
+      stopSynthesisProgress();
       showToast("error", "语音生成失败，请稍后重试");
       setNotice(error.message || "语音生成失败");
     } finally {
       setIsSynthesizing(false);
+      setShowSynthesisComplete(false);
+      setSynthesisProgress(0);
+      setSynthesisStageText("");
     }
   }
 
@@ -370,6 +445,7 @@ export function VoiceSynthesisView({
       message: "该语音生成记录会被移除，删除后无法恢复。",
     });
   const showRechargeAlert = isRechargeRequiredMessage(notice);
+  const showLoadingView = isSynthesizing || showSynthesisComplete;
 
   function closeRechargeAlert() {
     setNotice("");
@@ -397,7 +473,7 @@ export function VoiceSynthesisView({
             <div className="voice-hero-empty">
               <h1>语音合成</h1>
               <p>上传目标音色并输入文本，一键生成专属语音</p>
-              {currentVoice && (
+              {currentVoice && !showLoadingView && (
                 <div className="voice-current-chip">
                   <CheckCircle2 size={16} />
                   当前音色：{currentVoice.name}
@@ -405,7 +481,7 @@ export function VoiceSynthesisView({
               )}
             </div>
 
-            {voices.length > 0 && (
+            {!showLoadingView && voices.length > 0 && (
               <div className="voice-cloned-list">
                 {voices.slice(0, 4).map((voice) => (
                   <button
@@ -421,36 +497,49 @@ export function VoiceSynthesisView({
               </div>
             )}
 
-            <VoiceSynthesisWorkbenchCard
-              cloneAudio={cloneAudio}
-              currentVoice={currentVoice}
-              voices={voices}
-              text={text}
-              speed={speed}
-              volume={volume}
-              pitch={pitch}
-              uploading={uploading === "clone"}
-              isGenerating={isCloning || isSynthesizing}
-              notice={notice}
-              demoAudio={demoAudio}
-              resultAudio={resultAudio}
-              onPickCloneAudio={uploadFile}
-              onClearCloneAudio={clearCloneAudio}
-              onTextChange={setText}
-              onClearText={() => setText("")}
-              onPasteText={pasteText}
-              onInsertPause={insertPause}
-              onSpeedChange={setSpeed}
-              onVolumeChange={setVolume}
-              onPitchChange={setPitch}
-              onSelectVoice={setCurrentVoice}
-              onGenerate={generateSpeech}
-              onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
-            />
-            <div className="voice-privacy-note">
-              <LockKeyhole size={15} />
-              <span>音色数据仅用于当前语音生成流程，不在组件内额外持久化原始上传文件。</span>
-            </div>
+            {showLoadingView ? (
+              <VoiceConversionLoading
+                title="正在合成音色"
+                completeTitle="语音合成完成"
+                progressLabel="合成进度"
+                progress={synthesisProgress}
+                stageText={synthesisStageText}
+                isComplete={showSynthesisComplete}
+              />
+            ) : (
+              <>
+                <VoiceSynthesisWorkbenchCard
+                  cloneAudio={cloneAudio}
+                  currentVoice={currentVoice}
+                  voices={voices}
+                  text={text}
+                  speed={speed}
+                  volume={volume}
+                  pitch={pitch}
+                  uploading={uploading === "clone"}
+                  isGenerating={isCloning || isSynthesizing}
+                  notice={notice}
+                  demoAudio={demoAudio}
+                  resultAudio={resultAudio}
+                  onPickCloneAudio={uploadFile}
+                  onClearCloneAudio={clearCloneAudio}
+                  onTextChange={setText}
+                  onClearText={() => setText("")}
+                  onPasteText={pasteText}
+                  onInsertPause={insertPause}
+                  onSpeedChange={setSpeed}
+                  onVolumeChange={setVolume}
+                  onPitchChange={setPitch}
+                  onSelectVoice={setCurrentVoice}
+                  onGenerate={generateSpeech}
+                  onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
+                />
+                <div className="voice-privacy-note">
+                  <LockKeyhole size={15} />
+                  <span>音色数据仅用于当前语音生成流程，不在组件内额外持久化原始上传文件。</span>
+                </div>
+              </>
+            )}
           </>
         )}
 

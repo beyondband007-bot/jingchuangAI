@@ -12,7 +12,8 @@ export const musicApi = {
     const items = await request("/api/music/tasks");
     return items.map((item) => ({
       ...item,
-      audioUrl: toApiUrl(item.audioUrl)
+      audioUrl: toApiUrl(item.audioUrl),
+      coverUrl: toApiUrl(item.coverUrl)
     }));
   },
 
@@ -20,19 +21,21 @@ export const musicApi = {
     const item = await request(`/api/music/tasks/${encodeURIComponent(id)}`);
     return {
       ...item,
-      audioUrl: toApiUrl(item.audioUrl)
+      audioUrl: toApiUrl(item.audioUrl),
+      coverUrl: toApiUrl(item.coverUrl)
     };
   },
 
-  async generate({ prompt, lyrics, model = "music-2.6-free", isInstrumental, lyricsOptimizer }) {
+  async generate({ prompt, title, cover, lyrics, model = "music-2.6-free", isInstrumental, lyricsOptimizer }) {
     const result = await request("/api/music/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, lyrics, model, isInstrumental, lyricsOptimizer })
+      body: JSON.stringify({ prompt, title, cover, lyrics, model, isInstrumental, lyricsOptimizer })
     });
     return {
       ...result,
-      audioUrl: toApiUrl(result.audioUrl)
+      audioUrl: toApiUrl(result.audioUrl),
+      coverUrl: toApiUrl(result.coverUrl)
     };
   },
 
@@ -47,5 +50,18 @@ export const musicApi = {
     return request(`/api/music/tasks/${encodeURIComponent(id)}`, {
       method: "DELETE"
     });
+  },
+
+  async updateTaskCover(id, cover) {
+    const item = await request(`/api/music/tasks/${encodeURIComponent(id)}/cover`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cover })
+    });
+    return {
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl),
+      coverUrl: toApiUrl(item.coverUrl)
+    };
   }
 };

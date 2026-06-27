@@ -26,16 +26,9 @@ export function getActiveLyricIndex(timeline, currentTimeSec) {
   return activeIndex;
 }
 
-export function getLineProgress(line, currentMs) {
-  const start = Number(line?.startMs);
-  const end = Number(line?.endMs);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
-  if (currentMs <= start) return 0;
-  if (currentMs >= end) return 1;
-  return (currentMs - start) / (end - start);
-}
-
 export function getLyricSubtitle(item) {
+  const customTitle = String(item?.title || "").trim();
+  if (customTitle) return customTitle;
   const timeline = item?.lyricsTimeline || [];
   if (timeline[0]?.text) return timeline[0].text;
   const firstLine = String(item?.lyrics || "").split(/\r?\n/).map((t) => t.trim()).find(Boolean);
