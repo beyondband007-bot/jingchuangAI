@@ -6,9 +6,7 @@ import { voiceApi } from "../../voice/voiceApi";
 import {
   SCRIPT_MAX_LENGTH,
   VOICE_UNAVAILABLE_HINT,
-  estimateSpeechSeconds,
   formatSpeechDurationFromMs,
-  formatVoiceDuration,
   getVoiceEmotionValue,
   isDigitalHumanVoiceEnabled,
 } from "../utils";
@@ -40,7 +38,6 @@ export function ScriptCard({
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isUploadingClone, setIsUploadingClone] = useState(false);
-  const estimatedSeconds = estimateSpeechSeconds(text);
   const canOptimize = Boolean(selection.text.trim());
   const isCloneMode = showCloneUpload && voiceMode === VOICE_DUBBING_MODES.clone;
 
@@ -243,11 +240,6 @@ export function ScriptCard({
     }
   }
 
-  function handleBlur() {
-    if (!text.trim()) return;
-    previewScript({ shouldPlay: false });
-  }
-
   function handlePreviewClick() {
     if (isPlaying) {
       audioRef.current?.pause();
@@ -347,7 +339,6 @@ export function ScriptCard({
           onSelect={syncSelection}
           onMouseUp={syncSelection}
           onKeyUp={syncSelection}
-          onBlur={handleBlur}
         />
         <button
           type="button"
@@ -361,39 +352,31 @@ export function ScriptCard({
         </button>
       </div>
 
-      <button
-        type="button"
-        className={`dhv2-script-preview${previewDurationMs ? " has-duration" : ""}${
-          isPlaying ? " is-playing" : ""
-        }`}
-        disabled={isPreviewing || !text.trim() || isCloneMode}
-        aria-label={isPlaying ? "暂停试听" : "播放试听"}
-        onClick={handlePreviewClick}
-      >
-        <span className="dhv2-script-preview__icon" aria-hidden="true">
-          {isPreviewing ? (
-            <Loader2 size={12} className="dhv2-spinner" />
-          ) : isPlaying ? (
-            <Pause size={12} fill="currentColor" />
-          ) : (
-            <Play size={12} fill="currentColor" />
-          )}
-        </span>
-        <span>{isPreviewing ? "正在生成试听..." : durationLabel}</span>
-      </button>
-
-      <footer className="dhv2-script-meta">
-        <span>
-          {previewDurationMs
-            ? `试听时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
-            : isCloneMode && cloneAudio?.durationMs
-              ? `参考音频 ${formatSpeechDurationFromMs(cloneAudio.durationMs)}`
-              : `预估时长 ${formatVoiceDuration(estimatedSeconds)}`}
-        </span>
-        <span>
+      <div className="dhv2-script-preview-row">
+        <button
+          type="button"
+          className={`dhv2-script-preview${previewDurationMs ? " has-duration" : ""}${
+            isPlaying ? " is-playing" : ""
+          }`}
+          disabled={isPreviewing || !text.trim() || isCloneMode}
+          aria-label={isPlaying ? "暂停试听" : "播放试听"}
+          onClick={handlePreviewClick}
+        >
+          <span className="dhv2-script-preview__icon" aria-hidden="true">
+            {isPreviewing ? (
+              <Loader2 size={12} className="dhv2-spinner" />
+            ) : isPlaying ? (
+              <Pause size={12} fill="currentColor" />
+            ) : (
+              <Play size={12} fill="currentColor" />
+            )}
+          </span>
+          <span>{isPreviewing ? "正在生成试听..." : durationLabel}</span>
+        </button>
+        <span className="dhv2-script-count">
           {text.length} / {SCRIPT_MAX_LENGTH}
         </span>
-      </footer>
+      </div>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, Loader2, MoreHorizontal, Music, Play, Trash2 } from "lucide-react";
+import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Play, Trash2 } from "lucide-react";
+import { getLyricSubtitle } from "./musicPlayerUtils";
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return "00:00";
@@ -38,6 +39,7 @@ export function MusicRecentGrid({
   generatingId = "",
   onSelectItem,
   onDownloadItem,
+  onEditCoverItem,
   onDeleteItem,
   emptyText = "还没有生成过音乐，快来创作第一首吧 ✨"
 }) {
@@ -84,21 +86,26 @@ export function MusicRecentGrid({
             <button
               type="button"
               className="music-ref-recent-cover"
-              style={{ background: generateCoverGradient(item.id) }}
+              style={item.coverUrl ? undefined : { background: generateCoverGradient(item.id) }}
               onClick={(event) => {
                 event.stopPropagation();
                 if (!isGenerating) onSelectItem?.(item);
               }}
               disabled={isGenerating}
-              aria-label={`打开 ${item.prompt || "AI 音乐"} 播放器`}
+              aria-label={`打开 ${getLyricSubtitle(item)} 播放器`}
             >
-              <Music size={28} />
+              {item.coverUrl ? (
+                <img src={item.coverUrl} alt="" className="music-ref-recent-cover-image" />
+              ) : (
+                <Music size={28} />
+              )}
             </button>
             <div className="music-ref-recent-body">
               <div className="music-ref-recent-main">
-                <strong>{item.prompt || "AI 音乐"}</strong>
+                <strong>{getLyricSubtitle(item)}</strong>
                 <span>
                   {item.isInstrumental ? "纯音乐" : "带歌词"}
+                  {!item.title && item.prompt ? ` · ${item.prompt}` : ""}
                   {item.durationMs ? ` · ${formatDuration(item.durationMs)}` : ""}
                 </span>
               </div>
@@ -143,6 +150,18 @@ export function MusicRecentGrid({
                       </button>
                       {isMenuOpen ? (
                         <div className="music-ref-recent-menu" role="menu">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenMenuId(null);
+                              onEditCoverItem?.(item);
+                            }}
+                          >
+                            <ImagePlus size={14} />
+                            编辑封面
+                          </button>
                           <button
                             type="button"
                             role="menuitem"

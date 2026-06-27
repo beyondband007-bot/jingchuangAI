@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Heart, Loader2, Mic, Music, Star, Trash2 } from "lucide-react";
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
+import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
@@ -14,6 +15,13 @@ import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 const maxTargetAudioBytes = 20 * 1024 * 1024;
 const maxSourceAudioBytes = 50 * 1024 * 1024;
+
+const CONVERSION_STAGE_TEXTS = [
+  "正在读取目标音色特征",
+  "正在分析源音频内容",
+  "正在进行音色匹配",
+  "正在生成转换后的音频",
+];
 
 function formatVoiceDuration(ms) {
   const seconds = Math.round(Number(ms || 0) / 1000);
@@ -95,6 +103,9 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const [volume, setVolume] = useState(1);
   const [pitch, setPitch] = useState(0);
   const [isConverting, setIsConverting] = useState(false);
+  const [conversionProgress, setConversionProgress] = useState(0);
+  const [conversionStageText, setConversionStageText] = useState("");
+  const [showConversionComplete, setShowConversionComplete] = useState(false);
   const [currentVoice, setCurrentVoice] = useState(null);
   const [demoAudio, setDemoAudio] = useState("");
   const [resultAudio, setResultAudio] = useState("");
@@ -107,6 +118,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const toastTimerRef = useRef(null);
   const targetUploadVersionRef = useRef(0);
   const sourcePickVersionRef = useRef(0);
+  const progressTimerRef = useRef(null);
+  const stageTimerRef = useRef(null);
 
   function showToast(type, message) {
     setToast({ type, message });
@@ -148,6 +161,9 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     setVolume(1);
     setPitch(0);
     setIsConverting(false);
+    setConversionProgress(0);
+    setConversionStageText("");
+    setShowConversionComplete(false);
     setCurrentVoice(null);
     setDemoAudio("");
     setResultAudio("");
@@ -164,6 +180,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
 
   useEffect(() => () => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (progressTimerRef.current) window.clearInterval(progressTimerRef.current);
+    if (stageTimerRef.current) window.clearInterval(stageTimerRef.current);
   }, []);
 
   async function uploadTargetFile(file) {
@@ -243,6 +261,41 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     }
   }
 
+  function startConversionProgress() {
+    setConversionProgress(6);
+    setConversionStageText(CONVERSION_STAGE_TEXTS[0]);
+    setShowConversionComplete(false);
+
+    if (progressTimerRef.current) window.clearInterval(progressTimerRef.current);
+    if (stageTimerRef.current) window.clearInterval(stageTimerRef.current);
+
+    progressTimerRef.current = window.setInterval(() => {
+      setConversionProgress((prev) => {
+        if (prev >= 90) return prev;
+        const increment = Math.random() * 1.2 + 0.3;
+        return Math.min(90, Math.round((prev + increment) * 10) / 10);
+      });
+    }, 220);
+
+    stageTimerRef.current = window.setInterval(() => {
+      setConversionStageText((prev) => {
+        const idx = CONVERSION_STAGE_TEXTS.indexOf(prev);
+        return CONVERSION_STAGE_TEXTS[(idx + 1) % CONVERSION_STAGE_TEXTS.length];
+      });
+    }, 2800);
+  }
+
+  function stopConversionProgress() {
+    if (progressTimerRef.current) {
+      window.clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
+    if (stageTimerRef.current) {
+      window.clearInterval(stageTimerRef.current);
+      stageTimerRef.current = null;
+    }
+  }
+
   async function convertVoice() {
     if (!targetAudio?.fileId) {
       setNotice("请先上传目标音色。");
@@ -255,6 +308,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
 
     setNotice("");
     setIsConverting(true);
+    startConversionProgress();
+
     try {
       const result = await voiceConvertApi.convert({
         sourceAudio: sourceAudio.file,
@@ -266,6 +321,16 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
         volume,
         pitch
       });
+
+      stopConversionProgress();
+      setConversionProgress(100);
+      setConversionStageText(CONVERSION_STAGE_TEXTS[CONVERSION_STAGE_TEXTS.length - 1]);
+      setShowConversionComplete(true);
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+
       const fileName = makeVoiceDownloadName();
       setCurrentVoice(result.voice);
       setDemoAudio(result.demoAudio || "");
@@ -287,10 +352,14 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
       showToast("success", "音色转换成功");
       setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速。" : "转换完成。");
     } catch (error) {
+      stopConversionProgress();
       showToast("error", "音色转换失败，请稍后重试");
       setNotice(error.message || "音色转换失败");
     } finally {
       setIsConverting(false);
+      setShowConversionComplete(false);
+      setConversionProgress(0);
+      setConversionStageText("");
     }
   }
 
@@ -330,6 +399,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     onOpenFeature?.("billing");
   }
 
+  const showLoadingView = isConverting || showConversionComplete;
+
   return (
     <section className="voice-conversion-view-root voice-convert-view-root">
       <div className="image-filter-tabs voice-filter-tabs">
@@ -347,7 +418,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
             <div className="voice-hero-empty">
               <h1>音色转换</h1>
               <p>上传目标音色和源音频，自动提取内容并转换成目标声音。</p>
-              {currentVoice && (
+              {currentVoice && !showLoadingView && (
                 <div className="voice-current-chip">
                   <CheckCircle2 size={16} />
                   当前音色：{currentVoice.name}
@@ -355,26 +426,33 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
               )}
             </div>
 
-            <VoiceConversionWorkbenchCard
-              targetAudio={targetAudio}
-              sourceAudio={sourceAudio}
-              speed={speed}
-              volume={volume}
-              pitch={pitch}
-              notice={notice}
-              isConverting={isConverting}
-              demoAudio={demoAudio}
-              resultAudio={resultAudio}
-              onPickTarget={uploadTargetFile}
-              onClearTarget={clearTargetAudio}
-              onPickSource={pickSourceFile}
-              onClearSource={clearSourceAudio}
-              onSpeedChange={setSpeed}
-              onVolumeChange={setVolume}
-              onPitchChange={setPitch}
-              onConvert={convertVoice}
-              onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
-            />
+            {showLoadingView ? (
+              <VoiceConversionLoading
+                progress={conversionProgress}
+                stageText={conversionStageText}
+                isComplete={showConversionComplete}
+              />
+            ) : (
+              <VoiceConversionWorkbenchCard
+                targetAudio={targetAudio}
+                sourceAudio={sourceAudio}
+                speed={speed}
+                volume={volume}
+                pitch={pitch}
+                notice={notice}
+                demoAudio={demoAudio}
+                resultAudio={resultAudio}
+                onPickTarget={uploadTargetFile}
+                onClearTarget={clearTargetAudio}
+                onPickSource={pickSourceFile}
+                onClearSource={clearSourceAudio}
+                onSpeedChange={setSpeed}
+                onVolumeChange={setVolume}
+                onPitchChange={setPitch}
+                onConvert={convertVoice}
+                onDownloadResult={() => downloadResult({ audioDataUrl: resultAudio, audioUrl: resultUrl, fileName: resultFileName })}
+              />
+            )}
           </>
         )}
 

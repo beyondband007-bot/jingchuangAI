@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ModelOptionContent } from "./modelOptionMeta.jsx";
 
 function RatioPreviewIcon({ ratio, selected = false }) {
   const [width = 1, height = 1] = String(ratio || "1:1")
@@ -399,23 +400,41 @@ export function VideoPromptDialog({
             </button>
 
             {showModelDropdown && (
-              <div style={dropdownMenuStyle(200)}>
-                {modelOptions.map((item) => (
-                  <div
-                    key={item.value}
-                    onClick={() => {
-                      onModelChange(item.value);
-                      setShowModelDropdown(false);
-                    }}
-                    style={{
-                      ...dropdownItemStyle(item.value === model ? "#8f78ff" : "#cccccc", item.value === model)
-                    }}
-                    onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem(item.value === model ? "#8f78ff" : "#cccccc", item.value === model)}
-                  >
-                    {item.label}
-                  </div>
-                ))}
+              <div
+                style={{
+                  ...dropdownMenuStyle(480),
+                  minWidth: "480px",
+                  maxWidth: "calc(100vw - 48px)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  zIndex: 140
+                }}
+              >
+                {modelOptions.map((item) => {
+                  const isSelected = item.value === model;
+
+                  return (
+                    <div
+                      key={item.value}
+                      onClick={() => {
+                        onModelChange(item.value);
+                        setShowModelDropdown(false);
+                      }}
+                      style={{
+                        ...dropdownItemStyle(isSelected ? "#8f78ff" : "#cccccc", isSelected),
+                        alignItems: "center",
+                        justifyContent: "flex-start",
+                        gap: "10px",
+                        padding: "8px 10px"
+                      }}
+                      onMouseEnter={highlightDropdownItem}
+                      onMouseLeave={resetDropdownItem(isSelected ? "#8f78ff" : "#cccccc", isSelected)}
+                    >
+                      <ModelOptionContent item={item} selected={isSelected} />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

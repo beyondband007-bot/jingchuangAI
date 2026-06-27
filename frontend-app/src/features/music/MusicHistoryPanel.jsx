@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile, resolveMediaUrl } from "../../api/mediaUrl.js";
-import { attachAudioElement, getActiveLyricIndex, getLineProgress, getLyricSubtitle } from "./musicPlayerUtils";
+import { attachAudioElement, getActiveLyricIndex, getLyricSubtitle } from "./musicPlayerUtils";
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5, 2];
 
@@ -40,22 +40,16 @@ async function downloadAudioUrl(audioUrl, fileName) {
   await downloadMediaFile(audioUrl, fileName);
 }
 
-function LyricLine({ line, isActive, progress, isNear }) {
-  if (!isActive) {
-    return (
-      <p className={`music-expanded-lyric-line${isNear ? " is-near" : ""}`}>
-        {line.text}
-      </p>
-    );
-  }
-
-  const chars = [...String(line.text || "")];
-  const highlightCount = Math.max(0, Math.min(chars.length, Math.floor(chars.length * progress)));
+function LyricLine({ line, isActive, isNear }) {
+  const className = [
+    "music-expanded-lyric-line",
+    isActive ? "is-active" : "",
+    !isActive && isNear ? "is-near" : "",
+  ].filter(Boolean).join(" ");
 
   return (
-    <p className="music-expanded-lyric-line is-active">
-      <span className="music-expanded-lyric-sung">{chars.slice(0, highlightCount).join("")}</span>
-      <span className="music-expanded-lyric-unsung">{chars.slice(highlightCount).join("")}</span>
+    <p className={className}>
+      {line.text}
     </p>
   );
 }
@@ -105,7 +99,6 @@ export function MusicHistoryPanel({
     [timeline]
   );
   const prevTimelineKeyRef = useRef("");
-  const currentMs = currentTime * 1000;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const canPlayAudio = Boolean(playbackUrl) && audioState !== "error";
   const isAudioLoading = Boolean(playbackUrl) && audioState === "idle";
@@ -490,13 +483,12 @@ export function MusicHistoryPanel({
               ) : timeline.length ? timeline.map((line, index) => {
                 const isActive = index === activeLyricIndex;
                 const isNear = Math.abs(index - activeLyricIndex) === 1;
-                const progress = isActive ? getLineProgress(line, currentMs) : 0;
                 return (
                   <div
                     key={`${activeItem.id}-${line.lineIndex ?? index}`}
                     ref={isActive ? activeLineRef : null}
                   >
-                    <LyricLine line={line} isActive={isActive} isNear={isNear} progress={progress} />
+                    <LyricLine line={line} isActive={isActive} isNear={isNear} />
                   </div>
                 );
               }) : (

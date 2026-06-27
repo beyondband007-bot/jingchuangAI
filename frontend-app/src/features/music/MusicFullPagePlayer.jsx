@@ -23,7 +23,6 @@ import {
   attachAudioElement,
   formatAudioTime,
   getActiveLyricIndex,
-  getLineProgress,
   getLyricSubtitle
 } from "./musicPlayerUtils";
 import { MusicImmersiveStage } from "./MusicImmersiveStage";
@@ -65,22 +64,16 @@ async function downloadAudioUrl(audioUrl, fileName) {
   await downloadMediaFile(audioUrl, fileName);
 }
 
-function LyricLine({ line, isActive, progress, isNear }) {
-  if (!isActive) {
-    return (
-      <p className={`music-full-player__lyric-line${isNear ? " is-near" : ""}`}>
-        {line.text}
-      </p>
-    );
-  }
-
-  const chars = [...String(line.text || "")];
-  const highlightCount = Math.max(0, Math.min(chars.length, Math.floor(chars.length * progress)));
+function LyricLine({ line, isActive, isNear }) {
+  const className = [
+    "music-full-player__lyric-line",
+    isActive ? "is-active" : "",
+    !isActive && isNear ? "is-near" : "",
+  ].filter(Boolean).join(" ");
 
   return (
-    <p className="music-full-player__lyric-line is-active">
-      <span className="music-full-player__lyric-sung">{chars.slice(0, highlightCount).join("")}</span>
-      <span className="music-full-player__lyric-unsung">{chars.slice(highlightCount).join("")}</span>
+    <p className={className}>
+      {line.text}
     </p>
   );
 }
@@ -314,7 +307,6 @@ export function MusicFullPagePlayer({
     [timeline]
   );
   const prevTimelineKeyRef = useRef("");
-  const currentMs = currentTime * 1000;
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const isLyricsSyncing = item?.lyricsSyncStatus === "processing";
   const title = getLyricSubtitle(item);
@@ -550,10 +542,9 @@ export function MusicFullPagePlayer({
                 timeline.map((line, index) => {
                   const isActive = index === activeLyricIndex;
                   const isNear = Math.abs(index - activeLyricIndex) <= 2;
-                  const progress = isActive ? getLineProgress(line, currentMs) : 0;
                   return (
                     <div key={`${item.id}-${line.lineIndex ?? index}`} ref={isActive ? activeLineRef : null}>
-                      <LyricLine line={line} isActive={isActive} isNear={isNear} progress={progress} />
+                      <LyricLine line={line} isActive={isActive} isNear={isNear} />
                     </div>
                   );
                 })
@@ -592,8 +583,15 @@ export function MusicFullPagePlayer({
 
         <div className="music-full-player__controls">
           <div className="music-full-player__now-playing">
-            <div className="music-full-player__cover-mini" style={{ background: generateCoverGradient(item.id) }}>
-              <Music size={18} />
+            <div
+              className="music-full-player__cover-mini"
+              style={item.coverUrl ? undefined : { background: generateCoverGradient(item.id) }}
+            >
+              {item.coverUrl ? (
+                <img src={item.coverUrl} alt="" className="music-full-player__cover-mini-image" />
+              ) : (
+                <Music size={18} />
+              )}
             </div>
             <div className="music-full-player__song-name">
               <strong>{title}</strong>

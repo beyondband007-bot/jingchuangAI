@@ -11,6 +11,37 @@ import {
   Star,
 } from "lucide-react";
 
+/** 笔记预览中竖图展示上限（宽/高），高于此比例的竖图（如 9:16）缩放在 3:4 框内 */
+const NOTE_PREVIEW_MAX_PORTRAIT_RATIO = 3 / 4;
+
+function parseRatioString(ratioStr) {
+  if (!ratioStr || typeof ratioStr !== "string") return null;
+  const [width, height] = ratioStr.split(":").map(Number);
+  if (!width || !height) return null;
+  return { width, height };
+}
+
+function getNotePreviewDisplayAspect(naturalWidth, naturalHeight, ratioFallback) {
+  let width = naturalWidth;
+  let height = naturalHeight;
+
+  if (!width || !height) {
+    const parsed = parseRatioString(ratioFallback);
+    if (parsed) {
+      width = parsed.width;
+      height = parsed.height;
+    } else {
+      return { width: 3, height: 4, isCapped: false };
+    }
+  }
+
+  if (width / height < NOTE_PREVIEW_MAX_PORTRAIT_RATIO) {
+    return { width: 3, height: 4, isCapped: true };
+  }
+
+  return { width, height, isCapped: false };
+}
+
 function probeImageRatio(src) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -76,6 +107,7 @@ function useImageRatios(images) {
  *   activeIndex: number,
  *   onActiveIndexChange: (index: number) => void,
  *   stageClassName?: string,
+ *   ratioFallback?: string,
  * }} props
  */
 export function ArticleXhsNotePreview({
@@ -89,6 +121,7 @@ export function ArticleXhsNotePreview({
   activeIndex,
   onActiveIndexChange,
   stageClassName = "",
+  ratioFallback,
 }) {
   const carouselRef = useRef(null);
   const slideRefs = useRef([]);
@@ -252,12 +285,20 @@ export function ArticleXhsNotePreview({
             >
               {images.map((item, index) => {
                 const ratio = ratioById[item.id];
-                const aspectRatio = ratio
-                  ? `${ratio.width} / ${ratio.height}`
-                  : "3 / 4";
+                const display = getNotePreviewDisplayAspect(
+                  ratio?.width,
+                  ratio?.height,
+                  ratioFallback,
+                );
+                const aspectRatio = `${display.width} / ${display.height}`;
                 return (
                   <figure
-                    className="xhs-note-image-wrap"
+                    className={[
+                      "xhs-note-image-wrap",
+                      display.isCapped ? "is-aspect-capped" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
                     style={{ aspectRatio }}
                     key={item.id}
                     ref={(node) => {

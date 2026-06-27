@@ -23,14 +23,12 @@ export function VoiceDubbingModeCard({
 
   return (
     <section className="dhv2-card dhv2-voice-mode-card" aria-label="配音选型">
-      <header className="dhv2-card__head">
-        <h2>{showCloneTab ? "配音选型" : "绑定音色"}</h2>
-        <p>
-          {showCloneTab
-            ? "选择系统音色，或上传参考音频进行音色克隆"
-            : "系统已根据形象特征自动推荐音色"}
-        </p>
-      </header>
+      {showCloneTab ? (
+        <header className="dhv2-card__head">
+          <h2>配音选型</h2>
+          <p>选择系统音色，或上传参考音频进行音色克隆</p>
+        </header>
+      ) : null}
 
       {showCloneTab ? (
         <div className="dhv2-segmented-tabs dhv2-voice-mode-tabs" role="tablist" aria-label="配音方式">
