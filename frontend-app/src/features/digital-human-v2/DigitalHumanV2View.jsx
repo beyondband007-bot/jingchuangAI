@@ -36,8 +36,7 @@ import {
 } from "./utils";
 import "./digitalHumanV2.css";
 
-const DEFAULT_SCRIPT =
-  "大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。";
+const DEFAULT_SCRIPT = "";
 
 export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const {
@@ -159,7 +158,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
       setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
       setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
-      setText(item.text || item.task?.text || DEFAULT_SCRIPT);
+      setText(item.text || item.task?.text || "");
       setActiveTask(null);
       return;
     }
@@ -175,7 +174,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
       setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
       setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
-      setText(item.text || item.task?.text || DEFAULT_SCRIPT);
+      setText(item.text || item.task?.text || "");
       setActiveTask(null);
       return;
     }
@@ -485,7 +484,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setVoiceId(pickEnabledVoiceId(voices, draft.voiceId));
     setVoiceSpeed(Number(draft.voiceSpeed) || 1);
     setVoiceEmotion(draft.voiceEmotion || "中性");
-    setText(draft.text || DEFAULT_SCRIPT);
+    setText(draft.text || "");
     setVideoSpec(draft.videoSpec || VIDEO_SPEC_OPTIONS[0].value);
     setActiveTask(null);
     setRightView("preview");

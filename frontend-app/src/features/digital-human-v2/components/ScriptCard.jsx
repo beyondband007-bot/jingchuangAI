@@ -384,7 +384,9 @@ export function ScriptCard({
               <Play size={12} fill="currentColor" />
             )}
           </span>
-          <span>{isPreviewing ? "正在生成试听..." : durationLabel}</span>
+          <span className="dhv2-script-preview__text">
+            {isPreviewing ? "正在生成试听..." : durationLabel}
+          </span>
         </button>
         <span className="dhv2-script-count">
           {text.length} / {SCRIPT_MAX_LENGTH}
