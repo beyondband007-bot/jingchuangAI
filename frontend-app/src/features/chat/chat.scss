@@ -2161,139 +2161,9 @@
   }
 }
 
-/* Doubao-inspired chat shell: compact global rail + lightweight chat history rail. */
+/* Doubao-inspired chat shell: lightweight chat history rail. */
 .feature-page-shell[data-active-nav="chat"] {
-  --feature-sidebar-width: 220px;
   --chat-rail-width: 220px;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-sidebar {
-  flex: 0 0 var(--feature-sidebar-width) !important;
-  width: var(--feature-sidebar-width) !important;
-  min-width: var(--feature-sidebar-width) !important;
-  padding: 14px 10px 10px !important;
-  color: #202124 !important;
-  background: #f7f7f8 !important;
-  border-right: 1px solid #e8e8ec !important;
-  box-shadow: none !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-brand {
-  justify-content: flex-start !important;
-  gap: 8px !important;
-  width: 100% !important;
-  min-height: 34px !important;
-  margin: 0 0 10px !important;
-  padding: 0 8px !important;
-  color: #202124 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-brand-text {
-  font-size: 16px !important;
-  font-weight: 800 !important;
-  letter-spacing: 0 !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-brand-beta {
-  min-height: 18px !important;
-  padding: 0 6px !important;
-  color: #6d3cff !important;
-  background: #ece8ff !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  font-size: 11px !important;
-  font-weight: 800 !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav {
-  display: grid !important;
-  align-content: start !important;
-  gap: 3px !important;
-  padding: 0 !important;
-  overflow-y: auto !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-section {
-  margin: 0 !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-item,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-group,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-asset-bottom {
-  min-height: 34px !important;
-  padding: 0 10px !important;
-  gap: 9px !important;
-  color: #34343a !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 9px !important;
-  box-shadow: none !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-item svg,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-group svg,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child svg {
-  width: 17px !important;
-  height: 17px !important;
-  color: #3f4047 !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-item:hover,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-group:hover,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child:hover,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-asset-bottom:hover {
-  color: #111217 !important;
-  background: #ffffff !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-item.is-active,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-group.is-active,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child.is-active,
-.feature-page-shell[data-active-nav="chat"] .feature-nav-asset-bottom.is-active {
-  color: #111217 !important;
-  background: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(20, 20, 28, 0.04) !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-item.is-active::before {
-  display: none !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-children {
-  display: none !important;
-  gap: 2px !important;
-  padding: 2px 0 4px 20px !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-children.is-open {
-  display: grid !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child {
-  min-height: 30px !important;
-  padding-left: 9px !important;
-  color: #686a72 !important;
-  font-size: 13px !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-child-icon {
-  display: grid !important;
-  width: 17px !important;
-  height: 17px !important;
-  place-items: center !important;
-  background: transparent !important;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-nav-assets-dock {
-  padding: 10px 0 0 !important;
-  border-top: 1px solid #e6e6eb !important;
 }
 
 .feature-page-shell[data-active-nav="chat"] .feature-main {
@@ -2391,7 +2261,6 @@
 
 @media (max-width: 1180px) {
   .feature-page-shell[data-active-nav="chat"] {
-    --feature-sidebar-width: 196px;
     --chat-rail-width: 196px;
   }
 
@@ -2402,23 +2271,9 @@
   }
 }
 
-@media (max-width: 760px) {
-  .feature-page-shell[data-active-nav="chat"] .feature-sidebar {
-    display: none !important;
-  }
-}
-
-/* Correction: keep the global app menu, and apply the Doubao-style rail inside the chat page only. */
+/* Apply the Doubao-style rail inside the chat page only. */
 .feature-page-shell[data-active-nav="chat"] {
-  --feature-sidebar-width: 200px;
   --chat-rail-width: 220px;
-}
-
-.feature-page-shell[data-active-nav="chat"] .feature-sidebar {
-  display: flex !important;
-  flex: 0 0 var(--feature-sidebar-width) !important;
-  width: var(--feature-sidebar-width) !important;
-  min-width: var(--feature-sidebar-width) !important;
 }
 
 .feature-page-shell[data-active-nav="chat"] .feature-main {
@@ -2499,7 +2354,6 @@
 
 @media (max-width: 1180px) {
   .feature-page-shell[data-active-nav="chat"] {
-    --feature-sidebar-width: 188px;
     --chat-rail-width: 196px;
   }
 
@@ -2511,10 +2365,6 @@
 }
 
 @media (max-width: 760px) {
-  .feature-page-shell[data-active-nav="chat"] .feature-sidebar {
-    display: none !important;
-  }
-
   .feature-page-shell[data-active-nav="chat"] [data-feature-module="chat"] .chat-actions-panel {
     display: none !important;
   }
