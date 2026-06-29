@@ -98,6 +98,11 @@ export const digitalHumanApi = {
     const formData = new FormData();
     formData.append("name", payload.name || "");
     if (payload.file) formData.append("avatar", payload.file);
+    if (payload.scene) formData.append("scene", payload.scene);
+    if (payload.performance) formData.append("performance", payload.performance);
+    if (payload.voiceId) formData.append("voiceId", payload.voiceId);
+    if (payload.voiceSpeed) formData.append("voiceSpeed", String(payload.voiceSpeed));
+    if (payload.voiceEmotion) formData.append("voiceEmotion", payload.voiceEmotion);
     const avatar = await request("/api/digital-human/avatars", {
       method: "POST",
       body: formData

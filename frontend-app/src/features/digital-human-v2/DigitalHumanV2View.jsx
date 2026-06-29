@@ -9,7 +9,7 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { AvatarSelectionCard } from "./components/AvatarSelectionCard";
-import { VoiceDubbingModeCard, VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
+import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { ScriptCard } from "./components/ScriptCard";
 import { GenerateFooter, VideoSpecField } from "./components/GenerateFooter";
 import { AvatarLibraryPanel } from "./components/AvatarLibraryPanel";
@@ -127,6 +127,9 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [speechDurationMs, setSpeechDurationMs] = useState(0);
   const [selectedScene, setSelectedScene] = useState(null);
   const [isUploadingScene, setIsUploadingScene] = useState(false);
+  const [audioPreviewPhase, setAudioPreviewPhase] = useState("draft");
+  const [audioPreviewRequestId, setAudioPreviewRequestId] = useState(0);
+  const [isAudioPreviewing, setIsAudioPreviewing] = useState(false);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
@@ -167,6 +170,11 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   useEffect(() => {
     persistWorkspaceDrafts(drafts);
   }, [drafts]);
+
+  useEffect(() => {
+    setAudioPreviewPhase("draft");
+    setIsAudioPreviewing(false);
+  }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, cloneAudio]);
 
   function showToast(message) {
     setToastMessage(message);
@@ -387,9 +395,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       setSelectedAvatar(avatar);
       setAvatarSource("mine");
       setSelectedMineLibraryId(`avatar-${avatar.id}`);
+      if (payload.voiceId) setVoiceId(payload.voiceId);
+      setVoiceSpeed(Number(payload.voiceSpeed) || 1);
+      setVoiceEmotion(payload.voiceEmotion || "中性");
       setRightView("library");
       setIsCreateOpen(false);
-      showToast("个人形象创建成功");
+      showToast("形象已保存并使用");
     } catch {
       showToast("个人形象创建失败");
     } finally {
@@ -409,6 +420,34 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     } finally {
       setIsUploadingScene(false);
     }
+  }
+
+  function handleRequestAudioPreview() {
+    if (!selectedAvatar?.id) {
+      showToast("请先选择数字人形象");
+      return;
+    }
+    if (!text.trim()) {
+      showToast("请输入配音内容");
+      return;
+    }
+    if (!isDigitalHumanVoiceEnabled(voiceId)) {
+      showToast(VOICE_UNAVAILABLE_HINT);
+      return;
+    }
+    setAudioPreviewPhase("draft");
+    setAudioPreviewRequestId((current) => current + 1);
+  }
+
+  function handleAudioPreviewStateChange(state) {
+    setIsAudioPreviewing(Boolean(state?.isPreviewing));
+    if (state?.status === "ready") {
+      setAudioPreviewPhase("previewed");
+    }
+  }
+
+  function handleConfirmAudioPreview() {
+    setAudioPreviewPhase("confirmed");
   }
 
   async function handleRegenerateAiAvatar(request) {
@@ -589,21 +628,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               onAvatarSourceChange={handleAvatarSourceChange}
               onCreateAvatar={openCreateModal}
             />
-            {selectedAvatar ? (
-              <VoiceDubbingModeCard
-                voiceMode={voiceMode}
-                onVoiceModeChange={setVoiceMode}
-                showCloneTab={isMineAvatar}
-                selectedAvatar={selectedAvatar}
-                voices={voices}
-                voiceId={voiceId}
-                onVoiceIdChange={setVoiceId}
-                voiceSpeed={voiceSpeed}
-                onVoiceSpeedChange={setVoiceSpeed}
-                voiceEmotion={voiceEmotion}
-                onVoiceEmotionChange={setVoiceEmotion}
-              />
-            ) : null}
             <ScriptCard
               text={text}
               onTextChange={setText}
@@ -616,6 +640,15 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               cloneAudio={cloneAudio}
               onCloneAudioChange={setCloneAudio}
               onSpeechDurationMsChange={setSpeechDurationMs}
+              selectedAvatar={selectedAvatar}
+              voices={voices}
+              onVoiceIdChange={setVoiceId}
+              onVoiceSpeedChange={setVoiceSpeed}
+              onVoiceEmotionChange={setVoiceEmotion}
+              previewRequestId={audioPreviewRequestId}
+              previewPhase={audioPreviewPhase}
+              onPreviewStateChange={handleAudioPreviewStateChange}
+              onRegeneratePreview={handleRequestAudioPreview}
             />
             <SceneUploadCard
               scene={selectedScene}
@@ -634,6 +667,10 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             isSubmitting={isSubmitting}
             isCloneMode={isCloneMode}
             estimatedCredits={estimatedGenerateCredits}
+            audioPreviewPhase={audioPreviewPhase}
+            isAudioPreviewing={isAudioPreviewing}
+            onPreviewAudio={handleRequestAudioPreview}
+            onConfirmAudio={handleConfirmAudioPreview}
             onGenerate={handleGenerate}
           />
         </aside>
@@ -688,6 +725,10 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
           onCreate={handleCreateAvatar}
           isSubmitting={isSubmitting}
           mode={createMode}
+          voices={voices}
+          initialVoiceId={voiceId}
+          initialVoiceSpeed={voiceSpeed}
+          initialVoiceEmotion={voiceEmotion}
         />
       ) : null}
 

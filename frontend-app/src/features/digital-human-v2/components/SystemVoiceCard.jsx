@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Message } from "@arco-design/web-react";
-import { Play } from "lucide-react";
+import { ChevronRight, Play, UserRound } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import { getVoiceEmotionValue, getVoiceMatchHint } from "../utils";
 import { VoicePickerPanel } from "./VoicePickerPanel";
@@ -9,6 +10,7 @@ const VOICE_POPOVER_WIDTH = 400;
 
 export function SystemVoiceCard({
   embedded = false,
+  compact = false,
   selectedAvatar,
   voices = [],
   voiceId,
@@ -27,6 +29,7 @@ export function SystemVoiceCard({
   const voiceHint = selectedAvatar ? getVoiceMatchHint(selectedAvatar) : "";
 
   function updateVoicePopoverPosition() {
+    if (compact) return;
     const node = voicePanelRef.current;
     if (!node) return;
     const rect = node.getBoundingClientRect();
@@ -39,7 +42,7 @@ export function SystemVoiceCard({
   }
 
   function openVoicePicker() {
-    updateVoicePopoverPosition();
+    if (!compact) updateVoicePopoverPosition();
     setShowVoicePicker(true);
   }
 
@@ -86,6 +89,54 @@ export function SystemVoiceCard({
     } finally {
       setIsPreviewing(false);
     }
+  }
+
+  if (compact) {
+    return (
+      <div className="dhv2-script-voice" ref={voicePanelRef}>
+        <button
+          type="button"
+          className="dhv2-script-voice__trigger"
+          aria-label="选择音色"
+          onClick={openVoicePicker}
+        >
+          <span className="dhv2-script-voice__avatar" aria-hidden="true">
+            <UserRound size={15} />
+          </span>
+          <span className="dhv2-script-voice__meta">
+            <strong>{selectedVoice?.name || "未选择音色"}</strong>
+            <span>语速 {Number(voiceSpeed).toFixed(1)}x</span>
+          </span>
+          <ChevronRight size={15} aria-hidden="true" />
+        </button>
+
+        {showVoicePicker
+          ? createPortal(
+              <div
+                className="dhv2-voice-modal-backdrop"
+                role="presentation"
+                onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) closeVoicePicker();
+                }}
+              >
+                <div className="dhv2-voice-modal" role="dialog" aria-modal="true" aria-label="选择音色">
+                  <VoicePickerPanel
+                    voices={voices}
+                    voiceId={voiceId}
+                    onVoiceIdChange={onVoiceIdChange}
+                    voiceSpeed={voiceSpeed}
+                    onVoiceSpeedChange={onVoiceSpeedChange}
+                    voiceEmotion={voiceEmotion}
+                    onVoiceEmotionChange={onVoiceEmotionChange}
+                    onClose={closeVoicePicker}
+                  />
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
+      </div>
+    );
   }
 
   return (
