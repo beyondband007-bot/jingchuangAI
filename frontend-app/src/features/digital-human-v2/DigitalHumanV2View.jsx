@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
+import { ImagePlus, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import { voiceApi } from "../voice/voiceApi";
 import {
@@ -36,6 +37,55 @@ import {
 import "./digitalHumanV2.css";
 
 const DEFAULT_SCRIPT = "";
+
+function SceneUploadCard({
+  scene,
+  isUploading = false,
+  onPickScene,
+  onClearScene,
+}) {
+  const inputRef = useRef(null);
+  const previewUrl = scene?.localUrl || scene?.url || "";
+
+  function handleFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) onPickScene?.(file);
+  }
+
+  return (
+    <section className="dhv2-scene-card">
+      <div className="dhv2-scene-card__head">
+        <div>
+          <strong>场景背景</strong>
+          <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
+        </div>
+        {scene ? (
+          <button type="button" className="dhv2-scene-card__clear" onClick={onClearScene} aria-label="清除场景">
+            <X size={15} />
+          </button>
+        ) : null}
+      </div>
+
+      <button
+        type="button"
+        className={`dhv2-scene-card__dropzone${previewUrl ? " has-preview" : ""}`}
+        onClick={() => inputRef.current?.click()}
+        disabled={isUploading}
+      >
+        {previewUrl ? (
+          <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
+        ) : (
+          <>
+            <ImagePlus size={20} />
+            <span>{isUploading ? "上传中..." : "上传场景图"}</span>
+          </>
+        )}
+      </button>
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
+    </section>
+  );
+}
 
 export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const {
@@ -76,6 +126,9 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [audioPreviewPhase, setAudioPreviewPhase] = useState("draft");
   const [audioPreviewRequestId, setAudioPreviewRequestId] = useState(0);
   const [isAudioPreviewing, setIsAudioPreviewing] = useState(false);
+  const [confirmedPreviewAudio, setConfirmedPreviewAudio] = useState(null);
+  const [selectedScene, setSelectedScene] = useState(null);
+  const [isUploadingScene, setIsUploadingScene] = useState(false);
   const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
@@ -120,6 +173,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   useEffect(() => {
     setAudioPreviewPhase("draft");
     setIsAudioPreviewing(false);
+    setConfirmedPreviewAudio(null);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, cloneAudio]);
 
   function showToast(message) {
@@ -293,7 +347,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       const createPayload = {
         avatarId: selectedAvatar.id,
         avatarName: selectedAvatar.name,
-        driveMode: "text",
+        driveMode: !isCloneMode && confirmedPreviewAudio?.audioFileId ? "audio" : "text",
         text: text.trim(),
         performance: "",
         voiceId: resolvedVoiceId,
@@ -303,6 +357,13 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         pitch: 0,
         emotion: getVoiceEmotionValue(voiceEmotion),
       };
+      if (!isCloneMode && confirmedPreviewAudio?.audioFileId) {
+        createPayload.audioFileId = confirmedPreviewAudio.audioFileId;
+        createPayload.audioName = confirmedPreviewAudio.originalName || "试听音频";
+      }
+      if (selectedScene?.sceneFileId) {
+        createPayload.sceneFileId = selectedScene.sceneFileId;
+      }
       const task = await digitalHumanApi.createTask(createPayload);
       if (task?.status === "failed") {
         throw new Error(task.error || "数字人视频创建失败");
@@ -391,6 +452,15 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   function handleAudioPreviewStateChange(state) {
     setIsAudioPreviewing(Boolean(state?.isPreviewing));
     if (state?.status === "ready") {
+      if (state.audioFileId) {
+        setConfirmedPreviewAudio({
+          audioFileId: state.audioFileId,
+          audioUrl: state.audioUrl,
+          originalName: state.originalName,
+          durationMs: state.durationMs || 0,
+          previewKey: state.previewKey || "",
+        });
+      }
       setAudioPreviewPhase("previewed");
     }
   }
@@ -421,6 +491,20 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         error: createError.message || "AI avatar generation failed",
       } : null);
       await refreshCredits();
+    }
+  }
+
+  async function handlePickScene(file) {
+    if (!file) return;
+    setIsUploadingScene(true);
+    try {
+      const scene = await digitalHumanApi.uploadScene(file);
+      setSelectedScene(scene);
+      showToast("场景图已上传");
+    } catch (uploadError) {
+      showToast(uploadError.message || "场景图上传失败");
+    } finally {
+      setIsUploadingScene(false);
     }
   }
 
@@ -609,6 +693,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               previewPhase={audioPreviewPhase}
               onPreviewStateChange={handleAudioPreviewStateChange}
               onRegeneratePreview={handleRequestAudioPreview}
+            />
+            <SceneUploadCard
+              scene={selectedScene}
+              isUploading={isUploadingScene}
+              onPickScene={handlePickScene}
+              onClearScene={() => setSelectedScene(null)}
             />
             <VideoSpecField
               videoSpec={videoSpec}

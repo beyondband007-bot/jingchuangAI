@@ -1,5 +1,25 @@
 import { config } from "../../config/index.js";
 
+const retryableNetworkCodes = new Set([
+  "ECONNRESET",
+  "ETIMEDOUT",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_SOCKET"
+]);
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableRequestError(error) {
+  const code = error?.code || error?.cause?.code;
+  if (retryableNetworkCodes.has(code)) return true;
+  return /fetch failed|network|socket|timeout|ECONNRESET/i.test(String(error?.message || ""));
+}
+
 function ensureKey() {
   if (!config.kie.apiKey) {
     const error = new Error("KIE_API_KEY is not configured");
@@ -16,10 +36,27 @@ export async function requestKie(path, options = {}) {
     ...(options.headers || {})
   };
 
-  const response = await fetch(`${config.kie.baseUrl}${path}`, {
-    ...options,
-    headers
-  });
+  let response;
+  let lastError;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      response = await fetch(`${config.kie.baseUrl}${path}`, {
+        ...options,
+        headers
+      });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= 3 || !isRetryableRequestError(error)) {
+        const wrapped = new Error(`KIE request failed: ${error.message}`);
+        wrapped.status = 502;
+        wrapped.cause = error;
+        throw wrapped;
+      }
+      await delay(500 * attempt);
+    }
+  }
+  if (!response) throw lastError;
 
   const text = await response.text();
   let body;

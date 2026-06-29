@@ -772,6 +772,92 @@
   cursor: not-allowed;
 }
 
+.dhv2-scene-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--dhv2-border);
+  border-radius: 12px;
+}
+
+.dhv2-scene-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dhv2-scene-card__head div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dhv2-scene-card__head strong {
+  color: var(--dhv2-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dhv2-scene-card__head span {
+  color: var(--dhv2-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.dhv2-scene-card__clear {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #8b8798;
+  background: #f7f5fb;
+  border: 1px solid #eeeaf6;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dhv2-scene-card__clear:hover {
+  color: #4d465f;
+  background: #eee9ff;
+}
+
+.dhv2-scene-card__dropzone {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 112px;
+  overflow: hidden;
+  color: #625b73;
+  background: #faf9fd;
+  border: 1px dashed #d8d0eb;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.dhv2-scene-card__dropzone span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dhv2-scene-card__dropzone img {
+  width: 100%;
+  height: 132px;
+  object-fit: cover;
+}
+
+.dhv2-scene-card__dropzone.has-preview {
+  border-style: solid;
+}
+
+.dhv2-scene-card__dropzone:disabled {
+  opacity: 0.58;
+  cursor: wait;
+}
+
 .dhv2-script-voice {
   min-width: 0;
   margin-left: auto;

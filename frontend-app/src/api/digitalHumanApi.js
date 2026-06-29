@@ -51,10 +51,14 @@ export const digitalHumanApi = {
   },
 
   async previewVoice(payload) {
-    return request("/api/digital-human/voices/preview", {
+    const result = await request("/api/digital-human/voices/preview", {
       method: "POST",
       body: JSON.stringify(payload)
     });
+    return {
+      ...result,
+      audioUrl: toApiUrl(result.audioUrl)
+    };
   },
 
   async uploadAudio(file, { durationMs } = {}) {

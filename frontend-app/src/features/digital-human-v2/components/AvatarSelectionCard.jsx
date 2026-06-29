@@ -11,8 +11,8 @@ export function AvatarSelectionCard({
   const cover = selectedAvatar?.cover;
   const isVideo = isVideoCover(cover);
   const previewCover =
-    selectedAvatar?.threeView ||
-    (isVideo ? getPosterPath(cover) || selectedAvatar?.poster : cover);
+    selectedAvatar?.poster ||
+    (isVideo ? getPosterPath(cover) : cover);
   const isMine = avatarSource === "mine";
 
   return (

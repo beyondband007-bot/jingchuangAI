@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from "fs/promises";
+import { access, mkdir, rename, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import path from "path";
@@ -63,10 +63,21 @@ const uploadedDriveAudios = new Map();
 const uploadedSceneImages = new Map();
 const execFileAsync = promisify(execFile);
 const maxDigitalHumanAudioMs = 15 * 1000;
+const minSeedanceReferenceAudioMs = 2 * 1000;
 const klingAvatarPrompt =
   "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
 const seedanceDigitalHumanPrompt =
   "请生成一段单人数字人口播视频。人物参考图是所选数字人的三视图/身份图，用于确定同一个数字人的脸型、五官、发型、服装、体态和整体外观，请严格保持人物身份一致，不要更换人物、不要新增其他人物。参考音频是真实口播音频，请直接按照参考音频进行自然口型同步和面部表情驱动，不要翻译、改写、复述、总结或生成新的对白，不要生成英文对白。若提供了场景参考图，仅将其作为背景、空间氛围和光线参考，人物仍以三视图为准；若未提供场景参考图，请使用人物参考图中的默认视觉风格，保持画面干净稳定。镜头保持稳定，动作以自然头部微动、眨眼和口型同步为主，不要添加无关文字、字幕、logo、水印、商品包装变化或新场景。";
+
+const seedanceDigitalHumanPromptV2 = [
+  "请生成一段单人数字人口播视频。",
+  "人物参考图是所选数字人的三视图/身份图，只用于确定同一个数字人的脸型、五官、发型、服装、体态和整体外观；必须严格保持人物身份一致，不要替换人物，不要新增其他人物。",
+  "场景参考图是最终视频的背景、空间氛围和光线参考；必须把数字人自然放入该场景中，不要忽略场景参考图，不要只使用纯色背景或空白背景。",
+  "参考音频是最终口播的唯一依据。必须直接读取并遵循 reference_audio 的真实音频内容、节奏、停顿、语气和时长，让数字人的口型、面部表情和轻微头部动作严格同步参考音频。",
+  "最终视频必须以 reference_audio 作为口播声音来源，不要生成静音视频，不要替换成新的配音或新的台词。",
+  "不要翻译、改写、复述、总结或重新生成中文口播文案；不要生成英文对白；不要添加无关文字、字幕、logo、水印、无关商品或新场景。",
+  "镜头保持稳定，画面干净自然，以真实口播感为主。"
+].join("\n");
 
 function nowLabel(date = new Date()) {
   return formatBeijingDateTime(date);
@@ -91,7 +102,32 @@ function getVideoDurationSeconds(audioDurationMs) {
 }
 
 function getArkDurationSeconds(audioDurationMs) {
-  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+  const seconds = Math.ceil(Number(audioDurationMs || 0) / 1000);
+  return seconds > 5 ? 10 : 5;
+}
+
+async function padAudioFileToMinimumDuration(filePath, currentDurationMs, minimumDurationMs = minSeedanceReferenceAudioMs) {
+  const durationMs = Number(currentDurationMs || 0);
+  if (durationMs >= minimumDurationMs) return durationMs;
+
+  const targetSeconds = minimumDurationMs / 1000;
+  const tempPath = `${filePath}.seedance-pad-${Date.now()}.mp3`;
+  await execFileAsync(ffmpegPath, [
+    "-y",
+    "-i",
+    filePath,
+    "-af",
+    "apad",
+    "-t",
+    String(targetSeconds),
+    "-c:a",
+    "libmp3lame",
+    "-b:a",
+    "128k",
+    tempPath
+  ]);
+  await rename(tempPath, filePath);
+  return minimumDurationMs;
 }
 
 function normalizeUploadedAudioDurationMs(value) {
@@ -391,6 +427,28 @@ async function createSeedanceVirtualReferenceFromUrl({ userId, feature, url, ori
   return waitForVirtualAssetReference(asset.id);
 }
 
+async function savePreviewVoiceAudio({ audioBuffer, durationMs }) {
+  const id = `dh-audio-${randomUUID()}`;
+  const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio-uploads");
+  await mkdir(audioDir, { recursive: true });
+  const fileName = `${id}.mp3`;
+  const filePath = path.join(audioDir, fileName);
+  await writeFile(filePath, audioBuffer);
+
+  const audio = {
+    id,
+    filePath,
+    localUrl: `/media/digital-human/audio-uploads/${fileName}`,
+    originalName: fileName,
+    mimeType: "audio/mpeg",
+    sizeBytes: audioBuffer.length,
+    durationMs,
+    createdAt: new Date()
+  };
+  uploadedDriveAudios.set(id, audio);
+  return audio;
+}
+
 async function createProviderTask(taskId, payload) {
   const { text, voiceId, speed, volume, pitch, emotion, avatar, model, uploadedAudio, uploadedScene, userId } = payload;
   let savedAudio;
@@ -415,10 +473,11 @@ async function createProviderTask(taskId, payload) {
   if (audioDurationMs > maxDigitalHumanAudioMs) {
     throw createHttpError("audio duration must be 15 seconds or shorter", 400);
   }
+  audioDurationMs = await padAudioFileToMinimumDuration(savedAudio.filePath, audioDurationMs);
 
   const [avatarImagePath, sceneImagePath] = await Promise.all([
     getAvatarIdentityImageFile(avatar),
-    uploadedScene ? getAvatarSceneImageFile(avatar, uploadedScene) : Promise.resolve("")
+    getAvatarSceneImageFile(avatar, uploadedScene)
   ]);
 
   console.log(`[digital-human] task ${taskId}: preparing public provider assets`);
@@ -430,7 +489,7 @@ async function createProviderTask(taskId, payload) {
       uploadPath: "digital-human/audio"
     }),
     uploadImageToKieReference(avatarImagePath, "digital-human/avatar-image"),
-    uploadedScene ? uploadImageToKieReference(sceneImagePath, "digital-human/scene-image") : Promise.resolve("")
+    uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
   ]);
 
   if (model.provider !== "ark") {
@@ -471,7 +530,7 @@ async function createProviderTask(taskId, payload) {
     ]);
 
     const content = [
-      { type: "text", text: seedanceDigitalHumanPrompt },
+      { type: "text", text: seedanceDigitalHumanPromptV2 },
       buildReferenceImage(avatarReference),
       buildReferenceAudio(audioReference)
     ];
@@ -485,7 +544,7 @@ async function createProviderTask(taskId, payload) {
       resolution: "720p",
       ratio: "adaptive",
       duration: getArkDurationSeconds(audioDurationMs),
-      generateAudio: false,
+      generateAudio: true,
       watermark: false
     });
 
@@ -768,9 +827,18 @@ export async function previewVoice(payload) {
     emotion: normalizeEmotion(payload.emotion)
   });
   const durationMs = getAudioDurationMs(result, text);
+  const savedAudio = await savePreviewVoiceAudio({
+    audioBuffer: result.audioBuffer,
+    durationMs
+  });
 
   return {
     voiceId,
+    audioFileId: savedAudio.id,
+    audioUrl: savedAudio.localUrl,
+    originalName: savedAudio.originalName,
+    mimeType: savedAudio.mimeType,
+    size: savedAudio.sizeBytes,
     audioBase64: result.audioBase64,
     audioDataUrl: `data:${result.mimeType};base64,${result.audioBase64}`,
     durationMs,

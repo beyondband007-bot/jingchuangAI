@@ -272,7 +272,11 @@ export function ScriptCard({
         onPreviewStateChange?.({
           status: "ready",
           isPreviewing: false,
+          audioFileId: result.audioFileId,
+          audioUrl: result.audioUrl,
+          originalName: result.originalName,
           durationMs: result.durationMs || 0,
+          previewKey,
         });
       }
 
