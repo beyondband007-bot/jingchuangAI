@@ -48,7 +48,9 @@ export function AvatarCard({
             <Play size={18} fill="currentColor" />
           </span>
         ) : null}
-        <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
+        {variant !== "mine" ? (
+          <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
+        ) : null}
       </button>
       {variant === "default" ? (
         <strong className="dhv2-avatar-card__name">{name}</strong>

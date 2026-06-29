@@ -291,7 +291,7 @@ export function ScriptCard({
 
   useEffect(() => {
     if (!previewRequestId) return;
-    previewScript({ shouldPlay: true, notifyParent: true, forceGenerate: true });
+    previewScript({ shouldPlay: false, notifyParent: true, forceGenerate: true });
   }, [previewRequestId]);
 
   function handlePreviewClick() {

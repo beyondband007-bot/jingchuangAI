@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { ImagePlus, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import { voiceApi } from "../voice/voiceApi";
 import {
@@ -39,56 +38,6 @@ import "./digitalHumanV2.css";
 
 const DEFAULT_SCRIPT = "";
 
-function SceneUploadCard({
-  scene,
-  isUploading = false,
-  selectedAvatar,
-  onPickScene,
-  onClearScene,
-}) {
-  const inputRef = useRef(null);
-  const previewUrl = scene?.localUrl || scene?.url || "";
-
-  function handleFileChange(event) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (file) onPickScene?.(file);
-  }
-
-  return (
-    <section className="dhv2-scene-card">
-      <div className="dhv2-scene-card__head">
-        <div>
-          <strong>场景背景</strong>
-          <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
-        </div>
-        {scene ? (
-          <button type="button" className="dhv2-scene-card__clear" onClick={onClearScene} aria-label="清除场景">
-            <X size={15} />
-          </button>
-        ) : null}
-      </div>
-
-      <button
-        type="button"
-        className={`dhv2-scene-card__dropzone${previewUrl ? " has-preview" : ""}`}
-        onClick={() => inputRef.current?.click()}
-        disabled={isUploading || !selectedAvatar}
-      >
-        {previewUrl ? (
-          <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
-        ) : (
-          <>
-            <ImagePlus size={20} />
-            <span>{isUploading ? "上传中..." : selectedAvatar ? "上传场景图" : "选择数字人后可上传场景"}</span>
-          </>
-        )}
-      </button>
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
-    </section>
-  );
-}
-
 export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const {
     options,
@@ -125,8 +74,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
   const [cloneAudio, setCloneAudio] = useState(null);
   const [speechDurationMs, setSpeechDurationMs] = useState(0);
-  const [selectedScene, setSelectedScene] = useState(null);
-  const [isUploadingScene, setIsUploadingScene] = useState(false);
   const [audioPreviewPhase, setAudioPreviewPhase] = useState("draft");
   const [audioPreviewRequestId, setAudioPreviewRequestId] = useState(0);
   const [isAudioPreviewing, setIsAudioPreviewing] = useState(false);
@@ -267,7 +214,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setVoiceEmotion("中性");
     setVoiceMode(VOICE_DUBBING_MODES.system);
     setCloneAudio(null);
-    setSelectedScene(null);
     setActiveTask(null);
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
@@ -337,9 +283,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         pitch: 0,
         emotion: getVoiceEmotionValue(voiceEmotion),
       };
-      if (selectedScene?.sceneFileId) {
-        createPayload.sceneFileId = selectedScene.sceneFileId;
-      }
       const task = await digitalHumanApi.createTask(createPayload);
       if (task?.status === "failed") {
         throw new Error(task.error || "数字人视频创建失败");
@@ -405,20 +348,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       showToast("个人形象创建失败");
     } finally {
       setIsSubmitting(false);
-    }
-  }
-
-  async function handlePickScene(file) {
-    if (!file) return;
-    setIsUploadingScene(true);
-    try {
-      const scene = await digitalHumanApi.uploadScene(file);
-      setSelectedScene(scene);
-      showToast("场景图已上传");
-    } catch (uploadError) {
-      showToast(uploadError.message || "场景图上传失败");
-    } finally {
-      setIsUploadingScene(false);
     }
   }
 
@@ -607,6 +536,17 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     Message.success("已删除草稿");
   }
 
+  function handleCloseAvatarLibrary() {
+    if (avatarSource === "mine") {
+      setSelectedAvatar(null);
+      setSelectedMineLibraryId(null);
+      setActiveTask(null);
+      setRightView("library");
+      return;
+    }
+    setRightView("preview");
+  }
+
   if (loading) {
     return (
       <section className="dhv2-root">
@@ -650,13 +590,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               onPreviewStateChange={handleAudioPreviewStateChange}
               onRegeneratePreview={handleRequestAudioPreview}
             />
-            <SceneUploadCard
-              scene={selectedScene}
-              isUploading={isUploadingScene}
-              selectedAvatar={selectedAvatar}
-              onPickScene={handlePickScene}
-              onClearScene={() => setSelectedScene(null)}
-            />
             <VideoSpecField
               videoSpec={videoSpec}
               onVideoSpecChange={setVideoSpec}
@@ -697,7 +630,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             onSelectMineItem={handleSelectMineItem}
             onConfirmAvatar={handleConfirmAvatar}
             onCreateAvatar={openCreateModal}
-            onClose={selectedAvatar ? () => setRightView("preview") : null}
+            onClose={selectedAvatar ? handleCloseAvatarLibrary : null}
           />
         ) : (
           <PreviewPanel

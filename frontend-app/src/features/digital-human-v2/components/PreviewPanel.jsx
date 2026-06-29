@@ -84,6 +84,8 @@ export function PreviewPanel({
   const generatingProgress = isSubmitting ? 0 : activeTask?.progress || 0;
   const avatarTags = selectedAvatar ? getAvatarTags(selectedAvatar) : [];
   const showAvatarMeta = avatarSource === "official" && selectedAvatar?.name;
+  const avatarSourceLabel = avatarSource === "mine" ? "我的形象" : "官方形象";
+  const showSaveDraftAction = !activeTask && !isGenerating;
   const generatingTask = {
     avatarName: activeTask?.avatarName || selectedAvatar?.name || "数字人",
     progress: generatingProgress,
@@ -103,9 +105,9 @@ export function PreviewPanel({
       aria-label="预览区"
     >
       <header className="dhv2-preview__top">
-        <div className="dhv2-preview__toolbar">
+          <div className="dhv2-preview__toolbar">
           <div className="dhv2-preview__title-group">
-            <h2>数字人 | {resolutionLabel}</h2>
+            <h2>{avatarSourceLabel} | {resolutionLabel}</h2>
             {showAvatarMeta ? (
               <div className="dhv2-preview__avatar-meta">
                 <strong>{selectedAvatar.name}</strong>
@@ -142,9 +144,11 @@ export function PreviewPanel({
             >
               <Undo2 size={15} />
             </button>
-            <button type="button" aria-label="保存草稿" onClick={handleSaveDraft}>
-              <Copy size={15} />
-            </button>
+            {showSaveDraftAction ? (
+              <button type="button" aria-label="保存草稿" onClick={handleSaveDraft}>
+                <Copy size={15} />
+              </button>
+            ) : null}
             <button
               type="button"
               className="dhv2-preview__asset-btn"
