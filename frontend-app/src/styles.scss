@@ -24086,6 +24086,15 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   background: #6b7cff;
 }
 
+.fm-workbench-topbar .fm-article-nav-tabs button,
+.fm-workbench-topbar .fm-article-nav-tabs button.is-active {
+  border-bottom-color: transparent !important;
+}
+
+.fm-workbench-topbar .fm-article-nav-tabs button::after {
+  display: none !important;
+}
+
 .fm-asset-card video {
   width: 100%;
   height: 100%;

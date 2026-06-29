@@ -11720,6 +11720,8 @@ function WorkbenchTopbar({
   onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
+  digitalHumanMode = "avatar",
+  onDigitalHumanModeChange,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
@@ -11893,16 +11895,23 @@ function WorkbenchTopbar({
             <div className="fm-digital-tabs" aria-label="数字人类型">
               <button
                 type="button"
-                className={activeNav === "digital-human" ? "is-active" : ""}
-                onClick={() => onNavChange("digital-human")}
+                className={digitalHumanMode !== "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("avatar")}
               >
                 数字人形象
+              </button>
+              <button
+                type="button"
+                className={digitalHumanMode === "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("history")}
+              >
+                历史记录
               </button>
             </div>
           )}
           {showArticleTabs && (
             <div
-              className="fm-digital-tabs fm-video-workflow-tabs"
+              className="fm-digital-tabs fm-video-workflow-tabs fm-article-nav-tabs"
               aria-label="爆款图文类型"
             >
               <button
@@ -12072,6 +12081,7 @@ function ImageFeaturePage({
   const isGuest = !isLoggedInUser(authUser);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
+  const [digitalHumanMode, setDigitalHumanMode] = useState("avatar");
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
@@ -12234,6 +12244,8 @@ function ImageFeaturePage({
           onOpenLibrary={openInspirationLibrary}
           articleMode={articleMode}
           onArticleModeChange={setArticleMode}
+          digitalHumanMode={digitalHumanMode}
+          onDigitalHumanModeChange={setDigitalHumanMode}
         />
         <FeatureModuleKeepAlive
           id="creation"
@@ -12340,6 +12352,7 @@ function ImageFeaturePage({
           <DigitalHumanHubView
             isActive={activeNav === "digital-human"}
             onOpenFeature={handleNavChange}
+            viewMode={digitalHumanMode}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive

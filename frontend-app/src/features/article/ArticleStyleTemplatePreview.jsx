@@ -28,7 +28,6 @@ function buildPreviewSlots(items, cardIndex, imageCount) {
 
 export function ArticleStyleTemplatePreview({
   items = [],
-  selectedId,
   onSelect,
   imageCount = 1,
   ratio = "3:4",
@@ -44,9 +43,7 @@ export function ArticleStyleTemplatePreview({
 
           return (
             <figure
-              className={`article-fresh-template-preview__card${
-                item.id === selectedId ? " is-selected" : ""
-              } count-${slots.length} is-${ratioMeta.orientation}`}
+              className={`article-fresh-template-preview__card count-${slots.length} is-${ratioMeta.orientation}`}
               key={item.id}
             >
               <button
@@ -71,7 +68,6 @@ export function ArticleStyleTemplatePreview({
                           loading="lazy"
                           draggable="false"
                         />
-                        <em>图{slotIndex + 1}</em>
                       </span>
                     ))}
                   </span>
