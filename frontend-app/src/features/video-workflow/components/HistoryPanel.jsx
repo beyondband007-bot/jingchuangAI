@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  ArrowLeft,
   Download,
   History,
   Loader2,
@@ -11,17 +10,11 @@ import {
 } from "lucide-react";
 import { formatBeijingDateTime } from "../../../utils/time";
 
-export function HistoryPanel({ tasks, onClose, onRepeat, onDelete, onFavorite, emptyHint }) {
+export function HistoryPanel({ tasks, onRepeat, onDelete, onFavorite, emptyHint }) {
   return (
-    <div className="vgw-history" role="dialog" aria-modal="true" aria-label="历史记录">
-      <div className="vgw-history__backdrop" onMouseDown={onClose} />
-      <aside className="vgw-history__panel">
-        <header>
-          <button type="button" onClick={onClose} aria-label="返回">
-            <ArrowLeft size={18} />
-          </button>
-          <h2>历史记录</h2>
-        </header>
+    <main className="vgw-history-page" aria-label="历史记录">
+      <section className="vgw-history-page__card">
+        <h1>最近生成</h1>
         <div className="vgw-history__list">
           {tasks.length === 0 ? (
             <div className="vgw-history__empty">
@@ -86,7 +79,7 @@ export function HistoryPanel({ tasks, onClose, onRepeat, onDelete, onFavorite, e
             ))
           )}
         </div>
-      </aside>
-    </div>
+      </section>
+    </main>
   );
 }

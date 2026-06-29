@@ -29,7 +29,6 @@ export function DigitalHumanHubView({ isActive = true, onOpenFeature }) {
         type="line"
       >
         <Tabs.TabPane key={TAB_KEYS.avatar} title="数字人形象" />
-        <Tabs.TabPane key={TAB_KEYS.photo} title="照片数字人" />
         <Tabs.TabPane key={TAB_KEYS.history} title="历史记录" />
       </Tabs>
 

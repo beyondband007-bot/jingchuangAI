@@ -8,6 +8,7 @@ import {
   CircleAlert,
   Copy,
   Download,
+  ImagePlus,
   Layers,
   Loader2,
   RefreshCcw,
@@ -36,6 +37,7 @@ import { formatBeijingDateTime } from "../../utils/time";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
+const MAX_ARTICLE_REFERENCE_ASSETS = 6;
 
 const platformTabs = [
   "小红书种草",
@@ -87,7 +89,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-1.webp",
     copyTemplate: "测评种草模板",
     topic: "平价单品真实实测分享，突出产品质地、使用感受、外观细节与性价比，适合早八人、学生党日常种草测评，输出小红书吸睛标题 + 闺蜜安利式短种草正文，附带实用避坑小贴士与垂直好物话题标签",
-    keyword: "平价单品,真实实测,质地,使用感受,性价比",
     tone: "种草口语风"
   },
   {
@@ -97,7 +98,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-2.webp",
     copyTemplate: "测评种草模板",
     topic: "宝妈自用母婴好物真实测评，重点突出材质安全、带娃减负、使用便捷性，温柔真实分享风格，适配新手宝妈种草笔记，附带母婴选购避坑提醒与母婴垂直话题标签",
-    keyword: "母婴好物,材质安全,带娃减负,使用便捷,新手宝妈",
     tone: "温柔分享风"
   },
   {
@@ -107,7 +107,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-3.webp",
     copyTemplate: "清单攻略模板",
     topic: "换季敏感肌全套护肤好物合集，分别讲解每款护肤品补水、舒缓、修护屏障核心功效，干货清单式排版，分享长期维稳护肤心得，附带护肤叠加避坑指南与护肤赛道话题标签",
-    keyword: "敏感肌,换季护肤,补水舒缓,修护屏障,护肤清单",
     tone: "干货测评风"
   },
   {
@@ -117,7 +116,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-4.webp",
     copyTemplate: "清单攻略模板",
     topic: "小户型租房党厨房小家电全套合集，突出机身小巧不占地、操作简单易清洗、三餐多场景适配，生活化接地气种草，附带家电保养清洁小贴士与家居好物话题标签",
-    keyword: "厨房小家电,小户型,租房党,易清洗,家居好物",
     tone: "种草口语风"
   },
   {
@@ -127,7 +125,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-5.webp",
     copyTemplate: "测评种草模板",
     topic: "高性价比手机、电脑数码配件单品实测，突出续航、质感、实用功能，对比百元平替与大牌差异，学生党、打工人刚需，附带数码选购避坑提醒",
-    keyword: "数码配件,高性价比,续航,质感,百元平替",
     tone: "干货测评风"
   },
   {
@@ -137,7 +134,6 @@ const quickTemplates = [
     image: "/assets/article/quick-templates/template-6.webp",
     copyTemplate: "清单攻略模板",
     topic: "新手养猫养狗全套养护好物清单，侧重安全无刺激、清洁省力，分喂食、洗护、玩具类单品讲解，真实养宠实测分享，附带宠物用品选购避坑贴士",
-    keyword: "宠物养护,新手养宠,安全无刺激,清洁省力,宠物用品",
     tone: "温柔分享风"
   }
 ];
@@ -214,7 +210,6 @@ const defaultForm = {
   topic: "",
   wordCount: "短文案",
   tone: "种草口语风",
-  keyword: "",
   contentType: "xiaohongshu-cover",
   visualStyle: "fresh",
   layoutStyle: "balanced",
@@ -273,7 +268,7 @@ function buildDraftCopy(form) {
     "我会从核心卖点、适合人群、使用感受和避坑提醒几个角度拆开讲，让大家快速判断值不值得入手。",
     "有问题欢迎评论区聊聊，也可以先收藏起来，下次需要的时候直接照着选。",
   ].join("\n\n");
-  const tags = (form.keyword || "种草,好物,分享")
+  const tags = "种草,好物,分享"
     .split(/[,，\s]+/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -589,13 +584,6 @@ function QuickTemplatePreviewDialog({ template, onClose, onApply }) {
               <span>{template.copyTemplate}</span>
               <span>{template.tone}</span>
             </div>
-            {template.keyword ? (
-              <div className="article-quick-template-preview-keywords">
-                {template.keyword.split(",").map((item) => (
-                  <span key={item.trim()}>{item.trim()}</span>
-                ))}
-              </div>
-            ) : null}
           </div>
         </div>
         <footer className="article-quick-template-preview-foot">
@@ -767,68 +755,50 @@ function CopyParamsPanel({
   form,
   wordCounts,
   copyTones,
-  isOpen,
-  onToggle,
   onUpdateForm,
 }) {
   return (
-    <section className={`article-copy-params ${isOpen ? "is-open" : ""}`}>
-      <button
-        className="article-copy-params__head"
-        type="button"
-        aria-expanded={isOpen}
-        onClick={onToggle}
-      >
-        <span className="article-copy-params__title">文案参数</span>
+    <section className="article-copy-params">
+      <div className="article-copy-params__head">
+        <strong className="article-copy-params__title">文案参数</strong>
         <span className="article-copy-params__summary">
           {form.wordCount} · {form.tone}
         </span>
-        <ChevronDown size={16} aria-hidden="true" />
-      </button>
-      {isOpen && (
-        <div className="article-copy-params__body">
-          <div className="article-copy-params__group">
-            <strong>期望字数</strong>
-            <div className="article-copy-params__options">
-              {wordCounts.map((item) => (
-                <button
-                  className={form.wordCount === item ? "is-selected" : ""}
-                  type="button"
-                  key={item}
-                  onClick={() => onUpdateForm({ wordCount: item })}
-                >
-                  <span aria-hidden="true" />
-                  {item}
-                </button>
-              ))}
-            </div>
+      </div>
+      <div className="article-copy-params__body">
+        <div className="article-copy-params__group">
+          <strong>期望字数</strong>
+          <div className="article-copy-params__options">
+            {wordCounts.map((item) => (
+              <button
+                className={form.wordCount === item ? "is-selected" : ""}
+                type="button"
+                key={item}
+                onClick={() => onUpdateForm({ wordCount: item })}
+              >
+                <span aria-hidden="true" />
+                {item}
+              </button>
+            ))}
           </div>
-          <div className="article-copy-params__group">
-            <strong>文案语气</strong>
-            <div className="article-copy-params__options is-wrap">
-              {copyTones.map((item) => (
-                <button
-                  className={form.tone === item ? "is-selected" : ""}
-                  type="button"
-                  key={item}
-                  onClick={() => onUpdateForm({ tone: item })}
-                >
-                  <span aria-hidden="true" />
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-          <label className="article-copy-params__keyword">
-            <span>核心关键词补充</span>
-            <input
-              value={form.keyword}
-              onChange={(event) => onUpdateForm({ keyword: event.target.value })}
-              placeholder="填入商品/卖点关键词，逗号分隔"
-            />
-          </label>
         </div>
-      )}
+        <div className="article-copy-params__group">
+          <strong>文案语气</strong>
+          <div className="article-copy-params__options is-wrap">
+            {copyTones.map((item) => (
+              <button
+                className={form.tone === item ? "is-selected" : ""}
+                type="button"
+                key={item}
+                onClick={() => onUpdateForm({ tone: item })}
+              >
+                <span aria-hidden="true" />
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -967,7 +937,6 @@ function ArticlePreview({ task, onClose, authUser }) {
                 </div>
               )}
               <div className="article-history-full-footer">
-                <span>{createdAt}</span>
                 <div className="article-history-full-footer-actions">
                   <button
                     type="button"
@@ -1022,6 +991,9 @@ export function ArticleGenerationView({
   const [cards, setCards] = useState([]);
   const [draftCopy, setDraftCopy] = useState(null);
   const [imagePromptPlan, setImagePromptPlan] = useState(null);
+  const [selectedStyleTemplateId, setSelectedStyleTemplateId] = useState(null);
+  const [referenceAssets, setReferenceAssets] = useState([]);
+  const [isReferenceUploading, setIsReferenceUploading] = useState(false);
   const [resultViewMode, setResultViewMode] = useState("full");
   const [activePreviewIndex, setActivePreviewIndex] = useState(0);
   const [step, setStep] = useState(2);
@@ -1036,10 +1008,11 @@ export function ArticleGenerationView({
   const [isModelOpen, setIsModelOpen] = useState(false);
   const [pendingQuickTemplate, setPendingQuickTemplate] = useState(null);
   const [previewQuickTemplate, setPreviewQuickTemplate] = useState(null);
-  const [isCopyParamsOpen, setIsCopyParamsOpen] = useState(true);
   const templateSelectRef = useRef(null);
   const morePlatformRef = useRef(null);
   const modelSelectRef = useRef(null);
+  const referenceInputRef = useRef(null);
+  const referenceAssetsRef = useRef([]);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
@@ -1057,7 +1030,6 @@ export function ArticleGenerationView({
     setForm((current) => ({
       ...current,
       topic: pendingSeed.prompt || current.topic,
-      keyword: pendingSeed.title || current.keyword,
     }));
     setDraftCopy(null);
     setImagePromptPlan(null);
@@ -1067,6 +1039,20 @@ export function ArticleGenerationView({
     onModeChange?.("home");
     if (pendingSeed.notice) showToast(pendingSeed.notice);
   }, [isActive, onModeChange]);
+
+  useEffect(() => {
+    referenceAssetsRef.current = referenceAssets;
+  }, [referenceAssets]);
+
+  useEffect(() => {
+    return () => {
+      referenceAssetsRef.current.forEach((asset) => {
+        if (asset?.previewUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(asset.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -1182,7 +1168,7 @@ export function ArticleGenerationView({
       selectedTask?.createdAt || selectedTask?.created_at || selectedTask?.time,
     ) || "刚刚";
   const activeStyleTemplatePreviews = useMemo(
-    () => pickRandomStyleTemplates(form.visualStyle, 6),
+    () => pickRandomStyleTemplates(form.visualStyle, 4),
     [form.visualStyle],
   );
   const showStyleTemplatePreview =
@@ -1195,6 +1181,14 @@ export function ArticleGenerationView({
     visualStyles.find((item) => item.id === form.visualStyle)?.label || "清新";
 
   useEffect(() => {
+    setSelectedStyleTemplateId((current) =>
+      activeStyleTemplatePreviews.some((item) => item.id === current)
+        ? current
+        : activeStyleTemplatePreviews[0]?.id || null,
+    );
+  }, [activeStyleTemplatePreviews]);
+
+  useEffect(() => {
     setActivePreviewIndex((current) => Math.min(current, Math.max(previewImages.length - 1, 0)));
   }, [previewImages.length]);
 
@@ -1204,6 +1198,14 @@ export function ArticleGenerationView({
       if (selectedTask.status === "completed" || selectedTask.status === "partial_completed") setStep(4);
       if (selectedTask.copy && !draftCopy) setDraftCopy(selectedTask.copy);
       if (selectedTask.imagePromptPlan && !imagePromptPlan) setImagePromptPlan(selectedTask.imagePromptPlan);
+      const planReferenceAssets =
+        selectedTask.imagePromptPlan?.referenceAssets ||
+        (selectedTask.imagePromptPlan?.referenceAsset
+          ? [selectedTask.imagePromptPlan.referenceAsset]
+          : []);
+      if (planReferenceAssets.length && !referenceAssets.length) {
+        setReferenceAssets(planReferenceAssets);
+      }
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
 
       if (
@@ -1223,7 +1225,7 @@ export function ArticleGenerationView({
           .catch(() => {});
       }
     }
-  }, [selectedTask, draftCopy, imagePromptPlan]);
+  }, [selectedTask, draftCopy, imagePromptPlan, referenceAssets.length]);
 
   function updateForm(patch) {
     setForm((current) => ({ ...current, ...patch }));
@@ -1237,6 +1239,81 @@ export function ArticleGenerationView({
       setImagePromptPlan(null);
     }
     setSubmitError("");
+  }
+
+  function addReferenceAssets(fileList) {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const validFiles = [];
+    for (const file of files) {
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type || "")) {
+        showToast("请上传 JPG、PNG 或 WebP 图片");
+        continue;
+      }
+      validFiles.push(file);
+    }
+    if (!validFiles.length) return;
+    setReferenceAssets((current) => {
+      const slots = Math.max(0, MAX_ARTICLE_REFERENCE_ASSETS - current.length);
+      const nextFiles = validFiles.slice(0, slots);
+      if (validFiles.length > slots) {
+        showToast(`最多上传 ${MAX_ARTICLE_REFERENCE_ASSETS} 张参考素材`);
+      }
+      return [
+        ...current,
+        ...nextFiles.map((file) => ({
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          file,
+          name: file.name,
+          mimeType: file.type,
+          size: file.size,
+          previewUrl: URL.createObjectURL(file),
+          status: "local",
+        })),
+      ];
+    });
+    setImagePromptPlan(null);
+    if (referenceInputRef.current) referenceInputRef.current.value = "";
+  }
+
+  function removeReferenceAsset(assetKey) {
+    setReferenceAssets((current) => {
+      const removed = current.find((asset) => (asset.id || asset.referenceImageUrl) === assetKey);
+      if (removed?.previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return current.filter((asset) => (asset.id || asset.referenceImageUrl) !== assetKey);
+    });
+    setImagePromptPlan(null);
+  }
+
+  async function ensureReferenceAssetsUploaded() {
+    if (!referenceAssets.length) return [];
+    setIsReferenceUploading(true);
+    try {
+      const uploadedAssets = [];
+      for (const asset of referenceAssets) {
+        if (asset.referenceImageUrl) {
+          uploadedAssets.push(asset);
+          continue;
+        }
+        if (!asset.file) continue;
+        const uploaded = await articleApi.uploadReferenceImage(asset.file);
+        uploadedAssets.push({
+          ...asset,
+          ...uploaded,
+          name: uploaded.originalName || asset.name,
+          status: "uploaded",
+        });
+      }
+      setReferenceAssets(uploadedAssets);
+      return uploadedAssets;
+    } catch (error) {
+      showToast(error.message || "参考素材上传失败");
+      throw error;
+    } finally {
+      setIsReferenceUploading(false);
+    }
   }
 
   function showToast(message) {
@@ -1305,7 +1382,6 @@ export function ArticleGenerationView({
       platform: "小红书种草",
       copyTemplate: template.copyTemplate || "完整图文模板",
       topic: preserveDraftAndTopic ? current.topic : template.topic,
-      keyword: preserveDraftAndTopic ? current.keyword : template.keyword,
       tone: template.tone || current.tone,
       ratio: "3:4",
     }));
@@ -1360,6 +1436,7 @@ export function ArticleGenerationView({
     setIsDraftSubmitting(true);
     setPreviewTask(null);
     try {
+      const uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
       const result = await articleApi.createCopyDraft({
         platform: form.platform,
         copyTemplate: form.copyTemplate,
@@ -1367,13 +1444,13 @@ export function ArticleGenerationView({
         tone: form.tone,
         copyExpectation: form.tone,
         topic: form.topic,
-        keyword: form.keyword,
-        keywords: form.keyword,
         imageCount: form.imageCount,
         ratio: form.ratio,
         contentType: form.contentType,
         layoutStyle: form.layoutStyle,
-        visualStyle: form.visualStyle
+        visualStyle: form.visualStyle,
+        templateId: selectedStyleTemplateId,
+        referenceAssets: uploadedReferenceAssets,
       });
       setDraftCopy(result.copy);
       setImagePromptPlan(result.imagePromptPlan);
@@ -1403,6 +1480,15 @@ export function ArticleGenerationView({
       return;
     }
 
+    let uploadedReferenceAssets = overrides.referenceAssets || referenceAssets;
+    try {
+      if (!overrides.referenceAssets) {
+        uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
+      }
+    } catch {
+      return;
+    }
+
     const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
     const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
     const selectedModel =
@@ -1420,6 +1506,8 @@ export function ArticleGenerationView({
       contentType: overrides.contentType || form.contentType,
       visualStyle: overrides.visualStyle || form.visualStyle,
       layoutStyle: overrides.layoutStyle || form.layoutStyle,
+      templateId: overrides.templateId || selectedStyleTemplateId,
+      referenceAssets: uploadedReferenceAssets,
     };
 
     setDraftCopy(nextDraft);
@@ -1439,8 +1527,6 @@ export function ArticleGenerationView({
         wordCount: generationForm.wordCount,
         tone: generationForm.tone,
         topic: generationForm.topic,
-        keyword: generationForm.keyword,
-        keywords: generationForm.keyword,
         contentType: generationForm.contentType,
         visualStyle: generationForm.visualStyle,
         layoutStyle: generationForm.layoutStyle,
@@ -1448,6 +1534,8 @@ export function ArticleGenerationView({
         ratio: generationForm.ratio,
         quality: generationForm.quality,
         imageCount: generationForm.imageCount,
+        templateId: generationForm.templateId,
+        referenceAssets: generationForm.referenceAssets,
       });
       setCards((current) => [item, ...current.filter((card) => card.id !== item.id)]);
       setSelectedTaskId(item.id);
@@ -1472,6 +1560,10 @@ export function ArticleGenerationView({
       contentType: plan?.contentType,
       visualStyle: plan?.visualStyle,
       layoutStyle: plan?.layoutStyle,
+      templateId: plan?.template?.id || plan?.template?.legacyId,
+      referenceAssets:
+        plan?.referenceAssets ||
+        (plan?.referenceAsset ? [plan.referenceAsset] : []),
     };
   }
 
@@ -1484,6 +1576,7 @@ export function ArticleGenerationView({
     if (task?.type === "package" || task?.packageId) {
       const overrides = buildPackageRegenerateOverrides(task);
       if (overrides.model) setModel(overrides.model);
+      if (overrides.referenceAssets?.length) setReferenceAssets(overrides.referenceAssets);
       setForm((current) => ({
         ...current,
         ratio: overrides.ratio || current.ratio,
@@ -1493,6 +1586,7 @@ export function ArticleGenerationView({
         visualStyle: overrides.visualStyle || current.visualStyle,
         layoutStyle: overrides.layoutStyle || current.layoutStyle,
       }));
+      if (overrides.templateId) setSelectedStyleTemplateId(overrides.templateId);
       await submitGeneration(overrides);
       return;
     }
@@ -1745,6 +1839,53 @@ export function ArticleGenerationView({
                     }
                     placeholder="城市宝藏小店探店，氛围感满满的美食打卡文案"
                   />
+                  <div className={`article-reference-upload${referenceAssets.length ? " has-asset" : ""}`}>
+                    <input
+                      ref={referenceInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      onChange={(event) => addReferenceAssets(event.target.files)}
+                    />
+                    <button
+                      className="article-reference-upload__pick"
+                      type="button"
+                      disabled={isReferenceUploading || referenceAssets.length >= MAX_ARTICLE_REFERENCE_ASSETS}
+                      onClick={() => referenceInputRef.current?.click()}
+                    >
+                      {isReferenceUploading ? <Loader2 size={16} className="is-spinning" /> : <ImagePlus size={16} />}
+                    </button>
+                    <div className="article-reference-upload__text">
+                      <strong>{referenceAssets.length ? `已添加 ${referenceAssets.length} 张参考素材` : "上传参考素材"}</strong>
+                      <span>
+                        {isReferenceUploading
+                          ? "正在上传素材..."
+                          : referenceAssets.length
+                            ? "生成图片会强制包含这些素材主体"
+                            : `可上传多张，最多 ${MAX_ARTICLE_REFERENCE_ASSETS} 张`}
+                      </span>
+                    </div>
+                    {!!referenceAssets.length && (
+                      <div className="article-reference-upload__thumbs">
+                        {referenceAssets.map((asset) => (
+                          <figure className="article-reference-upload__thumb" key={asset.id || asset.referenceImageUrl}>
+                            {asset.previewUrl || asset.referenceImageUrl ? (
+                              <img src={asset.previewUrl || asset.referenceImageUrl} alt="" />
+                            ) : (
+                              <ImagePlus size={14} />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeReferenceAsset(asset.id || asset.referenceImageUrl)}
+                              aria-label="移除参考素材"
+                            >
+                              <X size={12} />
+                            </button>
+                          </figure>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </label>
               <section className="article-quick-section is-inline">
@@ -1771,8 +1912,6 @@ export function ArticleGenerationView({
                 form={form}
                 wordCounts={wordCounts}
                 copyTones={copyTones}
-                isOpen={isCopyParamsOpen}
-                onToggle={() => setIsCopyParamsOpen((value) => !value)}
                 onUpdateForm={updateForm}
               />
               </div>
@@ -1781,7 +1920,7 @@ export function ArticleGenerationView({
                   className="article-generate-fab"
                   type="button"
                   onClick={generateDraft}
-                  disabled={isDraftSubmitting}
+                  disabled={isDraftSubmitting || isReferenceUploading}
                 >
                   {isDraftSubmitting ? (
                     <Loader2 size={17} className="is-spinning" />
@@ -1828,7 +1967,7 @@ export function ArticleGenerationView({
             <strong>{showStyleTemplatePreview ? "模板预览" : "生成结果"}</strong>
             <span>
               {showStyleTemplatePreview
-                ? `${activeVisualStyleLabel}风格 · 6 款示意`
+                ? `${activeVisualStyleLabel}风格 · 2 款示意 · ${form.imageCount}图 · ${form.ratio}`
                 : `${form.platform} · ${form.ratio}`}
             </span>
           </header>
@@ -1935,7 +2074,17 @@ export function ArticleGenerationView({
               </div>
             </div>
           ) : showStyleTemplatePreview ? (
-            <ArticleStyleTemplatePreview items={activeStyleTemplatePreviews} />
+            <ArticleStyleTemplatePreview
+              items={activeStyleTemplatePreviews}
+              selectedId={selectedStyleTemplateId}
+              imageCount={form.imageCount}
+              ratio={form.ratio}
+              onSelect={(id) => {
+                setSelectedStyleTemplateId(id);
+                setImagePromptPlan(null);
+                setSubmitError("");
+              }}
+            />
           ) : (
             <>
               <ArticlePopularResultPanel

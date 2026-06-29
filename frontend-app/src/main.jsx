@@ -7,6 +7,12 @@
   useState,
 } from "react";
 import BillingPoints from "./components/BillingPoints.jsx";
+import { FeatureViewTabs } from "./components/FeatureViewTabs.jsx";
+import {
+  InspirationLibraryDrawer,
+  INSPIRATION_LIBRARY_DEFAULT_TAB,
+  INSPIRATION_LIBRARY_TABS,
+} from "./components/InspirationLibraryDrawer.jsx";
 import { createRoot } from "react-dom/client";
 import { Button, ConfigProvider } from "@arco-design/web-react";
 import ReactMarkdown from "react-markdown";
@@ -1298,28 +1304,6 @@ const fmInspirationCategoryRouteMap = {
   爆款图文: { feature: "article", target: "article", model: "AI 图文" },
 };
 
-const fmInspirationLibraryDefaultTab = "全部";
-const fmInspirationLibraryTabs = ["全部", "图片模板", "视频模板"];
-
-const fmInspirationLibraryItems = [
-  { title: "电商主图", icon: "🛍️", tab: "图片模板", route: "image" },
-  { title: "赛博海报", icon: "🌃", tab: "图片模板", route: "image" },
-  { title: "插画头像", icon: "🎨", tab: "图片模板", route: "image" },
-  { title: "3D 产品", icon: "✨", tab: "图片模板", route: "image" },
-  { title: "国潮美食", icon: "🍜", tab: "图片模板", route: "image" },
-  { title: "品牌 IP", icon: "🐱", tab: "图片模板", route: "image" },
-  { title: "人像写真", icon: "👤", tab: "图片模板", route: "image" },
-  { title: "节日海报", icon: "🎉", tab: "图片模板", route: "image" },
-  { title: "短视频口播", icon: "🎤", tab: "视频模板", route: "video" },
-  { title: "产品种草", icon: "🌿", tab: "视频模板", route: "video" },
-  { title: "漫剧片段", icon: "🎭", tab: "视频模板", route: "video" },
-  { title: "蝶舞", icon: "🦋", tab: "视频模板", route: "video" },
-  { title: "趣味短剧", icon: "🐱", tab: "视频模板", route: "video" },
-  { title: "城市延时", icon: "🌃", tab: "视频模板", route: "video" },
-  { title: "产品旋转", icon: "📦", tab: "视频模板", route: "video" },
-  { title: "口播带货", icon: "🛒", tab: "视频模板", route: "video" },
-];
-
 function getFaceminiInspirationRoute(item) {
   return (
     fmInspirationCategoryRouteMap[item?.category] ||
@@ -1353,120 +1337,6 @@ function getFaceminiVideoInspirations() {
     material: "视频素材",
     aspect: "wide",
   }));
-}
-
-function InspirationLibraryDrawer({
-  open,
-  activeTab,
-  onTabChange,
-  onClose,
-  onOpenFeature,
-}) {
-  const [keyword, setKeyword] = useState("");
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") onClose?.();
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
-
-  const filteredItems = useMemo(() => {
-    const query = keyword.trim().toLowerCase();
-    return fmInspirationLibraryItems.filter((item) => {
-      const matchesTab = activeTab === "全部" || item.tab === activeTab;
-      const matchesKeyword =
-        !query ||
-        item.title.toLowerCase().includes(query) ||
-        item.tab.toLowerCase().includes(query);
-      return matchesTab && matchesKeyword;
-    });
-  }, [activeTab, keyword]);
-
-  if (!open) return null;
-
-  function selectItem(item) {
-    onClose?.();
-    onOpenFeature?.(item.route);
-  }
-
-  return (
-    <div
-      className="fm-library-drawer-shell"
-      role="dialog"
-      aria-modal="true"
-      aria-label="灵感库"
-    >
-      <button
-        className="fm-library-drawer-mask"
-        type="button"
-        aria-label="关闭灵感库"
-        onClick={onClose}
-      />
-      <aside className="fm-library-drawer">
-        <header className="fm-library-head">
-          <div className="fm-library-title">
-            <Sparkles size={18} />
-            <h2>灵感库</h2>
-          </div>
-          <button
-            className="fm-library-close"
-            type="button"
-            aria-label="关闭灵感库"
-            onClick={onClose}
-          >
-            <X size={18} />
-          </button>
-        </header>
-        <nav className="fm-library-tabs" aria-label="灵感库分类">
-          {fmInspirationLibraryTabs.map((tab) => (
-            <button
-              className={activeTab === tab ? "is-active" : ""}
-              type="button"
-              key={tab}
-              onClick={() => onTabChange(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-        <label className="fm-library-search">
-          <Search size={16} />
-          <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="搜索模板名称、风格、场景..."
-          />
-        </label>
-        <div className="fm-library-grid">
-          {filteredItems.map((item) => (
-            <button
-              className="fm-library-card"
-              type="button"
-              key={`${item.tab}-${item.title}`}
-              onClick={() => selectItem(item)}
-            >
-              <span className="fm-library-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span>{item.title}</span>
-            </button>
-          ))}
-        </div>
-        {!filteredItems.length && (
-          <div className="fm-library-empty">
-            <Sparkles size={24} />
-            <strong>暂无匹配模板</strong>
-            <p>换个关键词或分类试试</p>
-          </div>
-        )}
-      </aside>
-    </div>
-  );
 }
 
 const appEntryStorageKey = "jingchuang:enter-app";
@@ -12235,39 +12105,15 @@ function WatermarkRemovalView({
 
   return (
     <section className="watermark-view-root">
-      <div className="image-filter-tabs watermark-filter-tabs">
-        <button
-          className={viewTab === "home" ? "selected" : ""}
-          type="button"
-          onClick={() => setViewTab("home")}
-        >
-          主页
-        </button>
-        <button
-          className={viewTab === "recent" ? "selected" : ""}
-          type="button"
-          onClick={() => {
-            setViewTab("recent");
-            setSubmittedTaskId(null);
-          }}
-        >
-          历史记录
-        </button>
-        <button
-          className={viewTab === "favorite" ? "selected" : ""}
-          type="button"
-          onClick={() => {
-            setViewTab("favorite");
-            setSubmittedTaskId(null);
-          }}
-        >
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-        {credits && (
-          <span className="credits-chip">积分 {credits.balance}</span>
-        )}
-      </div>
+      <FeatureViewTabs
+        currentLabel="去水印"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => {
+          setViewTab("recent");
+          setSubmittedTaskId(null);
+        }}
+      />
       <div
         className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}
       >
@@ -12640,12 +12486,38 @@ function WorkbenchTopbar({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
+  const [isVideoWorkflowHistoryOpen, setIsVideoWorkflowHistoryOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const showDigitalHumanTabs = activeNav === "digital-human";
   const showArticleTabs = activeNav === "article";
+  const showVideoWorkflowHistory = activeNav === "motion" || activeNav === "face-swap";
+  const hideStandaloneTitleTabs = [
+    "watermark",
+    "remove-bg",
+    "enhance",
+    "replicate",
+    "voice",
+    "music",
+    "voice-convert",
+    "transcribe",
+    "video-voice",
+  ].includes(activeNav);
 
   useEffect(() => {
     setShowProfileMenu(false);
+    setIsVideoWorkflowHistoryOpen(false);
+  }, [activeNav]);
+
+  useEffect(() => {
+    function handleHistoryState(event) {
+      if (event.detail?.moduleId !== activeNav) return;
+      setIsVideoWorkflowHistoryOpen(Boolean(event.detail?.open));
+    }
+
+    window.addEventListener("facemini:video-workflow-history-state", handleHistoryState);
+    return () => {
+      window.removeEventListener("facemini:video-workflow-history-state", handleHistoryState);
+    };
   }, [activeNav]);
 
   function flashCreditDelta(amount) {
@@ -12754,10 +12626,14 @@ function WorkbenchTopbar({
   return (
     <>
       <header
-        className={`fm-workbench-topbar ${showDigitalHumanTabs || showArticleTabs ? "has-digital-tabs" : ""}`}
+        className={`fm-workbench-topbar ${
+          showDigitalHumanTabs || showArticleTabs || showVideoWorkflowHistory
+            ? "has-digital-tabs"
+            : ""
+        }${showVideoWorkflowHistory ? " has-video-workflow-tabs" : ""}${hideStandaloneTitleTabs ? " has-feature-view-tabs" : ""}`}
       >
         <div className="fm-topbar-title-row">
-          {!showArticleTabs && (
+          {!showArticleTabs && !showVideoWorkflowHistory && (
             <h1>
               {activeNav === "music" ? (
                 <button
@@ -12784,7 +12660,7 @@ function WorkbenchTopbar({
           )}
           {showArticleTabs && (
             <div
-              className="fm-digital-tabs fm-article-top-tabs"
+              className="fm-digital-tabs fm-video-workflow-tabs"
               aria-label="爆款图文类型"
             >
               <button
@@ -12800,6 +12676,41 @@ function WorkbenchTopbar({
                 onClick={() => onArticleModeChange?.("history")}
               >
                 历史图文
+              </button>
+            </div>
+          )}
+          {showVideoWorkflowHistory && (
+            <div
+              className="fm-digital-tabs fm-article-top-tabs"
+              aria-label={`${title}页面`}
+            >
+              <button
+                type="button"
+                className={!isVideoWorkflowHistoryOpen ? "is-active" : ""}
+                onClick={() => {
+                  setIsVideoWorkflowHistoryOpen(false);
+                  window.dispatchEvent(
+                    new CustomEvent("facemini:video-workflow-history", {
+                      detail: { moduleId: activeNav, open: false },
+                    }),
+                  );
+                }}
+              >
+                {title}
+              </button>
+              <button
+                type="button"
+                className={isVideoWorkflowHistoryOpen ? "is-active" : ""}
+                onClick={() => {
+                  setIsVideoWorkflowHistoryOpen(true);
+                  window.dispatchEvent(
+                    new CustomEvent("facemini:video-workflow-history", {
+                      detail: { moduleId: activeNav, open: true },
+                    }),
+                  );
+                }}
+              >
+                历史
               </button>
             </div>
           )}
@@ -12923,7 +12834,7 @@ function ImageFeaturePage({
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
   const [inspirationLibraryTab, setInspirationLibraryTab] = useState(
-    fmInspirationLibraryDefaultTab,
+    INSPIRATION_LIBRARY_DEFAULT_TAB,
   );
   const [composerResetSignals, setComposerResetSignals] = useState({
     image: 0,
@@ -13033,11 +12944,11 @@ function ImageFeaturePage({
   }, [activeNav, authUser]);
 
   const openInspirationLibrary = useCallback(
-    (tab = fmInspirationLibraryDefaultTab) => {
+    (tab = INSPIRATION_LIBRARY_DEFAULT_TAB) => {
       setInspirationLibraryTab(
-        fmInspirationLibraryTabs.includes(tab)
+        INSPIRATION_LIBRARY_TABS.includes(tab)
           ? tab
-          : fmInspirationLibraryDefaultTab,
+          : INSPIRATION_LIBRARY_DEFAULT_TAB,
       );
       setShowInspirationLibrary(true);
     },
@@ -13057,7 +12968,7 @@ function ImageFeaturePage({
       {isGuest && (
         <div
           className="feature-guest-auth-actions"
-          aria-label="游客璐﹀彿鍏ュ彛"
+          aria-label="游客账号入口"
         >
           <button type="button" onClick={() => onOpenAuth("login")}>
             登录

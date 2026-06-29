@@ -205,6 +205,27 @@ export function VideoGenerationWorkflow({
   }, [isActive, activeTaskKey]);
 
   useEffect(() => {
+    function handleOpenHistory(event) {
+      if (event.detail?.moduleId !== moduleId) return;
+      setShowHistory(Boolean(event.detail?.open));
+    }
+
+    window.addEventListener("facemini:video-workflow-history", handleOpenHistory);
+    return () => {
+      window.removeEventListener("facemini:video-workflow-history", handleOpenHistory);
+    };
+  }, [moduleId]);
+
+  function closeHistory() {
+    setShowHistory(false);
+    window.dispatchEvent(
+      new CustomEvent("facemini:video-workflow-history-state", {
+        detail: { moduleId, open: false },
+      }),
+    );
+  }
+
+  useEffect(() => {
     return () => {
       if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
     };
@@ -498,7 +519,7 @@ export function VideoGenerationWorkflow({
   }
 
   function repeatTask(task) {
-    setShowHistory(false);
+    closeHistory();
     createTask({
       imageAssetId: task.imageAssetId,
       videoAssetId: task.videoAssetId,
@@ -597,91 +618,90 @@ export function VideoGenerationWorkflow({
     <section className="vgw-root" data-status={workflowStatus} data-module={moduleId}>
       <div className="vgw-ambient" aria-hidden="true" />
 
-      <WorkflowHeader
-        eyebrow={header.eyebrow}
-        title={header.title}
-        description={header.description}
-        workflowStatus={workflowStatus}
-        credits={credits}
-        onOpenHistory={() => setShowHistory(true)}
-      />
-
-      <main className="vgw-workflow" data-active-step={activeWorkflowStep}>
-        {activeWorkflowStep === 1 && (
-          <InputSection
-            stepState={inputStepState}
-            workflowStatus={workflowStatus}
-            subjectSlot={{
-              kind: "photo",
-              title: subjectSlot.title,
-              hint: subjectSlot.hint,
-              previewUrl: taskState.input.imagePreview,
-              asset: taskState.input.imageAsset,
-              isUploading: taskState.input.uploadingField === "image",
-              accept: "image/*",
-              fileFallback: subjectSlot.fileFallback,
-              onSelect: selectImage,
-              onClear: clearImage,
-            }}
-            driverSlot={{
-              kind: "video",
-              title: driverSlot.title,
-              hint: driverSlot.hint,
-              previewUrl: taskState.input.videoPreview,
-              asset: taskState.input.videoAsset,
-              isUploading: taskState.input.uploadingField === "video",
-              accept: "video/*",
-              fileFallback: driverSlot.fileFallback,
-              onSelect: selectVideo,
-              onClear: clearVideo,
-            }}
-            config={
-              renderExtraConfig
-                ? renderExtraConfig({ input: taskState.input, patchInput, options, selectedModel, resolutionOptions })
-                : defaultConfig
-            }
-          />
-        )}
-
-        {activeWorkflowStep === 2 && (
-          <ProcessTimeline progress={progress} status={workflowStatus} error={errorMessage} />
-        )}
-
-        {activeWorkflowStep === 3 && (
-          <ResultViewer
-            beforeUrl={sourceVideoUrl}
-            afterUrl={resultUrl}
-            posterUrl={activeTask?.thumbnailUrl || activeTask?.imageUrl || ""}
-            compareLabels={compareLabels}
-            showCompare={Boolean(sourceVideoUrl)}
-          />
-        )}
-      </main>
-
-      <ActionBar
-        workflowStatus={workflowStatus}
-        canGenerate={canGenerate}
-        isSubmitting={isSubmitting}
-        progress={progress}
-        hasResult={Boolean(resultUrl)}
-        privacyText={privacyText}
-        onGenerate={handleGenerate}
-        onRetry={handleRetry}
-        onNewTask={handleNewTask}
-        resultUrl={resultUrl}
-      />
-
-      {notice && <div className="vgw-toast">{notice}</div>}
-
-      {showHistory && (
+      {showHistory ? (
         <HistoryPanel
           tasks={tasks}
-          onClose={() => setShowHistory(false)}
           onRepeat={requestRepeat}
           onDelete={deleteTask}
           onFavorite={toggleFavorite}
           emptyHint={historyEmptyHint}
         />
+      ) : (
+        <>
+          <WorkflowHeader
+            eyebrow={header.eyebrow}
+            title={header.title}
+            description={header.description}
+            workflowStatus={workflowStatus}
+          />
+
+          <main className="vgw-workflow" data-active-step={activeWorkflowStep}>
+            {activeWorkflowStep === 1 && (
+              <InputSection
+                stepState={inputStepState}
+                workflowStatus={workflowStatus}
+                subjectSlot={{
+                  kind: "photo",
+                  title: subjectSlot.title,
+                  hint: subjectSlot.hint,
+                  previewUrl: taskState.input.imagePreview,
+                  asset: taskState.input.imageAsset,
+                  isUploading: taskState.input.uploadingField === "image",
+                  accept: "image/*",
+                  fileFallback: subjectSlot.fileFallback,
+                  onSelect: selectImage,
+                  onClear: clearImage,
+                }}
+                driverSlot={{
+                  kind: "video",
+                  title: driverSlot.title,
+                  hint: driverSlot.hint,
+                  previewUrl: taskState.input.videoPreview,
+                  asset: taskState.input.videoAsset,
+                  isUploading: taskState.input.uploadingField === "video",
+                  accept: "video/*",
+                  fileFallback: driverSlot.fileFallback,
+                  onSelect: selectVideo,
+                  onClear: clearVideo,
+                }}
+                config={
+                  renderExtraConfig
+                    ? renderExtraConfig({ input: taskState.input, patchInput, options, selectedModel, resolutionOptions })
+                    : defaultConfig
+                }
+              />
+            )}
+
+            {activeWorkflowStep === 2 && (
+              <ProcessTimeline progress={progress} status={workflowStatus} error={errorMessage} />
+            )}
+
+            {activeWorkflowStep === 3 && (
+              <ResultViewer
+                beforeUrl={sourceVideoUrl}
+                afterUrl={resultUrl}
+                posterUrl={activeTask?.thumbnailUrl || activeTask?.imageUrl || ""}
+                compareLabels={compareLabels}
+                showCompare={Boolean(sourceVideoUrl)}
+              />
+            )}
+          </main>
+
+          <ActionBar
+            workflowStatus={workflowStatus}
+            canGenerate={canGenerate}
+            isSubmitting={isSubmitting}
+            progress={progress}
+            hasResult={Boolean(resultUrl)}
+            privacyText={privacyText}
+            onGenerate={handleGenerate}
+            onRetry={handleRetry}
+            onNewTask={handleNewTask}
+            resultUrl={resultUrl}
+          />
+
+          {notice && <div className="vgw-toast">{notice}</div>}
+        </>
       )}
 
       {deleteConfirmDialog}

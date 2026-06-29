@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { getPool } from "../../db/pool.js";
 import { createDeepSeekChatResponse } from "../../providers/deepseek/chat.js";
+import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { createHttpError } from "../../shared/http.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
 import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
@@ -13,6 +14,10 @@ import {
   listTasks as listImageTasks,
   toggleFavorite as toggleImageFavorite
 } from "../image/image.service.js";
+import {
+  findArticleStyleTemplate,
+  snapshotArticleStyleTemplate
+} from "./article.templates.js";
 import {
   createArticlePackage,
   deleteArticlePackageRow,
@@ -28,6 +33,80 @@ const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const DEFAULT_COPY_MODEL = "deepseek-v4-pro";
 const allowedImageCounts = new Set([1, 2, 3, 4]);
 const validPackageStatuses = new Set(["pending", "processing", "partial_completed", "completed", "failed"]);
+
+function getTemplateIdFromPayload(payload = {}) {
+  return normalizeText(
+    payload.templateId ||
+      payload.styleTemplateId ||
+      payload.selectedTemplateId ||
+      payload.template?.id ||
+      payload.imagePromptPlan?.template?.id ||
+      payload.imagePromptPlan?.template?.legacyId,
+    240
+  );
+}
+
+function getTemplateForPayload(payload = {}) {
+  const templateId = getTemplateIdFromPayload(payload);
+  if (!templateId) return null;
+  return findArticleStyleTemplate({
+    templateId,
+    visualStyle: normalizeText(payload.visualStyle || payload.imagePromptPlan?.visualStyle, 80)
+  });
+}
+
+function mimeTypeFromTemplate(template) {
+  const ext = String(template?.filename || "").split(".").pop()?.toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  return "image/webp";
+}
+
+function getUserReferenceImageUrl(payload = {}) {
+  return getUserReferenceImageUrls(payload)[0] || "";
+}
+
+function normalizeReferenceAsset(asset = {}) {
+  const referenceImageUrl = normalizeText(asset.referenceImageUrl || asset.url, 1000);
+  if (!referenceImageUrl) return null;
+  return {
+    referenceImageUrl,
+    originalName: normalizeText(asset.originalName || asset.name, 160),
+    mimeType: normalizeText(asset.mimeType, 80),
+    size: Number(asset.size || 0) || null
+  };
+}
+
+function getReferenceAssetCandidates(payload = {}) {
+  return [
+    ...(Array.isArray(payload.referenceAssets) ? payload.referenceAssets : []),
+    payload.referenceAsset,
+    ...(Array.isArray(payload.imagePromptPlan?.referenceAssets) ? payload.imagePromptPlan.referenceAssets : []),
+    payload.imagePromptPlan?.referenceAsset,
+    payload.referenceImageUrl ? { referenceImageUrl: payload.referenceImageUrl } : null,
+    payload.imagePromptPlan?.referenceImageUrl ? { referenceImageUrl: payload.imagePromptPlan.referenceImageUrl } : null
+  ].filter(Boolean);
+}
+
+function snapshotReferenceAssets(payload = {}) {
+  const assets = getReferenceAssetCandidates(payload)
+    .map(normalizeReferenceAsset)
+    .filter(Boolean);
+  const seen = new Set();
+  return assets.filter((asset) => {
+    if (seen.has(asset.referenceImageUrl)) return false;
+    seen.add(asset.referenceImageUrl);
+    return true;
+  }).slice(0, 6);
+}
+
+function getUserReferenceImageUrls(payload = {}) {
+  return snapshotReferenceAssets(payload).map((asset) => asset.referenceImageUrl);
+}
+
+function snapshotReferenceAsset(payload = {}) {
+  return snapshotReferenceAssets(payload)[0] || null;
+}
 
 const wordCountGuides = {
   "短文案": "正文约 150-250 字，节奏紧凑，适合快速种草。",
@@ -194,9 +273,17 @@ function buildImagePromptSegment({ copy, base, item, index, total }) {
   const contentType = contentTypePrompts[base.contentType] || normalizeText(base.contentType, 80) || contentTypePrompts["xiaohongshu-cover"];
   const layoutStyle = layoutStylePrompts[base.layoutStyle] || normalizeText(base.layoutStyle, 80) || layoutStylePrompts.balanced;
   const keywords = normalizeText(base.keywords, 220);
+  const template = base.template;
+  const referenceAssets = base.referenceAssets || [];
+  const referenceAssetNames = referenceAssets.map((asset) => asset.originalName).filter(Boolean).join("、");
   const common = [
     `内容类型：${contentType}`,
     `布局方式：${layoutStyle}`,
+    template ? `参考模板：${template.label || template.id}。${template.layoutHints || ""}` : "",
+    template ? `模板风格约束：${template.promptHints || ""}` : "",
+    template ? `模板文字约束：${template.textPolicy || ""}` : "",
+    referenceAssets.length ? `用户上传了 ${referenceAssets.length} 张参考素材：最终图片必须清晰包含这些参考素材中的主体元素，不允许忽略、不允许只借用风格；可以重构场景和版式，但上传素材主体必须作为画面核心元素出现。` : "",
+    referenceAssetNames ? `参考素材文件名：${referenceAssetNames}` : "",
     `${ARTICLE_PROMPT_MARKER}，${base.platform}，第 ${index}/${total} 张图，${item.title}。`,
     `主题：${base.topic}`,
     `核心卖点关键词：${keywords || "围绕标题和正文提炼商品卖点"}`,
@@ -221,7 +308,7 @@ function buildImagePromptSegment({ copy, base, item, index, total }) {
     index,
     role: item.role,
     title: item.title,
-    prompt: [...common, roleDirectives[item.role] || roleDirectives.cover].join("\n"),
+    prompt: [...common, roleDirectives[item.role] || roleDirectives.cover].filter(Boolean).join("\n"),
     textPolicy: "minimal_text"
   };
 }
@@ -232,6 +319,8 @@ export function buildImagePromptPlan({ copy, payload }) {
   const visualStyle = normalizeText(payload.visualStyle || payload.imagePromptPlan?.visualStyle || "fresh", 80);
   const contentType = normalizeText(payload.contentType || payload.imagePromptPlan?.contentType || "xiaohongshu-cover", 80);
   const layoutStyle = normalizeText(payload.layoutStyle || payload.imagePromptPlan?.layoutStyle || "balanced", 80);
+  const template = snapshotArticleStyleTemplate(getTemplateForPayload(payload));
+  const referenceAssets = snapshotReferenceAssets(payload);
   const base = {
     platform: normalizeText(payload.platform || "小红书种草", 80),
     topic: ensureTopic(payload),
@@ -239,7 +328,9 @@ export function buildImagePromptPlan({ copy, payload }) {
     ratio,
     visualStyle,
     contentType,
-    layoutStyle
+    layoutStyle,
+    template,
+    referenceAssets
   };
   const roles = imageRoleMap[count] || imageRoleMap[1];
   const segments = roles.map((item, idx) => buildImagePromptSegment({
@@ -249,7 +340,28 @@ export function buildImagePromptPlan({ copy, payload }) {
     index: idx + 1,
     total: count
   }));
-  return { count, ratio, visualStyle, contentType, layoutStyle, segments };
+  return {
+    count,
+    ratio,
+    visualStyle,
+    contentType,
+    layoutStyle,
+    template,
+    referenceAsset: referenceAssets[0] || null,
+    referenceAssets,
+    segments
+  };
+}
+
+async function uploadTemplateReferenceImage(template) {
+  if (!template?.filePath) return "";
+  const upload = await uploadFileToKie({
+    filePath: template.filePath,
+    fileName: template.filename || "article-template.webp",
+    mimeType: mimeTypeFromTemplate(template),
+    uploadPath: "article-templates"
+  });
+  return upload.url || "";
 }
 
 async function getDeepSeekCopyModel() {
@@ -422,13 +534,16 @@ export async function createPackage(payload, userId) {
     keywords: payload.keywords || payload.keyword
   });
   const requestedCount = normalizeImageCount(payload.imageCount || payload.count || payload.imagePromptPlan?.count || 1);
+  const requestedTemplateId = getTemplateIdFromPayload(payload);
+  const planTemplateId = getTemplateIdFromPayload({ imagePromptPlan: payload.imagePromptPlan });
   const shouldReusePromptPlan =
     payload.imagePromptPlan?.segments?.length &&
     Number(payload.imagePromptPlan.count || payload.imagePromptPlan.segments.length) === requestedCount &&
     (!payload.ratio || payload.imagePromptPlan.ratio === payload.ratio) &&
     (!payload.visualStyle || payload.imagePromptPlan.visualStyle === payload.visualStyle) &&
     (!payload.contentType || payload.imagePromptPlan.contentType === payload.contentType) &&
-    (!payload.layoutStyle || payload.imagePromptPlan.layoutStyle === payload.layoutStyle);
+    (!payload.layoutStyle || payload.imagePromptPlan.layoutStyle === payload.layoutStyle) &&
+    (!requestedTemplateId || requestedTemplateId === planTemplateId);
   const imagePromptPlan = shouldReusePromptPlan
     ? {
         ...payload.imagePromptPlan,
@@ -438,7 +553,26 @@ export async function createPackage(payload, userId) {
     : buildImagePromptPlan({ copy, payload });
   const count = normalizeImageCount(imagePromptPlan.count || imagePromptPlan.segments.length);
   const segments = imagePromptPlan.segments.slice(0, count);
+  const selectedTemplate = getTemplateForPayload({ ...payload, imagePromptPlan });
+  if ((requestedTemplateId || planTemplateId) && !selectedTemplate) {
+    throw createHttpError("selected article style template not found", 400);
+  }
   const model = normalizeText(payload.model || "gpt_image_2", 80);
+  const hasUserReferenceImage = Boolean(getUserReferenceImageUrl({ ...payload, imagePromptPlan }));
+  if ((selectedTemplate || hasUserReferenceImage) && model !== "gpt_image_2" && model !== "gpt_image_2_i2i") {
+    throw createHttpError("参考素材图生图需要使用 GPT Image 2 模型", 400);
+  }
+  const templateReferenceImageUrl = selectedTemplate
+    ? await uploadTemplateReferenceImage(selectedTemplate)
+    : "";
+  const finalImagePromptPlan = {
+    ...imagePromptPlan,
+    count,
+    segments,
+    template: imagePromptPlan.template || snapshotArticleStyleTemplate(selectedTemplate),
+    referenceAsset: imagePromptPlan.referenceAsset || snapshotReferenceAsset(payload),
+    referenceAssets: imagePromptPlan.referenceAssets || snapshotReferenceAssets(payload)
+  };
   const ratio = normalizeText(payload.ratio || imagePromptPlan.ratio || "3:4", 20);
   const quality = normalizeText(payload.quality || "2K", 20);
   const threadId = normalizeText(payload.threadId, 80) || `article-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -453,7 +587,7 @@ export async function createPackage(payload, userId) {
       title: copy.title,
       body: copy.body,
       tags: copy.tags,
-      imagePromptPlan: { ...imagePromptPlan, count, ratio, segments },
+      imagePromptPlan: { ...finalImagePromptPlan, ratio },
       modelKey: model,
       ratio,
       quality
@@ -468,6 +602,10 @@ export async function createPackage(payload, userId) {
 
   const taskIds = [];
   for (const segment of segments) {
+    const taskReferenceImageUrls = [
+      ...getUserReferenceImageUrls({ ...payload, imagePromptPlan: finalImagePromptPlan }),
+      templateReferenceImageUrl
+    ].filter(Boolean);
     const task = await createImageTask({
       prompt: segment.prompt,
       model,
@@ -476,6 +614,8 @@ export async function createPackage(payload, userId) {
       count: 1,
       source: ARTICLE_SOURCE,
       threadId,
+      referenceImageUrl: taskReferenceImageUrls[0] || "",
+      referenceImageUrls: taskReferenceImageUrls,
       contextTaskIds: taskIds
     }, userId);
     taskIds.push(task.id);

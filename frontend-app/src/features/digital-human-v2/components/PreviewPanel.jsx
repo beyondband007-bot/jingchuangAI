@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import {
   formatDraftTime,
+  getAvatarTags,
   getVideoResolutionLabel,
   isVideoCover,
 } from "../utils";
@@ -81,6 +82,8 @@ export function PreviewPanel({
   const resolutionLabel = getVideoResolutionLabel(videoSpec);
   const canApplyDraft = avatarSource === "official";
   const generatingProgress = isSubmitting ? 0 : activeTask?.progress || 0;
+  const avatarTags = selectedAvatar ? getAvatarTags(selectedAvatar) : [];
+  const showAvatarMeta = avatarSource === "official" && selectedAvatar?.name;
   const generatingTask = {
     avatarName: activeTask?.avatarName || selectedAvatar?.name || "数字人",
     progress: generatingProgress,
@@ -103,6 +106,16 @@ export function PreviewPanel({
         <div className="dhv2-preview__toolbar">
           <div className="dhv2-preview__title-group">
             <h2>数字人 | {resolutionLabel}</h2>
+            {showAvatarMeta ? (
+              <div className="dhv2-preview__avatar-meta">
+                <strong>{selectedAvatar.name}</strong>
+                <span className="dhv2-preview__avatar-tags">
+                  {avatarTags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </span>
+              </div>
+            ) : null}
             {isGenerating ? (
               <span className="dhv2-preview__status">
                 {isSubmitting ? "提交中..." : `生成中 ${generatingProgress}%`}

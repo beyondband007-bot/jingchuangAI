@@ -67,6 +67,19 @@ function normalizeContextTaskIds(value) {
   ]
 }
 
+function normalizeReferenceImageUrls(payload = {}) {
+  const values = []
+  const push = (value) => {
+    const text = typeof value === 'string' ? value.trim() : ''
+    if (text) values.push(text)
+  }
+  push(payload.referenceImageUrl)
+  if (Array.isArray(payload.referenceImageUrls)) {
+    payload.referenceImageUrls.forEach(push)
+  }
+  return [...new Set(values)].slice(0, 6)
+}
+
 export async function getCredits(userId) {
   return getUserCredits(userId)
 }
@@ -114,13 +127,13 @@ export async function getTask(id, userId) {
 
 export async function createTask(payload, userId) {
   const { prompt, ratio, quality, count = 1, source } = payload
-  const referenceImageUrl =
-    typeof payload.referenceImageUrl === 'string'
-      ? payload.referenceImageUrl.trim()
-      : ''
+  const referenceImageUrls = normalizeReferenceImageUrls(payload)
+  const referenceImageUrl = referenceImageUrls[0] || ''
   const threadId = normalizeThreadId(payload.threadId)
   const contextTaskIds = normalizeContextTaskIds(payload.contextTaskIds)
   const requestedModel = payload.model
+  const fallbackModel =
+    typeof payload.fallbackModel === 'string' ? payload.fallbackModel.trim() : ''
   validateImagePayload({
     prompt,
     model: requestedModel,
@@ -186,14 +199,33 @@ export async function createTask(payload, userId) {
   connection.release()
 
   try {
-    const provider = await createKieImageTask({
-      prompt: prompt.trim(),
-      modelKey: model,
-      ratio,
-      quality,
-      referenceImageUrls: referenceImageUrl ? [referenceImageUrl] : [],
-    })
-    await setImageTaskProviderTaskId(taskId, provider.taskId)
+    let provider
+    let providerModel = model
+    try {
+      provider = await createKieImageTask({
+        prompt: prompt.trim(),
+        modelKey: model,
+        ratio,
+        quality,
+        referenceImageUrls,
+      })
+    } catch (primaryError) {
+      if (!fallbackModel) throw primaryError
+      console.warn(
+        `create image task ${taskId} with ${model} failed, retrying with ${fallbackModel}:`,
+        primaryError.message,
+        primaryError.body || '',
+      )
+      provider = await createKieImageTask({
+        prompt: prompt.trim(),
+        modelKey: fallbackModel,
+        ratio,
+        quality,
+        referenceImageUrls,
+      })
+      providerModel = fallbackModel
+    }
+    await setImageTaskProviderTaskId(taskId, provider.taskId, { modelKey: providerModel })
   } catch (error) {
     console.error('create image task failed:', error.message, error.body || '')
     await refundTask(

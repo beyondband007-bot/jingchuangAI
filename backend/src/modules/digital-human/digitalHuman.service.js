@@ -1,4 +1,4 @@
-import { access, mkdir } from "fs/promises";
+import { access, mkdir, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import path from "path";
@@ -28,6 +28,11 @@ import { createHttpError } from "../../shared/http.js";
 import { calculateBillingQuote, estimateSpeechSeconds } from "../../shared/billingRules.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
+import {
+  createTask as createImageGenerationTask,
+  getTask as getImageGenerationTask
+} from "../image/image.service.js";
+import { imageToImageModelKey } from "../image/image.options.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
   createVirtualAssetFromLocalFile,
@@ -133,12 +138,17 @@ function getProviderVoiceId(voice) {
   return String(voice?.providerVoiceId || voice?.id || voices[0].id).trim();
 }
 
+function isAiCustomAvatarAsset(asset) {
+  return String(asset?.localUrl || "").includes("/digital-human/avatars/ai/");
+}
+
 function mapVirtualAssetToAvatar(asset) {
   if (!asset) return null;
   const ready = asset.status === "active";
+  const isAiCustom = isAiCustomAvatarAsset(asset);
   return {
     id: `ark-asset-${asset.id}`,
-    name: asset.fileName || `Ark Avatar ${asset.id}`,
+    name: isAiCustom ? "AI Custom Avatar" : asset.fileName || `Ark Avatar ${asset.id}`,
     description:
       asset.status === "failed"
         ? asset.error || "Ark asset failed"
@@ -149,6 +159,8 @@ function mapVirtualAssetToAvatar(asset) {
     status: ready ? "ready" : asset.status === "failed" ? "failed" : "training",
     cover: asset.localUrl,
     provider: "kie",
+    source: isAiCustom ? "ai-custom" : "upload",
+    avatarType: isAiCustom ? "ai-custom" : "upload",
     arkAssetId: asset.id,
     providerAssetId: asset.providerAssetId,
     assetUri: asset.assetUri,
@@ -158,7 +170,10 @@ function mapVirtualAssetToAvatar(asset) {
 
 async function getMyAvatars() {
   const assets = await listVirtualAssets({ feature: "digital-human" });
-  return assets.filter((asset) => asset.assetType === "Image").map(mapVirtualAssetToAvatar).filter(Boolean);
+  return assets
+    .filter((asset) => asset.assetType === "Image" && isAiCustomAvatarAsset(asset))
+    .map(mapVirtualAssetToAvatar)
+    .filter(Boolean);
 }
 
 async function getAvatarById(avatarId) {
@@ -277,7 +292,7 @@ async function getVideoPosterPath(filePath) {
 
 async function getAvatarImageProviderUrl(avatar) {
   if (avatar.providerImageUrl) return avatar.providerImageUrl;
-  const assetPath = avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+  const assetPath = avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
   if (!assetPath) {
     throw createHttpError("selected avatar does not have an image asset", 400);
   }
@@ -381,6 +396,183 @@ export async function getAvatars() {
 
 export function getVoices() {
   return { voices: [...designedVoices, ...voices] };
+}
+
+const aiAvatarSource = "digital-human-avatar";
+const aiAvatarReferenceByStyle = {
+  default: "/assets/digital-human/thumb-digital-human.jpg",
+  realistic: "/assets/digital-human/hot-1-digital-human.jpg",
+  cartoon: "/assets/digital-human/thumb-digital-human.jpg"
+};
+
+function normalizeAiAvatarText(value, fallback = "") {
+  return String(value || fallback).trim().slice(0, 500);
+}
+
+function getSkinToneLabel(value) {
+  const index = Number(value);
+  const labels = [
+    "fair warm skin tone",
+    "natural light skin tone",
+    "warm tan skin tone",
+    "deep brown skin tone",
+    "dark brown skin tone"
+  ];
+  return labels[Number.isInteger(index) && index >= 0 && index < labels.length ? index : 1];
+}
+
+function selectAiAvatarReference(payload = {}) {
+  const style = String(payload.style || "").toLowerCase();
+  if (style.includes("3d") || style.includes("cartoon")) return aiAvatarReferenceByStyle.cartoon;
+  if (style.includes("real") || style.includes("write")) return aiAvatarReferenceByStyle.realistic;
+  return aiAvatarReferenceByStyle.default;
+}
+
+function buildAiAvatarPrompt(payload = {}) {
+  const gender = normalizeAiAvatarText(payload.gender, "female");
+  const age = normalizeAiAvatarText(payload.age, "young adult");
+  const style = normalizeAiAvatarText(payload.style, "realistic portrait");
+  const userPrompt = normalizeAiAvatarText(payload.prompt || payload.description);
+  const recommendation = normalizeAiAvatarText(payload.recommend || payload.recommendation);
+  if (!userPrompt) throw createHttpError("prompt is required", 400);
+
+  return [
+    "Create a front-facing half-body digital human avatar for talking-head video generation.",
+    `Gender: ${gender}.`,
+    `Age group: ${age}.`,
+    `Skin tone: ${getSkinToneLabel(payload.skinTone)}.`,
+    `Facial and visual style: ${style}.`,
+    recommendation ? `Role preset: ${recommendation}.` : "",
+    `User description: ${userPrompt}.`,
+    "Keep one single person, clear face, natural expression, symmetrical lighting, clean background, no text, no logo, no watermark.",
+    "The result must be suitable as a reusable digital-human avatar image for later lip-sync video generation."
+  ].filter(Boolean).join("\n");
+}
+
+async function uploadAiAvatarReference(payload) {
+  const referencePath = selectAiAvatarReference(payload);
+  const filePath = resolveAssetFilePath(referencePath);
+  await assertFileExists(filePath, `AI avatar reference image not found: ${referencePath}`);
+  const upload = await uploadFileToKie({
+    filePath,
+    fileName: path.basename(filePath),
+    mimeType: "image/jpeg",
+    uploadPath: "digital-human/ai-avatar-reference"
+  });
+  return { referencePath, referenceImageUrl: upload.url };
+}
+
+function normalizeAiAvatarRatio(value) {
+  const ratio = String(value || "9:16").trim();
+  return ["1:1", "3:4", "4:3", "9:16", "16:9", "21:9"].includes(ratio) ? ratio : "9:16";
+}
+
+function mapAiAvatarTask(task) {
+  if (!task) return null;
+  const status = task.status === "completed" ? "preview_ready" : task.status;
+  return {
+    id: String(task.id),
+    imageTaskId: String(task.id),
+    status,
+    progress: status === "preview_ready" ? 100 : task.progress || (task.providerTaskId ? 68 : 24),
+    prompt: task.prompt,
+    ratio: task.ratio,
+    points: task.points,
+    providerTaskId: task.providerTaskId,
+    imageUrl: task.imageUrl || task.image || null,
+    error: task.error || null
+  };
+}
+
+export async function createAiCustomAvatarTask(payload = {}, userId) {
+  if (!userId) throw createHttpError("user is required", 401);
+  const prompt = buildAiAvatarPrompt(payload);
+  const { referenceImageUrl } = await uploadAiAvatarReference(payload);
+  const task = await createImageGenerationTask({
+    prompt,
+    model: imageToImageModelKey,
+    fallbackModel: "nano_banana2",
+    ratio: normalizeAiAvatarRatio(payload.ratio),
+    quality: "1K",
+    count: 1,
+    source: aiAvatarSource,
+    referenceImageUrl
+  }, userId);
+  return mapAiAvatarTask(task);
+}
+
+export async function getAiCustomAvatarTask(id, userId) {
+  if (!userId) throw createHttpError("user is required", 401);
+  const task = await getImageGenerationTask(id, userId);
+  if (!task || task.source !== aiAvatarSource) return null;
+  return mapAiAvatarTask(task);
+}
+
+function getExtensionForMime(mimeType = "") {
+  if (mimeType.includes("png")) return ".png";
+  if (mimeType.includes("webp")) return ".webp";
+  return ".jpg";
+}
+
+async function downloadAiAvatarPreview(imageUrl, taskId) {
+  let response;
+  let lastError;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    try {
+      response = await fetch(imageUrl);
+      if (response.ok) break;
+      lastError = createHttpError(`download generated avatar failed with ${response.status}`, 502);
+    } catch (error) {
+      lastError = error;
+    }
+    if (attempt < 5) await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+  }
+  if (!response) throw lastError || createHttpError("download generated avatar failed", 502);
+  if (!response.ok) {
+    throw createHttpError(`download generated avatar failed with ${response.status}`, 502);
+  }
+  const mimeType = response.headers.get("content-type") || "image/jpeg";
+  const ext = getExtensionForMime(mimeType);
+  const fileName = `${Date.now()}-${taskId}-${randomUUID().slice(0, 8)}${ext}`;
+  const outputDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatars", "ai");
+  await mkdir(outputDir, { recursive: true });
+  const filePath = path.join(outputDir, fileName);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  await writeFile(filePath, bytes);
+  return {
+    filePath,
+    fileName,
+    localUrl: `/media/digital-human/avatars/ai/${fileName}`,
+    mimeType,
+    sizeBytes: bytes.length
+  };
+}
+
+export async function saveAiCustomAvatarTask(id, payload = {}, userId) {
+  if (!userId) throw createHttpError("user is required", 401);
+  const task = await getAiCustomAvatarTask(id, userId);
+  if (!task) throw createHttpError("AI avatar task not found", 404);
+  if (task.status !== "preview_ready" || !task.imageUrl) {
+    throw createHttpError("AI avatar preview is not ready", 400);
+  }
+
+  const saved = await downloadAiAvatarPreview(task.imageUrl, id);
+  const asset = await createVirtualAssetFromLocalFile({
+    userId,
+    feature: "digital-human",
+    localUrl: saved.localUrl,
+    filePath: saved.filePath,
+    originalName: saved.fileName,
+    mimeType: saved.mimeType,
+    sizeBytes: saved.sizeBytes
+  });
+  const avatar = mapVirtualAssetToAvatar(asset);
+  avatar.name = normalizeAiAvatarText(payload.name, "AI Custom Avatar");
+  return {
+    ...task,
+    status: "saved",
+    avatar
+  };
 }
 
 export async function designVoice(payload) {

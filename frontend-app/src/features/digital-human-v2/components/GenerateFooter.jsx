@@ -21,22 +21,22 @@ export function GenerateFooter({
   canGenerate,
   isSubmitting,
   isCloneMode = false,
-  credits,
+  estimatedCredits = 0,
   onGenerate,
 }) {
   return (
     <footer className="dhv2-generate-footer">
+      <div className="dhv2-generate-footer__estimate">
+        <span>预计消耗</span>
+        <strong>{Number(estimatedCredits || 0).toLocaleString()}</strong>
+        <span>积分</span>
+      </div>
       <button
         type="button"
         className="dhv2-generate-button"
         disabled={!canGenerate || isSubmitting}
         onClick={onGenerate}
       >
-        {typeof credits === "number" ? (
-          <span className="dhv2-generate-button__credits">
-            剩余 {credits.toLocaleString()} 积分
-          </span>
-        ) : null}
         {isSubmitting ? <Loader2 size={18} className="dhv2-spinner" /> : <Zap size={18} />}
         {isCloneMode ? "克隆音色并生成" : "生成口播视频"}
       </button>

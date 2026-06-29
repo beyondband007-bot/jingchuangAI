@@ -17,6 +17,7 @@ import {
 import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
@@ -514,18 +515,12 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
 
   return (
     <section className="voice-conversion-view-root video-dub-view-root">
-      <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>
-          主页
-        </button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>
-          历史记录
-        </button>
-        <button type="button" disabled>
-          <Star size={17} fill="#f8d545" color="#161616" />
-          收藏
-        </button>
-      </div>
+      <FeatureViewTabs
+        currentLabel="视频配音"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={() => setViewTab("home")}
+        onHistory={() => setViewTab("recent")}
+      />
 
       <div className={`voice-conversion-canvas video-dub-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" && (

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useRef, useState } from "react";
 import { ChevronRight, Clock, Music, Sparkles } from "lucide-react";
 import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
 import { MusicCoverCropModal } from "../music-generation-ui/MusicCoverCropModal";
@@ -8,6 +8,7 @@ import { MusicRecentGrid } from "./MusicRecentGrid";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile } from "../../api/mediaUrl.js";
+import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
@@ -225,11 +226,15 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     }
   }, [resetSignal]);
 
+  function closePlayerAndGoHome() {
+    setShowPlayer(false);
+    setPlayerTask(null);
+    setViewTab("home");
+  }
+
   useEffect(() => {
     function handleMusicHome() {
-      setShowPlayer(false);
-      setPlayerTask(null);
-      setViewTab("home");
+      closePlayerAndGoHome();
     }
 
     window.addEventListener("facemini:music-home", handleMusicHome);
@@ -590,7 +595,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
   async function downloadRecentItem(item) {
     if (!item?.audioUrl) {
-      showToast("error", "音频尚未生成完成，暂无法下载。");
+      showToast("error", "音频尚未生成完成，暂时无法下载。");
       return;
     }
     try {
@@ -618,7 +623,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
         ? `${updated.coverUrl}${updated.coverUrl.includes("?") ? "&" : "?"}t=${Date.now()}`
         : "";
       applyTaskUpdate(taskId, { ...updated, coverUrl });
-      showToast("success", "封面已更新");
+      showToast("success", "封面已更新。");
     } catch (error) {
       showToast("error", error.message || "封面更新失败，请稍后重试");
     } finally {
@@ -671,21 +676,19 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
   return (
     <section className="voice-conversion-view-root music-generation-view">
-      <div className="image-filter-tabs voice-filter-tabs">
-        <button className={viewTab === "home" ? "selected" : ""} type="button" onClick={() => setViewTab("home")}>主页</button>
-        <button className={viewTab === "recent" ? "selected" : ""} type="button" onClick={() => setViewTab("recent")}>历史记录</button>
-      </div>
+      <FeatureViewTabs
+        currentLabel="AI音乐"
+        activeView={viewTab === "recent" ? "recent" : "home"}
+        onHome={closePlayerAndGoHome}
+        onHistory={() => setViewTab("recent")}
+      />
 
       <div className={`voice-conversion-canvas music-canvas ${viewTab === "recent" ? "is-recent is-history" : ""}${showFullPagePlayer ? " is-full-player" : ""}${showGeneratingPanel ? " is-generating" : ""}`}>
         {showFullPagePlayer ? (
           <MusicFullPagePlayer
             item={playerTask}
             items={recentResults}
-            onBack={() => {
-              setShowPlayer(false);
-              setPlayerTask(null);
-              setViewTab("home");
-            }}
+            onBack={closePlayerAndGoHome}
             onSelectItem={selectPlayerTrack}
           />
         ) : viewTab === "home" ? (

@@ -60,6 +60,14 @@ export const ENABLED_DIGITAL_HUMAN_VOICE_IDS = [
   "female-chengshu",
   "presenter_female",
   "Chinese (Mandarin)_HK_Flight_Attendant",
+  "male-qn-jingying",
+  "male-qn-qingse",
+  "male-qn-badao",
+  "presenter_male",
+  "audiobook_male_1",
+  "clever_boy",
+  "cute_boy",
+  "male-qn-daxuesheng",
   "moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85",
   "moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d",
 ];
@@ -209,6 +217,27 @@ export function filterReadyMineAvatars(list = []) {
   });
 }
 
+export function isAiCustomMineAvatar(avatar) {
+  const sourceText = [
+    avatar?.source,
+    avatar?.sourceType,
+    avatar?.avatarType,
+    avatar?.type,
+    avatar?.origin,
+    avatar?.category,
+    avatar?.name,
+    avatar?.cover,
+    avatar?.localUrl,
+  ].join(" ").toLowerCase();
+
+  return (
+    sourceText.includes("ai-custom") ||
+    sourceText.includes("ai custom") ||
+    sourceText.includes("ai 定制") ||
+    sourceText.includes("/digital-human/avatars/ai/")
+  );
+}
+
 export function matchVoiceForAvatar(avatar, voices = []) {
   const enabledVoices = voices.filter((voice) => isDigitalHumanVoiceEnabled(voice.id));
   if (!enabledVoices.length) return null;
@@ -327,28 +356,15 @@ export function getMineLibraryItems(photoTasks = []) {
     .map(photoTaskToMineLibraryItem);
 }
 
-export function getDigitalHumanMineLibraryItems(tasks = [], mineAvatars = []) {
-  const completedTasks = (Array.isArray(tasks) ? tasks : [])
-    .filter(
-      (task) =>
-        task?.status === "completed" && (task.thumbnailUrl || task.resultUrl),
-    )
+export function getDigitalHumanMineLibraryItems(mineAvatars = []) {
+  return filterReadyMineAvatars(mineAvatars)
+    .filter(isAiCustomMineAvatar)
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
-    .map(taskToMineLibraryItem);
-
-  const usedAvatarIds = new Set(
-    completedTasks.map((item) => String(item.avatarId || "")).filter(Boolean),
-  );
-
-  const orphanAvatars = filterReadyMineAvatars(mineAvatars)
-    .filter((avatar) => !usedAvatarIds.has(String(avatar.id)))
     .map((avatar) => ({
       ...avatar,
       libraryId: `avatar-${avatar.id}`,
       sourceType: "avatar",
     }));
-
-  return [...completedTasks, ...orphanAvatars];
 }
 
 export const DHV2_DRAFTS_STORAGE_KEY = "dhv2-workspace-drafts";

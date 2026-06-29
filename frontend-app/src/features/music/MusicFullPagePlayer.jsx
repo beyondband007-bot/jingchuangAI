@@ -323,6 +323,14 @@ export function MusicFullPagePlayer({
   );
   const activeIndex = playableItems.findIndex((entry) => entry.id === item?.id);
 
+  useEffect(() => () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+  }, []);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!playbackUrl) {
@@ -530,8 +538,26 @@ export function MusicFullPagePlayer({
         {isInstrumentalMode ? (
           <MusicImmersiveStage isPlaying={isPlaying} />
         ) : (
-          <section className="music-full-player__lyrics" ref={lyricScrollRef}>
-            <div className={`music-full-player__lyrics-inner${timeline.length ? " is-karaoke" : " is-static"}`}>
+          <>
+            <aside className="music-full-player__cover-wrap" aria-label="歌曲封面">
+              <div
+                className="music-full-player__cover"
+                style={item.coverUrl ? undefined : { background: generateCoverGradient(item.id) }}
+              >
+                {item.coverUrl ? (
+                  <img src={item.coverUrl} alt="" className="music-full-player__cover-image" />
+                ) : (
+                  <Music size={52} />
+                )}
+                <span className="music-full-player__disc" />
+              </div>
+              <div className="music-full-player__meta">
+                <h2>{title}</h2>
+                {item.prompt ? <p>{item.prompt}</p> : null}
+              </div>
+            </aside>
+            <section className="music-full-player__lyrics" ref={lyricScrollRef}>
+              <div className={`music-full-player__lyrics-inner${timeline.length ? " is-karaoke" : " is-static"}`}>
               {isLyricsSyncing && !timeline.length ? (
                 <div className="music-full-player__lyrics-status is-inline">
                   <Loader2 size={18} className="music-lyrics-sync-spinner" />
@@ -553,8 +579,9 @@ export function MusicFullPagePlayer({
                   <p key={index} className="music-full-player__lyric-line">{line}</p>
                 ))
               )}
-            </div>
-          </section>
+              </div>
+            </section>
+          </>
         )}
       </div>
 

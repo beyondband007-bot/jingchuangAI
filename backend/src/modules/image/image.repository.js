@@ -214,7 +214,14 @@ export async function findImageTaskStatus(id) {
   return rows[0] || null;
 }
 
-export async function setImageTaskProviderTaskId(id, providerTaskId) {
+export async function setImageTaskProviderTaskId(id, providerTaskId, { modelKey } = {}) {
+  if (modelKey) {
+    await getPool().query(
+      "UPDATE image_generation_tasks SET status = 'processing', provider_task_id = ?, model_key = ? WHERE id = ?",
+      [providerTaskId, modelKey, id]
+    );
+    return;
+  }
   await getPool().query("UPDATE image_generation_tasks SET status = 'processing', provider_task_id = ? WHERE id = ?", [
     providerTaskId,
     id
