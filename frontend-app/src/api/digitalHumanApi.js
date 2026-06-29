@@ -60,6 +60,15 @@ export const digitalHumanApi = {
     });
   },
 
+  async uploadScene(file) {
+    const formData = new FormData();
+    formData.append("scene", file);
+    return request("/api/digital-human/uploads/scene", {
+      method: "POST",
+      body: formData
+    });
+  },
+
   async getTasks() {
     return request("/api/digital-human/tasks");
   },

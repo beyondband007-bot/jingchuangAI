@@ -69,6 +69,14 @@ export async function uploadDigitalHumanAudio(req, res) {
   }
 }
 
+export async function uploadDigitalHumanScene(req, res) {
+  try {
+    res.status(201).json(await service.uploadSceneImage(req.body || {}, req.file));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
 export async function deleteDigitalHumanTask(req, res) {
   try {
     res.json(await service.deleteTask(req.params.id));
