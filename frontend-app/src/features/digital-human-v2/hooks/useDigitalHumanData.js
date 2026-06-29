@@ -10,21 +10,48 @@ const emptyOptions = {
   defaults: { model: "", driveMode: "text" },
 };
 
+const dataCache = {
+  options: null,
+  avatars: null,
+  voices: null,
+  tasks: null,
+  photoTasks: null,
+  credits: null,
+  loaded: false,
+};
+
+function hasCachedData() {
+  return (
+    dataCache.loaded &&
+    dataCache.options &&
+    dataCache.avatars &&
+    dataCache.voices
+  );
+}
+
+function updateDataCache(partial, { markLoaded = false } = {}) {
+  Object.assign(dataCache, partial);
+  if (markLoaded) dataCache.loaded = true;
+}
+
 function applyCredits(setCredits, value) {
   if (!value) return;
+  updateDataCache({ credits: value });
   setCredits(value);
   emitCreditsUpdated(value);
 }
 
 export function useDigitalHumanData({ isActive = true } = {}) {
-  const [options, setOptions] = useState(emptyOptions);
-  const [avatars, setAvatars] = useState({ public: [], mine: [] });
-  const [voices, setVoices] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [photoTasks, setPhotoTasks] = useState([]);
-  const [credits, setCredits] = useState(null);
+  const [options, setOptions] = useState(() => dataCache.options || emptyOptions);
+  const [avatars, setAvatars] = useState(
+    () => dataCache.avatars || { public: [], mine: [] },
+  );
+  const [voices, setVoices] = useState(() => dataCache.voices || []);
+  const [tasks, setTasks] = useState(() => dataCache.tasks || []);
+  const [photoTasks, setPhotoTasks] = useState(() => dataCache.photoTasks || []);
+  const [credits, setCredits] = useState(() => dataCache.credits || null);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !hasCachedData());
   const [error, setError] = useState("");
   const taskStatusSignatureRef = useRef("");
 
@@ -41,6 +68,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         taskStatusSignatureRef.current !== nextSignature;
       taskStatusSignatureRef.current = nextSignature;
       digitalHumanApi.setHasRunningTasks(hasRunningTasks(value));
+      updateDataCache({ tasks: value });
       setTasks(value);
       if (didStatusChange) {
         digitalHumanApi
@@ -51,7 +79,8 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     }
 
     async function load() {
-      setLoading(true);
+      const hasCache = hasCachedData();
+      setLoading(!hasCache);
       setError("");
       try {
         const [modelData, avatarData, voiceData, taskData, photoTaskData, creditData] =
@@ -67,6 +96,15 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         setOptions(modelData);
         setAvatars(avatarData);
         setVoices(voiceData.voices || []);
+        updateDataCache(
+          {
+            options: modelData,
+            avatars: avatarData,
+            voices: voiceData.voices || [],
+            photoTasks: Array.isArray(photoTaskData) ? photoTaskData : [],
+          },
+          { markLoaded: true },
+        );
         applyTaskList(taskData);
         setPhotoTasks(Array.isArray(photoTaskData) ? photoTaskData : []);
         applyCredits(setCredits, creditData);
@@ -88,6 +126,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         .getAvatars()
         .then((value) => {
           if (!mounted) return;
+          updateDataCache({ avatars: value });
           setAvatars(value);
           setSelectedAvatar((current) => resolveAvatarSelection(current, value));
         })
@@ -97,7 +136,12 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     const unsubscribePhoto = imageDigitalHumanApi.subscribe(() => {
       imageDigitalHumanApi
         .getTasks()
-        .then((value) => mounted && setPhotoTasks(Array.isArray(value) ? value : []))
+        .then((value) => {
+          if (!mounted) return;
+          const nextPhotoTasks = Array.isArray(value) ? value : [];
+          updateDataCache({ photoTasks: nextPhotoTasks });
+          setPhotoTasks(nextPhotoTasks);
+        })
         .catch(() => {});
     });
 
