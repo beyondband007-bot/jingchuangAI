@@ -1832,13 +1832,13 @@ export function ArticleGenerationView({
                 <span>创作主题</span>
                 <em>{form.topic.length}/500</em>
                 <div className="article-topic-box">
-                  <textarea
-                    value={form.topic}
-                    onChange={(event) =>
-                      updateForm({ topic: event.target.value.slice(0, 500) })
-                    }
-                    placeholder="城市宝藏小店探店，氛围感满满的美食打卡文案"
-                  />
+                    <textarea
+                      value={form.topic}
+                      onChange={(event) =>
+                        updateForm({ topic: event.target.value.slice(0, 500) })
+                      }
+                      placeholder="描述你想发的内容，或 上传参考图 让 AI 帮你想"
+                    />
                   <div className={`article-reference-upload${referenceAssets.length ? " has-asset" : ""}`}>
                     <input
                       ref={referenceInputRef}
@@ -1854,15 +1854,16 @@ export function ArticleGenerationView({
                       onClick={() => referenceInputRef.current?.click()}
                     >
                       {isReferenceUploading ? <Loader2 size={16} className="is-spinning" /> : <ImagePlus size={16} />}
+                      <span>{isReferenceUploading ? "上传中..." : "上传参考图"}</span>
                     </button>
                     <div className="article-reference-upload__text">
-                      <strong>{referenceAssets.length ? `已添加 ${referenceAssets.length} 张参考素材` : "上传参考素材"}</strong>
+                      <strong>{referenceAssets.length ? `已添加 ${referenceAssets.length} 张参考素材` : "上传参考图"}</strong>
                       <span>
                         {isReferenceUploading
                           ? "正在上传素材..."
                           : referenceAssets.length
                             ? "生成图片会强制包含这些素材主体"
-                            : `可上传多张，最多 ${MAX_ARTICLE_REFERENCE_ASSETS} 张`}
+                            : "商品实拍、场景截图都可以，AI 帮你提炼创作主题"}
                       </span>
                     </div>
                     {!!referenceAssets.length && (

@@ -297,18 +297,120 @@
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-topic-box {
   display: grid;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 8px;
-  background: #f0f1f8;
+  gap: 18px;
+  min-height: 176px;
+  padding: 12px 0 16px;
+  border-bottom: 1px solid #e8e5f0;
+  border-radius: 0;
+  background: #fff;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field textarea {
-  min-height: 88px !important;
+  min-height: 74px !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
+  color: #24212d !important;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field textarea::placeholder {
+  color: #a7a3b2;
+  font-weight: 700;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field > span {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field > em {
+  top: -2px;
+  right: 0;
+  min-width: 62px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #f2f2f6;
+  color: #9a96a6;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload {
+  display: grid;
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 8px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-topic-field
+  .article-reference-upload__pick {
+  width: min(280px, 58%);
+  min-width: 220px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1.5px dashed #c8c1ff;
+  border-radius: 12px;
+  color: #745cff;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-topic-field
+  .article-reference-upload__pick:hover:not(:disabled) {
+  border-color: #8a7bff;
+  background: #fbfaff;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-topic-field
+  .article-reference-upload__pick
+  svg {
+  width: 18px;
+  height: 18px;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__text {
+  display: block;
+  text-align: center;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__text strong {
+  display: none;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__text span {
+  color: #9a96a6;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__thumbs {
+  justify-content: center;
+  margin-top: 2px;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-ref-upload.is-inline button {
@@ -535,6 +637,7 @@
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__track {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start !important;
   gap: 12px !important;
   padding: 12px !important;
   overflow-x: hidden !important;
@@ -546,8 +649,11 @@
   display: grid !important;
   grid-template-rows: minmax(0, 1fr) auto;
   align-items: stretch;
+  align-self: start !important;
   justify-items: stretch;
   overflow: hidden !important;
+  height: 80% !important;
+  max-height: 80% !important;
   border-radius: 8px !important;
   background: #ffffff !important;
   box-shadow: 0 8px 20px rgba(36, 33, 45, 0.06);
@@ -636,19 +742,7 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__slot em {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  z-index: 1;
-  padding: 2px 6px;
-  border-radius: 999px;
-  color: #6b63ff;
-  background: rgba(255, 255, 255, 0.82);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 900;
-  line-height: 1.2;
-  box-shadow: 0 4px 12px rgba(36, 33, 45, 0.08);
+  display: none !important;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview__copy {

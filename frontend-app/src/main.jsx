@@ -22,6 +22,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  ArrowUp,
   CircleAlert,
   Bell,
   Bot,
@@ -129,6 +130,106 @@ import "./features/article/articleTopTabs.scss";
 import "./features/article/articlePopularWorkbench.scss";
 import "./features/article/articleHistory.scss";
 import "./features/article/ArticlePopularResultPanel.scss";
+
+const backToTopThreshold = 1200;
+const backToTopDurationMs = 1000;
+
+function getWindowScrollElement() {
+  return document.scrollingElement || document.documentElement;
+}
+
+function getScrollTop(target) {
+  if (!target || target === window) {
+    return window.scrollY || getWindowScrollElement().scrollTop || 0;
+  }
+  return target.scrollTop || 0;
+}
+
+function setScrollTop(target, top) {
+  if (!target || target === window) {
+    window.scrollTo(0, top);
+    return;
+  }
+  target.scrollTop = top;
+}
+
+function animateScrollTop(target, duration = backToTopDurationMs) {
+  const startTop = getScrollTop(target);
+  if (startTop <= 0) return () => {};
+  const startTime = window.performance.now();
+  let frameId = 0;
+
+  function easeInOutCubic(value) {
+    return value < 0.5
+      ? 4 * value * value * value
+      : 1 - Math.pow(-2 * value + 2, 3) / 2;
+  }
+
+  function tick(now) {
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = easeInOutCubic(progress);
+    setScrollTop(target, Math.round(startTop * (1 - eased)));
+    if (progress < 1) {
+      frameId = window.requestAnimationFrame(tick);
+    }
+  }
+
+  frameId = window.requestAnimationFrame(tick);
+  return () => window.cancelAnimationFrame(frameId);
+}
+
+function BackToTopButton({
+  scrollTargetRef,
+  className = "",
+  threshold = backToTopThreshold,
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const cancelScrollRef = useRef(null);
+  const buttonClassName = [
+    "back-to-top-button",
+    isVisible ? "is-visible" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  useEffect(() => {
+    const target = scrollTargetRef?.current || window;
+    const updateVisibility = () => {
+      setIsVisible(getScrollTop(target) > threshold);
+    };
+
+    updateVisibility();
+    target.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+
+    return () => {
+      target.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+      cancelScrollRef.current?.();
+    };
+  }, [scrollTargetRef, threshold]);
+
+  const scrollToTop = useCallback(() => {
+    cancelScrollRef.current?.();
+    cancelScrollRef.current = animateScrollTop(
+      scrollTargetRef?.current || window,
+    );
+  }, [scrollTargetRef]);
+
+  return (
+    <button
+      className={buttonClassName}
+      type="button"
+      onClick={scrollToTop}
+      aria-label="回到顶部"
+      title="回到顶部"
+      tabIndex={isVisible ? 0 : -1}
+    >
+      <ArrowUp size={21} strokeWidth={2.4} />
+    </button>
+  );
+}
 
 const caseImageFiles = [
   "001.webp",
@@ -2703,6 +2804,7 @@ function CreationCenterView({
         onReference={referenceInspiration}
         onFavorite={toggleInspirationFavorite}
       />
+      <BackToTopButton />
     </section>
   );
 }
@@ -6500,6 +6602,10 @@ function ImageGenerationWorkbench({
           )}
         </div>
       </aside>
+      <BackToTopButton
+        scrollTargetRef={contextRef}
+        className="image-workbench-back-to-top"
+      />
     </div>
   );
 }
@@ -8325,6 +8431,7 @@ function ImageGenerationView({
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
       ) : null}
+      {filter !== "recent" && <BackToTopButton />}
       <ImagePreviewLightbox
         task={previewTask}
         onClose={() => setPreviewTask(null)}
@@ -9508,6 +9615,7 @@ function VideoGenerationView({
           )}
         </div>
       ) : null}
+      <BackToTopButton />
       <VideoInspirationModal
         item={selectedInspiration}
         onClose={() => setSelectedInspiration(null)}
@@ -11612,6 +11720,8 @@ function WorkbenchTopbar({
   onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
+  digitalHumanMode = "avatar",
+  onDigitalHumanModeChange,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
@@ -11785,16 +11895,23 @@ function WorkbenchTopbar({
             <div className="fm-digital-tabs" aria-label="数字人类型">
               <button
                 type="button"
-                className={activeNav === "digital-human" ? "is-active" : ""}
-                onClick={() => onNavChange("digital-human")}
+                className={digitalHumanMode !== "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("avatar")}
               >
                 数字人形象
+              </button>
+              <button
+                type="button"
+                className={digitalHumanMode === "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("history")}
+              >
+                历史记录
               </button>
             </div>
           )}
           {showArticleTabs && (
             <div
-              className="fm-digital-tabs fm-video-workflow-tabs"
+              className="fm-digital-tabs fm-video-workflow-tabs fm-article-nav-tabs"
               aria-label="爆款图文类型"
             >
               <button
@@ -11964,6 +12081,7 @@ function ImageFeaturePage({
   const isGuest = !isLoggedInUser(authUser);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
+  const [digitalHumanMode, setDigitalHumanMode] = useState("avatar");
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
@@ -12126,6 +12244,8 @@ function ImageFeaturePage({
           onOpenLibrary={openInspirationLibrary}
           articleMode={articleMode}
           onArticleModeChange={setArticleMode}
+          digitalHumanMode={digitalHumanMode}
+          onDigitalHumanModeChange={setDigitalHumanMode}
         />
         <FeatureModuleKeepAlive
           id="creation"
@@ -12232,6 +12352,7 @@ function ImageFeaturePage({
           <DigitalHumanHubView
             isActive={activeNav === "digital-human"}
             onOpenFeature={handleNavChange}
+            viewMode={digitalHumanMode}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
