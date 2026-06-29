@@ -15,6 +15,10 @@ import {
 } from "./components/InspirationLibraryDrawer.jsx";
 import { createRoot } from "react-dom/client";
 import { Button, ConfigProvider } from "@arco-design/web-react";
+import {
+  IconAlipayCircle,
+  IconWechat,
+} from "@arco-design/web-react/icon";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -2899,8 +2903,8 @@ const rechargePresets = [1, 10, 30, 50, 100, 200];
 const paymentCodeTtlSeconds = 3 * 60;
 const paymentResultTtlSeconds = 3;
 const paymentProviderOptions = [
-  { value: "alipay", label: "支付宝支付" },
-  { value: "wechat", label: "微信支付" },
+  { value: "alipay", label: "支付宝支付", icon: IconAlipayCircle },
+  { value: "wechat", label: "微信支付", icon: IconWechat },
 ];
 
 function paymentProviderText(provider) {
@@ -5443,19 +5447,22 @@ function AssetsPage({
                     className="assets-payment-methods"
                     aria-label="选择支付方式"
                   >
-                    {paymentProviderOptions.map((option) => (
-                      <button
-                        className={
-                          paymentProvider === option.value ? "is-active" : ""
-                        }
-                        key={option.value}
-                        type="button"
-                        onClick={() => setPaymentProvider(option.value)}
-                      >
-                        <Wallet size={16} />
-                        <span>{option.label}</span>
-                      </button>
-                    ))}
+                    {paymentProviderOptions.map((option) => {
+                      const PaymentIcon = option.icon;
+                      return (
+                        <button
+                          className={
+                            paymentProvider === option.value ? "is-active" : ""
+                          }
+                          key={option.value}
+                          type="button"
+                          onClick={() => setPaymentProvider(option.value)}
+                        >
+                          <PaymentIcon />
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
