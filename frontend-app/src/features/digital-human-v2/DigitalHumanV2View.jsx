@@ -22,7 +22,6 @@ import {
   createWorkspaceDraft,
   DHV2_DRAFTS_MAX,
   estimateSpeechSeconds,
-  getVoiceEmotionLabel,
   getVoiceEmotionValue,
   isDigitalHumanVoiceEnabled,
   loadWorkspaceDrafts,
@@ -132,16 +131,33 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     }, 2200);
   }
 
+  function resetFormConfig({ resetVoice = false } = {}) {
+    setVideoSpec(VIDEO_SPEC_OPTIONS[0].value);
+    setText(DEFAULT_SCRIPT);
+    if (resetVoice) {
+      setVoiceId(pickEnabledVoiceId(voices));
+      setVoiceSpeed(1);
+      setVoiceEmotion("中性");
+    }
+    setVoiceMode(VOICE_DUBBING_MODES.system);
+    setCloneAudio(null);
+    setSpeechDurationMs(0);
+    setAudioPreviewPhase("draft");
+    setIsAudioPreviewing(false);
+    setActiveTask(null);
+    setScriptOptimizeRequest(null);
+  }
+
   function handleAvatarSourceChange(nextSource) {
     if (nextSource !== "official" && nextSource !== "mine") return;
     const isSourceChanged = nextSource !== avatarSource;
     setAvatarSource(nextSource);
     setRightView("library");
-    setActiveTask(null);
-    setVoiceMode(VOICE_DUBBING_MODES.system);
-    setCloneAudio(null);
     if (nextSource === "official") {
       setSelectedMineLibraryId(null);
+    }
+    if (isSourceChanged) {
+      resetFormConfig({ resetVoice: true });
     }
     if (isSourceChanged && selectedAvatar?.id) {
       setSelectedAvatar(null);
@@ -149,8 +165,11 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   }
 
   function handleSelectAvatar(avatar) {
+    const isAvatarChanged = String(avatar?.id || "") !== String(selectedAvatar?.id || "");
     setSelectedAvatar(avatar);
-    setActiveTask(null);
+    if (isAvatarChanged) {
+      resetFormConfig();
+    }
     if (avatarSource !== "mine") {
       setSelectedMineLibraryId(null);
     }
@@ -158,16 +177,19 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
 
   function handleSelectMineItem(item) {
     if (!item) return;
+    const isAvatarChanged =
+      String(item.id || item.avatarId || "") !== String(selectedAvatar?.id || "");
     setAvatarSource("mine");
     setSelectedMineLibraryId(item.libraryId);
 
     if (item.sourceType === "photo-task") {
       setSelectedAvatar(photoTaskToSelectedAvatar(item));
       setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
-      setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
-      setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
-      setText(item.text || item.task?.text || "");
-      setActiveTask(null);
+      if (isAvatarChanged) {
+        resetFormConfig();
+        setVoiceSpeed(1);
+        setVoiceEmotion("中性");
+      }
       return;
     }
 
@@ -180,10 +202,11 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         setSelectedAvatar(avatar);
       }
       setVoiceId(pickEnabledVoiceId(voices, item.voiceId || item.task?.voiceId));
-      setVoiceSpeed(Number(item.voiceSpeed || item.task?.speed) || 1);
-      setVoiceEmotion(getVoiceEmotionLabel(item.task?.emotion));
-      setText(item.text || item.task?.text || "");
-      setActiveTask(null);
+      if (isAvatarChanged) {
+        resetFormConfig();
+        setVoiceSpeed(1);
+        setVoiceEmotion("中性");
+      }
       return;
     }
 
@@ -191,8 +214,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     if (matchedVoice?.id) {
       setVoiceId(matchedVoice.id);
     }
+    if (isAvatarChanged) {
+      resetFormConfig();
+      setVoiceSpeed(1);
+      setVoiceEmotion("中性");
+    }
     setSelectedAvatar(item);
-    setActiveTask(null);
   }
 
   function handleConfirmAvatar() {
@@ -207,14 +234,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setRightView("library");
     setAspectRatio("all");
     setFillMode("cover");
-    setVideoSpec(VIDEO_SPEC_OPTIONS[0].value);
-    setText(DEFAULT_SCRIPT);
-    setVoiceId(pickEnabledVoiceId(voices));
-    setVoiceSpeed(1);
-    setVoiceEmotion("中性");
-    setVoiceMode(VOICE_DUBBING_MODES.system);
-    setCloneAudio(null);
-    setActiveTask(null);
+    resetFormConfig({ resetVoice: true });
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
     setIsCreateOpen(false);
