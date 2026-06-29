@@ -42,7 +42,6 @@ const DEFAULT_SCRIPT = "";
 function SceneUploadCard({
   scene,
   isUploading = false,
-  selectedAvatar,
   onPickScene,
   onClearScene,
 }) {
@@ -73,14 +72,14 @@ function SceneUploadCard({
         type="button"
         className={`dhv2-scene-card__dropzone${previewUrl ? " has-preview" : ""}`}
         onClick={() => inputRef.current?.click()}
-        disabled={isUploading || !selectedAvatar}
+        disabled={isUploading}
       >
         {previewUrl ? (
           <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
         ) : (
           <>
             <ImagePlus size={20} />
-            <span>{isUploading ? "上传中..." : selectedAvatar ? "上传场景图" : "选择数字人后可上传场景"}</span>
+            <span>{isUploading ? "上传中..." : "上传场景图"}</span>
           </>
         )}
       </button>
@@ -653,7 +652,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             <SceneUploadCard
               scene={selectedScene}
               isUploading={isUploadingScene}
-              selectedAvatar={selectedAvatar}
               onPickScene={handlePickScene}
               onClearScene={() => setSelectedScene(null)}
             />
