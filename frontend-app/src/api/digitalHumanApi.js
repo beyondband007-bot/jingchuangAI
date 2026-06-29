@@ -1,9 +1,16 @@
 import { requestJson as request } from "./request.js";
+import { API_BASE } from "../apiBase.js";
 import { createTaskPollingController } from "./taskPolling.js";
 const taskPolling = createTaskPollingController();
 let modelsPromise;
 let avatarsPromise;
 let voicesPromise;
+
+function toApiUrl(url) {
+  const value = String(url || "").trim();
+  if (!value || /^https?:\/\//i.test(value) || value.startsWith("data:") || value.startsWith("blob:")) return value;
+  return `${API_BASE}${value.startsWith("/") ? "" : "/"}${value}`;
+}
 
 export const digitalHumanApi = {
   subscribe(listener) {
@@ -63,10 +70,15 @@ export const digitalHumanApi = {
   async uploadScene(file) {
     const formData = new FormData();
     formData.append("scene", file);
-    return request("/api/digital-human/uploads/scene", {
+    const scene = await request("/api/digital-human/uploads/scene", {
       method: "POST",
       body: formData
     });
+    return {
+      ...scene,
+      localUrl: toApiUrl(scene.localUrl || scene.url),
+      url: toApiUrl(scene.url || scene.localUrl)
+    };
   },
 
   async getTasks() {
