@@ -6210,7 +6210,7 @@ a:hover {
   display: block;
   overflow: hidden;
   background: #090909;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--video-inspiration-aspect, 16 / 9);
 }
 
 .video-inspiration-media img,

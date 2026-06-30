@@ -540,6 +540,35 @@ function IncrementalLoadMoreIndicator({ active }) {
   );
 }
 
+function useMeasuredInspirationCards(items, resetKey) {
+  const [measuredAspects, setMeasuredAspects] = useState({});
+
+  useEffect(() => {
+    setMeasuredAspects({});
+  }, [resetKey]);
+
+  const cards = useMemo(
+    () =>
+      items.map((item) => {
+        const measuredAspect = measuredAspects[item.id];
+        return measuredAspect ? { ...item, aspect: measuredAspect } : item;
+      }),
+    [items, measuredAspects],
+  );
+
+  const registerImageSize = useCallback((item, image) => {
+    if (!item?.id || !image?.naturalWidth || !image?.naturalHeight) return;
+    const nextAspect = image.naturalWidth / image.naturalHeight;
+    if (!Number.isFinite(nextAspect) || nextAspect <= 0) return;
+    setMeasuredAspects((current) => {
+      if (Math.abs((current[item.id] || 0) - nextAspect) < 0.01) return current;
+      return { ...current, [item.id]: nextAspect };
+    });
+  }, []);
+
+  return { cards, registerImageSize };
+}
+
 function arrangeInspirationCards(cards, columnCount = 6) {
   const buckets = cards.reduce(
     (next, card) => {
@@ -1440,7 +1469,7 @@ function getFaceminiVideoInspirations() {
     source: item.video,
     videoSrc: item.video,
     material: "视频素材",
-    aspect: "wide",
+    aspect: item.aspect,
   }));
 }
 
@@ -2540,9 +2569,9 @@ function CreationCenterView({
     filteredImages,
     `creation-${activeTab}-${filteredImages.length}`,
   );
-  const arrangedVisibleFilteredImages = useMemo(
-    () => arrangeInspirationCardsByBatch(visibleFilteredImages.items, 5),
-    [visibleFilteredImages.items],
+  const measuredInspirationCards = useMeasuredInspirationCards(
+    visibleFilteredImages.items,
+    `creation-${activeTab}-${filteredImages.length}`,
   );
   const nextBannerIndex = (bannerIndex + 1) % heroBanners.length;
 
@@ -2760,7 +2789,7 @@ function CreationCenterView({
           gap={12}
           maxColumns={5}
           minColumnWidth={172}
-          items={arrangedVisibleFilteredImages}
+          items={measuredInspirationCards.cards}
           renderItem={(item) => (
             <div className="fm-image-card">
               <button
@@ -2773,12 +2802,22 @@ function CreationCenterView({
                   src={item.thumbnail}
                   alt={item.title}
                   loading="lazy"
+                  onLoad={(event) =>
+                    measuredInspirationCards.registerImageSize(
+                      item,
+                      event.currentTarget,
+                    )
+                  }
                   onError={(event) => {
                     if (
                       item.fallbackThumbnail &&
                       event.currentTarget.src !== item.fallbackThumbnail
                     ) {
                       event.currentTarget.src = item.fallbackThumbnail;
+                      measuredInspirationCards.registerImageSize(
+                        item,
+                        event.currentTarget,
+                      );
                     }
                   }}
                 />
@@ -8676,11 +8715,49 @@ const videoInspirationMetadataMap = new Map(
 const videoInspirationPromptQualitySuffix =
   "镜头运动平滑，主体始终清晰，光影和材质真实，无水印、无乱码、无畸形肢体、无画面闪烁、无噪点、无主体漂移。";
 
+const videoInspirationAspectMeta = {
+  "3a-game-style-remake-1": { ratio: "16:9", aspect: 720 / 406 },
+  "3a-game-style-remake-2": { ratio: "16:9", aspect: 720 / 406 },
+  "ai-3d-animation": { ratio: "16:9", aspect: 720 / 406 },
+  "ai-3d-bleach-vs-naruto": { ratio: "16:9", aspect: 720 / 406 },
+  "axiom-visual-concept-ad": { ratio: "16:9", aspect: 720 / 406 },
+  "boxing-king-returns": { ratio: "16:9", aspect: 720 / 406 },
+  camera: { ratio: "16:9", aspect: 720 / 406 },
+  "car-ad": { ratio: "16:9", aspect: 720 / 406 },
+  "car-visual-concept-ad": { ratio: "16:9", aspect: 720 / 406 },
+  "chagee-visual-concept-ad": { ratio: "16:9", aspect: 720 / 406 },
+  cola: { ratio: "9:16", aspect: 720 / 1280 },
+  "costume-drama": { ratio: "9:16", aspect: 720 / 1280 },
+  "fallen-god": { ratio: "9:16", aspect: 720 / 1280 },
+  "former-king": { ratio: "16:9", aspect: 720 / 406 },
+  "golden-pomelo-1": { ratio: "9:16", aspect: 720 / 1280 },
+  "golden-pomelo-2": { ratio: "9:16", aspect: 720 / 1280 },
+  "isekai-demon-king": { ratio: "16:9", aspect: 720 / 406 },
+  "live-action-yuelin-qiji-remake": { ratio: "16:9", aspect: 720 / 406 },
+  "massage-device": { ratio: "16:9", aspect: 720 / 406 },
+  "mecha-transformation-1": { ratio: "16:9", aspect: 720 / 406 },
+  "mecha-transformation-2": { ratio: "16:9", aspect: 720 / 406 },
+  "mecha-transformation-3": { ratio: "16:9", aspect: 720 / 406 },
+  "mecha-transformation-4": { ratio: "16:9", aspect: 720 / 406 },
+  "medical-ultrasound-device-1": { ratio: "16:9", aspect: 720 / 406 },
+  "smartphone-4": { ratio: "16:9", aspect: 720 / 406 },
+  "tenth-freezer": { ratio: "9:16", aspect: 720 / 1280 },
+  "tianmen-weihe": { ratio: "16:9", aspect: 720 / 406 },
+  "wuhan-cherry-blossom-season": { ratio: "16:9", aspect: 720 / 406 },
+  yongyeti: { ratio: "16:9", aspect: 720 / 406 },
+  "yuelin-qiji-3d-remake": { ratio: "16:9", aspect: 720 / 406 },
+  "zhang-xue-motorcycle-remake": { ratio: "16:9", aspect: 720 / 406 },
+};
+
 const videoInspirationItems = videoInspirationCategoryTabs
   .filter((category) => category.id !== "all")
   .flatMap((category) =>
     (videoInspirationFolderSlugs[category.folder] || []).map((slug) => {
       const metadata = videoInspirationMetadataMap.get(slug) || {};
+      const aspectMeta = videoInspirationAspectMeta[slug] || {
+        ratio: "16:9",
+        aspect: 16 / 9,
+      };
       const title = metadata.title || slug;
       const prompt = metadata.prompt
         ? `${metadata.prompt}${videoInspirationPromptQualitySuffix}`
@@ -8695,7 +8772,8 @@ const videoInspirationItems = videoInspirationCategoryTabs
         categoryId: category.id,
         category: category.label,
         folder: category.folder,
-        ratio: "16:9",
+        ratio: aspectMeta.ratio,
+        aspect: aspectMeta.aspect,
         duration: 5,
         video: `/assets/videoInspiration/${category.folder}/${slug}.webm?v=20260623`,
         preview: `/assets/videoInspiration/previews/${slug}-preview.webm?v=20260613`,
@@ -8876,6 +8954,7 @@ function VideoInspirationCard({ item, onOpen }) {
     <button
       className="video-inspiration-card"
       type="button"
+      style={{ "--video-inspiration-aspect": item.aspect || 16 / 9 }}
       onClick={() => onOpen(item)}
       onMouseEnter={playPreview}
       onMouseLeave={stopPreview}
