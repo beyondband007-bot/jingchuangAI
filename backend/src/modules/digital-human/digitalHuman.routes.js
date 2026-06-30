@@ -20,6 +20,7 @@ import {
   regenerateDigitalHumanTask,
   saveDigitalHumanAiAvatar,
   uploadDigitalHumanAudio,
+  uploadDigitalHumanScene,
   updateDigitalHumanAvatar
 } from "./digitalHuman.controller.js";
 
@@ -27,8 +28,10 @@ export const digitalHumanRouter = Router();
 
 const avatarDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "avatars");
 const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio-uploads");
+const sceneDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "scene-uploads");
 mkdirSync(avatarDir, { recursive: true });
 mkdirSync(audioDir, { recursive: true });
+mkdirSync(sceneDir, { recursive: true });
 
 const avatarUpload = multer({
   storage: multer.diskStorage({
@@ -68,6 +71,24 @@ const audioUpload = multer({
   }
 });
 
+const sceneUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, sceneDir),
+    filename: (_req, file, callback) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+      callback(null, `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`);
+    }
+  }),
+  limits: { fileSize: 30 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    if (!String(file.mimetype || "").startsWith("image/")) {
+      callback(new Error("scene must be an image file"));
+      return;
+    }
+    callback(null, true);
+  }
+});
+
 function uploadAvatar(req, res, next) {
   avatarUpload.single("avatar")(req, res, (error) => {
     if (!error) {
@@ -90,6 +111,17 @@ function uploadAudio(req, res, next) {
   });
 }
 
+function uploadScene(req, res, next) {
+  sceneUpload.single("scene")(req, res, (error) => {
+    if (!error) {
+      next();
+      return;
+    }
+    const message = error.code === "LIMIT_FILE_SIZE" ? "scene image must be 30MB or smaller" : error.message;
+    res.status(400).json({ error: message });
+  });
+}
+
 digitalHumanRouter.get("/models", getDigitalHumanModels);
 digitalHumanRouter.get("/avatars", getDigitalHumanAvatars);
 digitalHumanRouter.post("/avatars", uploadAvatar, createDigitalHumanAvatar);
@@ -102,6 +134,7 @@ digitalHumanRouter.get("/voices", getDigitalHumanVoices);
 digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
 digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
 digitalHumanRouter.post("/uploads/audio", uploadAudio, uploadDigitalHumanAudio);
+digitalHumanRouter.post("/uploads/scene", uploadScene, uploadDigitalHumanScene);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);
 digitalHumanRouter.post("/tasks", createDigitalHumanTask);
 digitalHumanRouter.get("/tasks/:id", getDigitalHumanTask);

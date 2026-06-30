@@ -1,7 +1,25 @@
 import { createApp } from "./app.js";
 import { config } from "./config/index.js";
+import { recoverStreamingChatMessages } from "./modules/chat/chat.service.js";
 
 const app = createApp();
+
+const recoveredChatMessages = await recoverStreamingChatMessages();
+if (recoveredChatMessages > 0) {
+  console.log(`Recovered ${recoveredChatMessages} interrupted chat message(s)`);
+}
+
+const chatRecoveryTimer = setInterval(async () => {
+  try {
+    const recovered = await recoverStreamingChatMessages();
+    if (recovered > 0) {
+      console.log(`Recovered ${recovered} interrupted chat message(s)`);
+    }
+  } catch (error) {
+    console.error("Failed to recover interrupted chat messages", error);
+  }
+}, 60_000);
+chatRecoveryTimer.unref();
 
 app.listen(config.port, config.host, () => {
   console.log(`Backend listening on http://${config.host}:${config.port}`);

@@ -337,17 +337,21 @@ export async function createKieChatResponse({ model, messages, reasoningEffort }
   };
 }
 
-export async function createKieChatStream({ model, messages, reasoningEffort, onDelta }) {
+export async function createKieChatStream({ model, messages, reasoningEffort, onDelta, signal }) {
   ensureKieKey();
   const request = getEndpointAndBody({ model, messages, reasoningEffort, stream: true });
 
+  const timeoutSignal = AbortSignal.timeout(chatTimeoutMs);
+  const requestSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
   const response = await fetch(`${config.kie.baseUrl}${request.path}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${config.kie.apiKey}`,
       "Content-Type": "application/json"
     },
-    signal: AbortSignal.timeout(chatTimeoutMs),
+    signal: requestSignal,
     body: JSON.stringify(request.body)
   });
 

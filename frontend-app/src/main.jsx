@@ -15,9 +15,14 @@ import {
 } from "./components/InspirationLibraryDrawer.jsx";
 import { createRoot } from "react-dom/client";
 import { Button, ConfigProvider } from "@arco-design/web-react";
+import {
+  IconAlipayCircle,
+  IconWechat,
+} from "@arco-design/web-react/icon";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  ArrowUp,
   CircleAlert,
   Bell,
   Bot,
@@ -72,7 +77,6 @@ import { paymentApi } from "./api/paymentApi";
 import { invitationApi } from "./api/invitationApi";
 import { imageApi } from "./api/imageApi";
 import { videoApi } from "./api/videoApi";
-import { chatApi } from "./api/chatApi";
 import { digitalHumanApi } from "./api/digitalHumanApi";
 import { motionTransferApi } from "./api/motionTransferApi";
 import { faceSwapApi } from "./api/faceSwapApi";
@@ -121,10 +125,111 @@ import { StudioLanding } from "./StudioLanding";
 import { formatBeijingDateTime, formatBeijingHistoryTime } from "./utils/time";
 import "@arco-design/web-react/dist/css/arco.css";
 import "./styles.scss";
+import { ChatGenerationView } from "./features/chat/ChatGenerationView";
 import "./features/article/articleTopTabs.scss";
 import "./features/article/articlePopularWorkbench.scss";
 import "./features/article/articleHistory.scss";
 import "./features/article/ArticlePopularResultPanel.scss";
+
+const backToTopThreshold = 1200;
+const backToTopDurationMs = 1000;
+
+function getWindowScrollElement() {
+  return document.scrollingElement || document.documentElement;
+}
+
+function getScrollTop(target) {
+  if (!target || target === window) {
+    return window.scrollY || getWindowScrollElement().scrollTop || 0;
+  }
+  return target.scrollTop || 0;
+}
+
+function setScrollTop(target, top) {
+  if (!target || target === window) {
+    window.scrollTo(0, top);
+    return;
+  }
+  target.scrollTop = top;
+}
+
+function animateScrollTop(target, duration = backToTopDurationMs) {
+  const startTop = getScrollTop(target);
+  if (startTop <= 0) return () => {};
+  const startTime = window.performance.now();
+  let frameId = 0;
+
+  function easeInOutCubic(value) {
+    return value < 0.5
+      ? 4 * value * value * value
+      : 1 - Math.pow(-2 * value + 2, 3) / 2;
+  }
+
+  function tick(now) {
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = easeInOutCubic(progress);
+    setScrollTop(target, Math.round(startTop * (1 - eased)));
+    if (progress < 1) {
+      frameId = window.requestAnimationFrame(tick);
+    }
+  }
+
+  frameId = window.requestAnimationFrame(tick);
+  return () => window.cancelAnimationFrame(frameId);
+}
+
+function BackToTopButton({
+  scrollTargetRef,
+  className = "",
+  threshold = backToTopThreshold,
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const cancelScrollRef = useRef(null);
+  const buttonClassName = [
+    "back-to-top-button",
+    isVisible ? "is-visible" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  useEffect(() => {
+    const target = scrollTargetRef?.current || window;
+    const updateVisibility = () => {
+      setIsVisible(getScrollTop(target) > threshold);
+    };
+
+    updateVisibility();
+    target.addEventListener("scroll", updateVisibility, { passive: true });
+    window.addEventListener("resize", updateVisibility);
+
+    return () => {
+      target.removeEventListener("scroll", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
+      cancelScrollRef.current?.();
+    };
+  }, [scrollTargetRef, threshold]);
+
+  const scrollToTop = useCallback(() => {
+    cancelScrollRef.current?.();
+    cancelScrollRef.current = animateScrollTop(
+      scrollTargetRef?.current || window,
+    );
+  }, [scrollTargetRef]);
+
+  return (
+    <button
+      className={buttonClassName}
+      type="button"
+      onClick={scrollToTop}
+      aria-label="回到顶部"
+      title="回到顶部"
+      tabIndex={isVisible ? 0 : -1}
+    >
+      <ArrowUp size={21} strokeWidth={2.4} />
+    </button>
+  );
+}
 
 const caseImageFiles = [
   "001.webp",
@@ -2699,6 +2804,7 @@ function CreationCenterView({
         onReference={referenceInspiration}
         onFavorite={toggleInspirationFavorite}
       />
+      <BackToTopButton />
     </section>
   );
 }
@@ -2713,13 +2819,14 @@ const FeatureSidebar = memo(function FeatureSidebar({
 }) {
   const isLoadingUser = !authUser;
   const isGuest = Boolean(authUser?.isGuest);
+  const enableSidebarSearch = false;
   const [query, setQuery] = useState("");
   const [openGroups, setOpenGroups] = useState(() => ({
     vision: true,
     marketing: false,
     audio: false,
   }));
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = enableSidebarSearch ? query.trim().toLowerCase() : "";
 
   const getNavItem = useCallback(
     (id) => navItems.find((item) => item.id === id),
@@ -2757,15 +2864,18 @@ const FeatureSidebar = memo(function FeatureSidebar({
         <span className="feature-brand-text">Facemini</span>
         <span className="feature-brand-beta">Beta</span>
       </button>
-      <label className="feature-nav-search">
-        <Search size={16} />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          type="search"
-          placeholder="搜索..."
-        />
-      </label>
+      {enableSidebarSearch && (
+        <label className="feature-nav-search">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            type="search"
+            autoComplete="off"
+            placeholder="搜索..."
+          />
+        </label>
+      )}
       <nav className="feature-nav" aria-label="功能导航">
         {sidebarSections.map((section) => {
           if (section.type === "item") {
@@ -2899,8 +3009,8 @@ const rechargePresets = [1, 10, 30, 50, 100, 200];
 const paymentCodeTtlSeconds = 3 * 60;
 const paymentResultTtlSeconds = 3;
 const paymentProviderOptions = [
-  { value: "alipay", label: "支付宝支付" },
-  { value: "wechat", label: "微信支付" },
+  { value: "alipay", label: "支付宝支付", icon: IconAlipayCircle },
+  { value: "wechat", label: "微信支付", icon: IconWechat },
 ];
 
 function paymentProviderText(provider) {
@@ -5443,19 +5553,22 @@ function AssetsPage({
                     className="assets-payment-methods"
                     aria-label="选择支付方式"
                   >
-                    {paymentProviderOptions.map((option) => (
-                      <button
-                        className={
-                          paymentProvider === option.value ? "is-active" : ""
-                        }
-                        key={option.value}
-                        type="button"
-                        onClick={() => setPaymentProvider(option.value)}
-                      >
-                        <Wallet size={16} />
-                        <span>{option.label}</span>
-                      </button>
-                    ))}
+                    {paymentProviderOptions.map((option) => {
+                      const PaymentIcon = option.icon;
+                      return (
+                        <button
+                          className={
+                            paymentProvider === option.value ? "is-active" : ""
+                          }
+                          key={option.value}
+                          type="button"
+                          onClick={() => setPaymentProvider(option.value)}
+                        >
+                          <PaymentIcon />
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -6493,6 +6606,10 @@ function ImageGenerationWorkbench({
           )}
         </div>
       </aside>
+      <BackToTopButton
+        scrollTargetRef={contextRef}
+        className="image-workbench-back-to-top"
+      />
     </div>
   );
 }
@@ -8328,6 +8445,7 @@ function ImageGenerationView({
           <div className="empty-results video-empty-results">暂无图片结果</div>
         </div>
       ) : null}
+      {filter !== "recent" && <BackToTopButton />}
       <ImagePreviewLightbox
         task={previewTask}
         onClose={() => setPreviewTask(null)}
@@ -8631,13 +8749,25 @@ function sortVideoTasksByNewest(tasks) {
   });
 }
 
-function VideoPreview({ task }) {
+function VideoPreview({ task, onOpen }) {
   const isProcessing =
     task.status === "pending" || task.status === "processing";
   const isFailed = task.status === "failed";
 
   if (task.video && !isFailed) {
-    return <video src={task.video} controls playsInline preload="metadata" />;
+    return (
+      <button
+        className="video-preview-open"
+        type="button"
+        onClick={() => onOpen?.(task)}
+        aria-label="查看视频详情"
+      >
+        <video src={task.video} muted playsInline preload="metadata" />
+        <span className="video-preview-play">
+          <Play size={18} fill="currentColor" />
+        </span>
+      </button>
+    );
   }
 
   return (
@@ -8659,6 +8789,7 @@ function VideoResultCard({
   onDelete,
   onFavorite,
   onRegenerate,
+  onOpen,
   isExample = false,
 }) {
   const isCompleted = card.status === "completed" && Boolean(card.video);
@@ -8671,7 +8802,7 @@ function VideoResultCard({
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
     >
       <div className="result-preview video-result-preview">
-        <VideoPreview task={card} />
+        <VideoPreview task={card} onOpen={isCompleted ? onOpen : undefined} />
         <span className="video-duration-badge">{card.duration}s</span>
       </div>
       <div className="result-meta">
@@ -8775,7 +8906,7 @@ function VideoInspirationCard({ item, onOpen }) {
   );
 }
 
-function VideoInspirationModal({ item, onClose, onRemix }) {
+function VideoInspirationModal({ item, onClose, onRemix, onFavorite }) {
   if (!item) return null;
   return (
     <FaceminiInspirationModal
@@ -8788,6 +8919,7 @@ function VideoInspirationModal({ item, onClose, onRemix }) {
       }}
       onClose={onClose}
       onRemix={onRemix}
+      onFavorite={onFavorite}
       onReference={(nextItem) => {
         writePendingGenerationSeed({
           target: "image",
@@ -8803,6 +8935,40 @@ function VideoInspirationModal({ item, onClose, onRemix }) {
         window.history.pushState(null, "", "#/image");
         window.dispatchEvent(new HashChangeEvent("hashchange"));
       }}
+    />
+  );
+}
+
+function VideoTaskDetailModal({
+  task,
+  onClose,
+  onRemix,
+  onReference,
+  onFavorite,
+}) {
+  if (!task) return null;
+  return (
+    <FaceminiInspirationModal
+      item={{
+        ...task,
+        id: task.id,
+        title: task.title || "视频生成记录",
+        category: "视频灵感",
+        mediaType: "video",
+        videoSrc: task.video,
+        video: task.video,
+        image: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
+        poster: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
+        ratio: task.ratio || "16:9",
+        model: task.model || task.modelKey || "Seedance 2.0",
+        material: "历史生成",
+        prompt: task.prompt,
+        favorite: Boolean(task.favorite),
+      }}
+      onClose={onClose}
+      onRemix={() => onRemix?.(task)}
+      onReference={() => onReference?.(task)}
+      onFavorite={onFavorite ? () => onFavorite(task) : undefined}
     />
   );
 }
@@ -9042,6 +9208,10 @@ function VideoGenerationView({
   const [pageToastMessage, setPageToastMessage] = useState("");
   const [playingTask, setPlayingTask] = useState(null);
   const [selectedInspiration, setSelectedInspiration] = useState(null);
+  const [selectedHistoryTask, setSelectedHistoryTask] = useState(null);
+  const [favoriteInspirationIds, setFavoriteInspirationIds] = useState(() =>
+    readInspirationFavoriteIds(),
+  );
   const [videoInspirationCategory, setVideoInspirationCategory] =
     useState("all");
   const [composerSeed, setComposerSeed] = useState(null);
@@ -9087,10 +9257,28 @@ function VideoGenerationView({
     if (previousVideoResetSignalRef.current === resetSignal) return;
     previousVideoResetSignalRef.current = resetSignal;
     setPlayingTask(null);
+    setSelectedHistoryTask(null);
     setFilter("inspiration");
     setIsSubmitting(false);
     videoGen.resetToIdle();
   }, [resetSignal]);
+
+  useEffect(() => {
+    function syncFavoriteIds() {
+      setFavoriteInspirationIds(readInspirationFavoriteIds());
+    }
+    window.addEventListener(inspirationFavoritesChangedEvent, syncFavoriteIds);
+    return () =>
+      window.removeEventListener(
+        inspirationFavoritesChangedEvent,
+        syncFavoriteIds,
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedInUser(authUser)) return;
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+  }, [authUser?.id]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -9124,6 +9312,11 @@ function VideoGenerationView({
       taskStatusSignatureRef.current = nextSignature;
       videoApi.setHasRunningTasks(hasRunningTasks(runningValue));
       setCards(value);
+      setSelectedHistoryTask((current) => {
+        if (!current?.id) return current;
+        const nextTask = value.find((item) => item.id === current.id);
+        return nextTask || current;
+      });
       if (didStatusChange) {
         videoApi
           .refreshCredits()
@@ -9244,6 +9437,63 @@ function VideoGenerationView({
       current.map((item) => (item.id === id ? updated : item)),
     );
     setPlayingTask((current) => (current?.id === id ? updated : current));
+    setSelectedHistoryTask((current) =>
+      current?.id === id ? updated : current,
+    );
+    return Boolean(updated?.favorite);
+  }
+
+  async function toggleVideoInspirationFavorite(item) {
+    if (!isLoggedInUser(authUser)) {
+      requestLoginForGeneration();
+      throw new Error("请先登录");
+    }
+    const nextValue = await toggleInspirationFavoriteId(
+      getInspirationFavoriteId(item),
+    );
+    const nextIds = readInspirationFavoriteIds();
+    setFavoriteInspirationIds(nextIds);
+    setSelectedInspiration((current) =>
+      current && getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
+        ? { ...current, favorite: nextValue }
+        : current,
+    );
+    return nextValue;
+  }
+
+  function referenceVideoTask(task) {
+    const referenceUrl =
+      task?.poster ||
+      task?.cover ||
+      task?.thumbnail ||
+      task?.referenceImageUrl ||
+      "";
+    if (!referenceUrl) {
+      showVideoPageToast("该历史记录暂无可用参考图");
+      return;
+    }
+    writePendingGenerationSeed({
+      target: "image",
+      referenceImage: {
+        url: referenceUrl,
+        originalName: `${task?.title || "视频封面"}.png`,
+        size: 0,
+        mimeType: "image/png",
+      },
+      notice: "已添加视频封面作为参考图",
+    });
+    setSelectedHistoryTask(null);
+    window.history.pushState(null, "", "#/image");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+
+  function remixVideoTask(task) {
+    if (!task) return;
+    useVideoInspiration({
+      id: task.id || `video-history-${Date.now()}`,
+      prompt: task.prompt || "",
+    });
+    setSelectedHistoryTask(null);
   }
 
   async function regenerateTask(id) {
@@ -9491,6 +9741,7 @@ function VideoGenerationView({
               onDelete={() => {}}
               onFavorite={() => {}}
               onRegenerate={() => {}}
+              onOpen={() => {}}
             />
           )}
           {sortedCards.length ? (
@@ -9501,6 +9752,7 @@ function VideoGenerationView({
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
                 onRegenerate={requestRegenerate}
+                onOpen={setSelectedHistoryTask}
               />
             ))
           ) : (
@@ -9512,875 +9764,31 @@ function VideoGenerationView({
           )}
         </div>
       ) : null}
+      <BackToTopButton />
       <VideoInspirationModal
-        item={selectedInspiration}
+        item={
+          selectedInspiration
+            ? {
+                ...selectedInspiration,
+                favorite: favoriteInspirationIds.has(
+                  getInspirationFavoriteId(selectedInspiration),
+                ),
+              }
+            : null
+        }
         onClose={() => setSelectedInspiration(null)}
         onRemix={useVideoInspiration}
+        onFavorite={toggleVideoInspirationFavorite}
+      />
+      <VideoTaskDetailModal
+        task={selectedHistoryTask}
+        onClose={() => setSelectedHistoryTask(null)}
+        onRemix={remixVideoTask}
+        onReference={referenceVideoTask}
+        onFavorite={(task) => toggleFavorite(task.id)}
       />
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
-    </section>
-  );
-}
-
-const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
-const chatContextRoles = new Set(["system", "user", "assistant"]);
-
-function toChatContext(messages) {
-  return messages
-    .filter(
-      (message) =>
-        message.status !== "failed" &&
-        chatContextRoles.has(message.role) &&
-        (message.content?.trim() || message.attachments?.length),
-    )
-    .map((message) => ({
-      role: message.role,
-      content: message.content?.trim() || "",
-      attachments: message.attachments || [],
-    }));
-}
-
-function formatChatAttachmentSize(bytes = 0) {
-  if (!bytes || Number.isNaN(Number(bytes))) return "";
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function ChatAttachmentList({ attachments = [], onRemove, isStatic = false }) {
-  if (!attachments.length) return null;
-
-  return (
-    <div className="chat-attachment-list">
-      {attachments.map((attachment, index) => (
-        <div
-          className={`chat-attachment-card ${isStatic ? "is-static" : ""}`}
-          key={attachment.id || attachment.url || index}
-        >
-          <span className="chat-attachment-preview">
-            {attachment.kind === "image" && attachment.url ? (
-              <img src={attachment.url} alt="" />
-            ) : (
-              <FileText size={14} />
-            )}
-          </span>
-          <span className="chat-attachment-meta">
-            <strong title={attachment.originalName || "attachment"}>
-              {attachment.originalName || "attachment"}
-            </strong>
-            <small>{formatChatAttachmentSize(attachment.size)}</small>
-          </span>
-          {!isStatic && (
-            <button
-              type="button"
-              onClick={() => onRemove?.(index)}
-              aria-label="移除附件"
-            >
-              <X size={11} />
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function appendChatStreamChunk(current = "", chunk = "") {
-  if (!chunk) return current;
-  if (!current) return chunk;
-  if (chunk === current) return current;
-  if (chunk.startsWith(current)) return chunk;
-
-  const maxOverlap = Math.min(current.length, chunk.length);
-  for (let size = maxOverlap; size > 0; size -= 1) {
-    if (current.endsWith(chunk.slice(0, size))) {
-      return `${current}${chunk.slice(size)}`;
-    }
-  }
-
-  return `${current}${chunk}`;
-}
-
-function ChatMarkdown({ content }) {
-  return (
-    <div className="chat-markdown">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: ({ node, ...props }) => (
-            <a {...props} target="_blank" rel="noreferrer" />
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
-}
-
-function markdownToPlainText(markdown = "") {
-  return String(markdown || "")
-    .replace(/```[\s\S]*?```/g, (block) =>
-      block.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, ""),
-    )
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/^\s{0,3}>\s?/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/[*_~]{1,3}/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function ChatCopyActions({ content }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [copiedMode, setCopiedMode] = useState("");
-  const wrapRef = useRef(null);
-  const plainText = useMemo(() => markdownToPlainText(content), [content]);
-
-  useEffect(() => {
-    if (!isMenuOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!wrapRef.current?.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setIsMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isMenuOpen]);
-
-  async function copyContent(mode = "plain") {
-    const copied = await writeClipboardText(
-      mode === "markdown" ? content : plainText,
-    );
-    if (!copied) return;
-    setCopiedMode(mode);
-    setIsMenuOpen(false);
-    window.setTimeout(() => {
-      setCopiedMode((current) => (current === mode ? "" : current));
-    }, 1600);
-  }
-
-  return (
-    <div
-      className={`chat-copy-actions ${isMenuOpen ? "is-menu-open" : ""}`}
-      ref={wrapRef}
-    >
-      <button
-        className={`chat-copy-icon ${copiedMode ? "is-copied" : ""}`}
-        type="button"
-        onClick={() => copyContent("plain")}
-        aria-label={copiedMode ? "已复制回复内容" : "复制回复内容"}
-        title={copiedMode ? "已复制" : "复制"}
-      >
-        {copiedMode ? <CheckCircle2 size={15} /> : <Copy size={15} />}
-      </button>
-      <button
-        className={`chat-copy-chevron ${isMenuOpen ? "is-open" : ""}`}
-        type="button"
-        onClick={() => setIsMenuOpen((value) => !value)}
-        aria-label="展开复制选项"
-        aria-expanded={isMenuOpen}
-      >
-        <ChevronDown size={14} />
-      </button>
-      {isMenuOpen && (
-        <div className="chat-copy-menu" role="menu">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => copyContent("markdown")}
-          >
-            复制为Markdown
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => copyContent("plain")}
-          >
-            复制
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChatCanvas({ messages, isSubmitting, error }) {
-  const scrollContainerRef = useRef(null);
-  const scrollSignature = messages
-    .map(
-      (message) =>
-        `${message.id}:${message.status}:${message.content?.length || 0}:${
-          message.attachments?.length || 0
-        }`,
-    )
-    .join("|");
-  const hasStreamingMessage = messages.some(
-    (message) => message.status === "streaming",
-  );
-
-  useEffect(() => {
-    if (!messages.length && !isSubmitting && !error) return undefined;
-
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return undefined;
-
-    const scrollToBottom = () => {
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
-        behavior: "auto",
-      });
-    };
-
-    scrollToBottom();
-    const frameId = window.requestAnimationFrame(scrollToBottom);
-    const timeoutId = window.setTimeout(scrollToBottom, 60);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(timeoutId);
-    };
-  }, [error, isSubmitting, messages.length, scrollSignature]);
-
-  if (!messages.length && !isSubmitting && !error) {
-    return (
-      <div className="chat-main-canvas">
-        <div className="chat-empty-state llm-empty-state">
-          <h1>Hi，我是 Facemini，你的 AI 创作助手</h1>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="chat-main-canvas"
-      ref={scrollContainerRef}
-      aria-live="polite"
-    >
-      <div className="chat-conversation-thread">
-        {messages.map((message) => (
-          <div className={`chat-message-row ${message.role}`} key={message.id}>
-            {message.role === "assistant" && (
-              <span
-                className={`chat-message-avatar ${message.status === "failed" ? "is-error" : ""}`}
-              >
-                <Bot size={17} />
-              </span>
-            )}
-            <div
-              className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}
-            >
-              {message.status === "failed" ? (
-                <>
-                  <strong>这次没有回复成功</strong>
-                  <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
-                </>
-              ) : (
-                <>
-                  {message.role === "assistant" && message.content ? (
-                    <ChatMarkdown content={message.content} />
-                  ) : (
-                    message.content ||
-                    (message.status === "streaming" ? "正在思考..." : "")
-                  )}
-                  <ChatAttachmentList
-                    attachments={message.attachments || []}
-                    isStatic
-                  />
-                  {message.points > 0 && (
-                    <small className="chat-message-cost">
-                      {message.price || `${message.points} 积分`}
-                    </small>
-                  )}
-                  {message.role === "assistant" &&
-                    message.status === "completed" &&
-                    message.content?.trim() && (
-                      <ChatCopyActions content={message.content} />
-                    )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-        {isSubmitting && !hasStreamingMessage && (
-          <div className="chat-message-row assistant">
-            <span className="chat-message-avatar">
-              <Bot size={17} />
-            </span>
-            <div className="chat-message-bubble is-loading">
-              <Loader2 size={17} />
-              <span>正在思考...</span>
-            </div>
-          </div>
-        )}
-        {error && (
-          <div className="chat-inline-error" role="alert">
-            {error}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ChatComposerBar({
-  options,
-  onSubmit,
-  isSubmitting,
-  model,
-  onModelChange,
-  onModelSwitchNotice,
-  reasoningEffort,
-  onReasoningEffortChange,
-  conversationRound = 1,
-}) {
-  const [prompt, setPrompt] = useState("");
-  const [attachments, setAttachments] = useState([]);
-  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [openMenu, setOpenMenu] = useState(null);
-  const attachmentInputRef = useRef(null);
-  const modelMenuRef = useRef(null);
-
-  const isReady = options.models.length > 0;
-  const selectedModel =
-    options.models.find((item) => item.value === model) || options.models[0];
-  const isInputLocked = !isReady || isSubmitting || isUploadingAttachment;
-  const canSubmit =
-    isReady &&
-    (prompt.trim().length > 0 || attachments.length > 0) &&
-    model &&
-    !isSubmitting &&
-    !isUploadingAttachment;
-  const modelLabel = isReady
-    ? selectedModel?.label || "DeepSeek V4 Pro"
-    : "模型加载中";
-  const visibleReasoningEfforts = options.reasoningEfforts
-    .filter((item) => item.value === "none" || item.value === "low")
-    .map((item) =>
-      item.value === "low" ? { ...item, label: "深度思考" } : item,
-    );
-
-  useEffect(() => {
-    if (!openMenu) return undefined;
-
-    function closeOnOutside(event) {
-      if (!modelMenuRef.current?.contains(event.target)) {
-        setOpenMenu(null);
-      }
-    }
-
-    function closeOnPageInteraction(event) {
-      if (!modelMenuRef.current?.contains(event.target)) {
-        setOpenMenu(null);
-      }
-    }
-
-    document.addEventListener("pointerdown", closeOnOutside, true);
-    document.addEventListener("wheel", closeOnPageInteraction, true);
-    document.addEventListener("touchmove", closeOnPageInteraction, true);
-    window.addEventListener("resize", closeOnPageInteraction);
-    window.addEventListener("scroll", closeOnPageInteraction, true);
-
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutside, true);
-      document.removeEventListener("wheel", closeOnPageInteraction, true);
-      document.removeEventListener("touchmove", closeOnPageInteraction, true);
-      window.removeEventListener("resize", closeOnPageInteraction);
-      window.removeEventListener("scroll", closeOnPageInteraction, true);
-    };
-  }, [openMenu]);
-
-  async function handleAttachmentSelect(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (attachments.length >= 5) {
-      setNotice("单次最多上传 5 个附件。");
-      event.target.value = "";
-      return;
-    }
-
-    setIsUploadingAttachment(true);
-    setNotice("");
-    try {
-      const uploaded = await chatApi.uploadAttachment(file);
-      setAttachments((current) => [
-        ...current,
-        {
-          id: uploaded.id || uploaded.url,
-          url: uploaded.url,
-          originalName: uploaded.originalName || file.name,
-          mimeType: uploaded.mimeType || file.type,
-          size: uploaded.size || file.size,
-          kind:
-            uploaded.kind ||
-            (file.type.startsWith("image/") ? "image" : "file"),
-        },
-      ]);
-    } catch (error) {
-      setNotice(error.message || "附件上传失败，请重试。");
-    } finally {
-      setIsUploadingAttachment(false);
-      event.target.value = "";
-    }
-  }
-
-  function removeAttachment(index) {
-    setAttachments((current) =>
-      current.filter((_, itemIndex) => itemIndex !== index),
-    );
-    setNotice("");
-  }
-
-  function submitPrompt() {
-    if (!canSubmit) {
-      setNotice(
-        isUploadingAttachment
-          ? "附件上传完成后再发送。"
-          : "请输入内容或上传附件后再发送。",
-      );
-      return;
-    }
-
-    onSubmit({
-      content: prompt.trim(),
-      model,
-      reasoningEffort,
-      attachments,
-    });
-    setPrompt("");
-    setAttachments([]);
-    setNotice("");
-  }
-
-  return (
-    <div className="llm-composer chat-composer" aria-label="大模型输入框">
-      <input
-        ref={attachmentInputRef}
-        type="file"
-        hidden
-        accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        onChange={handleAttachmentSelect}
-      />
-      <textarea
-        className="llm-input"
-        value={prompt}
-        disabled={isInputLocked}
-        onChange={(event) => {
-          setPrompt(event.target.value);
-          if (notice) setNotice("");
-        }}
-        onKeyDown={(event) => {
-          if (isInputLocked) return;
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            submitPrompt();
-          }
-        }}
-        placeholder={
-          !isReady
-            ? "正在加载对话模型..."
-            : isSubmitting
-              ? "AI 正在思考中..."
-              : "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
-        }
-      />
-      <div className="llm-composer-footer">
-        <div className="llm-toolbar">
-          <div className="llm-left">
-            <button
-              className="llm-square"
-              type="button"
-              disabled={isInputLocked || attachments.length >= 5}
-              onClick={() => attachmentInputRef.current?.click()}
-              aria-label="上传附件"
-              title="上传附件"
-            >
-              {isUploadingAttachment ? (
-                <Loader2 size={16} />
-              ) : (
-                <Plus size={16} />
-              )}
-            </button>
-            <ChatAttachmentList
-              attachments={attachments}
-              onRemove={removeAttachment}
-            />
-            <div
-              ref={modelMenuRef}
-              className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}
-            >
-              <button
-                className="llm-select"
-                type="button"
-                disabled={isInputLocked}
-                onClick={() =>
-                  setOpenMenu((current) =>
-                    current === "model" ? null : "model",
-                  )
-                }
-              >
-                <span>{modelLabel}</span>
-                <ChevronDown size={16} />
-              </button>
-              <div className="llm-menu">
-                {options.models.map((item) => (
-                  <button
-                    type="button"
-                    key={item.value}
-                    className={item.value === model ? "is-selected" : ""}
-                    onClick={() => {
-                      if (item.value !== model) {
-                        onModelSwitchNotice?.();
-                      }
-                      onModelChange(item.value);
-                      setOpenMenu(null);
-                    }}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="llm-right">
-            {visibleReasoningEfforts.length > 0 && (
-              <CustomSelect
-                ariaLabel="推理强度"
-                className="llm-reasoning-select"
-                value={reasoningEffort}
-                disabled={isInputLocked}
-                onChange={onReasoningEffortChange}
-                options={visibleReasoningEfforts}
-              />
-            )}
-            <button
-              className="llm-round primary"
-              type="button"
-              disabled={!canSubmit}
-              onClick={submitPrompt}
-              aria-label="发送"
-            >
-              {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
-              <BillingPoints
-                feature="chat"
-                payload={{ outputChars: 1000, conversationRound }}
-                fallbackPoints={1}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-      {notice && <div className="composer-notice warning">{notice}</div>}
-    </div>
-  );
-}
-
-function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="chat-history-dropdown">
-      <button
-        className={`history-toggle chat-history-toggle ${isOpen ? "is-open" : ""}`}
-        type="button"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((value) => !value)}
-      >
-        <History size={16} />
-        <span>历史记录</span>
-        <b>{conversations.length}</b>
-        <ChevronDown size={16} />
-      </button>
-      {isOpen && (
-        <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
-          <div className="history-rail-header">
-            <span>历史对话</span>
-            <strong>{conversations.length}</strong>
-          </div>
-          <div className="history-list chat-history-list">
-            {conversations.length === 0 ? (
-              <p className="chat-history-empty">暂无历史对话</p>
-            ) : (
-              conversations.map((conversation) => (
-                <button
-                  className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => onSelect(conversation.id)}
-                >
-                  <span>{conversation.title || "未命名对话"}</span>
-                  <small>
-                    {formatBeijingDateTime(conversation.createdAt || conversation.created_at || conversation.time) ||
-                      conversation.time ||
-                      ""}
-                  </small>
-                </button>
-              ))
-            )}
-          </div>
-        </aside>
-      )}
-    </div>
-  );
-}
-
-function ChatGenerationView({ authUser, onOpenAuth }) {
-  const [messages, setMessages] = useState([]);
-  const [conversations, setConversations] = useState([]);
-  const [options, setOptions] = useState(emptyChatOptions);
-  const [credits, setCredits] = useState(null);
-  const [conversationId, setConversationId] = useState(null);
-  const [selectedModel, setSelectedModel] = useState("");
-  const [selectedReasoningEffort, setSelectedReasoningEffort] =
-    useState("none");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [modelSwitchNotice, setModelSwitchNotice] = useState("");
-  const isGuest = !isLoggedInUser(authUser);
-
-  // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
-  useEffect(() => {
-    let mounted = true;
-    chatApi
-      .getModels()
-      .then((value) => mounted && setOptions(value))
-      .catch((error) => mounted && setSubmitError(error.message));
-    chatApi
-      .getCredits()
-      .then((value) => mounted && setCredits(value))
-      .catch(() => {});
-    chatApi
-      .getConversations()
-      .then((value) => mounted && setConversations(value))
-      .catch(() => {});
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!modelSwitchNotice) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setModelSwitchNotice("");
-    }, 2600);
-
-    return () => window.clearTimeout(timer);
-  }, [modelSwitchNotice]);
-
-  const showModelSwitchNotice = useCallback(() => {
-    if (!messages.length && !isSubmitting && !submitError) return;
-    setModelSwitchNotice("对话中更换模型可能会导致输出不稳定");
-  }, [isSubmitting, messages.length, submitError]);
-
-  useEffect(() => {
-    const defaultModel = options.defaultModel || options.models[0]?.value || "";
-    const hasSelectedModel = options.models.some(
-      (item) => item.value === selectedModel,
-    );
-    if (defaultModel && (!selectedModel || !hasSelectedModel)) {
-      setSelectedModel(defaultModel);
-    }
-    const hasSelectedReasoningEffort = options.reasoningEfforts.some(
-      (item) => item.value === selectedReasoningEffort,
-    );
-    if (
-      options.reasoningEfforts[0]?.value &&
-      (!selectedReasoningEffort || !hasSelectedReasoningEffort)
-    ) {
-      setSelectedReasoningEffort(options.reasoningEfforts[0].value);
-    }
-  }, [options, selectedModel, selectedReasoningEffort]);
-
-  async function sendChatMessage({
-    content,
-    model,
-    reasoningEffort,
-    attachments = [],
-  }) {
-    if (isGuest) {
-      setSubmitError("请先登录");
-      onOpenAuth?.("login");
-      return;
-    }
-
-    const localId = Date.now();
-    const userMessage = {
-      id: `local-${localId}`,
-      role: "user",
-      content,
-      attachments,
-      status: "completed",
-    };
-    const streamingMessage = {
-      id: `stream-${localId}`,
-      role: "assistant",
-      content: "",
-      status: "streaming",
-    };
-    const nextMessages = [...messages, userMessage];
-    setMessages(nextMessages);
-    setSubmitError("");
-    setIsSubmitting(true);
-
-    try {
-      setMessages([...nextMessages, streamingMessage]);
-      const result = await chatApi.streamMessage(
-        {
-          conversationId,
-          model,
-          reasoningEffort,
-          messages: toChatContext(nextMessages),
-        },
-        {
-          onDelta: (delta) => {
-            setMessages((current) =>
-              current.map((message) =>
-                message.id === streamingMessage.id
-                  ? {
-                      ...message,
-                      content: appendChatStreamChunk(message.content, delta),
-                    }
-                  : message,
-              ),
-            );
-          },
-        },
-      );
-      setConversationId(result.conversationId);
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === streamingMessage.id ? result.message : message,
-        ),
-      );
-      if (result.credits) setCredits(result.credits);
-      chatApi
-        .getConversations()
-        .then(setConversations)
-        .catch(() => {});
-    } catch (error) {
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === streamingMessage.id
-            ? {
-                ...message,
-                status: "failed",
-                error: error.message || "发送失败",
-              }
-            : message,
-        ),
-      );
-      setSubmitError(error.message || "发送失败");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function startNewConversation() {
-    setMessages([]);
-    setConversationId(null);
-    setSubmitError("");
-    setModelSwitchNotice("");
-  }
-
-  async function selectConversation(id) {
-    setSubmitError("");
-    setConversationId(id);
-    try {
-      const historyMessages = await chatApi.getMessages(id);
-      setMessages(historyMessages);
-    } catch (error) {
-      setSubmitError(error.message || "加载历史对话失败");
-    }
-  }
-
-  const isIntroState = !messages.length && !isSubmitting && !submitError;
-  const composer = (
-    <ChatComposerBar
-      options={options}
-      onSubmit={sendChatMessage}
-      isSubmitting={isSubmitting}
-      model={selectedModel}
-      onModelChange={setSelectedModel}
-      onModelSwitchNotice={showModelSwitchNotice}
-      reasoningEffort={selectedReasoningEffort}
-      onReasoningEffortChange={setSelectedReasoningEffort}
-      conversationRound={Math.max(1, Math.ceil(messages.length / 2) + 1)}
-    />
-  );
-
-  return (
-    <section className={`chat-view-root ${isIntroState ? "is-intro" : ""}`}>
-      <div className="chat-topbar">
-        <h1>大模型</h1>
-        {isLoggedInUser(authUser) && credits && (
-          <span className="credits-chip">积分 {credits.balance}</span>
-        )}
-      </div>
-      {modelSwitchNotice && (
-        <div className="chat-floating-notice" role="status" aria-live="polite">
-          <span className="chat-floating-notice-icon">
-            <CircleAlert size={16} />
-          </span>
-          <span>{modelSwitchNotice}</span>
-        </div>
-      )}
-      <div className="chat-content-layout">
-        <div className="chat-dialog-column">
-          {isIntroState ? (
-            <div className="llm-intro-layout">
-              <ChatCanvas
-                messages={messages}
-                isSubmitting={isSubmitting}
-                error={submitError}
-              />
-              {composer}
-            </div>
-          ) : (
-            <>
-              <ChatCanvas
-                messages={messages}
-                isSubmitting={isSubmitting}
-                error={submitError}
-              />
-              {composer}
-            </>
-          )}
-        </div>
-        <aside className="chat-actions-panel" aria-label="对话操作">
-          <button
-            className="chat-new-conversation-button"
-            type="button"
-            onClick={startNewConversation}
-            disabled={isSubmitting}
-          >
-            <Plus size={16} />
-            新建对话
-          </button>
-          <ChatHistoryRail
-            conversations={conversations}
-            activeConversationId={conversationId}
-            onSelect={selectConversation}
-          />
-        </aside>
-      </div>
     </section>
   );
 }
@@ -12478,6 +11886,8 @@ function WorkbenchTopbar({
   onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
+  digitalHumanMode = "avatar",
+  onDigitalHumanModeChange,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
@@ -12651,16 +12061,23 @@ function WorkbenchTopbar({
             <div className="fm-digital-tabs" aria-label="数字人类型">
               <button
                 type="button"
-                className={activeNav === "digital-human" ? "is-active" : ""}
-                onClick={() => onNavChange("digital-human")}
+                className={digitalHumanMode !== "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("avatar")}
               >
                 数字人形象
+              </button>
+              <button
+                type="button"
+                className={digitalHumanMode === "history" ? "is-active" : ""}
+                onClick={() => onDigitalHumanModeChange?.("history")}
+              >
+                历史记录
               </button>
             </div>
           )}
           {showArticleTabs && (
             <div
-              className="fm-digital-tabs fm-video-workflow-tabs"
+              className="fm-digital-tabs fm-video-workflow-tabs fm-article-nav-tabs"
               aria-label="爆款图文类型"
             >
               <button
@@ -12830,6 +12247,7 @@ function ImageFeaturePage({
   const isGuest = !isLoggedInUser(authUser);
   const [activeNav, setActiveNav] = useState(firstNav);
   const [articleMode, setArticleMode] = useState("home");
+  const [digitalHumanMode, setDigitalHumanMode] = useState("avatar");
   const [visitedIds, setVisitedIds] = useState(() => new Set([firstNav]));
   const [showInvite, setShowInvite] = useState(false);
   const [showInspirationLibrary, setShowInspirationLibrary] = useState(false);
@@ -12956,7 +12374,10 @@ function ImageFeaturePage({
   );
 
   return (
-    <div className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}>
+    <div
+      className={`feature-page-shell ${isGuest ? "is-guest" : ""}`}
+      data-active-nav={activeNav}
+    >
       <FeatureSidebar
         activeNav={activeNav}
         onNavChange={handleNavChange}
@@ -12989,6 +12410,8 @@ function ImageFeaturePage({
           onOpenLibrary={openInspirationLibrary}
           articleMode={articleMode}
           onArticleModeChange={setArticleMode}
+          digitalHumanMode={digitalHumanMode}
+          onDigitalHumanModeChange={setDigitalHumanMode}
         />
         <FeatureModuleKeepAlive
           id="creation"
@@ -13095,6 +12518,7 @@ function ImageFeaturePage({
           <DigitalHumanHubView
             isActive={activeNav === "digital-human"}
             onOpenFeature={handleNavChange}
+            viewMode={digitalHumanMode}
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive

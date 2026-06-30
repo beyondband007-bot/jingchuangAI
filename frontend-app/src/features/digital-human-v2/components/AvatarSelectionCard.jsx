@@ -1,9 +1,6 @@
 import React from "react";
 import { Drama, History, Sparkles, Upload, UserRound } from "lucide-react";
-import {
-  getPosterPath,
-  isVideoCover,
-} from "../utils";
+import { getPosterPath, isVideoCover } from "../utils";
 
 export function AvatarSelectionCard({
   selectedAvatar,
@@ -13,7 +10,9 @@ export function AvatarSelectionCard({
 }) {
   const cover = selectedAvatar?.cover;
   const isVideo = isVideoCover(cover);
-  const previewCover = isVideo ? selectedAvatar?.poster || getPosterPath(cover) : cover;
+  const previewCover =
+    selectedAvatar?.poster ||
+    (isVideo ? getPosterPath(cover) : cover);
   const isMine = avatarSource === "mine";
 
   return (
@@ -46,17 +45,20 @@ export function AvatarSelectionCard({
 
       <div className={`dhv2-avatar-preview ${selectedAvatar ? "has-avatar" : ""}${isMine ? " is-mine" : ""}`}>
         {selectedAvatar ? (
-          <>
+          previewCover ? (
             <div className="dhv2-avatar-preview__media">
-              {previewCover ? (
-                <img src={previewCover} alt={selectedAvatar.name} />
-              ) : (
-                <div className="dhv2-avatar-preview__empty">
-                  <UserRound size={40} />
-                </div>
-              )}
+              <div
+                className="dhv2-avatar-preview__cover"
+                role="img"
+                aria-label={selectedAvatar.name}
+                style={{ backgroundImage: `url("${previewCover}")` }}
+              />
             </div>
-          </>
+          ) : (
+            <div className="dhv2-avatar-preview__empty">
+              <UserRound size={40} />
+            </div>
+          )
         ) : isMine ? (
           <div className="dhv2-avatar-preview__mine-actions">
             <button type="button" onClick={() => onCreateAvatar?.("ai")}>

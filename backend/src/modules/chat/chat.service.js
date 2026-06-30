@@ -13,6 +13,7 @@ import { normalizeMessages, reasoningEffortOptions, validateChatPayload } from "
 import {
   createChatConversation,
   createChatMessage,
+  deleteStreamingChatMessage,
   ensureUserHasReserveCredits,
   findChatConversation,
   findChatMessageRow,
@@ -20,7 +21,10 @@ import {
   findEnabledChatModels,
   listChatConversationRows,
   listChatMessageRows,
-  touchChatConversation
+  stopOrphanedStreamingChatMessages,
+  touchChatConversation,
+  updateChatMessage,
+  updateChatMessageContent
 } from "./chat.repository.js";
 
 function buildTitle(messages) {
@@ -50,14 +54,14 @@ async function createProviderChatResponse({ model, messages, reasoningEffort }) 
   return createKieChatResponse({ model, messages, reasoningEffort });
 }
 
-async function createProviderChatStream({ model, messages, reasoningEffort, onDelta }) {
+async function createProviderChatStream({ model, messages, reasoningEffort, onDelta, signal }) {
   if (model.provider_type === "deepseek") {
-    return createDeepSeekChatStream({ model, messages, reasoningEffort, onDelta });
+    return createDeepSeekChatStream({ model, messages, reasoningEffort, onDelta, signal });
   }
   if (model.provider_type === "qwen") {
-    return createQwenChatStream({ model, messages, reasoningEffort, onDelta });
+    return createQwenChatStream({ model, messages, reasoningEffort, onDelta, signal });
   }
-  return createKieChatStream({ model, messages, reasoningEffort, onDelta });
+  return createKieChatStream({ model, messages, reasoningEffort, onDelta, signal });
 }
 
 function getAttachmentKind(file) {
@@ -305,17 +309,44 @@ async function prepareChatMessage(payload, userId) {
   return { conversationId: resolvedConversationId, modelPrice, messages, model, reasoningEffort };
 }
 
-async function persistAssistantMessage({ conversationId, model, modelPrice, provider, userId, messages }) {
-  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed, provider.text, messages);
-  const chargeConnection = await getPool().getConnection();
-  let assistantMessageId;
+async function createStreamingAssistantMessage({ conversationId, model }) {
+  const connection = await getPool().getConnection();
   try {
-    await chargeConnection.beginTransaction();
-    assistantMessageId = await createChatMessage(chargeConnection, {
+    await connection.beginTransaction();
+    const messageId = await createChatMessage(connection, {
       conversationId,
       role: "assistant",
-      content: provider.text,
+      content: "",
       modelKey: model,
+      status: "streaming"
+    });
+    await touchChatConversation(connection, conversationId);
+    await connection.commit();
+    return messageId;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function recoverStreamingChatMessages() {
+  const configuredStaleAfterMs = Number(process.env.CHAT_STREAM_RECOVERY_STALE_MS);
+  const staleAfterMs = Number.isFinite(configuredStaleAfterMs)
+    ? Math.max(60_000, configuredStaleAfterMs)
+    : 10 * 60 * 1000;
+  return stopOrphanedStreamingChatMessages(new Date(Date.now() - staleAfterMs));
+}
+
+async function persistAssistantMessage({ messageId, conversationId, modelPrice, provider, userId, messages }) {
+  const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed, provider.text, messages);
+  const chargeConnection = await getPool().getConnection();
+  try {
+    await chargeConnection.beginTransaction();
+    await updateChatMessage(chargeConnection, {
+      id: messageId,
+      content: provider.text,
       costPoints,
       kieCreditsConsumed: provider.kieCreditsConsumed,
       usage: provider.usage,
@@ -323,7 +354,7 @@ async function persistAssistantMessage({ conversationId, model, modelPrice, prov
     });
     await debitCredits(chargeConnection, {
       userId,
-      taskId: assistantMessageId,
+      taskId: messageId,
       amount: costPoints,
       memo: "chat completion debit"
     });
@@ -336,26 +367,128 @@ async function persistAssistantMessage({ conversationId, model, modelPrice, prov
     chargeConnection.release();
   }
 
-  const assistantMessage = await findChatMessageRow(assistantMessageId);
+  const assistantMessage = await findChatMessageRow(messageId);
   return mapChatMessage(assistantMessage);
 }
 
-export async function streamMessage(payload, userId, { onDelta }) {
+export async function streamMessage(payload, userId, { onStarted, onDelta, signal }) {
   const prepared = await prepareChatMessage(payload, userId);
-  const provider = await createProviderChatStream({
-    model: prepared.modelPrice,
-    messages: prepared.messages,
-    reasoningEffort: prepared.reasoningEffort,
-    onDelta
-  });
-  const message = await persistAssistantMessage({
+  const assistantMessageId = await createStreamingAssistantMessage({
     conversationId: prepared.conversationId,
-    model: prepared.model,
-    modelPrice: prepared.modelPrice,
-    provider,
-    userId,
-    messages: prepared.messages
+    model: prepared.model
   });
+  await onStarted?.({
+    conversationId: prepared.conversationId,
+    messageId: assistantMessageId
+  });
+
+  let streamedText = "";
+  let lastPersistedLength = 0;
+  let lastPersistedAt = Date.now();
+  let persistenceQueue = Promise.resolve();
+
+  function queuePartialPersistence() {
+    const snapshot = streamedText;
+    lastPersistedLength = snapshot.length;
+    lastPersistedAt = Date.now();
+    persistenceQueue = persistenceQueue
+      .then(() => updateChatMessageContent(assistantMessageId, snapshot))
+      .catch((error) => {
+        console.error("Failed to persist partial chat response", error);
+      });
+  }
+
+  let provider;
+  try {
+    provider = await createProviderChatStream({
+      model: prepared.modelPrice,
+      messages: prepared.messages,
+      reasoningEffort: prepared.reasoningEffort,
+      onDelta: async (delta) => {
+        streamedText += delta;
+        if (
+          streamedText.length - lastPersistedLength >= 500 ||
+          Date.now() - lastPersistedAt >= 1000
+        ) {
+          queuePartialPersistence();
+        }
+        await onDelta(delta);
+      },
+      signal
+    });
+    await persistenceQueue;
+  } catch (error) {
+    await persistenceQueue;
+    const stopped = signal?.aborted || error?.name === "AbortError";
+    const connection = await getPool().getConnection();
+    try {
+      await connection.beginTransaction();
+      if (stopped && !streamedText.trim()) {
+        await deleteStreamingChatMessage(connection, assistantMessageId);
+      } else {
+        const costPoints = stopped
+          ? calculatePoints(prepared.modelPrice, 0, streamedText, prepared.messages)
+          : 0;
+        await updateChatMessage(connection, {
+          id: assistantMessageId,
+          content: streamedText,
+          costPoints,
+          status: stopped ? "stopped" : "failed",
+          errorMessage: stopped ? null : error.message || "stream failed"
+        });
+        if (stopped && costPoints > 0) {
+          await debitCredits(connection, {
+            userId,
+            taskId: assistantMessageId,
+            amount: costPoints,
+            memo: "chat completion debit"
+          });
+        }
+      }
+      await touchChatConversation(connection, prepared.conversationId);
+      await connection.commit();
+    } catch (persistError) {
+      await connection.rollback();
+      throw persistError;
+    } finally {
+      connection.release();
+    }
+    throw error;
+  }
+
+  let message;
+  try {
+    message = await persistAssistantMessage({
+      messageId: assistantMessageId,
+      conversationId: prepared.conversationId,
+      modelPrice: prepared.modelPrice,
+      provider,
+      userId,
+      messages: prepared.messages
+    });
+  } catch (error) {
+    let connection;
+    try {
+      connection = await getPool().getConnection();
+      await connection.beginTransaction();
+      await updateChatMessage(connection, {
+        id: assistantMessageId,
+        content: provider.text || streamedText,
+        status: "failed",
+        errorMessage: error.message || "failed to persist chat response"
+      });
+      await touchChatConversation(connection, prepared.conversationId);
+      await connection.commit();
+    } catch (persistError) {
+      if (connection) {
+        await connection.rollback().catch(() => {});
+      }
+      console.error("Failed to mark chat response as failed", persistError);
+    } finally {
+      connection?.release();
+    }
+    throw error;
+  }
 
   return {
     conversationId: prepared.conversationId,

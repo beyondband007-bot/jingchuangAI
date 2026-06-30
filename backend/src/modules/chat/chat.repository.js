@@ -95,6 +95,56 @@ export async function createChatMessage(connection, {
   return result.insertId;
 }
 
+export async function updateChatMessage(connection, {
+  id,
+  content,
+  costPoints = 0,
+  kieCreditsConsumed = 0,
+  usage = null,
+  status,
+  errorMessage = null
+}) {
+  await connection.query(
+    `UPDATE chat_messages
+     SET content = ?, cost_points = ?, kie_credits_consumed = ?,
+         usage_json = ?, status = ?, error_message = ?
+     WHERE id = ?`,
+    [
+      content,
+      costPoints,
+      kieCreditsConsumed,
+      usage ? JSON.stringify(usage) : null,
+      status,
+      errorMessage,
+      id
+    ]
+  );
+}
+
+export async function updateChatMessageContent(id, content) {
+  await getPool().query(
+    "UPDATE chat_messages SET content = ? WHERE id = ? AND status = 'streaming'",
+    [content, id]
+  );
+}
+
+export async function deleteStreamingChatMessage(connection, id) {
+  await connection.query(
+    "DELETE FROM chat_messages WHERE id = ? AND status = 'streaming'",
+    [id]
+  );
+}
+
+export async function stopOrphanedStreamingChatMessages(createdBefore) {
+  const [result] = await getPool().query(
+    `UPDATE chat_messages
+     SET status = 'stopped', error_message = NULL
+     WHERE status = 'streaming' AND created_at < ?`,
+    [createdBefore]
+  );
+  return result.affectedRows || 0;
+}
+
 export async function listChatMessageRows(conversationId) {
   const [rows] = await getPool().query(
     `SELECT m.*

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { Loader2, Pause, Play, Sparkles, Upload } from "lucide-react";
+import { Loader2, Pause, Play, RotateCcw, Sparkles, Upload } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import { voiceApi } from "../../voice/voiceApi";
 import {
@@ -11,11 +11,13 @@ import {
   isDigitalHumanVoiceEnabled,
 } from "../utils";
 import { VOICE_DUBBING_MODES } from "./VoiceDubbingModeCard";
+import { SystemVoiceCard } from "./SystemVoiceCard";
 
 const DEFAULT_PLACEHOLDER = "请输入你希望角色说的内容";
 const CLONE_AUDIO_ACCEPT = "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a";
-const CLONE_AUDIO_MIN_MS = 10000;
-const CLONE_AUDIO_MAX_MS = 5 * 60 * 1000;
+const CLONE_AUDIO_MIN_MS = 10 * 1000;
+const CLONE_AUDIO_MAX_MS = 15 * 1000;
+const MAX_SPEECH_DURATION_MS = 15 * 1000;
 
 export function ScriptCard({
   text,
@@ -25,10 +27,20 @@ export function ScriptCard({
   voiceSpeed = 1,
   voiceEmotion = "中性",
   voiceMode = VOICE_DUBBING_MODES.system,
+  onVoiceModeChange,
   showCloneUpload = false,
   cloneAudio,
   onCloneAudioChange,
   onSpeechDurationMsChange,
+  selectedAvatar,
+  voices = [],
+  onVoiceIdChange,
+  onVoiceSpeedChange,
+  onVoiceEmotionChange,
+  previewRequestId = 0,
+  previewPhase = "draft",
+  onPreviewStateChange,
+  onRegeneratePreview,
 }) {
   const textareaRef = useRef(null);
   const audioRef = useRef(null);
@@ -57,12 +69,6 @@ export function ScriptCard({
     }
     setIsPlaying(false);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, isCloneMode]);
-
-  useEffect(() => {
-    if (isCloneMode && cloneAudio?.durationMs) {
-      updatePreviewDurationMs(cloneAudio.durationMs);
-    }
-  }, [cloneAudio?.durationMs, isCloneMode]);
 
   function openCloneFilePicker() {
     cloneInputRef.current?.click();
@@ -97,12 +103,14 @@ export function ScriptCard({
     setIsUploadingClone(true);
     try {
       const durationMs = await readAudioDurationMs(file);
-      if (durationMs > 0 && durationMs < CLONE_AUDIO_MIN_MS) {
-        Message.warning("参考音频建议不少于 10 秒");
+      if (!durationMs) {
+        Message.warning("无法识别参考音频时长，请更换音频文件");
         return;
       }
-      if (durationMs > CLONE_AUDIO_MAX_MS) {
-        Message.warning("参考音频不能超过 5 分钟");
+      if (
+        (durationMs < CLONE_AUDIO_MIN_MS || durationMs > CLONE_AUDIO_MAX_MS)
+      ) {
+        Message.warning("参考音频时长需在 10–15 秒之间");
         return;
       }
       const uploaded = await voiceApi.uploadCloneAudio(file, durationMs);
@@ -184,7 +192,11 @@ export function ScriptCard({
     await audioRef.current.play().catch(() => {});
   }
 
-  async function previewScript({ shouldPlay = false } = {}) {
+  async function previewScript({
+    shouldPlay = false,
+    notifyParent = false,
+    forceGenerate = false,
+  } = {}) {
     const trimmed = text.trim();
     if (!trimmed) {
       updatePreviewDurationMs(0);
@@ -194,12 +206,6 @@ export function ScriptCard({
       return;
     }
     if (isCloneMode) {
-      if (cloneAudio?.durationMs) {
-        updatePreviewDurationMs(cloneAudio.durationMs);
-      }
-      if (shouldPlay) {
-        Message.info("音色克隆模式下请使用参考音频驱动口播");
-      }
       return;
     }
     if (!voiceId || !isDigitalHumanVoiceEnabled(voiceId)) {
@@ -211,18 +217,29 @@ export function ScriptCard({
 
     const previewKey = getPreviewKey(trimmed);
     if (
+      !forceGenerate &&
       shouldPlay &&
       previewDurationMs &&
       lastPreviewKeyRef.current === previewKey &&
       audioRef.current
     ) {
       await playPreviewAudio();
+      if (notifyParent) {
+        onPreviewStateChange?.({
+          status: "ready",
+          isPreviewing: false,
+          durationMs: previewDurationMs,
+        });
+      }
       return;
     }
 
     if (isPreviewing) return;
 
     setIsPreviewing(true);
+    if (notifyParent) {
+      onPreviewStateChange?.({ status: "loading", isPreviewing: true });
+    }
     try {
       const result = await digitalHumanApi.previewVoice({
         text: trimmed,
@@ -243,6 +260,18 @@ export function ScriptCard({
         }
       }
 
+      if (notifyParent) {
+        onPreviewStateChange?.({
+          status: "ready",
+          isPreviewing: false,
+          audioFileId: result.audioFileId,
+          audioUrl: result.audioUrl,
+          originalName: result.originalName,
+          durationMs: result.durationMs || 0,
+          previewKey,
+        });
+      }
+
       if (result.isTooLong) {
         Message.warning("配音时长过长，请缩短文案");
       }
@@ -250,27 +279,53 @@ export function ScriptCard({
       Message.error(error?.message || "试听失败");
     } finally {
       setIsPreviewing(false);
+      if (notifyParent) {
+        onPreviewStateChange?.({ isPreviewing: false });
+      }
     }
   }
+
+  useEffect(() => {
+    if (!previewRequestId) return;
+    previewScript({ shouldPlay: false, notifyParent: true, forceGenerate: true });
+  }, [previewRequestId]);
 
   function handlePreviewClick() {
     if (isPlaying) {
       audioRef.current?.pause();
       return;
     }
-    previewScript({ shouldPlay: true });
+    playPreviewAudio();
   }
 
+  const isSpeechTooLong = previewDurationMs > MAX_SPEECH_DURATION_MS;
   const durationLabel = previewDurationMs
-    ? `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
+    ? isSpeechTooLong
+      ? `配音时长 ${formatSpeechDurationFromMs(previewDurationMs)}，超过15s请重新生成`
+      : `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
     : isCloneMode
       ? "上传参考音频后可查看时长和消耗积分"
       : "试听后可获取准确的说话时长和消耗积分";
+
+  const hasGeneratedPreview = previewPhase === "previewed" || previewPhase === "confirmed";
 
   return (
     <section className="dhv2-card dhv2-script-card" aria-label="配音内容">
       <header className="dhv2-card__head dhv2-script-card__head">
         <h2>配音内容</h2>
+        {!isCloneMode ? (
+          <SystemVoiceCard
+            compact
+            selectedAvatar={selectedAvatar}
+            voices={voices}
+            voiceId={voiceId}
+            onVoiceIdChange={onVoiceIdChange}
+            voiceSpeed={voiceSpeed}
+            onVoiceSpeedChange={onVoiceSpeedChange}
+            voiceEmotion={voiceEmotion}
+            onVoiceEmotionChange={onVoiceEmotionChange}
+          />
+        ) : null}
         {isCloneMode ? (
           <button
             type="button"
@@ -283,6 +338,29 @@ export function ScriptCard({
           </button>
         ) : null}
       </header>
+
+      {showCloneUpload ? (
+        <div className="dhv2-segmented-tabs dhv2-voice-mode-tabs" role="tablist" aria-label="配音方式">
+          <button
+            type="button"
+            role="tab"
+            className={!isCloneMode ? "is-active" : ""}
+            aria-selected={!isCloneMode}
+            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.system)}
+          >
+            系统音色
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={isCloneMode ? "is-active" : ""}
+            aria-selected={isCloneMode}
+            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.clone)}
+          >
+            声音克隆
+          </button>
+        </div>
+      ) : null}
 
       <input
         ref={cloneInputRef}
@@ -315,7 +393,7 @@ export function ScriptCard({
             ) : (
               <>
                 <strong>上传本人人声参考音频，复刻专属音色</strong>
-                <span>支持 MP3、WAV、M4A 格式，建议 10 秒以上</span>
+                <span>支持 MP3、WAV、M4A 格式，时长需在 10–15 秒之间</span>
               </>
             )}
           </span>
@@ -365,13 +443,15 @@ export function ScriptCard({
         </button>
       </div>
 
-      <div className="dhv2-script-preview-row">
+      {!isCloneMode ? <div className="dhv2-script-preview-row">
         <button
           type="button"
           className={`dhv2-script-preview${previewDurationMs ? " has-duration" : ""}${
+            isSpeechTooLong ? " is-too-long" : ""
+          }${
             isPlaying ? " is-playing" : ""
           }`}
-          disabled={isPreviewing || !text.trim() || isCloneMode}
+          disabled={isPreviewing || !hasGeneratedPreview || !audioRef.current}
           aria-label={isPlaying ? "暂停试听" : "播放试听"}
           onClick={handlePreviewClick}
         >
@@ -388,10 +468,19 @@ export function ScriptCard({
             {isPreviewing ? "正在生成试听..." : durationLabel}
           </span>
         </button>
-        <span className="dhv2-script-count">
-          {text.length} / {SCRIPT_MAX_LENGTH}
-        </span>
-      </div>
+        {hasGeneratedPreview ? (
+          <button
+            type="button"
+            className="dhv2-script-regenerate"
+            disabled={isPreviewing}
+            onClick={onRegeneratePreview}
+          >
+            <RotateCcw size={12} />
+            重新生成
+          </button>
+        ) : null}
+      </div> : null}
+
     </section>
   );
 }

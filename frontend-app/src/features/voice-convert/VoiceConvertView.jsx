@@ -3,6 +3,7 @@ import { CheckCircle2, Download, Heart, Loader2, Mic, Music, Trash2 } from "luci
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
+import { VoiceResultView } from "../audio-ui/VoiceResultView";
 import { voiceConvertApi } from "./voiceConvertApi";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
@@ -112,6 +113,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const [resultAudio, setResultAudio] = useState("");
   const [resultUrl, setResultUrl] = useState("");
   const [resultFileName, setResultFileName] = useState("voice-convert.mp3");
+  const [currentResult, setCurrentResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
@@ -170,6 +172,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     setResultAudio("");
     setResultUrl("");
     setResultFileName("voice-convert.mp3");
+    setCurrentResult(null);
     setViewTab("home");
     setPlayingRecentId("");
     setToast(null);
@@ -340,7 +343,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
       setResultFileName(fileName);
       const voiceLabel = result.voice?.name || stripFileExtension(targetAudio.fileName) || "目标音色";
       const sourceLabel = stripFileExtension(sourceAudio.fileName);
-      setRecentResults((items) => [{
+      const generatedResult = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: sourceLabel || voiceLabel || "音色转换结果",
         voiceName: voiceLabel,
@@ -348,8 +351,10 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
         audioDataUrl: result.audioDataUrl || "",
         fileName,
         createdAt: formatBeijingDateTime()
-      }, ...items].slice(0, 20));
-      setViewTab("home");
+      };
+      setCurrentResult(generatedResult);
+      setRecentResults((items) => [generatedResult, ...items].slice(0, 20));
+      setViewTab("result");
       showToast("success", "音色转换成功");
       setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速。" : "转换完成。");
     } catch (error) {
@@ -376,6 +381,9 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     setRecentResults((items) => items.map((item) => (
       item.id === id ? { ...item, favorite: !item.favorite } : item
     )));
+    setCurrentResult((item) => (
+      item?.id === id ? { ...item, favorite: !item.favorite } : item
+    ));
   }
 
   function performDeleteRecentResult(id) {
@@ -411,7 +419,15 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""} ${viewTab === "result" ? "is-result" : ""}`}>
+        {viewTab === "result" && currentResult && (
+          <VoiceResultView
+            result={currentResult}
+            onBack={() => setViewTab("home")}
+            onDownload={() => downloadResult(currentResult)}
+            onFavoriteToggle={() => toggleRecentFavorite(currentResult.id)}
+          />
+        )}
         {viewTab === "home" && (
           <>
             <div className="voice-hero-empty">

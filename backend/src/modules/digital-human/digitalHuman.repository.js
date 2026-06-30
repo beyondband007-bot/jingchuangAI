@@ -51,10 +51,20 @@ export async function findRefreshableDigitalHumanTasks() {
   return rows;
 }
 
-export async function setDigitalHumanTaskProviderStarted(id, { providerTaskId, audioUrl, audioProviderUrl, avatarProviderUrl, audioDurationMs }) {
+export async function setDigitalHumanTaskProviderStarted(id, { providerTaskId, providerModel, audioUrl, audioProviderUrl, avatarProviderUrl, audioDurationMs }) {
+  if (providerModel) {
+    await getPool().query(
+      `UPDATE digital_human_tasks
+       SET status = 'processing', provider_task_id = ?, provider_model = ?, audio_url = ?, audio_provider_url = ?, avatar_provider_url = ?, audio_duration_ms = ?, error_message = NULL
+       WHERE id = ?`,
+      [providerTaskId, providerModel, audioUrl, audioProviderUrl, avatarProviderUrl, audioDurationMs, id]
+    );
+    return;
+  }
+
   await getPool().query(
     `UPDATE digital_human_tasks
-     SET status = 'processing', provider_task_id = ?, audio_url = ?, audio_provider_url = ?, avatar_provider_url = ?, audio_duration_ms = ?
+     SET status = 'processing', provider_task_id = ?, audio_url = ?, audio_provider_url = ?, avatar_provider_url = ?, audio_duration_ms = ?, error_message = NULL
      WHERE id = ?`,
     [providerTaskId, audioUrl, audioProviderUrl, avatarProviderUrl, audioDurationMs, id]
   );

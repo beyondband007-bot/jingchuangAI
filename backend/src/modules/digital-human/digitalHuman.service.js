@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from "fs/promises";
+import { access, mkdir, rename, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { createHash, randomUUID } from "crypto";
 import path from "path";
@@ -36,6 +36,7 @@ import { imageToImageModelKey } from "../image/image.options.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
   createVirtualAssetFromLocalFile,
+  createVirtualAssetFromRemoteUrl,
   isArkOpenApiConfigured,
   listVirtualAssets,
   refreshVirtualAsset,
@@ -59,10 +60,24 @@ import {
 const myAvatars = [];
 const designedVoices = [];
 const uploadedDriveAudios = new Map();
+const uploadedSceneImages = new Map();
 const execFileAsync = promisify(execFile);
 const maxDigitalHumanAudioMs = 15 * 1000;
+const minSeedanceReferenceAudioMs = 2 * 1000;
 const klingAvatarPrompt =
   "A person speaks naturally according to the provided audio. Preserve the original Chinese voiceover text exactly as spoken in the audio: do not translate, rewrite, paraphrase, or generate English speech. Keep the original person, clothing, background, composition, and lighting stable. Do not add new scenes or visual elements.";
+const seedanceDigitalHumanPrompt =
+  "请生成一段单人数字人口播视频。人物参考图是所选数字人的三视图/身份图，用于确定同一个数字人的脸型、五官、发型、服装、体态和整体外观，请严格保持人物身份一致，不要更换人物、不要新增其他人物。参考音频是真实口播音频，请直接按照参考音频进行自然口型同步和面部表情驱动，不要翻译、改写、复述、总结或生成新的对白，不要生成英文对白。若提供了场景参考图，仅将其作为背景、空间氛围和光线参考，人物仍以三视图为准；若未提供场景参考图，请使用人物参考图中的默认视觉风格，保持画面干净稳定。镜头保持稳定，动作以自然头部微动、眨眼和口型同步为主，不要添加无关文字、字幕、logo、水印、商品包装变化或新场景。";
+
+const seedanceDigitalHumanPromptV2 = [
+  "请生成一段单人数字人口播视频。",
+  "人物参考图是所选数字人的三视图/身份图，只用于确定同一个数字人的脸型、五官、发型、服装、体态和整体外观；必须严格保持人物身份一致，不要替换人物，不要新增其他人物。",
+  "场景参考图是最终视频的背景、空间氛围和光线参考；必须把数字人自然放入该场景中，不要忽略场景参考图，不要只使用纯色背景或空白背景。",
+  "参考音频是最终口播的唯一依据。必须直接读取并遵循 reference_audio 的真实音频内容、节奏、停顿、语气和时长，让数字人的口型、面部表情和轻微头部动作严格同步参考音频。",
+  "最终视频必须以 reference_audio 作为口播声音来源，不要生成静音视频，不要替换成新的配音或新的台词。",
+  "不要翻译、改写、复述、总结或重新生成中文口播文案；不要生成英文对白；不要添加无关文字、字幕、logo、水印、无关商品或新场景。",
+  "镜头保持稳定，画面干净自然，以真实口播感为主。"
+].join("\n");
 
 function nowLabel(date = new Date()) {
   return formatBeijingDateTime(date);
@@ -87,7 +102,32 @@ function getVideoDurationSeconds(audioDurationMs) {
 }
 
 function getArkDurationSeconds(audioDurationMs) {
-  return Math.max(2, Math.min(15, Math.ceil(Number(audioDurationMs || 0) / 1000)));
+  const seconds = Math.ceil(Number(audioDurationMs || 0) / 1000);
+  return seconds > 5 ? 10 : 5;
+}
+
+async function padAudioFileToMinimumDuration(filePath, currentDurationMs, minimumDurationMs = minSeedanceReferenceAudioMs) {
+  const durationMs = Number(currentDurationMs || 0);
+  if (durationMs >= minimumDurationMs) return durationMs;
+
+  const targetSeconds = minimumDurationMs / 1000;
+  const tempPath = `${filePath}.seedance-pad-${Date.now()}.mp3`;
+  await execFileAsync(ffmpegPath, [
+    "-y",
+    "-i",
+    filePath,
+    "-af",
+    "apad",
+    "-t",
+    String(targetSeconds),
+    "-c:a",
+    "libmp3lame",
+    "-b:a",
+    "128k",
+    tempPath
+  ]);
+  await rename(tempPath, filePath);
+  return minimumDurationMs;
 }
 
 function normalizeUploadedAudioDurationMs(value) {
@@ -100,12 +140,24 @@ function getUploadedDriveAudio(audioFileId) {
   return id ? uploadedDriveAudios.get(id) : null;
 }
 
+function getUploadedSceneImage(sceneFileId) {
+  const id = String(sceneFileId || "").trim();
+  return id ? uploadedSceneImages.get(id) : null;
+}
+
 function isImagePath(filePath = "") {
   return /\.(jpe?g|png|webp)$/i.test(filePath);
 }
 
 function isVideoPath(filePath = "") {
   return /\.(mp4|webm|mov)$/i.test(filePath);
+}
+
+function getImageMimeType(filePath = "") {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
+  return "image/jpeg";
 }
 
 const ttsEmotionOptions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
@@ -290,38 +342,117 @@ async function getVideoPosterPath(filePath) {
   return outputPath;
 }
 
-async function getAvatarImageProviderUrl(avatar) {
-  if (avatar.providerImageUrl) return avatar.providerImageUrl;
-  const assetPath = avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+async function resolveImageAssetFile(assetPath, label) {
   if (!assetPath) {
-    throw createHttpError("selected avatar does not have an image asset", 400);
+    throw createHttpError(`${label} image asset is required`, 400);
   }
 
   const filePath = resolveAssetFilePath(assetPath);
-  await assertFileExists(filePath, `avatar asset not found: ${assetPath}`);
+  await assertFileExists(filePath, `${label} asset not found: ${assetPath}`);
   const imagePath = isImagePath(filePath)
     ? filePath
     : isVideoPath(filePath)
       ? (await getCompanionPosterPath(filePath)) || (await getVideoPosterPath(filePath))
       : "";
   if (!imagePath) {
-    throw createHttpError("selected avatar asset must be an image or video", 400);
+    throw createHttpError(`${label} asset must be an image or video`, 400);
   }
+  return imagePath;
+}
+
+async function getAvatarIdentityImageFile(avatar) {
+  const assetPath = avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+  return resolveImageAssetFile(assetPath, "avatar");
+}
+
+async function getAvatarSceneImageFile(avatar, uploadedScene) {
+  if (uploadedScene?.filePath) return uploadedScene.filePath;
+  const assetPath = avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover || avatar.threeView || avatar.imagePath;
+  return resolveImageAssetFile(assetPath, "scene");
+}
+
+async function getAvatarImageProviderUrl(avatar) {
+  if (avatar.providerImageUrl) return avatar.providerImageUrl;
+  const imagePath = await getAvatarIdentityImageFile(avatar);
 
   const upload = await uploadFileToKie({
     filePath: imagePath,
     fileName: path.basename(imagePath),
-    mimeType: "image/jpeg",
+    mimeType: getImageMimeType(imagePath),
     uploadPath: "digital-human/avatar-image"
   });
   return upload.url;
 }
 
+async function createKieProviderTaskFromUrls(taskId, { audioUrl, avatarImageUrl, audioLocalUrl, audioDurationMs }) {
+  console.log(`[digital-human] task ${taskId}: creating fallback ${config.kie.digitalHumanModel} task`);
+  const provider = await createKieDigitalHumanTask({
+    model: config.kie.digitalHumanModel,
+    imageUrl: avatarImageUrl,
+    audioUrl,
+    prompt: klingAvatarPrompt
+  });
+
+  await setDigitalHumanTaskProviderStarted(taskId, {
+    providerTaskId: provider.taskId,
+    providerModel: config.kie.digitalHumanModel,
+    audioUrl: audioLocalUrl || "",
+    audioProviderUrl: audioUrl,
+    avatarProviderUrl: avatarImageUrl,
+    audioDurationMs
+  });
+  console.log(`[digital-human] task ${taskId}: fallback KIE task ${provider.taskId} created`);
+  return provider;
+}
+
+async function uploadImageToKieReference(filePath, uploadPath) {
+  const upload = await uploadFileToKie({
+    filePath,
+    fileName: path.basename(filePath),
+    mimeType: getImageMimeType(filePath),
+    uploadPath
+  });
+  return upload.url;
+}
+
+async function createSeedanceVirtualReferenceFromUrl({ userId, feature, url, originalName, mimeType }) {
+  if (/^asset:\/\//i.test(String(url || ""))) return url;
+  const asset = await createVirtualAssetFromRemoteUrl({
+    userId,
+    feature,
+    url,
+    originalName,
+    mimeType
+  });
+  return waitForVirtualAssetReference(asset.id);
+}
+
+async function savePreviewVoiceAudio({ audioBuffer, durationMs }) {
+  const id = `dh-audio-${randomUUID()}`;
+  const audioDir = path.resolve(process.cwd(), config.media.storageDir, "digital-human", "audio-uploads");
+  await mkdir(audioDir, { recursive: true });
+  const fileName = `${id}.mp3`;
+  const filePath = path.join(audioDir, fileName);
+  await writeFile(filePath, audioBuffer);
+
+  const audio = {
+    id,
+    filePath,
+    localUrl: `/media/digital-human/audio-uploads/${fileName}`,
+    originalName: fileName,
+    mimeType: "audio/mpeg",
+    sizeBytes: audioBuffer.length,
+    durationMs,
+    createdAt: new Date()
+  };
+  uploadedDriveAudios.set(id, audio);
+  return audio;
+}
+
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, avatar, uploadedAudio, userId } = payload;
+  const { text, voiceId, speed, volume, pitch, emotion, avatar, model, uploadedAudio, uploadedScene, userId } = payload;
   let savedAudio;
   let audioDurationMs;
-  let audioSizeBytes;
 
   if (uploadedAudio) {
     console.log(`[digital-human] task ${taskId}: using uploaded drive audio ${uploadedAudio.id}`);
@@ -332,46 +463,110 @@ async function createProviderTask(taskId, payload) {
       mimeType: uploadedAudio.mimeType || "audio/mpeg"
     };
     audioDurationMs = normalizeUploadedAudioDurationMs(uploadedAudio.durationMs) || estimateSeconds(text) * 1000;
-    audioSizeBytes = Number(uploadedAudio.sizeBytes || 0);
   } else {
     console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
     const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
     audioDurationMs = getAudioDurationMs(speech, text);
     savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
-    audioSizeBytes = speech.audioBuffer.length;
   }
 
   if (audioDurationMs > maxDigitalHumanAudioMs) {
-    throw createHttpError("音频时长不能超过 15 秒，请缩短文本或切片后分段生成", 400);
+    throw createHttpError("audio duration must be 15 seconds or shorter", 400);
   }
+  audioDurationMs = await padAudioFileToMinimumDuration(savedAudio.filePath, audioDurationMs);
 
-  console.log(`[digital-human] task ${taskId}: uploading audio and avatar assets to KIE`);
-  const [audioUpload, avatarImageProviderUrl] = await Promise.all([
+  const [avatarImagePath, sceneImagePath] = await Promise.all([
+    getAvatarIdentityImageFile(avatar),
+    getAvatarSceneImageFile(avatar, uploadedScene)
+  ]);
+
+  console.log(`[digital-human] task ${taskId}: preparing public provider assets`);
+  const [kieAudioUpload, kieAvatarImageProviderUrl, kieSceneImageProviderUrl] = await Promise.all([
     uploadFileToKie({
       filePath: savedAudio.filePath,
       fileName: savedAudio.fileName,
       mimeType: savedAudio.mimeType,
       uploadPath: "digital-human/audio"
     }),
-    getAvatarImageProviderUrl(avatar)
+    uploadImageToKieReference(avatarImagePath, "digital-human/avatar-image"),
+    uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
   ]);
 
-  console.log(`[digital-human] task ${taskId}: creating ${config.kie.digitalHumanModel} task`);
-  const provider = await createKieDigitalHumanTask({
-    model: config.kie.digitalHumanModel,
-    imageUrl: avatarImageProviderUrl,
-    audioUrl: audioUpload.url,
-    prompt: klingAvatarPrompt
-  });
+  if (model.provider !== "ark") {
+    return createKieProviderTaskFromUrls(taskId, {
+      audioUrl: kieAudioUpload.url,
+      avatarImageUrl: kieAvatarImageProviderUrl,
+      audioLocalUrl: savedAudio.publicPath,
+      audioDurationMs
+    });
+  }
 
-  await setDigitalHumanTaskProviderStarted(taskId, {
-    providerTaskId: provider.taskId,
-    audioUrl: savedAudio.publicPath,
-    audioProviderUrl: audioUpload.url,
-    avatarProviderUrl: avatarImageProviderUrl,
-    audioDurationMs
-  });
-  console.log(`[digital-human] task ${taskId}: KIE task ${provider.taskId} created`);
+  try {
+    console.log(`[digital-human] task ${taskId}: creating ${config.ark.videoModel} task`);
+    const [avatarReference, sceneReference, audioReference] = await Promise.all([
+      createSeedanceVirtualReferenceFromUrl({
+        userId,
+        feature: "digital-human-avatar-three-view",
+        url: kieAvatarImageProviderUrl,
+        originalName: path.basename(avatarImagePath),
+        mimeType: getImageMimeType(avatarImagePath)
+      }),
+      kieSceneImageProviderUrl
+        ? createSeedanceVirtualReferenceFromUrl({
+            userId,
+            feature: "digital-human-scene-image",
+            url: kieSceneImageProviderUrl,
+            originalName: path.basename(sceneImagePath),
+            mimeType: getImageMimeType(sceneImagePath)
+          })
+        : Promise.resolve(""),
+      createSeedanceVirtualReferenceFromUrl({
+        userId,
+        feature: "digital-human-audio",
+        url: kieAudioUpload.url,
+        originalName: savedAudio.fileName,
+        mimeType: savedAudio.mimeType
+      })
+    ]);
+
+    const content = [
+      { type: "text", text: seedanceDigitalHumanPromptV2 },
+      buildReferenceImage(avatarReference),
+      buildReferenceAudio(audioReference)
+    ];
+    if (sceneReference) {
+      content.splice(2, 0, buildReferenceImage(sceneReference));
+    }
+
+    const provider = await createArkVideoGenerationTask({
+      model: config.ark.videoModel,
+      content,
+      resolution: "720p",
+      ratio: "adaptive",
+      duration: getArkDurationSeconds(audioDurationMs),
+      generateAudio: true,
+      watermark: false
+    });
+
+    await setDigitalHumanTaskProviderStarted(taskId, {
+      providerTaskId: provider.taskId,
+      providerModel: config.ark.videoModel,
+      audioUrl: savedAudio.publicPath,
+      audioProviderUrl: kieAudioUpload.url,
+      avatarProviderUrl: kieAvatarImageProviderUrl,
+      audioDurationMs
+    });
+    console.log(`[digital-human] task ${taskId}: Seedance task ${provider.taskId} created`);
+    return provider;
+  } catch (error) {
+    console.error(`[digital-human] task ${taskId}: Seedance create failed, falling back to KIE`, error.message, error.body || "");
+    return createKieProviderTaskFromUrls(taskId, {
+      audioUrl: kieAudioUpload.url,
+      avatarImageUrl: kieAvatarImageProviderUrl,
+      audioLocalUrl: savedAudio.publicPath,
+      audioDurationMs
+    });
+  }
 }
 export function getModels() {
   return {
@@ -632,9 +827,18 @@ export async function previewVoice(payload) {
     emotion: normalizeEmotion(payload.emotion)
   });
   const durationMs = getAudioDurationMs(result, text);
+  const savedAudio = await savePreviewVoiceAudio({
+    audioBuffer: result.audioBuffer,
+    durationMs
+  });
 
   return {
     voiceId,
+    audioFileId: savedAudio.id,
+    audioUrl: savedAudio.localUrl,
+    originalName: savedAudio.originalName,
+    mimeType: savedAudio.mimeType,
+    size: savedAudio.sizeBytes,
     audioBase64: result.audioBase64,
     audioDataUrl: `data:${result.mimeType};base64,${result.audioBase64}`,
     durationMs,
@@ -674,6 +878,34 @@ export async function uploadDriveAudio(payload, file) {
   };
 }
 
+export async function uploadSceneImage(_payload, file) {
+  if (!file) throw createHttpError("scene image is required", 400);
+  const id = `dh-scene-${randomUUID()}`;
+  const originalName = file.originalname || file.filename || "scene-image";
+  const localUrl = `/media/digital-human/scene-uploads/${file.filename}`;
+  const scene = {
+    id,
+    filePath: file.path,
+    localUrl,
+    originalName,
+    mimeType: file.mimetype || getImageMimeType(file.path),
+    sizeBytes: file.size || 0,
+    createdAt: new Date()
+  };
+  uploadedSceneImages.set(id, scene);
+
+  return {
+    id,
+    sceneFileId: id,
+    localUrl,
+    url: localUrl,
+    originalName,
+    name: originalName,
+    mimeType: scene.mimeType,
+    size: scene.sizeBytes
+  };
+}
+
 export async function listTasks() {
   await refreshProcessingTasks();
   const rows = await listDigitalHumanTaskRows();
@@ -691,6 +923,7 @@ export async function createTask(payload) {
   const driveMode = String(payload.driveMode || "text");
   const text = String(payload.text || "").trim();
   const audioFileId = String(payload.audioFileId || payload.audio_file_id || "").trim();
+  const sceneFileId = String(payload.sceneFileId || payload.scene_file_id || "").trim();
   const audioName = String(payload.audioName || payload.audio_name || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
   const modelKey = String(payload.model || digitalHumanModels[0].value).trim();
@@ -702,7 +935,9 @@ export async function createTask(payload) {
   if (!avatarId) throw createHttpError("avatarId is required", 400);
   if (!["text", "audio"].includes(driveMode)) throw createHttpError("driveMode is invalid", 400);
   const uploadedAudio = driveMode === "audio" ? getUploadedDriveAudio(audioFileId) : null;
+  const uploadedScene = sceneFileId ? getUploadedSceneImage(sceneFileId) : null;
   if (driveMode === "audio" && !uploadedAudio) throw createHttpError("audio file is required", 400);
+  if (sceneFileId && !uploadedScene) throw createHttpError("scene image is required", 400);
   if (driveMode === "text" && !text) throw createHttpError("text is required", 400);
   if (driveMode === "text" && text.length > 2000) throw createHttpError("text must be 2000 characters or fewer", 400);
 
@@ -711,7 +946,7 @@ export async function createTask(payload) {
   if (avatar.status !== "ready") throw createHttpError("avatar is not ready", 400);
 
   const model = getModelByKey(modelKey);
-  if (!model || model.provider !== "kie") throw createHttpError("digital human model not found", 400);
+  if (!model || !["ark", "kie"].includes(model.provider)) throw createHttpError("digital human model not found", 400);
 
   const voice = driveMode === "audio"
     ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
@@ -726,7 +961,7 @@ export async function createTask(payload) {
     text,
     uploadedAudio: driveMode === "audio"
   }).points;
-  const providerModel = config.kie.digitalHumanModel;
+  const providerModel = model.provider === "ark" ? config.ark.videoModel : config.kie.digitalHumanModel;
 
   const pool = getPool();
   const connection = await pool.getConnection();
@@ -781,6 +1016,7 @@ export async function createTask(payload) {
       avatar,
       model,
       uploadedAudio,
+      uploadedScene,
       userId
     });
   } catch (error) {
@@ -794,6 +1030,24 @@ export async function createTask(payload) {
 async function refreshProcessingTasks() {
   const rows = await findRefreshableDigitalHumanTasks();
   await Promise.all(rows.map((row) => refreshTask(row.id)));
+}
+
+async function fallbackArkTaskToKie(row, reason) {
+  if (!row?.audio_provider_url || !row?.avatar_provider_url) {
+    await refundTask(row.id, null, null, reason || "Seedance task failed and fallback assets are missing");
+    return;
+  }
+
+  try {
+    await createKieProviderTaskFromUrls(row.id, {
+      audioUrl: row.audio_provider_url,
+      avatarImageUrl: row.avatar_provider_url,
+      audioLocalUrl: row.audio_url,
+      audioDurationMs: Number(row.audio_duration_ms || 0)
+    });
+  } catch (fallbackError) {
+    await refundTask(row.id, null, null, `${reason || "Seedance task failed"}; fallback failed: ${fallbackError.message}`);
+  }
 }
 
 async function refreshTask(id) {
@@ -815,7 +1069,12 @@ async function refreshTask(id) {
       }
     } else if (mapped === "failed") {
       const result = isArkTask ? extractArkVideoGenerationResult(record) : {};
-      await refundTask(id, null, null, result.errorMessage || record.data?.failMsg || record.data?.errorMessage || "digital human task failed");
+      const message = result.errorMessage || record.data?.failMsg || record.data?.errorMessage || "digital human task failed";
+      if (isArkTask) {
+        await fallbackArkTaskToKie(row, message);
+      } else {
+        await refundTask(id, null, null, message);
+      }
     } else {
       await setDigitalHumanTaskProcessing(id);
     }

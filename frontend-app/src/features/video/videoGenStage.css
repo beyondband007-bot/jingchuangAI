@@ -47,7 +47,7 @@
 
 /*
  * Single root: generation-stage + video-gen-view (no nested sections).
- * Overrides global styles.css min-height:100vh, padding-bottom:256px, background:#fff
+ * Overrides global styles.scss min-height:100vh, padding-bottom:256px, background:#fff
  */
 section.generation-stage.video-gen-view.video-gen-view-root.is-gen-stage {
   box-sizing: border-box !important;

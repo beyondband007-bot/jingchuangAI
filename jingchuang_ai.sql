@@ -108,7 +108,7 @@ CREATE TABLE `chat_messages` (
   `cost_points` int NOT NULL DEFAULT '0',
   `kie_credits_consumed` decimal(12,4) NOT NULL DEFAULT '0.0000',
   `usage_json` json DEFAULT NULL,
-  `status` enum('completed','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'completed',
+  `status` enum('streaming','completed','stopped','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'completed',
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,

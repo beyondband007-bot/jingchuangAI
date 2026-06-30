@@ -29,8 +29,8 @@ export const chatApi = {
     return request("/api/chat/conversations");
   },
 
-  async getMessages(conversationId) {
-    return request(`/api/chat/conversations/${conversationId}/messages`);
+  async getMessages(conversationId, { signal } = {}) {
+    return request(`/api/chat/conversations/${conversationId}/messages`, { signal });
   },
 
   async uploadAttachment(file) {
@@ -49,10 +49,11 @@ export const chatApi = {
     });
   },
 
-  async streamMessage(payload, { onDelta } = {}) {
+  async streamMessage(payload, { onStarted, onDelta, signal } = {}) {
     const response = await fetch(`${API_BASE}/api/chat/messages/stream`, {
       method: "POST",
       credentials: "include",
+      signal,
       headers: {
         "Content-Type": "application/json"
       },
@@ -88,7 +89,9 @@ export const chatApi = {
 
       for (const part of parts) {
         const { event, data } = parseStreamEvent(part);
-        if (event === "delta" && data?.delta) {
+        if (event === "started" && data?.conversationId) {
+          onStarted?.(data);
+        } else if (event === "delta" && data?.delta) {
           onDelta?.(data.delta);
         } else if (event === "done") {
           finalResult = data;

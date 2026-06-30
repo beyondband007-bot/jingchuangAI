@@ -45,6 +45,10 @@ async function hashFile(filePath) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
 }
 
+function hashText(value) {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
 function getGroupName(feature) {
   return `${config.ark.virtualAssetGroupName}-${feature}`;
 }
@@ -303,6 +307,71 @@ export async function createVirtualAssetFromLocalFile({
     originalName,
     mimeType,
     sizeBytes,
+    sourceHash,
+    providerAssetId
+  });
+
+  return mapArkVirtualAsset(await findArkVirtualAssetByInternalId(id));
+}
+
+export async function createVirtualAssetFromRemoteUrl({
+  userId,
+  feature = "digital-human",
+  url,
+  originalName,
+  mimeType,
+  sizeBytes = 0
+}) {
+  if (!isArkOpenApiConfigured()) {
+    throw createHttpError("Ark OpenAPI credentials are required for remote virtual assets", 500);
+  }
+
+  const normalizedFeature = normalizeFeature(feature);
+  const remoteUrl = String(url || "").trim();
+  if (!/^https?:\/\//i.test(remoteUrl)) throw createHttpError("remote asset URL must be HTTP(S)", 400);
+
+  const assetType = getAssetTypeFromMime(mimeType);
+  if (!assetType) throw createHttpError("unsupported asset file type", 400);
+
+  await assertPublicMediaUrlAccessible(remoteUrl, assetType === "Video" ? "视频" : assetType === "Image" ? "图片" : "素材");
+
+  const sourceHash = hashText(`${normalizedFeature}:${assetType}:${remoteUrl}`);
+  const reusable = await findReusableArkVirtualAsset({
+    userId,
+    feature: normalizedFeature,
+    assetType,
+    sourceHash,
+    projectName: config.ark.projectName
+  });
+  if (reusable) return mapArkVirtualAsset(await refreshVirtualAssetByRow(reusable));
+
+  const group = await ensureVirtualAssetGroup({ userId, feature: normalizedFeature });
+  const result = await createArkAsset({
+    projectName: config.ark.projectName,
+    groupId: group.provider_group_id,
+    url: remoteUrl,
+    assetType,
+    name: originalName || path.basename(new URL(remoteUrl).pathname) || `${normalizedFeature}-${assetType.toLowerCase()}`
+  });
+  const providerAssetId = result.Id || result.id;
+  if (!providerAssetId) {
+    const error = new Error("CreateAsset response missing asset id");
+    error.status = 502;
+    error.body = result;
+    throw error;
+  }
+
+  const id = await createArkVirtualAssetRow({
+    userId,
+    groupId: group.id,
+    feature: normalizedFeature,
+    assetType,
+    localUrl: remoteUrl,
+    publicUrl: remoteUrl,
+    filePath: remoteUrl,
+    originalName: originalName || path.basename(new URL(remoteUrl).pathname) || remoteUrl,
+    mimeType,
+    sizeBytes: Number(sizeBytes || 0),
     sourceHash,
     providerAssetId
   });
