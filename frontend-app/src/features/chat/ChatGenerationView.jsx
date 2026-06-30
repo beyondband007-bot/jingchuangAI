@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Message } from "@arco-design/web-react";
 import { IconMessage } from "@arco-design/web-react/icon";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, X, Zap, Bot } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, Trash2, X, Zap, Bot } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { CustomSelect } from "../../components/CustomSelect";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { chatApi } from "../../api/chatApi";
 import { formatBeijingDateTime } from "../../utils/time";
 import { ModelOptionContent } from "./components/modelOptionMeta.jsx";
@@ -696,7 +698,7 @@ function ChatComposerBar({
   );
 }
 
-function ChatHistoryRail({ conversations, activeConversationId, onSelect, disabled = false }) {
+function ChatHistoryRail({ conversations, activeConversationId, onSelect, onDelete, disabled = false }) {
   return (
     <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
@@ -708,9 +710,12 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect, disabl
           <p className="chat-history-empty">暂无历史对话</p>
         ) : (
           conversations.map((conversation) => (
+            <div
+              className={`chat-history-row ${activeConversationId === conversation.id ? "is-selected" : ""}`}
+              key={conversation.id}
+            >
             <button
               className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-              key={conversation.id}
               type="button"
               disabled={disabled}
               onClick={() => onSelect(conversation.id)}
@@ -723,6 +728,16 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect, disabl
                   ""}
               </small>
             </button>
+              <button
+                className="chat-history-delete"
+                type="button"
+                aria-label="删除历史对话"
+                disabled={disabled}
+                onClick={() => onDelete(conversation)}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           ))
         )}
       </div>
@@ -745,6 +760,26 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
   const streamAbortControllerRef = useRef(null);
   const historyAbortControllerRef = useRef(null);
   const isGuest = !isLoggedInUser(authUser);
+  const { requestDelete: requestDeleteConversation, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      title: "删除历史对话",
+      message: "删除后将无法恢复，确认删除这条历史对话吗？",
+      confirmText: "删除",
+      onConfirm: async (conversation) => {
+        await chatApi.deleteConversation(conversation.id);
+        Message.success("删除成功");
+        setConversations((current) =>
+          current.filter((item) => item.id !== conversation.id),
+        );
+        if (conversationId === conversation.id) {
+          historyAbortControllerRef.current?.abort();
+          setMessages([]);
+          setConversationId(null);
+          setSubmitError("");
+          setModelSwitchNotice("");
+        }
+      },
+    });
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
   useEffect(() => {
@@ -1064,10 +1099,16 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
             conversations={conversations}
             activeConversationId={conversationId}
             onSelect={selectConversation}
+            onDelete={(conversation) =>
+              requestDeleteConversation(conversation, {
+                targetName: conversation.title || "未命名对话",
+              })
+            }
             disabled={isSubmitting}
           />
         </aside>
       </div>
+      {deleteConfirmDialog}
     </section>
   );
 }

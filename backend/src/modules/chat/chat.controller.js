@@ -1,5 +1,5 @@
 import { requireLoggedIn, sendError } from "../../shared/http.js";
-import { getConversationMessages, getModels, listConversations, sendMessage, streamMessage, uploadChatAttachment } from "./chat.service.js";
+import { deleteConversation, getConversationMessages, getModels, listConversations, sendMessage, streamMessage, uploadChatAttachment } from "./chat.service.js";
 
 export async function getChatModels(_req, res) {
   try {
@@ -20,6 +20,15 @@ export async function listChatConversations(_req, res) {
 export async function listChatMessages(req, res) {
   try {
     res.json(await getConversationMessages(req.params.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function deleteChatConversation(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await deleteConversation(req.params.id));
   } catch (error) {
     sendError(res, error);
   }

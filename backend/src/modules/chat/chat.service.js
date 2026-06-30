@@ -13,6 +13,7 @@ import { normalizeMessages, reasoningEffortOptions, validateChatPayload } from "
 import {
   createChatConversation,
   createChatMessage,
+  deleteChatConversation,
   deleteStreamingChatMessage,
   ensureUserHasReserveCredits,
   findChatConversation,
@@ -113,6 +114,24 @@ export async function listConversations() {
 export async function getConversationMessages(conversationId) {
   const rows = await listChatMessageRows(conversationId);
   return rows.map(mapChatMessage);
+}
+
+export async function deleteConversation(conversationId) {
+  const connection = await getPool().getConnection();
+  try {
+    await connection.beginTransaction();
+    const deleted = await deleteChatConversation(connection, conversationId);
+    if (!deleted) {
+      throw createHttpError("conversation not found", 404);
+    }
+    await connection.commit();
+    return { success: true };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 export async function sendMessage(payload, userId) {
