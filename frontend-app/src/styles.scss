@@ -4007,6 +4007,138 @@ a:hover {
   }
 }
 
+/* Voice synthesis / conversion result page */
+.voice-synthesis-view-root .voice-conversion-canvas.is-result,
+.voice-convert-view-root .voice-conversion-canvas.is-result {
+  display: block;
+  width: 100%;
+  min-height: calc(100vh - 96px);
+  padding: 24px 40px 56px;
+  background: #fff;
+}
+
+.voice-result-view {
+  width: 100%;
+}
+
+.voice-result-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  color: #4b5563;
+  font-size: 15px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.voice-result-back:hover {
+  color: #623bff;
+  background: #f8f7ff;
+  border-color: #d9d2ff;
+}
+
+.voice-result-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(760px, 100%);
+  margin: 72px auto 0;
+}
+
+.voice-result-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.voice-result-heading__icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  color: #fff;
+  background: linear-gradient(135deg, #8b6cff, #623bff);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(98, 59, 255, 0.2);
+}
+
+.voice-result-heading h1 {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.voice-result-heading p {
+  margin: 0;
+  color: #9298a8;
+  font-size: 15px;
+}
+
+.voice-synthesis-view-root .voice-result-card,
+.voice-convert-view-root .voice-result-card {
+  width: min(720px, 100%) !important;
+  max-width: 720px !important;
+  min-height: 250px !important;
+  aspect-ratio: auto !important;
+  justify-content: center !important;
+  gap: 22px !important;
+  padding: 36px 42px 30px !important;
+  border-color: #dbe8fb !important;
+  border-radius: 24px !important;
+  box-shadow: 0 18px 48px rgba(59, 130, 246, 0.1) !important;
+}
+
+.voice-result-card .voice-recent-info {
+  width: 100%;
+  text-align: left;
+}
+
+.voice-result-card .voice-recent-info strong {
+  display: block;
+  overflow: hidden;
+  font-size: 22px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-result-card .voice-recent-info span {
+  display: block;
+  margin-top: 8px;
+  font-size: 14px !important;
+}
+
+.voice-result-card .voice-recent-player {
+  width: 100% !important;
+}
+
+@media (max-width: 760px) {
+  .voice-synthesis-view-root .voice-conversion-canvas.is-result,
+  .voice-convert-view-root .voice-conversion-canvas.is-result {
+    padding: 16px 18px 40px;
+  }
+
+  .voice-result-content {
+    margin-top: 48px;
+  }
+
+  .voice-result-heading h1 {
+    font-size: 23px;
+  }
+
+  .voice-synthesis-view-root .voice-result-card,
+  .voice-convert-view-root .voice-result-card {
+    padding: 28px 22px 24px !important;
+  }
+}
+
 .feature-page-shell {
   display: flex;
   min-height: 100vh;
@@ -39173,4 +39305,80 @@ section.video-gen-view-root
   color: #6d3cff !important;
   font-size: 16px !important;
   font-weight: 800 !important;
+}
+
+/* EOF override: keep audio result navigation at the canvas top-left. */
+.voice-synthesis-view-root .voice-conversion-canvas.is-result,
+.voice-convert-view-root .voice-conversion-canvas.is-result {
+  position: relative !important;
+  display: block !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+  padding: 0 40px 56px !important;
+}
+
+.voice-synthesis-view-root .voice-result-view,
+.voice-convert-view-root .voice-result-view {
+  position: relative !important;
+  min-height: calc(100vh - 96px) !important;
+  padding-top: 18px !important;
+}
+
+.voice-synthesis-view-root .voice-result-back,
+.voice-convert-view-root .voice-result-back {
+  position: absolute !important;
+  top: 18px !important;
+  left: 0 !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 760px) {
+  .voice-synthesis-view-root .voice-conversion-canvas.is-result,
+  .voice-convert-view-root .voice-conversion-canvas.is-result {
+    padding-right: 18px !important;
+    padding-left: 18px !important;
+  }
+}
+
+/* EOF override: fit audio creation pages into the available desktop viewport. */
+@media (min-width: 761px) {
+  .voice-synthesis-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result),
+  .voice-convert-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result) {
+    box-sizing: border-box !important;
+    min-height: calc(100vh - 72px) !important;
+    padding-top: clamp(18px, 3vh, 36px) !important;
+    padding-bottom: clamp(18px, 3vh, 36px) !important;
+    align-content: center !important;
+  }
+
+  .voice-synthesis-view-root .voice-hero-empty,
+  .voice-convert-view-root .voice-hero-empty {
+    margin-bottom: clamp(14px, 2vh, 24px) !important;
+  }
+
+  .voice-synthesis-view-root .voice-synthesis-workspace__dropzone {
+    min-height: clamp(205px, 28vh, 306px) !important;
+  }
+
+  .voice-convert-view-root .voice-conversion-workbench__upload-box {
+    min-height: clamp(168px, 22vh, 204px) !important;
+  }
+}
+
+@media (min-width: 761px) and (max-height: 850px) {
+  .voice-synthesis-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result),
+  .voice-convert-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result) {
+    height: calc(100vh - 72px) !important;
+    min-height: 0 !important;
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+    overflow: hidden !important;
+  }
+
+  .voice-synthesis-view-root .voice-hero-empty,
+  .voice-synthesis-view-root .voice-synthesis-workspace,
+  .voice-convert-view-root .voice-hero-empty,
+  .voice-convert-view-root .voice-conversion-workbench {
+    zoom: 0.84;
+  }
 }

@@ -3,6 +3,7 @@ import { CheckCircle2, Download, Heart, Loader2, LockKeyhole, Mic, Music, Trash2
 import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
 import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
+import { VoiceResultView } from "../audio-ui/VoiceResultView";
 import { voiceApi } from "../voice/voiceApi";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
@@ -113,6 +114,7 @@ export function VoiceSynthesisView({
   const [resultAudio, setResultAudio] = useState("");
   const [resultUrl, setResultUrl] = useState("");
   const [resultFileName, setResultFileName] = useState("voice-synthesis.mp3");
+  const [currentResult, setCurrentResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
@@ -186,6 +188,7 @@ export function VoiceSynthesisView({
     setResultAudio("");
     setResultUrl("");
     setResultFileName("voice-synthesis.mp3");
+    setCurrentResult(null);
     setViewTab("home");
     setPlayingRecentId("");
     setToast(null);
@@ -377,7 +380,7 @@ export function VoiceSynthesisView({
       setResultAudio(result.audioDataUrl);
       setResultUrl(result.audioUrl || "");
       setResultFileName(fileName);
-      setRecentResults((items) => [{
+      const generatedResult = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: text.trim().slice(0, 48) || "语音合成结果",
         voiceName: voice.name || "目标音色",
@@ -385,8 +388,10 @@ export function VoiceSynthesisView({
         audioDataUrl: result.audioDataUrl || "",
         fileName,
         createdAt: formatBeijingDateTime()
-      }, ...items].slice(0, 20));
-      setViewTab("home");
+      };
+      setCurrentResult(generatedResult);
+      setRecentResults((items) => [generatedResult, ...items].slice(0, 20));
+      setViewTab("result");
       showToast("success", "语音生成成功");
       setNotice("语音生成完成。");
     } catch (error) {
@@ -432,6 +437,9 @@ export function VoiceSynthesisView({
     setRecentResults((items) => items.map((item) => (
       item.id === id ? { ...item, favorite: !item.favorite } : item
     )));
+    setCurrentResult((item) => (
+      item?.id === id ? { ...item, favorite: !item.favorite } : item
+    ));
   }
 
   function performDeleteRecentResult(id) {
@@ -466,7 +474,15 @@ export function VoiceSynthesisView({
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+      <div className={`voice-conversion-canvas ${viewTab === "recent" ? "is-recent" : ""} ${viewTab === "result" ? "is-result" : ""}`}>
+        {viewTab === "result" && currentResult && (
+          <VoiceResultView
+            result={currentResult}
+            onBack={() => setViewTab("home")}
+            onDownload={() => downloadResult(currentResult)}
+            onFavoriteToggle={() => toggleRecentFavorite(currentResult.id)}
+          />
+        )}
         {viewTab === "home" && (
           <>
             <div className="voice-hero-empty">
