@@ -160,6 +160,11 @@ export function MusicCoverCropModal({
     top: 0,
   });
   const ownedBlobRef = useRef("");
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   function syncImageMetrics(
     naturalWidth = imageRef.current?.naturalWidth,
@@ -185,7 +190,7 @@ export function MusicCoverCropModal({
     }
 
     function handleKeyDown(event) {
-      if (event.key === "Escape") onClose?.();
+      if (event.key === "Escape") onCloseRef.current?.();
     }
 
     const previousOverflow = document.body.style.overflow;
@@ -196,7 +201,7 @@ export function MusicCoverCropModal({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, initialPreview, onClose]);
+  }, [open, initialPreview]);
 
   useEffect(
     () => () => {
