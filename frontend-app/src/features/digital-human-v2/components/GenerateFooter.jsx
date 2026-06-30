@@ -24,20 +24,25 @@ export function GenerateFooter({
   estimatedCredits = 0,
   audioPreviewPhase = "draft",
   isAudioPreviewing = false,
+  isSpeechTooLong = false,
   onPreviewAudio,
   onConfirmAudio,
   onGenerate,
 }) {
   const isPreviewed = audioPreviewPhase === "previewed";
   const isConfirmed = audioPreviewPhase === "confirmed";
-  const buttonDisabled = isConfirmed
+  const buttonDisabled = isCloneMode
     ? !canGenerate || isSubmitting
-    : !canGenerate || isAudioPreviewing;
-  const handleClick = isConfirmed
+    : isSpeechTooLong || (isConfirmed
+      ? !canGenerate || isSubmitting
+      : !canGenerate || isAudioPreviewing);
+  const handleClick = isCloneMode
     ? onGenerate
-    : isPreviewed
-      ? onConfirmAudio
-      : onPreviewAudio;
+    : isConfirmed
+      ? onGenerate
+      : isPreviewed
+        ? onConfirmAudio
+        : onPreviewAudio;
 
   return (
     <footer className="dhv2-generate-footer">
@@ -52,8 +57,10 @@ export function GenerateFooter({
         disabled={buttonDisabled}
         onClick={handleClick}
       >
-        {isSubmitting || isAudioPreviewing ? (
+        {isSubmitting || (!isCloneMode && isAudioPreviewing) ? (
           <Loader2 size={18} className="dhv2-spinner" />
+        ) : isCloneMode ? (
+          <Zap size={18} />
         ) : isConfirmed ? (
           <Zap size={18} />
         ) : isPreviewed ? (
@@ -61,7 +68,13 @@ export function GenerateFooter({
         ) : (
           <Volume2 size={18} />
         )}
-        {isAudioPreviewing
+        {isCloneMode
+          ? isSpeechTooLong
+            ? "口播预计超过 15 秒"
+            : isSubmitting
+            ? "正在克隆并生成..."
+            : "克隆音色并生成"
+          : isAudioPreviewing
           ? "正在生成试听..."
           : isConfirmed
             ? isCloneMode

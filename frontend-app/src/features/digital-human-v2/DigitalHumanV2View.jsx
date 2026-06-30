@@ -37,6 +37,7 @@ import {
 import "./digitalHumanV2.css";
 
 const DEFAULT_SCRIPT = "";
+const MAX_SPEECH_DURATION_MS = 15 * 1000;
 
 function SceneUploadCard({
   scene,
@@ -134,10 +135,15 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const model = options.defaults?.model || options.models[0]?.value || "";
   const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
   const isCloneMode = isMineAvatar && voiceMode === VOICE_DUBBING_MODES.clone;
+  const estimatedSpeechDurationMs = estimateSpeechSeconds(text) * 1000;
+  const isSpeechTooLong = isCloneMode
+    ? estimatedSpeechDurationMs > MAX_SPEECH_DURATION_MS
+    : speechDurationMs > MAX_SPEECH_DURATION_MS;
   const canGenerate = Boolean(
     selectedAvatar?.id &&
       text.trim() &&
       model &&
+      !isSpeechTooLong &&
       (isCloneMode
         ? cloneAudio?.fileId || cloneAudio?.cachedVoice?.id
         : voiceId && isDigitalHumanVoiceEnabled(voiceId)),
@@ -681,6 +687,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
               voiceSpeed={voiceSpeed}
               voiceEmotion={voiceEmotion}
               voiceMode={voiceMode}
+              onVoiceModeChange={setVoiceMode}
               showCloneUpload={isMineAvatar}
               cloneAudio={cloneAudio}
               onCloneAudioChange={setCloneAudio}
@@ -713,6 +720,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
             estimatedCredits={estimatedGenerateCredits}
             audioPreviewPhase={audioPreviewPhase}
             isAudioPreviewing={isAudioPreviewing}
+            isSpeechTooLong={isSpeechTooLong}
             onPreviewAudio={handleRequestAudioPreview}
             onConfirmAudio={handleConfirmAudioPreview}
             onGenerate={handleGenerate}

@@ -698,6 +698,15 @@
   color: var(--dhv2-text);
 }
 
+.dhv2-script-preview.is-too-long {
+  color: #e24b4b;
+}
+
+.dhv2-script-preview.is-too-long .dhv2-script-preview__text {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .dhv2-script-preview.is-playing {
   color: var(--dhv2-brand);
 }
@@ -738,13 +747,6 @@
 .dhv2-script-preview__text {
   font-size: 12px;
   line-height: 1.35;
-}
-
-.dhv2-script-count {
-  flex-shrink: 0;
-  color: var(--dhv2-muted);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .dhv2-script-regenerate {
@@ -825,9 +827,11 @@
 }
 
 .dhv2-scene-card__dropzone {
-  display: grid;
-  place-items: center;
-  gap: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   min-height: 112px;
   overflow: hidden;

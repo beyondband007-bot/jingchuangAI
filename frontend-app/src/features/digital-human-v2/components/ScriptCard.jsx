@@ -15,8 +15,9 @@ import { SystemVoiceCard } from "./SystemVoiceCard";
 
 const DEFAULT_PLACEHOLDER = "请输入你希望角色说的内容";
 const CLONE_AUDIO_ACCEPT = "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a";
-const CLONE_AUDIO_MIN_MS = 10000;
-const CLONE_AUDIO_MAX_MS = 5 * 60 * 1000;
+const CLONE_AUDIO_MIN_MS = 10 * 1000;
+const CLONE_AUDIO_MAX_MS = 15 * 1000;
+const MAX_SPEECH_DURATION_MS = 15 * 1000;
 
 export function ScriptCard({
   text,
@@ -26,6 +27,7 @@ export function ScriptCard({
   voiceSpeed = 1,
   voiceEmotion = "中性",
   voiceMode = VOICE_DUBBING_MODES.system,
+  onVoiceModeChange,
   showCloneUpload = false,
   cloneAudio,
   onCloneAudioChange,
@@ -68,12 +70,6 @@ export function ScriptCard({
     setIsPlaying(false);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, isCloneMode]);
 
-  useEffect(() => {
-    if (isCloneMode && cloneAudio?.durationMs) {
-      updatePreviewDurationMs(cloneAudio.durationMs);
-    }
-  }, [cloneAudio?.durationMs, isCloneMode]);
-
   function openCloneFilePicker() {
     cloneInputRef.current?.click();
   }
@@ -107,12 +103,14 @@ export function ScriptCard({
     setIsUploadingClone(true);
     try {
       const durationMs = await readAudioDurationMs(file);
-      if (durationMs > 0 && durationMs < CLONE_AUDIO_MIN_MS) {
-        Message.warning("参考音频建议不少于 10 秒");
+      if (!durationMs) {
+        Message.warning("无法识别参考音频时长，请更换音频文件");
         return;
       }
-      if (durationMs > CLONE_AUDIO_MAX_MS) {
-        Message.warning("参考音频不能超过 5 分钟");
+      if (
+        (durationMs < CLONE_AUDIO_MIN_MS || durationMs > CLONE_AUDIO_MAX_MS)
+      ) {
+        Message.warning("参考音频时长需在 10–15 秒之间");
         return;
       }
       const uploaded = await voiceApi.uploadCloneAudio(file, durationMs);
@@ -208,12 +206,6 @@ export function ScriptCard({
       return;
     }
     if (isCloneMode) {
-      if (cloneAudio?.durationMs) {
-        updatePreviewDurationMs(cloneAudio.durationMs);
-      }
-      if (shouldPlay) {
-        Message.info("音色克隆模式下请使用参考音频驱动口播");
-      }
       return;
     }
     if (!voiceId || !isDigitalHumanVoiceEnabled(voiceId)) {
@@ -306,8 +298,11 @@ export function ScriptCard({
     playPreviewAudio();
   }
 
+  const isSpeechTooLong = previewDurationMs > MAX_SPEECH_DURATION_MS;
   const durationLabel = previewDurationMs
-    ? `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
+    ? isSpeechTooLong
+      ? `配音时长 ${formatSpeechDurationFromMs(previewDurationMs)}，超过15s请重新生成`
+      : `说话时长 ${formatSpeechDurationFromMs(previewDurationMs)}`
     : isCloneMode
       ? "上传参考音频后可查看时长和消耗积分"
       : "试听后可获取准确的说话时长和消耗积分";
@@ -344,6 +339,29 @@ export function ScriptCard({
         ) : null}
       </header>
 
+      {showCloneUpload ? (
+        <div className="dhv2-segmented-tabs dhv2-voice-mode-tabs" role="tablist" aria-label="配音方式">
+          <button
+            type="button"
+            role="tab"
+            className={!isCloneMode ? "is-active" : ""}
+            aria-selected={!isCloneMode}
+            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.system)}
+          >
+            系统音色
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={isCloneMode ? "is-active" : ""}
+            aria-selected={isCloneMode}
+            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.clone)}
+          >
+            声音克隆
+          </button>
+        </div>
+      ) : null}
+
       <input
         ref={cloneInputRef}
         type="file"
@@ -375,7 +393,7 @@ export function ScriptCard({
             ) : (
               <>
                 <strong>上传本人人声参考音频，复刻专属音色</strong>
-                <span>支持 MP3、WAV、M4A 格式，建议 10 秒以上</span>
+                <span>支持 MP3、WAV、M4A 格式，时长需在 10–15 秒之间</span>
               </>
             )}
           </span>
@@ -425,10 +443,12 @@ export function ScriptCard({
         </button>
       </div>
 
-      <div className="dhv2-script-preview-row">
+      {!isCloneMode ? <div className="dhv2-script-preview-row">
         <button
           type="button"
           className={`dhv2-script-preview${previewDurationMs ? " has-duration" : ""}${
+            isSpeechTooLong ? " is-too-long" : ""
+          }${
             isPlaying ? " is-playing" : ""
           }`}
           disabled={isPreviewing || !hasGeneratedPreview || !audioRef.current}
@@ -459,10 +479,7 @@ export function ScriptCard({
             重新生成
           </button>
         ) : null}
-        <span className="dhv2-script-count">
-          {text.length} / {SCRIPT_MAX_LENGTH}
-        </span>
-      </div>
+      </div> : null}
 
     </section>
   );
