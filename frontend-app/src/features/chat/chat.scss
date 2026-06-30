@@ -1037,10 +1037,12 @@
 }
 
 .llm-menu button {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 9px 10px;
+  min-height: 56px;
+  padding: 8px 10px;
   color: #d5dae4;
   background: transparent;
   border: 0;
@@ -1546,12 +1548,41 @@
   background: #ffffff !important;
 }
 
-[data-feature-module="chat"] .llm-menu button span {
-  color: #3d2d78 !important;
+[data-feature-module="chat"] .llm-menu button > span:first-child {
+  width: 38px !important;
+  height: 38px !important;
+  flex: 0 0 38px !important;
+  background: #ffffff !important;
+  border-color: #e4e1ee !important;
+}
+
+[data-feature-module="chat"] .llm-menu button > span:first-child img {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+[data-feature-module="chat"] .llm-menu button > span:nth-child(2) {
+  overflow: hidden !important;
+}
+
+[data-feature-module="chat"] .llm-menu button strong {
+  display: block !important;
+  overflow: hidden !important;
+  color: #686879 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 [data-feature-module="chat"] .llm-menu button small {
+  display: block !important;
+  overflow: hidden !important;
   color: #8f899b !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 [data-feature-module="chat"] .llm-menu button:hover,
@@ -1587,6 +1618,17 @@
 
 [data-feature-module="chat"] .llm-model-more svg.is-expanded {
   transform: rotate(180deg);
+}
+
+[data-feature-module="chat"] .llm-menu button:hover small,
+[data-feature-module="chat"] .llm-menu button.is-selected small {
+  color: #8f8ca3 !important;
+}
+
+[data-feature-module="chat"] .llm-menu button:hover strong,
+[data-feature-module="chat"] .llm-menu button.is-selected strong {
+  color: #6d3cff !important;
+  font-weight: 800 !important;
 }
 
 [data-feature-module="chat"] .chat-actions-panel {

@@ -10916,7 +10916,24 @@ function MotionTransferView({
 }
 
 const emptyWatermarkOptions = {
-  models: [],
+  models: [
+    {
+      value: "kie-watermark-image",
+      label: "图片去水印",
+      kind: "image",
+      providerModel: "gpt-image-2-image-to-image",
+      basePoints: 25,
+      resolution: "2K",
+    },
+    {
+      value: "kie-watermark-video",
+      label: "视频去水印",
+      kind: "video",
+      providerModel: "wan/2-7-r2v",
+      basePoints: 100,
+      resolution: "720p",
+    },
+  ],
   defaults: {
     imageModel: "kie-watermark-image",
     videoModel: "kie-watermark-video",
@@ -11466,20 +11483,21 @@ function WatermarkRemovalView({
           .catch(() => {});
       }
     }
-    async function load() {
-      try {
-        const [modelData, taskData, creditData] = await Promise.all([
-          watermarkApi.getModels(),
-          watermarkApi.getTasks(),
-          watermarkApi.getCredits().catch(() => null),
-        ]);
-        if (!mounted) return;
-        setOptions(modelData);
-        applyTaskList(taskData);
-        applyCreditsUpdate(setCredits, creditData);
-      } catch (error) {
-        if (mounted) setSubmitError(error.message || "加载去水印失败");
-      }
+    function load() {
+      watermarkApi
+        .getModels()
+        .then((modelData) => mounted && setOptions(modelData))
+        .catch(() => {});
+      watermarkApi
+        .getTasks()
+        .then(applyTaskList)
+        .catch((error) => {
+          if (mounted) setSubmitError(error.message || "加载去水印失败");
+        });
+      watermarkApi
+        .getCredits()
+        .then((creditData) => mounted && applyCreditsUpdate(setCredits, creditData))
+        .catch(() => {});
     }
     load();
     const unsubscribe = watermarkApi.subscribe(() => {
@@ -11648,7 +11666,7 @@ function WatermarkRemovalView({
           ))}
         </div>
       </div>
-      {viewTab === "home" && !showCenterState && options.models.length > 0 && (
+      {viewTab === "home" && !showCenterState && (
         <WatermarkComposer
           options={options}
           onSubmit={createTask}
