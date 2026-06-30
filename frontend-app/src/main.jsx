@@ -2819,13 +2819,14 @@ const FeatureSidebar = memo(function FeatureSidebar({
 }) {
   const isLoadingUser = !authUser;
   const isGuest = Boolean(authUser?.isGuest);
+  const enableSidebarSearch = false;
   const [query, setQuery] = useState("");
   const [openGroups, setOpenGroups] = useState(() => ({
     vision: true,
     marketing: false,
     audio: false,
   }));
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = enableSidebarSearch ? query.trim().toLowerCase() : "";
 
   const getNavItem = useCallback(
     (id) => navItems.find((item) => item.id === id),
@@ -2863,15 +2864,18 @@ const FeatureSidebar = memo(function FeatureSidebar({
         <span className="feature-brand-text">Facemini</span>
         <span className="feature-brand-beta">Beta</span>
       </button>
-      <label className="feature-nav-search">
-        <Search size={16} />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          type="search"
-          placeholder="搜索..."
-        />
-      </label>
+      {enableSidebarSearch && (
+        <label className="feature-nav-search">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            type="search"
+            autoComplete="off"
+            placeholder="搜索..."
+          />
+        </label>
+      )}
       <nav className="feature-nav" aria-label="功能导航">
         {sidebarSections.map((section) => {
           if (section.type === "item") {
