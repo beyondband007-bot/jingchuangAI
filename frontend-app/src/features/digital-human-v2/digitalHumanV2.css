@@ -1409,6 +1409,442 @@
   font-weight: 900;
 }
 
+.dhv2-audio-library {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.dhv2-audio-library__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-content: flex-start;
+}
+
+.dhv2-audio-create-card,
+.dhv2-audio-pending-card,
+.dhv2-audio-notice-card,
+.dhv2-audio-asset-card {
+  flex: 0 0 170px;
+  width: 170px;
+  min-height: 226px;
+  border-radius: 14px;
+}
+
+.dhv2-audio-create-card {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  color: #2f2a3b;
+  background: #f5f2ff;
+  border: 1px dashed #cfc5ff;
+  cursor: pointer;
+}
+
+.dhv2-audio-create-card:hover {
+  color: var(--dhv2-brand);
+  border-color: #9f90ff;
+  background: #f2eeff;
+}
+
+.dhv2-audio-create-card:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.dhv2-audio-create-card__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  color: var(--dhv2-brand);
+  background: #e9e3ff;
+  border-radius: 10px;
+}
+
+.dhv2-audio-create-card span:last-child {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dhv2-audio-pending-card,
+.dhv2-audio-notice-card,
+.dhv2-audio-asset-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 14px;
+  text-align: center;
+  text-wrap: pretty;
+  background: #ffffff;
+  border: 1px solid #ebe7f4;
+}
+
+.dhv2-audio-pending-card {
+  border-color: #cfc5ff;
+  background: #fbf9ff;
+}
+
+.dhv2-audio-notice-card {
+  border-color: #f0d3a0;
+  background: #fffaf0;
+}
+
+.dhv2-audio-notice-card.is-error {
+  border-color: #f1b6b6;
+  background: #fff5f5;
+}
+
+.dhv2-audio-pending-card__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: #8d8999;
+  background: #ffffff;
+  border: 1px solid #ebe7f4;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dhv2-audio-notice-card__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: #8d8999;
+  background: #ffffff;
+  border: 1px solid #ebe7f4;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dhv2-audio-pending-card__icon,
+.dhv2-audio-notice-card__icon,
+.dhv2-audio-asset-card__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #623bff;
+  background: #f1edff;
+  border-radius: 12px;
+}
+
+.dhv2-audio-pending-card strong,
+.dhv2-audio-notice-card strong,
+.dhv2-audio-asset-card strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #2f2a3b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dhv2-audio-pending-card em,
+.dhv2-audio-notice-card em,
+.dhv2-audio-asset-card em {
+  color: #9a97a8;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.dhv2-audio-pending-card p {
+  margin: 0;
+  color: #6f6a7d;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.dhv2-audio-notice-card p {
+  margin: 0;
+  color: #72541e;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.dhv2-audio-notice-card.is-error p {
+  color: #8a3f3f;
+}
+
+.dhv2-audio-pending-card__confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  width: 100%;
+  padding: 0 10px;
+  color: #ffffff;
+  background: var(--dhv2-brand);
+  border: 0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dhv2-audio-notice-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  width: 100%;
+  padding: 0 10px;
+  color: #623bff;
+  background: #ffffff;
+  border: 1px solid #ddd5ff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dhv2-audio-pending-card__confirm:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.dhv2-audio-asset-card.is-active {
+  border-color: #b8adff;
+  background: #f8f6ff;
+  box-shadow: 0 0 0 1px rgba(98, 59, 255, 0.08);
+}
+
+.dhv2-audio-asset-card__main {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.dhv2-audio-asset-card__play {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: #623bff;
+  background: #f1edff;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dhv2-audio-asset-card__play:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.dhv2-audio-library__empty {
+  display: grid;
+  place-items: center;
+  flex: 1 1 260px;
+  min-height: 120px;
+  color: #8d8999;
+  background: #fbf9ff;
+  border: 1px dashed #dfd8f0;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dhv2-audio-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(31, 28, 45, 0.42);
+}
+
+.dhv2-audio-confirm {
+  width: min(420px, 92vw);
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4e0ee;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(31, 28, 45, 0.28);
+}
+
+.dhv2-audio-confirm__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid #ece8f3;
+}
+
+.dhv2-audio-confirm__head div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dhv2-audio-confirm__head span {
+  color: #8d8999;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dhv2-audio-confirm__head strong {
+  color: #2f2a3b;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.dhv2-audio-confirm__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #8d8999;
+  background: #f6f4fb;
+  border: 1px solid #ebe7f4;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dhv2-audio-confirm__body {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 22px 22px 18px;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.dhv2-audio-confirm__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  color: #623bff;
+  background: #f1edff;
+  border-radius: 14px;
+}
+
+.dhv2-audio-confirm__file {
+  display: grid;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.dhv2-audio-confirm__file strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #2f2a3b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.dhv2-audio-confirm__file span {
+  color: #8d8999;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dhv2-audio-confirm__cost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  width: 100%;
+  padding: 12px 14px;
+  background: #f8f6ff;
+  border: 1px solid #e5defc;
+  border-radius: 10px;
+}
+
+.dhv2-audio-confirm__cost span {
+  color: #6f6a7d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dhv2-audio-confirm__cost strong {
+  color: #623bff;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.dhv2-audio-confirm__body p {
+  margin: 0;
+  color: #6f6a7d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.dhv2-audio-confirm__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px 18px;
+  border-top: 1px solid #ece8f3;
+}
+
+.dhv2-audio-confirm__secondary,
+.dhv2-audio-confirm__primary {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dhv2-audio-confirm__secondary {
+  color: #7d7890;
+  background: #ffffff;
+  border: 1px solid var(--dhv2-border);
+}
+
+.dhv2-audio-confirm__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffffff;
+  background: var(--dhv2-brand);
+  border: 0;
+}
+
+.dhv2-audio-confirm__secondary:disabled,
+.dhv2-audio-confirm__primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .dhv2-avatar-card--mine .dhv2-avatar-card__cover {
   aspect-ratio: 3 / 4;
   border-radius: 14px;

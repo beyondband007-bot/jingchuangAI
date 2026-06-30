@@ -13,8 +13,12 @@ export async function getDigitalHumanAvatars(_req, res) {
   }
 }
 
-export function getDigitalHumanVoices(_req, res) {
-  res.json(service.getVoices());
+export async function getDigitalHumanVoices(req, res) {
+  try {
+    res.json(await service.getVoices(req.user?.isGuest ? null : req.user?.id));
+  } catch (error) {
+    sendError(res, error);
+  }
 }
 
 export async function designDigitalHumanVoice(req, res) {
@@ -28,8 +32,26 @@ export async function designDigitalHumanVoice(req, res) {
 
 export async function previewDigitalHumanVoice(req, res) {
   try {
-    const result = await service.previewVoice(req.body || {});
+    const result = await service.previewVoice(req.body || {}, req.user?.isGuest ? null : req.user?.id);
     res.status(201).json(result);
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadDigitalHumanVoiceCloneAudio(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.status(201).json(await service.uploadVoiceCloneAudio(req.body || {}, req.file, req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function createDigitalHumanVoiceClone(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.status(201).json(await service.createVoiceClone(req.body || {}, req.user.id));
   } catch (error) {
     sendError(res, error);
   }
@@ -55,7 +77,7 @@ export async function getDigitalHumanTask(req, res) {
 
 export async function createDigitalHumanTask(req, res) {
   try {
-    res.status(201).json(await service.createTask(req.body || {}));
+    res.status(201).json(await service.createTask(req.body || {}, req.user));
   } catch (error) {
     sendError(res, error);
   }

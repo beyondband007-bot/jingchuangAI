@@ -3,10 +3,12 @@ import path from "path";
 import { Router } from "express";
 import multer from "multer";
 import { config } from "../../config/index.js";
+import { normalizeUploadOriginalName } from "../../shared/fileName.js";
 import {
   createDigitalHumanAvatar,
   createDigitalHumanAiAvatar,
   createDigitalHumanTask,
+  createDigitalHumanVoiceClone,
   deleteDigitalHumanAvatar,
   deleteDigitalHumanTask,
   getDigitalHumanAiAvatarTask,
@@ -20,6 +22,7 @@ import {
   regenerateDigitalHumanTask,
   saveDigitalHumanAiAvatar,
   uploadDigitalHumanAudio,
+  uploadDigitalHumanVoiceCloneAudio,
   uploadDigitalHumanScene,
   updateDigitalHumanAvatar
 } from "./digitalHuman.controller.js";
@@ -89,9 +92,15 @@ const sceneUpload = multer({
   }
 });
 
+const voiceCloneUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }
+});
+
 function uploadAvatar(req, res, next) {
   avatarUpload.single("avatar")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }
@@ -103,6 +112,7 @@ function uploadAvatar(req, res, next) {
 function uploadAudio(req, res, next) {
   audioUpload.single("audio")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }
@@ -114,10 +124,23 @@ function uploadAudio(req, res, next) {
 function uploadScene(req, res, next) {
   sceneUpload.single("scene")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }
     const message = error.code === "LIMIT_FILE_SIZE" ? "scene image must be 30MB or smaller" : error.message;
+    res.status(400).json({ error: message });
+  });
+}
+
+function uploadVoiceCloneAudio(req, res, next) {
+  voiceCloneUpload.single("audio")(req, res, (error) => {
+    if (!error) {
+      normalizeUploadOriginalName(req.file);
+      next();
+      return;
+    }
+    const message = error.code === "LIMIT_FILE_SIZE" ? "audio file must be 20MB or smaller" : error.message;
     res.status(400).json({ error: message });
   });
 }
@@ -133,6 +156,8 @@ digitalHumanRouter.delete("/avatars/:id", deleteDigitalHumanAvatar);
 digitalHumanRouter.get("/voices", getDigitalHumanVoices);
 digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
 digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
+digitalHumanRouter.post("/voices/uploads/clone-audio", uploadVoiceCloneAudio, uploadDigitalHumanVoiceCloneAudio);
+digitalHumanRouter.post("/voices/clones", createDigitalHumanVoiceClone);
 digitalHumanRouter.post("/uploads/audio", uploadAudio, uploadDigitalHumanAudio);
 digitalHumanRouter.post("/uploads/scene", uploadScene, uploadDigitalHumanScene);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);
