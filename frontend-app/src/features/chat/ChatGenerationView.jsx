@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Message } from "@arco-design/web-react";
 import { IconMessage } from "@arco-design/web-react/icon";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, X, Zap, Bot } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, Trash2, X, Zap, Bot } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { CustomSelect } from "../../components/CustomSelect";
+import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { chatApi } from "../../api/chatApi";
-import { formatBeijingDateTime } from "../../utils/time";
 import { ModelOptionContent } from "./components/modelOptionMeta.jsx";
 import "./chat.scss";
 
@@ -174,6 +175,70 @@ function markdownToPlainText(markdown = "") {
     .replace(/[*_~]{1,3}/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function getBeijingDayKey(value = new Date()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const pick = (type) => parts.find((item) => item.type === type)?.value || "";
+  return `${pick("year")}-${pick("month")}-${pick("day")}`;
+}
+
+function getBeijingOffsetDayKey(offsetDays = 0) {
+  return getBeijingDayKey(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
+}
+
+function getConversationDateValue(conversation = {}) {
+  return (
+    conversation.updatedAt ||
+    conversation.updated_at ||
+    conversation.createdAt ||
+    conversation.created_at ||
+    conversation.time ||
+    ""
+  );
+}
+
+function formatChatHistoryItemTime(conversation = {}) {
+  const value = getConversationDateValue(conversation);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const dayKey = getBeijingDayKey(value);
+  const todayKey = getBeijingOffsetDayKey(0);
+  const yesterdayKey = getBeijingOffsetDayKey(-1);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Shanghai",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const pick = (type) => parts.find((item) => item.type === type)?.value || "";
+  if (dayKey === todayKey || dayKey === yesterdayKey) return "";
+  return `${pick("month")}/${pick("day")}`;
+}
+
+function groupChatConversationsByDay(conversations = []) {
+  const todayKey = getBeijingOffsetDayKey(0);
+  const yesterdayKey = getBeijingOffsetDayKey(-1);
+  const groups = { today: [], yesterday: [], older: [] };
+
+  conversations.forEach((conversation) => {
+    const dayKey = getBeijingDayKey(getConversationDateValue(conversation));
+    if (dayKey === todayKey) {
+      groups.today.push(conversation);
+    } else if (dayKey === yesterdayKey) {
+      groups.yesterday.push(conversation);
+    } else {
+      groups.older.push(conversation);
+    }
+  });
+
+  return groups;
 }
 
 function ChatCopyActions({ content }) {
@@ -696,34 +761,95 @@ function ChatComposerBar({
   );
 }
 
-function ChatHistoryRail({ conversations, activeConversationId, onSelect, disabled = false }) {
+function ChatHistoryRail({ conversations, activeConversationId, onSelect, onDelete, disabled = false }) {
+  const [showOlder, setShowOlder] = useState(false);
+  const groupedConversations = useMemo(
+    () => groupChatConversationsByDay(conversations),
+    [conversations],
+  );
+
+  function renderConversation(conversation) {
+    const isSelected = activeConversationId === conversation.id;
+    const itemTime = formatChatHistoryItemTime(conversation);
+    return (
+      <div
+        className={`chat-history-row ${isSelected ? "is-selected" : ""}`}
+        key={conversation.id}
+      >
+        <button
+          className={`chat-history-item ${isSelected ? "is-selected" : ""}`}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSelect(conversation.id)}
+        >
+          <IconMessage className="chat-history-message-icon" />
+          <span>{conversation.title || "未命名对话"}</span>
+        </button>
+        <div className={`chat-history-row-action ${itemTime ? "has-time" : ""}`}>
+          {itemTime ? (
+            <time dateTime={getConversationDateValue(conversation)}>
+              {itemTime}
+            </time>
+          ) : null}
+          <button
+            className="chat-history-delete"
+            type="button"
+            aria-label="删除历史对话"
+            disabled={disabled}
+            onClick={() => onDelete(conversation)}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderSection(label, items) {
+    if (!items.length) return null;
+    return (
+      <section className="chat-history-section" aria-label={label}>
+        <div className="chat-history-section-title">
+          <span>{label}</span>
+        </div>
+        <div className="chat-history-section-list">
+          {items.map(renderConversation)}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
         <span>历史对话</span>
-        <strong>{conversations.length}</strong>
       </div>
       <div className="history-list chat-history-list">
         {conversations.length === 0 ? (
           <p className="chat-history-empty">暂无历史对话</p>
         ) : (
-          conversations.map((conversation) => (
-            <button
-              className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-              key={conversation.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => onSelect(conversation.id)}
-            >
-              <IconMessage className="chat-history-message-icon" />
-              <span>{conversation.title || "未命名对话"}</span>
-              <small>
-                {formatBeijingDateTime(conversation.createdAt || conversation.created_at || conversation.time) ||
-                  conversation.time ||
-                  ""}
-              </small>
-            </button>
-          ))
+          <>
+            {renderSection("今天", groupedConversations.today)}
+            {renderSection("昨天", groupedConversations.yesterday)}
+            {groupedConversations.older.length > 0 && (
+              <section className="chat-history-section" aria-label="更早">
+                <button
+                  className={`chat-history-section-title chat-history-section-toggle ${showOlder ? "is-open" : ""}`}
+                  type="button"
+                  aria-expanded={showOlder}
+                  onClick={() => setShowOlder((value) => !value)}
+                >
+                  <span>更早</span>
+                  <ChevronDown size={14} />
+                </button>
+                {showOlder && (
+                  <div className="chat-history-section-list">
+                    {groupedConversations.older.map(renderConversation)}
+                  </div>
+                )}
+              </section>
+            )}
+          </>
         )}
       </div>
     </aside>
@@ -745,6 +871,26 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
   const streamAbortControllerRef = useRef(null);
   const historyAbortControllerRef = useRef(null);
   const isGuest = !isLoggedInUser(authUser);
+  const { requestDelete: requestDeleteConversation, deleteConfirmDialog } =
+    useDeleteConfirmation({
+      title: "删除历史对话",
+      message: "删除后将无法恢复，确认删除这条历史对话吗？",
+      confirmText: "删除",
+      onConfirm: async (conversation) => {
+        await chatApi.deleteConversation(conversation.id);
+        Message.success("删除成功");
+        setConversations((current) =>
+          current.filter((item) => item.id !== conversation.id),
+        );
+        if (conversationId === conversation.id) {
+          historyAbortControllerRef.current?.abort();
+          setMessages([]);
+          setConversationId(null);
+          setSubmitError("");
+          setModelSwitchNotice("");
+        }
+      },
+    });
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
   useEffect(() => {
@@ -1064,10 +1210,16 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
             conversations={conversations}
             activeConversationId={conversationId}
             onSelect={selectConversation}
+            onDelete={(conversation) =>
+              requestDeleteConversation(conversation, {
+                targetName: conversation.title || "未命名对话",
+              })
+            }
             disabled={isSubmitting}
           />
         </aside>
       </div>
+      {deleteConfirmDialog}
     </section>
   );
 }

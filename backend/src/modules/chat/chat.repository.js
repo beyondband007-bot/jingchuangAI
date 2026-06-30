@@ -63,6 +63,17 @@ export async function listChatConversationRows() {
   return rows;
 }
 
+export async function deleteChatConversation(connection, id) {
+  const [result] = await connection.query(
+    `DELETE c
+     FROM chat_conversations c
+     INNER JOIN users u ON u.id = c.user_id
+     WHERE u.external_id = ? AND c.id = ?`,
+    [getCurrentExternalId(), id]
+  );
+  return result.affectedRows || 0;
+}
+
 export async function createChatMessage(connection, {
   conversationId,
   role,

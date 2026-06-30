@@ -3,7 +3,7 @@ import path from "path";
 import { Router } from "express";
 import multer from "multer";
 import { config } from "../../config/index.js";
-import { createChatMessage, getChatModels, listChatConversations, listChatMessages, streamChatMessage, uploadChatFile } from "./chat.controller.js";
+import { createChatMessage, deleteChatConversation, getChatModels, listChatConversations, listChatMessages, streamChatMessage, uploadChatFile } from "./chat.controller.js";
 
 export const chatRouter = Router();
 
@@ -62,6 +62,7 @@ function uploadSingleChatFile(req, res, next) {
 chatRouter.get("/models", getChatModels);
 chatRouter.get("/conversations", listChatConversations);
 chatRouter.get("/conversations/:id/messages", listChatMessages);
+chatRouter.delete("/conversations/:id", deleteChatConversation);
 chatRouter.post("/uploads", uploadSingleChatFile, uploadChatFile);
 chatRouter.post("/messages", createChatMessage);
 chatRouter.post("/messages/stream", streamChatMessage);

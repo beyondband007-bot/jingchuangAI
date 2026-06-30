@@ -100,7 +100,12 @@ function getFallbackMeta(item = {}) {
 }
 
 export function getModelOptionMeta(item = {}) {
-  return modelOptionMeta[item.value] || getFallbackMeta(item);
+  const meta = modelOptionMeta[item.value] || getFallbackMeta(item);
+  return {
+    ...meta,
+    title: meta.title || item.label || item.value || "模型",
+    description: meta.description || item.description || "",
+  };
 }
 
 export function ModelOptionContent({ item, selected = false }) {

@@ -54,6 +54,14 @@ function SceneUploadCard({
     if (file) onPickScene?.(file);
   }
 
+  function handleDropzoneKeyDown(event) {
+    if (isUploading) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      inputRef.current?.click();
+    }
+  }
+
   return (
     <section className="dhv2-scene-card">
       <div className="dhv2-scene-card__head">
@@ -61,28 +69,40 @@ function SceneUploadCard({
           <strong>场景背景</strong>
           <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
         </div>
-        {scene ? (
-          <button type="button" className="dhv2-scene-card__clear" onClick={onClearScene} aria-label="清除场景">
-            <X size={15} />
-          </button>
-        ) : null}
       </div>
 
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={isUploading ? -1 : 0}
         className={`dhv2-scene-card__dropzone${previewUrl ? " has-preview" : ""}`}
-        onClick={() => inputRef.current?.click()}
-        disabled={isUploading}
+        onClick={() => {
+          if (!isUploading) inputRef.current?.click();
+        }}
+        onKeyDown={handleDropzoneKeyDown}
+        aria-disabled={isUploading}
       >
         {previewUrl ? (
-          <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
+          <>
+            <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
+            <button
+              type="button"
+              className="dhv2-scene-card__clear"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClearScene?.();
+              }}
+              aria-label="清除场景"
+            >
+              <X size={15} />
+            </button>
+          </>
         ) : (
           <>
             <ImagePlus size={20} />
             <span>{isUploading ? "上传中..." : "上传场景图"}</span>
           </>
         )}
-      </button>
+      </div>
       <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
     </section>
   );

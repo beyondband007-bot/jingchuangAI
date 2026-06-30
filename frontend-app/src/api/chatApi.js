@@ -1,6 +1,32 @@
 import { API_BASE } from "../apiBase.js";
 import { cleanApiErrorMessage, requestJson as request } from "./request.js";
 
+const visibleChatModels = [
+  {
+    value: "deepseek-v4-pro",
+    description: "中文强，带货 / 直播 / 国风文案自然"
+  },
+  {
+    value: "qwen3.7-plus",
+    description: "均衡性价比，种草文案、标题创意初稿"
+  }
+];
+
+function filterVisibleChatModels(options) {
+  const models = visibleChatModels
+    .map((visibleModel) => {
+      const model = options.models?.find((item) => item.value === visibleModel.value);
+      return model ? { ...model, description: visibleModel.description } : null;
+    })
+    .filter(Boolean);
+
+  return {
+    ...options,
+    models,
+    defaultModel: models[0]?.value || ""
+  };
+}
+
 function parseStreamEvent(block) {
   const lines = block.split(/\r?\n/);
   const event = lines.find((line) => line.startsWith("event:"))?.slice(6).trim() || "message";
@@ -22,7 +48,7 @@ export const chatApi = {
   },
 
   async getModels() {
-    return request("/api/chat/models");
+    return filterVisibleChatModels(await request("/api/chat/models"));
   },
 
   async getConversations() {
@@ -31,6 +57,12 @@ export const chatApi = {
 
   async getMessages(conversationId, { signal } = {}) {
     return request(`/api/chat/conversations/${conversationId}/messages`, { signal });
+  },
+
+  async deleteConversation(conversationId) {
+    return request(`/api/chat/conversations/${conversationId}`, {
+      method: "DELETE"
+    });
   },
 
   async uploadAttachment(file) {
