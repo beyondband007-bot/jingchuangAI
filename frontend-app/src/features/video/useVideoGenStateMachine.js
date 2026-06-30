@@ -3,10 +3,11 @@ import { videoApi } from "../../api/videoApi";
 import { deriveVideoGenState } from "./deriveVideoGenState";
 import {
   createInitialRawState,
+  getVirtualProgressDurationMs,
   tickRawState,
 } from "./videoGenRawState";
 
-const DONE_HOLD_MS = 1000;
+const DONE_HOLD_MS = 1400;
 const PROGRESS_TICK_MS = 1000;
 
 /**
@@ -90,13 +91,16 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
     function tick() {
       setRawState((prev) => {
         if (!prev || prev.status !== "generating") return prev;
-        return tickRawState(prev, { taskComplete: taskDoneRef.current });
+        return tickRawState(prev, {
+          taskComplete: taskDoneRef.current,
+          durationMs: getVirtualProgressDurationMs(session?.duration),
+        });
       });
     }
 
     progressTimerRef.current = window.setInterval(tick, PROGRESS_TICK_MS);
     return () => clearProgressTimer();
-  }, [rawState?.status]);
+  }, [rawState?.status, session?.duration]);
 
   useEffect(() => {
     if (rawState?.status !== "done") return undefined;
@@ -148,7 +152,10 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
           taskDoneRef.current = true;
           setRawState((prev) =>
             prev && prev.status === "generating"
-              ? tickRawState(prev, { taskComplete: true })
+              ? tickRawState(prev, {
+                  taskComplete: true,
+                  durationMs: getVirtualProgressDurationMs(session?.duration),
+                })
               : prev,
           );
         } else if (task.status === "failed") {
@@ -165,7 +172,7 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
       mounted = false;
       unsubscribe();
     };
-  }, [rawState?.status, session?.taskId]);
+  }, [rawState?.status, session?.duration, session?.taskId]);
 
   useEffect(
     () => () => {

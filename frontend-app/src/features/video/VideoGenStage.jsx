@@ -5,10 +5,12 @@ import "./videoGenStage.css";
 
 /** @param {{ icon: import('./deriveVideoGenState').StepIconKey }} props */
 function StepIcon({ icon }) {
-  if (icon === "play") {
+  if (icon === "script") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m9 7 8 5-8 5z" fill="currentColor" stroke="none" />
+        <path d="M6 4h8l4 4v12H6z" />
+        <path d="M14 4v4h4" />
+        <path d="M9 12h6M9 16h4" />
       </svg>
     );
   }
@@ -26,6 +28,16 @@ function StepIcon({ icon }) {
         <path d="M9 18V6l9-2v12" />
         <circle cx="6" cy="18" r="3" />
         <circle cx="15" cy="16" r="3" />
+      </svg>
+    );
+  }
+  if (icon === "edit") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 6h16M4 18h16" />
+        <path d="M8 6v12M16 6v12" />
+        <path d="m10 14 4-4" />
+        <path d="m10 10 4 4" />
       </svg>
     );
   }
