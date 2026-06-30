@@ -4,13 +4,13 @@
 export const PROGRESS_RING_RADIUS = 116;
 export const PROGRESS_RING_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RING_RADIUS;
 
-/** @typedef {'play' | 'film' | 'music' | 'check'} StepIconKey */
+/** @typedef {'script' | 'film' | 'music' | 'edit' | 'check'} StepIconKey */
 
 const STEPS = [
   {
     label: "1. 脚本解析",
     activeLabel: "正在解析脚本...",
-    icon: /** @type {StepIconKey} */ ("play"),
+    icon: /** @type {StepIconKey} */ ("script"),
   },
   {
     label: "2. 素材生成",
@@ -25,9 +25,15 @@ const STEPS = [
   {
     label: "4. 后期处理",
     activeLabel: "正在进行后期处理...",
-    icon: /** @type {StepIconKey} */ ("check"),
+    icon: /** @type {StepIconKey} */ ("edit"),
   },
 ];
+
+const STEP_COUNT = STEPS.length;
+const STEP_STARTS = [0, 15, 50, 75];
+const STEP_LINE_START = 10;
+const STEP_LINE_END = 90;
+const STEP_NODE_SPAN = (STEP_LINE_END - STEP_LINE_START) / (STEP_COUNT - 1);
 
 /**
  * @typedef {Object} DerivedStep
@@ -49,7 +55,12 @@ const STEPS = [
  */
 
 export function deriveCurrentStep(progress) {
-  return Math.min(3, Math.floor(progress / 25));
+  const safe = Math.max(0, Math.min(100, progress));
+  if (safe >= 100) return STEP_COUNT - 1;
+  for (let index = STEP_COUNT - 1; index >= 0; index -= 1) {
+    if (safe >= STEP_STARTS[index]) return index;
+  }
+  return 0;
 }
 
 /**
@@ -65,8 +76,8 @@ function deriveStep(index, progress, status) {
     return {
       label: meta.label,
       stateLabel: "已完成",
-      className: "step",
-      icon: meta.icon,
+      className: "step is-done",
+      icon: /** @type {StepIconKey} */ ("check"),
     };
   }
 
@@ -74,8 +85,8 @@ function deriveStep(index, progress, status) {
     return {
       label: meta.label,
       stateLabel: "已完成",
-      className: "step",
-      icon: meta.icon,
+      className: "step is-done",
+      icon: /** @type {StepIconKey} */ ("check"),
     };
   }
 
@@ -98,7 +109,19 @@ function deriveStep(index, progress, status) {
 
 function deriveStepsProgressWidth(progress) {
   const safe = Math.max(0, Math.min(100, progress));
-  return `${Math.max(8, safe * 0.55)}%`;
+  if (safe >= 100) return `${STEP_LINE_END - STEP_LINE_START}%`;
+  if (safe < STEP_STARTS[1]) return "0%";
+
+  const segmentIndex = safe < STEP_STARTS[2] ? 0 : safe < STEP_STARTS[3] ? 1 : 2;
+  const segmentStart = STEP_STARTS[segmentIndex + 1];
+  const segmentEnd =
+    segmentIndex + 2 < STEP_STARTS.length ? STEP_STARTS[segmentIndex + 2] : 100;
+  const stepProgress = (safe - segmentStart) / (segmentEnd - segmentStart);
+  const previousNode = STEP_LINE_START + segmentIndex * STEP_NODE_SPAN;
+  const nextNode = previousNode + STEP_NODE_SPAN;
+  const endpoint = previousNode + (nextNode - previousNode) * stepProgress;
+  const width = endpoint - STEP_LINE_START;
+  return `${Math.max(0, Math.min(STEP_LINE_END - STEP_LINE_START, width))}%`;
 }
 
 function deriveEtaText(_progress, status) {

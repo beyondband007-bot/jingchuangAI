@@ -7,6 +7,7 @@ import BillingPoints from "../../components/BillingPoints.jsx";
 import { CustomSelect } from "../../components/CustomSelect";
 import { chatApi } from "../../api/chatApi";
 import { formatBeijingDateTime } from "../../utils/time";
+import { ModelOptionContent } from "./components/modelOptionMeta.jsx";
 import "./chat.scss";
 
 function isLoggedInUser(authUser) {
@@ -36,6 +37,35 @@ async function writeClipboardText(text) {
 
 const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
 const chatContextRoles = new Set(["system", "user", "assistant"]);
+const collapsedChatModelValues = ["deepseek-v4-pro", "qwen3.7-plus"];
+const expandedChatModelValues = [
+  "qwen3.6-plus",
+  "gpt-5-4",
+  "gpt-5-5",
+  "gemini-3-pro",
+  "claude-opus-4-6",
+  "claude-sonnet-4-6",
+];
+
+function getOrderedChatModels(models = [], isExpanded = false) {
+  const modelMap = new Map(models.map((item) => [item.value, item]));
+  const pickedValues = new Set();
+  const pick = (value) => {
+    const item = modelMap.get(value);
+    if (!item || pickedValues.has(value)) return [];
+    pickedValues.add(value);
+    return [item];
+  };
+
+  const collapsedModels = collapsedChatModelValues.flatMap(pick);
+  if (!isExpanded) {
+    return collapsedModels.length ? collapsedModels : models.slice(0, 2);
+  }
+
+  const expandedModels = expandedChatModelValues.flatMap(pick);
+  const extraModels = models.filter((item) => !pickedValues.has(item.value));
+  return [...collapsedModels, ...expandedModels, ...extraModels];
+}
 
 function toChatContext(messages) {
   return messages
@@ -374,6 +404,7 @@ function ChatComposerBar({
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
   const [notice, setNotice] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
+  const [isModelListExpanded, setIsModelListExpanded] = useState(false);
   const attachmentInputRef = useRef(null);
   const modelMenuRef = useRef(null);
 
@@ -432,6 +463,20 @@ function ChatComposerBar({
       window.removeEventListener("resize", closeOnPageInteraction);
       window.removeEventListener("scroll", closeOnPageInteraction, true);
     };
+  }, [openMenu]);
+
+  const visibleModelOptions = getOrderedChatModels(
+    options.models,
+    isModelListExpanded,
+  );
+  const hasMoreModelOptions =
+    getOrderedChatModels(options.models, true).length >
+    getOrderedChatModels(options.models, false).length;
+
+  useEffect(() => {
+    if (openMenu !== "model") {
+      setIsModelListExpanded(false);
+    }
   }, [openMenu]);
 
   async function handleAttachmentSelect(event) {
@@ -572,11 +617,11 @@ function ChatComposerBar({
                 <ChevronDown size={16} />
               </button>
               <div className="llm-menu">
-                {options.models.map((item) => (
+                {visibleModelOptions.map((item) => (
                   <button
                     type="button"
                     key={item.value}
-                    className={item.value === model ? "is-selected" : ""}
+                    className={`llm-model-option ${item.value === model ? "is-selected" : ""}`}
                     onClick={() => {
                       if (item.value !== model) {
                         onModelSwitchNotice?.();
@@ -585,9 +630,29 @@ function ChatComposerBar({
                       setOpenMenu(null);
                     }}
                   >
-                    {item.label}
+                    <ModelOptionContent
+                      item={item}
+                      selected={item.value === model}
+                    />
                   </button>
                 ))}
+                {hasMoreModelOptions && (
+                  <button
+                    type="button"
+                    className="llm-model-more"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setIsModelListExpanded((current) => !current);
+                    }}
+                  >
+                    <span>{isModelListExpanded ? "收起" : "查看更多"}</span>
+                    <ChevronDown
+                      size={15}
+                      className={isModelListExpanded ? "is-expanded" : ""}
+                    />
+                  </button>
+                )}
               </div>
             </div>
           </div>

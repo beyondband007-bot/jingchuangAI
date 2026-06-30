@@ -3,6 +3,51 @@ import React from "react";
 const iconBase = "/assets/model-icons";
 
 const modelOptionMeta = {
+  "deepseek-v4-pro": {
+    title: "DeepSeek V4 Pro",
+    description: "中文强，带货 / 直播 / 国风文案自然",
+    icon: `${iconBase}/deepseek.svg`,
+  },
+  "qwen3.7-plus": {
+    title: "Qwen 3.7 Plus",
+    description: "均衡性价比，种草文案、标题创意初稿",
+    icon: `${iconBase}/qwen.svg`,
+  },
+  "qwen3.6-plus": {
+    title: "Qwen 3.6 Plus",
+    description: "轻量低成本，批量短文案",
+    icon: `${iconBase}/qwen.svg`,
+  },
+  "gpt-5-4": {
+    title: "GPT Codex 系列",
+    description: "专用写代码、自动化脚本",
+    icon: `${iconBase}/openai.svg`,
+  },
+  "gpt-5-5": {
+    title: "GPT Codex 系列",
+    description: "专用写代码、自动化脚本",
+    icon: `${iconBase}/openai.svg`,
+  },
+  "gemini-3-pro": {
+    title: "Gemini 3 Pro",
+    description: "多模态图文，海外短视频脚本",
+    icon: `${iconBase}/gemini.svg`,
+  },
+  "gemini-3.1-pro-openai": {
+    title: "Gemini 3 Pro",
+    description: "多模态图文，海外短视频脚本",
+    icon: `${iconBase}/gemini.svg`,
+  },
+  "claude-opus-4-6": {
+    title: "Claude Opus 4.6",
+    description: "超长上下文，万字策划、长篇剧本",
+    icon: `${iconBase}/claude.svg`,
+  },
+  "claude-sonnet-4-6": {
+    title: "Claude Sonnet 4.6",
+    description: "长文本流畅，口播稿、品牌软文",
+    icon: `${iconBase}/claude.svg`,
+  },
   gpt_image_2: {
     title: "GPT Image 2",
     description: "全能通用，适配海报、插画、多元素创意画面",

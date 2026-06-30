@@ -410,7 +410,7 @@ section.generation-stage.video-gen-view.video-gen-view-root.is-gen-stage {
   display: grid;
   place-items: center;
   color: #a7abc0;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgb(255, 255, 255);
   border: 1px solid rgba(109, 92, 255, 0.1);
   box-shadow: 0 8px 24px rgba(93, 72, 170, 0.04);
 }
@@ -432,6 +432,13 @@ section.generation-stage.video-gen-view.video-gen-view-root.is-gen-stage {
     0 0 0 6px rgba(118, 98, 255, 0.08),
     0 0 28px rgba(118, 98, 255, 0.4);
   animation: active-pulse 2.4s ease-in-out infinite;
+}
+
+.step.is-done .step-icon {
+  color: #fff;
+  background: linear-gradient(135deg, #7662ff, #8f7bff);
+  box-shadow: 0 8px 24px rgba(93, 72, 170, 0.04);
+  animation: none;
 }
 
 @keyframes active-pulse {
@@ -467,6 +474,11 @@ section.generation-stage.video-gen-view.video-gen-view-root.is-gen-stage {
 .step.active .step-state {
   color: #765fff;
   font-weight: 700;
+}
+
+.step.is-done .step-state {
+  color: #a2a6b9;
+  font-weight: 400;
 }
 
 .tip-card {
