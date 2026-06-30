@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { IconMessage } from "@arco-design/web-react/icon";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, X, Zap, Bot } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, X, Zap, Bot } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { CustomSelect } from "../../components/CustomSelect";
 import { chatApi } from "../../api/chatApi";
@@ -319,7 +319,14 @@ function ChatCanvas({ messages, isSubmitting, error }) {
                     </small>
                   )}
                   {message.role === "assistant" &&
-                    message.status === "completed" &&
+                    message.status === "stopped" && (
+                      <small className="chat-message-status">
+                        已停止生成
+                      </small>
+                    )}
+                  {message.role === "assistant" &&
+                    (message.status === "completed" ||
+                      message.status === "stopped") &&
                     message.content?.trim() && (
                       <ChatCopyActions content={message.content} />
                     )}
@@ -352,7 +359,9 @@ function ChatCanvas({ messages, isSubmitting, error }) {
 function ChatComposerBar({
   options,
   onSubmit,
+  onStop,
   isSubmitting,
+  canInterruptSubmit,
   model,
   onModelChange,
   onModelSwitchNotice,
@@ -371,12 +380,20 @@ function ChatComposerBar({
   const isReady = options.models.length > 0;
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
-  const isInputLocked = !isReady || isSubmitting || isUploadingAttachment;
+  const isTextInputLocked = !isReady || isUploadingAttachment;
+  const isControlsLocked = !isReady || isSubmitting || isUploadingAttachment;
   const canSubmit =
     isReady &&
     (prompt.trim().length > 0 || attachments.length > 0) &&
     model &&
     !isSubmitting &&
+    !isUploadingAttachment;
+  const canInterruptAndSubmit =
+    isReady &&
+    (prompt.trim().length > 0 || attachments.length > 0) &&
+    model &&
+    isSubmitting &&
+    canInterruptSubmit &&
     !isUploadingAttachment;
   const modelLabel = isReady
     ? selectedModel?.label || "DeepSeek V4 Pro"
@@ -458,8 +475,9 @@ function ChatComposerBar({
     setNotice("");
   }
 
-  function submitPrompt() {
-    if (!canSubmit) {
+  function submitPrompt({ interrupt = false } = {}) {
+    const isAllowed = interrupt ? canInterruptAndSubmit : canSubmit;
+    if (!isAllowed) {
       setNotice(
         isUploadingAttachment
           ? "附件上传完成后再发送。"
@@ -473,7 +491,7 @@ function ChatComposerBar({
       model,
       reasoningEffort,
       attachments,
-    });
+    }, { interrupt });
     setPrompt("");
     setAttachments([]);
     setNotice("");
@@ -491,16 +509,20 @@ function ChatComposerBar({
       <textarea
         className="llm-input"
         value={prompt}
-        disabled={isInputLocked}
+        disabled={isTextInputLocked}
         onChange={(event) => {
           setPrompt(event.target.value);
           if (notice) setNotice("");
         }}
         onKeyDown={(event) => {
-          if (isInputLocked) return;
+          if (isTextInputLocked) return;
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            submitPrompt();
+            if (isSubmitting) {
+              if (canInterruptAndSubmit) submitPrompt({ interrupt: true });
+            } else {
+              submitPrompt();
+            }
           }
         }}
         placeholder={
@@ -517,7 +539,7 @@ function ChatComposerBar({
             <button
               className="llm-square"
               type="button"
-              disabled={isInputLocked || attachments.length >= 5}
+              disabled={isControlsLocked || attachments.length >= 5}
               onClick={() => attachmentInputRef.current?.click()}
               aria-label="上传附件"
               title="上传附件"
@@ -539,7 +561,7 @@ function ChatComposerBar({
               <button
                 className="llm-select"
                 type="button"
-                disabled={isInputLocked}
+                disabled={isControlsLocked}
                 onClick={() =>
                   setOpenMenu((current) =>
                     current === "model" ? null : "model",
@@ -575,24 +597,31 @@ function ChatComposerBar({
                 ariaLabel="推理强度"
                 className="llm-reasoning-select"
                 value={reasoningEffort}
-                disabled={isInputLocked}
+                disabled={isControlsLocked}
                 onChange={onReasoningEffortChange}
                 options={visibleReasoningEfforts}
               />
             )}
             <button
-              className="llm-round primary"
+              className={`llm-round primary ${isSubmitting ? "is-stop" : ""}`}
               type="button"
-              disabled={!canSubmit}
-              onClick={submitPrompt}
+              disabled={!isSubmitting && !canSubmit}
+              onClick={isSubmitting ? onStop : submitPrompt}
+              title={isSubmitting ? "停止生成" : "发送"}
               aria-label="发送"
             >
-              {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
-              <BillingPoints
-                feature="chat"
-                payload={{ outputChars: 1000, conversationRound }}
-                fallbackPoints={1}
-              />
+              {isSubmitting ? (
+                <Square size={15} fill="currentColor" />
+              ) : (
+                <>
+                  <Zap size={18} />
+                  <BillingPoints
+                    feature="chat"
+                    payload={{ outputChars: 1000, conversationRound }}
+                    fallbackPoints={1}
+                  />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -602,7 +631,7 @@ function ChatComposerBar({
   );
 }
 
-function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
+function ChatHistoryRail({ conversations, activeConversationId, onSelect, disabled = false }) {
   return (
     <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
       <div className="history-rail-header">
@@ -618,6 +647,7 @@ function ChatHistoryRail({ conversations, activeConversationId, onSelect }) {
               className={`chat-history-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
               key={conversation.id}
               type="button"
+              disabled={disabled}
               onClick={() => onSelect(conversation.id)}
             >
               <IconMessage className="chat-history-message-icon" />
@@ -647,6 +677,8 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [modelSwitchNotice, setModelSwitchNotice] = useState("");
+  const streamAbortControllerRef = useRef(null);
+  const historyAbortControllerRef = useRef(null);
   const isGuest = !isLoggedInUser(authUser);
 
   // 模块由外层保活挂载，此处始终拉取对话配置与历史列表。
@@ -709,11 +741,15 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     model,
     reasoningEffort,
     attachments = [],
-  }) {
+  }, { interrupt = false } = {}) {
     if (isGuest) {
       setSubmitError("请先登录");
       onOpenAuth?.("login");
       return;
+    }
+
+    if (interrupt) {
+      streamAbortControllerRef.current?.abort();
     }
 
     const localId = Date.now();
@@ -735,6 +771,10 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     setSubmitError("");
     setIsSubmitting(true);
 
+    const abortController = new AbortController();
+    streamAbortControllerRef.current = abortController;
+    let activeConversationId = conversationId;
+
     try {
       setMessages([...nextMessages, streamingMessage]);
       const result = await chatApi.streamMessage(
@@ -745,6 +785,11 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
           messages: toChatContext(nextMessages),
         },
         {
+          signal: abortController.signal,
+          onStarted: ({ conversationId: startedConversationId }) => {
+            activeConversationId = startedConversationId;
+            setConversationId(startedConversationId);
+          },
           onDelta: (delta) => {
             setMessages((current) =>
               current.map((message) =>
@@ -771,6 +816,58 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
         .then(setConversations)
         .catch(() => {});
     } catch (error) {
+      if (error.name === "AbortError" || abortController.signal.aborted) {
+        setMessages((current) =>
+          current.flatMap((message) => {
+            if (message.id !== streamingMessage.id) return [message];
+            if (!message.content?.trim()) return [];
+            return [{ ...message, status: "stopped" }];
+          }),
+        );
+        if (
+          activeConversationId &&
+          streamAbortControllerRef.current === abortController
+        ) {
+          try {
+            let historyMessages = [];
+            let isSettled = false;
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+              historyMessages = await chatApi.getMessages(activeConversationId);
+              isSettled = !historyMessages.some(
+                (message) => message.status === "streaming",
+              );
+              if (isSettled) {
+                break;
+              }
+              await new Promise((resolve) => window.setTimeout(resolve, 200));
+            }
+            if (
+              isSettled &&
+              streamAbortControllerRef.current === abortController
+            ) {
+              setMessages(historyMessages);
+            }
+          } catch {
+            // Keep the local stopped message when server reconciliation fails.
+          }
+        }
+        try {
+          if (!activeConversationId) {
+            await new Promise((resolve) => window.setTimeout(resolve, 300));
+          }
+          const [nextConversations, nextCredits] = await Promise.all([
+            chatApi.getConversations(),
+            chatApi.getCredits(),
+          ]);
+          if (streamAbortControllerRef.current === abortController) {
+            setConversations(nextConversations);
+            setCredits(nextCredits);
+          }
+        } catch {
+          // The local stopped state remains usable if metadata refresh fails.
+        }
+        return;
+      }
       setMessages((current) =>
         current.map((message) =>
           message.id === streamingMessage.id
@@ -784,11 +881,19 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
       );
       setSubmitError(error.message || "发送失败");
     } finally {
-      setIsSubmitting(false);
+      if (streamAbortControllerRef.current === abortController) {
+        streamAbortControllerRef.current = null;
+        setIsSubmitting(false);
+      }
     }
   }
 
+  function stopGenerating() {
+    streamAbortControllerRef.current?.abort();
+  }
+
   function startNewConversation() {
+    historyAbortControllerRef.current?.abort();
     setMessages([]);
     setConversationId(null);
     setSubmitError("");
@@ -796,13 +901,27 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
   }
 
   async function selectConversation(id) {
+    if (isSubmitting) return;
+    historyAbortControllerRef.current?.abort();
+    const abortController = new AbortController();
+    historyAbortControllerRef.current = abortController;
     setSubmitError("");
     setConversationId(id);
     try {
-      const historyMessages = await chatApi.getMessages(id);
-      setMessages(historyMessages);
+      const historyMessages = await chatApi.getMessages(id, {
+        signal: abortController.signal,
+      });
+      if (historyAbortControllerRef.current === abortController) {
+        setMessages(historyMessages);
+      }
     } catch (error) {
-      setSubmitError(error.message || "加载历史对话失败");
+      if (error.name !== "AbortError") {
+        setSubmitError(error.message || "加载历史对话失败");
+      }
+    } finally {
+      if (historyAbortControllerRef.current === abortController) {
+        historyAbortControllerRef.current = null;
+      }
     }
   }
 
@@ -811,7 +930,9 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     <ChatComposerBar
       options={options}
       onSubmit={sendChatMessage}
+      onStop={stopGenerating}
       isSubmitting={isSubmitting}
+      canInterruptSubmit={Boolean(conversationId)}
       model={selectedModel}
       onModelChange={setSelectedModel}
       onModelSwitchNotice={showModelSwitchNotice}
@@ -878,6 +999,7 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
             conversations={conversations}
             activeConversationId={conversationId}
             onSelect={selectConversation}
+            disabled={isSubmitting}
           />
         </aside>
       </div>

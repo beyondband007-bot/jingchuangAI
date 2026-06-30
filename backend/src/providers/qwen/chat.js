@@ -12,7 +12,7 @@ function buildReasoningBody(reasoningEffort) {
   };
 }
 
-function getOptions({ model, messages, reasoningEffort, onDelta }) {
+function getOptions({ model, messages, reasoningEffort, onDelta, signal }) {
   return {
     providerName: "qwen",
     apiKey: config.qwen.apiKey,
@@ -22,6 +22,7 @@ function getOptions({ model, messages, reasoningEffort, onDelta }) {
     messages,
     reasoningEffort,
     onDelta,
+    signal,
     supportsImages: true,
     includeStreamUsage: true,
     buildReasoningBody

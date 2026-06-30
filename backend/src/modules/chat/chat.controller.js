@@ -60,18 +60,33 @@ export async function streamChatMessage(req, res) {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders?.();
 
+  const abortController = new AbortController();
+  const abortUpstream = () => {
+    if (!res.writableEnded) abortController.abort();
+  };
+  req.once("aborted", abortUpstream);
+  res.once("close", abortUpstream);
+
   try {
     const result = await streamMessage(req.body, req.user.id, {
+      signal: abortController.signal,
+      onStarted: async ({ conversationId }) => {
+        if (!res.destroyed) writeStreamEvent(res, "started", { conversationId });
+      },
       onDelta: async (delta) => {
-        writeStreamEvent(res, "delta", { delta });
+        if (!res.destroyed) writeStreamEvent(res, "delta", { delta });
       }
     });
-    writeStreamEvent(res, "done", result);
+    if (!res.destroyed) writeStreamEvent(res, "done", result);
   } catch (error) {
-    writeStreamEvent(res, "error", {
-      error: error.message || "stream failed"
-    });
+    if (!abortController.signal.aborted && !res.destroyed) {
+      writeStreamEvent(res, "error", {
+        error: error.message || "stream failed"
+      });
+    }
   } finally {
-    res.end();
+    req.removeListener("aborted", abortUpstream);
+    res.removeListener("close", abortUpstream);
+    if (!res.writableEnded && !res.destroyed) res.end();
   }
 }

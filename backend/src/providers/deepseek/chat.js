@@ -16,7 +16,7 @@ function buildReasoningBody(reasoningEffort) {
   };
 }
 
-function getOptions({ model, messages, reasoningEffort, onDelta }) {
+function getOptions({ model, messages, reasoningEffort, onDelta, signal }) {
   return {
     providerName: "deepseek",
     apiKey: config.deepseek.apiKey,
@@ -26,6 +26,7 @@ function getOptions({ model, messages, reasoningEffort, onDelta }) {
     messages,
     reasoningEffort,
     onDelta,
+    signal,
     supportsImages: false,
     includeStreamUsage: false,
     buildReasoningBody

@@ -992,7 +992,7 @@ async function createTables() {
       cost_points INT NOT NULL DEFAULT 0,
       kie_credits_consumed DECIMAL(12,4) NOT NULL DEFAULT 0,
       usage_json JSON NULL,
-      status ENUM('completed','failed') NOT NULL DEFAULT 'completed',
+      status ENUM('streaming','completed','stopped','failed') NOT NULL DEFAULT 'completed',
       error_message TEXT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_chat_messages_conversation_created (conversation_id, created_at),
@@ -1010,6 +1010,9 @@ async function createTables() {
   if (!chatMessageColumnNames.has("attachments_json")) {
     await pool.query("ALTER TABLE chat_messages ADD COLUMN attachments_json JSON NULL AFTER content");
   }
+  await pool.query(
+    "ALTER TABLE chat_messages MODIFY COLUMN status ENUM('streaming','completed','stopped','failed') NOT NULL DEFAULT 'completed'"
+  );
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS music_tasks (

@@ -98,13 +98,17 @@ function buildRequestBody({
 
 async function requestChatCompletion(options, stream) {
   ensureProviderConfig(options);
+  const timeoutSignal = AbortSignal.timeout(options.timeoutMs);
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, timeoutSignal])
+    : timeoutSignal;
   const response = await fetch(`${options.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${options.apiKey}`,
       "Content-Type": "application/json"
     },
-    signal: AbortSignal.timeout(options.timeoutMs),
+    signal,
     body: JSON.stringify(buildRequestBody({ ...options, stream }))
   });
 
