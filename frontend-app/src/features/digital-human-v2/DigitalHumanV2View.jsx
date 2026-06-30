@@ -356,6 +356,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         volume: 1,
         pitch: 0,
         emotion: getVoiceEmotionValue(voiceEmotion),
+        videoSpec,
       };
       if (!isCloneMode && confirmedPreviewAudio?.audioFileId) {
         createPayload.audioFileId = confirmedPreviewAudio.audioFileId;
