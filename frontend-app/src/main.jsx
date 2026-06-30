@@ -8738,13 +8738,25 @@ function sortVideoTasksByNewest(tasks) {
   });
 }
 
-function VideoPreview({ task }) {
+function VideoPreview({ task, onOpen }) {
   const isProcessing =
     task.status === "pending" || task.status === "processing";
   const isFailed = task.status === "failed";
 
   if (task.video && !isFailed) {
-    return <video src={task.video} controls playsInline preload="metadata" />;
+    return (
+      <button
+        className="video-preview-open"
+        type="button"
+        onClick={() => onOpen?.(task)}
+        aria-label="查看视频详情"
+      >
+        <video src={task.video} muted playsInline preload="metadata" />
+        <span className="video-preview-play">
+          <Play size={18} fill="currentColor" />
+        </span>
+      </button>
+    );
   }
 
   return (
@@ -8766,6 +8778,7 @@ function VideoResultCard({
   onDelete,
   onFavorite,
   onRegenerate,
+  onOpen,
   isExample = false,
 }) {
   const isCompleted = card.status === "completed" && Boolean(card.video);
@@ -8778,7 +8791,7 @@ function VideoResultCard({
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
     >
       <div className="result-preview video-result-preview">
-        <VideoPreview task={card} />
+        <VideoPreview task={card} onOpen={isCompleted ? onOpen : undefined} />
         <span className="video-duration-badge">{card.duration}s</span>
       </div>
       <div className="result-meta">
@@ -8882,7 +8895,7 @@ function VideoInspirationCard({ item, onOpen }) {
   );
 }
 
-function VideoInspirationModal({ item, onClose, onRemix }) {
+function VideoInspirationModal({ item, onClose, onRemix, onFavorite }) {
   if (!item) return null;
   return (
     <FaceminiInspirationModal
@@ -8895,6 +8908,7 @@ function VideoInspirationModal({ item, onClose, onRemix }) {
       }}
       onClose={onClose}
       onRemix={onRemix}
+      onFavorite={onFavorite}
       onReference={(nextItem) => {
         writePendingGenerationSeed({
           target: "image",
@@ -8910,6 +8924,40 @@ function VideoInspirationModal({ item, onClose, onRemix }) {
         window.history.pushState(null, "", "#/image");
         window.dispatchEvent(new HashChangeEvent("hashchange"));
       }}
+    />
+  );
+}
+
+function VideoTaskDetailModal({
+  task,
+  onClose,
+  onRemix,
+  onReference,
+  onFavorite,
+}) {
+  if (!task) return null;
+  return (
+    <FaceminiInspirationModal
+      item={{
+        ...task,
+        id: task.id,
+        title: task.title || "视频生成记录",
+        category: "视频灵感",
+        mediaType: "video",
+        videoSrc: task.video,
+        video: task.video,
+        image: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
+        poster: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
+        ratio: task.ratio || "16:9",
+        model: task.model || task.modelKey || "Seedance 2.0",
+        material: "历史生成",
+        prompt: task.prompt,
+        favorite: Boolean(task.favorite),
+      }}
+      onClose={onClose}
+      onRemix={() => onRemix?.(task)}
+      onReference={() => onReference?.(task)}
+      onFavorite={onFavorite ? () => onFavorite(task) : undefined}
     />
   );
 }
@@ -9149,6 +9197,10 @@ function VideoGenerationView({
   const [pageToastMessage, setPageToastMessage] = useState("");
   const [playingTask, setPlayingTask] = useState(null);
   const [selectedInspiration, setSelectedInspiration] = useState(null);
+  const [selectedHistoryTask, setSelectedHistoryTask] = useState(null);
+  const [favoriteInspirationIds, setFavoriteInspirationIds] = useState(() =>
+    readInspirationFavoriteIds(),
+  );
   const [videoInspirationCategory, setVideoInspirationCategory] =
     useState("all");
   const [composerSeed, setComposerSeed] = useState(null);
@@ -9194,10 +9246,28 @@ function VideoGenerationView({
     if (previousVideoResetSignalRef.current === resetSignal) return;
     previousVideoResetSignalRef.current = resetSignal;
     setPlayingTask(null);
+    setSelectedHistoryTask(null);
     setFilter("inspiration");
     setIsSubmitting(false);
     videoGen.resetToIdle();
   }, [resetSignal]);
+
+  useEffect(() => {
+    function syncFavoriteIds() {
+      setFavoriteInspirationIds(readInspirationFavoriteIds());
+    }
+    window.addEventListener(inspirationFavoritesChangedEvent, syncFavoriteIds);
+    return () =>
+      window.removeEventListener(
+        inspirationFavoritesChangedEvent,
+        syncFavoriteIds,
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedInUser(authUser)) return;
+    loadInspirationFavoriteIds().then(setFavoriteInspirationIds).catch(() => {});
+  }, [authUser?.id]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -9231,6 +9301,11 @@ function VideoGenerationView({
       taskStatusSignatureRef.current = nextSignature;
       videoApi.setHasRunningTasks(hasRunningTasks(runningValue));
       setCards(value);
+      setSelectedHistoryTask((current) => {
+        if (!current?.id) return current;
+        const nextTask = value.find((item) => item.id === current.id);
+        return nextTask || current;
+      });
       if (didStatusChange) {
         videoApi
           .refreshCredits()
@@ -9351,6 +9426,63 @@ function VideoGenerationView({
       current.map((item) => (item.id === id ? updated : item)),
     );
     setPlayingTask((current) => (current?.id === id ? updated : current));
+    setSelectedHistoryTask((current) =>
+      current?.id === id ? updated : current,
+    );
+    return Boolean(updated?.favorite);
+  }
+
+  async function toggleVideoInspirationFavorite(item) {
+    if (!isLoggedInUser(authUser)) {
+      requestLoginForGeneration();
+      throw new Error("请先登录");
+    }
+    const nextValue = await toggleInspirationFavoriteId(
+      getInspirationFavoriteId(item),
+    );
+    const nextIds = readInspirationFavoriteIds();
+    setFavoriteInspirationIds(nextIds);
+    setSelectedInspiration((current) =>
+      current && getInspirationFavoriteId(current) === getInspirationFavoriteId(item)
+        ? { ...current, favorite: nextValue }
+        : current,
+    );
+    return nextValue;
+  }
+
+  function referenceVideoTask(task) {
+    const referenceUrl =
+      task?.poster ||
+      task?.cover ||
+      task?.thumbnail ||
+      task?.referenceImageUrl ||
+      "";
+    if (!referenceUrl) {
+      showVideoPageToast("该历史记录暂无可用参考图");
+      return;
+    }
+    writePendingGenerationSeed({
+      target: "image",
+      referenceImage: {
+        url: referenceUrl,
+        originalName: `${task?.title || "视频封面"}.png`,
+        size: 0,
+        mimeType: "image/png",
+      },
+      notice: "已添加视频封面作为参考图",
+    });
+    setSelectedHistoryTask(null);
+    window.history.pushState(null, "", "#/image");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+
+  function remixVideoTask(task) {
+    if (!task) return;
+    useVideoInspiration({
+      id: task.id || `video-history-${Date.now()}`,
+      prompt: task.prompt || "",
+    });
+    setSelectedHistoryTask(null);
   }
 
   async function regenerateTask(id) {
@@ -9598,6 +9730,7 @@ function VideoGenerationView({
               onDelete={() => {}}
               onFavorite={() => {}}
               onRegenerate={() => {}}
+              onOpen={() => {}}
             />
           )}
           {sortedCards.length ? (
@@ -9608,6 +9741,7 @@ function VideoGenerationView({
                 onDelete={deleteTask}
                 onFavorite={toggleFavorite}
                 onRegenerate={requestRegenerate}
+                onOpen={setSelectedHistoryTask}
               />
             ))
           ) : (
@@ -9621,9 +9755,26 @@ function VideoGenerationView({
       ) : null}
       <BackToTopButton />
       <VideoInspirationModal
-        item={selectedInspiration}
+        item={
+          selectedInspiration
+            ? {
+                ...selectedInspiration,
+                favorite: favoriteInspirationIds.has(
+                  getInspirationFavoriteId(selectedInspiration),
+                ),
+              }
+            : null
+        }
         onClose={() => setSelectedInspiration(null)}
         onRemix={useVideoInspiration}
+        onFavorite={toggleVideoInspirationFavorite}
+      />
+      <VideoTaskDetailModal
+        task={selectedHistoryTask}
+        onClose={() => setSelectedHistoryTask(null)}
+        onRemix={remixVideoTask}
+        onReference={referenceVideoTask}
+        onFavorite={(task) => toggleFavorite(task.id)}
       />
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
