@@ -85,10 +85,10 @@
 
 .vgw-header h1 {
   margin: 0;
-  font-size: clamp(26px, 4vw, 38px);
+  font-size: clamp(20px, 3.6vw, 32px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .vgw-header p {
@@ -776,7 +776,7 @@
 /* Action bar */
 .vgw-action-bar {
   position: fixed;
-  left: 0;
+  left: 200px;
   right: 0;
   bottom: 0;
   z-index: 20;

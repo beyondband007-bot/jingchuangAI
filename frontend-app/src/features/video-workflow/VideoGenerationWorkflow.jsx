@@ -609,7 +609,7 @@ export function VideoGenerationWorkflow({
       </div>
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计时长</span>
-        <strong>1–3 分钟</strong>
+        <strong>1-3 分钟</strong>
       </div>
     </>
   );

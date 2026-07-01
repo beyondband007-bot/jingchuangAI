@@ -1,17 +1,17 @@
 import React from "react";
-import { Select } from "@arco-design/web-react";
 import { Check, Loader2, Volume2, Zap } from "lucide-react";
+import { CustomSelect } from "../../../components/CustomSelect";
 import { VIDEO_SPEC_OPTIONS } from "../utils";
 
 export function VideoSpecField({ videoSpec, onVideoSpecChange }) {
   return (
     <div className="dhv2-video-spec">
-      <Select
-        className="dhv2-spec-select"
+      <CustomSelect
+        className="dhv2-spec-select custom-select-theme-dh"
         value={videoSpec}
         onChange={onVideoSpecChange}
         options={VIDEO_SPEC_OPTIONS}
-        aria-label="成片规格"
+        ariaLabel="成片规格"
       />
     </div>
   );
