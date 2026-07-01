@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { ImagePlus, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
-import { voiceApi } from "../voice/voiceApi";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
@@ -353,7 +352,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         if (cloneAudio.cachedVoice?.id) {
           resolvedVoiceId = cloneAudio.cachedVoice.id;
         } else {
-          const cloneResult = await voiceApi.createClone({
+          const cloneResult = await digitalHumanApi.createVoiceClone({
             cloneAudioFileId: cloneAudio.fileId,
             audioHash: cloneAudio.audioHash,
             durationMs: cloneAudio.durationMs,

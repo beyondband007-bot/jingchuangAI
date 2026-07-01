@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { normalizeUploadOriginalName } from "../../shared/fileName.js";
 import {
   createVoiceClone,
   getVoiceConfig,
@@ -20,6 +21,7 @@ const upload = multer({
 function uploadSingle(req, res, next) {
   upload.single("audio")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }

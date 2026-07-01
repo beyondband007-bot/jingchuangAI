@@ -1102,8 +1102,10 @@ async function createTables() {
       source_size INT NOT NULL DEFAULT 0,
       duration_ms INT NOT NULL DEFAULT 0,
       demo_audio MEDIUMTEXT NULL,
-      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      status ENUM('processing','completed','failed','expired') NOT NULL DEFAULT 'completed',
       error_message TEXT NULL,
+      provider_activated_at TIMESTAMP NULL,
+      last_used_at TIMESTAMP NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       UNIQUE KEY uniq_voice_clone_user_hash (user_id, audio_sha256),
@@ -1112,6 +1114,21 @@ async function createTables() {
       CONSTRAINT fk_voice_clone_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [voiceCloneColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'voice_clone_assets'`,
+    [config.db.database]
+  );
+  const voiceCloneColumnNames = new Set(voiceCloneColumns.map((column) => column.COLUMN_NAME));
+  await pool.query("ALTER TABLE voice_clone_assets MODIFY COLUMN status ENUM('processing','completed','failed','expired') NOT NULL DEFAULT 'completed'");
+  if (!voiceCloneColumnNames.has("provider_activated_at")) {
+    await pool.query("ALTER TABLE voice_clone_assets ADD COLUMN provider_activated_at TIMESTAMP NULL AFTER error_message");
+  }
+  if (!voiceCloneColumnNames.has("last_used_at")) {
+    await pool.query("ALTER TABLE voice_clone_assets ADD COLUMN last_used_at TIMESTAMP NULL AFTER provider_activated_at");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_convert_tasks (

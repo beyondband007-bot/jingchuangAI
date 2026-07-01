@@ -267,7 +267,8 @@ export async function createClone(payload, userId) {
       return {
         voice: mapSavedVoice(cachedVoice),
         demoAudio: cachedVoice.demoAudio || "",
-        reused: true
+        reused: true,
+        points: 0
       };
     }
 
@@ -283,34 +284,34 @@ export async function createClone(payload, userId) {
         durationMs: normalizeDurationMs(payload.durationMs)
       });
     } catch (error) {
-      if (error?.code === "ER_DUP_ENTRY") {
-        const existing = await findVoiceCloneAssetByHash({ userId, audioHash });
-        if (existing?.status === "completed") {
-          return {
-            voice: mapSavedVoice(existing),
-            demoAudio: existing.demoAudio || "",
-            reused: true
-          };
-        }
-        if (existing?.status === "failed") {
-          const retryStarted = await retryFailedVoiceCloneAssetProcessing({
-            userId,
-            audioHash,
-            voiceId: normalizeVoiceId(payload.voiceId || payload.voice_id || `VoiceClone_${Date.now()}_${randomUUID().slice(0, 8)}`),
-            voiceName: name,
-            sourceFileName: payload.sourceFileName || payload.localName || "",
-            sourceMimeType: payload.sourceMimeType || payload.mimeType || "",
-            sourceSize: Number(payload.sourceSize || payload.size || 0),
-            durationMs: normalizeDurationMs(payload.durationMs)
-          });
-          if (!retryStarted) {
-            throw createHttpError("voice clone is already processing", 409);
-          }
-        } else {
+      if (error?.code !== "ER_DUP_ENTRY") throw error;
+
+      const existing = await findVoiceCloneAssetByHash({ userId, audioHash });
+      if (existing?.status === "completed") {
+        return {
+          voice: mapSavedVoice(existing),
+          demoAudio: existing.demoAudio || "",
+          reused: true,
+          points: 0
+        };
+      }
+      if (existing?.status === "failed" || existing?.status === "expired") {
+        const retryStarted = await retryFailedVoiceCloneAssetProcessing({
+          userId,
+          audioHash,
+          voiceId: normalizeVoiceId(payload.voiceId || payload.voice_id || `VoiceClone_${Date.now()}_${randomUUID().slice(0, 8)}`),
+          voiceName: name,
+          sourceFileName: payload.sourceFileName || payload.localName || "",
+          sourceMimeType: payload.sourceMimeType || payload.mimeType || "",
+          sourceSize: Number(payload.sourceSize || payload.size || 0),
+          durationMs: normalizeDurationMs(payload.durationMs)
+        });
+        if (!retryStarted) {
           throw createHttpError("voice clone is already processing", 409);
         }
+      } else {
+        throw createHttpError("voice clone is already processing", 409);
       }
-      throw error;
     }
   }
 
@@ -348,7 +349,11 @@ export async function createClone(payload, userId) {
       });
     }
 
-    return result;
+    return {
+      ...result,
+      reused: false,
+      points: clonePoints
+    };
   } catch (error) {
     await failVoiceCloneAsset({ userId, audioHash, errorMessage: error.message });
     if (clonePoints > 0) {

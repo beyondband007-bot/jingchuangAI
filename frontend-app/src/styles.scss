@@ -17364,9 +17364,9 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 }
 
 .replicate-view .replicate-hero-empty h1 {
-  margin: 0 0 12px !important;
+  margin: 0 0 6px !important;
   color: #202027 !important;
-  font-size: 34px !important;
+  font-size: 32px !important;
   font-weight: 500 !important;
   line-height: 1.2 !important;
 }
@@ -17500,7 +17500,7 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
 
 .replicate-view .replicate-result-prompt textarea {
   min-height: 140px !important;
-  font-size: 13px !important;
+  font-size: 16px !important;
   border-width: 1px !important;
   border-color: #d9d6e2 !important;
   border-radius: 12px !important;
@@ -19246,7 +19246,7 @@ body {
 .fm-workbench-topbar h1 {
   margin: 0;
   color: #555561;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -19293,9 +19293,7 @@ body {
 }
 
 .fm-workbench-topbar .fm-video-workflow-tabs button {
-  min-height: 72px;
-  padding: 0 2px;
-  border-bottom: 3px solid transparent;
+  min-height: 38px;
   border-radius: 0;
   font-size: 18px;
   cursor: pointer;
@@ -19563,7 +19561,7 @@ body {
 .feature-main .image-filter-tabs {
   position: fixed !important;
   top: 0 !important;
-  left: calc(var(--feature-sidebar-width) + 152px) !important;
+  left: calc(var(--feature-sidebar-width) + 132px) !important;
   right: 430px !important;
   z-index: 250 !important;
   width: auto !important;
@@ -19586,7 +19584,7 @@ body {
 .feature-main .image-filter-tabs button {
   height: 38px !important;
   flex: 0 0 auto !important;
-  padding: 0 22px !important;
+  padding: 0 12px !important;
   border: 0 !important;
   border-radius: 999px !important;
   background: transparent !important;
@@ -19598,7 +19596,6 @@ body {
 
 .feature-main .image-filter-tabs button.selected {
   color: var(--fm-brand) !important;
-  border: 1px solid var(--fm-brand) !important;
   background: #fff !important;
 }
 
@@ -19884,7 +19881,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   padding: 0;
   background: transparent;
   color: #c1bfcc;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -19916,7 +19913,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border: 0;
   border-radius: 0;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0;
@@ -21843,7 +21840,10 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 .fm-invite-hero {
-  background: url("/assets/facemini/prototypes/invite-bg.png") no-repeat;
+  background: image-set(
+    url("/assets/facemini/prototypes/invite-bg.webp") type("image/webp"),
+    url("/assets/facemini/prototypes/invite-bg.jpg") type("image/jpeg")
+  ) no-repeat;
   background-size: cover;
 }
 
@@ -22203,17 +22203,6 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 
 .fm-article-top-tabs button.is-active {
   position: relative;
-}
-
-.fm-article-top-tabs button.is-active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -22px;
-  height: 3px;
-  border-radius: 999px;
-  background: #6b7cff;
 }
 
 .fm-workbench-topbar .fm-article-nav-tabs button,
@@ -24435,7 +24424,7 @@ textarea::placeholder {
 .video-dub-view-root .video-dub-hero-empty h1 {
   margin: 0 0 10px;
   color: #15131b !important;
-  font-size: 38px;
+  font-size: 32px;
   font-weight: 500;
   line-height: 1.08;
 }
@@ -24447,7 +24436,7 @@ textarea::placeholder {
 .video-dub-view-root .video-dub-hero-empty p {
   margin: 0;
   color: #9994ad !important;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -24481,7 +24470,7 @@ textarea::placeholder {
 .video-dub-floating-composer {
   background: var(--audio-panel) !important;
   border: 1px solid var(--audio-border) !important;
-  border-radius: 26px !important;
+  border-radius: 24px !important;
   box-shadow: none !important;
 }
 
@@ -25006,7 +24995,7 @@ textarea::placeholder {
   width: min(640px, 100%) !important;
   max-width: none !important;
   margin: 0 auto !important;
-  padding: 22px !important;
+  padding: 16px !important;
   backdrop-filter: none !important;
 }
 
@@ -25023,8 +25012,8 @@ textarea::placeholder {
 
 .voice-composer-footer,
 .video-dub-floating-composer .voice-composer-footer {
-  min-height: 52px !important;
-  margin-top: 14px !important;
+  min-height: 42px !important;
+  margin-top: 16px !important;
   padding: 0 !important;
   border-top: 0 !important;
 }
@@ -32436,15 +32425,15 @@ section.image-gen-view.is-generation-workbench .image-workbench-main {
   align-items: center;
   gap: 12px;
   margin: 0 0 10px;
-  font-size: 40px;
+  font-size: 32px;
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.02em;
 }
 
 .music-ref-hero h1 svg {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   color: #6b5ce7;
 }
 
@@ -36934,5 +36923,773 @@ section.video-gen-view-root
   .voice-convert-view-root .voice-hero-empty,
   .voice-convert-view-root .voice-conversion-workbench {
     zoom: 0.84;
+  }
+}
+
+/* Shared marketing-tool upload panel: watermark / cutout / enhance / reverse prompt. */
+.watermark-canvas:not(.is-list):not(.has-active-task),
+.remove-bg-canvas:not(.is-list):not(.has-active-task),
+.enhance-canvas:not(.is-list):not(.has-active-task),
+.replicate-view .replicate-canvas:not(.is-recent) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 24px 90px !important;
+}
+
+.marketing-tool-panel {
+  display: grid !important;
+  width: min(640px, calc(100% - 96px)) !important;
+  gap: 18px !important;
+  margin: 0 !important;
+}
+
+.marketing-tool-panel .watermark-hero-empty,
+.marketing-tool-panel .remove-bg-hero-empty,
+.marketing-tool-panel .enhance-hero-empty,
+.marketing-tool-panel .replicate-hero-empty {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.marketing-tool-panel h1 {
+  display: block !important;
+  width: auto !important;
+  margin: 0 0 6px !important;
+  color: #202027 !important;
+  font-size: 32px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+}
+
+.marketing-tool-panel p {
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  color: #9894aa !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+}
+
+.marketing-tool-panel .marketing-result-footer p {
+  font-size: 12px !important;
+}
+
+.marketing-tool-panel .watermark-composer,
+.marketing-tool-panel .remove-bg-composer,
+.marketing-tool-panel .enhance-composer,
+.marketing-tool-panel .replicate-floating-composer {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  transform: none !important;
+}
+
+.marketing-tool-panel .watermark-mode-tabs,
+.marketing-tool-panel .enhance-mode-tabs,
+.marketing-tool-panel .replicate-mode-toggle {
+  position: relative !important;
+  top: -55px !important;
+  justify-self: start !important;
+  display: inline-grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 120px !important;
+  width: auto !important;
+  height: 60px !important;
+  align-items: end !important;
+  gap: 0 !important;
+  margin-bottom: -40px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.marketing-tool-panel .watermark-mode-tabs button,
+.marketing-tool-panel .enhance-mode-tabs button,
+.marketing-tool-panel .replicate-mode-toggle button {
+  position: relative !important;
+  z-index: 0 !important;
+  min-width: 164px !important;
+  min-height: 60px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 0 8px 16px 0 !important;
+  color: #8f8aa0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.marketing-tool-panel .watermark-mode-tabs button + button,
+.marketing-tool-panel .enhance-mode-tabs button + button,
+.marketing-tool-panel .replicate-mode-toggle button + button {
+  margin-left: -15px !important;
+}
+
+.marketing-tool-panel .watermark-mode-tabs button::before,
+.marketing-tool-panel .enhance-mode-tabs button::before,
+.marketing-tool-panel .replicate-mode-toggle button::before {
+  content: "";
+  position: absolute;
+  inset: 0 -30px 0 -16px !important;
+  z-index: -1;
+  background: center bottom / 100% 100% no-repeat
+    url("/assets/marketing/tab_01-02.svg");
+}
+
+.marketing-tool-panel .watermark-mode-tabs button:first-child::before,
+.marketing-tool-panel .enhance-mode-tabs button:first-child::before,
+.marketing-tool-panel .replicate-mode-toggle button:first-child::before {
+  background-image: url("/assets/marketing/tab_01-01.svg");
+}
+
+.marketing-tool-panel .watermark-mode-tabs .is-active,
+.marketing-tool-panel .enhance-mode-tabs .is-active,
+.marketing-tool-panel .replicate-mode-toggle button.active {
+  z-index: 2 !important;
+  color: #623bff !important;
+}
+
+.marketing-tool-panel .watermark-mode-tabs button > svg,
+.marketing-tool-panel .enhance-mode-tabs button > svg,
+.marketing-tool-panel .replicate-mode-toggle button > svg {
+  display: block !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 auto !important;
+}
+
+.marketing-tool-panel .watermark-upload-slot,
+.marketing-tool-panel .enhance-upload-slot,
+.marketing-tool-panel .replicate-upload-slot {
+  position: relative !important;
+  z-index: 2 !important;
+  min-height: 214px !important;
+  background: #f5f3fb !important;
+  border: 1px dashed #c9c5d6 !important;
+  border-radius: 10px !important;
+}
+
+.marketing-tool-panel .marketing-result-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  transform: none !important;
+}
+
+.marketing-tool-panel .marketing-result-card::before,
+.marketing-tool-panel .marketing-result-card::after {
+  content: none !important;
+}
+
+/* Final shared selectors for marketing-tool internals. Page classes only tweak local details. */
+.marketing-tool-panel .marketing-tool-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  background: transparent !important;
+  border: 0 !important;
+  transform: none !important;
+}
+
+.marketing-tool-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #ffffff !important;
+  border: 1px solid #d9d6e2 !important;
+  border-radius: 24px !important;
+  pointer-events: none !important;
+}
+
+.marketing-tool-card > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs {
+  position: relative !important;
+  top: -55px !important;
+  justify-self: start !important;
+  display: inline-grid !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 120px !important;
+  width: auto !important;
+  height: 60px !important;
+  align-items: end !important;
+  gap: 0 !important;
+  margin-bottom: -40px !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs button {
+  position: relative !important;
+  z-index: 0 !important;
+  min-width: 164px !important;
+  min-height: 60px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 0 8px 16px 0 !important;
+  color: #8f8aa0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs button + button {
+  margin-left: -15px !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs button::before {
+  content: "";
+  display: block !important;
+  position: absolute;
+  inset: 0 -30px 0 -16px !important;
+  z-index: -1;
+  background: center bottom / 100% 100% no-repeat
+    url("/assets/marketing/tab_01-02.svg");
+  pointer-events: none !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs button:first-child::before {
+  background-image: url("/assets/marketing/tab_01-01.svg");
+}
+
+.marketing-tool-panel .marketing-tool-tabs .is-active,
+.marketing-tool-panel .marketing-tool-tabs button.active {
+  z-index: 2 !important;
+  color: #623bff !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.marketing-tool-panel .marketing-tool-tabs button > svg {
+  display: block !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 auto !important;
+}
+
+.marketing-tool-panel .marketing-tool-upload {
+  position: relative !important;
+  z-index: 2 !important;
+  min-height: 214px !important;
+  background: #f5f3fb !important;
+  border: 1px dashed #c9c5d6 !important;
+  border-radius: 10px !important;
+}
+
+.marketing-tool-panel .marketing-tool-footer {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 54px !important;
+  padding-top: 18px !important;
+  border-top: 0 !important;
+  z-index: 2;
+}
+
+/* Highest-priority shared layout for marketing tool panels.
+   Keeps legacy page-specific rules from changing the common geometry. */
+.marketing-tool-panel.watermark-home-panel,
+.marketing-tool-panel.remove-bg-home-panel,
+.marketing-tool-panel.enhance-home-panel,
+.marketing-tool-panel.replicate-home-stack {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  align-content: center !important;
+  justify-content: stretch !important;
+  width: min(640px, calc(100% - 96px)) !important;
+  max-width: none !important;
+  gap: 54px !important;
+  margin: 0 !important;
+}
+
+.marketing-tool-panel:has(.marketing-complete-state),
+.marketing-tool-panel:has(.marketing-result-card) {
+  gap: 18px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel h1,
+.marketing-tool-panel.remove-bg-home-panel h1,
+.marketing-tool-panel.enhance-home-panel h1,
+.marketing-tool-panel.replicate-home-stack h1 {
+  display: block !important;
+  width: auto !important;
+  margin: 0 0 6px !important;
+  color: #202027 !important;
+  font-size: 32px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+}
+
+.marketing-tool-panel.watermark-home-panel p,
+.marketing-tool-panel.remove-bg-home-panel p,
+.marketing-tool-panel.enhance-home-panel p,
+.marketing-tool-panel.replicate-home-stack p {
+  max-width: 760px !important;
+  margin: 0 auto !important;
+  color: #9894aa !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+}
+
+.marketing-tool-panel.remove-bg-home-panel {
+  gap: 18px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-card,
+.marketing-tool-panel.remove-bg-home-panel .marketing-tool-card,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-card,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-card {
+  position: relative !important;
+  inset: auto !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: 0 !important;
+  padding: 16px 16px 16px !important;
+  background: transparent !important;
+  border: 0 !important;
+  transform: none !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-card::after,
+.marketing-tool-panel.remove-bg-home-panel .marketing-tool-card::after,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-card::after,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-card::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #ffffff !important;
+  border: 1px solid #d9d6e2 !important;
+  border-radius: 24px !important;
+  pointer-events: none !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-card > *,
+.marketing-tool-panel.remove-bg-home-panel .marketing-tool-card > *,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-card > *,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-card > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs {
+  position: relative !important;
+  top: -55px !important;
+  left: -41px !important;
+  z-index: 1 !important;
+  justify-self: start !important;
+  display: inline-grid !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: column !important;
+  grid-auto-columns: 120px !important;
+  width: auto !important;
+  height: 60px !important;
+  gap: 0 !important;
+  margin: 0 0 -56px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs button,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs button {
+  min-width: 164px !important;
+  min-height: 60px !important;
+  margin: 0 !important;
+  padding: 0 8px 16px 0 !important;
+  color: #8f8aa0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+  font-size: 14px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button {
+  font-size: 12px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button + button,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs button + button,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs button + button {
+  margin-left: -16px !important;
+  padding: 0 0px 16px 12px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button::before,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs button::before,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs button::before {
+  display: block !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs .is-active,
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button.active,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs .is-active,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs button.active,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs .is-active,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs button.active {
+  z-index: 2 !important;
+  color: #623bff !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs .is-active svg,
+.marketing-tool-panel.watermark-home-panel .marketing-tool-tabs button.active svg,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs .is-active svg,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-tabs button.active svg,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs .is-active svg,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-tabs button.active svg {
+  color: #623bff !important;
+  stroke: currentColor !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-upload,
+.marketing-tool-panel.remove-bg-home-panel .marketing-tool-upload,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-upload,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-upload,
+.marketing-tool-panel.watermark-home-panel .arco-upload,
+.marketing-tool-panel.remove-bg-home-panel .arco-upload,
+.marketing-tool-panel.enhance-home-panel .arco-upload {
+  width: 100% !important;
+  min-height: 214px !important;
+}
+
+.marketing-tool-panel.watermark-home-panel .marketing-tool-footer,
+.marketing-tool-panel.remove-bg-home-panel .marketing-tool-footer,
+.marketing-tool-panel.enhance-home-panel .marketing-tool-footer,
+.marketing-tool-panel.replicate-home-stack .marketing-tool-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 60px !important;
+  padding-top: 16px !important;
+}
+
+/* Shared marketing-tool runtime states: processing and completed. */
+.watermark-canvas.has-active-task,
+.remove-bg-canvas.has-active-task,
+.enhance-canvas.has-active-task {
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  padding: 24px 24px 90px !important;
+}
+
+.marketing-process-state {
+  display: grid !important;
+  justify-items: center !important;
+  align-content: center !important;
+  gap: 16px !important;
+  width: min(420px, calc(100% - 48px)) !important;
+  min-height: 220px !important;
+  margin: 0 auto !important;
+  padding: 16px !important;
+  color: #202027 !important;
+  text-align: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.marketing-process-state .watermark-center-spinner {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  color: #8b6bff !important;
+  background: #f2efff !important;
+  border-radius: 8px !important;
+}
+
+.marketing-process-state .watermark-center-spinner svg {
+  animation: spin 1s linear infinite;
+}
+
+.marketing-process-state strong {
+  margin: 0 !important;
+  color: #123b66 !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+}
+
+.marketing-process-state p {
+  margin: 0 !important;
+  color: #5f7d9a !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.6 !important;
+}
+
+.marketing-process-progress,
+.marketing-process-state .watermark-center-progress,
+.marketing-process-state .remove-bg-center-progress,
+.marketing-process-state .enhance-center-progress {
+  width: min(360px, 80vw) !important;
+  height: 8px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 999px !important;
+}
+
+.marketing-process-progress i,
+.marketing-process-state .watermark-center-progress i,
+.marketing-process-state .remove-bg-center-progress i,
+.marketing-process-state .enhance-center-progress i {
+  display: block !important;
+  height: 100% !important;
+  background: var(--brand-gradient) !important;
+  border-radius: inherit !important;
+}
+
+.marketing-process-state small {
+  margin: 0 !important;
+  color: #6f8dac !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+}
+
+.marketing-complete-state,
+.watermark-center-state.marketing-result-card,
+.remove-bg-center-state.marketing-result-card,
+.enhance-center-state.marketing-result-card {
+  display: grid !important;
+  width: 640px !important;
+  gap: 16px !important;
+  padding: 16px !important;
+  color: #282532 !important;
+  background: #ffffff !important;
+  border: 1px solid #d9d6e2 !important;
+  border-radius: 24px !important;
+  box-shadow: 0 18px 42px rgba(22, 20, 45, 0.08) !important;
+}
+
+.marketing-complete-state .marketing-result-head,
+.marketing-result-card .marketing-result-head,
+.replicate-result-composer .replicate-result-success {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.marketing-complete-state .marketing-result-head span,
+.marketing-result-card .marketing-result-head span,
+.replicate-result-composer .replicate-result-success-copy strong {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin: 0 !important;
+  color: #623bff !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1.4 !important;
+}
+
+.marketing-complete-state .marketing-result-head p,
+.marketing-result-card .marketing-result-head p,
+.replicate-result-composer .replicate-result-success-copy p {
+  margin: 0 !important;
+  color: #aaa6b8 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.5 !important;
+}
+
+.marketing-complete-state .marketing-result-compare,
+.marketing-result-card .marketing-result-compare {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.marketing-complete-state .marketing-result-footer,
+.marketing-result-card .marketing-result-footer,
+.replicate-result-composer .replicate-result-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+}
+
+.marketing-complete-state .marketing-result-actions,
+.marketing-result-card .marketing-result-actions,
+.replicate-result-composer .marketing-result-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 16px !important;
+}
+
+.marketing-complete-state .marketing-result-footer > p,
+.marketing-result-card .marketing-result-footer > p,
+.marketing-complete-state .replicate-result-footer > p {
+  margin: 0 !important;
+  color: #aaa6b8 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.55 !important;
+}
+
+.marketing-complete-state.replicate-result-composer.is-completed {
+  width: 640px !important;
+  gap: 16px !important;
+  padding: 16px !important;
+}
+
+.marketing-complete-state .replicate-result-body {
+  display: grid !important;
+  grid-template-columns: 176px minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+.marketing-complete-state .replicate-result-source {
+  display: grid !important;
+  place-items: center !important;
+  min-width: 0 !important;
+  min-height: 188px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  color: #8f8aa2 !important;
+  background: #f3f0fa !important;
+  border: 1px solid #e2ddec !important;
+  border-radius: 16px !important;
+}
+
+.marketing-complete-state .replicate-result-source img,
+.marketing-complete-state .replicate-result-source video {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.marketing-complete-state .replicate-result-source span {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  color: #ffffff !important;
+  background: #c8c2d7 !important;
+  border-radius: 999px !important;
+}
+
+.marketing-complete-state .replicate-result-prompt {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.marketing-complete-state .replicate-result-prompt textarea {
+  min-height: 188px !important;
+  resize: none !important;
+}
+
+.marketing-complete-state .replicate-result-footer {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+}
+
+.marketing-complete-state .replicate-result-footer-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+.marketing-complete-state.replicate-result-composer .marketing-result-actions {
+  justify-content: flex-end !important;
+  gap: 16px !important;
+}
+
+.marketing-complete-state.replicate-result-composer .marketing-result-actions .is-primary {
+  min-width: 132px !important;
+}
+
+.marketing-complete-state .replicate-result-credits,
+.marketing-complete-state .replicate-result-success,
+.marketing-complete-state.replicate-result-composer .replicate-mode-toggle {
+  display: none !important;
+}
+
+@media (max-width: 760px) {
+  .marketing-complete-state.replicate-result-composer.is-completed {
+    width: 100% !important;
+  }
+
+  .marketing-complete-state .replicate-result-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .marketing-complete-state .replicate-result-footer {
+    grid-template-columns: 1fr !important;
+  }
+
+  .marketing-complete-state .replicate-result-footer-actions,
+  .marketing-complete-state.replicate-result-composer .marketing-result-actions {
+    justify-content: stretch !important;
+  }
+
+  .marketing-complete-state.replicate-result-composer .marketing-result-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
   }
 }

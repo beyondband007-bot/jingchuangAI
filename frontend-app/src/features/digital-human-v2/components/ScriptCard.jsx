@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { Loader2, Pause, Play, RotateCcw, Sparkles, Upload } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
-import { voiceApi } from "../../voice/voiceApi";
 import {
   SCRIPT_MAX_LENGTH,
   VOICE_UNAVAILABLE_HINT,
@@ -113,7 +112,7 @@ export function ScriptCard({
         Message.warning("参考音频时长需在 10–15 秒之间");
         return;
       }
-      const uploaded = await voiceApi.uploadCloneAudio(file, durationMs);
+      const uploaded = await digitalHumanApi.uploadVoiceCloneAudio(file, durationMs);
       if (uploaded.cachedVoice) {
         onCloneAudioChange?.({
           fileId: uploaded.cachedVoice.id,

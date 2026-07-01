@@ -75,14 +75,15 @@ export const ENABLED_DIGITAL_HUMAN_VOICE_IDS = [
 export const VOICE_UNAVAILABLE_HINT = "当前音色暂未开放";
 
 export function isDigitalHumanVoiceEnabled(voiceId) {
-  return ENABLED_DIGITAL_HUMAN_VOICE_IDS.includes(String(voiceId || ""));
+  const id = String(voiceId || "");
+  return ENABLED_DIGITAL_HUMAN_VOICE_IDS.includes(id) || id.startsWith("VoiceClone_");
 }
 
 export function pickEnabledVoiceId(voices = [], preferredId = "") {
   if (preferredId && isDigitalHumanVoiceEnabled(preferredId)) {
     return preferredId;
   }
-  const enabledVoice = voices.find((voice) => isDigitalHumanVoiceEnabled(voice.id));
+  const enabledVoice = voices.find((voice) => isDigitalHumanVoiceEnabled(voice.id) || voice.source === "voice-clone");
   return enabledVoice?.id || "";
 }
 
@@ -188,6 +189,7 @@ const VOICE_MATCH_RULES = [
 
 export const VOICE_CATEGORIES = [
   { id: "all", label: "全部" },
+  { id: "mine", label: "我的音色" },
   { id: "knowledge", label: "知识科普", pattern: /科普|讲解|知识|课程|纪录片|自然中文/ },
   { id: "life", label: "生活分享", pattern: /生活|探店|旅游|自然|年轻|开朗|甜美|阳光/ },
   { id: "host", label: "活动主持", pattern: /主持|活动|服务|亲切|专业女|女主播/ },
@@ -260,6 +262,7 @@ export function getVoiceMatchHint(avatar) {
 
 export function filterVoicesByCategory(voices = [], categoryId = "all") {
   if (categoryId === "all") return voices;
+  if (categoryId === "mine") return voices.filter((voice) => voice.source === "voice-clone");
   const category = VOICE_CATEGORIES.find((item) => item.id === categoryId);
   if (!category?.pattern) return voices;
   return voices.filter((voice) =>

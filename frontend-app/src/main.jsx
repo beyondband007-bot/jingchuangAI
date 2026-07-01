@@ -11462,7 +11462,7 @@ function WorkbenchTopbar({
                   );
                 }}
               >
-                历史
+                历史记录
               </button>
             </div>
           )}

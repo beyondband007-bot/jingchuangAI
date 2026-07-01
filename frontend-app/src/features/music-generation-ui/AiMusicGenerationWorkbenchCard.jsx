@@ -97,7 +97,7 @@ export function AiMusicGenerationWorkbenchCard({
 
             <label className="ai-music-workbench__field-title ai-music-workbench__field-title--compact">
               <Type size={17} />
-              歌曲标题
+              歌曲名称
               <small>选填</small>
             </label>
             <div className="ai-music-workbench__title-input">

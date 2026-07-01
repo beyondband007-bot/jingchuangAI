@@ -1862,7 +1862,7 @@ export function ArticleGenerationView({
                         {isReferenceUploading
                           ? "正在上传素材..."
                           : referenceAssets.length
-                            ? "生成图片会强制包含这些素材主体"
+                            ? null
                             : "商品实拍、场景截图都可以，AI 帮你提炼创作主题"}
                       </span>
                     </div>
