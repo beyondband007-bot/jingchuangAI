@@ -40,6 +40,26 @@ export const digitalHumanApi = {
     return voicesPromise;
   },
 
+  async uploadVoiceCloneAudio(file, durationMs) {
+    const formData = new FormData();
+    formData.append("audio", file);
+    if (durationMs) formData.append("durationMs", String(Math.round(durationMs)));
+    return request("/api/digital-human/voices/uploads/clone-audio", {
+      method: "POST",
+      body: formData
+    });
+  },
+
+  async createVoiceClone(payload) {
+    const result = await request("/api/digital-human/voices/clones", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    voicesPromise = undefined;
+    taskPolling.notifyNow();
+    return result;
+  },
+
   async designVoice(payload) {
     const result = await request("/api/digital-human/voices/design", {
       method: "POST",

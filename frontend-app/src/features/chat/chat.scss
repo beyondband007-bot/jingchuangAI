@@ -1018,7 +1018,7 @@
 .llm-menu {
   position: absolute;
   left: 0;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 10px);
   z-index: 8;
   display: none;
   min-width: 280px;
@@ -1534,12 +1534,29 @@
 }
 
 [data-feature-module="chat"] .llm-menu {
+  left: 0 !important;
   width: 480px !important;
   max-width: min(480px, calc(100vw - 48px)) !important;
-  max-height: 420px !important;
+  max-height: 270px !important;
   padding: 8px !important;
   gap: 6px !important;
   border-radius: 16px !important;
+}
+
+[data-feature-module="chat"]
+  .chat-view-root.is-intro
+  .llm-select-wrap
+  .llm-menu {
+  top: calc(100% + 10px) !important;
+  bottom: auto !important;
+}
+
+[data-feature-module="chat"]
+  .chat-view-root:not(.is-intro)
+  .llm-select-wrap
+  .llm-menu {
+  top: auto !important;
+  bottom: calc(100% + 10px) !important;
 }
 
 [data-feature-module="chat"] .llm-menu button,
@@ -2004,7 +2021,7 @@
   gap: 36px !important;
   width: 100% !important;
   min-height: auto !important;
-  padding: 0 0 8vh !important;
+  padding: 0 0 12vh !important;
 }
 
 [data-feature-module="chat"] .chat-view-root.is-intro .chat-main-canvas {

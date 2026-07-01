@@ -33,6 +33,12 @@ import {
   getTask as getImageGenerationTask
 } from "../image/image.service.js";
 import { imageToImageModelKey } from "../image/image.options.js";
+import * as voiceService from "../voice/voice.service.js";
+import {
+  findCompletedVoiceCloneAssetByVoiceId,
+  markVoiceCloneAssetExpired,
+  touchVoiceCloneAssetLastUsed
+} from "../voice/voice.repository.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
   createVirtualAssetFromLocalFile,
@@ -178,7 +184,7 @@ function normalizeEmotion(value) {
   return ttsEmotionOptions.has(emotion) ? emotion : "";
 }
 
-function getVoiceById(voiceId) {
+function getBuiltInVoiceById(voiceId) {
   const id = String(voiceId || "").trim();
   const found = [...designedVoices, ...voices].find((item) => item.id === id);
   if (found) return found;
@@ -188,6 +194,76 @@ function getVoiceById(voiceId) {
 
 function getProviderVoiceId(voice) {
   return String(voice?.providerVoiceId || voice?.id || voices[0].id).trim();
+}
+
+function mapClonedVoiceForDigitalHuman(voice) {
+  if (!voice) return null;
+  return {
+    ...voice,
+    language: "中文 / 克隆",
+    sampleUrl: voice.demoAudio || "",
+    providerVoiceId: voice.id,
+    provider: "minimax",
+    source: "voice-clone"
+  };
+}
+
+async function getUserClonedVoices(userId) {
+  if (!userId) return [];
+  const savedVoices = await voiceService.listVoices(userId);
+  return savedVoices.map(mapClonedVoiceForDigitalHuman).filter(Boolean);
+}
+
+async function getVoiceById(voiceId, userId) {
+  const id = String(voiceId || "").trim();
+  const found = [...designedVoices, ...voices].find((item) => item.id === id);
+  if (found) return found;
+
+  if (id && userId) {
+    const clonedVoice = await findCompletedVoiceCloneAssetByVoiceId({ userId, voiceId: id });
+    if (clonedVoice) return mapClonedVoiceForDigitalHuman(clonedVoice);
+  }
+
+  return getBuiltInVoiceById(id);
+}
+
+function stringifyProviderError(error) {
+  const body = error?.body ? JSON.stringify(error.body) : "";
+  return `${error?.message || ""} ${body}`.trim();
+}
+
+function isVoiceUnavailableError(error) {
+  const message = stringifyProviderError(error);
+  return /voice[_\s-]?id|voice|timbre|speaker/i.test(message)
+    && /invalid|not found|not exist|no permission|unauthorized|forbidden|expired|unavailable|access denied/i.test(message);
+}
+
+async function synthesizeDigitalHumanSpeech({ text, voice, speed, volume, pitch, emotion, userId }) {
+  const providerVoiceId = getProviderVoiceId(voice);
+  try {
+    const speech = await synthesizeMinimaxSpeech({
+      text,
+      voiceId: providerVoiceId,
+      speed,
+      volume,
+      pitch,
+      emotion
+    });
+    if (voice?.source === "voice-clone" && userId) {
+      await touchVoiceCloneAssetLastUsed({ userId, voiceId: voice.id });
+    }
+    return speech;
+  } catch (error) {
+    if (voice?.source === "voice-clone" && userId && isVoiceUnavailableError(error)) {
+      await markVoiceCloneAssetExpired({
+        userId,
+        voiceId: voice.id,
+        errorMessage: stringifyProviderError(error)
+      });
+      throw createHttpError("克隆音色已失效，请重新上传音频克隆后再生成", 400);
+    }
+    throw error;
+  }
 }
 
 function isAiCustomAvatarAsset(asset) {
@@ -450,7 +526,7 @@ async function savePreviewVoiceAudio({ audioBuffer, durationMs }) {
 }
 
 async function createProviderTask(taskId, payload) {
-  const { text, voiceId, speed, volume, pitch, emotion, avatar, model, uploadedAudio, uploadedScene, userId } = payload;
+  const { text, voice, voiceId, speed, volume, pitch, emotion, avatar, model, uploadedAudio, uploadedScene, userId } = payload;
   let savedAudio;
   let audioDurationMs;
 
@@ -464,8 +540,9 @@ async function createProviderTask(taskId, payload) {
     };
     audioDurationMs = normalizeUploadedAudioDurationMs(uploadedAudio.durationMs) || estimateSeconds(text) * 1000;
   } else {
-    console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${voiceId}`);
-    const speech = await synthesizeMinimaxSpeech({ text, voiceId, speed, volume, pitch, emotion });
+    const ttsVoice = voice || { id: voiceId, providerVoiceId: voiceId };
+    console.log(`[digital-human] task ${taskId}: synthesizing MiniMax TTS with voice ${getProviderVoiceId(ttsVoice)}`);
+    const speech = await synthesizeDigitalHumanSpeech({ text, voice: ttsVoice, speed, volume, pitch, emotion, userId });
     audioDurationMs = getAudioDurationMs(speech, text);
     savedAudio = await saveMinimaxSpeechAudio({ taskId, audioBuffer: speech.audioBuffer });
   }
@@ -589,8 +666,9 @@ export async function getAvatars() {
   return { public: publicAvatars, mine: await getMyAvatars() };
 }
 
-export function getVoices() {
-  return { voices: [...designedVoices, ...voices] };
+export async function getVoices(userId) {
+  const clonedVoices = await getUserClonedVoices(userId);
+  return { voices: [...clonedVoices, ...designedVoices, ...voices] };
 }
 
 const aiAvatarSource = "digital-human-avatar";
@@ -812,18 +890,19 @@ export async function designVoice(payload) {
   };
 }
 
-export async function previewVoice(payload) {
+export async function previewVoice(payload, userId) {
   const text = String(payload.previewText || payload.text || "").trim();
   const voiceId = String(payload.voiceId || voices[0].id).trim();
   if (!text) throw createHttpError("previewText is required", 400);
-  const voice = getVoiceById(voiceId);
+  const voice = await getVoiceById(voiceId, userId);
 
-  const result = await synthesizeMinimaxSpeech({
+  const result = await synthesizeDigitalHumanSpeech({
     text,
-    voiceId: getProviderVoiceId(voice),
+    voice,
     speed: normalizeDecimal(payload.speed, 1),
     volume: normalizeVolume(payload.volume),
     pitch: normalizeDecimal(payload.pitch, 0),
+    userId,
     emotion: normalizeEmotion(payload.emotion)
   });
   const durationMs = getAudioDurationMs(result, text);
@@ -906,6 +985,19 @@ export async function uploadSceneImage(_payload, file) {
   };
 }
 
+export function uploadVoiceCloneAudio(payload, file, userId) {
+  return voiceService.uploadAudio({
+    file,
+    purpose: "voice_clone",
+    durationMs: payload?.durationMs,
+    userId
+  });
+}
+
+export function createVoiceClone(payload, userId) {
+  return voiceService.createClone(payload, userId);
+}
+
 export async function listTasks() {
   await refreshProcessingTasks();
   const rows = await listDigitalHumanTaskRows();
@@ -918,7 +1010,8 @@ export async function getTask(id) {
   return row ? mapTask(row) : null;
 }
 
-export async function createTask(payload) {
+export async function createTask(payload, requestUser = null) {
+  const requestUserId = requestUser?.id && !requestUser?.isGuest ? requestUser.id : null;
   const avatarId = String(payload.avatarId || "").trim();
   const driveMode = String(payload.driveMode || "text");
   const text = String(payload.text || "").trim();
@@ -950,7 +1043,7 @@ export async function createTask(payload) {
 
   const voice = driveMode === "audio"
     ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
-    : getVoiceById(voiceId);
+    : await getVoiceById(voiceId, requestUserId);
   const taskText = driveMode === "audio" ? audioName || uploadedAudio.originalName || "用户上传音频" : text;
   const billingDuration = driveMode === "audio"
     ? Math.ceil(Number(uploadedAudio?.durationMs || 0) / 1000)
@@ -970,7 +1063,7 @@ export async function createTask(payload) {
 
   try {
     await connection.beginTransaction();
-    const user = await getDemoUser(connection);
+    const user = requestUserId ? requestUser : await getDemoUser(connection);
     userId = user.id;
     taskId = await createDigitalHumanTaskRow(connection, {
       userId,
@@ -1009,6 +1102,7 @@ export async function createTask(payload) {
     await createProviderTask(taskId, {
       text: taskText,
       voiceId: getProviderVoiceId(voice),
+      voice,
       speed,
       volume,
       pitch,

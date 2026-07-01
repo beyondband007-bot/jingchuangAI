@@ -123,6 +123,15 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     const unsubscribe = digitalHumanApi.subscribe(() => {
       digitalHumanApi.getTasks().then(applyTaskList).catch(() => {});
       digitalHumanApi
+        .getVoices()
+        .then((value) => {
+          if (!mounted) return;
+          const nextVoices = value.voices || [];
+          updateDataCache({ voices: nextVoices });
+          setVoices(nextVoices);
+        })
+        .catch(() => {});
+      digitalHumanApi
         .getAvatars()
         .then((value) => {
           if (!mounted) return;

@@ -19616,6 +19616,22 @@ body {
   color: #686679 !important;
 }
 
+[data-feature-module="chat"]
+  .chat-view-root.is-intro
+  .llm-select-wrap
+  .llm-menu {
+  top: calc(100% + 10px) !important;
+  bottom: auto !important;
+}
+
+[data-feature-module="chat"]
+  .chat-view-root:not(.is-intro)
+  .llm-select-wrap
+  .llm-menu {
+  top: auto !important;
+  bottom: calc(100% + 10px) !important;
+}
+
 .llm-menu button,
 .custom-select-menu button {
   color: #686679 !important;

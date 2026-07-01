@@ -7,7 +7,7 @@ export const BILLING_RULES = Object.freeze({
   musicPointsPerSecond: 2,
   musicMinimumPoints: 30,
   transcribePointsPerSecond: 1,
-  voiceClonePoints: 0,
+  voiceClonePoints: 2000,
   articleTextPoints: 10,
   replicateImagePoints: 5,
   replicateVideoPoints: 10,
