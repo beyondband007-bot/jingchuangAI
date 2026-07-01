@@ -19246,7 +19246,7 @@ body {
 .fm-workbench-topbar h1 {
   margin: 0;
   color: #555561;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -19884,7 +19884,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   padding: 0;
   background: transparent;
   color: #c1bfcc;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -19916,7 +19916,7 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border: 0;
   border-radius: 0;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0;
@@ -21843,7 +21843,10 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
 }
 
 .fm-invite-hero {
-  background: url("/assets/facemini/prototypes/invite-bg.png") no-repeat;
+  background: image-set(
+    url("/assets/facemini/prototypes/invite-bg.webp") type("image/webp"),
+    url("/assets/facemini/prototypes/invite-bg.jpg") type("image/jpeg")
+  ) no-repeat;
   background-size: cover;
 }
 
