@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs.jsx";
+import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
@@ -92,7 +93,7 @@ function WatermarkCenterState({
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
     return (
-      <section className="watermark-center-state marketing-result-card is-completed">
+      <section className="marketing-complete-state watermark-center-state marketing-result-card is-completed">
         <header className="marketing-result-head">
           <span>
             <CheckCircle2 size={18} />
@@ -207,7 +208,7 @@ function WatermarkCenterState({
 
   return (
     <section
-      className="watermark-center-state is-processing"
+      className="marketing-process-state watermark-center-state is-processing"
       aria-live="polite"
     >
       <span className="watermark-center-spinner">
@@ -217,7 +218,7 @@ function WatermarkCenterState({
         {isSubmitting ? "正在创建去水印任务" : "正在智能去除水印"}
       </strong>
       <p>素材正在处理中，完成后会自动回填到这里。</p>
-      <div className="watermark-center-progress">
+      <div className="marketing-process-progress watermark-center-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
       <small>
@@ -329,7 +330,7 @@ function WatermarkUploadSlot({
   function renderUploadSlot(uploadDisabled = false) {
     return (
       <div
-        className={`watermark-upload-slot ${previewUrl ? "has-preview" : ""}`}
+        className={`marketing-tool-upload watermark-upload-slot ${previewUrl ? "has-preview" : ""}`}
         role="button"
         tabIndex={uploadDisabled ? 0 : -1}
         aria-disabled={uploadDisabled || isUploading}
@@ -543,8 +544,8 @@ function WatermarkComposer({
   }
 
   return (
-    <div className="watermark-composer" aria-label="去水印上传面板">
-      <div className="watermark-mode-tabs">
+    <div className="marketing-tool-card watermark-composer" aria-label="去水印上传面板">
+      <div className="marketing-tool-tabs watermark-mode-tabs">
         <button
           className={mode === "image" ? "is-active" : ""}
           type="button"
@@ -575,7 +576,7 @@ function WatermarkComposer({
           onOpenAuth?.("login");
         }}
       />
-      <div className="watermark-composer-footer">
+      <div className="marketing-tool-footer watermark-composer-footer">
         <span>
           {notice ||
             (mode === "video"
@@ -669,6 +670,7 @@ export function WatermarkRemovalView({
   const submittedTask =
     tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
+  const showCompletedResult = submittedTask?.status === "completed";
   const visibleTasks =
     viewTab === "favorite"
       ? tasks.filter(
@@ -768,15 +770,46 @@ export function WatermarkRemovalView({
         className={`watermark-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}
       >
         {showEmptyHero && (
-          <div className="watermark-hero-empty">
-            <span className="watermark-hero-icon">
-              <Eraser size={36} />
-            </span>
-            <h1>智能去水印</h1>
-            <p>上传图片或视频，AI 智能一键去除水印</p>
-          </div>
+          <MarketingToolPanel className="watermark-home-panel">
+            <div className="watermark-hero-empty">
+              <span className="watermark-hero-icon">
+                <Eraser size={36} />
+              </span>
+              <h1>智能去水印</h1>
+              <p>上传图片或视频，AI 智能一键去除水印</p>
+            </div>
+            <WatermarkComposer
+              options={options}
+              onSubmit={createTask}
+              isSubmitting={isSubmitting}
+              authUser={authUser}
+              onOpenAuth={onOpenAuth}
+              isActive={isActive}
+            />
+          </MarketingToolPanel>
         )}
-        {showCenterState && (
+        {showCenterState && showCompletedResult ? (
+          <MarketingToolPanel className="watermark-state-panel">
+            <div className="watermark-hero-empty">
+              <span className="watermark-hero-icon">
+                <Eraser size={36} />
+              </span>
+              <h1>智能去水印</h1>
+              <p>上传图片或视频，AI 智能一键去除水印</p>
+            </div>
+            <WatermarkCenterState
+              task={submittedTask}
+              isSubmitting={isSubmitting && !submittedTask}
+              error={submitError}
+              onReset={() => {
+                setSubmittedTaskId(null);
+              }}
+              onRepeat={requestRepeat}
+              onDismiss={dismissCenterState}
+              onRecharge={goToRecharge}
+            />
+          </MarketingToolPanel>
+        ) : showCenterState ? (
           <WatermarkCenterState
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
@@ -788,7 +821,7 @@ export function WatermarkRemovalView({
             onDismiss={dismissCenterState}
             onRecharge={goToRecharge}
           />
-        )}
+        ) : null}
         {showRecentEmpty && (
           <div className="watermark-recent-empty">
             <Eraser size={24} />
@@ -816,16 +849,6 @@ export function WatermarkRemovalView({
           ))}
         </div>
       </div>
-      {viewTab === "home" && !showCenterState && (
-        <WatermarkComposer
-          options={options}
-          onSubmit={createTask}
-          isSubmitting={isSubmitting}
-          authUser={authUser}
-          onOpenAuth={onOpenAuth}
-          isActive={isActive}
-        />
-      )}
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
     </section>

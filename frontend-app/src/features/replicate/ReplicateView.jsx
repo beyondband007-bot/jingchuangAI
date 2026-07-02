@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
-  CheckCircle2,
   Copy,
   Download,
   FileImage,
@@ -14,6 +13,7 @@ import {
 import { replicateApi } from "./replicateApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
+import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { formatBeijingDateTime } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -71,11 +71,6 @@ async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 }
   throw new Error("分析仍在处理中，请稍后查看历史记录");
 }
 
-function isReplicateErrorNotice(message) {
-  const text = String(message || "");
-  return /失败|失效|超时|错误|不够|请先|未能|仍在处理|不可用/i.test(text);
-}
-
 function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
@@ -114,6 +109,7 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
   }
 
   const slotClassName = [
+    "marketing-tool-upload",
     "replicate-upload-slot",
     dragOver && isInteractive ? "drag-over" : "",
     hasFile ? "has-file" : "",
@@ -224,58 +220,53 @@ function ReplicatePageHeader() {
 function ReplicateResult({
   result,
   mode,
+  fileState,
   onCopy,
   onReset,
-  onReprocess,
   onOpenGeneration,
-  isReprocessing,
 }) {
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    const file = fileState?.file;
+    if (!file) {
+      setPreviewUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [fileState?.file]);
+
   if (!result) return null;
 
   const isVideo = (result.source || mode) === "video";
   const promptText = buildPromptText(result);
-  const creditCost = isVideo ? 100 : 25;
 
   return (
-    <div className="replicate-result-composer is-completed">
-      <div className="replicate-mode-toggle" aria-label="反推类型">
-        <button type="button" className={!isVideo ? "active" : ""} disabled aria-pressed={!isVideo}>
-          <FileImage size={12} />
-          图片反推
-        </button>
-        <button type="button" className={isVideo ? "active" : ""} disabled aria-pressed={isVideo}>
-          <FileVideo size={12} />
-          视频反推
-        </button>
-      </div>
+    <div className="marketing-complete-state replicate-result-composer is-completed">
+      <div className="replicate-result-body">
+        <figure className="replicate-result-source">
+          {previewUrl ? (
+            isVideo ? (
+              <video src={previewUrl} controls playsInline preload="metadata" />
+            ) : (
+              <img src={previewUrl} alt={fileState?.name || "参考图片"} />
+            )
+          ) : (
+            <span>{isVideo ? <FileVideo size={28} /> : <FileImage size={28} />}</span>
+          )}
+        </figure>
 
-      <div className="replicate-result-success" role="status">
-        <span className="replicate-result-success-icon" aria-hidden="true">
-          <CheckCircle2 size={14} />
-        </span>
-        <div className="replicate-result-success-copy">
-          <strong>反推完成</strong>
-          <p>提示词已生成，可复制或继续处理新素材</p>
+        <div className="replicate-result-prompt">
+          <label htmlFor="replicate-result-prompt">Prompt</label>
+          <textarea id="replicate-result-prompt" readOnly value={promptText} />
         </div>
       </div>
 
-      <div className="replicate-result-prompt">
-        <label htmlFor="replicate-result-prompt">Prompt</label>
-        <textarea id="replicate-result-prompt" readOnly value={promptText} />
-        <button
-          type="button"
-          className="replicate-goto-generation-btn"
-          onClick={() => onOpenGeneration?.(promptText, isVideo ? "video" : "image")}
-          disabled={!promptText}
-        >
-          {isVideo ? "去视频生成" : "去图片生成"}
-        </button>
-      </div>
-
       <footer className="replicate-result-footer">
-        <p>已完成本次处理，可下载结果、再次处理当前素材，或上传新素材继续</p>
+        <p>已完成本次处理，可复制提示词或上传新素材继续</p>
         <div className="replicate-result-footer-actions">
-          <span className="replicate-result-credits">{creditCost} 积分</span>
           <div className="marketing-result-actions">
             <button type="button" onClick={onReset}>
               处理新素材
@@ -285,12 +276,12 @@ function ReplicateResult({
             </button>
             <button
               type="button"
-              className="is-primary"
-              onClick={onReprocess}
-              disabled={isReprocessing}
+              className="is-primary replicate-goto-generation-btn"
+              onClick={() => onOpenGeneration?.(promptText, isVideo ? "video" : "image")}
+              disabled={!promptText}
             >
-              {isReprocessing ? <Loader2 size={14} /> : <ArrowUp size={14} />}
-              再次处理
+              <ArrowUp size={14} />
+              {isVideo ? "去生成视频" : "去生成图片"}
             </button>
           </div>
         </div>
@@ -327,7 +318,6 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     setNotice("");
     setSelectedFile({ file, name: file.name, size: file.size, type: file.type });
     setCurrentResult(null);
-    setNotice("素材已选择，可以开始反推");
   }
 
   async function startReplicate() {
@@ -379,15 +369,6 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     } finally {
       setIsAnalyzing(false);
     }
-  }
-
-  async function reprocessCurrentMaterial() {
-    if (!selectedFile?.file) {
-      setNotice("当前素材已失效，请重新上传");
-      setCurrentResult(null);
-      return;
-    }
-    await startReplicate();
   }
 
   function clearSelectedFile() {
@@ -443,7 +424,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
       <div className={`voice-conversion-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" ? (
-          <div className="replicate-home-stack">
+          <MarketingToolPanel className="replicate-home-stack">
             <ReplicatePageHeader />
 
             {currentResult && (
@@ -451,20 +432,18 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 <ReplicateResult
                   result={currentResult}
                   mode={mode}
+                  fileState={selectedFile}
                   onCopy={() => copyPrompt()}
                   onReset={resetForNewMaterial}
-                  onReprocess={reprocessCurrentMaterial}
                   onOpenGeneration={openGeneration}
-                  isReprocessing={isAnalyzing}
                 />
-                {notice && <div className="replicate-notice">{notice}</div>}
               </div>
             )}
 
             {!currentResult && (
             <>
-            <div className="replicate-floating-composer">
-              <div className="replicate-mode-toggle" aria-label="选择反推类型">
+            <div className="marketing-tool-card replicate-floating-composer">
+              <div className="marketing-tool-tabs replicate-mode-toggle" aria-label="选择反推类型">
                 <button
                   type="button"
                   className={mode === "image" ? "active" : ""}
@@ -497,7 +476,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 <ReplicateUpload mode={mode} fileState={selectedFile} onFile={handleFile} onClear={clearSelectedFile} isAnalyzing={isAnalyzing} />
               </div>
 
-              <div className="replicate-composer-footer">
+              <div className="marketing-tool-footer replicate-composer-footer">
                 <span className="replicate-composer-hint">
                   {mode === "video"
                     ? "视频会分析镜头运动、节奏与动态变化，处理时间通常更长。"
@@ -515,15 +494,6 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 </button>
               </div>
             </div>
-            {notice && (
-              <div
-                className={`replicate-notice replicate-composer-notice${isReplicateErrorNotice(notice) ? " is-error" : ""}`}
-                role="status"
-                aria-live="polite"
-              >
-                {notice}
-              </div>
-            )}
             {showRechargeAlert && (
               <CreditAlertDialog
                 title="这次没有反推成功"
@@ -535,7 +505,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
             )}
             </>
             )}
-          </div>
+          </MarketingToolPanel>
         ) : (
           <div className="replicate-recent-list">
             {recentResults.length === 0 ? (
@@ -570,7 +540,6 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 </article>
               ))
             )}
-            {notice && <div className="replicate-notice">{notice}</div>}
           </div>
         )}
       </div>

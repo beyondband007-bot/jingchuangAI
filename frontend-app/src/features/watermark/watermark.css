@@ -560,7 +560,7 @@
 .replicate-hero-empty h1 {
   margin: 0 0 12px !important;
   color: #202027 !important;
-  font-size: 34px !important;
+  font-size: 32px !important;
   font-weight: 500 !important;
   line-height: 1.2 !important;
 }
@@ -1266,7 +1266,6 @@
 .transcribe-hero-empty h1,
 .video-dub-hero-empty h1 {
   margin: 20px 0 10px;
-  font-size: 26px;
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -1541,7 +1540,7 @@
   display: block !important;
   margin: 0 0 12px !important;
   color: #202027 !important;
-  font-size: 34px !important;
+  font-size: 32px !important;
   font-weight: 500 !important;
   line-height: 1.2 !important;
   letter-spacing: 0 !important;
@@ -1774,10 +1773,12 @@
   margin-bottom: 9px !important;
 }
 
+.marketing-tool-card,
 .watermark-composer {
   border: none;
 }
 
+.marketing-tool-card::after,
 .watermark-composer::after {
   content: "";
   position: absolute;
@@ -1789,6 +1790,11 @@
   background: rgba(255, 255, 255, 1);
   border-radius: 24px;
   border: 1px solid #d9d6e2;
+}
+
+.marketing-tool-card > * {
+  position: relative;
+  z-index: 2;
 }
 
 .watermark-mode-tabs,
