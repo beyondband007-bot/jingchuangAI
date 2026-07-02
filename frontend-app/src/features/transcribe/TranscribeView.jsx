@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Sparkles, Trash2, Upload, X } from "lucide-react";
+import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Trash2, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
@@ -9,6 +9,7 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
 
@@ -85,7 +86,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
 
   return (
     <button
-      className={`voice-upload-slot transcribe-upload-slot ${hasFile ? "has-file" : ""}`}
+      className={`marketing-composer__upload ${hasFile ? "has-file" : ""}`}
       type="button"
       onClick={() => inputRef.current?.click()}
       onDragOver={(event) => {
@@ -123,8 +124,14 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
           <X size={13} />
         </span>
       )}
-      <span className="voice-upload-icon">{isUploading ? <Loader2 size={18} /> : <Upload size={18} />}</span>
-      <strong>{hasFile ? fileState.fileName : <><span className="upload-plus">+</span>上传音频文件</>}</strong>
+      {isUploading ? (
+        <Loader2 size={20} />
+      ) : (
+        <span className="marketing-upload-icon" aria-hidden="true">
+          <img src="/assets/marketing/upload.svg" alt="" />
+        </span>
+      )}
+      <strong>{hasFile ? fileState.fileName : "上传音频文件"}</strong>
       <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6 秒到 6 分钟"}</small>
     </button>
   );
@@ -134,13 +141,13 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
   if (!result) return null;
 
   return (
-    <div className="transcribe-result-panel">
-      <div className="transcribe-result-head">
+    <div className="marketing-result transcribe-result-panel">
+      <div className="marketing-result__head transcribe-result-head">
         <span>
           <CheckCircle2 size={17} />
           转录结果
         </span>
-        <div className="transcribe-result-actions">
+        <div className="marketing-result__actions transcribe-result-actions">
           <button type="button" onClick={onCopy} title="复制文本" aria-label="复制文本">
             <Clipboard size={15} />
           </button>
@@ -329,7 +336,7 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
   }
 
   return (
-    <section className="voice-conversion-view-root transcribe-view-root">
+    <section className="watermark-view-root">
       <FeatureViewTabs
         currentLabel="语音转文字"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -337,24 +344,50 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`voice-conversion-canvas transcribe-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
-        {viewTab === "home" && !result && (
-          <div className="voice-hero-empty transcribe-hero-empty">
-            <span className="voice-hero-icon">
-              <FileAudio size={42} />
-            </span>
-            <h1>语音转文字</h1>
-            <p>上传音频文件，自动提取文字内容，适合短音频转录和歌词草稿整理。</p>
-          </div>
-        )}
+      <div className={`marketing-canvas transcribe-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+        {viewTab === "home" && (
+          <MarketingToolPanel
+            className="audio-tool-panel transcribe-home-panel"
+            title="语音转文字"
+            subtitle="上传音频文件，自动提取文字内容，适合短音频转录和歌词草稿整理。"
+          >
+            {result && (
+              <TranscribeResult
+                result={result}
+                onCopy={() => copyResultText(result)}
+                onDownloadText={() => downloadText(result)}
+                onDownloadJson={() => downloadJson(result)}
+              />
+            )}
 
-        {viewTab === "home" && result && (
-          <TranscribeResult
-            result={result}
-            onCopy={() => copyResultText(result)}
-            onDownloadText={() => downloadText(result)}
-            onDownloadJson={() => downloadJson(result)}
-          />
+            <div className="marketing-composer audio-tool-composer">
+              <div className="voice-upload-grid">
+                <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
+              </div>
+              <div className="marketing-composer__footer audio-tool-footer">
+                <strong className="audio-credit-hint">
+                  {audioFile ? (
+                    <>
+                      预计消耗 <em><BillingPoints feature="transcribe" payload={{ durationMs: audioFile?.durationMs || 0 }} fallbackPoints={1} /></em> 积分
+                    </>
+                  ) : (
+                    "请上传文件"
+                  )}
+                </strong>
+                <div className="audio-tool-actions">
+                  {result && (
+                    <button className="voice-download" type="button" onClick={() => downloadText(result)}>
+                      <Download size={15} />
+                    </button>
+                  )}
+                  <button className="send-button voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
+                    {isTranscribing ? <Loader2 size={16} /> : <FileAudio size={16} />}
+                    开始转录
+                  </button>
+                </div>
+              </div>
+            </div>
+          </MarketingToolPanel>
         )}
 
         {viewTab === "recent" && (
@@ -393,31 +426,6 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
           </div>
         )}
 
-        {viewTab === "home" && (
-          <div className="voice-floating-composer transcribe-floating-composer">
-            <div className="voice-composer-title">
-              <Sparkles size={16} />
-              转录工作台
-            </div>
-            <div className="voice-upload-grid">
-              <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
-            </div>
-            <div className="voice-composer-footer">
-              <strong className="audio-credit-hint">本次生成预计消耗 <em><BillingPoints feature="transcribe" payload={{ durationMs: audioFile?.durationMs || 0 }} fallbackPoints={1} /></em> 积分</strong>
-              <div className="voice-actions">
-                {result && (
-                  <button className="voice-download" type="button" onClick={() => downloadText(result)}>
-                    <Download size={15} />
-                  </button>
-                )}
-                <button className="voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
-                  {isTranscribing ? <Loader2 size={16} /> : <FileAudio size={16} />}
-                  开始转录
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       {toast ? (
         <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">

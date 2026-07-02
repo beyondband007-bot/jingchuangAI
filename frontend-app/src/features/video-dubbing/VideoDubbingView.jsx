@@ -2,14 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import {
-  CheckCircle2,
   Download,
   Film,
   Loader2,
   Play,
   Star,
   Trash2,
-  Upload,
   Video,
   Volume2,
   X
@@ -23,6 +21,7 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
 const videoDubRunningStatuses = new Set(["pending", "processing"]);
@@ -88,7 +87,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
 
   return (
     <button
-      className={`video-dub-upload-slot ${hasFile ? "has-file" : ""}`}
+      className={`marketing-composer__upload ${hasFile ? "has-file" : ""}`}
       type="button"
       onClick={() => inputRef.current?.click()}
       onDragOver={(event) => {
@@ -126,10 +125,14 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
           <X size={13} />
         </span>
       )}
-      <span className="video-dub-upload-icon">
-        {isUploading ? <Loader2 size={20} /> : <Upload size={20} />}
-      </span>
-      <strong>{hasFile ? fileState.fileName : <><span className="upload-plus">+</span>上传视频文件</>}</strong>
+      {isUploading ? (
+        <Loader2 size={20} />
+      ) : (
+        <span className="marketing-upload-icon" aria-hidden="true">
+          <img src="/assets/marketing/upload.svg" alt="" />
+        </span>
+      )}
+      <strong>{hasFile ? fileState.fileName : "上传视频文件"}</strong>
       <small>
         {hasFile
           ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}`
@@ -151,37 +154,6 @@ const STAGE_LABELS = {
   completed: "已完成",
   failed: "失败"
 };
-
-const STAGE_ORDER = [
-  "queued",
-  "extracting_frames",
-  "analyzing_video",
-  "generating_script",
-  "generating_voice",
-  "generating_bgm",
-  "composing_video",
-  "completed",
-  "failed"
-];
-
-function ProgressStage({ currentStage }) {
-  const currentIndex = STAGE_ORDER.indexOf(currentStage);
-  return (
-    <div className="video-dub-progress">
-      {STAGE_ORDER.map((stage, i) => (
-        <span
-          key={stage}
-          className={`video-dub-progress-step ${
-            i < currentIndex ? "done" : i === currentIndex ? "active" : ""
-          }`}
-        >
-          {i < currentIndex ? <CheckCircle2 size={12} /> : <span>{i + 1}</span>}
-          {STAGE_LABELS[stage] || stage}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFavorite }) {
   const isCompleted = item.status === "completed";
@@ -514,7 +486,7 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
   }
 
   return (
-    <section className="voice-conversion-view-root video-dub-view-root">
+    <section className="watermark-view-root">
       <FeatureViewTabs
         currentLabel="视频配音"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -522,15 +494,42 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`voice-conversion-canvas video-dub-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+      <div className={`marketing-canvas video-dub-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" && (
-          <div className="video-dub-hero-empty">
-            <span className="video-dub-hero-icon">
-              <Volume2 size={42} />
-            </span>
-            <h1>视频配音</h1>
-            <p>上传视频，自动分析内容并生成配音与背景音乐</p>
-          </div>
+          <MarketingToolPanel
+            className="audio-tool-panel video-dub-home-panel"
+            title="视频配音"
+            subtitle="上传视频，自动分析内容并生成配音与背景音乐"
+          >
+            <div className="marketing-composer audio-tool-composer">
+              <div className="video-dub-upload-grid">
+                <VideoUploadSlot fileState={videoFile} isUploading={isUploading} onPick={pickVideoFile} onClear={clearVideoFile} />
+              </div>
+
+              <div className="marketing-composer__footer audio-tool-footer">
+                <strong className="audio-credit-hint">
+                  {videoFile ? (
+                    <>
+                      预计消耗 <em><BillingPoints feature="video-dub" payload={{ durationMs: videoFile?.durationMs || 0, bgmEnabled: true }} fallbackPoints={35} /></em> 积分
+                    </>
+                  ) : (
+                    "请上传文件"
+                  )}
+                </strong>
+                <div className="audio-tool-actions">
+                  <button
+                    className="send-button voice-generate-button"
+                    type="button"
+                    onClick={submitDub}
+                    disabled={isUploading || isSubmitting || !videoFile}
+                  >
+                    {isUploading || isSubmitting ? <Loader2 size={16} /> : <Play size={16} />}
+                    开始配音
+                  </button>
+                </div>
+              </div>
+            </div>
+          </MarketingToolPanel>
         )}
 
         {viewTab === "recent" && (
@@ -558,32 +557,6 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
           </div>
         )}
 
-        {viewTab === "home" && (
-          <div className="voice-floating-composer video-dub-floating-composer">
-            <div className="voice-composer-title">
-              <Film size={16} />
-              视频配音工作台
-            </div>
-            <div className="video-dub-upload-grid">
-              <VideoUploadSlot fileState={videoFile} isUploading={isUploading} onPick={pickVideoFile} onClear={clearVideoFile} />
-            </div>
-
-            <div className="voice-composer-footer">
-              <strong className="audio-credit-hint">本次生成预计消耗 <em><BillingPoints feature="video-dub" payload={{ durationMs: videoFile?.durationMs || 0, bgmEnabled: true }} fallbackPoints={35} /></em> 积分</strong>
-              <div className="voice-actions">
-                <button
-                  className="voice-generate-button"
-                  type="button"
-                  onClick={submitDub}
-                  disabled={isUploading || isSubmitting || !videoFile}
-                >
-                  {isUploading || isSubmitting ? <Loader2 size={16} /> : <Play size={16} />}
-                  开始配音
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       {previewTask?.result?.videoUrl
         ? createPortal(
