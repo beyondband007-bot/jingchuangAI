@@ -8858,6 +8858,18 @@ function VideoPreview({ task, onOpen }) {
   );
 }
 
+function normalizeVideoResultMessage(card) {
+  const message = String(card?.error || "").trim();
+  if (
+    /copyright/i.test(message) ||
+    /版权/.test(message) ||
+    /明确 IP|标志性设定/.test(message)
+  ) {
+    return "AI模型判断提示词可能涉及版权问题，请调整后再上传";
+  }
+  return message || card?.prompt || "";
+}
+
 function VideoResultCard({
   card,
   onDelete,
@@ -8888,9 +8900,8 @@ function VideoResultCard({
         </div>
         <div className="time-row">
           <span>{formatBeijingDateTime(card.createdAt || card.created_at || card.time) || card.time}</span>
-          <strong>{card.rmb || card.price}</strong>
         </div>
-        <p>{card.error || card.prompt}</p>
+        <p>{normalizeVideoResultMessage(card)}</p>
         <div className="card-actions">
           <button
             className={`icon-circle ${card.favorite ? "is-favorite" : ""}`}
@@ -9279,6 +9290,7 @@ function VideoGenerationView({
   const [options, setOptions] = useState(emptyVideoOptions);
   const [credits, setCredits] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVideoHistoryLoading, setIsVideoHistoryLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [pageToastMessage, setPageToastMessage] = useState("");
   const [playingTask, setPlayingTask] = useState(null);
@@ -9297,6 +9309,7 @@ function VideoGenerationView({
   const [isVideoInspirationGridReady, setIsVideoInspirationGridReady] =
     useState(false);
   const videoComposerRef = useRef(null);
+  const videoCardsRef = useRef([]);
   const taskStatusSignatureRef = useRef("");
   const previousVideoResetSignalRef = useRef(resetSignal);
   const isGuest = Boolean(authUser?.isGuest);
@@ -9386,6 +9399,7 @@ function VideoGenerationView({
         taskStatusSignatureRef.current !== nextSignature;
       taskStatusSignatureRef.current = nextSignature;
       videoApi.setHasRunningTasks(hasRunningTasks(runningValue));
+      videoCardsRef.current = value;
       setCards(value);
       setSelectedHistoryTask((current) => {
         if (!current?.id) return current;
@@ -9407,14 +9421,25 @@ function VideoGenerationView({
       .getCredits()
       .then((value) => mounted && applyCreditsUpdate(setCredits, value));
     async function refreshTasks() {
-      const [taskData, runningTaskData] =
-        filter === "inspiration"
-          ? [[], await videoApi.getTasks({ filter: "all" })]
-          : await Promise.all([
-              videoApi.getTasks({ filter }),
-              videoApi.getTasks({ filter: "all" }),
-            ]);
-      applyTaskList(taskData, runningTaskData || taskData);
+      const shouldShowHistoryLoading =
+        filter !== "inspiration" && videoCardsRef.current.length === 0;
+      if (shouldShowHistoryLoading) setIsVideoHistoryLoading(true);
+      try {
+        const [taskData, runningTaskData] =
+          filter === "inspiration"
+            ? [[], await videoApi.getTasks({ filter: "all" })]
+            : await Promise.all([
+                videoApi.getTasks({ filter }),
+                videoApi.getTasks({ filter: "all" }),
+              ]);
+        applyTaskList(taskData, runningTaskData || taskData);
+      } catch {
+        // Keep the current history and polling state when a transient refresh fails.
+      } finally {
+        if (mounted && shouldShowHistoryLoading) {
+          setIsVideoHistoryLoading(false);
+        }
+      }
     }
     refreshTasks();
 
@@ -9799,43 +9824,57 @@ function VideoGenerationView({
         </>
       ) : filter !== "inspiration" ? (
         <div className="results-feed video-results-feed">
-          {isSubmitting && filter === "recent" && (
-            <VideoResultCard
-              card={{
-                id: "submitting",
-                status: "processing",
-                model: "创建中",
-                ratio: "16:9",
-                duration: 8,
-                time: "--:--",
-                rmb: null,
-                price: "计算中",
-                prompt: "正在提交视频生成任务",
-                favorite: false,
-              }}
-              onDelete={() => {}}
-              onFavorite={() => {}}
-              onRegenerate={() => {}}
-              onOpen={() => {}}
-            />
-          )}
-          {sortedCards.length ? (
-            sortedCards.map((card) => (
-              <VideoResultCard
-                card={card}
-                key={card.id}
-                onDelete={deleteTask}
-                onFavorite={toggleFavorite}
-                onRegenerate={requestRegenerate}
-                onOpen={setSelectedHistoryTask}
-              />
-            ))
-          ) : (
-            <div className="video-dub-recent-empty video-empty-results">
-              <Film size={28} />
-              <strong>暂无视频结果</strong>
-              <p>生成完成的视频会保存在这里。</p>
+          {isVideoHistoryLoading ? (
+            <div
+              className="video-dub-recent-empty video-empty-results video-history-loading"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 size={28} className="is-spinning" />
+              <strong>加载历史记录中...</strong>
+              <p>正在同步你的视频生成记录。</p>
             </div>
+          ) : (
+            <>
+              {isSubmitting && filter === "recent" && (
+                <VideoResultCard
+                  card={{
+                    id: "submitting",
+                    status: "processing",
+                    model: "创建中",
+                    ratio: "16:9",
+                    duration: 8,
+                    time: "--:--",
+                    rmb: null,
+                    price: "计算中",
+                    prompt: "正在提交视频生成任务",
+                    favorite: false,
+                  }}
+                  onDelete={() => {}}
+                  onFavorite={() => {}}
+                  onRegenerate={() => {}}
+                  onOpen={() => {}}
+                />
+              )}
+              {sortedCards.length ? (
+                sortedCards.map((card) => (
+                  <VideoResultCard
+                    card={card}
+                    key={card.id}
+                    onDelete={deleteTask}
+                    onFavorite={toggleFavorite}
+                    onRegenerate={requestRegenerate}
+                    onOpen={setSelectedHistoryTask}
+                  />
+                ))
+              ) : (
+                <div className="video-dub-recent-empty video-empty-results">
+                  <Film size={28} />
+                  <strong>暂无视频结果</strong>
+                  <p>生成完成的视频会保存在这里。</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       ) : null}

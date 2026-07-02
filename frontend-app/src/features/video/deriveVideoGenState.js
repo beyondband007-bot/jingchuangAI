@@ -156,7 +156,7 @@ export function deriveVideoGenState(raw, context = {}) {
     },
     header: {
       title: isDone ? "生成完成" : "视频生成中",
-      description: context.prompt ?? "",
+      description: "",
     },
     progress: {
       value: progress,

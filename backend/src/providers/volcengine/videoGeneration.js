@@ -31,6 +31,10 @@ export function normalizeArkVideoErrorMessage(body = {}) {
     return `火山视频生成接口无法访问该 asset:// 资产，通常是资产库 Project 与视频生成 API Key 命名空间未打通${suffix}`;
   }
 
+  if (/copyright/i.test(code) || /copyright restrictions/i.test(message)) {
+    return `AI模型判断提示词可能涉及版权问题，请调整后再上传${suffix}`;
+  }
+
   return message || `Ark request failed${suffix}`;
 }
 

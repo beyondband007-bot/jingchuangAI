@@ -6524,6 +6524,18 @@ a:hover {
   min-height: 420px;
 }
 
+.video-history-loading svg {
+  color: #7c3cff;
+}
+
+.video-history-loading strong {
+  color: #31284f;
+}
+
+.video-history-loading p {
+  color: #8a819d;
+}
+
 .video-composer {
   min-height: 140px;
 }
@@ -26731,6 +26743,41 @@ textarea::placeholder {
 
 .video-results-feed > .video-dub-recent-empty.video-empty-results {
   align-self: center !important;
+}
+
+.video-gen-view-root .video-history-loading {
+  width: min(320px, 90vw) !important;
+  min-height: 150px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  gap: 14px !important;
+  color: #5f5a78 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.video-gen-view-root .video-history-loading svg {
+  box-sizing: content-box;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 18px !important;
+  color: #7a5cff !important;
+  background: linear-gradient(180deg, #f3f0ff 0%, #ffffff 100%) !important;
+  border: 1px solid #e7e0ff !important;
+  border-radius: 999px !important;
+  box-shadow: 0 14px 36px rgba(122, 92, 255, 0.14) !important;
+}
+
+.video-gen-view-root .video-history-loading strong {
+  color: #2d2942 !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
+
+.video-gen-view-root .video-history-loading p {
+  display: none !important;
 }
 
 /* Voice-style recent panels (voice-synthesis, music, voice-convert, transcribe) */
