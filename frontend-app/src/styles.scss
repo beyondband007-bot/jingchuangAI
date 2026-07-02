@@ -1,5 +1,52 @@
-﻿* {
-  box-sizing: border-box;
+﻿/* Box sizing规则 */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+/* 移除默认边距 */
+body,
+h1, h2, h3, h4, h5, h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+	margin: 0;
+}
+
+/* 设置根元素 */
+html:focus-within {
+	scroll-behavior: smooth;
+}
+
+/* 设置body默认值 */
+body {
+	min-height: 100vh;
+	text-rendering: optimizeSpeed;
+	line-height: 1.5;
+	font-family: "PingFang SC", "Zona Pro SemiBold", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+/* 让链接没有下划线 */
+a:not([class]) {
+	text-decoration-skip-ink: auto;
+}
+
+/* 让图片更容易处理 */
+img,
+picture {
+	max-width: 100%;
+	display: block;
+}
+
+/* 继承字体 */
+input, button, textarea, select {
+	font: inherit;
+  outline: none;
 }
 
 :root {
@@ -23,12 +70,6 @@
   );
   --feature-sidebar-width: 256px;
   --feature-page-padding-x: 24px;
-}
-
-input,
-textarea,
-button {
-  outline: none;
 }
 
 .back-to-top-button {
@@ -36908,7 +36949,9 @@ section.video-gen-view-root
   .voice-convert-view-root .voice-conversion-workbench__upload-box {
     min-height: clamp(168px, 22vh, 204px) !important;
   }
-}@media (min-width: 761px) and (max-height: 850px) {
+}
+
+@media (min-width: 761px) and (max-height: 850px) {
   .voice-synthesis-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result),
   .voice-convert-view-root .voice-conversion-canvas:not(.is-recent):not(.is-result) {
     height: calc(100vh - 72px) !important;
@@ -37327,7 +37370,7 @@ section.video-gen-view-root
   width: auto !important;
   height: 60px !important;
   gap: 0 !important;
-  margin: 0 0 -56px !important;
+  margin: 0 0 -60px !important;
   padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
