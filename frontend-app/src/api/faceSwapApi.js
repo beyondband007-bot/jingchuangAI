@@ -26,7 +26,12 @@ export const faceSwapApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/face-swap/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/face-swap/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

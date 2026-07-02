@@ -84,6 +84,7 @@ import {
   emitCreditsUpdated,
   subscribeCreditsUpdated,
 } from "./api/creditsEvents";
+import { refreshCachedCredits } from "./api/creditsCache";
 import { hasRunningTasks, taskStatusSignature } from "./api/taskPolling";
 import { VoiceSynthesisView } from "./features/voice-synthesis-ui/VoiceSynthesisView";
 import { VoiceConvertView } from "./features/voice-convert/VoiceConvertView";
@@ -3664,7 +3665,7 @@ function AssetsPage({
         imageDigitalHumanTasks,
         articleTasks,
       ] = await Promise.all([
-        paymentApi.getCredits(),
+        refreshCachedCredits(),
         paymentApi.listOrders(),
         paymentApi.getCreditTransactions({
           type: transactionFilter,
@@ -3698,6 +3699,7 @@ function AssetsPage({
         );
       setMonthlyConsumedCredits(monthlyConsumed);
       setCredits(creditsState);
+      emitCreditsUpdated(creditsState);
       setOrders(orderState.orders || []);
       setTransactions(txState.transactions || []);
       setTransactionMeta({
