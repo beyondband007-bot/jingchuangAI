@@ -3,8 +3,10 @@ import {
   ArrowUp,
   Copy,
   Download,
+  Film,
   FileImage,
   FileVideo,
+  Image,
   Loader2,
   Sparkles,
   Upload,
@@ -109,6 +111,7 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
   }
 
   const slotClassName = [
+    "marketing-composer__upload",
     "marketing-tool-upload",
     "replicate-upload-slot",
     dragOver && isInteractive ? "drag-over" : "",
@@ -210,9 +213,9 @@ function buildPromptText(result) {
 
 function ReplicatePageHeader() {
   return (
-    <div className="voice-hero-empty replicate-hero-empty">
-      <h1>反推提示词</h1>
-      <p>上传参考图片或视频，自动理解主体、风格、镜头语言与画面细节，用于 AI 图片 / 视频生成</p>
+    <div className="marketing-panel-hero voice-hero-empty replicate-hero-empty">
+      <h1 className="marketing-panel-hero__title">反推提示词</h1>
+      <p className="marketing-panel-hero__subtitle">上传参考图片或视频，自动理解主体、风格、镜头语言与画面细节，用于 AI 图片 / 视频生成</p>
     </div>
   );
 }
@@ -244,8 +247,8 @@ function ReplicateResult({
   const promptText = buildPromptText(result);
 
   return (
-    <div className="marketing-complete-state replicate-result-composer is-completed">
-      <div className="replicate-result-body">
+    <div className="marketing-result replicate-result-composer">
+      <div className="marketing-result__body replicate-result-body">
         <figure className="replicate-result-source">
           {previewUrl ? (
             isVideo ? (
@@ -264,10 +267,10 @@ function ReplicateResult({
         </div>
       </div>
 
-      <footer className="replicate-result-footer">
+      <footer className="marketing-result__footer">
         <p>已完成本次处理，可复制提示词或上传新素材继续</p>
-        <div className="replicate-result-footer-actions">
-          <div className="marketing-result-actions">
+        <div className="marketing-result__footer-actions">
+          <div className="marketing-result__actions">
             <button type="button" onClick={onReset}>
               处理新素材
             </button>
@@ -414,7 +417,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   const showRechargeAlert = isRechargeRequiredMessage(notice);
 
   return (
-    <section className="voice-conversion-view-root replicate-view">
+    <section className="watermark-view-root replicate-view">
       <FeatureViewTabs
         currentLabel="反推提示词"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -422,28 +425,26 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`voice-conversion-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+      <div className={`marketing-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
         {viewTab === "home" ? (
           <MarketingToolPanel className="replicate-home-stack">
             <ReplicatePageHeader />
 
             {currentResult && (
-              <div className="replicate-result-wrap is-completed">
-                <ReplicateResult
-                  result={currentResult}
-                  mode={mode}
-                  fileState={selectedFile}
-                  onCopy={() => copyPrompt()}
-                  onReset={resetForNewMaterial}
-                  onOpenGeneration={openGeneration}
-                />
-              </div>
+              <ReplicateResult
+                result={currentResult}
+                mode={mode}
+                fileState={selectedFile}
+                onCopy={() => copyPrompt()}
+                onReset={resetForNewMaterial}
+                onOpenGeneration={openGeneration}
+              />
             )}
 
             {!currentResult && (
             <>
-            <div className="marketing-tool-card replicate-floating-composer">
-              <div className="marketing-tool-tabs replicate-mode-toggle" aria-label="选择反推类型">
+            <div className="marketing-composer marketing-composer--inline marketing-tool-card replicate-floating-composer">
+              <div className="marketing-composer__tabs marketing-tool-tabs replicate-mode-toggle" aria-label="选择反推类型">
                 <button
                   type="button"
                   className={mode === "image" ? "active" : ""}
@@ -454,7 +455,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                   }}
                   disabled={isAnalyzing}
                 >
-                  <FileImage size={16} />
+                  <Image size={15} />
                   图片反推
                 </button>
                 <button
@@ -467,22 +468,30 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                   }}
                   disabled={isAnalyzing}
                 >
-                  <FileVideo size={16} />
+                  <Film size={15} />
                   视频反推
                 </button>
               </div>
 
-              <div className="replicate-upload-area">
+              <div className="marketing-composer__upload-wrap replicate-upload-area">
                 <ReplicateUpload mode={mode} fileState={selectedFile} onFile={handleFile} onClear={clearSelectedFile} isAnalyzing={isAnalyzing} />
               </div>
 
-              <div className="marketing-tool-footer replicate-composer-footer">
+              <div className="marketing-composer__footer marketing-tool-footer replicate-composer-footer">
                 <span className="replicate-composer-hint">
                   {mode === "video"
                     ? "视频会分析镜头运动、节奏与动态变化，处理时间通常更长。"
                     : "图片用于反推画面风格和主体细节。"}
                 </span>
-                <strong><BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 10 : 5} /> 积分</strong>
+                <strong>
+                  {selectedFile ? (
+                    <>
+                      预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 10 : 5} /> 积分
+                    </>
+                  ) : (
+                    "请上传文件"
+                  )}
+                </strong>
                 <button
                   className="send-button"
                   type="button"

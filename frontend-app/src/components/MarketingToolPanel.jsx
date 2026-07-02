@@ -10,10 +10,10 @@ export function MarketingToolPanel({
   return (
     <div className={`marketing-tool-panel ${className}`.trim()}>
       {title || subtitle || icon ? (
-        <div className="marketing-tool-hero">
-          {icon ? <span className="marketing-tool-hero__icon">{icon}</span> : null}
-          {title ? <h1>{title}</h1> : null}
-          {subtitle ? <p>{subtitle}</p> : null}
+        <div className="marketing-panel-hero marketing-tool-hero">
+          {icon ? <span className="marketing-panel-hero__icon marketing-tool-hero__icon">{icon}</span> : null}
+          {title ? <h1 className="marketing-panel-hero__title">{title}</h1> : null}
+          {subtitle ? <p className="marketing-panel-hero__subtitle">{subtitle}</p> : null}
         </div>
       ) : null}
       {children}
