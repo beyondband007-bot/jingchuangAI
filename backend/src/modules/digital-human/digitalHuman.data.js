@@ -261,14 +261,6 @@ export const voices = [
     sampleUrl: ""
   },
   {
-    id: "cute_girl",
-    providerVoiceId: "Chinese (Mandarin)_Crisp_Girl",
-    name: "可爱女孩",
-    description: "稚嫩、可爱、活泼，适合少儿故事和卡通形象",
-    language: "中文普通话",
-    sampleUrl: ""
-  },
-  {
     id: "male-qn-daxuesheng",
     providerVoiceId: "Chinese (Mandarin)_Straightforward_Boy",
     name: "阳光男生",
