@@ -26,17 +26,32 @@ export const digitalHumanApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/digital-human/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/digital-human/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 
   async getAvatars() {
-    avatarsPromise ||= request("/api/digital-human/avatars");
+    if (!avatarsPromise) {
+      avatarsPromise = request("/api/digital-human/avatars").catch((err) => {
+        avatarsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return avatarsPromise;
   },
 
   async getVoices() {
-    voicesPromise ||= request("/api/digital-human/voices");
+    if (!voicesPromise) {
+      voicesPromise = request("/api/digital-human/voices").catch((err) => {
+        voicesPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return voicesPromise;
   },
 

@@ -17,7 +17,12 @@ export const removeBgApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/remove-bg/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/remove-bg/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

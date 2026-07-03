@@ -41,13 +41,10 @@ services:
       PUBLIC_ASSETS_DIR: /app/public
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://facemini.com}
       PUBLIC_MEDIA_BASE_URL: ${PUBLIC_MEDIA_BASE_URL:-https://facemini.com/media}
-      ARK_API_KEY: ${ARK_API_KEY:-}
       ARK_API_BASE_URL: ${ARK_API_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
       ARK_VIDEO_MODEL: ${ARK_VIDEO_MODEL:-doubao-seedance-2-0-260128}
       ARK_PROJECT_NAME: ${ARK_PROJECT_NAME:-jingchuang}
       ARK_VIRTUAL_ASSET_GROUP_NAME: ${ARK_VIRTUAL_ASSET_GROUP_NAME:-jingchuang-ai-virtual-assets}
-      VOLC_ACCESS_KEY_ID: ${VOLC_ACCESS_KEY_ID:-}
-      VOLC_SECRET_ACCESS_KEY: ${VOLC_SECRET_ACCESS_KEY:-}
       VOLC_REGION: ${VOLC_REGION:-cn-beijing}
       VOLC_OPENAPI_ENDPOINT: ${VOLC_OPENAPI_ENDPOINT:-https://open.volcengineapi.com}
       KIE_API_KEY: ${KIE_API_KEY:-}

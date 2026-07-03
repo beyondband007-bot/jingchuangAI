@@ -26,7 +26,12 @@ export const motionTransferApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/motion-transfer/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/motion-transfer/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

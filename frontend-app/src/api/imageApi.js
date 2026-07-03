@@ -1,8 +1,8 @@
 import { requestJson as request } from "./request.js";
 import { createTaskPollingController } from "./taskPolling.js";
+import { getCachedCredits, refreshCachedCredits } from "./creditsCache.js";
 const taskPolling = createTaskPollingController();
 let modelsPromise;
-let creditsPromise;
 export const imageToImageModelKey = "gpt_image_1_5_i2i";
 export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 
@@ -16,17 +16,20 @@ export const imageApi = {
   },
 
   async getCredits() {
-    creditsPromise ||= request("/api/me/credits");
-    return creditsPromise;
+    return getCachedCredits();
   },
 
   async refreshCredits() {
-    creditsPromise = request("/api/me/credits");
-    return creditsPromise;
+    return refreshCachedCredits();
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/image/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/image/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

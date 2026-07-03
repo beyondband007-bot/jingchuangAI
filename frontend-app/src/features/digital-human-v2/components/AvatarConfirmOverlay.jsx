@@ -153,6 +153,7 @@ export function AvatarConfirmOverlay({
             <div className="dhv2-avatar-confirm__aside">
               <VoicePickerPanel
                 voices={voices}
+                avatar={avatar}
                 voiceId={voiceId}
                 onVoiceIdChange={onVoiceIdChange}
                 voiceSpeed={voiceSpeed}

@@ -1,8 +1,8 @@
 import { requestJson as request } from "../../api/request.js";
 import { createTaskPollingController } from "../../api/taskPolling.js";
+import { getCachedCredits, refreshCachedCredits } from "../../api/creditsCache.js";
 const taskPolling = createTaskPollingController();
 let modelsPromise;
-let creditsPromise;
 
 export const articleApi = {
   subscribe(listener) {
@@ -14,17 +14,20 @@ export const articleApi = {
   },
 
   async getCredits() {
-    creditsPromise ||= request("/api/me/credits");
-    return creditsPromise;
+    return getCachedCredits();
   },
 
   async refreshCredits() {
-    creditsPromise = request("/api/me/credits");
-    return creditsPromise;
+    return refreshCachedCredits();
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/article/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/article/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

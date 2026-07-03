@@ -17,7 +17,12 @@ export const enhanceApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/enhance/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/enhance/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

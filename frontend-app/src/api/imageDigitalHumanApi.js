@@ -18,12 +18,22 @@ export const imageDigitalHumanApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/image-digital-human/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/image-digital-human/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 
   async getVoices() {
-    voicesPromise ||= request("/api/image-digital-human/voices");
+    if (!voicesPromise) {
+      voicesPromise = request("/api/image-digital-human/voices").catch((err) => {
+        voicesPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return voicesPromise;
   },
 

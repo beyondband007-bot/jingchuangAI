@@ -6,6 +6,7 @@ import {
   VOICE_CATEGORIES,
   VOICE_EMOTION_OPTIONS,
   VOICE_UNAVAILABLE_HINT,
+  filterVoicesByAvatarGender,
   filterVoicesByCategory,
   getVoiceEmotionValue,
   isDigitalHumanVoiceEnabled,
@@ -13,6 +14,7 @@ import {
 
 export function VoicePickerPanel({
   voices = [],
+  avatar,
   voiceId,
   onVoiceIdChange,
   voiceSpeed = 1,
@@ -25,9 +27,13 @@ export function VoicePickerPanel({
   const audioRef = useRef(null);
   const [voiceCategory, setVoiceCategory] = useState("all");
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const genderFilteredVoices = useMemo(
+    () => filterVoicesByAvatarGender(voices, avatar),
+    [voices, avatar],
+  );
   const filteredVoices = useMemo(
-    () => filterVoicesByCategory(voices, voiceCategory),
-    [voiceCategory, voices],
+    () => filterVoicesByCategory(genderFilteredVoices, voiceCategory),
+    [voiceCategory, genderFilteredVoices],
   );
 
   useEffect(() => {
