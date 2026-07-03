@@ -1,9 +1,9 @@
 import { randomUUID } from "crypto";
-import { mkdir, unlink, writeFile } from "fs/promises";
+import { mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
-import { spawn } from "child_process";
 import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax, analyzeVideoFramesWithMinimax } from "../../providers/minimax/vision.js";
+import { extractKeyFrames } from "../../providers/ffmpeg/video.js";
 import { createHttpError } from "../../shared/http.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
@@ -91,160 +91,18 @@ async function extractVideoFrames(videoBuffer, fileName) {
 
   const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const tempVideoPath = path.join(framesDir, `${taskId}-input${getExt(fileName)}`);
+  const tempFramesDir = path.join(framesDir, taskId);
   await writeFile(tempVideoPath, videoBuffer);
 
-  const pythonCandidates = process.platform === "win32"
-    ? ["python", "py", "python3"]
-    : ["python3", "python"];
-
-  return new Promise((resolve, reject) => {
-    const pythonScript = `
-import sys
-import cv2
-import os
-import base64
-
-video_path = sys.argv[1]
-output_dir = sys.argv[2]
-task_id = sys.argv[3]
-
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-
-cap = cv2.VideoCapture(video_path)
-if not cap.isOpened():
-    print("ERROR: Cannot open video", flush=True)
-    sys.exit(1)
-
-total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-if total_frames <= 0:
-    print("ERROR: No frames in video", flush=True)
-    sys.exit(1)
-
-# Extract 3 frames: 25%, 50%, 75%
-frame_positions = [
-    max(0, int(total_frames * 0.25) - 1),
-    max(0, int(total_frames * 0.5) - 1),
-    max(0, int(total_frames * 0.75) - 1)
-]
-
-base64_frames = []
-for i, pos in enumerate(frame_positions):
-    cap.set(cv2.CAP_PROP_POS_FRAMES, pos)
-    ret, frame = cap.read()
-    if ret:
-        # Resize to reduce size for API
-        h, w = frame.shape[:2]
-        max_dim = 1024
-        if max(h, w) > max_dim:
-            scale = max_dim / max(h, w)
-            frame = cv2.resize(frame, (int(w * scale), int(h * scale)))
-        # Encode as JPEG
-        _, buffer = cv2.imencode('.jpg', frame)
-        b64 = base64.b64encode(buffer).decode('utf-8')
-        base64_frames.append(b64)
-        frame_path = os.path.join(output_dir, f"{task_id}-frame-{i}.jpg")
-        cv2.imwrite(frame_path, frame)
-
-cap.release()
-os.remove(video_path)
-
-# Output base64 frames separated by marker
-print("---FRAMES_START---", flush=True)
-for b64 in base64_frames:
-    print(b64, flush=True)
-print("---FRAMES_END---", flush=True)
-`;
-
-    const scriptPath = path.join(framesDir, `${taskId}_extract.py`);
-    writeFile(scriptPath, pythonScript)
-      .then(() => {
-        let candidateIndex = 0;
-        let missingCv2Error = false;
-
-        function runPython() {
-          const command = pythonCandidates[candidateIndex];
-          if (!command) {
-            reject(new Error("视频抽帧失败：未找到可用的 Python 环境，请安装 Python 和 opencv-python"));
-            return;
-          }
-
-          const python = spawn(command, [scriptPath, tempVideoPath, framesDir, taskId]);
-          let stdout = "";
-          let stderr = "";
-
-          python.stdout.on("data", (data) => {
-            stdout += data.toString();
-          });
-
-          python.stderr.on("data", (data) => {
-            stderr += data.toString();
-          });
-
-          python.on("error", (error) => {
-            if (error?.code === "ENOENT" && candidateIndex < pythonCandidates.length - 1) {
-              candidateIndex += 1;
-              runPython();
-              return;
-            }
-            unlink(scriptPath).catch(() => {});
-            unlink(tempVideoPath).catch(() => {});
-            reject(new Error(`视频抽帧失败：${error.message || "无法启动 Python"}`));
-          });
-
-          python.on("close", (code) => {
-            const missingCv2 = code !== 0 && /No module named 'cv2'|ModuleNotFoundError/i.test(stderr);
-            if (missingCv2) {
-              missingCv2Error = true;
-            }
-
-            if (code !== 0 && candidateIndex < pythonCandidates.length - 1) {
-              candidateIndex += 1;
-              runPython();
-              return;
-            }
-
-            unlink(scriptPath).catch(() => {});
-            unlink(tempVideoPath).catch(() => {});
-
-            if (code !== 0) {
-              if (missingCv2Error) {
-                reject(new Error("视频抽帧失败：缺少 opencv-python，请先安装 pip install opencv-python"));
-                return;
-              }
-              reject(new Error(`视频抽帧失败：${stderr || "未知错误"}`));
-              return;
-            }
-
-            const startMarker = "---FRAMES_START---";
-            const endMarker = "---FRAMES_END---";
-            const startIndex = stdout.indexOf(startMarker);
-            const endIndex = stdout.indexOf(endMarker);
-
-            if (startIndex === -1 || endIndex === -1) {
-              reject(new Error("视频抽帧输出格式无效"));
-              return;
-            }
-
-            const framesBase64 = stdout
-              .slice(startIndex + startMarker.length, endIndex)
-              .trim()
-              .split("\n")
-              .filter(Boolean);
-
-            if (!framesBase64.length) {
-              reject(new Error("未能从视频中提取到画面帧"));
-              return;
-            }
-
-            resolve({ framesBase64, taskId });
-          });
-        }
-
-        runPython();
-      })
-      .catch(reject);
-  });
+  try {
+    const framesBase64 = await extractKeyFrames(tempVideoPath, tempFramesDir, 3);
+    return { framesBase64, taskId };
+  } catch (error) {
+    throw new Error(`视频抽帧失败：${error.message || "无法读取视频帧"}`);
+  } finally {
+    await rm(tempVideoPath, { force: true }).catch(() => {});
+    await rm(tempFramesDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
 
 export function getConfig() {
