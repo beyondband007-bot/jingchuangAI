@@ -556,8 +556,8 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-copy-params__options.is-wrap {
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 14px 22px;
 }
@@ -573,6 +573,7 @@
   color: #6f6a7c;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: none !important;
 }

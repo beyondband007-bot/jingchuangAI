@@ -1015,6 +1015,7 @@ export function ArticleGenerationView({
   const referenceAssetsRef = useRef([]);
   const toastTimerRef = useRef(null);
   const taskStatusSignatureRef = useRef("");
+  const generationSubmitLockRef = useRef(false);
   const isGuest = Boolean(authUser?.isGuest);
 
   function applyCredits(creditsValue) {
@@ -1479,46 +1480,45 @@ export function ArticleGenerationView({
       onOpenAuth?.("login");
       return;
     }
+    if (isSubmitting || generationSubmitLockRef.current) return;
 
-    let uploadedReferenceAssets = overrides.referenceAssets || referenceAssets;
-    try {
-      if (!overrides.referenceAssets) {
-        uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
-      }
-    } catch {
-      return;
-    }
-
-    const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
-    const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
-    const selectedModel =
-      overrides.model || model || pickDefaultModel(options.models);
-    if (!selectedModel) {
-      showToast("暂无可用图片模型");
-      return;
-    }
-
-    const generationForm = {
-      ...form,
-      ratio: overrides.ratio || form.ratio,
-      quality: overrides.quality || form.quality,
-      imageCount: overrides.imageCount || form.imageCount,
-      contentType: overrides.contentType || form.contentType,
-      visualStyle: overrides.visualStyle || form.visualStyle,
-      layoutStyle: overrides.layoutStyle || form.layoutStyle,
-      templateId: overrides.templateId || selectedStyleTemplateId,
-      referenceAssets: uploadedReferenceAssets,
-    };
-
-    setDraftCopy(nextDraft);
-    if (nextImagePromptPlan) setImagePromptPlan(nextImagePromptPlan);
-    setSubmitError("");
+    generationSubmitLockRef.current = true;
     setIsSubmitting(true);
+    setSubmitError("");
     setPreviewTask(null);
     setResultViewMode("full");
     setActivePreviewIndex(0);
 
     try {
+      let uploadedReferenceAssets = overrides.referenceAssets || referenceAssets;
+      if (!overrides.referenceAssets) {
+        uploadedReferenceAssets = await ensureReferenceAssetsUploaded();
+      }
+
+      const nextDraft = overrides.copy || draftCopy || buildDraftCopy(form);
+      const nextImagePromptPlan = overrides.imagePromptPlan ?? imagePromptPlan;
+      const selectedModel =
+        overrides.model || model || pickDefaultModel(options.models);
+      if (!selectedModel) {
+        showToast("暂无可用图片模型");
+        return;
+      }
+
+      const generationForm = {
+        ...form,
+        ratio: overrides.ratio || form.ratio,
+        quality: overrides.quality || form.quality,
+        imageCount: overrides.imageCount || form.imageCount,
+        contentType: overrides.contentType || form.contentType,
+        visualStyle: overrides.visualStyle || form.visualStyle,
+        layoutStyle: overrides.layoutStyle || form.layoutStyle,
+        templateId: overrides.templateId || selectedStyleTemplateId,
+        referenceAssets: uploadedReferenceAssets,
+      };
+
+      setDraftCopy(nextDraft);
+      if (nextImagePromptPlan) setImagePromptPlan(nextImagePromptPlan);
+
       const item = await articleApi.createPackage({
         copy: nextDraft,
         imagePromptPlan: nextImagePromptPlan,
@@ -1541,9 +1541,10 @@ export function ArticleGenerationView({
       setSelectedTaskId(item.id);
       setImagePromptPlan(item.imagePromptPlan || nextImagePromptPlan);
       articleApi.refreshCredits().then(applyCredits).catch(() => {});
-      if (item.status === "failed") setIsSubmitting(false);
     } catch (error) {
       showToast(formatArticleError(error));
+    } finally {
+      generationSubmitLockRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -1862,7 +1863,7 @@ export function ArticleGenerationView({
                         {isReferenceUploading
                           ? "正在上传素材..."
                           : referenceAssets.length
-                            ? "生成图片会强制包含这些素材主体"
+                            ? null
                             : "商品实拍、场景截图都可以，AI 帮你提炼创作主题"}
                       </span>
                     </div>

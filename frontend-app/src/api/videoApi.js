@@ -1,9 +1,9 @@
 import { requestJson as request } from "./request.js";
 import { createTaskPollingController } from "./taskPolling.js";
+import { getCachedCredits, refreshCachedCredits } from "./creditsCache.js";
 const taskPolling = createTaskPollingController();
 const FORCED_VIDEO_MODEL = "seedance_2_0_720p";
 let modelsPromise;
-let creditsPromise;
 
 export const videoApi = {
   subscribe(listener) {
@@ -15,17 +15,20 @@ export const videoApi = {
   },
 
   async getCredits() {
-    creditsPromise ||= request("/api/me/credits");
-    return creditsPromise;
+    return getCachedCredits();
   },
 
   async refreshCredits() {
-    creditsPromise = request("/api/me/credits");
-    return creditsPromise;
+    return refreshCachedCredits();
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/video/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/video/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

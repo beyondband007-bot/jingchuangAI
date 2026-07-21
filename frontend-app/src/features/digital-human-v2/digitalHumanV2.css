@@ -1034,18 +1034,19 @@
   width: 100%;
 }
 
-.dhv2-spec-select .arco-select-view {
+.dhv2-spec-select .custom-select-trigger {
   min-height: 40px;
   color: var(--dhv2-text);
   background: #ffffff;
-  border-color: var(--dhv2-border);
+  border-color: var(--dhv2-border) !important;
   border-radius: 10px;
 }
 
-.dhv2-spec-select .arco-select-view:hover,
-.dhv2-spec-select.arco-select-focused .arco-select-view {
-  border-color: #c8c0ff;
-  box-shadow: 0 0 0 2px rgba(98, 59, 255, 0.08);
+.dhv2-spec-select .custom-select-trigger:hover,
+.dhv2-spec-select .custom-select-trigger:focus-visible,
+.dhv2-spec-select.is-open .custom-select-trigger {
+  border-color: #c8c0ff !important;
+  box-shadow: 0 0 0 2px rgba(98, 59, 255, 0.08) !important;
 }
 
 .dhv2-cost-line {
@@ -1066,7 +1067,7 @@
   color: #ffffff;
   background: linear-gradient(135deg, #8b72ee, #5b28ff);
   border: 0;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 15px;
   font-weight: 900;
   cursor: pointer;
@@ -1166,6 +1167,7 @@
 }
 
 .dhv2-library__filters {
+  width: 235px;
   display: flex;
   gap: 10px;
 }
@@ -1519,6 +1521,7 @@
   position: absolute;
   top: 8px;
   right: 8px;
+  padding: 0;
   display: grid;
   place-items: center;
   width: 24px;
@@ -1968,7 +1971,6 @@
   height: 28px;
   flex-shrink: 0;
   color: #9a97a8;
-  background: #ffffff;
   border: 1px solid var(--dhv2-border);
   border-radius: 999px;
   cursor: pointer;
@@ -2788,8 +2790,8 @@
 .dhv2-preview__draft-item {
   position: relative;
   display: flex;
-  flex: 0 0 240px;
-  min-width: 240px;
+  flex: 0 0 250px;
+  min-width: 250px;
   background: #faf9fd;
   border: 1px solid #ebe7f4;
   border-radius: 12px;
@@ -2807,10 +2809,10 @@
 
 .dhv2-preview__draft-main {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 34px 10px 10px;
+  padding: 10px 10px 10px 10px;
   text-align: left;
   background: transparent;
   border: 0;
@@ -2875,12 +2877,13 @@
 
 .dhv2-preview__draft-remove {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   display: grid;
   place-items: center;
   width: 22px;
   height: 22px;
+  padding: 0;
   color: #9a94a8;
   background: #ffffff;
   border: 1px solid #ebe7f4;

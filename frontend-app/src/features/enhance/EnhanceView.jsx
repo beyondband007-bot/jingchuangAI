@@ -27,6 +27,7 @@ import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime } from "../../utils/time";
 import { enhanceApi } from "./enhanceApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
+import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -50,12 +51,12 @@ function EnhanceCenterState({
 
   if (task?.status === "completed" && task.resultUrl) {
     return (
-      <section className="watermark-center-state enhance-center-state marketing-result-card is-completed">
-        <header className="marketing-result-head">
+      <section className="marketing-result">
+        <header className="marketing-result__head">
           <span><CheckCircle2 size={18} />处理完成</span>
           <p>对比清晰度变化，可下载或继续处理</p>
         </header>
-        <div className="marketing-result-compare">
+        <div className="marketing-result__compare">
           <figure>
             <figcaption>原图</figcaption>
             {isVideo ? (
@@ -73,9 +74,9 @@ function EnhanceCenterState({
             )}
           </figure>
         </div>
-        <footer className="marketing-result-footer">
+        <footer className="marketing-result__footer">
           <p>已完成本次处理，可下载结果、再次处理当前素材，或上传新素材继续</p>
-          <div className="marketing-result-actions">
+          <div className="marketing-result__actions">
             <button type="button" onClick={onReset}>处理新素材</button>
             <a href={task.resultUrl} download>
               <Download size={15} />
@@ -107,8 +108,8 @@ function EnhanceCenterState({
     }
 
     return (
-      <section className="watermark-center-state enhance-center-state is-failed">
-        <span className="watermark-center-icon enhance-center-icon">
+      <section className="marketing-runtime-state marketing-runtime-state--failed">
+        <span className="marketing-runtime-icon">
           <Wand2 size={24} />
         </span>
         <strong>这次没有增强成功</strong>
@@ -118,13 +119,13 @@ function EnhanceCenterState({
   }
 
   return (
-    <section className="watermark-center-state enhance-center-state is-processing" aria-live="polite">
-      <span className="watermark-center-spinner">
+    <section className="marketing-runtime-state marketing-runtime-state--processing" aria-live="polite">
+      <span className="marketing-runtime-spinner">
         <Loader2 size={30} />
       </span>
       <strong>{isSubmitting ? "正在创建画质增强任务" : "正在智能提升画质"}</strong>
       <p>素材正在处理中，完成后会自动回填到这里。</p>
-      <div className="watermark-center-progress enhance-center-progress">
+      <div className="marketing-runtime-progress">
         <i style={{ width: `${task?.progress || 28}%` }} />
       </div>
       <small>{task?.progress ? `${task.progress}%` : "任务准备中"} · 请保持页面打开</small>
@@ -200,7 +201,7 @@ function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelec
   }
 
   return (
-    <button className={`watermark-upload-slot enhance-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+    <button className={`marketing-composer__upload marketing-tool-upload watermark-upload-slot enhance-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
       <input
         ref={inputRef}
         type="file"
@@ -275,7 +276,6 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
   const upscaleFactor = options.defaults?.upscaleFactor || selectedModel?.upscaleFactor || "2";
-  const price = isReady ? `${selectedModel?.basePoints || 0} 积分` : "计算中";
   const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
   function changeMode(nextMode) {
@@ -340,8 +340,8 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="watermark-composer enhance-composer" aria-label="画质增强上传面板">
-      <div className="watermark-mode-tabs enhance-mode-tabs">
+    <div className="marketing-composer marketing-composer--inline marketing-tool-card watermark-composer enhance-composer" aria-label="画质增强上传面板">
+      <div className="marketing-composer__tabs marketing-tool-tabs watermark-mode-tabs enhance-mode-tabs">
         <button className={mode === "image" ? "is-active" : ""} type="button" disabled={!isReady} onClick={() => changeMode("image")}>
           <Image size={15} />
           图片增强
@@ -359,9 +359,17 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
         onSelect={selectSource}
         onClear={clearSource}
       />
-      <div className="watermark-composer-footer enhance-composer-footer">
+      <div className="marketing-composer__footer marketing-tool-footer watermark-composer-footer enhance-composer-footer">
         <span>{notice || (mode === "video" ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音` : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}</span>
-        <strong><BillingPoints feature="enhance" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 0 : 30} /></strong>
+        <strong>
+          {sourceAsset ? (
+            <>
+              预计消耗 <BillingPoints feature="enhance" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 0 : 30} /> 积分
+            </>
+          ) : (
+            "请上传文件"
+          )}
+        </strong>
         <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
@@ -427,6 +435,7 @@ export function EnhanceView({ onOpenFeature }) {
 
   const submittedTask = tasks.find((task) => String(task.id) === String(submittedTaskId)) || null;
   const showCenterState = isSubmitting || submitError || submittedTask;
+  const showCompletedResult = submittedTask?.status === "completed";
   const visibleTasks = viewTab === "favorite"
     ? tasks.filter((task) => task.favorite && String(task.id) !== String(submittedTaskId))
     : viewTab === "recent"
@@ -505,17 +514,45 @@ export function EnhanceView({ onOpenFeature }) {
           setSubmittedTaskId(null);
         }}
       />
-      <div className={`watermark-canvas enhance-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
+      <div className={`marketing-canvas enhance-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
         {showEmptyHero && (
-          <div className="watermark-hero-empty enhance-hero-empty">
-            <span className="watermark-hero-icon enhance-hero-icon">
-              <Wand2 size={36} />
-            </span>
-            <h1>画质提升</h1>
-            <p>上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
-          </div>
+          <MarketingToolPanel className="watermark-home-panel enhance-home-panel">
+            <div className="marketing-panel-hero watermark-hero-empty enhance-hero-empty">
+              <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
+                <Wand2 size={36} />
+              </span>
+              <h1 className="marketing-panel-hero__title">画质提升</h1>
+              <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
+            </div>
+            <EnhanceComposer
+              options={options}
+              onSubmit={createTask}
+              isSubmitting={isSubmitting}
+            />
+          </MarketingToolPanel>
         )}
-        {showCenterState && (
+        {showCenterState && showCompletedResult ? (
+          <MarketingToolPanel className="watermark-state-panel enhance-state-panel">
+            <div className="marketing-panel-hero watermark-hero-empty enhance-hero-empty">
+              <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
+                <Wand2 size={36} />
+              </span>
+              <h1 className="marketing-panel-hero__title">画质提升</h1>
+              <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
+            </div>
+            <EnhanceCenterState
+              task={submittedTask}
+              isSubmitting={isSubmitting && !submittedTask}
+              error={submitError}
+              onReset={() => {
+                setSubmittedTaskId(null);
+              }}
+              onRepeat={requestRepeat}
+              onDismiss={dismissCenterState}
+              onRecharge={goToRecharge}
+            />
+          </MarketingToolPanel>
+        ) : showCenterState ? (
           <EnhanceCenterState
             task={submittedTask}
             isSubmitting={isSubmitting && !submittedTask}
@@ -527,7 +564,7 @@ export function EnhanceView({ onOpenFeature }) {
             onDismiss={dismissCenterState}
             onRecharge={goToRecharge}
           />
-        )}
+        ) : null}
         {showRecentEmpty && (
           <div className="watermark-recent-empty enhance-recent-empty">
             <Wand2 size={24} />
@@ -547,13 +584,6 @@ export function EnhanceView({ onOpenFeature }) {
           ))}
         </div>
       </div>
-      {viewTab === "home" && !showCenterState && (
-        <EnhanceComposer
-          options={options}
-          onSubmit={createTask}
-          isSubmitting={isSubmitting}
-        />
-      )}
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
     </section>

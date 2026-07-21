@@ -122,6 +122,7 @@ export function SystemVoiceCard({
                 <div className="dhv2-voice-modal" role="dialog" aria-modal="true" aria-label="选择音色">
                   <VoicePickerPanel
                     voices={voices}
+                    avatar={selectedAvatar}
                     voiceId={voiceId}
                     onVoiceIdChange={onVoiceIdChange}
                     voiceSpeed={voiceSpeed}
@@ -201,6 +202,7 @@ export function SystemVoiceCard({
           <div className="dhv2-voice-popover" style={voicePopoverStyle}>
             <VoicePickerPanel
               voices={voices}
+              avatar={selectedAvatar}
               voiceId={voiceId}
               onVoiceIdChange={onVoiceIdChange}
               voiceSpeed={voiceSpeed}

@@ -1,3 +1,5 @@
+import { config } from "../config/index.js";
+
 export const BILLING_RULES = Object.freeze({
   imagePointsPerItem: 30,
   videoPointsPerSecond: 120,
@@ -125,8 +127,8 @@ export function calculateBillingQuote(feature, payload = {}) {
       break;
     case "watermark":
       items.push(mediaKind === "video"
-        ? item("video", "视频去水印", calculateVideoPoints(durationSeconds))
-        : item("image", "图片去水印", BILLING_RULES.imagePointsPerItem));
+        ? item("video", "视频去水印", config.kie.watermarkVideoPoints || calculateVideoPoints(durationSeconds))
+        : item("image", "图片去水印", config.kie.watermarkImagePoints || BILLING_RULES.imagePointsPerItem));
       break;
     case "enhance":
       items.push(item(mediaKind === "video" ? "video-enhance" : "image",
@@ -156,5 +158,10 @@ export function calculateBillingQuote(feature, payload = {}) {
 }
 
 export function getPublicBillingRules() {
-  return { ...BILLING_RULES, rulesVersion: "2026-06-24" };
+  return {
+    ...BILLING_RULES,
+    watermarkImagePoints: config.kie.watermarkImagePoints,
+    watermarkVideoPoints: config.kie.watermarkVideoPoints,
+    rulesVersion: "2026-06-24"
+  };
 }

@@ -240,18 +240,92 @@ export function isAiCustomMineAvatar(avatar) {
   );
 }
 
+// 官方男声形象名单（其余官方形象默认为女声）
+const MALE_OFFICIAL_AVATAR_NAMES = new Set([
+  "主播对话",
+  "房地产经纪人",
+  "财经主播",
+  "运营达人",
+]);
+
+export function getAvatarGender(avatar) {
+  // 照片数字人性别未知，不限制
+  if (avatar?.isPhotoPortrait) return "neutral";
+
+  // AI 定制形象以创建时填写的 gender 字段为准
+  if (avatar?.gender === "男") return "male";
+  if (avatar?.gender === "女") return "female";
+
+  const name = String(avatar?.name || "");
+  const text = `${name} ${avatar?.description || ""}`;
+
+  // 官方男声形象名单精确匹配
+  if (MALE_OFFICIAL_AVATAR_NAMES.has(name)) return "male";
+
+  // 名称/描述含性别关键词兜底
+  if (/男/.test(text)) return "male";
+  if (/女/.test(text)) return "female";
+
+  // 无法判断的自定义形象不限制
+  if (isAiCustomMineAvatar(avatar)) return "neutral";
+
+  // 官方形象其余默认女声
+  return "female";
+}
+
+const FEMALE_VOICE_NAMES = new Set([
+  "成熟少妇语音",
+  "旗袍大妹子",
+  "亲和服务声",
+]);
+
+const MALE_VOICE_NAMES = new Set([
+  "纪录片旁白",
+]);
+
+const FEMALE_SYSTEM_VOICE_IDS = new Set([
+  "Chinese (Mandarin)_HK_Flight_Attendant",
+]);
+
+const MALE_SYSTEM_VOICE_IDS = new Set([
+  "moss_audio_ce44fc67-7ce3-11f0-8de5-96e35d26fb85",
+  "moss_audio_aaa1346a-7ce7-11f0-8e61-2e6e3c7ee85d",
+  "audiobook_male_1",
+]);
+
+export function getVoiceGender(voice) {
+  const id = String(typeof voice === "object" ? voice?.id : voice || "");
+  const name = String(typeof voice === "object" ? voice?.name : "");
+  if (FEMALE_VOICE_NAMES.has(name)) return "female";
+  if (MALE_VOICE_NAMES.has(name)) return "male";
+  if (FEMALE_SYSTEM_VOICE_IDS.has(id)) return "female";
+  if (MALE_SYSTEM_VOICE_IDS.has(id)) return "male";
+  if (/^female-|^presenter_female$|Flight_Attendant/.test(id)) return "female";
+  if (/^male-|^presenter_male$|^audiobook_male_|boy$/.test(id)) return "male";
+  return "neutral";
+}
+
+export function filterVoicesByAvatarGender(voices = [], avatar) {
+  const gender = getAvatarGender(avatar);
+  if (gender === "neutral") return voices;
+  return voices.filter((voice) => {
+    const vg = getVoiceGender(voice);
+    return vg === "neutral" || vg === gender;
+  });
+}
+
 export function matchVoiceForAvatar(avatar, voices = []) {
   const enabledVoices = voices.filter((voice) => isDigitalHumanVoiceEnabled(voice.id));
   if (!enabledVoices.length) return null;
+  const genderFiltered = filterVoicesByAvatarGender(enabledVoices, avatar);
+  const pool = genderFiltered.length ? genderFiltered : enabledVoices;
   const text = `${avatar?.name || ""} ${avatar?.description || ""}`;
   for (const rule of VOICE_MATCH_RULES) {
     if (!rule.pattern.test(text)) continue;
-    const matched = enabledVoices.find((voice) => rule.voiceIds.includes(voice.id));
+    const matched = pool.find((voice) => rule.voiceIds.includes(voice.id));
     if (matched) return matched;
   }
-  return (
-    enabledVoices.find((voice) => voice.id === "female-qn-qingse") || enabledVoices[0]
-  );
+  return pool.find((voice) => voice.id === "female-qn-qingse") || pool[0];
 }
 
 export function getVoiceMatchHint(avatar) {

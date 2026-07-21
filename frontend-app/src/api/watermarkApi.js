@@ -17,7 +17,12 @@ export const watermarkApi = {
   },
 
   async getModels() {
-    modelsPromise ||= request("/api/watermark/models");
+    if (!modelsPromise) {
+      modelsPromise = request("/api/watermark/models").catch((err) => {
+        modelsPromise = undefined;
+        return Promise.reject(err);
+      });
+    }
     return modelsPromise;
   },
 

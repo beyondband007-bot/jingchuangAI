@@ -1,13 +1,15 @@
 import dotenv from "dotenv";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const projectRoot = path.resolve(backendRoot, "..");
 
 // Load project root env first as defaults, then backend-specific env to take precedence.
 const runtimeEnv = { ...process.env };
-dotenv.config({ path: path.resolve(process.cwd(), "..", ".env") });
-dotenv.config({ override: true });
+dotenv.config({ path: path.resolve(projectRoot, ".env") });
+dotenv.config({ path: path.resolve(backendRoot, ".env"), override: true });
 Object.assign(process.env, runtimeEnv);
-
-const projectRoot = path.resolve(process.cwd(), "..");
 
 function resolveProjectPath(value) {
   const filePath = String(value || "").trim();

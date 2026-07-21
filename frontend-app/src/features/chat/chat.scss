@@ -70,7 +70,7 @@
 .chat-empty-state h1 {
   margin: 18px 0 8px;
   color: #172033;
-  font-size: 26px;
+  font-size: 32px;
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -717,7 +717,6 @@
   box-shadow: none !important;
   width: 100%;
   margin: 0;
-  padding: 0 24px 0 0;
 }
 
 .llm-empty-state {
@@ -1322,7 +1321,7 @@
 
 [data-feature-module="chat"] .chat-empty-state h1 {
   color: #282532 !important;
-  font-size: 34px !important;
+  font-size: 32px !important;
   font-weight: 500 !important;
 }
 
@@ -2107,7 +2106,7 @@
 
   [data-feature-module="chat"] .chat-view-root.is-intro .chat-empty-state h1,
   [data-feature-module="chat"] .chat-view-root.is-intro .llm-empty-state h1 {
-    font-size: 26px !important;
+    font-size: 32px !important;
     line-height: 1.2 !important;
   }
 
