@@ -66,7 +66,7 @@ export async function getTask(id, userId) {
 }
 
 export async function createTask(payload, userId) {
-  let { prompt, model, ratio, duration, mode = "first-frame", count = 1, referenceImageUrl, referenceVideoUrl } = payload;
+  let { prompt, model, ratio, duration, mode = "first-frame", count = 1, referenceImageUrl, referenceVideoUrl, source } = payload;
 
   // 视频生成统一走 Ark Seedance 2.0，与换脸和动作迁移共用同一套凭据与任务链路。
   const forcedModelKey = "seedance_2_0_720p";
@@ -93,6 +93,7 @@ export async function createTask(payload, userId) {
     const rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
     taskId = await createVideoTask(connection, {
       userId,
+      source,
       modelKey: model,
       prompt: prompt.trim(),
       ratio,

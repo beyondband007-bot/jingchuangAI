@@ -340,6 +340,41 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS canvas_projects (
+      id VARCHAR(64) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      name VARCHAR(160) NOT NULL,
+      thumbnail_url TEXT NULL,
+      graph_json JSON NOT NULL,
+      viewport_json JSON NOT NULL,
+      schema_version INT NOT NULL DEFAULT 1,
+      revision INT NOT NULL DEFAULT 1,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      deleted_at TIMESTAMP NULL,
+      INDEX idx_canvas_projects_user_updated (user_id, updated_at),
+      CONSTRAINT fk_canvas_projects_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS canvas_node_tasks (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      project_id VARCHAR(64) NOT NULL,
+      user_id BIGINT UNSIGNED NOT NULL,
+      node_id VARCHAR(80) NOT NULL,
+      task_type VARCHAR(32) NOT NULL,
+      task_id VARCHAR(80) NOT NULL,
+      input_hash CHAR(64) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_canvas_node_task (project_id, node_id, task_type, task_id),
+      INDEX idx_canvas_node_tasks_project (project_id, user_id, created_at),
+      CONSTRAINT fk_canvas_node_tasks_project FOREIGN KEY (project_id) REFERENCES canvas_projects(id),
+      CONSTRAINT fk_canvas_node_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS image_model_prices (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       model_key VARCHAR(80) NOT NULL UNIQUE,
@@ -492,6 +527,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS video_generation_tasks (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
+      source VARCHAR(40) NOT NULL DEFAULT 'video',
       model_key VARCHAR(80) NOT NULL,
       prompt TEXT NOT NULL,
       ratio VARCHAR(20) NOT NULL,
@@ -515,6 +551,16 @@ async function createTables() {
       CONSTRAINT fk_video_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [videoSourceColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'source'`,
+    [config.db.database]
+  );
+  if (videoSourceColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'video' AFTER user_id");
+  }
 
   const [videoRefImageColumns] = await pool.query(
     `SELECT COLUMN_NAME
@@ -972,14 +1018,37 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
+      source VARCHAR(40) NOT NULL DEFAULT 'chat',
       title VARCHAR(160) NOT NULL,
       model_key VARCHAR(80) NOT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_chat_conversations_user_updated (user_id, updated_at),
+      INDEX idx_chat_conversations_source_updated (source, user_id, updated_at),
       CONSTRAINT fk_chat_conversations_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [chatConversationColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'chat_conversations'`,
+    [config.db.database]
+  );
+  const chatConversationColumnNames = new Set(chatConversationColumns.map((column) => column.COLUMN_NAME));
+  if (!chatConversationColumnNames.has("source")) {
+    await pool.query("ALTER TABLE chat_conversations ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'chat' AFTER user_id");
+  }
+
+  const [chatConversationIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'chat_conversations' AND INDEX_NAME = 'idx_chat_conversations_source_updated'`,
+    [config.db.database]
+  );
+  if (chatConversationIndexes.length === 0) {
+    await pool.query("ALTER TABLE chat_conversations ADD INDEX idx_chat_conversations_source_updated (source, user_id, updated_at)");
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS chat_messages (
