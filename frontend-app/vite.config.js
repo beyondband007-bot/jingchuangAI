@@ -49,6 +49,11 @@ export default defineConfig({
   server: {
     ...(devPort ? { port: devPort, strictPort: true } : {}),
     proxy: {
+      "/canvas-app": {
+        target: "http://127.0.0.1:5176",
+        changeOrigin: true,
+        ws: true
+      },
       "/api": {
         target: proxyTarget,
         changeOrigin: true

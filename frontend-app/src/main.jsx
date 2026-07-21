@@ -125,6 +125,7 @@ import { formatBeijingDateTime, formatBeijingHistoryTime } from "./utils/time";
 import "@arco-design/web-react/dist/css/arco.css";
 import "./styles.scss";
 import { ChatGenerationView } from "./features/chat/ChatGenerationView";
+import { InfiniteCanvasHost } from "./features/infinite-canvas/InfiniteCanvasHost";
 import "./features/article/articleTopTabs.scss";
 import "./features/article/articlePopularWorkbench.scss";
 import "./features/article/articleHistory.scss";
@@ -717,6 +718,7 @@ const navItems = [
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "chat", label: "大模型", icon: Bot },
+  { id: "infinite-canvas", label: "无限画布", icon: Layers },
   { id: "digital-human", label: "数字人形象", icon: UserRound },
   { id: "motion", label: "动作迁移", icon: Sparkles },
   { id: "face-swap", label: "视频换脸", icon: Scissors },
@@ -735,6 +737,7 @@ const navItems = [
 const navSections = [
   { type: "item", id: "creation" },
   { type: "item", id: "chat" },
+  { type: "item", id: "infinite-canvas" },
   {
     type: "group",
     id: "vision",
@@ -766,6 +769,7 @@ const homeFeatureRoutes = [
   "image",
   "video",
   "chat",
+  "infinite-canvas",
   "digital-human",
   "motion",
   "face-swap",
@@ -11802,6 +11806,17 @@ function ImageFeaturePage({
           />
         </FeatureModuleKeepAlive>
         <FeatureModuleKeepAlive
+          id="infinite-canvas"
+          activeNav={activeNav}
+          visitedIds={visitedIds}
+        >
+          <InfiniteCanvasHost
+            authUser={authUser}
+            onOpenAuth={onOpenAuth}
+            onOpenFeature={handleNavChange}
+          />
+        </FeatureModuleKeepAlive>
+        <FeatureModuleKeepAlive
           id="image"
           activeNav={activeNav}
           visitedIds={visitedIds}
@@ -11969,6 +11984,7 @@ function ImageFeaturePage({
           "image",
           "video",
           "chat",
+          "infinite-canvas",
           "digital-human",
           "motion",
           "face-swap",

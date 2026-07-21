@@ -18,19 +18,19 @@ export async function findVideoModelPrice(connection, modelKey) {
   return models[0] || null;
 }
 
-export async function createVideoTask(connection, { userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl, referenceVideoUrl }) {
+export async function createVideoTask(connection, { userId, source, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl, referenceVideoUrl }) {
   const [result] = await connection.query(
     `INSERT INTO video_generation_tasks
-     (user_id, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost, reference_image_url, reference_video_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [userId, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl || null, referenceVideoUrl || null]
+     (user_id, source, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost, reference_image_url, reference_video_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [userId, source || "video", modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl || null, referenceVideoUrl || null]
   );
   return result.insertId;
 }
 
 export async function listVideoTaskRows({ userId, filter = "all" } = {}) {
   const params = [userId];
-  let where = "t.user_id = ?";
+  let where = "t.user_id = ? AND COALESCE(t.source, 'video') <> 'infinite-canvas'";
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
   } else if (filter === "recent") {

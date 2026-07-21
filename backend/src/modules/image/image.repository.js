@@ -167,9 +167,13 @@ export async function listImageTaskRows({ userId, filter = "all", source } = {})
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
   }
-  if (source && await hasSourceColumn()) {
-    where += " AND t.source = ?";
-    params.push(source);
+  if (await hasSourceColumn()) {
+    if (source) {
+      where += " AND t.source = ?";
+      params.push(source);
+    } else {
+      where += " AND COALESCE(t.source, 'image') <> 'infinite-canvas'";
+    }
   }
 
   const [rows] = await getPool().query(

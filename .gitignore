@@ -38,9 +38,16 @@ backup-before-import-*.sql
 
 # Local cache
 .claude/
+tmp/
 tmp-volc-e2e/
 start-dev.ps1
 STARTUP.md
+
+# Unused files from the imported infinite-canvas starter
+frontend-app/canvas-app/pnpm-lock.yaml
+frontend-app/canvas-app/src/assets/logo.png
+frontend-app/canvas-app/src/assets/product01.jpg
+frontend-app/canvas-app/src/assets/vue.svg
 
 # Large local media assets
 frontend-app/public/assets/videoInspiration/

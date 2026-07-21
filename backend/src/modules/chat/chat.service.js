@@ -38,6 +38,10 @@ function buildTitle(messages) {
   return title.length > 32 ? `${title.slice(0, 32)}...` : title;
 }
 
+function normalizeChatSource(value) {
+  return value === "infinite-canvas" ? "infinite-canvas" : "chat";
+}
+
 function calculatePoints(_model, _kieCreditsConsumed, text, messages = []) {
   return calculateTextPoints({
     outputChars: String(text || "").length,
@@ -136,6 +140,7 @@ export async function deleteConversation(conversationId) {
 
 export async function sendMessage(payload, userId) {
   const { conversationId = null, model, reasoningEffort = "none" } = payload;
+  const source = normalizeChatSource(payload.source);
   const messages = normalizeMessages(payload.messages || []);
   validateChatPayload({ model, messages, reasoningEffort });
 
@@ -173,7 +178,8 @@ export async function sendMessage(payload, userId) {
       resolvedConversationId = await createChatConversation(setupConnection, {
         userId,
         title: buildTitle(messages),
-        modelKey: model
+        modelKey: model,
+        source
       });
     }
 
@@ -268,6 +274,7 @@ export async function sendMessage(payload, userId) {
 
 async function prepareChatMessage(payload, userId) {
   const { conversationId = null, model, reasoningEffort = "none" } = payload;
+  const source = normalizeChatSource(payload.source);
   const messages = normalizeMessages(payload.messages || []);
   validateChatPayload({ model, messages, reasoningEffort });
 
@@ -305,7 +312,8 @@ async function prepareChatMessage(payload, userId) {
       resolvedConversationId = await createChatConversation(setupConnection, {
         userId,
         title: buildTitle(messages),
-        modelKey: model
+        modelKey: model,
+        source
       });
     }
 

@@ -24,11 +24,11 @@ export async function ensureUserHasReserveCredits(connection, { userId, reserveP
   return accounts.length > 0 && Number(accounts[0].balance) >= Number(reservePoints);
 }
 
-export async function createChatConversation(connection, { userId, title, modelKey }) {
+export async function createChatConversation(connection, { userId, title, modelKey, source = "chat" }) {
   const [result] = await connection.query(
-    `INSERT INTO chat_conversations (user_id, title, model_key)
-     VALUES (?, ?, ?)`,
-    [userId, title, modelKey]
+    `INSERT INTO chat_conversations (user_id, source, title, model_key)
+     VALUES (?, ?, ?, ?)`,
+    [userId, source, title, modelKey]
   );
   return result.insertId;
 }
@@ -56,6 +56,7 @@ export async function listChatConversationRows() {
      INNER JOIN users u ON u.id = c.user_id
      LEFT JOIN chat_model_prices mp ON mp.model_key = c.model_key
      WHERE u.external_id = ?
+       AND COALESCE(c.source, 'chat') <> 'infinite-canvas'
      ORDER BY c.updated_at DESC, c.id DESC
      LIMIT 100`,
     [getCurrentExternalId()]
