@@ -57,3 +57,18 @@ export const createCanvasNodeTask = withLoggedIn(async (req, res) => {
 export const listCanvasNodeTasks = withLoggedIn(async (req, res) => {
   res.json(await listNodeTasks(req.params.id, req.user.id));
 });
+
+export const uploadCanvasMedia = withLoggedIn(async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: "file is required" });
+    return;
+  }
+  const mimeType = String(req.file.mimetype || "");
+  res.status(201).json({
+    url: `/media/canvas/uploads/${req.file.filename}`,
+    kind: mimeType.startsWith("video/") ? "video" : "image",
+    originalName: req.file.originalname,
+    mimeType,
+    size: req.file.size,
+  });
+});

@@ -331,6 +331,7 @@ import { NIcon, NTooltip, NSwitch, NImagePreview, NModal, NButton } from 'naive-
 import { TrashOutline, ExpandOutline, ImageOutline, CloseCircleOutline, CopyOutline, VideocamOutline, DownloadOutline, EyeOutline, BrushOutline, RefreshOutline, ColorWandOutline, SwapHorizontalOutline } from '@vicons/ionicons5'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
+import { uploadCanvasMedia } from '../../api/facemini'
 
 const props = defineProps({
   id: String,
@@ -412,14 +413,8 @@ const handleSelect = (item) => {
       return
     }
 
-    // Create text node for prompt
-    const textNodeId = addNode('text', { x: nodeX + 300, y: nodeY - 100 }, {
-      content: '',
-      label: '提示词'
-    })
-
     // Create imageConfig node
-    const configNodeId = addNode('imageConfig', { x: nodeX + 900, y: nodeY }, {
+    const configNodeId = addNode('imageConfig', { x: nodeX + 360, y: nodeY }, {
       model: 'gpt-image-2-text-to-image',
       size: '2048x2048',
       label: '生图配置'
@@ -427,9 +422,8 @@ const handleSelect = (item) => {
 
     // Connect edges
     addEdge({ source: props.id, target: configNodeId, sourceHandle: 'right', targetHandle: 'left' })
-    addEdge({ source: textNodeId, target: configNodeId, sourceHandle: 'right', targetHandle: 'left' })
 
-    setTimeout(() => updateNodeInternals([textNodeId, configNodeId]), 50)
+    setTimeout(() => updateNodeInternals(configNodeId), 50)
     window.$message?.success('已创建图生图工作流')
   } else if (action === 'image_videoConfig') {
     // Video generation workflow | 视频生成工作流
@@ -437,14 +431,8 @@ const handleSelect = (item) => {
     const nodeX = currentNode?.position?.x || 0
     const nodeY = currentNode?.position?.y || 0
 
-    // Create text node for prompt
-    const textNodeId = addNode('text', { x: nodeX + 300, y: nodeY - 100 }, {
-      content: '',
-      label: '提示词'
-    })
-
     // Create videoConfig node
-    const configNodeId = addNode('videoConfig', { x: nodeX + 600, y: nodeY }, {
+    const configNodeId = addNode('videoConfig', { x: nodeX + 360, y: nodeY }, {
       label: '视频生成'
     })
 
@@ -458,15 +446,7 @@ const handleSelect = (item) => {
       data: { imageRole: 'first_frame_image' }
     })
 
-    // Connect text to videoConfig
-    addEdge({
-      source: textNodeId,
-      target: configNodeId,
-      sourceHandle: 'right',
-      targetHandle: 'left'
-    })
-
-    setTimeout(() => updateNodeInternals([textNodeId, configNodeId]), 50)
+    setTimeout(() => updateNodeInternals(configNodeId), 50)
     window.$message?.success('已创建视频生成工作流')
   }
 }
@@ -621,14 +601,8 @@ const createInpaintWorkflow = () => {
   const nodeX = currentNode?.position?.x || 0
   const nodeY = currentNode?.position?.y || 0
   
-  // Create text node for prompt | 创建文本节点用于提示词
-  const textNodeId = addNode('text', { x: nodeX + 300, y: nodeY - 100 }, {
-    content: '请输入重绘提示词...',
-    label: '重绘提示词'
-  })
-  
   // Create imageConfig node for inpainting | 创建图生图配置节点
-  const configNodeId = addNode('imageConfig', { x: nodeX + 600, y: nodeY }, {
+  const configNodeId = addNode('imageConfig', { x: nodeX + 360, y: nodeY }, {
     model: 'gpt-image-2-text-to-image',
     size: '2048x2048',
     label: '局部重绘',
@@ -649,33 +623,15 @@ const createInpaintWorkflow = () => {
     targetHandle: 'left'
   })
   
-  // Connect text node to config node | 连接文本节点到配置节点
-  addEdge({
-    source: textNodeId,
-    target: configNodeId,
-    sourceHandle: 'right',
-    targetHandle: 'left'
-  })
-  
   // Exit inpaint mode | 退出涂抹模式
   isInpaintMode.value = false
   
   // Force Vue Flow to recalculate | 强制重新计算
   setTimeout(() => {
-    updateNodeInternals([textNodeId, configNodeId])
+    updateNodeInternals(configNodeId)
   }, 50)
   
   window.$message?.success('已创建局部重绘工作流')
-}
-
-// Convert file to base64 | 将文件转换为 base64
-const fileToBase64 = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 // Handle file upload | 处理文件上传
@@ -683,12 +639,12 @@ const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
     try {
-      // Convert to base64 | 转换为 base64
-      const base64 = await fileToBase64(file)
-      // Store both display URL and base64 | 同时存储显示 URL 和 base64
+      updateNode(props.id, { loading: true, error: '' })
+      const uploaded = await uploadCanvasMedia(file)
       updateNode(props.id, {
-        url: base64,  // Use base64 as display URL | 使用 base64 作为显示 URL
-        base64: base64,  // Store base64 for API calls | 存储 base64 用于 API 调用
+        url: uploaded.url,
+        base64: '',
+        loading: false,
         fileName: file.name,
         fileType: file.type,
         label: '参考图',
@@ -696,7 +652,8 @@ const handleFileUpload = async (event) => {
       })
     } catch (err) {
       console.error('File upload error:', err)
-      window.$message?.error('图片上传失败')
+      updateNode(props.id, { loading: false, error: err.message || '图片上传失败' })
+      window.$message?.error(err.message || '图片上传失败')
     }
   }
 }
@@ -741,10 +698,12 @@ const handleReplaceFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
     try {
-      const base64 = await fileToBase64(file)
+      updateNode(props.id, { loading: true, error: '' })
+      const uploaded = await uploadCanvasMedia(file)
       updateNode(props.id, {
-        url: base64,
-        base64: base64,
+        url: uploaded.url,
+        base64: '',
+        loading: false,
         fileName: file.name,
         fileType: file.type,
         label: '参考图',
@@ -755,7 +714,8 @@ const handleReplaceFileUpload = async (event) => {
       window.$message?.success('图片已替换')
     } catch (err) {
       console.error('File upload error:', err)
-      window.$message?.error('图片上传失败')
+      updateNode(props.id, { loading: false, error: err.message || '图片上传失败' })
+      window.$message?.error(err.message || '图片上传失败')
     }
   }
 }
@@ -836,12 +796,6 @@ const handleImageGen = () => {
   const nodeX = currentNode?.position?.x || 0
   const nodeY = currentNode?.position?.y || 0
 
-  // Create text node for prompt | 创建文本节点用于提示词
-  const textNodeId = addNode('text', { x: nodeX + 300, y: nodeY - 100 }, {
-    content: '',
-    label: '提示词'
-  })
-
   // Create ImageNode for editing | 创建图片编辑节点
   const imageNodeId = addNode('image', { x: nodeX + 600, y: nodeY }, {
     url: props.data.url,  // Pass the current image as input
@@ -872,17 +826,9 @@ const handleImageGen = () => {
     targetHandle: 'left'
   })
 
-  // Connect text node to config node | 连接文本节点到配置节点
-  addEdge({
-    source: textNodeId,
-    target: configNodeId,
-    sourceHandle: 'right',
-    targetHandle: 'left'
-  })
-
   // Force Vue Flow to recalculate node dimensions | 强制 Vue Flow 重新计算节点尺寸
   setTimeout(() => {
-    updateNodeInternals([textNodeId, imageNodeId, configNodeId])
+    updateNodeInternals([imageNodeId, configNodeId])
   }, 50)
 
   window.$message?.success('已创建图生图工作流')
@@ -917,12 +863,6 @@ const handleVideoGen = () => {
   const nodeX = currentNode?.position?.x || 0
   const nodeY = currentNode?.position?.y || 0
 
-  // Create text node for prompt | 创建文本节点用于提示词
-  const textNodeId = addNode('text', { x: nodeX + 300, y: nodeY - 100 }, {
-    content: '',
-    label: '提示词'
-  })
-
   // Create videoConfig node | 创建视频配置节点
   const configNodeId = addNode('videoConfig', { x: nodeX + 600, y: nodeY }, {
     label: '视频生成'
@@ -938,17 +878,9 @@ const handleVideoGen = () => {
     data: { imageRole: 'first_frame_image' } // Default to first frame | 默认首帧
   })
 
-  // Connect text node to config node | 连接文本节点到配置节点
-  addEdge({
-    source: textNodeId,
-    target: configNodeId,
-    sourceHandle: 'right',
-    targetHandle: 'left'
-  })
-
   // Force Vue Flow to recalculate node dimensions | 强制 Vue Flow 重新计算节点尺寸
   setTimeout(() => {
-    updateNodeInternals([textNodeId, configNodeId])
+    updateNodeInternals(configNodeId)
   }, 50)
 }
 </script>

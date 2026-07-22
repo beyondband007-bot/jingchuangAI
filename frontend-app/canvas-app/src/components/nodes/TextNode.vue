@@ -441,7 +441,7 @@ const handleSelect = (item) => {
   const nodeY = currentNode?.position?.y || 0
 
   const defaultData = {
-    imageConfig: { model: 'gpt-image-2-text-to-image', size: '1x1', label: '文生图' },
+    imageConfig: { model: 'gpt-image-2-text-to-image', size: '1x1', label: '生图配置' },
     videoConfig: { label: '视频生成' },
     llmConfig: { label: 'LLM文本生成' }
   }
@@ -698,7 +698,7 @@ const handleImageGen = () => {
   const configNodeId = addNode('imageConfig', { x: nodeX + 400, y: nodeY }, {
     model: 'gpt-image-2-text-to-image',
     size: '2048x2048',
-    label: '文生图'
+    label: '生图配置'
   })
 
   // Auto connect | 自动连接

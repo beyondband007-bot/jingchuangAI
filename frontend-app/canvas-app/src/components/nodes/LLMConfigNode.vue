@@ -418,7 +418,7 @@ const handleSelect = (item) => {
   const nodeY = currentNode?.position?.y || 0
 
   const defaultData = {
-    imageConfig: { model: 'gpt-image-2-text-to-image', size: '1x1', label: '文生图' },
+    imageConfig: { model: 'gpt-image-2-text-to-image', size: '1x1', label: '生图配置' },
     videoConfig: { label: '视频生成' },
     text: { content: '', label: '文本输入' }
   }

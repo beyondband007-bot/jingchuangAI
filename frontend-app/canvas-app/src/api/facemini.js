@@ -46,14 +46,42 @@ export function openMyAssets() {
 }
 
 export async function uploadDataUrl(dataUrl, path, filename = 'canvas-reference.png') {
-  if (!String(dataUrl || '').startsWith('data:')) return dataUrl
-  const response = await fetch(dataUrl)
+  const source = String(dataUrl || '').trim()
+  if (!source) return source
+
+  const isDataUrl = source.startsWith('data:')
+  let isLocalMedia = false
+  if (!isDataUrl) {
+    try {
+      const url = new URL(source, window.location.origin)
+      isLocalMedia = url.origin === window.location.origin && url.pathname.startsWith('/media/')
+    } catch {
+      isLocalMedia = false
+    }
+  }
+  if (!isDataUrl && !isLocalMedia) return source
+
+  const response = await fetch(source, { credentials: 'include' })
+  if (!response.ok) throw new Error(`参考图读取失败（${response.status}）`)
   const blob = await response.blob()
-  const file = new File([blob], filename, { type: blob.type || 'image/png' })
+  const extensionByType = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif'
+  }
+  const fallbackName = filename.replace(/\.[^.]+$/, '') + (extensionByType[blob.type] || '.png')
+  const file = new File([blob], fallbackName, { type: blob.type || 'image/png' })
   const formData = new FormData()
   formData.append('file', file)
   const uploaded = await faceminiRequest(path, { method: 'POST', body: formData })
   return uploaded.url
+}
+
+export async function uploadCanvasMedia(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return faceminiRequest('/canvas/uploads/media', { method: 'POST', body: formData })
 }
 
 export async function associateNodeTask({ projectId, nodeId, taskType, taskId, inputHash = '' }) {
@@ -63,4 +91,3 @@ export async function associateNodeTask({ projectId, nodeId, taskType, taskId, i
     body: JSON.stringify({ nodeId, taskType, taskId, inputHash })
   })
 }
-
