@@ -357,7 +357,7 @@ export const useWorkflowOrchestrator = () => {
     // Step 2: Create imageConfig with autoExecute | 创建图片配置节点并自动执行
     currentStep.value = 2
     const imageConfigId = addNode('imageConfig', { x, y: position.y }, {
-      label: '文生图',
+      label: '生图配置',
       autoExecute: true
     })
     addLog('info', `创建图片配置节点: ${imageConfigId}`)
@@ -408,7 +408,7 @@ export const useWorkflowOrchestrator = () => {
     // Step 3: Create imageConfig with autoExecute | 创建图片配置节点
     currentStep.value = 3
     const imageConfigId = addNode('imageConfig', { x, y: position.y }, {
-      label: '文生图',
+      label: '生图配置',
       autoExecute: true
     })
     addLog('info', `创建图片配置节点: ${imageConfigId}`)

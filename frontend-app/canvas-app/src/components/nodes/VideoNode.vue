@@ -150,6 +150,7 @@ import { TrashOutline, ExpandOutline, VideocamOutline, CopyOutline, CloseCircleO
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes } from '../../stores/canvas'
 import { useVideoGeneration } from '../../hooks/useApi'
 import NodeHandleMenu from './NodeHandleMenu.vue'
+import { uploadCanvasMedia } from '../../api/facemini'
 
 const props = defineProps({
   id: String,
@@ -253,14 +254,24 @@ const handleSelect = (item) => {
 }
 
 // Handle file upload | 处理文件上传
-const handleFileUpload = (event) => {
+const handleFileUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const url = URL.createObjectURL(file)
-    updateNode(props.id, { 
-      url,
-      updatedAt: Date.now()
-    })
+    try {
+      updateNode(props.id, { loading: true, error: '' })
+      const uploaded = await uploadCanvasMedia(file)
+      updateNode(props.id, {
+        url: uploaded.url,
+        loading: false,
+        fileName: file.name,
+        fileType: file.type,
+        label: file.name || '视频素材',
+        updatedAt: Date.now()
+      })
+    } catch (error) {
+      updateNode(props.id, { loading: false, error: error.message || '视频上传失败' })
+      window.$message?.error(error.message || '视频上传失败')
+    }
   }
 }
 

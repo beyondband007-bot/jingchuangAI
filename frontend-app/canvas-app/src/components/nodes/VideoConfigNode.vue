@@ -37,6 +37,22 @@
 
       <!-- Config options | 配置选项 -->
       <div class="p-3 space-y-3">
+        <div class="space-y-1.5">
+          <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+          <textarea
+            v-model="localPrompt"
+            rows="3"
+            placeholder="描述画面内容、动作和镜头，可直接在这里输入"
+            class="nodrag nowheel w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
+            @input="handlePromptInput"
+            @mousedown.stop
+            @wheel.stop
+          />
+          <div v-if="connectedExternalPrompt" class="text-[11px] text-[var(--text-tertiary)]">
+            还会追加已连接的外部提示词
+          </div>
+        </div>
+
         <!-- Model selector | 模型选择 -->
         <div class="flex items-center justify-between">
           <span class="text-xs text-[var(--text-secondary)]">模型</span>
@@ -175,7 +191,12 @@ const showHandleMenu = ref(false)
 const isGenerating = ref(false)  // 任务创建中状态
 const localModel = ref(props.data?.model || DEFAULT_VIDEO_MODEL)
 const localRatio = ref(props.data?.ratio || '16:9')
-const localDuration = ref(props.data?.dur || 5)
+const localDuration = ref(props.data?.duration || props.data?.dur || 5)
+const localPrompt = ref(props.data?.prompt || '')
+
+const handlePromptInput = () => {
+  updateNode(props.id, { prompt: localPrompt.value })
+}
 
 // Label editing state | Label 编辑状态
 const isEditingLabel = ref(false)
@@ -255,7 +276,7 @@ const handleModelSelect = (key) => {
   }
   if (config?.defaultParams?.duration) {
     localDuration.value = config.defaultParams.duration
-    updates.dur = config.defaultParams.duration
+    updates.duration = config.defaultParams.duration
   }
   updateNode(props.id, updates)
 }
@@ -280,14 +301,14 @@ const handleRatioSelect = (key) => {
 // Handle duration selection | 处理时长选择
 const handleDurationSelect = (key) => {
   localDuration.value = key
-  updateNode(props.id, { dur: key })
+  updateNode(props.id, { duration: key })
 }
 
 // Get connected inputs by role | 根据角色获取连接的输入
 const getConnectedInputs = () => {
   const connectedEdges = edges.value.filter(e => e.target === props.id)
 
-  let prompt = ''
+  let externalPrompt = ''
   let first_frame_image = ''
   let last_frame_image = ''
   const images = [] // input_reference images | 参考图
@@ -297,11 +318,11 @@ const getConnectedInputs = () => {
     if (!sourceNode) continue
 
     if (sourceNode.type === 'text') {
-      prompt = sourceNode.data?.content || ''
+      externalPrompt = sourceNode.data?.content || ''
     } else if (sourceNode.type === 'llmConfig') {
       // LLM node output as prompt | LLM 节点输出作为提示词
       const content = sourceNode.data?.outputContent || ''
-      if (content) prompt = content
+      if (content) externalPrompt = content
     } else if (sourceNode.type === 'image' && sourceNode.data?.url) {
       const imageData = sourceNode.data.base64 || sourceNode.data.url
       const role = edge.data?.imageRole || 'first_frame_image'
@@ -316,8 +337,14 @@ const getConnectedInputs = () => {
     }
   }
 
-  return { prompt, first_frame_image, last_frame_image, images }
+  const prompt = [localPrompt.value, externalPrompt]
+    .map(value => String(value || '').trim())
+    .filter(Boolean)
+    .join('\n\n')
+  return { prompt, externalPrompt, first_frame_image, last_frame_image, images }
 }
+
+const connectedExternalPrompt = computed(() => getConnectedInputs().externalPrompt)
 
 // Computed connected prompt | 计算连接的提示词
 const connectedPrompt = computed(() => {
@@ -336,7 +363,7 @@ const handleGenerate = async () => {
 
   const hasInput = prompt || first_frame_image || last_frame_image || images.length > 0
   if (!hasInput) {
-    window.$message?.warning('请先连接文本节点或图片节点')
+    window.$message?.warning('请输入提示词，或连接文本/图片节点')
     isGenerating.value = false
     return
   }
@@ -409,7 +436,7 @@ const handleGenerate = async () => {
 
     // Add duration | 添加时长
     if (localDuration.value) {
-      params.dur = localDuration.value
+      params.duration = localDuration.value
     }
 
     // 只创建任务，获取 taskId，不在这里轮询
@@ -505,6 +532,10 @@ watch(() => props.data?.model, (newModel) => {
   if (newModel && newModel !== localModel.value) {
     localModel.value = newModel
   }
+})
+
+watch(() => props.data?.prompt, (newPrompt) => {
+  if (String(newPrompt || '') !== localPrompt.value) localPrompt.value = String(newPrompt || '')
 })
 
 // 修复 Vue Flow visibility: hidden 问题

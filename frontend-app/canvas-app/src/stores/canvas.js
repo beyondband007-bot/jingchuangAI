@@ -245,7 +245,7 @@ const getDefaultNodeData = (type) => {
         model: DEFAULT_IMAGE_MODEL,
         size: imageModel?.defaultParams?.size || '1x1',
         quality: imageModel?.defaultParams?.quality || 'standard',
-        label: '文生图'
+        label: '生图配置'
       }
     }
     case 'videoConfig': {
@@ -482,7 +482,7 @@ export const initSampleData = () => {
     prompt: '',
     model: 'gpt_image_2',
     ratio: '16:9',
-    label: '文生图'
+    label: '生图配置'
   })
   
   // Add edge between nodes | 添加节点之间的边

@@ -40,7 +40,14 @@
     </AppHeader>
 
     <!-- Main canvas area | 主画布区域 -->
-    <div class="flex-1 relative overflow-hidden">
+    <div
+      ref="canvasContainerRef"
+      class="flex-1 relative overflow-hidden"
+      @dragenter.prevent="handleCanvasDragEnter"
+      @dragover.prevent="handleCanvasDragOver"
+      @dragleave="handleCanvasDragLeave"
+      @drop.prevent="handleCanvasDrop"
+    >
       <!-- Vue Flow canvas | Vue Flow 画布 -->
       <VueFlow
         :key="flowKey"
@@ -54,9 +61,12 @@
         :max-zoom="2"
         :snap-to-grid="true"
         :snap-grid="[20, 20]"
+        :delete-key-code="null"
         @connect="onConnect"
         @node-click="onNodeClick"
+        @edge-click="onEdgeClick"
         @pane-click="onPaneClick"
+        @pane-context-menu="handlePaneContextMenu"
         @viewport-change="handleViewportChange"
         @edges-change="onEdgesChange"
         class="canvas-flow"
@@ -69,6 +79,16 @@
           :zoomable="true"
         />
       </VueFlow>
+
+      <div
+        v-if="isDraggingMedia"
+        class="pointer-events-none absolute inset-4 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--accent-color)] bg-[var(--bg-primary)]/85"
+      >
+        <div class="rounded-xl bg-[var(--bg-secondary)] px-6 py-4 text-center shadow-lg">
+          <div class="text-base font-medium text-[var(--text-primary)]">释放以添加到画布</div>
+          <div class="mt-1 text-xs text-[var(--text-secondary)]">支持图片和视频，可一次拖入多个文件</div>
+        </div>
+      </div>
 
       <!-- Left toolbar | 左侧工具栏 -->
       <aside class="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-2 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] shadow-lg z-10">
@@ -111,6 +131,27 @@
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors text-left"
         >
           <n-icon :size="20" :color="nodeType.color"><component :is="nodeType.icon" /></n-icon>
+          <span class="text-sm">{{ nodeType.name }}</span>
+        </button>
+      </div>
+
+
+      <!-- Canvas context menu | 画布右键菜单 -->
+      <div
+        v-if="contextMenu.visible"
+        class="absolute z-40 min-w-[180px] rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-2 shadow-xl"
+        :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
+        @click.stop
+        @contextmenu.prevent
+      >
+        <div class="px-3 pb-1.5 pt-1 text-xs text-[var(--text-secondary)]">新建节点</div>
+        <button
+          v-for="nodeType in nodeTypeOptions"
+          :key="`context-${nodeType.type}`"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-[var(--bg-tertiary)]"
+          @click="addNodeFromContextMenu(nodeType.type)"
+        >
+          <n-icon :size="18" :color="nodeType.color"><component :is="nodeType.icon" /></n-icon>
           <span class="text-sm">{{ nodeType.name }}</span>
         </button>
       </div>
@@ -272,12 +313,12 @@ import {
   AppsOutline,
   ChatbubbleOutline
 } from '@vicons/ionicons5'
-import { nodes, edges, addNode, addNodes, addEdge, addEdges, updateNode, initSampleData, loadProject, saveProject, clearCanvas, canvasViewport, updateViewport, undo, redo, canUndo, canRedo, manualSaveHistory, startBatchOperation, endBatchOperation, markDescendantResultsStale } from '../stores/canvas'
+import { nodes, edges, addNode, addNodes, addEdge, addEdges, updateNode, removeEdge, initSampleData, loadProject, saveProject, clearCanvas, canvasViewport, updateViewport, undo, redo, canUndo, canRedo, manualSaveHistory, startBatchOperation, endBatchOperation, markDescendantResultsStale } from '../stores/canvas'
 import { loadAllModels } from '../stores/models'
 import { useChat, useWorkflowOrchestrator } from '../hooks'
 import { useModelStore } from '../stores/pinia'
 import { projects, initProjectsStore, ensureProjectLoaded, renameProject, deleteProject, duplicateProject, flushProjectSave, saveState, saveError } from '../stores/projects'
-import { openMyAssets } from '../api/facemini'
+import { openMyAssets, uploadCanvasMedia } from '../api/facemini'
 import { IMAGE_PROMPT_POLISH_SYSTEM_PROMPT, PROMPT_POLISH_MODEL, VIDEO_PROMPT_POLISH_SYSTEM_PROMPT } from '../config/promptPolish'
 
 // API Settings component | API 设置组件
@@ -353,12 +394,13 @@ import LLMConfigNode from '../components/nodes/LLMConfigNode.vue'
 import ImageRoleEdge from '../components/edges/ImageRoleEdge.vue'
 import PromptOrderEdge from '../components/edges/PromptOrderEdge.vue'
 import ImageOrderEdge from '../components/edges/ImageOrderEdge.vue'
+import DeletableEdge from '../components/edges/DeletableEdge.vue'
 
 const router = useRouter()
 const route = useRoute()
 
 // Vue Flow instance | Vue Flow 实例
-const { viewport, zoomIn, zoomOut, fitView, updateNodeInternals } = useVueFlow()
+const { viewport, zoomIn, zoomOut, fitView, updateNodeInternals, screenToFlowCoordinate } = useVueFlow()
 
 // Register custom node types | 注册自定义节点类型
 const nodeTypes = {
@@ -372,6 +414,7 @@ const nodeTypes = {
 
 // Register custom edge types | 注册自定义边类型
 const edgeTypes = {
+  default: markRaw(DeletableEdge),
   imageRole: markRaw(ImageRoleEdge),
   promptOrder: markRaw(PromptOrderEdge),
   imageOrder: markRaw(ImageOrderEdge)
@@ -384,6 +427,10 @@ const autoExecute = ref(false)
 const isMobile = ref(false)
 const showGrid = ref(true)
 const isProcessing = ref(false)
+const canvasContainerRef = ref(null)
+const isDraggingMedia = ref(false)
+const dragDepth = ref(0)
+const contextMenu = ref({ visible: false, x: 0, y: 0, flowPosition: { x: 0, y: 0 } })
 
 // Flow key for forcing re-render on project switch | 项目切换时强制重新渲染的 key
 const flowKey = ref(Date.now())
@@ -420,9 +467,9 @@ const projectOptions = [
 const tools = [
   { id: 'text', name: '文本', icon: TextOutline, action: () => addNewNode('text') },
   { id: 'image', name: '图片', icon: ImageOutline, action: () => addNewNode('image') },
-  { id: 'imageConfig', name: '文生图', icon: ColorPaletteOutline, action: () => addNewNode('imageConfig') },
+  { id: 'imageConfig', name: '生图配置', icon: ColorPaletteOutline, action: () => addNewNode('imageConfig') },
   { id: 'videoConfig', name: '视频生成', icon: VideocamOutline, action: () => addNewNode('videoConfig') },
-  { id: 'undo', name: '撤销', icon: ArrowUndoOutline, action: () => undo(), disabled: () => !canUndo() },
+  { id: 'undo', name: '撤销 (Ctrl+Z)', icon: ArrowUndoOutline, action: () => undo(), disabled: () => !canUndo() },
   { id: 'redo', name: '重做', icon: ArrowRedoOutline, action: () => redo(), disabled: () => !canRedo() }
 ]
 
@@ -430,7 +477,7 @@ const tools = [
 const nodeTypeOptions = [
   { type: 'text', name: '文本节点', icon: TextOutline, color: '#3b82f6' },
   { type: 'llmConfig', name: 'LLM文本生成', icon: ChatbubbleOutline, color: '#a855f7' },
-  { type: 'imageConfig', name: '文生图配置', icon: ColorPaletteOutline, color: '#22c55e' },
+  { type: 'imageConfig', name: '生图配置', icon: ColorPaletteOutline, color: '#22c55e' },
   { type: 'videoConfig', name: '视频生成配置', icon: VideocamOutline, color: '#f59e0b' },
   { type: 'image', name: '图片节点', icon: ImageOutline, color: '#8b5cf6' },
   { type: 'video', name: '视频节点', icon: VideocamOutline, color: '#ef4444' }
@@ -448,13 +495,13 @@ const suggestions = [
 ]
 
 // Add new node | 添加新节点
-const addNewNode = async (type) => {
+const addNewNode = async (type, requestedPosition = null) => {
   // Calculate viewport center position | 计算视口中心位置
   const viewportCenterX = -viewport.value.x / viewport.value.zoom + (window.innerWidth / 2) / viewport.value.zoom
   const viewportCenterY = -viewport.value.y / viewport.value.zoom + (window.innerHeight / 2) / viewport.value.zoom
   
   // Add node at viewport center | 在视口中心添加节点
-  const nodeId = addNode(type, { x: viewportCenterX - 100, y: viewportCenterY - 100 })
+  const nodeId = addNode(type, requestedPosition || { x: viewportCenterX - 100, y: viewportCenterY - 100 })
   
   // Set highest z-index | 设置最高层级
   const maxZIndex = Math.max(0, ...nodes.value.map(n => n.zIndex || 0))
@@ -466,6 +513,94 @@ const addNewNode = async (type) => {
   }, 50)
   
   showNodeMenu.value = false
+}
+
+const closeContextMenu = () => {
+  contextMenu.value = { ...contextMenu.value, visible: false }
+}
+
+const handlePaneContextMenu = (event) => {
+  event.preventDefault()
+  const bounds = canvasContainerRef.value?.getBoundingClientRect()
+  if (!bounds) return
+  const menuWidth = 190
+  const menuHeight = 330
+  contextMenu.value = {
+    visible: true,
+    x: Math.max(8, Math.min(event.clientX - bounds.left, bounds.width - menuWidth - 8)),
+    y: Math.max(8, Math.min(event.clientY - bounds.top, bounds.height - menuHeight - 8)),
+    flowPosition: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
+  }
+  showNodeMenu.value = false
+}
+
+const addNodeFromContextMenu = (type) => {
+  const position = { ...contextMenu.value.flowPosition }
+  closeContextMenu()
+  addNewNode(type, position)
+}
+
+const containsMediaFiles = (dataTransfer) => Array.from(dataTransfer?.items || []).some(item =>
+  item.kind === 'file' && (item.type.startsWith('image/') || item.type.startsWith('video/'))
+)
+
+const handleCanvasDragEnter = (event) => {
+  if (!containsMediaFiles(event.dataTransfer)) return
+  dragDepth.value += 1
+  isDraggingMedia.value = true
+}
+
+const handleCanvasDragOver = (event) => {
+  if (!containsMediaFiles(event.dataTransfer)) return
+  event.dataTransfer.dropEffect = 'copy'
+}
+
+const handleCanvasDragLeave = () => {
+  dragDepth.value = Math.max(0, dragDepth.value - 1)
+  if (dragDepth.value === 0) isDraggingMedia.value = false
+}
+
+const handleCanvasDrop = async (event) => {
+  dragDepth.value = 0
+  isDraggingMedia.value = false
+  closeContextMenu()
+
+  const files = Array.from(event.dataTransfer?.files || []).filter(file =>
+    file.type.startsWith('image/') || file.type.startsWith('video/')
+  )
+  if (!files.length) return
+
+  const start = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
+  let uploadedCount = 0
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index]
+    const type = file.type.startsWith('video/') ? 'video' : 'image'
+    const position = { x: start.x + index * 36, y: start.y + index * 36 }
+    const nodeId = addNode(type, position, {
+      url: '',
+      loading: true,
+      label: file.name || (type === 'video' ? '上传视频' : '上传图片'),
+      fileName: file.name,
+      fileType: file.type,
+    })
+    setTimeout(() => updateNodeInternals(nodeId), 50)
+    try {
+      const uploaded = await uploadCanvasMedia(file)
+      updateNode(nodeId, {
+        url: uploaded.url,
+        loading: false,
+        label: file.name || (type === 'video' ? '视频素材' : '图片素材'),
+        updatedAt: Date.now(),
+      })
+      uploadedCount += 1
+    } catch (error) {
+      updateNode(nodeId, { loading: false, error: error.message || '上传失败' })
+      window.$message?.error(`${file.name || '文件'}上传失败：${error.message || '未知错误'}`)
+    }
+  }
+  if (uploadedCount > 0) {
+    window.$message?.success(uploadedCount === 1 ? '素材已添加到画布' : `已添加 ${uploadedCount} 个素材`)
+  }
 }
 
 // Handle add workflow from panel | 处理从面板添加工作流
@@ -617,6 +752,34 @@ const onNodeClick = (event) => {
   // }
 }
 
+const onEdgeClick = ({ edge }) => {
+  edges.value = edges.value.map(item => ({ ...item, selected: item.id === edge.id }))
+}
+
+const isTextEditingTarget = (target) => target instanceof HTMLElement && (
+  target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+)
+
+const handleCanvasKeyboardShortcut = (event) => {
+  // Keep native undo behavior while the user is editing a node title or prompt.
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    if (isTextEditingTarget(event.target)) return
+    if (!canUndo()) return
+    event.preventDefault()
+    undo()
+    return
+  }
+
+  if (!['Delete', 'Backspace'].includes(event.key)) return
+  if (isTextEditingTarget(event.target)) return
+
+  const selectedIds = edges.value.filter(edge => edge.selected).map(edge => edge.id)
+  if (!selectedIds.length) return
+  event.preventDefault()
+  selectedIds.forEach(removeEdge)
+  window.$message?.success('连线已删除')
+}
+
 // Handle viewport change | 处理视口变化
 const handleViewportChange = (newViewport) => {
   updateViewport(newViewport)
@@ -642,7 +805,9 @@ const onEdgesChange = (changes) => {
 
 // Handle pane click | 处理画布点击
 const onPaneClick = () => {
+  closeContextMenu()
   showNodeMenu.value = false
+  edges.value = edges.value.map(edge => edge.selected ? { ...edge, selected: false } : edge)
   // Clear all selections | 清除所有选中
   // nodes.value = nodes.value.map(node => ({
   //   ...node,
@@ -785,7 +950,7 @@ const sendMessage = async () => {
       })
       
       const imageConfigNodeId = addNode('imageConfig', { x: baseX + 400, y: baseY }, {
-        label: '文生图'
+        label: '生图配置'
       })
       
       addEdge({
@@ -846,6 +1011,7 @@ watch(
 onMounted(async () => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  window.addEventListener('keydown', handleCanvasKeyboardShortcut)
   
   // Initialize projects store | 初始化项目存储
   await initProjectsStore()
@@ -868,6 +1034,7 @@ onMounted(async () => {
 // Cleanup on unmount | 卸载时清理
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('keydown', handleCanvasKeyboardShortcut)
   // Save project before leaving | 离开前保存项目
   saveProject()
   flushProjectSave(route.params.id).catch(() => {})

@@ -38,6 +38,24 @@
 
       <!-- Config options | 配置选项 -->
       <div class="p-3 space-y-3">
+        <div class="space-y-1.5">
+          <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+          <textarea
+            ref="promptInputRef"
+            v-model="localPrompt"
+            rows="3"
+            placeholder="描述你想生成的图片，可直接在这里输入"
+            class="nodrag nowheel w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
+            @input="handlePromptInput"
+            @keydown="handlePromptKeydown"
+            @mousedown.stop
+            @wheel.stop
+          />
+          <div v-if="connectedPrompts.length" class="text-[11px] text-[var(--text-tertiary)]">
+            还会追加 {{ connectedPrompts.length }} 个已连接的外部提示词
+          </div>
+        </div>
+
         <!-- Model selector | 模型选择 -->
         <div class="flex items-center justify-between">
           <span class="text-xs text-[var(--text-secondary)]">模型</span>
@@ -86,7 +104,7 @@
           class="flex items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedPrompts.length > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
-            提示词 {{ connectedPrompts.length > 0 ? `${connectedPrompts.length}个` : '○' }}
+            外部提示 {{ connectedPrompts.length > 0 ? `${connectedPrompts.length}个` : '○' }}
           </span>
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedRefImages.length > 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
@@ -150,6 +168,13 @@
       <NodeHandleMenu :nodeId="id" nodeType="imageConfig" :visible="showHandleMenu" :operations="operations" @select="handleSelect" />
     </div>
 
+    <MentionsPicker
+      v-model:visible="showMentionsPicker"
+      :position="mentionsPosition"
+      context="text"
+      @select="handlePromptMentionSelect"
+    />
+
   </div>
 </template>
 
@@ -165,6 +190,7 @@ import { ChevronDownOutline, ChevronForwardOutline, CopyOutline, TrashOutline, R
 import { useImageGeneration } from '../../hooks'
 import { updateNode, addNode, addEdge, nodes, edges, duplicateNode, removeNode, getNodeInputHash } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
+import MentionsPicker from '../MentionsPicker.vue'
 import { useModelStore } from '../../stores/pinia'
 import { getModelSizeOptions, getModelQualityOptions, getModelConfig, DEFAULT_IMAGE_MODEL } from '../../stores/models'
 import { parseMentions } from '../../hooks/useNodeRef'
@@ -191,6 +217,57 @@ const showHandleMenu = ref(false)
 const localModel = ref(props.data?.model || DEFAULT_IMAGE_MODEL)
 const localSize = ref(props.data?.size || '2048x2048')
 const localQuality = ref(props.data?.quality || 'standard')
+const localPrompt = ref(props.data?.prompt || '')
+const promptInputRef = ref(null)
+const showMentionsPicker = ref(false)
+const mentionsPosition = ref({ x: 0, y: 0 })
+const mentionSearchStart = ref(-1)
+const mentionCursorPosition = ref(-1)
+
+const handlePromptInput = (event) => {
+  updateNode(props.id, { prompt: localPrompt.value })
+  const input = event?.target
+  const cursorPosition = input?.selectionStart ?? localPrompt.value.length
+  const textBeforeCursor = localPrompt.value.slice(0, cursorPosition)
+  const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+  const textAfterAt = lastAtIndex >= 0 ? textBeforeCursor.slice(lastAtIndex + 1) : ''
+  const shouldShow = lastAtIndex >= 0 && !/\s/.test(textAfterAt) && !textAfterAt.includes('[')
+
+  if (shouldShow && input) {
+    const rect = input.getBoundingClientRect()
+    mentionSearchStart.value = lastAtIndex
+    mentionCursorPosition.value = cursorPosition
+    mentionsPosition.value = { x: rect.left + 10, y: rect.bottom + 5 }
+    showMentionsPicker.value = true
+  } else {
+    showMentionsPicker.value = false
+  }
+}
+
+const handlePromptKeydown = (event) => {
+  if (!showMentionsPicker.value) return
+  if (['Enter', 'Escape', 'ArrowDown', 'ArrowUp'].includes(event.key)) event.preventDefault()
+}
+
+const handlePromptMentionSelect = ({ nodeId, label }) => {
+  const start = mentionSearchStart.value
+  const end = mentionCursorPosition.value
+  if (start < 0 || end < start) return
+  const mention = `@[${nodeId}|${label || '图片'}]`
+  localPrompt.value = `${localPrompt.value.slice(0, start)}${mention} ${localPrompt.value.slice(end)}`
+  updateNode(props.id, { prompt: localPrompt.value })
+  showMentionsPicker.value = false
+  const nextCursor = start + mention.length + 1
+  nextTick(() => {
+    promptInputRef.value?.focus()
+    promptInputRef.value?.setSelectionRange(nextCursor, nextCursor)
+  })
+}
+
+const combinePrompts = (...values) => values
+  .map(value => String(value || '').trim())
+  .filter(Boolean)
+  .join('\n\n')
 
 // Label editing state | Label 编辑状态
 const isEditingLabel = ref(false)
@@ -294,12 +371,11 @@ onMounted(() => {
 })
 
 // 解析 textNode 内容中的 @ 引用，转换为简短引用（如 图 1）并收集图片
-const resolveTextMentionsForImage = (textNode) => {
-  const content = textNode.data?.content || ''
+const resolveContentMentionsForImage = (content = '') => {
   const mentions = parseMentions(content)
 
   if (mentions.length === 0) {
-    return { resolvedContent: content, refImages: [] }
+    return { resolvedContent: content, refImages: [], imageMentions: [] }
   }
 
   // 收集引用的图片节点
@@ -319,7 +395,7 @@ const resolveTextMentionsForImage = (textNode) => {
   }
 
   if (imageMentions.length === 0) {
-    return { resolvedContent: content, refImages: [] }
+    return { resolvedContent: content, refImages: [], imageMentions: [] }
   }
 
   // 按出现顺序排序
@@ -329,16 +405,18 @@ const resolveTextMentionsForImage = (textNode) => {
   let resolvedContent = content
   for (let i = 0; i < imageMentions.length; i++) {
     const mention = imageMentions[i]
-    const placeholder = `@[${mention.nodeId}]`
+    const mentionPattern = new RegExp(`@\\[${mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\|[^\\]]+)?\\]`, 'g')
     // 按排序后的索引替换为 "图1"、"图2" 等
-    resolvedContent = resolvedContent.replace(placeholder, `图${i + 1}`)
+    resolvedContent = resolvedContent.replace(mentionPattern, `图${i + 1}`)
   }
 
   // 返回解析后的内容和图片数组（按引用顺序）
   const refImages = imageMentions.map(m => m.imageData)
 
-  return { resolvedContent, refImages }
+  return { resolvedContent, refImages, imageMentions }
 }
+
+const resolveTextMentionsForImage = (textNode) => resolveContentMentionsForImage(textNode.data?.content || '')
 
 // Computed connected prompts (sorted by order) | 计算连接的提示词（按顺序排列）
 const connectedPrompts = computed(() => {
@@ -365,11 +443,16 @@ const connectedTextNodeIds = computed(() => {
 
 // Get connected nodes | 获取连接的节点
 const getConnectedInputs = () => {
+  const localMentionResult = resolveContentMentionsForImage(localPrompt.value)
   // 1. First check @ mentions | 首先检查 @ 引用
   // Only check connected TextNodes | 只检查已连接的 TextNode
   const textNodes = nodes.value.filter(n => n.type === 'text' && connectedTextNodeIds.value.includes(n.id))
   const mentionsPrompts = []
-  const mentionsRefImages = []
+  const mentionsRefImages = localMentionResult.imageMentions.map((mention, index) => ({
+    order: index,
+    imageData: mention.imageData,
+    nodeId: mention.nodeId
+  }))
 
   for (const textNode of textNodes) {
     const { resolvedContent, refImages: nodeRefImages } = resolveTextMentionsForImage(textNode)
@@ -420,7 +503,7 @@ const getConnectedInputs = () => {
   const allRefImages = [...mentionsRefImages, ...edgeRefImages]
   // Sort by order | 按顺序排序
   allRefImages.sort((a, b) => a.order - b.order)
-  const sortedRefImages = allRefImages.map(r => r.imageData)
+  const sortedRefImages = [...new Set(allRefImages.map(r => r.imageData).filter(Boolean))]
 
   // 4. If there are @ mentions, use them | 如果有 @ 提及，使用它们
   if (mentionsPrompts.length > 0) {
@@ -429,7 +512,7 @@ const getConnectedInputs = () => {
     const combinedPrompt = mentionsPrompts.map(p => p.content).join('\n\n')
 
     return {
-      prompt: combinedPrompt,
+      prompt: combinePrompts(localMentionResult.resolvedContent, combinedPrompt),
       prompts: mentionsPrompts,
       refImages: sortedRefImages,
       refImagesWithOrder: allRefImages,
@@ -468,7 +551,7 @@ const getConnectedInputs = () => {
   const combinedPrompt = prompts.map(p => p.content).join('\n\n')
 
   // Use edge-connected refImages (already sorted above) | 使用边连接的参考图（已在上面排序）
-  return { prompt: combinedPrompt, prompts, refImages: sortedRefImages, refImagesWithOrder: allRefImages, fromMentions: false }
+  return { prompt: combinePrompts(localMentionResult.resolvedContent, combinedPrompt), prompts, refImages: sortedRefImages, refImagesWithOrder: allRefImages, fromMentions: false }
 }
 
 // Handle model selection | 处理模型选择
@@ -571,7 +654,7 @@ const handleGenerate = async (mode = 'auto') => {
   const { prompt, prompts, refImages, refImagesWithOrder } = getConnectedInputs()
 
   if (!prompt && refImages.length === 0) {
-    window.$message?.warning('请连接文本节点（提示词）或图片节点（参考图）')
+    window.$message?.warning('请输入提示词，或连接文本/图片节点')
     return
   }
   
@@ -748,6 +831,10 @@ watch(() => props.data?.model, (newModel) => {
       localSize.value = config.defaultParams.size
     }
   }
+})
+
+watch(() => props.data?.prompt, (newPrompt) => {
+  if (String(newPrompt || '') !== localPrompt.value) localPrompt.value = String(newPrompt || '')
 })
 
 // 修复 Vue Flow visibility: hidden 问题

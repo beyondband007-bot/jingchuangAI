@@ -12,6 +12,7 @@
       }"
       class="nodrag nopan"
     >
+      <div class="flex items-center gap-1">
       <n-dropdown 
         :options="imageRoleOptions" 
         @select="handleRoleSelect"
@@ -24,6 +25,8 @@
           <n-icon :size="10"><ChevronDownOutline /></n-icon>
         </button>
       </n-dropdown>
+      <button v-if="selected" type="button" class="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] shadow-sm transition-colors hover:bg-[var(--bg-tertiary)] hover:text-red-500" title="删除连线" aria-label="删除连线" @click.stop="removeEdge(id)" @mousedown.stop><n-icon :size="14"><TrashOutline /></n-icon></button>
+      </div>
     </div>
   </EdgeLabelRenderer>
 </template>
@@ -32,8 +35,8 @@
 import { computed } from 'vue'
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, useVueFlow } from '@vue-flow/core'
 import { NDropdown, NIcon } from 'naive-ui'
-import { ChevronDownOutline } from '@vicons/ionicons5'
-import { edges } from '../../stores/canvas'
+import { ChevronDownOutline, TrashOutline } from '@vicons/ionicons5'
+import { edges, removeEdge } from '../../stores/canvas'
 
 // Get VueFlow instance | 获取 VueFlow 实例
 const { updateEdgeData } = useVueFlow()
@@ -49,6 +52,7 @@ const props = defineProps({
   sourcePosition: String,
   targetPosition: String,
   data: Object,
+  selected: Boolean,
   markerEnd: String,
   style: Object
 })
