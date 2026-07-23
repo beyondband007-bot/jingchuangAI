@@ -34,6 +34,41 @@ export async function getVideoDuration(videoPath) {
   });
 }
 
+export async function preserveOriginalAudio({ videoPath, originalVideoPath, outputPath }) {
+  const [generatedDuration, originalDuration] = await Promise.all([
+    getVideoDuration(videoPath),
+    getVideoDuration(originalVideoPath)
+  ]);
+  const padDuration = Math.max(0, originalDuration - generatedDuration);
+  const args = [
+    "-y",
+    "-i", videoPath,
+    "-i", originalVideoPath,
+    "-map", "0:v:0",
+    "-map", "1:a?",
+    ...(padDuration > 0.05
+      ? [
+          "-vf", `tpad=stop_mode=clone:stop_duration=${padDuration.toFixed(3)}`,
+          "-c:v", "libx264",
+          "-preset", "medium",
+          "-crf", "18",
+          "-pix_fmt", "yuv420p"
+        ]
+      : ["-c:v", "copy"]),
+    "-c:a", "copy",
+    "-map_metadata", "1",
+    "-map_chapters", "1",
+    "-t", originalDuration.toFixed(3),
+    "-movflags", "+faststart",
+    outputPath
+  ];
+  await runFfmpeg(args);
+  return {
+    outputPath,
+    videoDuration: await getVideoDuration(outputPath)
+  };
+}
+
 function buildAtempoFilter(ratio) {
   let remaining = Number(ratio) || 1;
   const filters = [];

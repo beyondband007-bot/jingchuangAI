@@ -20,6 +20,18 @@ function applyCreditsUpdate(setCredits, credits) {
   emitCreditsUpdated(credits);
 }
 
+function formatTaskFailure(message, moduleId) {
+  const text = String(message || "").trim();
+  const isArkPrivacyRejection =
+    /Input(?:Image|Video)SensitiveContentDetected\.PrivacyInformation/i.test(text) ||
+    /PrivacyInformation|real person|隐私信息|隐私内容审核/i.test(text);
+
+  if (moduleId === "face-swap" && isArkPrivacyRejection) {
+    return "素材未通过火山平台隐私内容审核。请确认使用已获授权的人像；若仍被拦截，请更换素材后重试。";
+  }
+  return text || "任务生成失败";
+}
+
 function createInitialTaskState(activeTaskKey) {
   function readActiveTaskId() {
     try {
@@ -158,15 +170,16 @@ export function VideoGenerationWorkflow({
     if (!task) return;
 
     if (task.status === "failed") {
-      writeActiveTaskId(null);
+      const failureMessage = formatTaskFailure(task.error, moduleId);
+      writeActiveTaskId(task.id);
       patchTaskState({
-        status: "idle",
-        progress: 0,
-        error: "",
-        activeTaskId: null,
+        status: "failed",
+        progress: task.progress || 0,
+        error: failureMessage,
+        activeTaskId: task.id,
         resultUrl: "",
       });
-      showNotice(task.error || "任务生成失败", 6000);
+      showNotice(failureMessage, 12000);
       return;
     }
 
@@ -258,10 +271,8 @@ export function VideoGenerationWorkflow({
 
         const cachedId = readActiveTaskId();
         const cachedTask = taskData.find((t) => String(t.id) === String(cachedId));
-        if (cachedTask && cachedTask.status !== "failed") {
+        if (cachedTask) {
           applyTaskSnapshot(cachedTask);
-        } else if (cachedTask?.status === "failed") {
-          writeActiveTaskId(null);
         }
       } catch (error) {
         if (mounted) showNotice(error.message || "加载失败");
@@ -281,14 +292,13 @@ export function VideoGenerationWorkflow({
             const task = taskData.find((t) => String(t.id) === String(current.activeTaskId));
             if (!task) return current;
             if (task.status === "failed") {
-              writeActiveTaskId(null);
-              showNotice(task.error || "任务生成失败", 6000);
+              const failureMessage = formatTaskFailure(task.error, moduleId);
+              showNotice(failureMessage, 12000);
               return {
                 ...current,
-                status: "idle",
-                progress: 0,
-                error: "",
-                activeTaskId: null,
+                status: "failed",
+                progress: task.progress || 0,
+                error: failureMessage,
                 resultUrl: "",
               };
             }
@@ -466,13 +476,14 @@ export function VideoGenerationWorkflow({
       applyTaskSnapshot(task);
     } catch (error) {
       writeActiveTaskId(null);
+      const failureMessage = formatTaskFailure(error.message, moduleId);
       patchTaskState({
-        status: "idle",
+        status: "failed",
         progress: 0,
-        error: "",
+        error: failureMessage,
         activeTaskId: null,
       });
-      showNotice(error.message || "创建任务失败", 6000);
+      showNotice(failureMessage, 12000);
     } finally {
       setIsSubmitting(false);
     }
@@ -560,6 +571,7 @@ export function VideoGenerationWorkflow({
     if (
       workflowStatus === "processing" ||
       workflowStatus === "rendering" ||
+      workflowStatus === "failed" ||
       isSubmitting
     ) {
       return 2;

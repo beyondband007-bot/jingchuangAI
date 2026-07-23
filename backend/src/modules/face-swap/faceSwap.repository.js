@@ -120,7 +120,12 @@ export async function findRefreshableFaceSwapTasks() {
 
 export async function findFaceSwapTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status FROM face_swap_tasks WHERE id = ? LIMIT 1",
+    `SELECT t.id, t.provider_task_id, t.status,
+            video.file_path AS video_file_path
+     FROM face_swap_tasks t
+     LEFT JOIN face_swap_assets video ON video.id = t.video_asset_id
+     WHERE t.id = ?
+     LIMIT 1`,
     [id]
   );
   return rows[0] || null;

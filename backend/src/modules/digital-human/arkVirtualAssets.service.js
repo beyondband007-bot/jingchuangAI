@@ -415,6 +415,16 @@ export async function waitForVirtualAssetUri(assetId, options = {}) {
   return asset.assetUri;
 }
 
+export function selectVirtualAssetReference(asset) {
+  const assetUri = String(asset?.assetUri || "").trim();
+  const publicUrl = String(asset?.publicUrl || "").trim();
+
+  // A real Ark asset URI keeps Seedance on the virtual-asset path. Local-only
+  // placeholders cannot be resolved by Ark, so they must retain the HTTP URL.
+  if (/^asset:\/\/(?!local-)/i.test(assetUri)) return assetUri;
+  return publicUrl || assetUri;
+}
+
 export async function waitForVirtualAssetReference(assetId, options = {}) {
   let row = await findArkVirtualAssetByInternalId(assetId);
   if (!row) throw createHttpError("Ark virtual asset not found", 404);
@@ -422,20 +432,16 @@ export async function waitForVirtualAssetReference(assetId, options = {}) {
   row = await refreshVirtualAssetByRow(row, { force: true });
   if (row.status !== "active") {
     const asset = await waitForVirtualAssetActive(assetId, options);
-    if (!asset.assetUri && !asset.publicUrl) {
-      throw createHttpError("Ark virtual asset missing reference URL", 502);
-    }
-    if (asset.publicUrl && !asset.assetUri?.startsWith("asset://")) {
-      return asset.publicUrl;
-    }
-    return asset.assetUri || asset.publicUrl;
+    const reference = selectVirtualAssetReference(asset);
+    if (!reference) throw createHttpError("Ark virtual asset missing reference URL", 502);
+    return reference;
   }
 
   const asset = mapArkVirtualAsset(row);
   if (asset.status === "failed") {
     throw createHttpError(asset.error || "Ark virtual asset failed", 422);
   }
-  const referenceUrl = asset.publicUrl?.startsWith("http") ? asset.publicUrl : (asset.assetUri || asset.publicUrl);
-  if (!referenceUrl) throw createHttpError("Ark virtual asset missing reference URL", 502);
-  return referenceUrl;
+  const reference = selectVirtualAssetReference(asset);
+  if (!reference) throw createHttpError("Ark virtual asset missing reference URL", 502);
+  return reference;
 }
