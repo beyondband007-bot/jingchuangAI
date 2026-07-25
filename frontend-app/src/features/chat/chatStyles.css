@@ -1,0 +1,16 @@
+/* Import order is intentional: shell → conversation → composer/history → responsive → compatibility. */
+@import "../history/historyRail.css";
+@import "./chatEmptyState.css";
+@import "./chatLayout.css";
+@import "./chatConversationLayout.css";
+@import "./chatComposer.css";
+@import "./chatHistoryBase.css";
+@import "./chatMessages.css";
+@import "./chat.css";
+@import "./chatLayoutRefinements.css";
+@import "./chatResponsive.css";
+@import "./chatIntroLayout.css";
+@import "./chatIntroResponsive.css";
+@import "./chatHistoryTreatment.css";
+@import "./chatHistorySidebar.css";
+@import "./chatConversationCanvas.css";

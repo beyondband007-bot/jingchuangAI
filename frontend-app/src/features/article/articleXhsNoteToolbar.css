@@ -1,0 +1,81 @@
+/* Bottom toolbar for the XHS note preview. */
+.xhs-note-toolbar {
+  display: flex;
+  height: 48px;
+  flex: 0 0 48px;
+  align-items: center;
+  gap: var(--space-10px);
+  padding: 0 14px;
+  margin-bottom: 20px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+.xhs-note-comment-box {
+  display: inline-flex;
+  min-width: 0;
+  height: 34px;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 48%;
+  padding: 0 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-pill);
+  color: #999;
+  background: #fff;
+  font-size: 12px;
+}
+.xhs-note-comment-box svg {
+  flex: 0 0 auto;
+  width: 13px;
+  height: 13px;
+  color: #999;
+}
+.xhs-note-comment-placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xhs-note-toolbar-avatar {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+}
+.xhs-note-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3px);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  color: #111;
+  background: transparent;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.xhs-note-action svg {
+  width: 18px;
+  height: 18px;
+}
+.xhs-note-action span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+.xhs-note-home-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 100px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: #111;
+  transform: translateX(-50%);
+}

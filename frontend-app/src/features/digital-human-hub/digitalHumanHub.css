@@ -1,0 +1,52 @@
+.dh-hub {
+  --dh-hub-brand: #623bff;
+  --dh-hub-border: #ebe7f4;
+  --dh-hub-text: #282532;
+  --dh-hub-muted: #8d8999;
+  display: flex;
+  flex-direction: column;
+  height: var(--app-content-height);
+  min-height: 0;
+  color: var(--dh-hub-text);
+  background: #ffffff;
+}
+
+.dh-hub__tabs {
+  flex-shrink: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--dh-hub-border);
+  background: #ffffff;
+}
+
+.dh-hub__tabs .arco-tabs-header-nav-line .arco-tabs-header-title {
+  padding: 14px 4px;
+  font-size: 14px;
+}
+
+.dh-hub__tabs .arco-tabs-header-nav-line .arco-tabs-header-title-active,
+.dh-hub__tabs .arco-tabs-header-nav-line .arco-tabs-header-title-active:hover {
+  color: var(--dh-hub-brand);
+}
+
+.dh-hub__tabs .arco-tabs-header-ink {
+  background: var(--dh-hub-brand);
+}
+
+.dh-hub__panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dh-hub__view {
+  height: 100%;
+  min-height: 0;
+}
+
+.dh-hub .dhv2-root {
+  height: 100%;
+}
+
+.dh-hub .pdhv2-root {
+  height: 100%;
+}

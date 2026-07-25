@@ -12,14 +12,14 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
     width: 100%;
     min-width: 0;
     min-height: 0;
     height: 100%;
     padding: 12px;
     border: 1px solid #e5e2ec;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: #fff;
     overflow: hidden;
   }
@@ -28,14 +28,13 @@
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
 
     .arco-btn {
       min-width: 88px;
       height: 32px;
       padding: 0 16px;
       font-size: 13px;
-      font-weight: 600;
     }
 
     .arco-btn-outline {
@@ -55,11 +54,11 @@
     flex: 1 1 auto;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: var(--space-4);
     min-height: 0;
     padding: 20px;
     border: 1px solid #f3d0d0;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: #fff7f7;
     color: #8f3f3f;
 
@@ -91,7 +90,7 @@
     flex: 1 1 auto;
     display: grid;
     grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
-    gap: 14px;
+    gap: var(--space-14px);
     width: 100%;
     min-width: 0;
     min-height: 0;
@@ -108,7 +107,7 @@
     display: flex;
     flex-direction: column;
     border: 1px solid #ebe7f2;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: #fff;
     padding: 14px 16px 12px;
     overflow-x: hidden;
@@ -128,7 +127,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--space-10px);
     margin-bottom: 8px;
     min-width: 0;
 
@@ -165,7 +164,7 @@
   &__tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--space-1);
     margin-top: 10px;
     min-width: 0;
 
@@ -182,7 +181,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: var(--space-3);
     min-width: 0;
     color: #a5a0b1;
     font-size: 12px;
@@ -198,7 +197,7 @@
     &-actions {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--space-2);
       flex: 0 0 auto;
     }
 
@@ -213,7 +212,7 @@
     min-height: 0;
     height: 100%;
     border: 1px solid #ebe7f2;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     overflow: hidden;
     background: #f5f3fa;
 
@@ -233,7 +232,7 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--space-3);
     width: 100%;
     min-width: 0;
     min-height: 0;
@@ -253,7 +252,7 @@
       min-width: 0;
       margin: 0;
       overflow: hidden;
-      border-radius: 8px;
+      border-radius: var(--radius-control);
     }
 
     img {
@@ -262,7 +261,7 @@
       height: auto;
       max-width: 100%;
       object-fit: contain;
-      border-radius: 8px;
+      border-radius: var(--radius-control);
     }
   }
 
@@ -306,7 +305,7 @@
     width: 36px;
     height: 36px;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     color: #4c4759;
     background: rgba(255, 255, 255, 0.92);
     box-shadow: 0 8px 20px rgba(80, 72, 104, 0.12);
@@ -328,7 +327,7 @@
     bottom: 12px;
     z-index: 2;
     display: inline-flex;
-    gap: 6px;
+    gap: var(--space-1);
     transform: translateX(-50%);
 
     button {
@@ -336,7 +335,7 @@
       height: 8px;
       padding: 0;
       border: 0;
-      border-radius: 999px;
+      border-radius: var(--radius-pill);
       background: rgba(255, 255, 255, 0.55);
       cursor: pointer;
 
@@ -357,7 +356,7 @@
     padding: 8px;
     overflow: hidden;
     border: 1px solid #e5e2ec;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: #f7f6fb;
 
     .xhs-note-phone {

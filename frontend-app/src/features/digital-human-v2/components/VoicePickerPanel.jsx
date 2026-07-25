@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { Play, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
+import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import {
   VOICE_CATEGORIES,
   VOICE_EMOTION_OPTIONS,
@@ -143,7 +144,12 @@ export function VoicePickerPanel({
           );
         })}
         {!filteredVoices.length ? (
-          <p className="dhv2-voice-picker__empty">该分类暂无音色</p>
+          <HistoryEmptyState
+            className="dhv2-voice-picker__empty"
+            title="该分类暂无音色"
+            compact
+            borderless
+          />
         ) : null}
       </div>
 

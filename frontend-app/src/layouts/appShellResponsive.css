@@ -1,0 +1,64 @@
+﻿@media (max-width: 768px) {
+  .app-shell.feature-page-shell .app-shell__header {
+    flex-basis: auto;
+    height: auto;
+    max-height: none;
+  }
+
+  .app-shell.feature-page-shell .app-shell__content.feature-main {
+    height: auto;
+  }
+
+  .app-shell .fm-workbench-topbar {
+    position: relative;
+    height: auto;
+    flex-wrap: wrap;
+    padding: var(--space-4);
+  }
+
+  .app-shell .fm-top-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .app-shell .feature-view-tabs {
+    position: sticky;
+    top: 0;
+    right: auto;
+    left: auto;
+    width: 100%;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-5);
+    overflow-x: auto;
+    background: #fff;
+    border-bottom: 1px solid var(--fm-line);
+  }
+
+  .app-shell .feature-view-tabs button {
+    flex: 0 0 auto;
+    font-size: var(--title-feature-size);
+  }
+
+  .app-shell .fm-top-actions .fm-auth-entry-group {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .app-shell .fm-profile-dropdown {
+    right: auto;
+    left: 0;
+  }
+}
+@media (max-width: 768px) {
+  .feature-page-shell {
+    display: block;
+  }
+
+  .feature-sidebar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    padding: 20px;
+  }
+}

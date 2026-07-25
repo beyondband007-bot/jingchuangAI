@@ -1,18 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { ImagePlus, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
+import { useToast } from "../../components/ToastProvider";
+import { takePendingGenerationSeed } from "../generation/generationState";
 import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
-import { AvatarSelectionCard } from "./components/AvatarSelectionCard";
 import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
-import { ScriptCard } from "./components/ScriptCard";
-import { GenerateFooter, VideoSpecField } from "./components/GenerateFooter";
-import { AvatarLibraryPanel } from "./components/AvatarLibraryPanel";
-import { PreviewPanel } from "./components/PreviewPanel";
+import { DigitalHumanWorkspace } from "./components/DigitalHumanWorkspace";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
 import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
@@ -33,81 +30,13 @@ import {
   resolveAvatarFromDraft,
   snapshotAvatar,
 } from "./utils";
-import "./digitalHumanV2.css";
+import "./digitalHumanV2Styles.css";
 
 const DEFAULT_SCRIPT = "";
 const MAX_SPEECH_DURATION_MS = 15 * 1000;
 
-function SceneUploadCard({
-  scene,
-  isUploading = false,
-  onPickScene,
-  onClearScene,
-}) {
-  const inputRef = useRef(null);
-  const previewUrl = scene?.localUrl || scene?.url || "";
-
-  function handleFileChange(event) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (file) onPickScene?.(file);
-  }
-
-  function handleDropzoneKeyDown(event) {
-    if (isUploading) return;
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      inputRef.current?.click();
-    }
-  }
-
-  return (
-    <section className="dhv2-scene-card">
-      <div className="dhv2-scene-card__head">
-        <div>
-          <strong>场景背景</strong>
-          <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
-        </div>
-      </div>
-
-      <div
-        role="button"
-        tabIndex={isUploading ? -1 : 0}
-        className={`dhv2-scene-card__dropzone${previewUrl ? " has-preview" : ""}`}
-        onClick={() => {
-          if (!isUploading) inputRef.current?.click();
-        }}
-        onKeyDown={handleDropzoneKeyDown}
-        aria-disabled={isUploading}
-      >
-        {previewUrl ? (
-          <>
-            <img src={previewUrl} alt={scene?.originalName || "场景背景"} />
-            <button
-              type="button"
-              className="dhv2-scene-card__clear"
-              onClick={(event) => {
-                event.stopPropagation();
-                onClearScene?.();
-              }}
-              aria-label="清除场景"
-            >
-              <X size={15} />
-            </button>
-          </>
-        ) : (
-          <>
-            <ImagePlus size={20} />
-            <span>{isUploading ? "上传中..." : "上传场景图"}</span>
-          </>
-        )}
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFileChange} />
-    </section>
-  );
-}
-
 export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
+  const { showToast } = useToast();
   const {
     options,
     avatars,
@@ -137,7 +66,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [createMode, setCreateMode] = useState("upload");
   const [aiGeneratingJob, setAiGeneratingJob] = useState(null);
   const [scriptOptimizeRequest, setScriptOptimizeRequest] = useState(null);
-  const [toastMessage, setToastMessage] = useState("");
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
   const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
@@ -149,7 +77,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [confirmedPreviewAudio, setConfirmedPreviewAudio] = useState(null);
   const [selectedScene, setSelectedScene] = useState(null);
   const [isUploadingScene, setIsUploadingScene] = useState(false);
-  const toastTimerRef = useRef(null);
 
   const model = options.defaults?.model || options.models[0]?.value || "";
   const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
@@ -186,10 +113,21 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   }, [voiceId, voices]);
 
   useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
+    if (!isActive || loading) return;
+    const pendingSeed = takePendingGenerationSeed("digital-human");
+    if (!pendingSeed) return;
+
+    const avatar = avatars.public.find(
+      (item) => String(item.id) === String(pendingSeed.avatarId),
+    );
+    if (avatar) {
+      setAvatarSource("official");
+      setSelectedAvatar(avatar);
+      setRightView("library");
+    }
+    if (pendingSeed.prompt) setText(pendingSeed.prompt);
+    if (pendingSeed.notice) showToast(pendingSeed.notice);
+  }, [avatars.public, isActive, loading, setSelectedAvatar, showToast]);
 
   useEffect(() => {
     persistWorkspaceDrafts(drafts);
@@ -200,15 +138,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setIsAudioPreviewing(false);
     setConfirmedPreviewAudio(null);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, cloneAudio]);
-
-  function showToast(message) {
-    setToastMessage(message);
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage("");
-      toastTimerRef.current = null;
-    }, 2200);
-  }
 
   function resetFormConfig({ resetVoice = false } = {}) {
     setVideoSpec(VIDEO_SPEC_OPTIONS[0].value);
@@ -546,7 +475,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         setSelectedMineLibraryId(`avatar-${result.avatar.id}`);
       }
       setAiGeneratingJob(null);
-      showToast("涓汉褰㈣薄鍒涘缓鎴愬姛");
+      showToast("个人形象创建成功");
     } catch (saveError) {
       setAiGeneratingJob((current) => current ? {
         ...current,
@@ -689,106 +618,67 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     <section className="dhv2-root">
       {error ? <div className="dhv2-error">{error}</div> : null}
 
-      <div className="dhv2-workspace">
-        <aside className="dhv2-sidebar">
-          <div className="dhv2-sidebar__scroll">
-            <AvatarSelectionCard
-              selectedAvatar={selectedAvatar}
-              avatarSource={avatarSource}
-              onAvatarSourceChange={handleAvatarSourceChange}
-              onCreateAvatar={openCreateModal}
-            />
-            <ScriptCard
-              text={text}
-              onTextChange={setText}
-              onOptimizeRequest={handleScriptOptimizeRequest}
-              voiceId={voiceId}
-              voiceSpeed={voiceSpeed}
-              voiceEmotion={voiceEmotion}
-              voiceMode={voiceMode}
-              onVoiceModeChange={setVoiceMode}
-              showCloneUpload={isMineAvatar}
-              cloneAudio={cloneAudio}
-              onCloneAudioChange={setCloneAudio}
-              onSpeechDurationMsChange={setSpeechDurationMs}
-              selectedAvatar={selectedAvatar}
-              voices={voices}
-              onVoiceIdChange={setVoiceId}
-              onVoiceSpeedChange={setVoiceSpeed}
-              onVoiceEmotionChange={setVoiceEmotion}
-              previewRequestId={audioPreviewRequestId}
-              previewPhase={audioPreviewPhase}
-              onPreviewStateChange={handleAudioPreviewStateChange}
-              onRegeneratePreview={handleRequestAudioPreview}
-            />
-            <SceneUploadCard
-              scene={selectedScene}
-              isUploading={isUploadingScene}
-              onPickScene={handlePickScene}
-              onClearScene={() => setSelectedScene(null)}
-            />
-            <VideoSpecField
-              videoSpec={videoSpec}
-              onVideoSpecChange={setVideoSpec}
-            />
-          </div>
-          <GenerateFooter
-            canGenerate={canGenerate}
-            isSubmitting={isSubmitting}
-            isCloneMode={isCloneMode}
-            estimatedCredits={estimatedGenerateCredits}
-            audioPreviewPhase={audioPreviewPhase}
-            isAudioPreviewing={isAudioPreviewing}
-            isSpeechTooLong={isSpeechTooLong}
-            onPreviewAudio={handleRequestAudioPreview}
-            onConfirmAudio={handleConfirmAudioPreview}
-            onGenerate={handleGenerate}
-          />
-        </aside>
-
-        {showLibrary ? (
-          <AvatarLibraryPanel
-            avatars={avatars}
-            selectedAvatar={selectedAvatar}
-            selectedMineLibraryId={selectedMineLibraryId}
-            avatarSource={avatarSource}
-            onAvatarSourceChange={handleAvatarSourceChange}
-            voices={voices}
-            voiceId={voiceId}
-            onVoiceIdChange={setVoiceId}
-            voiceSpeed={voiceSpeed}
-            onVoiceSpeedChange={setVoiceSpeed}
-            voiceEmotion={voiceEmotion}
-            onVoiceEmotionChange={setVoiceEmotion}
-            aspectRatio={aspectRatio}
-            onAspectRatioChange={setAspectRatio}
-            fillMode={fillMode}
-            onFillModeChange={setFillMode}
-            onSelectAvatar={handleSelectAvatar}
-            onSelectMineItem={handleSelectMineItem}
-            onConfirmAvatar={handleConfirmAvatar}
-            onCreateAvatar={openCreateModal}
-            onClose={selectedAvatar ? handleCloseAvatarLibrary : null}
-          />
-        ) : (
-          <PreviewPanel
-            selectedAvatar={selectedAvatar}
-            activeTask={resolvedTask}
-            isSubmitting={isSubmitting}
-            onDeleteTask={deleteTask}
-            onRegenerateTask={requestRegenerate}
-            onReset={handleResetWorkspace}
-            onSaveDraft={handleSaveDraft}
-            drafts={drafts}
-            avatarSource={avatarSource}
-            onApplyDraft={handleApplyDraft}
-            onDeleteDraft={handleDeleteDraft}
-            onOpenAssets={onOpenAssets}
-            scriptText={text}
-            videoSpec={videoSpec}
-          />
-        )}
-      </div>
+      <DigitalHumanWorkspace
+        selectedAvatar={selectedAvatar}
+        avatarSource={avatarSource}
+        onAvatarSourceChange={handleAvatarSourceChange}
+        onCreateAvatar={openCreateModal}
+        text={text}
+        onTextChange={setText}
+        onOptimizeRequest={handleScriptOptimizeRequest}
+        voiceId={voiceId}
+        onVoiceIdChange={setVoiceId}
+        voiceSpeed={voiceSpeed}
+        onVoiceSpeedChange={setVoiceSpeed}
+        voiceEmotion={voiceEmotion}
+        onVoiceEmotionChange={setVoiceEmotion}
+        voiceMode={voiceMode}
+        onVoiceModeChange={setVoiceMode}
+        isMineAvatar={isMineAvatar}
+        cloneAudio={cloneAudio}
+        onCloneAudioChange={setCloneAudio}
+        onSpeechDurationMsChange={setSpeechDurationMs}
+        voices={voices}
+        previewRequestId={audioPreviewRequestId}
+        previewPhase={audioPreviewPhase}
+        onPreviewStateChange={handleAudioPreviewStateChange}
+        onRegeneratePreview={handleRequestAudioPreview}
+        selectedScene={selectedScene}
+        isUploadingScene={isUploadingScene}
+        onPickScene={handlePickScene}
+        onClearScene={() => setSelectedScene(null)}
+        videoSpec={videoSpec}
+        onVideoSpecChange={setVideoSpec}
+        canGenerate={canGenerate}
+        isSubmitting={isSubmitting}
+        isCloneMode={isCloneMode}
+        estimatedCredits={estimatedGenerateCredits}
+        isAudioPreviewing={isAudioPreviewing}
+        isSpeechTooLong={isSpeechTooLong}
+        onPreviewAudio={handleRequestAudioPreview}
+        onConfirmAudio={handleConfirmAudioPreview}
+        onGenerate={handleGenerate}
+        showLibrary={showLibrary}
+        avatars={avatars}
+        selectedMineLibraryId={selectedMineLibraryId}
+        aspectRatio={aspectRatio}
+        onAspectRatioChange={setAspectRatio}
+        fillMode={fillMode}
+        onFillModeChange={setFillMode}
+        onSelectAvatar={handleSelectAvatar}
+        onSelectMineItem={handleSelectMineItem}
+        onConfirmAvatar={handleConfirmAvatar}
+        onCloseLibrary={handleCloseAvatarLibrary}
+        activeTask={resolvedTask}
+        onDeleteTask={deleteTask}
+        onRegenerateTask={requestRegenerate}
+        onReset={handleResetWorkspace}
+        onSaveDraft={handleSaveDraft}
+        drafts={drafts}
+        onApplyDraft={handleApplyDraft}
+        onDeleteDraft={handleDeleteDraft}
+        onOpenAssets={onOpenAssets}
+      />
 
       {isCreateOpen ? (
         <CreateAvatarModal
@@ -820,7 +710,6 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         />
       ) : null}
 
-      {toastMessage ? <div className="dhv2-toast">{toastMessage}</div> : null}
     </section>
   );
 }

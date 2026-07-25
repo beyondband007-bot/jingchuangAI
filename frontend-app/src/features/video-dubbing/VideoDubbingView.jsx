@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./videoDubbing.css";
 import { createPortal } from "react-dom";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import {
@@ -16,12 +17,14 @@ import { videoDubbingApi } from "./videoDubbingApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { useToast } from "../../components/ToastProvider";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
 const videoDubRunningStatuses = new Set(["pending", "processing"]);
@@ -112,7 +115,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
       />
       {hasFile && !isUploading && (
         <span
-          className="upload-clear-button"
+          className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
           title="取消上传"
@@ -250,6 +253,7 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
 }
 
 export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
+  const { showToast: showGlobalToast, dismissToast } = useToast();
   const [videoFile, setVideoFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -261,18 +265,11 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
   const [previewTask, setPreviewTask] = useState(null);
   const [favoriteIds, setFavoriteIds] = useState(() => readFavoriteIds());
   const [currentStage, setCurrentStage] = useState("");
-  const [toast, setToast] = useState(null);
   const currentTaskStatusRef = useRef("");
-  const toastTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function showToast(type, message) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 2200);
+    showGlobalToast(message, { type });
   }
 
   function refreshCredits() {
@@ -300,16 +297,8 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
     setViewTab("home");
     setPreviewTask(null);
     setCurrentStage("");
-    setToast(null);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
+    dismissToast();
   }, [resetSignal]);
-
-  useEffect(() => () => {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-  }, []);
 
   // Poll current task stage/progress
   useEffect(() => {
@@ -486,7 +475,7 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
   }
 
   return (
-    <section className="watermark-view-root">
+    <section className="video-dubbing-view-root">
       <FeatureViewTabs
         currentLabel="视频配音"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -518,7 +507,7 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
                 </strong>
                 <div className="audio-tool-actions">
                   <button
-                    className="send-button voice-generate-button"
+                    className="ui-send-button voice-generate-button"
                     type="button"
                     onClick={submitDub}
                     disabled={isUploading || isSubmitting || !videoFile}
@@ -535,11 +524,7 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
         {viewTab === "recent" && (
           <div className={`video-dub-recent-panel ${tasks.length ? "has-items" : ""}`}>
             {tasks.length === 0 ? (
-              <div className="video-dub-recent-empty">
-                <Film size={28} />
-                <strong>暂无配音记录</strong>
-                <p>完成后的配音视频会显示在这里，可直接播放和下载。</p>
-              </div>
+              <HistoryEmptyState title="暂无配音记录" />
             ) : (
               tasks.map((item) => (
                 <div key={item.id} className="video-dub-recent-item-wrapper">
@@ -582,11 +567,6 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
           document.body,
         )
         : null}
-      {toast ? (
-        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
-          {toast.message}
-        </div>
-      ) : null}
       {showRechargeAlert && (
         <CreditAlertDialog
           title="这次没有完成配音"

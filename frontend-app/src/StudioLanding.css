@@ -1,0 +1,243 @@
+/* BEGIN GENERATED STUDIO LANDING CSS */
+html.studio-landing-active,
+body.studio-landing-active {
+  background: #000;
+  height: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  overscroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body.studio-landing-active #root {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: auto;
+}
+
+html.studio-landing-active::-webkit-scrollbar,
+body.studio-landing-active::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+html.studio-landing-active::-webkit-scrollbar-thumb,
+body.studio-landing-active::-webkit-scrollbar-thumb {
+  background: rgba(127, 94, 255, 0.45);
+  border-radius: var(--radius-pill);
+}
+
+.studio-landing {
+  --bg: #05030d;
+  --bg-soft: #0b0718;
+  --panel: rgba(14, 10, 31, 0.72);
+  --panel-border: rgba(145, 104, 255, 0.28);
+  --text: #f5f2ff;
+  --muted: #bcb4d8;
+  --dim: #8c83ab;
+  --primary: #7f5cff;
+  --primary-strong: #9c7dff;
+  --primary-fade: rgba(127, 92, 255, 0.18);
+  --white-fade: rgba(255, 255, 255, 0.12);
+  --shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  --radius-xl: 32px;
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --container: min(1180px, calc(100vw - 48px));
+  --nav-safe-offset: 112px;
+  --hero-nav-gap: var(--space-4);
+  --hero-video-y: 0px;
+  --hero-video-scale: 1;
+  --hero-video-radius: 32px;
+  --hero-video-frame-opacity: 1;
+  --hero-video-border-alpha: 0.62;
+  --hero-video-inner-alpha: 0.08;
+  --hero-video-glow-alpha: 0.16;
+  --hero-video-shadow-alpha: 0.55;
+  --hero-video-shadow-y: 30px;
+  --hero-video-shadow-blur: 80px;
+  --hero-video-ray-opacity: 0.95;
+  --hero-eyebrow-opacity: 1;
+  --hero-eyebrow-shift: 0px;
+  --hero-copy-opacity: 1;
+  --hero-copy-shift: 0px;
+  --hero-actions-opacity: 1;
+  --hero-actions-shift: 0px;
+  --features-offset: 24px;
+  margin: 0;
+  height: 100vh;
+  min-height: 100vh;
+  color: var(--text);
+  background: #000000;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: auto;
+}
+
+.studio-landing,
+.studio-landing * {
+  box-sizing: border-box;
+}
+
+.studio-landing::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.studio-landing::before,
+.studio-landing::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.studio-landing::before {
+  z-index: 1;
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(139, 92, 246, 0.08),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at center,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.12) 45%,
+      rgba(0, 0, 0, 0.78) 100%
+    );
+}
+
+.studio-landing::after {
+  display: none;
+}
+
+.studio-landing a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.studio-landing .page {
+  width: var(--container);
+  margin: 0 auto;
+  padding: 0 0 36px;
+  position: relative;
+  z-index: 2;
+}
+
+.studio-landing .first-screen {
+  position: relative;
+  width: 100vw;
+  min-height: 100svh;
+  margin-left: calc(50% - 50vw);
+  padding-inline: max(24px, calc((100vw - 1180px) / 2));
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: stretch;
+  isolation: isolate;
+  overflow: hidden;
+}@supports (height: 100dvh) {
+  .studio-landing .first-screen {
+    min-height: 100dvh;
+  }
+}
+
+.studio-landing .first-screen > .nav,
+.studio-landing .first-screen > #home {
+  position: relative;
+  z-index: 2;
+}
+
+.studio-landing .first-screen .nav,
+.studio-landing .first-screen .hero-layout,
+.studio-landing .first-screen .eyebrow,
+.studio-landing .first-screen .hero-copy h1,
+.studio-landing .first-screen .hero-copy p,
+.studio-landing .first-screen .hero-actions {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.studio-landing .first-screen .nav,
+.studio-landing .first-screen .eyebrow,
+.studio-landing .first-screen .hero-copy h1,
+.studio-landing .first-screen .hero-copy p,
+.studio-landing .first-screen .hero-actions {
+  transform: translateY(-34px);
+}
+
+.studio-landing .first-screen .hero-layout {
+  transform: translateY(40px);
+}
+
+.studio-landing.is-loaded .first-screen .nav,
+.studio-landing.is-loaded .first-screen .hero-layout,
+.studio-landing.is-loaded .first-screen .eyebrow,
+.studio-landing.is-loaded .first-screen .hero-copy h1,
+.studio-landing.is-loaded .first-screen .hero-copy p,
+.studio-landing.is-loaded .first-screen .hero-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.studio-landing.is-loaded .first-screen .nav {
+  transition:
+    opacity 880ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 880ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.studio-landing.is-loaded .first-screen .hero-layout {
+  transition:
+    opacity 980ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms,
+    transform 980ms cubic-bezier(0.22, 0.61, 0.36, 1) 120ms;
+}
+
+.studio-landing.is-loaded .first-screen .eyebrow {
+  transition:
+    opacity 900ms cubic-bezier(0.22, 0.61, 0.36, 1) 260ms,
+    transform 900ms cubic-bezier(0.22, 0.61, 0.36, 1) 260ms;
+}
+
+.studio-landing.is-loaded .first-screen .hero-copy h1,
+.studio-landing.is-loaded .first-screen .hero-copy p {
+  transition:
+    opacity 920ms cubic-bezier(0.22, 0.61, 0.36, 1) 400ms,
+    transform 920ms cubic-bezier(0.22, 0.61, 0.36, 1) 400ms;
+}
+
+.studio-landing.is-loaded .first-screen .hero-actions {
+  transition:
+    opacity 920ms cubic-bezier(0.22, 0.61, 0.36, 1) 560ms,
+    transform 920ms cubic-bezier(0.22, 0.61, 0.36, 1) 560ms;
+}
+
+.studio-landing.is-loaded #home .eyebrow {
+  opacity: var(--hero-eyebrow-opacity);
+  transform: translateY(var(--hero-eyebrow-shift));
+}
+
+.studio-landing.is-loaded #home .hero-copy h1,
+.studio-landing.is-loaded #home .hero-copy p {
+  opacity: var(--hero-copy-opacity);
+  transform: translateY(var(--hero-copy-shift));
+}
+
+.studio-landing.is-loaded #home .hero-actions {
+  opacity: var(--hero-actions-opacity);
+  transform: translateY(var(--hero-actions-shift));
+}
+
+.studio-landing.hero-sequence-running #home .eyebrow,
+.studio-landing.hero-sequence-running #home .hero-copy h1,
+.studio-landing.hero-sequence-running #home .hero-copy p,
+.studio-landing.hero-sequence-running #home .hero-actions {
+  transition: none;
+}

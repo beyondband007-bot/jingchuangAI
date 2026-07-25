@@ -8,16 +8,16 @@ import {
   Image,
   Layers,
   Loader2,
-  RefreshCcw,
-  Star,
-  Trash2,
   Video,
   X,
   Zap,
 } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
+import { CreditAlertDialog } from "../../components/CreditAlertDialog";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { PageTitle } from "../../components/PageTitle";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
@@ -26,7 +26,7 @@ import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { watermarkApi } from "../../api/watermarkApi";
 import { formatBeijingDateTime } from "../../utils/time";
-import "./watermark.css";
+import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
 
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
@@ -109,6 +109,7 @@ function WatermarkCenterState({
                 src={task.sourceUrl}
                 controls
                 playsInline
+                preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
               />
             ) : (
@@ -125,6 +126,7 @@ function WatermarkCenterState({
                 src={task.resultUrl}
                 controls
                 playsInline
+                preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
               />
             ) : (
@@ -165,44 +167,12 @@ function WatermarkCenterState({
       task?.error ||
       "处理服务返回了错误，积分会按任务状态自动处理。";
     return (
-      <div
-        className="remove-bg-alert-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="remove-bg-alert-title"
-      >
-        <button
-          className="remove-bg-alert-backdrop"
-          type="button"
-          aria-label="关闭提醒"
-          onClick={onDismiss}
-        />
-        <section className="remove-bg-alert-dialog">
-          <button
-            className="remove-bg-alert-close"
-            type="button"
-            aria-label="关闭提醒"
-            onClick={onDismiss}
-          >
-            <X size={18} />
-          </button>
-          <span className="remove-bg-alert-icon" aria-hidden="true">
-            <Layers size={28} />
-          </span>
-          <div className="remove-bg-alert-copy">
-            <strong id="remove-bg-alert-title">这次没有去水印成功</strong>
-            <p>{message}</p>
-          </div>
-          <div className="remove-bg-alert-actions">
-            <button type="button" onClick={onDismiss}>
-              关闭
-            </button>
-            <button type="button" className="is-primary" onClick={onRecharge}>
-              去充值
-            </button>
-          </div>
-        </section>
-      </div>
+      <CreditAlertDialog
+        message={message}
+        icon={<Layers size={28} />}
+        onClose={onDismiss}
+        onRecharge={onRecharge}
+      />
     );
   }
 
@@ -231,9 +201,6 @@ function WatermarkCenterState({
 function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
-  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
-  const canUseCompletedActions = isCompleted;
-  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -274,36 +241,12 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <div className="card-actions watermark-card-actions">
-          <button
-            className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
-            type="button"
-            onClick={() => onFavorite(task.id)}
-            disabled={!canUseCompletedActions}
-            aria-label="收藏"
-          >
-            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
-          </button>
-          {canUseCompletedActions ? (
-            <a className="card-action-link" href={task.resultUrl} download>
-              <Download size={15} />
-              下载
-            </a>
-          ) : (
-            <button type="button" disabled>
-              <Download size={15} />
-              下载
-            </button>
-          )}
-          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
-            <RefreshCcw size={15} />
-            再次生成
-          </button>
-          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
-            <Trash2 size={15} />
-            删除
-          </button>
-        </div>
+        <MarketingTaskCardActions
+          task={task}
+          onDelete={onDelete}
+          onFavorite={onFavorite}
+          onRepeat={onRepeat}
+        />
       </div>
     </article>
   );
@@ -362,7 +305,7 @@ function WatermarkUploadSlot({
         )}
         {previewUrl && !isUploading && (
           <span
-            className="upload-clear-button"
+            className="ui-upload-clear-button"
             role="button"
             tabIndex={0}
             title="取消上传"
@@ -593,7 +536,7 @@ function WatermarkComposer({
           )}
         </strong>
         <button
-          className="send-button"
+          className="ui-send-button"
           type="button"
           onClick={submit}
           disabled={!canSubmit}
@@ -764,7 +707,7 @@ export function WatermarkRemovalView({
   }
 
   return (
-    <section className="watermark-view-root">
+    <section className="marketing-tool-root marketing-tool--watermark watermark-view-root">
       <FeatureViewTabs
         currentLabel="去水印"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -775,7 +718,7 @@ export function WatermarkRemovalView({
         }}
       />
       <div
-        className={`marketing-canvas watermark-home-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}
+        className={`marketing-canvas watermark-home-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""} ${showRecentEmpty ? "is-empty" : ""}`}
       >
         {showEmptyHero && (
           <MarketingToolPanel className="watermark-home-panel">
@@ -783,7 +726,7 @@ export function WatermarkRemovalView({
               <span className="marketing-panel-hero__icon watermark-hero-icon">
                 <Eraser size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">智能去水印</h1>
+              <PageTitle className="marketing-panel-hero__title">智能去水印</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片或视频，AI 智能一键去除水印</p>
             </div>
             <WatermarkComposer
@@ -802,7 +745,7 @@ export function WatermarkRemovalView({
               <span className="marketing-panel-hero__icon watermark-hero-icon">
                 <Eraser size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">智能去水印</h1>
+              <PageTitle className="marketing-panel-hero__title">智能去水印</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片或视频，AI 智能一键去除水印</p>
             </div>
             <WatermarkCenterState
@@ -831,17 +774,9 @@ export function WatermarkRemovalView({
           />
         ) : null}
         {showRecentEmpty && (
-          <div className="watermark-recent-empty">
-            <Eraser size={24} />
-            <strong>
-              {viewTab === "favorite" ? "暂无收藏结果" : "暂无生成记录"}
-            </strong>
-            <p>
-              {viewTab === "favorite"
-                ? "收藏后的去水印结果会显示在这里"
-                : "生成完成的图片或视频会保存在这里"}
-            </p>
-          </div>
+          <HistoryEmptyState
+            title={viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}
+          />
         )}
         <div
           className={`watermark-results-feed ${visibleTasks.length ? "has-results" : ""}`}

@@ -60,7 +60,7 @@ export function WaterfallGrid({
   className = "",
   itemClassName = "",
   minColumnWidth = 172,
-  gap = 13,
+  gap = 12,
   maxColumns = 8,
   reductionThreshold = Number.POSITIVE_INFINITY
 }) {

@@ -1,0 +1,136 @@
+/* Transcription owns its workbench layout instead of borrowing watermark styles. */
+
+.feature-page-shell:has([data-feature-active="true"] .transcribe-view-root) {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feature-main:has([data-feature-active="true"] .transcribe-view-root) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feature-main:has([data-feature-active="true"] .transcribe-view-root) .fm-workbench-topbar {
+  position: relative;
+  top: auto;
+  flex: 0 0 72px;
+}
+
+.transcribe-view-root {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.transcribe-view-root .transcribe-canvas {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.transcribe-view-root .transcribe-canvas:not(.is-recent) {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--space-5) calc(var(--space-5) * 3);
+}
+
+.transcribe-view-root .transcribe-canvas.is-recent {
+  display: block;
+  min-height: calc(100vh - 96px);
+  overflow-y: auto;
+}
+
+.transcribe-view-root .audio-tool-panel {
+  --marketing-panel-width: min(640px, calc(100% - 96px));
+}
+
+.transcribe-view-root .audio-tool-panel .voice-upload-grid {
+  display: block;
+  width: 100%;
+}
+
+.transcribe-view-root .audio-tool-panel .audio-tool-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  margin: 0;
+  padding-top: 16px;
+}
+
+.transcribe-view-root .audio-tool-panel .audio-tool-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: var(--space-10px);
+}
+
+.transcribe-view-root .transcribe-result-panel textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: none;
+  color: #282532;
+  background: var(--marketing-field, #f5f3fb);
+  border: 1px solid var(--marketing-border, #d9d6e2);
+  border-radius: var(--radius-lg);
+  font: 15px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.transcribe-view-root .transcribe-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--marketing-subtle, #aaa6b8);
+  font-size: 12px;
+}
+
+.transcribe-view-root .transcribe-result-head svg,
+.transcribe-view-root .transcribe-result-actions button {
+  border-color: var(--brand-primary-border);
+}
+
+.transcribe-view-root .transcribe-result-actions button {
+  color: #fff;
+  background: var(--brand-gradient);
+}
+
+.transcribe-recent-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 320px);
+  align-content: start;
+  align-items: stretch;
+  justify-content: start;
+  justify-items: stretch;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .transcribe-view-root .transcribe-canvas:not(.is-recent) {
+    padding: 20px 16px 48px;
+  }
+
+  .transcribe-view-root .audio-tool-panel .audio-tool-footer {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .transcribe-view-root .audio-tool-panel .audio-tool-actions {
+    display: grid;
+  }
+}

@@ -2,6 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Heart, Loader2, Mic, Music, Trash2 } from "lucide-react";
 import { VoiceConversionWorkbenchCard } from "../voice-conversion-ui/VoiceConversionWorkbenchCard";
 import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
+import "../audio-ui/audioResponsive.css";
+import "../audio-ui/audioStateControls.css";
+import "./voiceConvertLayout.css";
+import "../audio-ui/voiceWorkbench.css";
+import "../audio-ui/voiceHistory.css";
 import { VoiceRecentPlayer } from "../audio-ui/VoiceRecentPlayer";
 import { VoiceResultView } from "../audio-ui/VoiceResultView";
 import { voiceConvertApi } from "./voiceConvertApi";
@@ -13,6 +18,8 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { useToast } from "../../components/ToastProvider";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 const maxTargetAudioBytes = 20 * 1024 * 1024;
@@ -97,6 +104,7 @@ function loadRecentResults() {
 }
 
 export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
+  const { showToast: showGlobalToast, dismissToast } = useToast();
   const [targetAudio, setTargetAudio] = useState(null);
   const [sourceAudio, setSourceAudio] = useState(null);
   const [uploading, setUploading] = useState("");
@@ -117,20 +125,13 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
-  const [toast, setToast] = useState(null);
-  const toastTimerRef = useRef(null);
   const targetUploadVersionRef = useRef(0);
   const sourcePickVersionRef = useRef(0);
   const progressTimerRef = useRef(null);
   const stageTimerRef = useRef(null);
 
   function showToast(type, message) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 2200);
+    showGlobalToast(message, { type });
   }
 
   useEffect(() => {
@@ -175,15 +176,10 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     setCurrentResult(null);
     setViewTab("home");
     setPlayingRecentId("");
-    setToast(null);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
+    dismissToast();
   }, [resetSignal]);
 
   useEffect(() => () => {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     if (progressTimerRef.current) window.clearInterval(progressTimerRef.current);
     if (stageTimerRef.current) window.clearInterval(stageTimerRef.current);
   }, []);
@@ -474,11 +470,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
         {viewTab === "recent" && (
           <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
             {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <Music size={28} />
-                <strong>暂无转换记录</strong>
-                <p>转换完成后的 MP3 会显示在这里，可直接播放和下载。</p>
-              </div>
+              <HistoryEmptyState title="暂无转换记录" />
             ) : (
               recentResults.map((item) => (
                 <article className="voice-recent-card" key={item.id}>
@@ -513,11 +505,6 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
           </div>
         )}
       </div>
-      {toast ? (
-        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
-          {toast.message}
-        </div>
-      ) : null}
       {showRechargeAlert && (
         <CreditAlertDialog
           title="这次没有转换成功"

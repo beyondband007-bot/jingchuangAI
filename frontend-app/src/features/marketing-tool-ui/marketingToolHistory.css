@@ -1,0 +1,203 @@
+/* Marketing tool canvas, runtime feedback, and result-history cards. */
+/* Marketing tool component layer.
+   Public classes define structure; legacy tool classes only carry local deltas. */
+.marketing-tool-root {
+  --marketing-primary: var(--brand-primary);
+  --marketing-primary-soft: var(--brand-primary-soft);
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+.feature-page-shell[data-active-nav="watermark"] .feature-main,
+.feature-page-shell[data-active-nav="remove-bg"] .feature-main,
+.feature-page-shell[data-active-nav="enhance"] .feature-main,
+.feature-page-shell[data-active-nav="replicate"] .feature-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.marketing-tool-root .marketing-canvas {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5);
+  overflow: hidden;
+  background: var(--surface-page);
+}
+
+.marketing-tool-root .marketing-canvas.is-list,
+.marketing-tool-root .marketing-canvas.is-recent {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  padding: var(--space-5);
+  overflow-y: auto;
+}
+
+.marketing-tool-root .marketing-canvas.has-active-task {
+  display: grid;
+  align-content: center;
+  place-items: center;
+  padding: var(--space-5) var(--space-5) calc(var(--space-5) * 3);
+}
+
+.marketing-tool-root .marketing-canvas.is-list.is-empty,
+.marketing-tool-root .marketing-canvas.is-recent.is-empty {
+  display: grid;
+  align-content: center;
+  place-items: center;
+}
+
+.marketing-tool-root .marketing-canvas.is-empty .watermark-results-feed:not(.has-results) {
+  display: none;
+}
+
+.marketing-tool-root .enhance-task-card.status-processing .watermark-task-placeholder svg {
+  color: #0f66d6;
+}
+
+.marketing-tool-root .remove-bg-task-card.status-processing .watermark-task-placeholder svg {
+  color: #0f766e;
+}
+
+.marketing-tool-root .marketing-runtime-state {
+  display: grid;
+  width: min(420px, calc(100% - (var(--space-5) * 2)));
+  min-height: 216px;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  margin: 0 auto;
+  padding: var(--space-4);
+  color: var(--marketing-text);
+  text-align: center;
+}
+
+.marketing-tool-root .marketing-runtime-state--failed {
+  min-height: 168px;
+}
+
+.marketing-tool-root .marketing-runtime-icon,
+.marketing-tool-root .marketing-runtime-spinner {
+  display: inline-grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: var(--marketing-primary);
+  background: var(--marketing-primary-soft);
+  border-radius: var(--radius-control);
+}
+
+.marketing-tool-root .marketing-runtime-state--failed .marketing-runtime-icon {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.marketing-tool-root .marketing-runtime-state strong {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.marketing-tool-root .marketing-runtime-state p,
+.marketing-tool-root .marketing-runtime-state small {
+  margin: 0;
+  color: var(--marketing-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.marketing-tool-root .marketing-runtime-state small {
+  font-size: 12px;
+}
+
+.marketing-tool-root .marketing-runtime-progress {
+  width: min(360px, 80vw);
+  height: var(--space-2);
+  overflow: hidden;
+  background: var(--state-disabled);
+  border-radius: var(--radius-pill);
+}
+
+.marketing-tool-root .marketing-runtime-progress i {
+  display: block;
+  height: 100%;
+  background: var(--brand-gradient);
+  border-radius: inherit;
+}
+
+.marketing-tool-root .watermark-results-feed,
+.marketing-tool-root .remove-bg-results-feed,
+.marketing-tool-root .enhance-results-feed {
+  align-content: start;
+  align-items: start;
+  padding-top: 0;
+}
+
+.marketing-tool-root .watermark-task-card,
+.marketing-tool-root .remove-bg-task-card,
+.marketing-tool-root .enhance-task-card {
+  background: var(--surface-panel);
+  border: 1px solid var(--marketing-border);
+  box-shadow: var(--shadow-panel);
+}
+
+.marketing-tool-root .watermark-task-meta p,
+.marketing-tool-root .remove-bg-task-meta p,
+.marketing-tool-root .enhance-task-meta p {
+  color: var(--marketing-text);
+}
+
+.marketing-tool-root .watermark-source-row span,
+.marketing-tool-root .remove-bg-source-row span,
+.marketing-tool-root .enhance-source-row span {
+  color: var(--text-secondary);
+  background: var(--marketing-field);
+  border-color: var(--marketing-border);
+}
+
+.marketing-tool-root .watermark-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.marketing-tool-root .watermark-card-actions .icon-circle {
+  flex: 0 0 36px;
+}
+
+.marketing-tool-root .watermark-card-actions > button,
+.marketing-tool-root .watermark-card-actions > .card-action-link {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: var(--space-1) 4px;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.marketing-tool-root .watermark-card-actions > .card-action-link,
+.marketing-tool-root .watermark-card-actions > .card-action-link:hover {
+  color: #ffffff;
+  background: var(--marketing-primary);
+  border-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing-tool-root .watermark-task-card.status-processing .watermark-task-placeholder svg,
+  .marketing-tool-root .remove-bg-task-card.status-processing .watermark-task-placeholder svg,
+  .marketing-tool-root .enhance-task-card.status-processing .watermark-task-placeholder svg,
+  .marketing-tool-root .marketing-runtime-spinner .lucide-loader-2 {
+    animation: none;
+  }
+}

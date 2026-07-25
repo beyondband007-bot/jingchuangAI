@@ -1,0 +1,7 @@
+/* Import order is intentional: shared generation base → image states → inspiration controls. */
+@import "../generation/generationResults.css";
+@import "../generation/generationWorkbench.css";
+@import "../generation/generationComposer.css";
+@import "../generation/generationResponsive.css";
+@import "./imageGenerationStates.css";
+@import "../inspiration/inspirationCategoryTabs.css";

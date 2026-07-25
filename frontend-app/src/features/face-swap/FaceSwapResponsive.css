@@ -1,0 +1,55 @@
+﻿@media (max-width: 1440px) {
+  .face-swap-workbench__settings-body {
+    grid-template-columns: 1fr;
+  }
+
+  .face-swap-workbench__settings-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .face-swap-workbench__action-area {
+    grid-column: 1 / -1;
+    justify-items: start;
+  }
+}
+
+@media (max-width: 1024px) {
+  .face-swap-workbench__hero,
+  .face-swap-workbench__upload-grid,
+  .face-swap-workbench__settings-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .face-swap-workbench__hero {
+    display: grid;
+  }
+
+  .face-swap-workbench__card-header {
+    flex-wrap: wrap;
+  }
+
+  .face-swap-workbench__format-pill {
+    margin-left: 0;
+  }
+
+  .face-swap-workbench__action-area {
+    justify-items: stretch;
+  }
+
+  .face-swap-workbench__start-button {
+    width: 100%;
+  }
+
+  .face-swap-workbench__dialog {
+    padding: 24px;
+  }
+
+  .face-swap-workbench__dialog-copy {
+    padding-right: 0;
+  }
+
+  .face-swap-workbench__dialog-actions,
+  .face-swap-workbench__dialog-actions button {
+    width: 100%;
+  }
+}

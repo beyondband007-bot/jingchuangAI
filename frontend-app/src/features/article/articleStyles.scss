@@ -1,0 +1,22 @@
+@use "sass:meta";
+
+/* Import order is intentional: shell → feature regions → states → responsive → compatibility. */
+@import "./articleWorkbenchResponsiveLayout.css";
+@import "./articlePreviewLayout.css";
+@import "./articleHistoryPreview.css";
+@import "./articleHistoryResultPreview.css";
+@import "./articleXhsCoverPreview.css";
+@import "../../components/faceminiDetailModal.css";
+@import "./articleWorkbenchBase.css";
+@import "./articleWorkbenchHistory.css";
+@import "./articleWorkbenchResponsive.css";
+@import "./articleVisualConfigBase.css";
+@import "./articleWorkbenchStyles/article-quick-template-preview.css";
+@import "./articleWorkbenchStyles/article-quick-rail.css";
+@include meta.load-css("./ArticlePopularResultPanel");
+@include meta.load-css("./articleTopTabs");
+@include meta.load-css("./articlePopularWorkbench");
+@include meta.load-css("./articleTemplatePreview");
+@include meta.load-css("./articlePopularWorkbenchLayout");
+@include meta.load-css("./articleHistory");
+@import "./articleWorkbenchComposition.css";

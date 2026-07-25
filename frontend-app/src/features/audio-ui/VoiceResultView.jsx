@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowLeft, Download, Heart, Music } from "lucide-react";
 import { VoiceRecentPlayer } from "./VoiceRecentPlayer";
+import "./voiceResult.css";
 
 export function VoiceResultView({
   result,

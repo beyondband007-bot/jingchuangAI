@@ -1,0 +1,10 @@
+/* Import order is intentional: shell → content domains → account/billing → responsive. */
+@import "./assetsBase.css";
+@import "./assetsHistory.css";
+@import "./assetsCommerce.css";
+@import "./assetsBilling.css";
+@import "./assetsProfile.css";
+@import "./assetsAccount.css";
+@import "./assetsFavorites.css";
+@import "./assetsGallery.css";
+@import "./assetsResponsive.css";

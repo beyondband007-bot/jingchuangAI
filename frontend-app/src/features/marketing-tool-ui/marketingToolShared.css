@@ -1,0 +1,371 @@
+/* Marketing tool composer and upload controls. */
+.marketing-tool-panel {
+  --marketing-panel-width: min(640px, calc(100% - 96px));
+  --marketing-surface: #ffffff;
+  --marketing-field: #f5f3fb;
+  --marketing-border: #d9d6e2;
+  --marketing-border-muted: #c9c5d6;
+  --marketing-primary: #623bff;
+  --marketing-primary-soft: #f6f4ff;
+  --marketing-text: #202027;
+  --marketing-muted: #9894aa;
+  --marketing-subtle: #aaa6b8;
+  --marketing-radius-lg: var(--space-5);
+  --marketing-radius-md: var(--radius-control);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-content: stretch;
+  align-items: stretch;
+  justify-items: stretch;
+  width: var(--marketing-panel-width);
+  max-width: none;
+  gap: calc(var(--space-5) * 2);
+  margin: 0;
+}
+
+.marketing-tool-panel.remove-bg-home-panel,
+.marketing-tool-panel.audio-tool-panel {
+  gap: var(--space-3);
+}
+
+.marketing-tool-panel:has(.marketing-result) {
+  gap: var(--space-3);
+}
+
+.marketing-tool-panel .marketing-panel-hero {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  color: var(--marketing-text);
+  text-align: center;
+  transform: none;
+}
+
+.marketing-tool-panel .marketing-panel-hero__icon {
+  display: none;
+}
+
+.marketing-tool-panel .marketing-panel-hero h1 {
+  display: block;
+  width: auto;
+  margin: 0 0 var(--space-1);
+  color: var(--marketing-text);
+  font-size: var(--title-page-size);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.marketing-tool-panel .marketing-panel-hero p {
+  max-width: 760px;
+  margin: 0 auto;
+  color: var(--marketing-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.marketing-composer {
+  position: relative;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 0;
+  padding: var(--space-4);
+  color: #282532;
+  background: transparent;
+  border: 0;
+  border-radius: var(--marketing-radius-lg);
+  box-shadow: none;
+  transform: none;
+}
+
+.marketing-composer--inline {
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+.marketing-composer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--marketing-surface);
+  border: 1px solid var(--marketing-border);
+  border-radius: var(--marketing-radius-lg);
+  pointer-events: none;
+}
+
+.marketing-composer > * {
+  position: relative;
+  z-index: 2;
+}
+
+.marketing-composer__title {
+  min-height: 0;
+  margin: 0 0 var(--space-4);
+}
+
+.marketing-composer__tabs {
+  position: relative;
+  top: -55px;
+  left: -41px;
+  z-index: 1;
+  display: inline-grid;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 120px;
+  justify-self: start;
+  width: auto;
+  height: 60px;
+  gap: 0;
+  margin: 0 0 -60px;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button {
+  position: relative;
+  z-index: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 164px;
+  min-height: 60px;
+  margin: 0;
+  padding: 0 8px 16px 0;
+  gap: var(--space-3px);
+  color: #8f8aa0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button + button {
+  margin-left: -16px;
+  padding: 0 0 16px 12px;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button::before {
+  content: "";
+  position: absolute;
+  inset: 0 -30px 0 -16px;
+  z-index: -1;
+  display: block;
+  background: center bottom / 100% 100% no-repeat
+    url("/assets/marketing/tab_01-02.svg");
+  pointer-events: none;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button:first-child::before {
+  background-image: url("/assets/marketing/tab_01-01.svg");
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs .is-active,
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button.active {
+  z-index: 2;
+  color: var(--marketing-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs .is-active svg,
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button.active svg {
+  color: var(--marketing-primary);
+  stroke: currentColor;
+}
+
+.marketing-tool-panel .marketing-composer__tabs.marketing-tool-tabs button > svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.marketing-composer__upload-wrap,
+.marketing-composer .arco-upload {
+  width: 100%;
+}
+
+.marketing-composer__upload {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 100%;
+  min-height: 214px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-1);
+  overflow: hidden;
+  color: #282532;
+  background: var(--marketing-field);
+  border: 1px dashed var(--marketing-border-muted);
+  border-radius: var(--marketing-radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.marketing-composer__upload:hover,
+.marketing-composer__upload.drag-over,
+.watermark-upload-control .arco-upload-trigger-custom-active .marketing-composer__upload {
+  background: #f8f6ff;
+  border-color: #9b80ff;
+  box-shadow: 0 12px 30px rgba(98, 59, 255, 0.12);
+}
+
+.marketing-composer__upload input[type="file"] {
+  display: none;
+}
+
+.marketing-composer__upload:disabled,
+.marketing-composer__upload[aria-disabled="true"] {
+  cursor: wait;
+  opacity: 0.82;
+}
+
+.marketing-composer__upload.has-file {
+  border-style: solid;
+}
+
+.marketing-composer__upload.has-preview {
+  min-height: 214px;
+  padding: 0;
+  border-style: solid;
+}
+
+.marketing-composer__upload.has-preview img,
+.marketing-composer__upload.has-preview video {
+  display: block;
+  width: 100%;
+  min-height: 214px;
+  max-height: 280px;
+  object-fit: contain;
+  background: var(--marketing-field);
+}
+
+.marketing-composer__upload > svg,
+.marketing-upload-icon,
+.replicate-upload-icon {
+  display: grid;
+  grid-row: auto;
+  justify-self: center;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  color: #ffffff;
+  background: var(--marketing-border-muted);
+  border-radius: var(--radius-pill);
+}
+
+.marketing-upload-icon img,
+.replicate-upload-icon img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.marketing-composer__upload strong {
+  color: #282532;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.marketing-composer__upload span,
+.marketing-composer__upload small {
+  color: var(--marketing-subtle);
+  font-size: 12px;
+}
+
+.marketing-composer__upload.has-preview small {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  left: var(--space-3);
+  z-index: 2;
+  overflow: hidden;
+  padding: var(--space-1) var(--space-2);
+  color: #282532;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: var(--radius-control);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marketing-composer__footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  padding-top: var(--space-4);
+  border-top: 0;
+}
+
+.marketing-composer__footer > span {
+  display: none;
+}
+
+.marketing-composer__footer > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0);
+  color: #6d3cff;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.marketing-composer__footer > strong .billing-points {
+  color: #6d3cff;
+  font-size: 16px;
+}
+
+.marketing-composer__footer .ui-send-button,
+.marketing-composer__footer .replicate-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  min-height: 42px;
+  gap: var(--space-2);
+  padding: 0 22px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b6bff, #623bff);
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 12px 26px rgba(98, 59, 255, 0.2);
+}
+
+.marketing-composer__footer .ui-send-button::after {
+  content: attr(aria-label);
+  font-size: 13px;
+}

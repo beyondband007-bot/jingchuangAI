@@ -1,0 +1,14 @@
+/* Base spacing for article visual configuration fields. */
+[data-feature-module="article"] .article-visual-config {
+  display: grid;
+  gap: var(--space-18px);
+}
+
+[data-feature-module="article"] .article-visual-field {
+  gap: var(--space-10px);
+}
+
+[data-feature-module="article"] .article-visual-field > span {
+  color: #24212d;
+  font-size: 14px;
+}

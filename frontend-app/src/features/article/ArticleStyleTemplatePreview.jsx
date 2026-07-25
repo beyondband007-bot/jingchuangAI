@@ -1,4 +1,5 @@
 import React from "react";
+import "./articleWorkbenchStyles/article-fresh-template-preview.css";
 
 function parseRatio(ratio) {
   const [width, height] = String(ratio || "3:4")

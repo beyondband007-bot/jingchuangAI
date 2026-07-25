@@ -1,0 +1,126 @@
+/* Intro-state composition and viewport-specific chat adjustments. */
+[data-feature-module="chat"]
+  .chat-view-root.is-intro
+  .chat-dialog-column::after {
+  display: none;
+}
+
+[data-feature-module="chat"] .chat-view-root.is-intro .llm-intro-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-36px);
+  width: 100%;
+  min-height: auto;
+  padding: 0 0 12vh;
+}
+
+[data-feature-module="chat"] .chat-view-root.is-intro .chat-main-canvas {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: auto;
+  overflow: visible;
+}
+
+[data-feature-module="chat"] .chat-view-root.is-intro .chat-empty-state {
+  min-height: auto;
+  display: grid;
+  place-items: center;
+}
+
+[data-feature-module="chat"] .chat-view-root.is-intro .chat-empty-state h1 {
+  margin: 0;
+  text-align: center;
+}
+
+[data-feature-module="chat"] .chat-view-root.is-intro .chat-composer {
+  position: relative;
+  grid-column: 1 / -1;
+  left: auto;
+  bottom: auto;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  align-self: stretch;
+  margin: 0;
+  justify-self: stretch;
+  transform: none;
+}
+
+@media (min-width: 768px) and (max-width: 1440px) {
+  .llm-intro-layout .chat-main-canvas,
+  .llm-intro-layout .llm-composer.chat-composer {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .llm-intro-layout .llm-empty-state h1 {
+    font-size: 26px;
+    margin-bottom: 34px;
+  }
+
+  .llm-intro-layout .llm-composer-footer {
+    gap: var(--space-7px);
+  }
+
+  .llm-intro-layout .llm-toolbar {
+    min-height: 31px;
+    gap: var(--space-11px);
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-intro-layout {
+    gap: var(--space-25px);
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .chat-main-canvas {
+    max-width: 800px;
+    justify-self: center;
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .chat-empty-state h1,
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-empty-state h1 {
+    font-size: 32px;
+    line-height: 1.2;
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .chat-composer {
+    min-width: 0;
+    max-width: 800px;
+    align-self: center;
+    justify-self: center;
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-composer-footer {
+    gap: var(--space-7px);
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-toolbar {
+    min-height: 31px;
+    gap: var(--space-11px);
+  }
+}
+
+@media (max-width: 768px) {
+  [data-feature-module="chat"] .chat-view-root.is-intro .chat-dialog-column {
+    width: var(--chat-content-width);
+    max-width: var(--chat-content-width);
+  }
+
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-intro-layout {
+    gap: var(--space-28px);
+    padding-bottom: 10vh;
+  }
+}
+
+@media (max-height: 760px) and (min-width: 768px) {
+  [data-feature-module="chat"] .chat-view-root.is-intro .llm-intro-layout {
+    gap: var(--space-5);
+    padding-bottom: 4vh;
+  }
+}

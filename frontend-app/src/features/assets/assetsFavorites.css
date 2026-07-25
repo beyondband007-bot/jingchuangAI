@@ -1,0 +1,84 @@
+.fm-favorites-view {
+  min-height: calc(100vh - 120px);
+  padding: 24px 52px;
+  background: #fff;
+}
+
+.fm-favorites-inner {
+  width: min(1480px, 100%);
+  max-width: none;
+  margin: 0 auto;
+}
+
+.fm-favorites-login-panel {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.fm-favorites-nav-row {
+  margin-bottom: 14px;
+}
+
+.fm-favorites-back {
+  margin: 0;
+  padding: 0;
+  color: #6d3cff;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.fm-favorites-back:hover {
+  opacity: 0.82;
+}
+
+.fm-favorites-title-row {
+  margin-bottom: 22px;
+}
+
+.fm-favorites-title-row h2 {
+  white-space: nowrap;
+}
+
+.fm-favorites-tabs {
+  margin: 0;
+}
+
+.fm-favorites-tabs button {
+  box-shadow: none;
+}
+
+.fm-favorites-tabs button:hover {
+  border-color: #d8ccff;
+}
+
+.fm-favorites-tabs button.is-active {
+  box-shadow: none;
+}
+
+.fm-favorites-grid {
+  margin-top: 0;
+}
+
+.fm-favorites-empty-state {
+  min-height: 420px;
+  margin-top: 10px;
+}
+
+.fm-favorites-empty-state p {
+  margin: 0;
+  font-size: 14px;
+}@media (max-width: 1024px) {
+  .fm-favorites-view {
+    padding: 24px 16px 32px;
+  }
+
+  .fm-favorites-title-row {
+    margin-bottom: 18px;
+  }
+
+  .fm-favorites-tabs {
+    justify-content: flex-start;
+  }
+}

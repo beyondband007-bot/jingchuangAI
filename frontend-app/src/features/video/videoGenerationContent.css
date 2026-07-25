@@ -1,0 +1,127 @@
+.video-inspiration-grid {
+  align-items: start;
+  margin-top: var(--space-5);
+  padding: 0 0 42px;
+}
+
+.video-gen-view-root {
+  min-height: var(--app-content-height);
+  padding: 0 var(--feature-page-padding-x) 256px;
+  color: var(--fm-ink);
+}
+
+.video-gen-view-root.is-empty-results {
+  box-sizing: border-box;
+  height: var(--app-content-height);
+  min-height: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Keep video empty states independent from the similarly named dubbing styles. */
+.video-gen-view-root .video-generation-empty-state {
+  display: grid;
+  grid-column: 1 / -1;
+  place-items: center;
+  align-content: center;
+  justify-self: center;
+  align-self: center;
+  gap: var(--space-3);
+  width: min(420px, 86vw);
+  min-height: 420px;
+  padding: 30px 24px;
+  color: #282532;
+  text-align: center;
+  background: #fff;
+  border-radius: var(--radius-control);
+  box-shadow: none;
+}
+
+.video-gen-view-root .video-generation-empty-state::before {
+  width: 180px;
+  height: 160px;
+  content: "";
+  background: url("/assets/article/empty/kong.png") no-repeat center / contain;
+}
+
+.video-gen-view-root .video-generation-empty-state > svg,
+.video-gen-view-root .video-generation-empty-state > p {
+  display: none;
+}
+
+.video-gen-view-root .video-generation-empty-state strong {
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-default);
+}
+
+.video-gen-view-root .video-generation-empty-state.video-history-loading::before {
+  display: none;
+}
+
+.video-gen-view-root .video-generation-empty-state.video-history-loading > svg,
+.video-gen-view-root .video-generation-empty-state.video-history-loading > p {
+  display: block;
+}
+
+.video-gen-view-root .video-composer.is-inline {
+  position: relative;
+  inset: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: min(800px, calc(100% - 48px));
+  max-width: min(800px, calc(100% - 48px));
+  z-index: 2;
+  margin: 0 auto 150px;
+  transform: none;
+}
+
+.video-gen-view-root .video-composer.is-sticky {
+  position: fixed;
+  right: auto;
+  bottom: var(--space-5);
+  left: calc(
+    var(--feature-sidebar-width) +
+      ((100vw - var(--feature-sidebar-width)) / 2)
+  );
+  z-index: var(--z-raised);
+  width: min(
+    800px,
+    calc(
+      100vw - var(--feature-sidebar-width) - var(--space-5) - var(--space-5)
+    )
+  );
+  max-width: min(
+    800px,
+    calc(
+      100vw - var(--feature-sidebar-width) - var(--space-5) - var(--space-5)
+    )
+  );
+  padding: 0;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 1024px) {
+  .video-gen-view-root .video-composer.is-inline:not(.is-sticky) {
+    width: calc(100vw - var(--space-4) - var(--space-4));
+    max-width: calc(100vw - var(--space-4) - var(--space-4));
+    right: auto;
+    left: auto;
+    margin-right: auto;
+    margin-left: auto;
+    transform: none;
+  }
+
+  .video-gen-view-root
+    .video-composer.is-inline:not(.is-sticky)
+    .chatbot-ui-dialog {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .video-gen-view-root .video-composer.is-sticky:not(.is-inline) {
+    right: var(--space-4);
+    left: var(--space-4);
+  }
+}

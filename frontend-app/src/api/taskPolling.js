@@ -16,6 +16,7 @@ export function createTaskPollingController(intervalMs = TASK_POLL_INTERVAL_MS) 
   const listeners = new Set();
   let pollTimer;
   let hasRunning = false;
+  let isVisibilityListenerAttached = false;
 
   function notify() {
     listeners.forEach((listener) => listener());
@@ -27,8 +28,32 @@ export function createTaskPollingController(intervalMs = TASK_POLL_INTERVAL_MS) 
     pollTimer = undefined;
   }
 
+  function isPageVisible() {
+    return typeof document === "undefined" || document.visibilityState !== "hidden";
+  }
+
+  function handleVisibilityChange() {
+    syncPolling();
+    if (isPageVisible() && hasRunning && listeners.size > 0) {
+      notify();
+    }
+  }
+
+  function syncVisibilityListener() {
+    if (typeof document === "undefined") return;
+    const shouldListen = listeners.size > 0;
+    if (shouldListen && !isVisibilityListenerAttached) {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      isVisibilityListenerAttached = true;
+    } else if (!shouldListen && isVisibilityListenerAttached) {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      isVisibilityListenerAttached = false;
+    }
+  }
+
   function syncPolling() {
-    if (!hasRunning || listeners.size === 0) {
+    syncVisibilityListener();
+    if (!hasRunning || listeners.size === 0 || !isPageVisible()) {
       stopPolling();
       return;
     }

@@ -1,4 +1,9 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
+import "../audio-ui/audioResponsive.css";
+import "../audio-ui/audioStateControls.css";
+import "./transcribe.css";
+import "../audio-ui/voiceWorkbench.css";
+import "../audio-ui/voiceHistory.css";
 import { CheckCircle2, Clipboard, Download, FileAudio, FileJson, Loader2, Trash2, X } from "lucide-react";
 import { transcribeApi } from "./transcribeApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
@@ -10,6 +15,8 @@ import {
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { useToast } from "../../components/ToastProvider";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
 
@@ -111,7 +118,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
       />
       {hasFile && !isUploading && (
         <span
-          className="upload-clear-button"
+          className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
           title="取消上传"
@@ -170,23 +177,17 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
 }
 
 export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
+  const { showToast: showGlobalToast, dismissToast } = useToast();
   const [audioFile, setAudioFile] = useState(null);
   const [notice, setNotice] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [result, setResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
-  const [toast, setToast] = useState(null);
-  const toastTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function showToast(type, message) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 2200);
+    showGlobalToast(message, { type });
   }
 
   useEffect(() => {
@@ -214,16 +215,8 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
     setIsTranscribing(false);
     setResult(null);
     setViewTab("home");
-    setToast(null);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
+    dismissToast();
   }, [resetSignal]);
-
-  useEffect(() => () => {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-  }, []);
 
   async function pickAudioFile(file) {
     setNotice("");
@@ -336,7 +329,7 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
   }
 
   return (
-    <section className="watermark-view-root">
+    <section className="transcribe-view-root">
       <FeatureViewTabs
         currentLabel="语音转文字"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -380,7 +373,7 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
                       <Download size={15} />
                     </button>
                   )}
-                  <button className="send-button voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
+                  <button className="ui-send-button voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
                     {isTranscribing ? <Loader2 size={16} /> : <FileAudio size={16} />}
                     开始转录
                   </button>
@@ -393,11 +386,7 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
         {viewTab === "recent" && (
           <div className={`voice-recent-panel transcribe-recent-panel ${recentResults.length ? "has-items" : ""}`}>
             {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <FileAudio size={28} />
-                <strong>暂无转录记录</strong>
-                <p>完成后的转录文本会显示在这里，可直接复制或下载。</p>
-              </div>
+              <HistoryEmptyState title="暂无转录记录" />
             ) : (
               recentResults.map((item) => (
                 <article className="voice-recent-card transcribe-recent-card" key={item.id}>
@@ -427,11 +416,6 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
         )}
 
       </div>
-      {toast ? (
-        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
-          {toast.message}
-        </div>
-      ) : null}
       {showRechargeAlert && (
         <CreditAlertDialog
           title="这次没有转录成功"

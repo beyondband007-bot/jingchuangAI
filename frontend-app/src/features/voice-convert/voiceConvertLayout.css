@@ -1,0 +1,55 @@
+.voice-convert-view-root .voice-conversion-workbench {
+  width: min(100%, 990px);
+}
+
+.voice-convert-view-root .voice-conversion-workbench__shell {
+  display: block;
+}
+
+.voice-convert-view-root .voice-conversion-workbench__workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 380px) minmax(380px, 400px);
+  gap: var(--space-4);
+  justify-content: center;
+  padding: 0;
+}
+
+.voice-convert-view-root .voice-conversion-workbench__upload-grid {
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  padding: 16px;
+}
+
+.voice-convert-view-root .voice-conversion-workbench__settings-panel {
+  margin-top: 0;
+  padding: 16px;
+  background: var(--audio-surface, #ffffff);
+  border: 1px solid var(--audio-panel-border, #ded8ed);
+  border-radius: var(--radius-2xl);
+  box-shadow: none;
+}
+
+.voice-convert-view-root
+  .voice-conversion-workbench__settings-panel
+  .voice-synthesis-workspace__sliders {
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 1024px) {
+  .voice-convert-view-root .voice-conversion-workbench__workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-convert-view-root .voice-conversion-workbench {
+    width: min(100%, 560px);
+  }
+}
+
+@media (max-width: 768px) {
+  .voice-convert-view-root .voice-conversion-workbench__upload-grid,
+  .voice-convert-view-root .voice-conversion-workbench__settings-panel {
+    padding: 20px;
+    border-radius: var(--radius-2xl);
+  }
+}

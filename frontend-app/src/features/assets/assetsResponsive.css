@@ -1,0 +1,96 @@
+﻿/* Responsive layout. */
+@media (max-width: 1024px) {
+  .assets-view-root {
+    padding: 20px 14px;
+  }
+
+  .assets-balance-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: 22px 24px;
+  }
+
+  .assets-balance-actions {
+    justify-content: flex-start;
+  }
+
+  .assets-balance-info strong {
+    font-size: 32px;
+  }
+
+  .assets-presets {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .assets-transactions-header {
+    display: none;
+  }
+
+  .assets-transactions-table {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .assets-transaction-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+    padding: 14px;
+  }
+
+  .assets-transaction-row span {
+    white-space: normal;
+  }
+}@media (max-width: 375px) {
+  .assets-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .assets-balance-hero {
+    padding: 20px;
+  }
+
+  .assets-tabs {
+    width: 100%;
+  }
+
+  .assets-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .assets-presets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assets-custom-amount {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .assets-order-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .assets-order-row > div:last-child {
+    text-align: left;
+  }
+
+  .assets-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assets-pagination > div,
+  .assets-pagination button {
+    width: 100%;
+  }
+
+  .assets-transaction-row {
+    padding: 12px;
+  }
+}

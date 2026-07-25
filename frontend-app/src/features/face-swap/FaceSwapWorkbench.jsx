@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
 import BillingPoints from "../../components/BillingPoints.jsx";
-import "./FaceSwapWorkbench.css";
+import { useToast } from "../../components/ToastProvider";
+import "./faceSwapStyles.css";
 
 const faceSamples = [
   "/assets/faceswap/face-sample-1.jpg",
@@ -50,7 +51,7 @@ function normalizeSourceDuration(value) {
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
   if (!text) return fallback;
-  const suspiciousCount = (text.match(/[�锟�]/g) || []).length;
+  const suspiciousCount = (text.match(/[\uFFFD\u951F]/g) || []).length;
   if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
   return text;
 }
@@ -222,6 +223,7 @@ export function FaceSwapWorkbench({
   taskError = "",
   taskProgress = 0
 }) {
+  const { showToast: showTemporaryNotice, dismissToast } = useToast();
   const [imageAsset, setImageAsset] = useState(null);
   const [videoAsset, setVideoAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
@@ -232,20 +234,9 @@ export function FaceSwapWorkbench({
   const [faceStrength, setFaceStrength] = useState(80);
   const [enhanceQuality, setEnhanceQuality] = useState(true);
   const [faceOptimize, setFaceOptimize] = useState(true);
-  const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState("");
   const [resultDismissed, setResultDismissed] = useState(false);
   const activeRef = useRef(isActive);
-  const noticeTimerRef = useRef(null);
-
-  function showTemporaryNotice(message) {
-    setNotice(message);
-    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice("");
-      noticeTimerRef.current = null;
-    }, 2000);
-  }
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -257,7 +248,7 @@ export function FaceSwapWorkbench({
     if (videoPreview) window.URL.revokeObjectURL(videoPreview);
     setImagePreview("");
     setVideoPreview("");
-    setNotice("");
+    dismissToast();
     setUploading("");
     setResultDismissed(false);
   }, [isActive, imagePreview, videoPreview]);
@@ -285,12 +276,6 @@ export function FaceSwapWorkbench({
         : isMotionPreview
           ? "暂无草稿，上传素材后点击开始生成"
           : "暂无草稿，上传照片和视频后点击生成换脸视频";
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (!model && (options.defaults?.model || options.models[0]?.value)) {
@@ -584,8 +569,6 @@ export function FaceSwapWorkbench({
         </div>
         <div className="face-swap-workbench__target-draft">{previewDraftText}</div>
       </section>
-
-      {notice && <div className="face-swap-workbench__notice">{notice}</div>}
 
       <div className="face-swap-workbench__privacy">
         <LockKeyhole size={16} />

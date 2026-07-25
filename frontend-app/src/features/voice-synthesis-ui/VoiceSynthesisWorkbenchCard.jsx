@@ -2,15 +2,26 @@ import React, { useRef } from "react";
 import { Clipboard, Mic2, SmilePlus, Trash2, Upload, Wand2 } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import "./voiceSynthesisWorkbenchCard.css";
+import "../audio-ui/audioWorkbenchShared.css";
 
 function SliderField({ label, displayValue, minLabel, maxLabel, ...props }) {
+  const value = Number(props.value ?? props.min ?? 0);
+  const min = Number(props.min ?? 0);
+  const max = Number(props.max ?? 100);
+  const fillPercent = max > min ? ((value - min) / (max - min)) * 100 : 0;
   return (
     <label className="voice-synthesis-workspace__slider">
       <span className="voice-synthesis-workspace__slider-header">
         <span>{label}</span>
         <strong>{displayValue}</strong>
       </span>
-      <input {...props} />
+      <input
+        {...props}
+        style={{
+          ...props.style,
+          "--range-fill": `${Math.max(0, Math.min(100, fillPercent))}%`,
+        }}
+      />
       <span className="voice-synthesis-workspace__slider-range">
         <small>{minLabel}</small>
         <small>{maxLabel}</small>
@@ -222,7 +233,6 @@ export function VoiceSynthesisWorkbenchCard({
                   />
                   {isGenerating ? "生成中..." : "生成语音"}
                 </button>
-                <p className="voice-synthesis-workspace__settings-note">{notice || "目标音色支持 mp3、m4a、wav，建议时长 10 秒到 5 分钟。"}</p>
               </section>
             </div>
           </div>
@@ -232,13 +242,13 @@ export function VoiceSynthesisWorkbenchCard({
               {demoAudio && (
                 <div>
                   <span>音色试听</span>
-                  <audio src={demoAudio} controls />
+                  <audio src={demoAudio} controls preload="metadata" />
                 </div>
               )}
               {resultAudio && (
                 <div>
                   <span>合成结果</span>
-                  <audio src={resultAudio} controls />
+                  <audio src={resultAudio} controls preload="metadata" />
                 </div>
               )}
             </section>

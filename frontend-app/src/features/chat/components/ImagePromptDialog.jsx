@@ -1,39 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { ModelOptionContent } from "./modelOptionMeta.jsx";
-
-function RatioPreviewIcon({ ratio, selected = false }) {
-  const [width = 1, height = 1] = String(ratio || "1:1")
-    .split(":")
-    .map((part) => Number(part) || 1);
-  const isPortrait = height > width;
-  const isSquare = width === height;
-
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: "inline-flex",
-        width: "30px",
-        alignItems: "center",
-        justifyContent: "center",
-        flex: "0 0 30px",
-      }}
-    >
-      <span
-        style={{
-          width: isSquare ? "18px" : isPortrait ? "14px" : "22px",
-          height: isSquare ? "18px" : isPortrait ? "22px" : "14px",
-          borderRadius: "4px",
-          border: `1.5px solid ${selected ? "#8f78ff" : "rgba(204, 204, 204, 0.72)"}`,
-          background: selected
-            ? "rgba(143, 120, 255, 0.18)"
-            : "rgba(255, 255, 255, 0.06)",
-          boxShadow: selected ? "0 0 0 3px rgba(143, 120, 255, 0.1)" : "none",
-        }}
-      />
-    </span>
-  );
-}
+import { PromptDropdown } from "./PromptDropdown.jsx";
+import { PromptRatioPreview } from "./PromptRatioPreview.jsx";
 
 export function ImagePromptDialog({
   ariaLabel,
@@ -60,21 +28,10 @@ export function ImagePromptDialog({
   collapsed = false,
   dropdownPlacement = "top",
 }) {
-  const [isHovering, setIsHovering] = useState(false);
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
-  const [showRatioDropdown, setShowRatioDropdown] = useState(false);
-  const [showQualityDropdown, setShowQualityDropdown] = useState(false);
-  const dialogRef = useRef(null);
   const textareaRef = useRef(null);
   const maxPromptRows = 9;
   const promptLineHeight = 24;
   const promptMaxHeight = maxPromptRows * promptLineHeight;
-
-  function closeDropdowns() {
-    setShowModelDropdown(false);
-    setShowRatioDropdown(false);
-    setShowQualityDropdown(false);
-  }
 
   function resizePromptTextarea() {
     const textarea = textareaRef.current;
@@ -90,204 +47,21 @@ export function ImagePromptDialog({
     resizePromptTextarea();
   }, [value]);
 
-  useEffect(() => {
-    if (!showModelDropdown && !showRatioDropdown && !showQualityDropdown) {
-      return undefined;
-    }
-
-    function closeOnOutside(event) {
-      if (!dialogRef.current?.contains(event.target)) {
-        closeDropdowns();
-      }
-    }
-
-    function closeOnPageInteraction() {
-      closeDropdowns();
-    }
-
-    function closeOnEscape(event) {
-      if (event.key === "Escape") closeDropdowns();
-    }
-
-    document.addEventListener("pointerdown", closeOnOutside, true);
-    document.addEventListener("wheel", closeOnPageInteraction, true);
-    document.addEventListener("touchmove", closeOnPageInteraction, true);
-    document.addEventListener("keydown", closeOnEscape);
-    window.addEventListener("resize", closeOnPageInteraction);
-    window.addEventListener("scroll", closeOnPageInteraction, true);
-
-    return () => {
-      document.removeEventListener("pointerdown", closeOnOutside, true);
-      document.removeEventListener("wheel", closeOnPageInteraction, true);
-      document.removeEventListener("touchmove", closeOnPageInteraction, true);
-      document.removeEventListener("keydown", closeOnEscape);
-      window.removeEventListener("resize", closeOnPageInteraction);
-      window.removeEventListener("scroll", closeOnPageInteraction, true);
-    };
-  }, [showModelDropdown, showQualityDropdown, showRatioDropdown]);
-
-  useEffect(() => {
-    if (collapsed) closeDropdowns();
-  }, [collapsed]);
-
-  const shellStyle = useMemo(
-    () => ({
-      width: "100%",
-      position: "relative",
-      background:
-        "linear-gradient(135deg, rgba(35, 35, 35, 0.78) 0%, rgba(28, 28, 28, 0.88) 100%)",
-      borderRadius: "24px",
-      border: isHovering
-        ? "1px solid rgba(255, 255, 255, 0.38)"
-        : "1px solid rgba(255, 255, 255, 0.08)",
-      padding: "20px 24px",
-      boxShadow:
-        "0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
-      backdropFilter: "blur(20px)",
-      WebkitBackdropFilter: "blur(20px)",
-      transition: "border-color 0.42s cubic-bezier(0.22, 1, 0.36, 1)",
-    }),
-    [isHovering],
-  );
-
-  const buttonBaseStyle = {
-    height: "44px",
-    borderRadius: "12px",
-    background: "rgba(55, 55, 55, 0.8)",
-    border: "1px solid rgba(255, 255, 255, 0.06)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    padding: "0 14px",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    color: "#cccccc",
-    fontSize: "13px",
-    fontWeight: "500",
-  };
-  const submitButtonStyle = {
-    background: "var(--brand-primary, #5a2cfc)",
-    border: "1px solid var(--brand-primary, #5a2cfc)",
-    color: "#ffffff",
-  };
-
-  function dropdownMenuStyle(minWidth) {
-    return {
-      position: "absolute",
-      ...(dropdownPlacement === "bottom"
-        ? { top: "54px" }
-        : { bottom: "54px" }),
-      left: 0,
-      background: "rgba(40, 40, 40, 0.98)",
-      borderRadius: "12px",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      padding: "8px",
-      minWidth: `${minWidth}px`,
-      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-      backdropFilter: "blur(20px)",
-      animation: "fadeIn 0.15s ease",
-      zIndex: 120,
-    };
-  }
-
-  const selectedDropdownItemBackground = "#f2edff";
-
-  function dropdownItemStyle(color, isSelected = false) {
-    return {
-      padding: "10px 12px",
-      borderRadius: "8px",
-      cursor: "pointer",
-      color: isSelected ? "#6d3cff" : "#686879",
-      fontSize: "14px",
-      fontWeight: isSelected ? "700" : "400",
-      background: isSelected ? selectedDropdownItemBackground : "transparent",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "flex-start",
-      gap: "12px",
-      transition: "all 0.15s ease",
-    };
-  }
-
-  function highlightDropdownItem(event) {
-    event.currentTarget.style.background = selectedDropdownItemBackground;
-  }
-
-  function resetDropdownItem(color, isSelected = false) {
-    return function (event) {
-      event.currentTarget.style.background = isSelected
-        ? selectedDropdownItemBackground
-        : "transparent";
-    };
-  }
-
-  const currentModel = modelOptions.find((m) => m.value === model);
-  const currentRatio = ratioOptions.find((r) => (r.value || r) === ratio);
-  const currentQuality = qualityOptions.find((q) => q.value === quality);
-  const dialogClassName = `chatbot-ui-dialog image-prompt-dialog ${
+  const dialogClassName = `fm-prompt-dialog chatbot-ui-dialog image-prompt-dialog ${
     collapsed ? "is-collapsed" : "is-expanded"
   }`;
-  const mainRowClassName = `image-prompt-main-row ${
+  const mainRowClassName = `fm-prompt-main-row image-prompt-main-row ${
     collapsed ? "is-collapsed" : "is-expanded"
   }`;
-  const textareaStyle = {
-    flex: "1 1 auto",
-    minWidth: 0,
-    width: "100%",
-    background: "transparent",
-    border: "none",
-    outline: "none",
-    resize: "none",
-    color: "#ffffff",
-    fontSize: "16px",
-    fontWeight: "400",
-    lineHeight: `${promptLineHeight}px`,
-    fontFamily: "inherit",
-    minHeight: "28px",
-    maxHeight: `${promptMaxHeight}px`,
-    overflowY: "hidden",
-    padding: 0,
-  };
-  const compactAddButtonStyle = {
-    ...buttonBaseStyle,
-    flex: "0 0 44px",
-    width: "44px",
-    padding: 0,
-  };
-  const compactSubmitStyle = {
-    ...buttonBaseStyle,
-    flex: "0 0 auto",
-    width: "auto",
-    minWidth: "96px",
-    ...(canSubmit
-      ? submitButtonStyle
-      : {
-          background: "rgba(55, 55, 55, 0.5)",
-          border: "1px solid rgba(255, 255, 255, 0.04)",
-          color: "#8b8b8b",
-        }),
-    cursor: canSubmit ? "pointer" : "not-allowed",
-    opacity: canSubmit ? 1 : 0.6,
-  };
-
   return (
-    <div
-      ref={dialogRef}
-      className={dialogClassName}
-      aria-label={ariaLabel}
-      style={shellStyle}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
+    <div className={dialogClassName} aria-label={ariaLabel}>
       <div className={mainRowClassName}>
         {onAdd && (
           <button
             type="button"
-            className="image-prompt-main-add"
+            className="fm-prompt-control fm-prompt-control--square image-prompt-main-add"
             onClick={onAdd}
-            style={compactAddButtonStyle}
-            aria-label="添加"
+            aria-label="娣诲姞"
           >
             <svg
               width="20"
@@ -305,6 +79,7 @@ export function ImagePromptDialog({
         )}
         <textarea
           ref={textareaRef}
+          className="fm-prompt-input image-prompt-input"
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
@@ -318,14 +93,12 @@ export function ImagePromptDialog({
           }}
           placeholder={placeholder}
           rows={1}
-          style={textareaStyle}
         />
         <button
           type="button"
-          className="image-prompt-compact-submit"
+          className="fm-prompt-submit image-prompt-compact-submit"
           onClick={onSubmit}
           disabled={!canSubmit}
-          style={compactSubmitStyle}
           aria-label="生成"
         >
           <svg
@@ -344,32 +117,20 @@ export function ImagePromptDialog({
         </button>
       </div>
 
-      <div className="image-prompt-reference-region">{referenceSlot}</div>
+      <div className="fm-prompt-reference-region">{referenceSlot}</div>
 
       <div
-        className="image-prompt-controls-row"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          flexWrap: "wrap",
-        }}
+        className="fm-prompt-controls-row image-prompt-controls-row"
       >
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-          }}
+          className="fm-prompt-controls-group"
         >
           {onAdd && (
             <button
               type="button"
+              className="fm-prompt-control fm-prompt-control--square"
               onClick={onAdd}
-              style={buttonBaseStyle}
-              aria-label="添加"
+              aria-label="娣诲姞"
             >
               <svg
                 width="20"
@@ -386,23 +147,11 @@ export function ImagePromptDialog({
             </button>
           )}
 
-          {/* Model Dropdown */}
-          <div className="chatbot-ui-dropdown" style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowModelDropdown(!showModelDropdown);
-                setShowRatioDropdown(false);
-                setShowQualityDropdown(false);
-              }}
-              style={buttonBaseStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
-              }}
-            >
+          <PromptDropdown
+            ariaLabel="选择图片模型"
+            className="fm-prompt-dropdown prompt-dropdown--model"
+            disabled={collapsed}
+            leadingIcon={(
               <svg
                 width="16"
                 height="16"
@@ -417,239 +166,59 @@ export function ImagePromptDialog({
                 <path d="M2 17l10 5 10-5" />
                 <path d="M2 12l10 5 10-5" />
               </svg>
-              <span>{currentModel?.label || model}</span>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                style={{
-                  transform: showModelDropdown ? "rotate(180deg)" : "rotate(0)",
-                  transition: "transform 0.2s ease",
-                }}
-              >
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="#888888"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            {showModelDropdown && (
-              <div
-                style={{
-                  ...dropdownMenuStyle(480),
-                  minWidth: "480px",
-                  maxWidth: "calc(100vw - 48px)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px",
-                  zIndex: 140,
-                }}
-              >
-                {modelOptions.map((item) => {
-                  const isSelected = item.value === model;
-
-                  return (
-                    <div
-                      key={item.value}
-                      onClick={() => {
-                        onModelChange(item.value);
-                        setShowModelDropdown(false);
-                      }}
-                      style={{
-                        ...dropdownItemStyle(
-                          isSelected ? "#8f78ff" : "#cccccc",
-                          isSelected,
-                        ),
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: "10px",
-                        padding: "8px 10px",
-                      }}
-                      onMouseEnter={highlightDropdownItem}
-                      onMouseLeave={resetDropdownItem(
-                        isSelected ? "#8f78ff" : "#cccccc",
-                        isSelected,
-                      )}
-                    >
-                      <ModelOptionContent item={item} selected={isSelected} />
-                    </div>
-                  );
-                })}
-              </div>
             )}
-          </div>
-
-          {/* Ratio Dropdown */}
-          <div className="chatbot-ui-dropdown" style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowRatioDropdown(!showRatioDropdown);
-                setShowModelDropdown(false);
-                setShowQualityDropdown(false);
-              }}
-              style={buttonBaseStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
-              }}
-            >
-              <RatioPreviewIcon ratio={ratio} selected={showRatioDropdown} />
-              <span>{currentRatio?.label || currentRatio || ratio}</span>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                style={{
-                  transform: showRatioDropdown ? "rotate(180deg)" : "rotate(0)",
-                  transition: "transform 0.2s ease",
-                }}
-              >
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="#888888"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            {showRatioDropdown && (
-              <div style={dropdownMenuStyle(150)}>
-                {ratioOptions.map((item) => {
-                  const optionValue = item.value || item;
-                  const isSelected = optionValue === ratio;
-
-                  return (
-                    <div
-                      key={optionValue}
-                      onClick={() => {
-                        onRatioChange(optionValue);
-                        setShowRatioDropdown(false);
-                      }}
-                      style={{
-                        ...dropdownItemStyle(
-                          isSelected ? "#8f78ff" : "#cccccc",
-                          isSelected,
-                        ),
-                      }}
-                      onMouseEnter={highlightDropdownItem}
-                      onMouseLeave={resetDropdownItem(
-                        isSelected ? "#8f78ff" : "#cccccc",
-                        isSelected,
-                      )}
-                    >
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "10px",
-                        }}
-                      >
-                        <RatioPreviewIcon
-                          ratio={optionValue}
-                          selected={isSelected}
-                        />
-                        {item.label || item}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+            onChange={onModelChange}
+            options={modelOptions}
+            placement={dropdownPlacement}
+            renderOption={(item, isSelected) => (
+              <ModelOptionContent item={item} selected={isSelected} />
             )}
-          </div>
+            triggerClassName="fm-prompt-control"
+            value={model}
+            width={480}
+          />
 
-          {/* Quality Dropdown */}
-          <div className="chatbot-ui-dropdown" style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => {
-                setShowQualityDropdown(!showQualityDropdown);
-                setShowModelDropdown(false);
-                setShowRatioDropdown(false);
-              }}
-              style={buttonBaseStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
-              }}
-            >
-              <span>
-                {currentQuality?.label || currentQuality?.value || quality}
+          <PromptDropdown
+            ariaLabel="选择图片比例"
+            className="fm-prompt-dropdown"
+            disabled={collapsed}
+            onChange={onRatioChange}
+            options={ratioOptions}
+            placement={dropdownPlacement}
+            renderOption={(item, isSelected, option) => (
+              <span className="prompt-dropdown__ratio-option">
+                <PromptRatioPreview ratio={option.value} selected={isSelected} />
+                <span>{item.label || option.value}</span>
               </span>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                style={{
-                  transform: showQualityDropdown
-                    ? "rotate(180deg)"
-                    : "rotate(0)",
-                  transition: "transform 0.2s ease",
-                }}
-              >
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="#888888"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            {showQualityDropdown && (
-              <div style={dropdownMenuStyle(150)}>
-                {qualityOptions.map((item) => (
-                  <div
-                    key={item.value}
-                    onClick={() => {
-                      onQualityChange(item.value);
-                      setShowQualityDropdown(false);
-                    }}
-                    style={{
-                      ...dropdownItemStyle(
-                        item.value === quality ? "#8f78ff" : "#cccccc",
-                        item.value === quality,
-                      ),
-                    }}
-                    onMouseEnter={highlightDropdownItem}
-                    onMouseLeave={resetDropdownItem(
-                      item.value === quality ? "#8f78ff" : "#cccccc",
-                      item.value === quality,
-                    )}
-                  >
-                    {item.label || item.value}
-                  </div>
-                ))}
-              </div>
             )}
-          </div>
+            renderValue={(option, isOpen) => (
+              <>
+                <PromptRatioPreview ratio={option?.value || ratio} selected={isOpen} />
+                <span>{option?.label || ratio}</span>
+              </>
+            )}
+            triggerClassName="fm-prompt-control"
+            value={ratio}
+            width={160}
+          />
+
+          <PromptDropdown
+            ariaLabel="选择图片清晰度"
+            className="fm-prompt-dropdown"
+            disabled={collapsed}
+            onChange={onQualityChange}
+            options={qualityOptions}
+            placement={dropdownPlacement}
+            triggerClassName="fm-prompt-control"
+            value={quality}
+            width={160}
+          />
 
           {onRandom && (
             <button
               type="button"
-              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onRandom}
-              style={buttonBaseStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
-              }}
+              className="fm-prompt-control fm-prompt-control--square prompt-icon-button prompt-icon-button--tooltip"
               data-tooltip="随机提示词"
               aria-label="随机提示词"
             >
@@ -674,15 +243,8 @@ export function ImagePromptDialog({
           {onClear && (
             <button
               type="button"
-              className="prompt-icon-button prompt-icon-button--tooltip"
               onClick={onClear}
-              style={buttonBaseStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(70, 70, 70, 0.9)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(55, 55, 55, 0.8)";
-              }}
+              className="fm-prompt-control fm-prompt-control--square prompt-icon-button prompt-icon-button--tooltip"
               data-tooltip="清空提示词"
               aria-label="清空提示词"
             >
@@ -705,25 +267,11 @@ export function ImagePromptDialog({
         </div>
 
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
+          className="fm-prompt-controls-group fm-prompt-controls-group--end"
         >
           {price && (
             <span
-              style={{
-                padding: "8px 12px",
-                color: "#6d3cff",
-                background: "#f0eef7",
-                border: "1px solid #dedbea",
-                borderRadius: "999px",
-                fontSize: "12px",
-                fontWeight: "900",
-              }}
+              className="fm-prompt-points"
             >
               {price}
             </span>
@@ -731,24 +279,9 @@ export function ImagePromptDialog({
 
           <button
             type="button"
+            className="fm-prompt-submit image-prompt-submit"
             onClick={onSubmit}
             disabled={!canSubmit}
-            style={{
-              ...buttonBaseStyle,
-              width: "auto",
-              minWidth: "120px",
-              ...(canSubmit
-                ? submitButtonStyle
-                : {
-                    background: "rgba(55, 55, 55, 0.5)",
-                    border: "1px solid rgba(255, 255, 255, 0.04)",
-                    color: "#8b8b8b",
-                  }),
-              fontSize: buttonBaseStyle.fontSize,
-              fontWeight: buttonBaseStyle.fontWeight,
-              cursor: canSubmit ? "pointer" : "not-allowed",
-              opacity: canSubmit ? 1 : 0.6,
-            }}
             aria-label="生成"
           >
             <svg

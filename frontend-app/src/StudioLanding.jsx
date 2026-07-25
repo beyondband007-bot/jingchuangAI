@@ -1,5 +1,12 @@
 import { memo, useCallback, useEffect, useRef } from "react";
 import studioLandingHtml from "./StudioLandingContent";
+import "./StudioLanding.css";
+import "./StudioLandingHero.css";
+import "./StudioLandingShowcase.css";
+import "./StudioLandingContentSections.css";
+import "./StudioLandingBottomCta.css";
+import "./StudioLandingFooter.css";
+import "./StudioLandingResponsive.css";
 
 export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterApp, onEnterCreation }) {
   const rootRef = useRef(null);
@@ -19,44 +26,6 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
     if (action === "enter") onEnterApp();
     if (action === "creation") onEnterCreation?.();
   }, [onEnterApp, onEnterCreation, onOpenAuth]);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return undefined;
-
-    const burst = root.querySelector("[data-studio-burst-canvas]");
-    if (!burst) return undefined;
-
-    let cancelled = false;
-    let cleanupBurst = null;
-    const burstModuleUrl = "/new_page/assets/prismatic-burst.js?v=20260608-https-mime";
-    const importPublicModule = new Function("url", "return import(url)");
-
-    importPublicModule(burstModuleUrl)
-      .then(({ mountPrismaticBurst }) => {
-        if (cancelled || !root.isConnected) return;
-
-        cleanupBurst = mountPrismaticBurst(burst, {
-          opacity: 0.96,
-          intensity: 1.85,
-          speed: 0.68,
-          distort: 0.9,
-          noiseAmount: 0.16,
-          rayCount: 11,
-        });
-        root.classList.add("is-video-ready");
-      })
-      .catch((error) => {
-        console.warn("Failed to start studio WebGL burst:", error);
-        root.classList.add("is-video-ready");
-      });
-
-    return () => {
-      cancelled = true;
-      root.classList.remove("is-video-ready");
-      cleanupBurst?.();
-    };
-  }, []);
 
   useEffect(() => {
     const root = rootRef.current;

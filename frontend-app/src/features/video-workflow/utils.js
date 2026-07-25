@@ -20,7 +20,7 @@ export function normalizeSourceDuration(value) {
 export function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
   if (!text) return fallback;
-  const suspiciousCount = (text.match(/[锟]/g) || []).length;
+  const suspiciousCount = (text.match(/[\u951F]/g) || []).length;
   if (suspiciousCount >= 2 || /[ãÂ]/.test(text)) return fallback;
   return text;
 }

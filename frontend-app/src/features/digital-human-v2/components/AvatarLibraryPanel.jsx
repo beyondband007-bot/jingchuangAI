@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Sparkles, X } from "lucide-react";
 import { CustomSelect } from "../../../components/CustomSelect";
+import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import { AvatarCard } from "./AvatarCard";
 import { AvatarConfirmOverlay } from "./AvatarConfirmOverlay";
 import { VoiceAudioLibraryPanel } from "./VoiceAudioLibraryPanel";
@@ -195,12 +196,20 @@ export function AvatarLibraryPanel({
             />
           ))}
           {!list.length && !isMine ? (
-            <div className="dhv2-library__empty">暂无可用官方形象</div>
+            <HistoryEmptyState
+              className="dhv2-library__empty"
+              title="暂无可用官方形象"
+              compact
+              borderless
+            />
           ) : null}
           {!list.length && isMine ? (
-            <div className="dhv2-library__mine-empty">
-              <p>暂无我的形象，可使用 AI 定制创建</p>
-            </div>
+            <HistoryEmptyState
+              className="dhv2-library__mine-empty"
+              title="暂无我的形象"
+              compact
+              borderless
+            />
           ) : null}
         </div>
       )}

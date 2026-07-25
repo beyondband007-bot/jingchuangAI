@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Image, Layers, Loader2, Plus, RefreshCcw, Star, Trash2, X, Zap } from "lucide-react";
+import { CheckCircle2, Download, Image, Layers, Loader2, Plus, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import {
@@ -15,6 +15,9 @@ import { formatBeijingDateTime } from "../../utils/time";
 import { removeBgApi } from "./removeBgApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { PageTitle } from "../../components/PageTitle";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
 
@@ -113,9 +116,6 @@ function RemoveBgCenterState({
 function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
-  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
-  const canUseCompletedActions = isCompleted;
-  const canRetryOrDelete = isCompleted || isFailed;
 
   return (
     <article className={`watermark-task-card remove-bg-task-card status-${task.status}`}>
@@ -134,30 +134,12 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
-            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
-          </button>
-          {canUseCompletedActions ? (
-            <a className="card-action-link" href={task.resultUrl} download>
-              <Download size={15} />
-              下载
-            </a>
-          ) : (
-            <button type="button" disabled>
-              <Download size={15} />
-              下载
-            </button>
-          )}
-          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
-            <RefreshCcw size={15} />
-            再次生成
-          </button>
-          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
-            <Trash2 size={15} />
-            删除
-          </button>
-        </div>
+        <MarketingTaskCardActions
+          task={task}
+          onDelete={onDelete}
+          onFavorite={onFavorite}
+          onRepeat={onRepeat}
+        />
       </div>
     </article>
   );
@@ -197,7 +179,7 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
       )}
       {previewUrl && !isUploading && (
         <span
-          className="upload-clear-button"
+          className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
           title="取消上传"
@@ -313,7 +295,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
             "请上传文件"
           )}
         </strong>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
+        <button className="ui-send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
       </div>
@@ -446,7 +428,7 @@ export function RemoveBgView({ onOpenFeature }) {
   }
 
   return (
-    <section className="watermark-view-root remove-bg-view-root">
+    <section className="marketing-tool-root marketing-tool--cutout remove-bg-view-root">
       <FeatureViewTabs
         currentLabel="智能抠图"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -456,14 +438,14 @@ export function RemoveBgView({ onOpenFeature }) {
           setSubmittedTaskId(null);
         }}
       />
-      <div className={`marketing-canvas remove-bg-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
+      <div className={`marketing-canvas remove-bg-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""} ${showRecentEmpty ? "is-empty" : ""}`}>
         {showEmptyHero && (
           <MarketingToolPanel className="watermark-home-panel remove-bg-home-panel">
             <div className="marketing-panel-hero watermark-hero-empty remove-bg-hero-empty">
               <span className="marketing-panel-hero__icon watermark-hero-icon remove-bg-hero-icon">
                 <Layers size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">智能抠图</h1>
+              <PageTitle className="marketing-panel-hero__title">智能抠图</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片，AI 一键抠出主体并生成透明背景素材</p>
             </div>
             <RemoveBgComposer
@@ -479,7 +461,7 @@ export function RemoveBgView({ onOpenFeature }) {
               <span className="marketing-panel-hero__icon watermark-hero-icon remove-bg-hero-icon">
                 <Layers size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">智能抠图</h1>
+              <PageTitle className="marketing-panel-hero__title">智能抠图</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片，AI 一键抠出主体并生成透明背景素材</p>
             </div>
             <RemoveBgCenterState
@@ -508,11 +490,9 @@ export function RemoveBgView({ onOpenFeature }) {
           />
         ) : null}
         {showRecentEmpty && (
-          <div className="watermark-recent-empty remove-bg-recent-empty">
-            <Layers size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}</strong>
-            <p>{viewTab === "favorite" ? "收藏后的抠图结果会显示在这里。" : "抠图完成的透明图片会保存在这里。"}</p>
-          </div>
+          <HistoryEmptyState
+            title={viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}
+          />
         )}
         <div className={`watermark-results-feed remove-bg-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
           {visibleTasks.map((task) => (

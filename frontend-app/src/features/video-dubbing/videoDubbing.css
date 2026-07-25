@@ -1,0 +1,406 @@
+/* Video dubbing owns its canvas layout so it does not depend on watermark styles. */
+
+.feature-page-shell:has([data-feature-active="true"] .video-dubbing-view-root) {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feature-main:has([data-feature-active="true"] .video-dubbing-view-root) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feature-main:has([data-feature-active="true"] .video-dubbing-view-root) .fm-workbench-topbar {
+  position: relative;
+  top: auto;
+  flex: 0 0 72px;
+}
+
+.video-dubbing-view-root {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.video-dubbing-view-root .video-dub-canvas {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 24px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.video-dubbing-view-root .video-dub-canvas:not(.is-recent) {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--space-5) calc(var(--space-5) * 3);
+}
+
+.video-dubbing-view-root .video-dub-canvas.is-recent {
+  display: block;
+  min-height: calc(100vh - 96px);
+  overflow-y: auto;
+}
+
+.video-dubbing-view-root .audio-tool-panel {
+  --marketing-panel-width: min(640px, calc(100% - 96px));
+}
+
+.video-dubbing-view-root .audio-tool-panel .video-dub-upload-grid {
+  display: block;
+  width: 100%;
+}
+
+.video-dubbing-view-root .audio-tool-panel .audio-tool-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
+  margin: 0;
+  padding-top: 16px;
+}
+
+.video-dubbing-view-root .audio-tool-panel .audio-tool-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: var(--space-10px);
+}
+
+@media (max-width: 768px) {
+  .video-dubbing-view-root .video-dub-canvas:not(.is-recent) {
+    padding: 20px 16px 48px;
+  }
+
+  .video-dubbing-view-root .audio-tool-panel :is(.audio-tool-footer) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .video-dubbing-view-root .audio-tool-panel :is(.audio-tool-actions) {
+    display: grid;
+  }
+}
+
+/* ============================================
+   video-dubbing - ÊÓÆµÅäÒô¹¦ÄÜ
+   ============================================ */
+
+.video-dub-recent-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
+  align-content: start;
+  line-height: 1.2;
+  justify-content: start;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 8px;
+}
+
+.video-dub-recent-panel.has-items {
+  align-content: start;
+}
+
+.video-dub-recent-empty {
+  display: grid;
+  min-height: min(320px, calc(100vh - 220px));
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-10px);
+  padding: 60px 24px;
+  color: #9ab;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.video-dub-recent-empty img {
+  display: block;
+  width: 180px;
+  height: auto;
+}
+
+.video-dub-recent-empty strong {
+  font-size: 15px;
+  color: #4a6080;
+}
+
+.video-dub-recent-item-wrapper {
+  position: relative;
+}
+
+.video-dub-recent-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #e5eaf2;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.video-dub-recent-art {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  background: #f6f7f9;
+  color: #c5d5e8;
+  overflow: hidden;
+}
+
+.video-dub-recent-art:not(:has(img)) {
+  aspect-ratio: 16 / 9;
+}
+
+.video-dub-recent-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.video-dub-recent-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.video-dub-recent-overlay.is-failed {
+  background: rgba(220, 50, 50, 0.45);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-dubbing-view-root .lucide-loader-2 {
+    animation: none;
+  }
+}
+
+.video-dub-recent-info {
+  display: grid;
+  gap: var(--space-0);
+  padding: 12px 14px;
+}
+
+.video-dub-recent-info strong {
+  font-size: 13px;
+  color: #17375c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-dub-recent-info span {
+  font-size: 11px;
+  color: #9ab;
+}
+
+.video-dub-recent-stage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 14px 4px;
+  font-size: 12px;
+  color: var(--brand-primary-strong);
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+}
+
+.video-dub-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #e5eaf2;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+}
+
+.video-dub-progress-fill {
+  height: 100%;
+  color: var(--brand-primary-strong);
+  background: var(--brand-primary-strong);
+  border-color: var(--brand-primary-border);
+  border-radius: var(--radius-xs);
+  transition: width 0.3s ease;
+}
+
+.video-dub-recent-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--brand-primary-strong);
+  background: rgba(255, 255, 255, 0.9);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: #2b83ef;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.video-dubbing-view-root .video-dub-recent-play:not(:disabled),
+.video-dubbing-view-root .video-dub-submit-button:not(:disabled) {
+  color: #fff;
+  background: var(--brand-gradient);
+  border-color: var(--brand-primary);
+  box-shadow: 0 14px 32px rgba(93, 30, 224, 0.28);
+}
+
+.video-dub-recent-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0);
+  padding: 8px 12px 12px;
+}
+
+.video-dub-favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5px);
+  min-height: 30px;
+  padding: 0 10px;
+  color: #5a7a9a;
+  background: #f2f7ff;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.video-dub-favorite-button:hover,
+.video-dub-favorite-button.is-favorite {
+  color: #9a6a00;
+  background: #fff6d8;
+}
+
+.video-dub-recent-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #5a7a9a;
+  background: #f2f7ff;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.video-dub-recent-icon-button:hover {
+  color: var(--brand-primary-strong);
+  background: #dde8ff;
+  border-color: var(--brand-primary-border);
+}
+
+.video-dub-recent-icon-button.is-danger:hover {
+  color: #dc3232;
+  background: #fee;
+}
+
+.video-dub-player-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 17, 24, 0.76);
+  backdrop-filter: blur(10px);
+}
+
+.video-dub-player-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  width: min(920px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dedbe8;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 28px 80px rgba(15, 17, 24, 0.38);
+}
+
+.video-dub-player-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  color: #24202b;
+  background: #ffffff;
+  border-bottom: 1px solid #ebe8f2;
+}
+
+.video-dub-player-head strong {
+  overflow: hidden;
+  color: #24202b;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.video-dub-player-head button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #696477;
+  background: #f5f3f9;
+  border: 1px solid #e3dfeb;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.video-dub-player-head button:hover {
+  color: #623bff;
+  background: #f3f0ff;
+  border-color: #d8d0ff;
+}
+
+.video-dub-player-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  max-height: calc(100vh - 140px);
+  padding: 16px;
+  background: #f6f4fb;
+}
+
+.video-dub-player-body video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(78vh, 720px);
+  margin: 0 auto;
+  background: transparent;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}

@@ -1,0 +1,16 @@
+/* Article workbench style composition. Import order preserves the established cascade. */
+@import "./articleWorkbenchStyles/article-workbench-foundation.css";
+@import "./articleWorkbenchStyles/article-workbench-form.css";
+@import "./articleWorkbenchStyles/article-results-layout.css";
+@import "./articleWorkbenchStyles/article-result-preview.css";
+@import "./articleWorkbenchStyles/article-full-result.css";
+@import "./articleWorkbenchStyles/article-workbench-mobile.css";
+@import "./articleWorkbenchStyles/article-history-results.css";
+@import "./articleWorkbenchStyles/article-workbench-viewport.css";
+@import "./articleWorkbenchStyles/article-workbench-laptop.css";
+@import "./articleWorkbenchStyles/article-workbench-layout.css";
+@import "./articleWorkbenchStyles/article-visual-options.css";
+@import "./articleWorkbenchStyles/article-quick-template-rail.css";
+@import "./articleWorkbenchStyles/article-workbench-responsive.css";
+@import "./articleWorkbenchStyles/article-workbench-compact.css";
+@import "./articleWorkbenchStyles/article-workbench-shell.css";
