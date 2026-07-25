@@ -56,27 +56,6 @@ export function ImagePromptDialog({
   return (
     <div className={dialogClassName} aria-label={ariaLabel}>
       <div className={mainRowClassName}>
-        {onAdd && (
-          <button
-            type="button"
-            className="fm-prompt-control fm-prompt-control--square image-prompt-main-add"
-            onClick={onAdd}
-            aria-label="娣诲姞"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="#999999"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <line x1="10" y1="4" x2="10" y2="16" />
-              <line x1="4" y1="10" x2="16" y2="10" />
-            </svg>
-          </button>
-        )}
         <textarea
           ref={textareaRef}
           className="fm-prompt-input image-prompt-input"

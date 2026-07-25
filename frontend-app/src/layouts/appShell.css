@@ -62,6 +62,10 @@
   background: var(--app-bg);
 }
 
+.app-shell.feature-page-shell[data-active-nav="infinite-canvas"] .app-shell__content.feature-main {
+  overflow: hidden;
+}
+
 .app-sidebar {
   display: flex;
   flex-direction: column;

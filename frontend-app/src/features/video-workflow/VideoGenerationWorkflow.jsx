@@ -127,6 +127,11 @@ export function VideoGenerationWorkflow({
 
   const selectedModel =
     options.models.find((m) => m.value === taskState.input.model) || options.models[0] || null;
+  const estimatedPoints =
+    Number(taskState.input.videoAsset?.estimatedPoints) ||
+    Number(selectedModel?.estimatedPoints) ||
+    Number(selectedModel?.basePoints) ||
+    0;
 
   const resolutionOptions = useMemo(() => {
     const values = new Set();
@@ -609,7 +614,7 @@ export function VideoGenerationWorkflow({
       )}
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计消耗</span>
-        <strong>{selectedModel?.basePoints || 0} 积分</strong>
+        <strong>{estimatedPoints} 积分</strong>
       </div>
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计时长</span>

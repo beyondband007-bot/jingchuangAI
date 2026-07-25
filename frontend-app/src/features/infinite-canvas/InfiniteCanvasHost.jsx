@@ -61,7 +61,7 @@ export function InfiniteCanvasHost({ authUser, onOpenAuth, onOpenFeature }) {
 }
 
 const styles = {
-  host: { width: "100%", height: "calc(100vh - 64px)", minHeight: 640, overflow: "hidden", background: "#f7f8fb" },
+  host: { width: "100%", height: "100%", minHeight: 0, overflow: "hidden", background: "#f7f8fb" },
   frame: { display: "block", width: "100%", height: "100%", border: 0, background: "#f7f8fb" },
   gate: { minHeight: "calc(100vh - 64px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 32, textAlign: "center", background: "linear-gradient(145deg, #f7f9ff, #fff8f3)" },
   icon: { width: 68, height: 68, borderRadius: 22, display: "grid", placeItems: "center", color: "white", fontSize: 34, fontWeight: 700, background: "linear-gradient(135deg, #6c5ce7, #ff8a5c)", boxShadow: "0 18px 40px rgba(108,92,231,.2)" },

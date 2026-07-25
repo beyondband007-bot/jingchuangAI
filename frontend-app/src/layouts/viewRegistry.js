@@ -7,6 +7,7 @@ export const registeredFeatureIds = [
   "image",
   "video",
   "chat",
+  "infinite-canvas",
   "digital-human",
   "motion",
   "face-swap",

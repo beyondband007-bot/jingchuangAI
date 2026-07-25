@@ -118,9 +118,10 @@ export async function createAsset({ kind, file, user }) {
   if (!file) throw createHttpError(`${kind} file is required`, 400);
   if (!user?.id) throw createHttpError("请先登录", 401);
 
+  let duration = 0;
   if (kind === "video") {
     try {
-      await getSourceVideoDuration({ file_path: file.path });
+      duration = await getSourceVideoDuration({ file_path: file.path });
     } catch (error) {
       await unlink(file.path).catch(() => {});
       throw error;
@@ -153,7 +154,9 @@ export async function createAsset({ kind, file, user }) {
 
   const asset = mapFaceSwapAsset(await findFaceSwapAssetByIdForUser(assetId, kind, userId));
   if (!asset) throw createHttpError("上传资源保存失败，请重试", 500);
-  return asset;
+  return duration
+    ? { ...asset, duration, estimatedPoints: calculateVideoPoints(duration) }
+    : asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {

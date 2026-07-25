@@ -88,7 +88,6 @@ section.image-gen-view
   .image-composer-shell.is-sticky
   .image-prompt-main-row
   textarea,
-section.image-gen-view .image-composer-shell.is-sticky .image-prompt-main-add,
 section.image-gen-view
   .image-composer-shell.is-sticky
   .image-prompt-compact-submit,
@@ -207,7 +206,6 @@ section.image-gen-view .image-prompt-main-row.is-collapsed textarea {
   max-height: 28px;
 }
 
-section.image-gen-view .image-prompt-main-add,
 section.image-gen-view .image-prompt-compact-submit {
   transition:
     opacity 180ms ease,
@@ -216,7 +214,6 @@ section.image-gen-view .image-prompt-compact-submit {
     border-color 160ms ease;
 }
 
-section.image-gen-view .image-prompt-dialog.is-expanded .image-prompt-main-add,
 section.image-gen-view
   .image-prompt-dialog.is-expanded
   .image-prompt-compact-submit {
@@ -271,7 +268,6 @@ section.image-gen-view .image-composer-shell.is-collapsed .chatbot-ui-dialog {
   section.image-gen-view .image-prompt-dialog,
   section.image-gen-view .image-prompt-main-row,
   section.image-gen-view .image-prompt-main-row textarea,
-  section.image-gen-view .image-prompt-main-add,
   section.image-gen-view .image-prompt-compact-submit,
   section.image-gen-view .fm-prompt-reference-region,
   section.image-gen-view .image-prompt-controls-row {

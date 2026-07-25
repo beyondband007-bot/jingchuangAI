@@ -111,6 +111,17 @@ textarea:focus {
   box-shadow: none;
 }
 
+input:not([type="checkbox"]):not([type="radio"]):not(
+    [type="range"]
+  ):focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
