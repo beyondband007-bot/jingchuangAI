@@ -88,7 +88,7 @@ export function ResultCard({
           )
         ) : null}
         {card.referenceImageUrl && (
-          <span className="result-reference-thumb" title="参考图">
+          <span className="result-reference-thumb" data-tooltip="参考图">
             <img src={card.referenceImageUrl} alt="" />
           </span>
         )}
@@ -213,7 +213,7 @@ export function ReferenceImageSlot({ image, isUploading, onRemove }) {
           {image?.url ? <img src={image.url} alt="" /> : <Image size={16} />}
         </span>
         <span className="fm-prompt-reference-meta">
-          <strong title={image?.originalName || "参考图"}>
+          <strong data-tooltip={image?.originalName || "参考图"}>
             {image?.originalName || "参考图"}
           </strong>
           <small>{formatReferenceImageSize(image?.size)}</small>
@@ -266,7 +266,7 @@ export function ReferenceMediaSlot({
           )}
         </span>
         <span className="fm-prompt-reference-meta">
-          <strong title={media?.originalName || (isVideo ? "参考视频" : "参考图")}>
+          <strong data-tooltip={media?.originalName || (isVideo ? "参考视频" : "参考图")}>
             {media?.originalName || (isVideo ? "参考视频" : "参考图")}
           </strong>
           <small>

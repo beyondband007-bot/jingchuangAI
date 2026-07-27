@@ -121,7 +121,7 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
           className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
-          title="取消上传"
+          data-tooltip="取消上传"
           aria-label="取消上传"
           onClick={clearFile}
           onKeyDown={(event) => {
@@ -155,13 +155,13 @@ function TranscribeResult({ result, onCopy, onDownloadText, onDownloadJson }) {
           转录结果
         </span>
         <div className="marketing-result__actions transcribe-result-actions">
-          <button type="button" onClick={onCopy} title="复制文本" aria-label="复制文本">
+          <button type="button" onClick={onCopy} data-tooltip="复制文本" aria-label="复制文本">
             <Clipboard size={15} />
           </button>
-          <button type="button" onClick={onDownloadText} title="下载 TXT" aria-label="下载 TXT">
+          <button type="button" onClick={onDownloadText} data-tooltip="下载 TXT" aria-label="下载 TXT">
             <Download size={15} />
           </button>
-          <button type="button" onClick={onDownloadJson} title="下载 JSON" aria-label="下载 JSON">
+          <button type="button" onClick={onDownloadJson} data-tooltip="下载 JSON" aria-label="下载 JSON">
             <FileJson size={15} />
           </button>
         </div>
@@ -399,13 +399,13 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
                   </div>
                   <p>{item.text || item.formattedText || "暂无文本"}</p>
                   <div className="voice-recent-actions">
-                    <button className="voice-recent-icon-button" type="button" onClick={() => copyResultText(item)} title="复制文本" aria-label="复制文本">
+                    <button className="voice-recent-icon-button" type="button" onClick={() => copyResultText(item)} data-tooltip="复制文本" aria-label="复制文本">
                       <Clipboard size={16} />
                     </button>
-                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadText(item)} title="下载 TXT" aria-label="下载 TXT">
+                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadText(item)} data-tooltip="下载 TXT" aria-label="下载 TXT">
                       <Download size={16} />
                     </button>
-                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
+                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} data-tooltip="删除" aria-label="删除">
                       <Trash2 size={16} />
                     </button>
                   </div>

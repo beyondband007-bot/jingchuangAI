@@ -1,3 +1,5 @@
+@import "./tooltip.css";
+
 .credits-chip {
   margin-left: auto;
   padding: 8px 12px;
@@ -343,68 +345,6 @@
 
 .image-workbench-back-to-top {
   right: 370px;
-}
-
-[data-tooltip] {
-  position: relative;
-}
-
-[data-tooltip]::before,
-[data-tooltip]::after {
-  position: absolute;
-  left: 50%;
-  z-index: var(--z-dropdown);
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease;
-}
-
-[data-tooltip]::before {
-  content: attr(data-tooltip);
-  bottom: calc(100% + 12px);
-  min-width: max-content;
-  padding: 6px 8px;
-  color: #ffffff;
-  background: rgba(38, 36, 44, 0.94);
-  border-radius: var(--radius-xs);
-  box-shadow: 0 12px 24px rgba(25, 22, 36, 0.18);
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  transform: translate(-50%, 4px);
-}
-
-[data-tooltip]::after {
-  content: "";
-  bottom: calc(100% + 6px);
-  width: 8px;
-  height: 8px;
-  background: rgba(38, 36, 44, 0.94);
-  transform: translate(-50%, 4px) rotate(45deg);
-}
-
-[data-tooltip]:hover::before,
-[data-tooltip]:hover::after,
-[data-tooltip]:focus-visible::before,
-[data-tooltip]:focus-visible::after {
-  opacity: 1;
-}
-
-[data-tooltip]:hover::before,
-[data-tooltip]:focus-visible::before {
-  transform: translate(-50%, 0);
-}
-
-[data-tooltip]:hover::after,
-[data-tooltip]:focus-visible::after {
-  transform: translate(-50%, 0) rotate(45deg);
-}
-
-[data-tooltip=""]::before,
-[data-tooltip=""]::after {
-  display: none;
 }
 
 @media (max-width: 1024px) {

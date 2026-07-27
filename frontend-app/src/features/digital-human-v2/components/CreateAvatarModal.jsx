@@ -193,7 +193,7 @@ export function CreateAvatarModal({
                       aria-label="已上传形象预览"
                       style={{ backgroundImage: `url("${previewUrl}")` }}
                     />
-                    <button type="button" title="重新上传" aria-label="重新上传" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
+                    <button type="button" data-tooltip="重新上传" aria-label="重新上传" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
                       <RefreshCcw size={18} />
                     </button>
                   </div>

@@ -434,7 +434,7 @@ export function ScriptCard({
           type="button"
           className="dhv2-script-optimize"
           disabled={!canOptimize}
-          title={canOptimize ? "根据选中台词生成优化模板" : "请先选中需要优化的台词"}
+          data-tooltip={canOptimize ? "" : "请先选中需要优化的台词"}
           onClick={handleOptimizeClick}
         >
           <Sparkles size={12} />

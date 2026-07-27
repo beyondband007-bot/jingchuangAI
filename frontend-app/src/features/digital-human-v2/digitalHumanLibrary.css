@@ -135,7 +135,7 @@
 .dhv2-create-card--mine svg {
   width: 36px;
   height: 36px;
-  padding: 9px;
+  padding: var(--space-1);
   color: var(--dhv2-brand);
   background: #e9e3ff;
   border-radius: var(--radius-control);

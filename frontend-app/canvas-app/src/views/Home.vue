@@ -5,16 +5,16 @@
     <AppHeader />
 
     <!-- Main content | 主要内容 -->
-    <main class="max-w-5xl mx-auto px-4 py-8 md:py-16">
+    <main class="canvas-home max-w-5xl mx-auto px-4 py-8 md:py-16">
       <!-- Welcome section | 欢迎区域 -->
-      <section class="text-center mb-12">
+      <section class="canvas-home__welcome text-center mb-12">
         <div class="flex items-center justify-center gap-4 mb-8">
-          <img src="../assets/facemini-logo.svg" alt="Facemini Logo" class="w-12 h-12 md:w-16 md:h-16" />
-          <h1 class="text-2xl md:text-4xl font-bold text-[var(--text-primary)]">欢迎来到 facemini 无限画布</h1>
+          <img src="../assets/facemini-logo.svg" alt="Facemini Logo" class="w-12 h-12 md:w-12 md:h-12" />
+          <h1 class="text-2xl md:text-4xl font-bold text-[var(--text-primary)]">欢迎来到 Facemini 无限画布</h1>
         </div>
         
         <!-- Input area | 输入区域 -->
-        <div class="max-w-2xl mx-auto">
+        <div class="canvas-home__composer max-w-2xl mx-auto">
           <div class="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] p-4 shadow-sm">
             <textarea
               v-model="inputText"
@@ -34,9 +34,11 @@
               <div class="flex items-center gap-3">
                 <button 
                   @click="handleCreateWithInput"
-                  class="w-8 h-8 rounded-xl bg-[var(--accent-color)] hover:bg-[var(--accent-hover)] flex items-center justify-center transition-colors"
+                  class="canvas-home__send-button"
+                  aria-label="Create project"
+                  :disabled="!inputText.trim()"
                 >
-                  <n-icon :size="20" color="white"><SendOutline /></n-icon>
+                  <n-icon :size="18"><FlashOutline /></n-icon>
                 </button>
               </div>
             </div>
@@ -61,11 +63,12 @@
       </section>
 
       <!-- My projects section | 我的项目区域 -->
-      <section ref="projectsSection">
+      <section ref="projectsSection" class="canvas-home__projects">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-[var(--text-primary)]">我的项目</h2>
           <button 
             @click="createNewProject"
+            data-testid="canvas-create-project"
             class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-[var(--accent-color)] hover:bg-[var(--accent-hover)] text-white transition-colors"
           >
             <n-icon :size="16"><AddOutline /></n-icon>
@@ -156,14 +159,16 @@
       <button 
         @click="createNewProject"
         class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-        title="新建项目"
+        data-tooltip="新建项目"
+        aria-label="新建项目"
       >
         <n-icon :size="20"><DocumentOutline /></n-icon>
       </button>
       <button 
         @click="scrollToProjects"
         class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-        title="我的项目"
+        data-tooltip="我的项目"
+        aria-label="我的项目"
       >
         <n-icon :size="20"><FolderOutline /></n-icon>
       </button>
@@ -191,7 +196,7 @@ import { NIcon, NDropdown, NModal, NInput, NButton, useDialog } from 'naive-ui'
 import { 
   AddOutline, 
   ImageOutline, 
-  SendOutline,
+  FlashOutline,
   RefreshOutline,
   DocumentOutline,
   FolderOutline,
@@ -379,3 +384,116 @@ onMounted(async () => {
   await initProjectsStore()
 })
 </script>
+
+<style scoped>
+.canvas-home {
+  font-family: "PingFang SC";
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-default);
+  line-height: var(--line-height-default);
+}
+
+.canvas-home__welcome h1 {
+  color: var(--text-primary);
+  font-size: var(--title-page-size);
+  font-weight: var(--font-weight-default);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0;
+}
+
+.canvas-home__composer textarea {
+  border: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-default);
+  line-height: var(--line-height-default);
+}
+
+.canvas-home__composer textarea:focus,
+.canvas-home__composer textarea:focus-visible {
+  border-color: transparent;
+  outline: 0;
+  box-shadow: none;
+}
+
+.canvas-home__composer > div:last-child {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-default);
+}
+
+.canvas-home__composer > div:last-child button:not(.canvas-home__send-button) {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-default);
+}
+
+.canvas-home__send-button {
+  display: inline-flex;
+  width: 44px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  background: var(--fm-brand, var(--brand-primary));
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-brand);
+  transition: background var(--duration-normal) var(--ease-standard), box-shadow var(--duration-normal) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-home__send-button:hover,
+.canvas-home__send-button:focus-visible {
+  color: var(--color-white);
+  background: var(--brand-primary-strong);
+  box-shadow: var(--shadow-brand);
+}
+
+.canvas-home__send-button:active {
+  transform: translateY(1px);
+}
+
+.canvas-home__send-button:disabled {
+  color: var(--text-faint);
+  background: var(--state-disabled);
+  border-color: var(--app-border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.canvas-home__projects h2 {
+  color: var(--text-primary);
+  font-size: var(--title-section-size);
+  font-weight: var(--font-weight-default);
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.canvas-home__projects p {
+  font-weight: var(--font-weight-default);
+}
+
+.canvas-home__projects > div:first-child > button,
+.canvas-home__projects > div:nth-child(2) > button {
+  min-height: 34px;
+  color: var(--color-white);
+  background: var(--fm-brand, var(--brand-primary));
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-brand);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-default);
+}
+
+.canvas-home__projects > div:first-child > button:hover,
+.canvas-home__projects > div:first-child > button:focus-visible,
+.canvas-home__projects > div:nth-child(2) > button:hover,
+.canvas-home__projects > div:nth-child(2) > button:focus-visible {
+  color: var(--color-white);
+  background: var(--brand-primary-strong);
+}
+
+@media (max-width: 640px) {
+  .canvas-home__welcome h1 {
+    font-size: var(--font-size-section);
+  }
+}
+</style>

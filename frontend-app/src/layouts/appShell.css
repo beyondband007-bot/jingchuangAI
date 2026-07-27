@@ -63,6 +63,7 @@
 }
 
 .app-shell.feature-page-shell[data-active-nav="infinite-canvas"] .app-shell__content.feature-main {
+  height: var(--app-viewport-height);
   overflow: hidden;
 }
 

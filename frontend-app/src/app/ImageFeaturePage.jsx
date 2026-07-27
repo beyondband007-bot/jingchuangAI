@@ -409,7 +409,7 @@ function ImageFeaturePageContent({
             onOpenLanding={onOpenLanding}
           />
         }
-        header={
+        header={activeNav === "infinite-canvas" ? null : (
           <AppHeader>
             <WorkbenchTopbar
               activeNav={activeNav}
@@ -426,7 +426,7 @@ function ImageFeaturePageContent({
               onDigitalHumanModeChange={setDigitalHumanMode}
             />
           </AppHeader>
-        }
+        )}
       >
         <AppContent
           activeNav={activeNav}

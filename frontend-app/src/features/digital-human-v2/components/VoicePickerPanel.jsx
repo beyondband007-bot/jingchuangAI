@@ -112,14 +112,14 @@ export function VoicePickerPanel({
             <div
               key={voice.id}
               className={`dhv2-voice-picker__item${isActive ? " is-active" : ""}${isEnabled ? "" : " is-disabled"}`}
-              title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
+              data-tooltip={isEnabled ? "" : VOICE_UNAVAILABLE_HINT}
             >
               <button
                 type="button"
                 className="dhv2-voice-picker__item-main"
                 disabled={!isEnabled}
                 aria-disabled={!isEnabled}
-                title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
+                data-tooltip={isEnabled ? "" : VOICE_UNAVAILABLE_HINT}
                 onClick={() => {
                   if (!isEnabled) return;
                   onVoiceIdChange?.(voice.id);

@@ -576,19 +576,19 @@ export function VoiceSynthesisView({
                     playingId={playingRecentId}
                     onPlayingChange={setPlayingRecentId}
                   >
-                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
+                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} data-tooltip="下载 MP3" aria-label="下载 MP3">
                       <Download size={16} />
                     </button>
                     <button
                       className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`}
                       type="button"
                       onClick={() => toggleRecentFavorite(item.id)}
-                      title={item.favorite ? "取消收藏" : "收藏"}
+                      data-tooltip={item.favorite ? "取消收藏" : "收藏"}
                       aria-label={item.favorite ? "取消收藏" : "收藏"}
                     >
                       <Heart size={16} fill={item.favorite ? "currentColor" : "none"} />
                     </button>
-                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
+                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} data-tooltip="删除" aria-label="删除">
                       <Trash2 size={16} />
                     </button>
                   </VoiceRecentPlayer>

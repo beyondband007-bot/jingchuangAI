@@ -209,6 +209,19 @@ test("digital human route mounts its workspace", async ({ page }) => {
   );
 });
 
+test("digital human mine libraries keep their creation entry without redundant empty states", async ({ page }) => {
+  await mockDigitalHumanWorkspace(page);
+  await page.goto("/#/digital-human");
+
+  await page.getByRole("tab", { name: "我的形象", exact: true }).click();
+  await expect(page.locator(".dhv2-create-card--mine")).toBeVisible();
+  await expect(page.getByText("暂无我的形象", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "我的音色", exact: true }).click();
+  await expect(page.locator(".dhv2-audio-create-card")).toBeVisible();
+  await expect(page.getByText("暂无我的音色", { exact: true })).toHaveCount(0);
+});
+
 test("digital human preview stays inside the workspace after selecting an avatar", async ({ page }) => {
   await mockDigitalHumanWorkspace(page);
   await page.goto("/#/digital-human");

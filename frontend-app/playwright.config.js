@@ -12,5 +12,8 @@ export default defineConfig({
     timezoneId: "Asia/Shanghai",
     reducedMotion: "reduce",
   },
-  webServer: { command: "npm run dev", url: "http://127.0.0.1:5173", reuseExistingServer: true },
+  webServer: [
+    { command: "npm run dev", url: "http://127.0.0.1:5173", reuseExistingServer: true },
+    { command: "npm --prefix canvas-app run dev", url: "http://127.0.0.1:5176/canvas-app/", reuseExistingServer: true },
+  ],
 });

@@ -97,7 +97,7 @@ export function BackToTopButton({
       type="button"
       onClick={scrollToTop}
       aria-label="回到顶部"
-      title="回到顶部"
+      data-tooltip="回到顶部"
       tabIndex={isVisible ? 0 : -1}
     >
       <ArrowUp size={21} strokeWidth={2.4} />

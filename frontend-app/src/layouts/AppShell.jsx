@@ -33,7 +33,7 @@ export function AppShell({
       </Sider>
       {guestAuthActions}
       <Layout className="app-shell__body">
-        <Header className="app-shell__header">{header}</Header>
+        {header ? <Header className="app-shell__header">{header}</Header> : null}
         <Content className="app-shell__content feature-main">
           {children}
         </Content>

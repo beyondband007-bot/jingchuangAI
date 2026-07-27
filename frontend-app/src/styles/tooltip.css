@@ -1,0 +1,86 @@
+/* Shared, keyboard-accessible tooltip treatment for lightweight icon actions. */
+[data-tooltip] {
+  position: relative;
+}
+
+[data-tooltip]::before,
+[data-tooltip]::after {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+[data-tooltip]::before {
+  bottom: calc(100% + 10px);
+  left: 50%;
+  min-width: max-content;
+  padding: 6px 8px;
+  color: #ffffff;
+  background: rgba(38, 36, 44, 0.94);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 12px 24px rgba(25, 22, 36, 0.18);
+  font: var(--font-weight-default) 12px/1.25 "PingFang SC", "Microsoft YaHei", sans-serif;
+  white-space: nowrap;
+  content: attr(data-tooltip);
+  transform: translate(-50%, 4px);
+}
+
+[data-tooltip]::after {
+  bottom: calc(100% + 6px);
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: rgba(38, 36, 44, 0.94);
+  content: "";
+  transform: translate(-50%, 4px) rotate(45deg);
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::before,
+[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
+  transform: translate(-50%, 0);
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+[data-tooltip--left]::before {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: calc(100% + 10px);
+  transform: translate(4px, -50%);
+}
+
+[data-tooltip--left]::after {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: calc(100% + 6px);
+  transform: translate(4px, -50%) rotate(45deg);
+}
+
+[data-tooltip--left]:hover::before,
+[data-tooltip--left]:focus-visible::before {
+  transform: translate(0, -50%);
+}
+
+[data-tooltip--left]:hover::after,
+[data-tooltip--left]:focus-visible::after {
+  transform: translate(0, -50%) rotate(45deg);
+}
+
+[data-tooltip=""]::before,
+[data-tooltip=""]::after {
+  display: none;
+}

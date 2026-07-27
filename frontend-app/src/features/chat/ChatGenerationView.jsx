@@ -313,7 +313,7 @@ function ChatComposerBar({
               type="button"
               disabled={!isSubmitting && !canSubmit}
               onClick={isSubmitting ? onStop : submitPrompt}
-              title={isSubmitting ? "停止生成" : "发送"}
+              data-tooltip={isSubmitting ? "停止生成" : "发送"}
               aria-label="发送"
             >
               {isSubmitting ? (

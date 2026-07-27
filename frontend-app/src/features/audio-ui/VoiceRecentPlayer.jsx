@@ -171,7 +171,7 @@ export function VoiceRecentPlayer({
             type="button"
             onClick={cycleSpeed}
             disabled={disabled || !src}
-            title="切换播放倍速"
+            data-tooltip="切换播放倍速"
             aria-label={`播放倍速 ${speed} 倍`}
           >
             {formatSpeedLabel(speed)}

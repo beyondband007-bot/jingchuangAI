@@ -167,7 +167,7 @@ export function InviteGiftDialog({
             aria-label={
               isGuest ? "登录后生成专属邀请链接" : "点击复制专属邀请链接"
             }
-            title={
+            data-tooltip={
               isGuest
                 ? "登录后生成专属邀请链接"
                 : canCopyInviteLink

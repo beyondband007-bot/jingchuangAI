@@ -63,7 +63,7 @@ export function CreditTransactionsPanel({
                     {tx.amount}
                   </span>
                   <span>{tx.balanceAfter}</span>
-                  <span title={tx.memo}>{tx.memo || "-"}</span>
+                  <span data-tooltip={tx.memo || ""}>{tx.memo || "-"}</span>
                 </div>
               );
             })}

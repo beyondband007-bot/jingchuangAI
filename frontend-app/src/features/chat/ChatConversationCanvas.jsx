@@ -98,7 +98,7 @@ export function ChatAttachmentList({ attachments = [], onRemove, isStatic = fals
             )}
           </span>
           <span className={`${classPrefix}-meta`}>
-            <strong title={attachment.originalName || "attachment"}>
+            <strong data-tooltip={attachment.originalName || "attachment"}>
               {attachment.originalName || "attachment"}
             </strong>
             <small>{formatChatAttachmentSize(attachment.size)}</small>
@@ -208,7 +208,7 @@ function ChatCopyActions({ content }) {
         type="button"
         onClick={() => copyContent("plain")}
         aria-label={copiedMode ? "已复制回复内容" : "复制回复内容"}
-        title={copiedMode ? "已复制" : "复制"}
+        data-tooltip={copiedMode ? "已复制" : "复制"}
       >
         {copiedMode ? <CheckCircle2 size={15} /> : <Copy size={15} />}
       </button>

@@ -2,7 +2,6 @@ import React, { useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { Check, Loader2, Mic2, Play, Upload, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
-import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import { formatSpeechDurationFromMs } from "../utils";
 
 const CLONE_AUDIO_ACCEPT = "audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,.mp3,.wav,.m4a";
@@ -308,14 +307,6 @@ export function VoiceAudioLibraryPanel({
           );
         })}
 
-        {!pendingAudio && !uploadNotice && !clonedVoices.length ? (
-          <HistoryEmptyState
-            className="dhv2-audio-library__empty"
-            title="暂无我的音色"
-            compact
-            borderless
-          />
-        ) : null}
       </div>
 
       {pendingAudio && showConfirmDialog ? (
