@@ -1,0 +1,225 @@
+/* Asset center shell, toolbar, balance, and tabs. */
+/* Asset center baseline styles. */
+.assets-view-root {
+  min-height: 100vh;
+  padding: 28px;
+  color: var(--text-primary);
+}
+
+.assets-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: 1120px;
+  margin: 0 auto 22px;
+}
+
+.assets-toolbar h1 {
+  margin: 0 0 4px;
+  color: var(--text-primary);
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.assets-toolbar p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.assets-icon-button,
+.assets-dialog-close {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: var(--text-secondary);
+  background: #f2f0f8;
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.assets-icon-button:hover:not(:disabled) {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+  border-color: var(--brand-primary-border);
+}
+
+.assets-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.is-spinning {
+  animation: spin 1s linear infinite;
+}
+
+.assets-login-panel {
+  display: grid;
+  max-width: 1120px;
+  min-height: 320px;
+  place-items: center;
+  gap: var(--space-3);
+  margin: 0 auto;
+  padding: 40px;
+  color: var(--text-primary);
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-dark);
+}
+
+.assets-login-panel svg {
+  color: var(--brand-secondary);
+}
+
+.assets-login-panel strong {
+  font-size: 18px;
+}
+
+.assets-login-panel p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.assets-login-panel button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: 0 24px;
+  color: var(--text-primary);
+  background: var(--brand-gradient);
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(93, 30, 224, 0.28);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.assets-login-panel button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(93, 30, 224, 0.34);
+}
+
+/* Balance hero card. */
+.assets-balance-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-20px);
+  max-width: 1120px;
+  margin: 0 auto 22px;
+  padding: 28px 32px;
+  color: var(--text-primary);
+  background: linear-gradient(135deg, #ad6cfc 0%, #5a2cfc 100%);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 38px rgba(90, 44, 252, 0.28);
+}
+
+.assets-balance-info {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.assets-balance-info span {
+  font-size: 14px;
+  opacity: 0.88;
+}
+
+.assets-balance-info strong {
+  font-size: 38px;
+  line-height: 1.1;
+}
+
+.assets-balance-info small {
+  font-size: 13px;
+  opacity: 0.78;
+}
+
+.assets-balance-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 22px;
+  color: #5a2cfc;
+  background: #ffffff;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(90, 44, 252, 0.22);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.assets-balance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-10px);
+}
+
+.assets-balance-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(90, 44, 252, 0.3);
+}
+
+/* 鏍囩椤?*/
+.assets-tabs-wrapper {
+  max-width: 1120px;
+  margin: 0 auto 16px;
+}
+
+.assets-tabs {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: 5px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+}
+
+.assets-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 38px;
+  padding: 0 18px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 160ms ease;
+}
+
+.assets-tab:hover {
+  color: var(--text-secondary);
+  background: var(--app-surface-subtle);
+}
+
+.assets-tab.is-active {
+  color: var(--text-primary);
+  background: var(--brand-gradient);
+  box-shadow: 0 4px 12px rgba(93, 30, 224, 0.24);
+}
+
+/* Panel container. */
+
+@media (prefers-reduced-motion: reduce) {
+  .is-spinning {
+    animation: none;
+  }
+}

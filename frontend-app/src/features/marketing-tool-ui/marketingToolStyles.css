@@ -1,0 +1,5 @@
+/* Shared presentation contract for the marketing-tool shell. Import order is intentional. */
+@import "./marketingToolShared.css";
+@import "./marketingToolHistory.css";
+@import "./marketingToolResults.css";
+@import "../watermark/watermark.css";

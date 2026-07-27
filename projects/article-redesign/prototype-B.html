@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>爆款图文 — 画布吸附式</title>
+  <title>爆款图文 �?画布吸附�?/title>
   <style>
     :root {
       --bg: #0a0a0c;
@@ -28,7 +28,6 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
       min-height: 100vh;
       line-height: 1.5;
     }
@@ -44,18 +43,18 @@
       padding: 18px 0 16px;
       border-bottom: 1px solid var(--border);
     }
-    .topbar-title { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .topbar-title { font-size: 20px;  letter-spacing: -0.3px; }
+    .topbar-right { display: flex; align-items: center; gap: var(--space-4); }
     .credit-badge {
       font-size: 13px;
       color: var(--text-2);
       padding: 5px 12px;
       border: 1px solid var(--border-2);
-      border-radius: 20px;
+      border-radius: var(--radius-2xl);
     }
     .credit-badge strong { color: var(--accent); margin-left: 4px; }
     .btn-ghost {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: var(--space-1);
       font-size: 13px; color: var(--text-2);
       background: none; border: none; cursor: pointer;
       padding: 6px 12px;
@@ -65,9 +64,9 @@
     .btn-ghost:hover { color: var(--text); background: var(--surface-2); }
 
     /* ─── Tabs ─── */
-    .tabs { display: flex; gap: 4px; padding: 16px 0 0; }
+    .tabs { display: flex; gap: var(--space-0); padding: 16px 0 0; }
     .tab-btn {
-      font-size: 14px; color: var(--text-3); font-weight: 500;
+      font-size: 14px; color: var(--text-3);
       background: none; border: none; cursor: pointer;
       padding: 8px 16px; border-radius: var(--radius);
       transition: color 0.15s, background 0.15s;
@@ -93,7 +92,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: var(--space-3);
       padding: 48px;
     }
     .canvas-empty-icon {
@@ -103,7 +102,7 @@
       display: flex; align-items: center; justify-content: center;
       color: var(--text-3);
     }
-    .canvas-empty h3 { font-size: 16px; font-weight: 600; color: var(--text-2); }
+    .canvas-empty h3 { font-size: 16px;  color: var(--text-2); }
     .canvas-empty p { font-size: 13px; color: var(--text-3); }
 
     /* Selected state */
@@ -117,7 +116,7 @@
     }
     .canvas-preview {
       width: 320px;
-      border-radius: 10px;
+      border-radius: var(--radius-control);
       aspect-ratio: 16/9;
       overflow: hidden;
       position: relative;
@@ -131,19 +130,19 @@
     .canvas-preview .preview-label {
       position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
       font-size: 13px; color: rgba(255,255,255,0.9);
-      background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: 20px;
+      background: rgba(0,0,0,0.5); padding: 4px 12px; border-radius: var(--radius-2xl);
       white-space: nowrap;
     }
     .canvas-meta {
       padding: 16px 24px;
       border-top: 1px solid var(--border);
-      display: flex; align-items: center; gap: 16px;
+      display: flex; align-items: center; gap: var(--space-4);
     }
-    .canvas-meta-title { font-size: 15px; font-weight: 600; }
-    .canvas-meta-tags { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .canvas-meta-title { font-size: 15px;  }
+    .canvas-meta-tags { display: flex; gap: var(--space-1); flex-wrap: wrap; flex: 1; }
     .tag {
       font-size: 11px; padding: 3px 8px;
-      border-radius: 20px;
+      border-radius: var(--radius-2xl);
       background: var(--accent-dim); color: var(--accent);
       border: 1px solid rgba(20,184,166,0.2);
     }
@@ -160,17 +159,17 @@
     /* ─── Template Gallery ─── */
     .gallery-section { margin-top: 24px; }
     .gallery-head {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: var(--space-3);
       margin-bottom: 14px;
     }
-    .gallery-head h2 { font-size: 15px; font-weight: 600; }
+    .gallery-head h2 { font-size: 15px;  }
     .gallery-head span { font-size: 12px; color: var(--text-3); }
 
     /* Content type filter tabs */
-    .type-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .type-tabs { display: flex; gap: var(--space-1); flex-wrap: wrap; margin-bottom: 14px; }
     .type-tab {
       font-size: 12px; padding: 5px 12px;
-      border-radius: 20px; border: 1px solid var(--border-2);
+      border-radius: var(--radius-2xl); border: 1px solid var(--border-2);
       background: none; color: var(--text-2); cursor: pointer;
       transition: all 0.15s;
     }
@@ -181,10 +180,10 @@
     .template-grid {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
+      gap: var(--space-3);
     }
-    @media (max-width: 1100px) { .template-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 640px) { .template-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1024px) { .template-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .template-grid { grid-template-columns: repeat(2, 1fr); } }
 
     .tpl-card {
       background: var(--surface);
@@ -232,12 +231,12 @@
     .tpl-card[data-style="cute"] .tpl-thumb { border-radius: 0; }
 
     .tpl-meta { padding: 10px 12px 12px; }
-    .tpl-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .tpl-title { font-size: 13px;  margin-bottom: 4px; }
     .tpl-desc { font-size: 11px; color: var(--text-3); line-height: 1.4; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .tpl-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+    .tpl-chips { display: flex; gap: var(--space-0); flex-wrap: wrap; }
     .tpl-chip {
       font-size: 10px; padding: 2px 6px;
-      border-radius: 10px;
+      border-radius: var(--radius-control);
       background: var(--surface-2); color: var(--text-3);
     }
 
@@ -250,11 +249,11 @@
       padding: 24px;
     }
     .form-section.is-hidden { display: none; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
 
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 12px; color: var(--text-2); font-weight: 500; }
+    .field { display: flex; flex-direction: column; gap: var(--space-1); }
+    .field label { font-size: 12px; color: var(--text-2);  }
     .field input, .field textarea, .field select {
       background: var(--surface-2);
       border: 1px solid var(--border-2);
@@ -262,7 +261,6 @@
       color: var(--text);
       font-size: 14px;
       padding: 10px 12px;
-      font-family: inherit;
       resize: none;
       outline: none;
       transition: border-color 0.15s;
@@ -281,8 +279,8 @@
     .price-info { font-size: 13px; color: var(--text-2); }
     .price-info strong { color: var(--accent); font-size: 15px; margin-left: 4px; }
     .btn-submit {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; gap: var(--space-2);
+      font-size: 14px;
       color: #0a0a0c; background: var(--accent);
       border: none; border-radius: var(--radius);
       padding: 10px 24px; cursor: pointer;
@@ -295,7 +293,7 @@
       width: 16px; height: 16px;
       border: 2px solid rgba(0,0,0,0.2);
       border-top-color: #0a0a0c;
-      border-radius: 50%;
+      border-radius: var(--radius-pill);
       animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -306,10 +304,10 @@
     .history-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+      gap: var(--space-3);
     }
-    @media (max-width: 900px) { .history-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 500px) { .history-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1024px) { .history-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 375px) { .history-grid { grid-template-columns: 1fr; } }
 
     .hist-card {
       background: var(--surface);
@@ -328,7 +326,7 @@
     .hist-status {
       position: absolute; top: 8px; right: 8px;
       font-size: 10px; padding: 3px 8px;
-      border-radius: 20px;
+      border-radius: var(--radius-2xl);
       background: rgba(0,0,0,0.6); color: #fff;
     }
     .hist-status.done { background: rgba(34,197,94,0.8); }
@@ -336,12 +334,12 @@
     .hist-meta { padding: 10px 12px; }
     .hist-meta strong { font-size: 12px; display: block; margin-bottom: 2px; }
     .hist-meta span { font-size: 11px; color: var(--text-3); }
-    .hist-actions { display: flex; gap: 6px; padding: 0 12px 10px; }
+    .hist-actions { display: flex; gap: var(--space-1); padding: 0 12px 10px; }
     .hist-action {
       font-size: 11px; padding: 4px 10px;
       border-radius: var(--radius); border: 1px solid var(--border-2);
       background: none; color: var(--text-2); cursor: pointer;
-      display: flex; align-items: center; gap: 4px;
+      display: flex; align-items: center; gap: var(--space-0);
       transition: all 0.15s;
     }
     .hist-action:hover { color: var(--text); border-color: var(--text-3); }
@@ -380,7 +378,7 @@
       box-shadow: 0 16px 48px rgba(0,0,0,0.5);
     }
     .tweaks-panel.is-open { display: block; }
-    .tweaks-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-bottom: 16px; }
+    .tweaks-title { font-size: 12px;  text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); margin-bottom: 16px; }
     .tweak-item { margin-bottom: 16px; }
     .tweak-item label { font-size: 12px; color: var(--text-2); display: block; margin-bottom: 6px; }
     .tweak-item select, .tweak-item input[type="range"] { width: 100%; }
@@ -405,15 +403,14 @@
       <div class="credit-badge">积分 <strong id="credits">8,420</strong></div>
       <button class="btn-ghost" onclick="randomTemplate()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-        灵感换一换
-      </button>
+        灵感换一�?      </button>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="tabs">
     <button class="tab-btn is-active" onclick="switchTab('home')">主页</button>
-    <button class="tab-btn" onclick="switchTab('recent')">最近生成</button>
+    <button class="tab-btn" onclick="switchTab('recent')">最近生�?/button>
     <button class="tab-btn" onclick="switchTab('favorite')">收藏</button>
   </div>
 
@@ -425,19 +422,19 @@
         <div class="canvas-empty-icon">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M3 9h18M3 15h18"/></svg>
         </div>
-        <h3>选择一个模板开始</h3>
+        <h3>选择一个模板开�?/h3>
         <p>点击下方卡片，模板参数会自动填入表单</p>
       </div>
       <div class="canvas-selected" id="canvasSelected">
         <div class="canvas-preview-wrap">
           <div class="canvas-preview" id="canvasPreview">
-            <div class="tpl-thumb-inner" id="canvasPreviewInner">选择一个模板</div>
-            <div class="preview-label" id="canvasPreviewLabel">—</div>
+            <div class="tpl-thumb-inner" id="canvasPreviewInner">选择一个模�?/div>
+            <div class="preview-label" id="canvasPreviewLabel">�?/div>
           </div>
         </div>
         <div class="canvas-meta">
           <div>
-            <div class="canvas-meta-title" id="canvasTitle">—</div>
+            <div class="canvas-meta-title" id="canvasTitle">�?/div>
             <div class="canvas-meta-tags" id="canvasTags"></div>
           </div>
           <button class="btn-clear" onclick="clearTemplate()">清除选择</button>
@@ -448,19 +445,19 @@
     <!-- Template Gallery -->
     <div class="gallery-section">
       <div class="gallery-head">
-        <h2>模板精选</h2>
-        <span>点击即应用 · 所见即所得</span>
+        <h2>模板精�?/h2>
+        <span>点击即应�?· 所见即所�?/span>
       </div>
 
       <!-- Content type filter -->
       <div class="type-tabs" id="typeTabs">
         <button class="type-tab is-active" onclick="filterType('all')">全部</button>
-        <button class="type-tab" onclick="filterType('xiaohongshu-cover')">小红书封面</button>
+        <button class="type-tab" onclick="filterType('xiaohongshu-cover')">小红书封�?/button>
         <button class="type-tab" onclick="filterType('quote-poster')">金句海报</button>
         <button class="type-tab" onclick="filterType('knowledge-card')">知识卡片</button>
-        <button class="type-tab" onclick="filterType('tutorial')">步骤教程图</button>
-        <button class="type-tab" onclick="filterType('product-card')">产品卖点图</button>
-        <button class="type-tab" onclick="filterType('comparison')">对比分析图</button>
+        <button class="type-tab" onclick="filterType('tutorial')">步骤教程�?/button>
+        <button class="type-tab" onclick="filterType('product-card')">产品卖点�?/button>
+        <button class="type-tab" onclick="filterType('comparison')">对比分析�?/button>
       </div>
 
       <!-- Template Cards -->
@@ -472,10 +469,10 @@
       <div class="form-grid">
         <div class="field field-full">
           <label>主题描述（描述画面中要出现的内容和文字）</label>
-          <textarea id="formTopic" placeholder="例如：给职场新人做一张时间管理封面，画面文字：每天多出1小时"></textarea>
+          <textarea id="formTopic" placeholder="例如：给职场新人做一张时间管理封面，画面文字：每天多�?小时"></textarea>
         </div>
         <div class="field field-half-full">
-          <label>画面中需要出现的中文文字（选填）</label>
+          <label>画面中需要出现的中文文字（选填�?/label>
           <input id="formVisibleText" type="text" placeholder="例：每天多出 1 小时">
         </div>
         <div class="field">
@@ -495,7 +492,7 @@
           </select>
         </div>
         <div class="field">
-          <label>清晰度</label>
+          <label>清晰�?/label>
           <select id="formQuality">
             <option value="1K">1K（快速）</option>
             <option value="2K" selected>2K（推荐）</option>
@@ -504,7 +501,7 @@
         </div>
       </div>
       <div class="form-footer">
-        <div class="price-info">预估消耗<strong>20 积分</strong></div>
+        <div class="price-info">预估消�?strong>20 积分</strong></div>
         <button class="btn-submit" id="submitBtn" onclick="handleSubmit()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           生成图文
@@ -533,7 +530,7 @@
 </div>
 
 <!-- Tweaks Panel -->
-<button class="tweaks-btn" onclick="toggleTweaks()">⚙</button>
+<button class="tweaks-btn" onclick="toggleTweaks()">�?/button>
 <div class="tweaks-panel" id="tweaksPanel">
   <div class="tweaks-title">Tweaks</div>
   <div class="tweak-item">
@@ -547,16 +544,16 @@
   <div class="tweak-item">
     <label>模板网格</label>
     <select onchange="setGridCols(this.value)">
-      <option value="6">6 列</option>
-      <option value="4">4 列</option>
-      <option value="3">3 列</option>
+      <option value="6">6 �?/option>
+      <option value="4">4 �?/option>
+      <option value="3">3 �?/option>
     </select>
   </div>
   <div class="tweak-item">
     <label>Canvas 预览大小</label>
     <input type="range" min="200" max="480" value="320" onchange="setCanvasSize(this.value)">
   </div>
-  <div class="tweaks-hint">画布吸附式原型 — 点击模板卡片体验"所见即所得"</div>
+  <div class="tweaks-hint">画布吸附式原�?�?点击模板卡片体验"所见即所�?</div>
 </div>
 
 <script>
@@ -566,7 +563,7 @@ const templates = [
     title: "深夜电台封面",
     desc: "柔和暗恋氛围的情绪封面，适合错过、怀念和深夜独白内容",
     contentType: "xiaohongshu-cover",
-    contentTypeLabel: "小红书封面",
+    contentTypeLabel: "小红书封�?,
     style: "fresh",
     styleLabel: "清新",
     layout: "balanced",
@@ -581,7 +578,7 @@ const templates = [
   },
   {
     id: "old-photo-shadow",
-    title: "旧巷影子叙事图",
+    title: "旧巷影子叙事�?,
     desc: "旧照片质感的情绪场景，适合成长、回忆和人生转折主题",
     contentType: "quote-poster",
     contentTypeLabel: "金句海报",
@@ -600,15 +597,15 @@ const templates = [
   {
     id: "wuhan-city-walk",
     title: "城市漫步路线",
-    desc: "手绘路线教程图，适合城市攻略、周末出行和收藏型内容",
+    desc: "手绘路线教程图，适合城市攻略、周末出行和收藏型内�?,
     contentType: "tutorial",
-    contentTypeLabel: "步骤教程图",
+    contentTypeLabel: "步骤教程�?,
     style: "handdrawn",
     styleLabel: "手绘笔记",
     layout: "flow",
     layoutLabel: "流程",
     palette: "pastel",
-    paletteLabel: "马卡龙",
+    paletteLabel: "马卡�?,
     ratio: "9:16",
     ratioLabel: "9:16",
     thumbBg: "linear-gradient(135deg, #fff8e1 0%, #ffecb3 50%, #ffe082 100%)",
@@ -630,13 +627,13 @@ const templates = [
     ratio: "16:9",
     ratioLabel: "16:9",
     thumbBg: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
-    thumbLabel: "配色避坑\n这样更高级",
+    thumbLabel: "配色避坑\n这样更高�?,
     accentColor: "#f59e0b"
   },
   {
     id: "cat-checklist",
     title: "新手养猫清单",
-    desc: "可收藏的清单式知识卡，适合宠物科普和新手指南",
+    desc: "可收藏的清单式知识卡，适合宠物科普和新手指�?,
     contentType: "knowledge-card",
     contentTypeLabel: "知识卡片",
     style: "cute",
@@ -644,7 +641,7 @@ const templates = [
     layout: "list",
     layoutLabel: "列表",
     palette: "pastel",
-    paletteLabel: "马卡龙",
+    paletteLabel: "马卡�?,
     ratio: "3:4",
     ratioLabel: "3:4",
     thumbBg: "linear-gradient(135deg, #fce4ec 0%, #f8bbd9 50%, #f48fb1 100%)",
@@ -653,20 +650,20 @@ const templates = [
   },
   {
     id: "beauty-cover",
-    title: "3分钟通勤妆",
-    desc: "清新明亮的产品卖点图，适合视频封面和种草内容",
+    title: "3分钟通勤�?,
+    desc: "清新明亮的产品卖点图，适合视频封面和种草内�?,
     contentType: "product-card",
-    contentTypeLabel: "产品卖点图",
+    contentTypeLabel: "产品卖点�?,
     style: "fresh",
     styleLabel: "清新",
     layout: "sparse",
     layoutLabel: "留白",
     palette: "pastel",
-    paletteLabel: "马卡龙",
+    paletteLabel: "马卡�?,
     ratio: "1:1",
     ratioLabel: "1:1",
     thumbBg: "linear-gradient(135deg, #e0f7fa 0%, #80deea 50%, #26c6da 100%)",
-    thumbLabel: "3 分钟\n通勤妆",
+    thumbLabel: "3 分钟\n通勤�?,
     accentColor: "#00bcd4"
   }
 ];
@@ -756,12 +753,12 @@ function clearTemplate() {
 
 function filterType(type) {
   activeType = type;
-  document.querySelectorAll(".type-tab").forEach(t => t.classList.toggle("is-active", t.textContent === (type === "all" ? "全部" : type === "xiaohongshu-cover" ? "小红书封面" : type === "quote-poster" ? "金句海报" : type === "knowledge-card" ? "知识卡片" : type === "tutorial" ? "步骤教程图" : type === "product-card" ? "产品卖点图" : type === "comparison" ? "对比分析图" : "全部")));
+  document.querySelectorAll(".type-tab").forEach(t => t.classList.toggle("is-active", t.textContent === (type === "all" ? "全部" : type === "xiaohongshu-cover" ? "小红书封�? : type === "quote-poster" ? "金句海报" : type === "knowledge-card" ? "知识卡片" : type === "tutorial" ? "步骤教程�? : type === "product-card" ? "产品卖点�? : type === "comparison" ? "对比分析�? : "全部")));
   renderGrid(type);
 }
 
 function switchTab(tab) {
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("is-active", b.textContent === (tab === "home" ? "主页" : tab === "recent" ? "最近生成" : "收藏")));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("is-active", b.textContent === (tab === "home" ? "主页" : tab === "recent" ? "最近生�? : "收藏")));
   document.getElementById("tab-home").style.display = tab === "home" ? "block" : "none";
   document.getElementById("tab-recent").style.display = tab === "recent" ? "block" : "none";
   document.getElementById("tab-favorite").style.display = tab === "favorite" ? "block" : "none";
@@ -776,7 +773,7 @@ function randomTemplate() {
 function handleSubmit() {
   const btn = document.getElementById("submitBtn");
   btn.classList.add("is-loading");
-  btn.innerHTML = '<div class="spinner"></div>生成中';
+  btn.innerHTML = '<div class="spinner"></div>生成�?;
   setTimeout(() => {
     btn.classList.remove("is-loading");
     btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>生成图文';

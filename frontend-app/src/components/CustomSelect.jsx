@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
+import "./customSelect.css";
 
 function normalizeOption(item) {
   if (typeof item === "object" && item !== null) {
@@ -69,6 +70,7 @@ export function CustomSelect({
   options,
   icon: Icon,
   className = "",
+  triggerClassName = "",
   ariaLabel,
   placeholder = "请选择",
   disabled = false,
@@ -116,7 +118,7 @@ export function CustomSelect({
       top: `${top}px`,
       left: `${left}px`,
       width: `${width}px`,
-      zIndex: 2000
+      zIndex: "var(--z-dropdown)"
     });
   }
 
@@ -201,7 +203,7 @@ export function CustomSelect({
       <div ref={rootRef} className={`custom-select ${open ? "is-open" : ""} ${disabled ? "is-disabled" : ""} ${className}`.trim()}>
       <button
         ref={triggerRef}
-        className="custom-select-trigger"
+        className={`custom-select-trigger ${triggerClassName}`.trim()}
         type="button"
         aria-label={ariaLabel}
         aria-haspopup="listbox"

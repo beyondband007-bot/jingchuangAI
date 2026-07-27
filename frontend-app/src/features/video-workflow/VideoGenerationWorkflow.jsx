@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CustomSelect } from "../../components/CustomSelect";
 import {
+  TOAST_DURATION_MS,
+  useToast,
+} from "../../components/ToastProvider";
+import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
@@ -13,6 +17,7 @@ import { ResultViewer } from "./components/ResultViewer";
 import { WorkflowHeader } from "./components/WorkflowHeader";
 import { deriveWorkflowStatus, readVideoFileDuration } from "./utils";
 import "./videoWorkflow.css";
+import "./videoWorkflowStates.css";
 
 function applyCreditsUpdate(setCredits, credits) {
   if (!credits) return;
@@ -68,7 +73,6 @@ export function VideoGenerationWorkflow({
   moduleId = "video-workflow",
   header,
   privacyText,
-  historyEmptyHint,
   subjectSlot,
   driverSlot,
   compareLabels = ["原视频", "生成结果"],
@@ -76,15 +80,14 @@ export function VideoGenerationWorkflow({
   renderExtraConfig,
   emptyOptions,
 }) {
+  const { showToast, dismissToast } = useToast();
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [taskState, setTaskState] = useState(() => createInitialTaskState(activeTaskKey));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [notice, setNotice] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const activeRef = useRef(isActive);
-  const noticeTimerRef = useRef(null);
 
   function readActiveTaskId() {
     try {
@@ -124,6 +127,11 @@ export function VideoGenerationWorkflow({
 
   const selectedModel =
     options.models.find((m) => m.value === taskState.input.model) || options.models[0] || null;
+  const estimatedPoints =
+    Number(taskState.input.videoAsset?.estimatedPoints) ||
+    Number(selectedModel?.estimatedPoints) ||
+    Number(selectedModel?.basePoints) ||
+    0;
 
   const resolutionOptions = useMemo(() => {
     const values = new Set();
@@ -146,13 +154,8 @@ export function VideoGenerationWorkflow({
     workflowStatus !== "processing" &&
     workflowStatus !== "rendering";
 
-  function showNotice(message, duration = 2600) {
-    setNotice(message);
-    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => {
-      setNotice("");
-      noticeTimerRef.current = null;
-    }, duration);
+  function showNotice(message, duration = TOAST_DURATION_MS) {
+    showToast(message, { duration });
   }
 
   function patchInput(patch) {
@@ -213,7 +216,7 @@ export function VideoGenerationWorkflow({
       if (current.input.videoPreview) window.URL.revokeObjectURL(current.input.videoPreview);
       return createInitialTaskState(activeTaskKey);
     });
-    setNotice("");
+    dismissToast();
     setShowHistory(false);
   }, [isActive, activeTaskKey]);
 
@@ -237,12 +240,6 @@ export function VideoGenerationWorkflow({
       }),
     );
   }
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -617,7 +614,7 @@ export function VideoGenerationWorkflow({
       )}
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计消耗</span>
-        <strong>{selectedModel?.basePoints || 0} 积分</strong>
+        <strong>{estimatedPoints} 积分</strong>
       </div>
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计时长</span>
@@ -636,7 +633,6 @@ export function VideoGenerationWorkflow({
           onRepeat={requestRepeat}
           onDelete={deleteTask}
           onFavorite={toggleFavorite}
-          emptyHint={historyEmptyHint}
         />
       ) : (
         <>
@@ -712,7 +708,6 @@ export function VideoGenerationWorkflow({
             resultUrl={resultUrl}
           />
 
-          {notice && <div className="vgw-toast">{notice}</div>}
         </>
       )}
 

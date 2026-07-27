@@ -4,11 +4,24 @@ import { imageDigitalHumanApi } from "../../../api/imageDigitalHumanApi";
 import { emitCreditsUpdated } from "../../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../../api/taskPolling";
 import { resolveAvatarSelection } from "../utils";
+import { digitalHumanOfficialAvatarFallbacks } from "../../../data/faceminiData";
 
 const emptyOptions = {
   models: [],
   defaults: { model: "", driveMode: "text" },
 };
+
+const fallbackAvatars = {
+  public: digitalHumanOfficialAvatarFallbacks,
+  mine: [],
+};
+
+function withOfficialAvatarFallback(value) {
+  const publicAvatars = Array.isArray(value?.public) ? value.public : [];
+  return publicAvatars.length
+    ? { ...value, public: publicAvatars, mine: Array.isArray(value?.mine) ? value.mine : [] }
+    : { ...fallbackAvatars, mine: Array.isArray(value?.mine) ? value.mine : [] };
+}
 
 const dataCache = {
   options: null,
@@ -44,7 +57,7 @@ function applyCredits(setCredits, value) {
 export function useDigitalHumanData({ isActive = true } = {}) {
   const [options, setOptions] = useState(() => dataCache.options || emptyOptions);
   const [avatars, setAvatars] = useState(
-    () => dataCache.avatars || { public: [], mine: [] },
+    () => withOfficialAvatarFallback(dataCache.avatars),
   );
   const [voices, setVoices] = useState(() => dataCache.voices || []);
   const [tasks, setTasks] = useState(() => dataCache.tasks || []);
@@ -94,12 +107,13 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         ]);
         if (!mounted) return;
         setOptions(modelData);
-        setAvatars(avatarData);
+        const resolvedAvatarData = withOfficialAvatarFallback(avatarData);
+        setAvatars(resolvedAvatarData);
         setVoices(voiceData.voices || []);
         updateDataCache(
           {
             options: modelData,
-            avatars: avatarData,
+            avatars: resolvedAvatarData,
             voices: voiceData.voices || [],
             photoTasks: Array.isArray(photoTaskData) ? photoTaskData : [],
           },
@@ -108,7 +122,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         applyTaskList(taskData);
         setPhotoTasks(Array.isArray(photoTaskData) ? photoTaskData : []);
         applyCredits(setCredits, creditData);
-        setSelectedAvatar((current) => resolveAvatarSelection(current, avatarData));
+        setSelectedAvatar((current) => resolveAvatarSelection(current, resolvedAvatarData));
       } catch (loadError) {
         if (mounted) {
           setError(loadError.message || "加载数字人数据失败");
@@ -135,9 +149,10 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         .getAvatars()
         .then((value) => {
           if (!mounted) return;
-          updateDataCache({ avatars: value });
-          setAvatars(value);
-          setSelectedAvatar((current) => resolveAvatarSelection(current, value));
+          const resolvedAvatarData = withOfficialAvatarFallback(value);
+          updateDataCache({ avatars: resolvedAvatarData });
+          setAvatars(resolvedAvatarData);
+          setSelectedAvatar((current) => resolveAvatarSelection(current, resolvedAvatarData));
         })
         .catch(() => {});
     });

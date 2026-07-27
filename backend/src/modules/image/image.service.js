@@ -22,7 +22,7 @@ import {
   findImageTaskStatus,
   findRefreshableImageTasks,
   findInspirationFavorite,
-  listInspirationFavoriteIds,
+  listInspirationFavorites as listInspirationFavoriteEntries,
   listImageTaskRows,
   lockImageTaskForRefund,
   addInspirationFavorite,
@@ -320,7 +320,11 @@ function normalizeInspirationId(value) {
 }
 
 export async function listInspirationFavorites(userId) {
-  return { ids: await listInspirationFavoriteIds(userId) }
+  const favorites = await listInspirationFavoriteEntries(userId)
+  return {
+    ids: favorites.map((favorite) => favorite.id),
+    favorites,
+  }
 }
 
 export async function toggleInspirationFavorite(id, userId) {

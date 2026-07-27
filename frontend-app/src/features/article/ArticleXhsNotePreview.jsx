@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import "./articleXhsNotePreview.css";
+import "./articleXhsNoteToolbar.css";
 import { IconWifi } from "@arco-design/web-react/icon";
 import {
   ArrowLeft,

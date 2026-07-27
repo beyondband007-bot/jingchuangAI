@@ -1,13 +1,13 @@
 .viral-graphic-showcase {
   display: grid;
-  gap: 14px;
+  gap: var(--space-14px);
   padding: 12px;
 }
 
 .viral-graphic-showcase__hero,
 .viral-graphic-showcase__panel {
   border: 1px solid rgba(183, 194, 235, 0.12);
-  border-radius: 24px;
+  border-radius: var(--radius-2xl);
   background: linear-gradient(180deg, rgba(28, 32, 46, 0.94), rgba(18, 21, 31, 0.94));
   padding: 16px;
 }
@@ -21,14 +21,13 @@
 .viral-graphic-showcase__eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
   min-height: 30px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(86, 96, 138, 0.22);
   color: #c6cce6;
   font-size: 12px;
-  font-weight: 800;
 }
 
 .viral-graphic-showcase__hero h3 {
@@ -53,14 +52,14 @@
 .viral-graphic-showcase__steps {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-10px);
   margin-top: 16px;
   color: #94a3b8;
 }
 
 .viral-graphic-showcase__step {
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
   justify-items: center;
   flex: 1;
   min-width: 0;
@@ -70,13 +69,12 @@
 .viral-graphic-showcase__step span {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   display: grid;
   place-items: center;
   background: rgba(86, 96, 138, 0.22);
   color: #f5f7ff;
   font-size: 13px;
-  font-weight: 800;
 }
 
 .viral-graphic-showcase__step strong,
@@ -94,37 +92,43 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-10px);
 }
 
 .viral-graphic-showcase__panel-head span,
 .viral-graphic-showcase__tag-head {
   color: #a9b3cf;
   font-size: 12px;
-  font-weight: 700;
 }
 
 .viral-graphic-showcase__panel {
   display: grid;
-  gap: 14px;
+  gap: var(--space-14px);
 }
 .viral-graphic-showcase__template-body button {
   min-height: 34px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   font-size: 12px;
-  font-weight: 800;
-}
-.viral-graphic-showcase__template-body button {
   border: 1px solid rgba(196, 207, 249, 0.14);
   background: rgba(255, 255, 255, 0.07);
   color: #f5f7ff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-1);
   cursor: pointer;
+  width: fit-content;
+  padding: 0 12px;
+  margin-top: auto;
+  justify-self: end;
+  align-self: end;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
-.viral-graphic-showcase__template-body button:disabled,
 .viral-graphic-showcase__template-body button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -132,16 +136,16 @@
 
 .viral-graphic-showcase__template-list {
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .viral-graphic-showcase__template {
   display: grid;
   grid-template-columns: 108px minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
   padding: 12px;
   border: 1px solid rgba(196, 207, 249, 0.14);
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -157,14 +161,14 @@
   height: 132px;
   object-fit: cover;
   display: block;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.05);
 }
 
 .viral-graphic-showcase__template-body {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 8px;
+  gap: var(--space-2);
   align-content: start;
   height: 132px;
   min-height: 132px;
@@ -172,20 +176,6 @@
 
 .viral-graphic-showcase__template-body strong {
   font-size: 14px;
-}
-
-.viral-graphic-showcase__template-body button {
-  width: fit-content;
-  padding: 0 12px;
-  margin-top: auto;
-  justify-self: end;
-  align-self: end;
-  transition:
-    background 180ms ease,
-    border-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
 }
 
 .viral-graphic-showcase__template-body button:hover,
@@ -205,7 +195,7 @@
   transform: translateY(0);
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .viral-graphic-showcase__template {
     grid-template-columns: 1fr;
   }

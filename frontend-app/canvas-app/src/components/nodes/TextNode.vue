@@ -4,14 +4,15 @@
     <!-- Text node | 文本节点 -->
     <div
       class="text-node bg-[var(--bg-secondary)] rounded-xl border min-w-[280px] max-w-[350px] relative transition-all duration-200"
-      :class="data.selected ? 'border-1 border-blue-500 shadow-lg shadow-blue-500/20' : 'border border-[var(--border-color)]'">
+      :class="{ 'is-selected': data.selected, 'is-processing': isPolishing }"
+      :aria-busy="isPolishing">
       <!-- Header | 头部 -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-[var(--border-color)]">
         <span
           v-if="!isEditingLabel"
           @dblclick="startEditLabel"
           class="text-sm font-medium text-[var(--text-secondary)] cursor-text hover:bg-[var(--bg-tertiary)] px-1 rounded transition-colors"
-          title="双击编辑名称"
+          data-tooltip="双击编辑名称"
         >{{ data.label }}</span>
         <input
           v-else
@@ -23,17 +24,17 @@
           class="text-sm font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] px-1 rounded outline-none border border-blue-500"
         />
         <div class="flex items-center gap-1">
-          <button @click="handleDuplicate" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" title="复制节点">
+          <button @click="handleDuplicate" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" data-tooltip="复制节点" aria-label="复制节点">
             <n-icon :size="14">
               <CopyOutline />
             </n-icon>
           </button>
-          <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" title="删除节点">
+          <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" data-tooltip="删除节点" aria-label="删除节点">
             <n-icon :size="14">
               <TrashOutline />
             </n-icon>
           </button>
-          <!-- <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" title="展开">
+        <!-- <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors">
             <n-icon :size="14">
               <ExpandOutline />
             </n-icon>
@@ -749,6 +750,23 @@ const handleVideoGen = () => {
 .text-node {
   cursor: default;
   position: relative;
+  border-color: var(--canvas-border);
+}
+
+.text-node.is-selected {
+  border-color: var(--canvas-action);
+  box-shadow: 0 0 0 3px var(--canvas-focus), var(--shadow-control);
+}
+
+.text-node.is-processing::before {
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  left: 12px;
+  height: 3px;
+  content: "";
+  background: var(--brand-gradient);
+  border-radius: var(--radius-pill);
 }
 
 /* Textarea wrapper - 参考 MaterialInput input-with-mention */

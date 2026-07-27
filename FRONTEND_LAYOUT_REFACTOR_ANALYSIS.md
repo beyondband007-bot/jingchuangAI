@@ -28,7 +28,7 @@
 `frontend-app/src/styles.scss` 和 `frontend-app/src/styles.css` 体量很大，包含大量跨模块规则，例如：
 
 - 针对具体 feature 的 `[data-feature-module="..."]` 覆盖
-- 大量 `!important`
+- 大量强制覆盖标记
 - `:has()` 选择器修补局部布局
 - 多处 `height: 100vh`、`min-height: 100vh`
 - 多层 `overflow: hidden` / `overflow-y: auto`
@@ -61,7 +61,7 @@
 
 ```css
 .dhv2-root {
-  height: calc(100vh - 72px);
+  height: calc(100vh - 64px);
   overflow: hidden;
 }
 ```
@@ -108,7 +108,7 @@
 - Feature Shell 管理侧栏、顶部栏、主内容区
 - 业务页面只管理自己的内容布局
 - 全局样式只放 tokens、reset、基础组件和布局 primitives
-- 删除大部分 `!important` 和跨模块覆盖
+- 删除大部分强制覆盖标记和跨模块覆盖
 - 统一滚动策略和 `min-height: 0` 使用
 - 数字人 V2 接入统一工作台布局
 
@@ -253,7 +253,7 @@ src/layouts/WorkspaceLayout.jsx
 
 ### 调整
 
-- `.dhv2-root` 不再使用 `height: calc(100vh - 72px)`
+- `.dhv2-root` 不再使用 `height: calc(100vh - 64px)`
 - `.dhv2-root` 改为 `height: 100%; min-height: 0`
 - `.dhv2-workspace` 使用统一 `WorkspaceLayout`
 - 左侧宽度从业务 CSS 变量逐步迁移到 layout token
@@ -288,7 +288,7 @@ src/layouts/WorkspaceLayout.jsx
 - 首页和功能页正常打开
 - 侧栏、顶部栏位置稳定
 - 页面不出现双滚动条
-- 数字人 V2 不再依赖 `calc(100vh - 72px)`
+- 数字人 V2 不再依赖 `calc(100vh - 64px)`
 
 ### Phase 2：数字人 V2 接入标准工作台
 
@@ -316,7 +316,7 @@ src/layouts/WorkspaceLayout.jsx
 
 建议任务：
 
-- 盘点 `styles.scss` 中所有 `!important`
+- 盘点 `styles.scss` 中所有强制覆盖标记
 - 删除针对特定 feature 的全局 override
 - 把业务样式迁回各 feature 目录
 - 抽出基础 tokens 和布局 primitives
@@ -343,7 +343,7 @@ src/layouts/WorkspaceLayout.jsx
 验收标准：
 
 - 新增功能页不再需要写应用级布局 CSS
-- 不再通过 `:has()` 和 `!important` 修复主布局
+- 不再通过 `:has()` 和强制覆盖标记修复主布局
 - 主功能页的响应式规则一致
 
 ## 风险点

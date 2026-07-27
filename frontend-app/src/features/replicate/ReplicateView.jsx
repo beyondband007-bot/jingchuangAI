@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import "../audio-ui/audioStateControls.css";
+import "./replicateExperience.css";
 import {
   ArrowUp,
   Copy,
@@ -16,6 +18,8 @@ import { replicateApi } from "./replicateApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { PageTitle } from "../../components/PageTitle";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { formatBeijingDateTime } from "../../utils/time";
 import {
   CreditAlertDialog,
@@ -99,7 +103,7 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
 
   const isImage = mode === "image";
   const hasFile = Boolean(fileState?.name);
-  const hasPreview = Boolean(previewUrl);
+  const hasPreview = Boolean(fileState?.file && previewUrl);
   const isInteractive = !isAnalyzing;
   const accept = isImage ? ".jpg,.jpeg,.png,.gif,.webp,image/*" : ".mp4,.mov,.avi,.webm,video/*";
   const hint = isImage ? "支持 jpg / png / gif / webp，最大 20MB" : "支持 mp4 / mov / webm / avi，最大 100MB";
@@ -184,10 +188,10 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
           )}
           {hasFile && isInteractive && (
             <span
-              className="upload-clear-button"
+              className="ui-upload-clear-button"
               role="button"
               tabIndex={0}
-              title="取消上传"
+          data-tooltip="取消上传"
               aria-label="取消上传"
               onClick={clearFile}
               onKeyDown={(event) => {
@@ -233,7 +237,7 @@ function buildPromptText(result) {
 function ReplicatePageHeader() {
   return (
     <div className="marketing-panel-hero voice-hero-empty replicate-hero-empty">
-      <h1 className="marketing-panel-hero__title">反推提示词</h1>
+      <PageTitle className="marketing-panel-hero__title">反推提示词</PageTitle>
       <p className="marketing-panel-hero__subtitle">上传参考图片或视频，自动理解主体、风格、镜头语言与画面细节，用于 AI 图片 / 视频生成</p>
     </div>
   );
@@ -461,7 +465,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   const showRechargeAlert = isRechargeRequiredMessage(notice);
 
   return (
-    <section className="watermark-view-root replicate-view">
+    <section className="marketing-tool-root marketing-tool--prompt-reverse replicate-view">
       <FeatureViewTabs
         currentLabel="反推提示词"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -469,7 +473,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         onHistory={() => setViewTab("recent")}
       />
 
-      <div className={`marketing-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""}`}>
+      <div className={`marketing-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""} ${viewTab === "recent" && recentResults.length === 0 ? "is-empty" : ""}`}>
         {viewTab === "home" ? (
           <MarketingToolPanel className="replicate-home-stack">
             <ReplicatePageHeader />
@@ -544,7 +548,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                   )}
                 </strong>
                 <button
-                  className="send-button"
+                  className="ui-send-button"
                   type="button"
                   onClick={startReplicate}
                   disabled={isAnalyzing || !selectedFile}
@@ -574,11 +578,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         ) : (
           <div className="replicate-recent-list">
             {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <Upload size={28} />
-                <strong>暂无历史记录</strong>
-                <p>回到主页上传图片或视频开始反推。</p>
-              </div>
+              <HistoryEmptyState title="暂无历史记录" />
             ) : (
               recentResults.map((item) => (
                 <article className="replicate-recent-card" key={item.id}>

@@ -1,0 +1,445 @@
+/* Image/video generation light compatibility. */
+
+.feature-page-shell .image-gen-view,
+.feature-page-shell .video-gen-view,
+.feature-page-shell .video-gen-view-root {
+  color: var(--text-primary);
+  background: var(--app-bg);
+}
+
+.feature-page-shell .image-results-feed,
+.feature-page-shell .image-workspace,
+.feature-page-shell .result-card,
+.feature-page-shell .empty-results {
+  color: var(--text-primary);
+}
+
+.feature-page-shell .feature-main .image-filter-tabs {
+  position: fixed;
+  top: 0;
+  left: calc(var(--app-sidebar-width, 220px) + 152px);
+  right: 420px;
+  z-index: var(--z-header);
+  display: flex;
+  width: auto;
+  height: var(--app-header-height);
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  gap: var(--space-14px);
+  overflow: visible;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.feature-page-shell .feature-main .image-filter-tabs .credits-chip {
+  display: none;
+}
+
+.feature-page-shell .fm-generation-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-14px);
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.feature-page-shell .feature-main .image-filter-tabs button,
+.feature-page-shell .fm-generation-tabs button {
+  display: inline-flex;
+  height: 38px;
+  align-items: center;
+  gap: var(--space-7px);
+  padding: 0 14px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  box-shadow: none;
+  font-size: 15px;
+}
+
+.feature-page-shell .feature-main .image-filter-tabs button.selected,
+.feature-page-shell .feature-main .image-filter-tabs button.is-active,
+.feature-page-shell .fm-generation-tabs button.selected,
+.feature-page-shell .fm-generation-tabs button.is-active {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft-alt);
+}
+
+.feature-page-shell .fm-generation-tabs button:hover,
+.feature-page-shell .fm-generation-tabs button:focus-visible {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft-alt);
+}
+
+.feature-page-shell .fm-inspiration-title-row {
+  align-items: center;
+}
+
+.feature-page-shell .fm-inspiration-tabs {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs {
+  gap: var(--space-10px);
+}
+
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs button {
+  min-height: 36px;
+  padding: 0 16px;
+  color: #777387;
+  background: #ffffff;
+  border: 1px solid #e2dfed;
+  font-size: 14px;
+}
+
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs button:hover,
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs button:focus-visible {
+  color: var(--fm-brand);
+  border-color: #cfc6ff;
+  outline: none;
+}
+
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs button.selected,
+.feature-page-shell .fm-creation-page .fm-inspiration-tabs button.is-active {
+  color: #ffffff;
+  background: var(--fm-brand);
+  border-color: var(--fm-brand);
+}
+
+.feature-page-shell .fm-prompt-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 152px;
+  gap: var(--space-4);
+  padding: 16px;
+  color: var(--text-primary);
+  background: #ffffff;
+  border: 1px solid #dedbe8;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 18px 48px rgba(47, 43, 68, 0.12);
+  backdrop-filter: none;
+}
+
+.feature-page-shell .video-prompt-dialog.is-collapsed {
+  min-height: 60px;
+  gap: 0;
+  padding: 8px;
+  border-radius: var(--radius-xl);
+}
+
+.feature-page-shell .fm-prompt-main-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 74px;
+}
+
+.feature-page-shell .fm-prompt-reference-region {
+  min-width: 0;
+}
+
+.feature-page-shell .fm-prompt-reference-region:empty {
+  display: none;
+}
+
+.feature-page-shell .image-prompt-main-row.is-expanded,
+.feature-page-shell .video-prompt-dialog.is-expanded .fm-prompt-main-row {
+  align-items: flex-start;
+}
+
+.feature-page-shell .image-prompt-main-row.is-collapsed,
+.feature-page-shell .video-prompt-dialog.is-collapsed .fm-prompt-main-row {
+  min-height: 44px;
+}
+
+.feature-page-shell .image-prompt-dialog.is-expanded .image-prompt-compact-submit {
+  display: none;
+}
+
+.feature-page-shell .fm-prompt-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  min-height: 28px;
+  max-height: 216px;
+  padding: 0;
+  color: #5d596a;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  resize: none;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.feature-page-shell .fm-prompt-input:focus,
+.feature-page-shell .fm-prompt-input:focus-visible {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.feature-page-shell .fm-prompt-dialog.is-expanded .fm-prompt-input {
+  min-height: 74px;
+}
+
+.feature-page-shell .video-prompt-dialog.is-collapsed .fm-prompt-input {
+  height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  font-size: 15px;
+}
+
+.feature-page-shell .fm-prompt-input::placeholder {
+  color: #c1bdce;
+}
+
+.feature-page-shell .fm-prompt-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+.feature-page-shell .fm-prompt-controls-group {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-10px);
+  flex-wrap: nowrap;
+}
+
+.feature-page-shell .fm-prompt-controls-group--end {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+}
+
+.feature-page-shell .fm-prompt-dropdown {
+  position: relative;
+}
+
+.feature-page-shell .fm-prompt-control,
+.feature-page-shell .fm-prompt-submit {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 12px;
+  color: #777284;
+  background: #ffffff;
+  border: 1px solid #d8d4e3;
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.feature-page-shell .fm-prompt-control--square {
+  width: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+}
+
+.feature-page-shell .fm-prompt-control--round {
+  width: 44px;
+  flex: 0 0 44px;
+  padding: 0;
+}
+
+.feature-page-shell .fm-prompt-control--model {
+  max-width: 148px;
+}
+
+.feature-page-shell .fm-prompt-control-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feature-page-shell .fm-prompt-control:hover,
+.feature-page-shell .fm-prompt-control:focus-visible {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft-alt);
+  border-color: var(--brand-primary-border);
+}
+
+.feature-page-shell .fm-prompt-submit {
+  min-width: 108px;
+  color: #ffffff;
+  background: var(--brand-gradient);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(109, 60, 255, 0.18);
+}
+
+.feature-page-shell .fm-prompt-submit svg,
+.feature-page-shell .fm-prompt-submit .billing-points {
+  flex: 0 0 auto;
+}
+
+.feature-page-shell .fm-prompt-submit .billing-points {
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.feature-page-shell .image-prompt-submit {
+  min-width: 120px;
+}
+
+.feature-page-shell .fm-prompt-control:disabled,
+.feature-page-shell .fm-prompt-submit:disabled {
+  color: #b8b5c7;
+  background: #ffffff;
+  border-color: #dedbea;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.feature-page-shell .fm-prompt-points {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+  color: #6d3cff;
+  background: #f0eef7;
+  border: 1px solid #dedbea;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.feature-page-shell .fm-prompt-notice {
+  margin-top: 12px;
+  color: #8f899b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.feature-page-shell .image-gen-view .chatbot-ui-dialog button[aria-label*="生成"],
+.feature-page-shell .video-gen-view .chatbot-ui-dialog button[aria-label*="生成"] {
+  border-radius: var(--radius-pill);
+}
+
+.feature-page-shell
+  .image-gen-view
+  .chatbot-ui-dialog
+  button[aria-label*="生成"]:not(:disabled),
+.feature-page-shell
+  .video-gen-view
+  .chatbot-ui-dialog
+  button[aria-label*="生成"]:not(:disabled) {
+  color: #ffffff;
+  background: var(--fm-brand, var(--brand-primary, #6d3cff));
+  border-color: var(--fm-brand, var(--brand-primary, #6d3cff));
+  opacity: 1;
+}
+
+.feature-page-shell
+  .image-gen-view
+  .chatbot-ui-dialog
+  button[aria-label*="生成"]:disabled,
+.feature-page-shell
+  .video-gen-view
+  .chatbot-ui-dialog
+  button[aria-label*="生成"]:disabled {
+  color: #b8b5c7;
+  background: #ffffff;
+  border-color: #dedbea;
+  opacity: 0.62;
+}
+
+@media (max-width: 1024px) {
+  .feature-page-shell .feature-main .image-filter-tabs {
+    left: calc(var(--app-sidebar-width, 200px) + 120px);
+    right: 300px;
+  }
+
+  .feature-page-shell .fm-prompt-controls-row,
+  .feature-page-shell .fm-prompt-controls-group {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1024px) {
+  .feature-page-shell .image-gen-view .image-filter-tabs,
+  .feature-page-shell .video-gen-view-root .image-filter-tabs {
+    position: sticky;
+    top: 0;
+    right: auto;
+    left: auto;
+    width: 100%;
+    max-width: 100vw;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    overflow-x: auto;
+    background: #fff;
+    border-bottom: 1px solid var(--fm-line);
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog {
+    width: calc(100vw - var(--space-4) - var(--space-4));
+    max-width: calc(100vw - var(--space-4) - var(--space-4));
+    min-width: 0;
+  }
+
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog .fm-prompt-input,
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog > .fm-prompt-main-row,
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog > .fm-prompt-reference-region,
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog > .fm-prompt-controls-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .feature-page-shell .fm-prompt-dialog.chatbot-ui-dialog .fm-prompt-reference-region,
+  .feature-page-shell
+    .fm-prompt-dialog.chatbot-ui-dialog
+    .fm-prompt-reference-region
+    > .fm-prompt-reference-list {
+    flex-wrap: wrap;
+  }
+
+  .feature-page-shell .image-gen-view .image-filter-tabs,
+  .feature-page-shell .video-gen-view-root .image-filter-tabs {
+    top: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 var(--space-3);
+    gap: var(--space-2);
+    overflow-x: auto;
+  }
+
+  .feature-page-shell .image-gen-view .image-filter-tabs button,
+  .feature-page-shell .video-gen-view-root .image-filter-tabs button {
+    flex: 0 0 auto;
+    padding: 0 var(--space-3);
+    font-size: 14px;
+  }
+}

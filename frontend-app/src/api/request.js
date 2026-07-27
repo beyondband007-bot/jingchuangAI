@@ -1,5 +1,10 @@
 import { API_BASE } from "../apiBase.js";
 
+// Identical read requests often originate from a page and one of its child
+// panels during the same render. Share only in-flight GETs: this removes
+// duplicate traffic without introducing stale-data caching semantics.
+const inFlightGetRequests = new Map();
+
 const ERROR_TRANSLATIONS = [
   { pattern: /unauthorized|forbidden|please log in|not logged in|not authenticated/i, message: "请先登录" },
   { pattern: /insufficient credits?|credit insufficient|not enough credits?|积分不足/i, message: "积分不够，请充值" },
@@ -31,7 +36,7 @@ export function cleanApiErrorMessage(error, fallback = "操作失败，请稍后
   return message;
 }
 
-export async function requestJson(path, options = {}) {
+async function performJsonRequest(path, options) {
   const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
@@ -65,4 +70,32 @@ export async function requestJson(path, options = {}) {
   }
 
   return body;
+}
+
+function getRequestKey(path, options) {
+  const headers = Object.entries(options.headers || {})
+    .map(([key, value]) => [key.toLowerCase(), String(value)])
+    .sort(([left], [right]) => left.localeCompare(right));
+  return JSON.stringify([path, headers]);
+}
+
+export function requestJson(path, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const canDeduplicate =
+    method === "GET" &&
+    !options.body &&
+    !options.signal &&
+    !options.cache;
+
+  if (!canDeduplicate) return performJsonRequest(path, options);
+
+  const key = getRequestKey(path, options);
+  const existingRequest = inFlightGetRequests.get(key);
+  if (existingRequest) return existingRequest;
+
+  const request = performJsonRequest(path, options).finally(() => {
+    inFlightGetRequests.delete(key);
+  });
+  inFlightGetRequests.set(key, request);
+  return request;
 }

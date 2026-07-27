@@ -1,0 +1,64 @@
+/* Responsive audio tool compatibility. */
+
+@media (max-width: 1024px) {
+  .voice-conversion-view-root {
+    padding: 0 12px 12px;
+  }
+
+  .voice-conversion-canvas {
+    min-height: 720px;
+    padding: 70px 16px 520px;
+  }
+
+  .voice-conversion-canvas.is-recent {
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .voice-cloned-list {
+    position: static;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .voice-floating-composer {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .voice-upload-grid,
+  .voice-form-grid,
+  .voice-slider-row,
+  .voice-audio-results {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-composer-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .voice-actions {
+    justify-content: flex-end;
+  }
+
+  .transcribe-canvas {
+    padding-bottom: 360px;
+  }
+
+  .transcribe-result-panel {
+    padding: 14px;
+  }
+
+  .transcribe-result-panel textarea {
+    min-height: 220px;
+  }
+
+
+
+
+}

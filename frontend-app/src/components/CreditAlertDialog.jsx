@@ -1,5 +1,7 @@
 import React from "react";
 import { CircleAlert, X } from "lucide-react";
+import { BaseModal } from "./BaseModal";
+import "./creditAlertDialog.css";
 
 export function isRechargeRequiredMessage(message) {
   return /积分不够|余额不足|请充值|Payment Required|402/i.test(
@@ -15,35 +17,30 @@ export function CreditAlertDialog({
   onRecharge,
 }) {
   return (
-    <div
-      className="remove-bg-alert-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="credit-alert-title"
+    <BaseModal
+      variant="compact"
+      className="credit-alert-modal"
+      surfaceClassName="credit-alert-dialog"
+      ariaLabel={title}
+      closeLabel="关闭提醒"
+      onClose={onClose}
     >
-      <button
-        className="remove-bg-alert-backdrop"
-        type="button"
-        aria-label="关闭提醒"
-        onClick={onClose}
-      />
-      <section className="remove-bg-alert-dialog">
         <button
-          className="remove-bg-alert-close"
+          className="credit-alert-close"
           type="button"
           aria-label="关闭提醒"
           onClick={onClose}
         >
           <X size={18} />
         </button>
-        <span className="remove-bg-alert-icon" aria-hidden="true">
+        <span className="credit-alert-icon" aria-hidden="true">
           {icon}
         </span>
-        <div className="remove-bg-alert-copy">
+        <div className="credit-alert-copy">
           <strong id="credit-alert-title">{title}</strong>
           <p>{message}</p>
         </div>
-        <div className="remove-bg-alert-actions">
+        <div className="credit-alert-actions">
           <button type="button" onClick={onClose}>
             关闭
           </button>
@@ -51,7 +48,6 @@ export function CreditAlertDialog({
             去充值
           </button>
         </div>
-      </section>
-    </div>
+    </BaseModal>
   );
 }

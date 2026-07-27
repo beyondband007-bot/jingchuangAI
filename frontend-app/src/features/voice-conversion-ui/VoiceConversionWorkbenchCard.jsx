@@ -3,6 +3,7 @@ import { Download, FileAudio, Mic2, Play } from "lucide-react";
 import { CustomSelect } from "../../components/CustomSelect";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import "./voiceConversionWorkbenchCard.css";
+import "../audio-ui/audioWorkbenchShared.css";
 
 const voiceConversionModelOptions = [
   { value: "voice-clone-pro", label: "Voice Clone Pro" },
@@ -112,13 +113,23 @@ function UploadBox({
 }
 
 function SettingsSlider({ label, displayValue, minLabel, maxLabel, ...props }) {
+  const value = Number(props.value ?? props.min ?? 0);
+  const min = Number(props.min ?? 0);
+  const max = Number(props.max ?? 100);
+  const fillPercent = max > min ? ((value - min) / (max - min)) * 100 : 0;
   return (
     <label className="voice-synthesis-workspace__slider">
       <span className="voice-synthesis-workspace__slider-header">
         <span>{label}</span>
         <strong>{displayValue}</strong>
       </span>
-      <input {...props} />
+      <input
+        {...props}
+        style={{
+          ...props.style,
+          "--range-fill": `${Math.max(0, Math.min(100, fillPercent))}%`,
+        }}
+      />
       <span className="voice-synthesis-workspace__slider-range">
         <small>{minLabel}</small>
         <small>{maxLabel}</small>
@@ -338,13 +349,13 @@ export function VoiceConversionWorkbenchCard({
               {demoAudio ? (
                 <div>
                   <span>音色试听</span>
-                  <audio src={demoAudio} controls />
+                  <audio src={demoAudio} controls preload="metadata" />
                 </div>
               ) : null}
               {resultAudio ? (
                 <div>
                   <span>转换结果</span>
-                  <audio src={resultAudio} controls />
+                  <audio src={resultAudio} controls preload="metadata" />
                 </div>
               ) : null}
             </div>

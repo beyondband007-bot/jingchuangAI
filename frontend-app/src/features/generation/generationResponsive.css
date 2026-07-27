@@ -1,0 +1,35 @@
+/* Responsive rules for the shared image and video generation workbench. */
+@media (max-width: 768px) {
+  .image-gen-view {
+    padding: 0 var(--feature-page-padding-x) 178px;
+  }
+
+  .image-filter-tabs {
+    gap: var(--space-2);
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  .image-filter-tabs button {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .sowa-composer {
+    right: 16px;
+    left: 216px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sowa-composer {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    padding: 12px;
+    border-radius: var(--radius-xl);
+  }
+}

@@ -6,9 +6,6 @@ import {
   Image,
   Loader2,
   Plus,
-  RefreshCcw,
-  Star,
-  Trash2,
   Wand2,
   X,
   Zap
@@ -26,8 +23,11 @@ import {
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { formatBeijingDateTime } from "../../utils/time";
 import { enhanceApi } from "./enhanceApi";
+import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
+import { PageTitle } from "../../components/PageTitle";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -136,9 +136,6 @@ function EnhanceCenterState({
 function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
-  const isCompleted = task.status === "completed" && Boolean(task.resultUrl);
-  const canUseCompletedActions = isCompleted;
-  const canRetryOrDelete = isCompleted || isFailed;
   const isVideo = task.mediaType === "video";
 
   return (
@@ -162,30 +159,12 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
           <span>{formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}</span>
           <strong>{task.price}</strong>
         </div>
-        <div className="card-actions watermark-card-actions">
-          <button className={`icon-circle ${task.favorite ? "is-favorite" : ""}`} type="button" onClick={() => onFavorite(task.id)} aria-label="收藏" disabled={!canUseCompletedActions}>
-            <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
-          </button>
-          {canUseCompletedActions ? (
-            <a className="card-action-link" href={task.resultUrl} download>
-              <Download size={15} />
-              下载
-            </a>
-          ) : (
-            <button type="button" disabled>
-              <Download size={15} />
-              下载
-            </button>
-          )}
-          <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
-            <RefreshCcw size={15} />
-            再次生成
-          </button>
-          <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
-            <Trash2 size={15} />
-            删除
-          </button>
-        </div>
+        <MarketingTaskCardActions
+          task={task}
+          onDelete={onDelete}
+          onFavorite={onFavorite}
+          onRepeat={onRepeat}
+        />
       </div>
     </article>
   );
@@ -230,10 +209,10 @@ function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelec
       )}
       {previewUrl && !isUploading && (
         <span
-          className="upload-clear-button"
+          className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
-          title="取消上传"
+          data-tooltip="取消上传"
           aria-label="取消上传"
           onClick={clearFile}
           onKeyDown={(event) => {
@@ -370,7 +349,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
             "请上传文件"
           )}
         </strong>
-        <button className="send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
+        <button className="ui-send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
       </div>
@@ -504,7 +483,7 @@ export function EnhanceView({ onOpenFeature }) {
   }
 
   return (
-    <section className="watermark-view-root enhance-view-root">
+    <section className="marketing-tool-root marketing-tool--enhance enhance-view-root">
       <FeatureViewTabs
         currentLabel="画质提升"
         activeView={viewTab === "recent" ? "recent" : "home"}
@@ -514,14 +493,14 @@ export function EnhanceView({ onOpenFeature }) {
           setSubmittedTaskId(null);
         }}
       />
-      <div className={`marketing-canvas enhance-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""}`}>
+      <div className={`marketing-canvas enhance-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""} ${showRecentEmpty ? "is-empty" : ""}`}>
         {showEmptyHero && (
           <MarketingToolPanel className="watermark-home-panel enhance-home-panel">
             <div className="marketing-panel-hero watermark-hero-empty enhance-hero-empty">
               <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
                 <Wand2 size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">画质提升</h1>
+              <PageTitle className="marketing-panel-hero__title">画质提升</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
             </div>
             <EnhanceComposer
@@ -537,7 +516,7 @@ export function EnhanceView({ onOpenFeature }) {
               <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
                 <Wand2 size={36} />
               </span>
-              <h1 className="marketing-panel-hero__title">画质提升</h1>
+              <PageTitle className="marketing-panel-hero__title">画质提升</PageTitle>
               <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
             </div>
             <EnhanceCenterState
@@ -566,11 +545,9 @@ export function EnhanceView({ onOpenFeature }) {
           />
         ) : null}
         {showRecentEmpty && (
-          <div className="watermark-recent-empty enhance-recent-empty">
-            <Wand2 size={24} />
-            <strong>{viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}</strong>
-            <p>{viewTab === "favorite" ? "收藏后的提升结果会显示在这里。" : "提升完成的图片或视频会保存在这里。"}</p>
-          </div>
+          <HistoryEmptyState
+            title={viewTab === "favorite" ? "暂无收藏结果" : "暂无历史记录"}
+          />
         )}
         <div className={`watermark-results-feed enhance-results-feed ${visibleTasks.length ? "has-results" : ""}`}>
           {visibleTasks.map((task) => (

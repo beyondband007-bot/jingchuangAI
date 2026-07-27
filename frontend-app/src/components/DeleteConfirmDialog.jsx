@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Loader2, RefreshCcw, Trash2, X } from "lucide-react";
+import { BaseModal } from "./BaseModal";
+import "./deleteConfirm.css";
 
 export function DeleteConfirmDialog({
   open,
@@ -15,32 +17,20 @@ export function DeleteConfirmDialog({
   onCancel,
   onConfirm,
 }) {
-  useEffect(() => {
-    if (!open) return undefined;
-    function closeOnEscape(event) {
-      if (event.key === "Escape" && !isSubmitting) onCancel?.();
-    }
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [open, isSubmitting, onCancel]);
-
   if (!open) return null;
 
   return (
-    <div className="delete-confirm-layer" role="presentation">
-      <button
-        className="delete-confirm-backdrop"
-        type="button"
-        aria-label={cancelText}
-        disabled={isSubmitting}
-        onClick={onCancel}
-      />
-      <section
-        className="delete-confirm-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-confirm-title"
-      >
+    <BaseModal
+      open={open}
+      variant="confirm"
+      className="delete-confirm-layer"
+      surfaceClassName="delete-confirm-dialog"
+      ariaLabel={title}
+      closeLabel={cancelText}
+      closeOnBackdrop={!isSubmitting}
+      closeOnEscape={!isSubmitting}
+      onClose={onCancel}
+    >
         <button
           className="delete-confirm-close"
           type="button"
@@ -72,8 +62,7 @@ export function DeleteConfirmDialog({
             {isSubmitting ? submittingText : confirmText}
           </button>
         </div>
-      </section>
-    </div>
+    </BaseModal>
   );
 }
 

@@ -1,0 +1,39 @@
+.chat-view-root {
+  position: relative;
+  min-height: 100vh;
+  padding: 0 24px 166px;
+  background: #fff;
+}
+
+.chat-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-18px);
+  min-height: 66px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+}
+
+.chat-topbar h1 {
+  grid-column: 2;
+  margin: 0;
+  color: #172033;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.chat-topbar .credits-chip { grid-column: 3; justify-self: end; }
+
+.chat-main-canvas {
+  display: grid;
+  min-height: calc(100vh - 232px);
+  overflow-y: auto;
+  background: #fff;
+}

@@ -36,7 +36,6 @@ export function MotionTransferWorkflowView({ isActive = true }) {
         description: "上传人物图与动作参考视频，让静态角色自然完成同款动作",
       }}
       privacyText="您上传的内容仅用于动作迁移处理，不会被用于其他用途"
-      historyEmptyHint="完成的动作迁移视频会显示在这里"
       subjectSlot={{
         title: "人物照片",
         hint: "单人主体，姿态清晰",

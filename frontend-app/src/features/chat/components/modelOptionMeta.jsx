@@ -10,12 +10,12 @@ const modelOptionMeta = {
   },
   "qwen3.7-plus": {
     title: "Qwen 3.7 Plus",
-    description: "均衡性价比，种草文案、标题创意初稿",
+    description: "均衡性价比，适合种草文案、标题创意初稿",
     icon: `${iconBase}/qwen.svg`,
   },
   "qwen3.6-plus": {
     title: "Qwen 3.6 Plus",
-    description: "轻量低成本，批量短文案",
+    description: "轻量低成本，适合批量短文案",
     icon: `${iconBase}/qwen.svg`,
   },
   "gpt-5-4": {
@@ -30,22 +30,22 @@ const modelOptionMeta = {
   },
   "gemini-3-pro": {
     title: "Gemini 3 Pro",
-    description: "多模态图文，海外短视频脚本",
+    description: "多模态图文，适合海外短视频脚本",
     icon: `${iconBase}/gemini.svg`,
   },
   "gemini-3.1-pro-openai": {
     title: "Gemini 3 Pro",
-    description: "多模态图文，海外短视频脚本",
+    description: "多模态图文，适合海外短视频脚本",
     icon: `${iconBase}/gemini.svg`,
   },
   "claude-opus-4-6": {
     title: "Claude Opus 4.6",
-    description: "超长上下文，万字策划、长篇剧本",
+    description: "超长上下文，适合万字策划、长篇剧本",
     icon: `${iconBase}/claude.svg`,
   },
   "claude-sonnet-4-6": {
     title: "Claude Sonnet 4.6",
-    description: "长文本流畅，口播稿、品牌软文",
+    description: "长文本流畅，适合口播稿、品牌软文",
     icon: `${iconBase}/claude.svg`,
   },
   gpt_image_2: {
@@ -75,12 +75,12 @@ const modelOptionMeta = {
   },
   seedream_4_5: {
     title: "Seedream 4.5",
-    description: "国风 / 电商优化，商品图、中式场景、日常写实创作",
+    description: "国风 / 电商优化，适合商品图、中式场景、日常写实创作",
     icon: `${iconBase}/seedream.svg`,
   },
   seedream_45: {
     title: "Seedream 4.5",
-    description: "国风 / 电商优化，商品图、中式场景、日常写实创作",
+    description: "国风 / 电商优化，适合商品图、中式场景、日常写实创作",
     icon: `${iconBase}/seedream.svg`,
   },
   seedance_2_0_720p: {
@@ -143,7 +143,7 @@ export function ModelOptionContent({ item, selected = false }) {
           style={{
             color: selected ? "#6d3cff" : "#686879",
             fontSize: "14px",
-            fontWeight: selected ? 800 : 700,
+            fontWeight: selected ? 500 : 500,
             whiteSpace: "nowrap",
           }}
         >

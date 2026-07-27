@@ -22,12 +22,31 @@ const STEP_DEFINITIONS = [
 const ICON_BAR_COUNT = 5;
 const WAVE_BAR_COUNT = 20;
 
-function useRandomBarHeights(count, { min, max, tickMin = 90, tickMax = 260 }) {
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  useEffect(() => {
+    const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    if (!query) return undefined;
+    const updatePreference = () => setPrefersReducedMotion(query.matches);
+    updatePreference();
+    query.addEventListener?.("change", updatePreference);
+    return () => query.removeEventListener?.("change", updatePreference);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
+function useRandomBarHeights(count, { min, max, tickMin = 90, tickMax = 260, isStatic = false }) {
   const [heights, setHeights] = useState(() =>
     Array.from({ length: count }, () => min + Math.random() * (max - min))
   );
 
   useEffect(() => {
+    if (isStatic) return undefined;
     const timeouts = new Set();
     let cancelled = false;
 
@@ -53,9 +72,9 @@ function useRandomBarHeights(count, { min, max, tickMin = 90, tickMax = 260 }) {
       cancelled = true;
       timeouts.forEach((id) => window.clearTimeout(id));
     };
-  }, [count, min, max, tickMin, tickMax]);
+  }, [count, min, max, tickMin, tickMax, isStatic]);
 
-  return heights;
+  return isStatic ? Array.from({ length: count }, () => (min + max) / 2) : heights;
 }
 
 function RandomEqualizerBars({
@@ -67,7 +86,14 @@ function RandomEqualizerBars({
   tickMin,
   tickMax
 }) {
-  const heights = useRandomBarHeights(count, { min, max, tickMin, tickMax });
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const heights = useRandomBarHeights(count, {
+    min,
+    max,
+    tickMin,
+    tickMax,
+    isStatic: prefersReducedMotion,
+  });
 
   return (
     <>
@@ -113,7 +139,8 @@ export function MusicGeneratingPanel({
   onSelectItem,
   onDownloadItem,
   onEditCoverItem,
-  onDeleteItem
+  onDeleteItem,
+  onRetryItem,
 }) {
   const steps = buildSteps(activeStep);
   const safeProgress = Math.max(0, Math.min(100, Math.round(progressPercent)));
@@ -200,6 +227,7 @@ export function MusicGeneratingPanel({
           onDownloadItem={onDownloadItem}
           onEditCoverItem={onEditCoverItem}
           onDeleteItem={onDeleteItem}
+          onRetryItem={onRetryItem}
         />
       </div>
     </div>

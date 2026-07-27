@@ -1,454 +1,25 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { IconMessage } from "@arco-design/web-react/icon";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { CheckCircle2, ChevronDown, CircleAlert, Copy, FileText, Loader2, Plus, Square, Trash2, X, Zap, Bot } from "lucide-react";
+import { ChevronDown, Loader2, Plus, Square, Zap } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { CustomSelect } from "../../components/CustomSelect";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { useToast } from "../../components/ToastProvider";
 import { chatApi } from "../../api/chatApi";
+import { ChatHistoryRail } from "./ChatHistoryRail";
+import {
+  appendChatStreamChunk,
+  ChatAttachmentList,
+  ChatConversationCanvas,
+  emptyChatOptions,
+  getOrderedChatModels,
+  toChatContext,
+} from "./ChatConversationCanvas";
 import { ModelOptionContent } from "./components/modelOptionMeta.jsx";
-import "./chat.scss";
+import "./chatStyles.css";
 
 function isLoggedInUser(authUser) {
   return Boolean(authUser && !authUser.isGuest);
-}
-
-async function writeClipboardText(text) {
-  const value = String(text || "").trim();
-  if (!value) return false;
-
-  try {
-    await navigator.clipboard.writeText(value);
-    return true;
-  } catch {
-    const textarea = document.createElement("textarea");
-    textarea.value = value;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    const copied = document.execCommand("copy");
-    textarea.remove();
-    return copied;
-  }
-}
-
-const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
-const chatContextRoles = new Set(["system", "user", "assistant"]);
-const collapsedChatModelValues = ["deepseek-v4-pro", "qwen3.7-plus"];
-const expandedChatModelValues = [
-  "qwen3.6-plus",
-  "gpt-5-4",
-  "gpt-5-5",
-  "gemini-3-pro",
-  "claude-opus-4-6",
-  "claude-sonnet-4-6",
-];
-
-function getOrderedChatModels(models = [], isExpanded = false) {
-  const modelMap = new Map(models.map((item) => [item.value, item]));
-  const pickedValues = new Set();
-  const pick = (value) => {
-    const item = modelMap.get(value);
-    if (!item || pickedValues.has(value)) return [];
-    pickedValues.add(value);
-    return [item];
-  };
-
-  const collapsedModels = collapsedChatModelValues.flatMap(pick);
-  if (!isExpanded) {
-    return collapsedModels.length ? collapsedModels : models.slice(0, 2);
-  }
-
-  const expandedModels = expandedChatModelValues.flatMap(pick);
-  const extraModels = models.filter((item) => !pickedValues.has(item.value));
-  return [...collapsedModels, ...expandedModels, ...extraModels];
-}
-
-function toChatContext(messages) {
-  return messages
-    .filter(
-      (message) =>
-        message.status !== "failed" &&
-        chatContextRoles.has(message.role) &&
-        (message.content?.trim() || message.attachments?.length),
-    )
-    .map((message) => ({
-      role: message.role,
-      content: message.content?.trim() || "",
-      attachments: message.attachments || [],
-    }));
-}
-
-function formatChatAttachmentSize(bytes = 0) {
-  if (!bytes || Number.isNaN(Number(bytes))) return "";
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function ChatAttachmentList({ attachments = [], onRemove, isStatic = false }) {
-  if (!attachments.length) return null;
-
-  return (
-    <div className="chat-attachment-list">
-      {attachments.map((attachment, index) => (
-        <div
-          className={`chat-attachment-card ${isStatic ? "is-static" : ""}`}
-          key={attachment.id || attachment.url || index}
-        >
-          <span className="chat-attachment-preview">
-            {attachment.kind === "image" && attachment.url ? (
-              <img src={attachment.url} alt="" />
-            ) : (
-              <FileText size={14} />
-            )}
-          </span>
-          <span className="chat-attachment-meta">
-            <strong title={attachment.originalName || "attachment"}>
-              {attachment.originalName || "attachment"}
-            </strong>
-            <small>{formatChatAttachmentSize(attachment.size)}</small>
-          </span>
-          {!isStatic && (
-            <button
-              type="button"
-              onClick={() => onRemove?.(index)}
-              aria-label="移除附件"
-            >
-              <X size={11} />
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function appendChatStreamChunk(current = "", chunk = "") {
-  if (!chunk) return current;
-  if (!current) return chunk;
-  if (chunk === current) return current;
-  if (chunk.startsWith(current)) return chunk;
-
-  const maxOverlap = Math.min(current.length, chunk.length);
-  for (let size = maxOverlap; size > 0; size -= 1) {
-    if (current.endsWith(chunk.slice(0, size))) {
-      return `${current}${chunk.slice(size)}`;
-    }
-  }
-
-  return `${current}${chunk}`;
-}
-
-function ChatMarkdown({ content }) {
-  return (
-    <div className="chat-markdown">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: ({ node, ...props }) => (
-            <a {...props} target="_blank" rel="noreferrer" />
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
-}
-
-function markdownToPlainText(markdown = "") {
-  return String(markdown || "")
-    .replace(/```[\s\S]*?```/g, (block) =>
-      block.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, ""),
-    )
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/^\s{0,3}>\s?/gm, "")
-    .replace(/^\s*[-*+]\s+/gm, "")
-    .replace(/^\s*\d+\.\s+/gm, "")
-    .replace(/[*_~]{1,3}/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function getBeijingDayKey(value = new Date()) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const pick = (type) => parts.find((item) => item.type === type)?.value || "";
-  return `${pick("year")}-${pick("month")}-${pick("day")}`;
-}
-
-function getBeijingOffsetDayKey(offsetDays = 0) {
-  return getBeijingDayKey(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
-}
-
-function getConversationDateValue(conversation = {}) {
-  return (
-    conversation.updatedAt ||
-    conversation.updated_at ||
-    conversation.createdAt ||
-    conversation.created_at ||
-    conversation.time ||
-    ""
-  );
-}
-
-function formatChatHistoryItemTime(conversation = {}) {
-  const value = getConversationDateValue(conversation);
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const dayKey = getBeijingDayKey(value);
-  const todayKey = getBeijingOffsetDayKey(0);
-  const yesterdayKey = getBeijingOffsetDayKey(-1);
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Asia/Shanghai",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const pick = (type) => parts.find((item) => item.type === type)?.value || "";
-  if (dayKey === todayKey || dayKey === yesterdayKey) return "";
-  return `${pick("month")}/${pick("day")}`;
-}
-
-function groupChatConversationsByDay(conversations = []) {
-  const todayKey = getBeijingOffsetDayKey(0);
-  const yesterdayKey = getBeijingOffsetDayKey(-1);
-  const groups = { today: [], yesterday: [], older: [] };
-
-  conversations.forEach((conversation) => {
-    const dayKey = getBeijingDayKey(getConversationDateValue(conversation));
-    if (dayKey === todayKey) {
-      groups.today.push(conversation);
-    } else if (dayKey === yesterdayKey) {
-      groups.yesterday.push(conversation);
-    } else {
-      groups.older.push(conversation);
-    }
-  });
-
-  return groups;
-}
-
-function ChatCopyActions({ content }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [copiedMode, setCopiedMode] = useState("");
-  const wrapRef = useRef(null);
-  const plainText = useMemo(() => markdownToPlainText(content), [content]);
-
-  useEffect(() => {
-    if (!isMenuOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!wrapRef.current?.contains(event.target)) {
-        setIsMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setIsMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isMenuOpen]);
-
-  async function copyContent(mode = "plain") {
-    const copied = await writeClipboardText(
-      mode === "markdown" ? content : plainText,
-    );
-    if (!copied) return;
-    setCopiedMode(mode);
-    setIsMenuOpen(false);
-    window.setTimeout(() => {
-      setCopiedMode((current) => (current === mode ? "" : current));
-    }, 1600);
-  }
-
-  return (
-    <div
-      className={`chat-copy-actions ${isMenuOpen ? "is-menu-open" : ""}`}
-      ref={wrapRef}
-    >
-      <button
-        className={`chat-copy-icon ${copiedMode ? "is-copied" : ""}`}
-        type="button"
-        onClick={() => copyContent("plain")}
-        aria-label={copiedMode ? "已复制回复内容" : "复制回复内容"}
-        title={copiedMode ? "已复制" : "复制"}
-      >
-        {copiedMode ? <CheckCircle2 size={15} /> : <Copy size={15} />}
-      </button>
-      <button
-        className={`chat-copy-chevron ${isMenuOpen ? "is-open" : ""}`}
-        type="button"
-        onClick={() => setIsMenuOpen((value) => !value)}
-        aria-label="展开复制选项"
-        aria-expanded={isMenuOpen}
-      >
-        <ChevronDown size={14} />
-      </button>
-      {isMenuOpen && (
-        <div className="chat-copy-menu" role="menu">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => copyContent("markdown")}
-          >
-            复制为Markdown
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => copyContent("plain")}
-          >
-            复制
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChatCanvas({ messages, isSubmitting, error }) {
-  const scrollContainerRef = useRef(null);
-  const scrollSignature = messages
-    .map(
-      (message) =>
-        `${message.id}:${message.status}:${message.content?.length || 0}:${
-          message.attachments?.length || 0
-        }`,
-    )
-    .join("|");
-  const hasStreamingMessage = messages.some(
-    (message) => message.status === "streaming",
-  );
-
-  useEffect(() => {
-    if (!messages.length && !isSubmitting && !error) return undefined;
-
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return undefined;
-
-    const scrollToBottom = () => {
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
-        behavior: "auto",
-      });
-    };
-
-    scrollToBottom();
-    const frameId = window.requestAnimationFrame(scrollToBottom);
-    const timeoutId = window.setTimeout(scrollToBottom, 60);
-
-    return () => {
-      window.cancelAnimationFrame(frameId);
-      window.clearTimeout(timeoutId);
-    };
-  }, [error, isSubmitting, messages.length, scrollSignature]);
-
-  if (!messages.length && !isSubmitting && !error) {
-    return (
-      <div className="chat-main-canvas">
-        <div className="chat-empty-state llm-empty-state">
-          <h1>Hi，我是 Facemini，你的 AI 创作助手</h1>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="chat-main-canvas"
-      ref={scrollContainerRef}
-      aria-live="polite"
-    >
-      <div className="chat-conversation-thread">
-        {messages.map((message) => (
-          <div className={`chat-message-row ${message.role}`} key={message.id}>
-            {message.role === "assistant" && (
-              <span
-                className={`chat-message-avatar ${message.status === "failed" ? "is-error" : ""}`}
-              >
-                <Bot size={17} />
-              </span>
-            )}
-            <div
-              className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}
-            >
-              {message.status === "failed" ? (
-                <>
-                  <strong>这次没有回复成功</strong>
-                  <p>{message.error || "对话服务暂时不可用，请稍后重试。"}</p>
-                </>
-              ) : (
-                <>
-                  {message.role === "assistant" && message.content ? (
-                    <ChatMarkdown content={message.content} />
-                  ) : (
-                    message.content ||
-                    (message.status === "streaming" ? "正在思考..." : "")
-                  )}
-                  <ChatAttachmentList
-                    attachments={message.attachments || []}
-                    isStatic
-                  />
-                  {message.points > 0 && (
-                    <small className="chat-message-cost">
-                      {message.price || `${message.points} 积分`}
-                    </small>
-                  )}
-                  {message.role === "assistant" &&
-                    message.status === "stopped" && (
-                      <small className="chat-message-status">
-                        已停止生成
-                      </small>
-                    )}
-                  {message.role === "assistant" &&
-                    (message.status === "completed" ||
-                      message.status === "stopped") &&
-                    message.content?.trim() && (
-                      <ChatCopyActions content={message.content} />
-                    )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-        {isSubmitting && !hasStreamingMessage && (
-          <div className="chat-message-row assistant">
-            <span className="chat-message-avatar">
-              <Bot size={17} />
-            </span>
-            <div className="chat-message-bubble is-loading">
-              <Loader2 size={17} />
-              <span>正在思考...</span>
-            </div>
-          </div>
-        )}
-        {error && (
-          <div className="chat-inline-error" role="alert">
-            {error}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 function ChatComposerBar({
@@ -608,7 +179,7 @@ function ChatComposerBar({
   }
 
   return (
-    <div className="llm-composer chat-composer" aria-label="大模型输入框">
+    <div className="fm-prompt-dialog llm-composer chat-composer is-expanded" aria-label="大模型输入框">
       <input
         ref={attachmentInputRef}
         type="file"
@@ -616,38 +187,46 @@ function ChatComposerBar({
         accept="image/jpeg,image/png,image/webp,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         onChange={handleAttachmentSelect}
       />
-      <textarea
-        className="llm-input"
-        value={prompt}
-        disabled={isTextInputLocked}
-        onChange={(event) => {
-          setPrompt(event.target.value);
-          if (notice) setNotice("");
-        }}
-        onKeyDown={(event) => {
-          if (isTextInputLocked) return;
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            if (isSubmitting) {
-              if (canInterruptAndSubmit) submitPrompt({ interrupt: true });
-            } else {
-              submitPrompt();
+      <div className="fm-prompt-main-row">
+        <textarea
+          className="fm-prompt-input llm-input"
+          value={prompt}
+          disabled={isTextInputLocked}
+          onChange={(event) => {
+            setPrompt(event.target.value);
+            if (notice) setNotice("");
+          }}
+          onKeyDown={(event) => {
+            if (isTextInputLocked) return;
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              if (isSubmitting) {
+                if (canInterruptAndSubmit) submitPrompt({ interrupt: true });
+              } else {
+                submitPrompt();
+              }
             }
+          }}
+          placeholder={
+            !isReady
+              ? "正在加载对话模型..."
+              : isSubmitting
+                ? "AI 正在思考中..."
+                : "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
           }
-        }}
-        placeholder={
-          !isReady
-            ? "正在加载对话模型..."
-            : isSubmitting
-              ? "AI 正在思考中..."
-              : "输入你的创作需求，AI 帮你写文案、做脚本、生成内容灵感......"
-        }
-      />
-      <div className="llm-composer-footer">
+        />
+      </div>
+      <div className="fm-prompt-reference-region">
+        <ChatAttachmentList
+          attachments={attachments}
+          onRemove={removeAttachment}
+        />
+      </div>
+      <div className="fm-prompt-controls-row llm-composer-footer">
         <div className="llm-toolbar">
-          <div className="llm-left">
+          <div className="fm-prompt-controls-group llm-left">
             <button
-              className="llm-square"
+              className="fm-prompt-control fm-prompt-control--round llm-square"
               type="button"
               disabled={isControlsLocked || attachments.length >= 5}
               onClick={() => attachmentInputRef.current?.click()}
@@ -660,16 +239,12 @@ function ChatComposerBar({
                 <Plus size={16} />
               )}
             </button>
-            <ChatAttachmentList
-              attachments={attachments}
-              onRemove={removeAttachment}
-            />
             <div
               ref={modelMenuRef}
               className={`llm-select-wrap ${openMenu === "model" ? "is-open" : ""}`}
             >
               <button
-                className="llm-select"
+                className="fm-prompt-control llm-select"
                 type="button"
                 disabled={isControlsLocked}
                 onClick={() =>
@@ -721,11 +296,12 @@ function ChatComposerBar({
               </div>
             </div>
           </div>
-          <div className="llm-right">
+          <div className="fm-prompt-controls-group fm-prompt-controls-group--end llm-right">
             {visibleReasoningEfforts.length > 0 && (
               <CustomSelect
                 ariaLabel="推理强度"
                 className="llm-reasoning-select"
+                triggerClassName="fm-prompt-control"
                 value={reasoningEffort}
                 disabled={isControlsLocked}
                 onChange={onReasoningEffortChange}
@@ -733,11 +309,11 @@ function ChatComposerBar({
               />
             )}
             <button
-              className={`llm-round primary ${isSubmitting ? "is-stop" : ""}`}
+              className={`fm-prompt-submit llm-round primary ${isSubmitting ? "is-stop" : ""}`}
               type="button"
               disabled={!isSubmitting && !canSubmit}
               onClick={isSubmitting ? onStop : submitPrompt}
-              title={isSubmitting ? "停止生成" : "发送"}
+              data-tooltip={isSubmitting ? "停止生成" : "发送"}
               aria-label="发送"
             >
               {isSubmitting ? (
@@ -761,102 +337,8 @@ function ChatComposerBar({
   );
 }
 
-function ChatHistoryRail({ conversations, activeConversationId, onSelect, onDelete, disabled = false }) {
-  const [showOlder, setShowOlder] = useState(false);
-  const groupedConversations = useMemo(
-    () => groupChatConversationsByDay(conversations),
-    [conversations],
-  );
-
-  function renderConversation(conversation) {
-    const isSelected = activeConversationId === conversation.id;
-    const itemTime = formatChatHistoryItemTime(conversation);
-    return (
-      <div
-        className={`chat-history-row ${isSelected ? "is-selected" : ""}`}
-        key={conversation.id}
-      >
-        <button
-          className={`chat-history-item ${isSelected ? "is-selected" : ""}`}
-          type="button"
-          disabled={disabled}
-          onClick={() => onSelect(conversation.id)}
-        >
-          <IconMessage className="chat-history-message-icon" />
-          <span>{conversation.title || "未命名对话"}</span>
-        </button>
-        <div className={`chat-history-row-action ${itemTime ? "has-time" : ""}`}>
-          {itemTime ? (
-            <time dateTime={getConversationDateValue(conversation)}>
-              {itemTime}
-            </time>
-          ) : null}
-          <button
-            className="chat-history-delete"
-            type="button"
-            aria-label="删除历史对话"
-            disabled={disabled}
-            onClick={() => onDelete(conversation)}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  function renderSection(label, items) {
-    if (!items.length) return null;
-    return (
-      <section className="chat-history-section" aria-label={label}>
-        <div className="chat-history-section-title">
-          <span>{label}</span>
-        </div>
-        <div className="chat-history-section-list">
-          {items.map(renderConversation)}
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <aside className="history-rail chat-history-rail" aria-label="AI 对话历史">
-      <div className="history-rail-header">
-        <span>历史对话</span>
-      </div>
-      <div className="history-list chat-history-list">
-        {conversations.length === 0 ? (
-          <p className="chat-history-empty">暂无历史对话</p>
-        ) : (
-          <>
-            {renderSection("今天", groupedConversations.today)}
-            {renderSection("昨天", groupedConversations.yesterday)}
-            {groupedConversations.older.length > 0 && (
-              <section className="chat-history-section" aria-label="更早">
-                <button
-                  className={`chat-history-section-title chat-history-section-toggle ${showOlder ? "is-open" : ""}`}
-                  type="button"
-                  aria-expanded={showOlder}
-                  onClick={() => setShowOlder((value) => !value)}
-                >
-                  <span>更早</span>
-                  <ChevronDown size={14} />
-                </button>
-                {showOlder && (
-                  <div className="chat-history-section-list">
-                    {groupedConversations.older.map(renderConversation)}
-                  </div>
-                )}
-              </section>
-            )}
-          </>
-        )}
-      </div>
-    </aside>
-  );
-}
-
 export function ChatGenerationView({ authUser, onOpenAuth }) {
+  const { showToast, dismissToast } = useToast();
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [options, setOptions] = useState(emptyChatOptions);
@@ -867,7 +349,6 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     useState("none");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [modelSwitchNotice, setModelSwitchNotice] = useState("");
   const streamAbortControllerRef = useRef(null);
   const historyAbortControllerRef = useRef(null);
   const isGuest = !isLoggedInUser(authUser);
@@ -887,7 +368,7 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
           setMessages([]);
           setConversationId(null);
           setSubmitError("");
-          setModelSwitchNotice("");
+          dismissToast();
         }
       },
     });
@@ -913,20 +394,10 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!modelSwitchNotice) return undefined;
-
-    const timer = window.setTimeout(() => {
-      setModelSwitchNotice("");
-    }, 2600);
-
-    return () => window.clearTimeout(timer);
-  }, [modelSwitchNotice]);
-
   const showModelSwitchNotice = useCallback(() => {
     if (!messages.length && !isSubmitting && !submitError) return;
-    setModelSwitchNotice("对话中更换模型可能会导致输出不稳定");
-  }, [isSubmitting, messages.length, submitError]);
+    showToast("对话中更换模型可能会导致输出不稳定", { type: "warning" });
+  }, [isSubmitting, messages.length, showToast, submitError]);
 
   useEffect(() => {
     const defaultModel = options.defaultModel || options.models[0]?.value || "";
@@ -1108,7 +579,7 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
     setMessages([]);
     setConversationId(null);
     setSubmitError("");
-    setModelSwitchNotice("");
+    dismissToast();
   }
 
   async function selectConversation(id) {
@@ -1161,19 +632,11 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
           <span className="credits-chip">积分 {credits.balance}</span>
         )}
       </div>
-      {modelSwitchNotice && (
-        <div className="chat-floating-notice" role="status" aria-live="polite">
-          <span className="chat-floating-notice-icon">
-            <CircleAlert size={16} />
-          </span>
-          <span>{modelSwitchNotice}</span>
-        </div>
-      )}
       <div className="chat-content-layout">
         <div className="chat-dialog-column">
           {isIntroState ? (
             <div className="llm-intro-layout">
-              <ChatCanvas
+              <ChatConversationCanvas
                 messages={messages}
                 isSubmitting={isSubmitting}
                 error={submitError}
@@ -1182,7 +645,7 @@ export function ChatGenerationView({ authUser, onOpenAuth }) {
             </div>
           ) : (
             <>
-              <ChatCanvas
+              <ChatConversationCanvas
                 messages={messages}
                 isSubmitting={isSubmitting}
                 error={submitError}

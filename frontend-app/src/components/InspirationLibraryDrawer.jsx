@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Drawer } from "@arco-design/web-react";
 import { Search, Sparkles, X } from "lucide-react";
-import "./InspirationLibraryDrawer.scss";
-
-export const INSPIRATION_LIBRARY_DEFAULT_TAB = "全部";
-export const INSPIRATION_LIBRARY_TABS = ["全部", "图片模板", "视频模板"];
+import "./InspirationLibraryDrawer.css";
+import {
+  INSPIRATION_LIBRARY_DEFAULT_TAB,
+  INSPIRATION_LIBRARY_TABS,
+} from "./inspirationLibraryConfig";
 
 const inspirationLibraryItems = [
   { title: "电商主图", icon: "🛍️", tab: "图片模板", route: "image" },

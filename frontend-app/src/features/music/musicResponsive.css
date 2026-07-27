@@ -1,0 +1,82 @@
+/* Music workbench viewport overrides. */
+@media (max-width: 1024px) {
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__columns {
+    grid-template-columns: 1fr;
+  }
+
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__lyric-box textarea {
+    min-height: 220px;
+  }
+
+  .music-ref-recent-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1024px) {
+  .music-generation-view.voice-conversion-view-root:has(.music-ref-layout),
+  .music-generation-view.voice-conversion-view-root:has(.music-gen-waiting-layout),
+  .music-generation-view.voice-conversion-view-root:has(.music-full-player) {
+    min-height: var(--app-content-height);
+    height: var(--app-content-height);
+    max-height: var(--app-content-height);
+  }
+
+  .music-generation-view :where(.music-canvas):has(.music-ref-layout),
+  .music-generation-view :where(.music-canvas):has(.music-gen-waiting-layout),
+  .music-generation-view :where(.music-canvas):has(.music-full-player) {
+    min-height: auto;
+    padding: 0 12px 40px;
+  }
+
+  .music-ref-hero,
+  .music-ref-form,
+  .music-ref-recent {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .music-generation-view .music-canvas:has(.music-ref-layout),
+  .music-generation-view .music-canvas:has(.music-gen-waiting-layout),
+  .music-generation-view .music-canvas:has(.music-full-player) {
+    padding: 0 12px 32px;
+  }
+
+  .music-ref-layout {
+    border-radius: var(--radius-xl);
+  }
+
+  .music-ref-hero h1 {
+    font-size: 30px;
+  }
+
+  .music-ref-hero h1 svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__card {
+    padding: 20px;
+  }
+
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__mode-tabs {
+    margin-bottom: 18px;
+  }
+
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__mode-tabs button {
+    min-width: 100px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__generate {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .music-ref-layout .music-ref-recent-list {
+    grid-template-columns: 1fr;
+  }
+}

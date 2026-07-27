@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Play, Trash2 } from "lucide-react";
+import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Play, RotateCcw, Trash2 } from "lucide-react";
 import { getLyricSubtitle } from "./musicPlayerUtils";
+import "./musicRecentGrid.css";
 
 function formatDuration(ms) {
   if (!ms || ms <= 0) return "00:00";
@@ -41,6 +42,7 @@ export function MusicRecentGrid({
   onDownloadItem,
   onEditCoverItem,
   onDeleteItem,
+  onRetryItem,
   emptyText = "还没有生成过音乐，快来创作第一首吧 ✨"
 }) {
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -75,13 +77,14 @@ export function MusicRecentGrid({
     <div className="music-ref-recent-list">
       {items.map((item) => {
         const isGenerating = isItemGenerating(item, generatingId);
+        const isFailed = item.status === "failed";
         const isMenuOpen = openMenuId === item.id;
 
         return (
           <div
             key={item.id}
-            className={`music-ref-recent-card${isGenerating ? " is-generating" : ""}`}
-            onClick={() => !isGenerating && onSelectItem?.(item)}
+            className={`music-ref-recent-card${isGenerating ? " is-generating" : ""}${isFailed ? " is-failed" : ""}`}
+            onClick={() => !isGenerating && !isFailed && onSelectItem?.(item)}
           >
             <button
               type="button"
@@ -89,13 +92,19 @@ export function MusicRecentGrid({
               style={item.coverUrl ? undefined : { background: generateCoverGradient(item.id) }}
               onClick={(event) => {
                 event.stopPropagation();
-                if (!isGenerating) onSelectItem?.(item);
+                if (!isGenerating && !isFailed) onSelectItem?.(item);
               }}
-              disabled={isGenerating}
-              aria-label={`打开 ${getLyricSubtitle(item)} 播放器`}
+              disabled={isGenerating || isFailed}
+              aria-label={isFailed ? `${getLyricSubtitle(item)} 生成失败` : `打开 ${getLyricSubtitle(item)} 播放器`}
             >
               {item.coverUrl ? (
-                <img src={item.coverUrl} alt="" className="music-ref-recent-cover-image" />
+                <img
+                  src={item.coverUrl}
+                  alt=""
+                  className="music-ref-recent-cover-image"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <Music size={28} />
               )}
@@ -115,22 +124,77 @@ export function MusicRecentGrid({
                     <Loader2 size={14} className="music-lyrics-sync-spinner" />
                     生成中...
                   </span>
+                ) : isFailed ? (
+                  <>
+                    <span className="music-ref-recent-failed-status" role="alert">
+                      <strong>生成失败</strong>
+                      <small>{item.error || "请重新创作或删除此记录"}</small>
+                    </span>
+                    <button
+                      type="button"
+                      className="music-ref-recent-retry"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRetryItem?.(item);
+                      }}
+                    >
+                      <RotateCcw size={13} />
+                      重新创作
+                    </button>
+                    <div
+                      className={`music-ref-recent-more-wrap${isMenuOpen ? " is-open" : ""}`}
+                      ref={isMenuOpen ? menuWrapRef : null}
+                    >
+                      <button
+                        type="button"
+                        className={`music-ref-recent-more${isMenuOpen ? " is-active" : ""}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setOpenMenuId((current) => (current === item.id ? null : item.id));
+                        }}
+                        aria-label="更多操作"
+                        aria-expanded={isMenuOpen}
+                        aria-haspopup="menu"
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                      {isMenuOpen ? (
+                        <div className="music-ref-recent-menu" role="menu">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="is-danger"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenMenuId(null);
+                              onDeleteItem?.(item);
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            删除
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
                 ) : (
                   <>
                     {generatingId ? (
                       <span className="music-gen-waiting-recent-duration">{formatDuration(item.durationMs)}</span>
                     ) : null}
-                    <button
-                      type="button"
-                      className="music-ref-recent-play"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onSelectItem?.(item);
-                      }}
-                      aria-label="播放"
-                    >
-                      <Play size={14} fill="currentColor" />
-                    </button>
+                    {!isFailed && (
+                      <button
+                        type="button"
+                        className="music-ref-recent-play"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSelectItem?.(item);
+                        }}
+                        aria-label="播放"
+                      >
+                        <Play size={14} fill="currentColor" />
+                      </button>
+                    )}
                     <div
                       className={`music-ref-recent-more-wrap${isMenuOpen ? " is-open" : ""}`}
                       ref={isMenuOpen ? menuWrapRef : null}

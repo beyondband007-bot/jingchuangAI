@@ -1,0 +1,387 @@
+/* ---------- Video immersive (generating / result) ---------- */
+/* Video generation floating composer width and centering. */
+section.video-gen-view .sowa-composer,
+section.video-generation-view .sowa-composer {
+  max-width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  );
+  width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  );
+  right: auto;
+  left: calc(
+    var(--feature-sidebar-width) + ((100vw - var(--feature-sidebar-width)) / 2)
+  );
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  transform: translateX(-50%);
+}
+
+.video-gen-view-root.is-immersive {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  height: var(--app-content-height);
+  max-height: var(--app-content-height);
+  overflow: hidden;
+  background: var(--surface-page, #f7f6fb);
+}
+
+.feature-page-shell.is-video-immersive {
+  overflow: hidden;
+}
+
+.feature-main.is-video-immersive {
+  height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background: #f4f2fa;
+}
+
+.video-gen-immersive-shell {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.video-gen-immersive-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4, var(--space-4));
+  width: 100%;
+  height: 100%;
+  padding: var(--space-5, 24px);
+  overflow: hidden;
+  text-align: center;
+}
+
+.video-gen-immersive-hero {
+  display: grid;
+  gap: var(--space-2);
+  width: min(720px, 100%);
+}
+
+.video-gen-immersive-hero h1 {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, var(--space-2));
+  margin: 0;
+  color: #4a3f8f;
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
+.video-gen-immersive-hero h1 svg {
+  color: #8b7df7;
+}
+
+.video-gen-result-hero h1 svg:first-child {
+  color: #22a06b;
+}
+
+.video-gen-immersive-hero p {
+  margin: 0;
+  color: #8b8798;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.video-gen-immersive-progress {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  flex: 0 0 auto;
+}
+
+.video-gen-immersive-progress svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.video-gen-waiting-ring-track {
+  fill: none;
+  stroke: #ebe6f8;
+  stroke-width: 6;
+}
+
+.video-gen-waiting-ring-fill {
+  fill: none;
+  stroke: #7c5ce7;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 180ms linear;
+}
+
+.video-gen-immersive-progress-copy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: var(--space-0);
+}
+
+.video-gen-immersive-progress-copy span,
+.video-gen-immersive-progress-copy em {
+  color: #a8a3b8;
+  font-size: 13px;
+  font-style: normal;
+}
+
+.video-gen-immersive-progress-copy strong {
+  color: #4a3f8f;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.video-gen-immersive-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: min(760px, 100%);
+}
+
+.video-gen-immersive-footnote {
+  width: min(640px, 100%);
+  margin: 0;
+  color: #9a95a8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.video-gen-waiting-step {
+  display: grid;
+  gap: var(--space-2, var(--space-2));
+  min-width: 0;
+}
+
+.video-gen-waiting-step-track {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.video-gen-waiting-step-node {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: #b8b3c8;
+  background: #f3f1f8;
+  border: 1px solid #e8e4f2;
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
+}
+
+.video-gen-waiting-step-node.is-active {
+  color: #fff;
+  background: linear-gradient(145deg, #8b7df7, #6b5ce7);
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(107, 92, 231, 0.28);
+}
+
+.video-gen-waiting-step-node.is-done {
+  color: #fff;
+  background: #6b5ce7;
+  border-color: transparent;
+}
+
+.video-gen-waiting-step-line {
+  flex: 1 1 auto;
+  height: 2px;
+  margin: 0 6px;
+  background: #e8e4f2;
+  border-radius: var(--radius-pill);
+}
+
+.video-gen-waiting-step-line.is-done {
+  background: linear-gradient(90deg, #8b7df7, #6b5ce7);
+}
+
+.video-gen-waiting-step-copy strong {
+  display: block;
+  color: #3f3a4d;
+  font-size: 13px;
+}
+
+.video-gen-waiting-step-copy span {
+  display: block;
+  margin-top: 4px;
+  color: #a8a3b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.video-gen-waiting-step.is-done .video-gen-waiting-step-copy span {
+  color: #22a06b;
+}
+
+.video-gen-waiting-step.is-active .video-gen-waiting-step-copy span {
+  color: #6b5ce7;
+}
+
+.video-gen-result-panel {
+  gap: var(--space-4, var(--space-4));
+}
+
+.video-gen-result-player-shell {
+  width: min(920px, 100%);
+  overflow: hidden;
+  background: #0f1118;
+  border: 1px solid rgba(107, 92, 231, 0.16);
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 24px 64px rgba(24, 20, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.video-gen-result-player-shell video {
+  display: block;
+  width: 100%;
+  max-height: min(52vh, 520px);
+  aspect-ratio: 16 / 9;
+  background: #000;
+  object-fit: contain;
+}
+
+.video-gen-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.video-gen-result-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  color: #6b5ce7;
+  font-size: 12px;
+  background: rgba(107, 92, 231, 0.08);
+  border: 1px solid rgba(107, 92, 231, 0.14);
+  border-radius: var(--radius-pill);
+}
+
+.video-gen-result-tag.is-muted {
+  color: #8b8798;
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(107, 92, 231, 0.08);
+}
+
+.video-gen-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, var(--space-2));
+  width: min(760px, 100%);
+}
+
+.video-gen-result-actions button,
+.video-gen-result-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 40px;
+  padding: 0 16px;
+  color: #5e5a6d;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e8e4f2;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.video-gen-result-actions button:hover,
+.video-gen-result-action:hover {
+  color: #6b5ce7;
+  border-color: #d8d0ff;
+  background: #fff;
+}
+
+.video-gen-result-actions button.is-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #8b7df7, #6b5ce7);
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(107, 92, 231, 0.28);
+}
+
+.video-gen-result-actions button.is-primary:hover {
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(107, 92, 231, 0.34);
+}
+
+.video-gen-result-action.is-favorite {
+  color: #9a7b00;
+  background: #fff9df;
+  border-color: #f3e39a;
+}@media (max-width: 768px) {
+  .video-gen-view-root.is-immersive {
+    height: var(--app-content-height);
+    max-height: var(--app-content-height);
+  }
+
+  .video-gen-immersive-panel {
+    gap: var(--space-4, var(--space-4));
+    padding: 16px 12px;
+  }
+
+  .video-gen-immersive-hero h1 {
+    font-size: 22px;
+  }
+
+  .video-gen-immersive-progress {
+    width: 176px;
+    height: 176px;
+  }
+
+  .video-gen-immersive-progress-copy strong {
+    font-size: 34px;
+  }
+
+  .video-gen-immersive-steps {
+    grid-template-columns: 1fr 1fr;
+    row-gap: var(--space-4);
+  }
+
+  .video-gen-waiting-step.is-last {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: min(220px, 100%);
+  }
+
+  .video-gen-result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .video-gen-result-actions button,
+  .video-gen-result-action {
+    width: 100%;
+  }
+}

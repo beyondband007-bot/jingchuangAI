@@ -128,9 +128,10 @@ export function getModels() {
 export async function createAsset({ kind, file }) {
   if (!file) throw createHttpError(kind === "image" ? "请上传图片" : "请上传视频", 400);
 
+  let duration = 0;
   if (kind === "video") {
     try {
-      await getSourceVideoDuration({ file_path: file.path });
+      duration = await getSourceVideoDuration({ file_path: file.path });
     } catch (error) {
       await unlink(file.path).catch(() => {});
       throw error;
@@ -161,7 +162,10 @@ export async function createAsset({ kind, file }) {
     connection.release();
   }
 
-  return mapMotionTransferAsset(await findMotionTransferAsset(assetId, kind));
+  const asset = mapMotionTransferAsset(await findMotionTransferAsset(assetId, kind));
+  return duration
+    ? { ...asset, duration, estimatedPoints: calculateVideoPoints(duration) }
+    : asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {

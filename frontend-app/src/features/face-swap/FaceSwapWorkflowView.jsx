@@ -24,7 +24,6 @@ export function FaceSwapWorkflowView({ isActive = true }) {
         description: "上传人脸与目标视频，AI 将身份自然融合到每一帧画面",
       }}
       privacyText="您上传的内容仅用于换脸处理，不会被用于其他用途"
-      historyEmptyHint="完成的换脸视频会显示在这里"
       subjectSlot={{
         title: "人脸照片",
         hint: "正脸清晰，光线自然",

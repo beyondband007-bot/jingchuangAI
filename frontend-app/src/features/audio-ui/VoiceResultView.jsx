@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ArrowLeft, Download, Heart, Music } from "lucide-react";
 import { VoiceRecentPlayer } from "./VoiceRecentPlayer";
+import "./voiceResult.css";
 
 export function VoiceResultView({
   result,
@@ -45,7 +46,7 @@ export function VoiceResultView({
               className="voice-recent-icon-button"
               type="button"
               onClick={onDownload}
-              title="下载 MP3"
+              data-tooltip="下载 MP3"
               aria-label="下载 MP3"
             >
               <Download size={18} />
@@ -54,7 +55,7 @@ export function VoiceResultView({
               className={`voice-recent-icon-button ${favorite ? "is-favorite" : ""}`}
               type="button"
               onClick={onFavoriteToggle}
-              title={favorite ? "取消收藏" : "收藏"}
+              data-tooltip={favorite ? "取消收藏" : "收藏"}
               aria-label={favorite ? "取消收藏" : "收藏"}
             >
               <Heart size={18} fill={favorite ? "currentColor" : "none"} />
