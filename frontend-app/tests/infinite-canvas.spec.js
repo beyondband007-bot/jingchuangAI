@@ -74,8 +74,38 @@ test("authenticated infinite canvas keeps the unified workbench shell", async ({
   await expect(canvasFrame.locator(".canvas-composer__surface")).toBeVisible();
   await expect(canvasFrame.locator("[role=status]")).toBeVisible();
   await expect(canvasFrame.locator(".canvas-workbench__header")).toBeVisible();
+  const backButton = canvasFrame.getByRole("button", { name: "返回项目列表" });
+  const backButtonLayout = await backButton.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const tooltipStyle = getComputedStyle(element, "::before");
+    return {
+      alignItems: style.alignItems,
+      justifyContent: style.justifyContent,
+      tooltipTop: tooltipStyle.top,
+    };
+  });
+  expect(backButtonLayout.alignItems).toBe("center");
+  expect(backButtonLayout.justifyContent).toBe("center");
+  expect(Number.parseFloat(backButtonLayout.tooltipTop)).toBeGreaterThan(0);
   const composerPrompt = canvasFrame.locator(".canvas-composer textarea");
   const composerSend = canvasFrame.locator(".canvas-composer__send-button");
+  const canvasSuggestions = canvasFrame.locator(".canvas-composer > div:last-child button:not([data-testid])");
+  const canvasSuggestionRefresh = canvasFrame.getByTestId("canvas-refresh-canvas-suggestions");
+  await expect(canvasSuggestions).toHaveCount(4);
+  const firstCanvasSuggestionBatch = (await canvasSuggestions.allTextContents()).join("|");
+  await canvasSuggestionRefresh.click();
+  expect((await canvasSuggestions.allTextContents()).join("|")).not.toBe(firstCanvasSuggestionBatch);
+  const iconButtonLayout = await canvasSuggestionRefresh.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      alignItems: style.alignItems,
+      justifyContent: style.justifyContent,
+      transitionProperty: style.transitionProperty,
+    };
+  });
+  expect(iconButtonLayout.alignItems).toBe("center");
+  expect(iconButtonLayout.justifyContent).toBe("center");
+  expect(iconButtonLayout.transitionProperty).not.toContain("transform");
   await expect(composerSend).toBeDisabled();
   await composerPrompt.fill("生成一个画布节点");
   await expect(composerSend).toBeEnabled();

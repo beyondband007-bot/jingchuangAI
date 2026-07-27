@@ -4,11 +4,13 @@
     <!-- Header | 顶部导航 -->
     <AppHeader class="canvas-workbench__header bg-[var(--bg-secondary)]">
       <template #left>
-        <button 
-          @click="goBack"
-          class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-          aria-label="返回项目列表"
-        >
+      <button
+        @click="goBack"
+        class="canvas-header-icon-button"
+        data-tooltip="返回项目列表"
+        data-tooltip--bottom
+        aria-label="返回项目列表"
+      >
           <n-icon :size="20"><ChevronBackOutline /></n-icon>
         </button>
         <n-dropdown :options="projectOptions" @select="handleProjectAction">
@@ -27,6 +29,7 @@
           class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
           :class="{ 'text-[var(--accent-color)]': hasDownloadableAssets }"
           data-tooltip="批量下载素材"
+          data-tooltip--bottom
           aria-label="批量下载素材"
         >
           <n-icon :size="20"><DownloadOutline /></n-icon>
@@ -259,7 +262,13 @@
           >
             {{ tag }}
           </button>
-          <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors">
+          <button
+            class="canvas-composer__suggestion-refresh"
+            data-testid="canvas-refresh-canvas-suggestions"
+            data-tooltip="换一批推荐"
+            aria-label="换一批推荐"
+            @click="refreshSuggestions"
+          >
             <n-icon :size="14"><RefreshOutline /></n-icon>
           </button>
         </div>
@@ -497,12 +506,59 @@ const nodeTypeOptions = [
 const inputPlaceholder = '你可以试着说"帮我生成一个二次元的卡通角色"'
 
 // Quick suggestions | 快捷建议
-const suggestions = [
-  '像个魔法森林',
-  '三只不同的小猫',
-  '生成多角度分镜',
-  '夏日田野环绕漫步'
+const CANVAS_SUGGESTION_BATCH_SIZE = 4
+const canvasSuggestionPool = [
+  '童话森林里的发光小屋',
+  '雨夜霓虹街头人像',
+  '生成三段分镜脚本',
+  '产品广告镜头设计',
+  '海边日落旅行短片',
+  '古风侠客角色设定',
+  '未来城市航拍视角',
+  '治愈系猫咪日常',
+  '咖啡馆品牌宣传图',
+  '赛博朋克机械少女',
+  '国潮茶饮包装方案',
+  '雪山露营纪录片',
+  '二次元冒险场景',
+  '北欧客厅软装设计',
+  '美食制作过程分镜',
+  '水墨山水动画灵感',
+  '时尚杂志封面人像',
+  '深海水母奇幻世界',
+  '儿童绘本角色设计',
+  '城市夜景延时摄影',
+  '夏日音乐节海报',
+  '复古胶片旅行影像',
+  '科技产品发布会主视觉',
+  '花店开业宣传短片'
 ]
+
+const pickSuggestions = (pool, count = CANVAS_SUGGESTION_BATCH_SIZE) => {
+  const shuffled = [...pool]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]]
+  }
+
+  return shuffled.slice(0, count)
+}
+
+const suggestions = ref(pickSuggestions(canvasSuggestionPool))
+
+const refreshSuggestions = () => {
+  const currentSuggestions = new Set(suggestions.value)
+  const availableSuggestions = canvasSuggestionPool.filter(
+    suggestion => !currentSuggestions.has(suggestion)
+  )
+
+  suggestions.value = pickSuggestions(
+    availableSuggestions.length >= CANVAS_SUGGESTION_BATCH_SIZE
+      ? availableSuggestions
+      : canvasSuggestionPool
+  )
+}
 
 // Add new node | 添加新节点
 const addNewNode = async (type, requestedPosition = null) => {
@@ -1076,6 +1132,31 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
+.canvas-header-icon-button,
+.canvas-composer__suggestion-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.canvas-header-icon-button {
+  width: 34px;
+  height: 34px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--canvas-radius-control);
+  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-header-icon-button:hover,
+.canvas-header-icon-button:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
 .canvas-project-trigger {
   min-width: 0;
 }
@@ -1137,6 +1218,23 @@ onUnmounted(() => {
   border-color: var(--app-border);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+.canvas-composer__suggestion-refresh {
+  width: 30px;
+  height: 30px;
+  color: var(--text-secondary);
+  background: var(--canvas-surface);
+  border: 1px solid var(--canvas-border);
+  border-radius: var(--radius-pill);
+  transition: color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-composer__suggestion-refresh:hover,
+.canvas-composer__suggestion-refresh:focus-visible {
+  color: var(--fm-brand, var(--brand-primary));
+  background: var(--bg-tertiary);
+  border-color: var(--fm-brand, var(--brand-primary));
 }
 
 .canvas-toolbar {
