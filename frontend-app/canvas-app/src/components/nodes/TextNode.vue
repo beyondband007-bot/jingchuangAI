@@ -94,7 +94,7 @@
 import { ref, watch, nextTick, computed, onMounted } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { NIcon, NSpin } from 'naive-ui'
-import { TrashOutline, ExpandOutline, CopyOutline, ImageOutline, VideocamOutline, ChatbubbleOutline, CreateOutline } from '@vicons/ionicons5'
+import { TrashOutline, ExpandOutline, CopyOutline, ChatbubbleOutline, CreateOutline } from '@vicons/ionicons5'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
 import MentionsPicker from '../MentionsPicker.vue'
@@ -429,8 +429,6 @@ const editorHtml = computed(() => {
 
 // Text node menu operations | 文本节点菜单操作
 const operations = [
-  { type: 'imageConfig', label: '生图', icon: ImageOutline },
-  { type: 'videoConfig', label: '生视频', icon: VideocamOutline },
   { type: 'llmConfig', label: 'LLM', icon: ChatbubbleOutline }
 ]
 

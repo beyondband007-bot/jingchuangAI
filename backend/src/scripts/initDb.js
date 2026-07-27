@@ -1253,8 +1253,23 @@ async function createTables() {
       tags JSON NULL,
       model VARCHAR(160) NULL,
       frame_count INT NULL,
+      provider VARCHAR(64) NULL,
+      analysis_mode VARCHAR(64) NULL,
+      stage VARCHAR(64) NOT NULL DEFAULT 'completed',
+      attempt_count INT NOT NULL DEFAULT 0,
+      provider_request_id VARCHAR(255) NULL,
+      provider_status_code INT NULL,
+      latency_ms INT NULL,
+      input_tokens INT NULL,
+      output_tokens INT NULL,
+      input_duration_seconds DECIMAL(10, 3) NULL,
+      input_size_bytes BIGINT UNSIGNED NULL,
+      fallback_reason TEXT NULL,
+      quality_warning TEXT NULL,
+      error_code VARCHAR(64) NULL,
+      analysis_json JSON NULL,
       favorite BOOLEAN NOT NULL DEFAULT FALSE,
-      status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed',
+      status ENUM('processing','completed','completed_with_warning','failed') NOT NULL DEFAULT 'completed',
       error_message TEXT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1271,10 +1286,34 @@ async function createTables() {
   );
   const replicateColumnNames = new Set(replicateColumns.map((column) => column.COLUMN_NAME));
   if (!replicateColumnNames.has("status")) {
-    await pool.query("ALTER TABLE replicate_tasks ADD COLUMN status ENUM('processing','completed','failed') NOT NULL DEFAULT 'completed' AFTER favorite");
+    await pool.query("ALTER TABLE replicate_tasks ADD COLUMN status ENUM('processing','completed','completed_with_warning','failed') NOT NULL DEFAULT 'completed' AFTER favorite");
+  } else {
+    await pool.query("ALTER TABLE replicate_tasks MODIFY COLUMN status ENUM('processing','completed','completed_with_warning','failed') NOT NULL DEFAULT 'completed'");
   }
   if (!replicateColumnNames.has("error_message")) {
     await pool.query("ALTER TABLE replicate_tasks ADD COLUMN error_message TEXT NULL AFTER status");
+  }
+  const replicateColumnsToAdd = [
+    ["provider", "VARCHAR(64) NULL AFTER frame_count"],
+    ["analysis_mode", "VARCHAR(64) NULL AFTER provider"],
+    ["stage", "VARCHAR(64) NOT NULL DEFAULT 'completed' AFTER analysis_mode"],
+    ["attempt_count", "INT NOT NULL DEFAULT 0 AFTER stage"],
+    ["provider_request_id", "VARCHAR(255) NULL AFTER attempt_count"],
+    ["provider_status_code", "INT NULL AFTER provider_request_id"],
+    ["latency_ms", "INT NULL AFTER provider_status_code"],
+    ["input_tokens", "INT NULL AFTER latency_ms"],
+    ["output_tokens", "INT NULL AFTER input_tokens"],
+    ["input_duration_seconds", "DECIMAL(10, 3) NULL AFTER output_tokens"],
+    ["input_size_bytes", "BIGINT UNSIGNED NULL AFTER input_duration_seconds"],
+    ["fallback_reason", "TEXT NULL AFTER input_size_bytes"],
+    ["quality_warning", "TEXT NULL AFTER fallback_reason"],
+    ["error_code", "VARCHAR(64) NULL AFTER quality_warning"],
+    ["analysis_json", "JSON NULL AFTER error_code"]
+  ];
+  for (const [columnName, definition] of replicateColumnsToAdd) {
+    if (!replicateColumnNames.has(columnName)) {
+      await pool.query(`ALTER TABLE replicate_tasks ADD COLUMN ${columnName} ${definition}`);
+    }
   }
 }
 

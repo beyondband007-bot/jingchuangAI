@@ -249,6 +249,8 @@ export const useVideoGeneration = () => {
     if (params.first_frame_image) requestData.first_frame_image = params.first_frame_image
     if (params.last_frame_image) requestData.last_frame_image = params.last_frame_image
     if (params.images?.length) requestData.images = params.images
+    if (params.reference_image) requestData.reference_image = params.reference_image
+    if (params.reference_video) requestData.reference_video = params.reference_video
     if (params.ratio) requestData.size = params.ratio
     if (params.dur) requestData.seconds = params.dur
     requestData.resolution = params.resolution || modelConfig?.defaultParams?.resolution || '720p'

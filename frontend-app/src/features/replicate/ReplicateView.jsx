@@ -57,11 +57,30 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 } = {}) {
+const replicateStageLabels = {
+  queued: "任务已提交，正在排队...",
+  validating: "正在校验视频...",
+  preparing_media: "正在读取视频内容...",
+  analyzing_primary: "正在理解动作与镜头...",
+  analyzing_fallback: "正在进行关键帧增强分析...",
+  synthesizing: "正在整理视频提示词...",
+  saving: "正在保存分析结果..."
+};
+
+function getReplicateStageLabel(task) {
+  return replicateStageLabels[task?.stage] || "正在反推提示词...";
+}
+
+async function waitForReplicateTask(taskId, {
+  attempts = 80,
+  intervalMs = 3000,
+  onProgress
+} = {}) {
   let task = await replicateApi.getTask(taskId);
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (task.status === "completed" && hasReplicateContent(task)) return task;
-    if (task.status === "completed" && !hasReplicateContent(task)) {
+    onProgress?.(task);
+    if (["completed", "completed_with_warning"].includes(task.status) && hasReplicateContent(task)) return task;
+    if (["completed", "completed_with_warning"].includes(task.status) && !hasReplicateContent(task)) {
       throw new Error("分析完成但没有生成提示词，请重试");
     }
     if (task.status === "failed") {
@@ -73,7 +92,7 @@ async function waitForReplicateTask(taskId, { attempts = 80, intervalMs = 3000 }
   throw new Error("分析仍在处理中，请稍后查看历史记录");
 }
 
-function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
+function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageLabel }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -160,7 +179,7 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing }) {
           {isAnalyzing && (
             <span className="replicate-upload-analyzing">
               <Loader2 size={22} className="is-spinning" />
-              <strong>正在反推提示词...</strong>
+              <strong>{stageLabel || "正在反推提示词..."}</strong>
             </span>
           )}
           {hasFile && isInteractive && (
@@ -264,6 +283,15 @@ function ReplicateResult({
         <div className="replicate-result-prompt">
           <label htmlFor="replicate-result-prompt">Prompt</label>
           <textarea id="replicate-result-prompt" readOnly value={promptText} />
+          {isVideo && (
+            <div className={`replicate-result-diagnostics ${result.qualityWarning ? "has-warning" : ""}`}>
+              <span>
+                {result.analysisMode === "scene_frames" ? "关键帧增强分析" : "原生视频理解"}
+                {result.model ? ` · ${result.model}` : ""}
+              </span>
+              {result.qualityWarning && <p>{result.qualityWarning}</p>}
+            </div>
+          )}
         </div>
       </div>
 
@@ -298,6 +326,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [notice, setNotice] = useState("");
+  const [analysisStageLabel, setAnalysisStageLabel] = useState("");
   const [currentResult, setCurrentResult] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
@@ -319,6 +348,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
   function handleFile(file) {
     setNotice("");
+    setAnalysisStageLabel("");
     setSelectedFile({ file, name: file.name, size: file.size, type: file.type });
     setCurrentResult(null);
   }
@@ -335,16 +365,21 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
     setCurrentResult(null);
     setNotice("");
+    setAnalysisStageLabel("正在上传并校验素材...");
     setIsAnalyzing(true);
     try {
       const data = mode === "image"
         ? await replicateApi.analyzeImage(selectedFile.file, selectedFile.name)
         : await replicateApi.analyzeVideo(selectedFile.file, selectedFile.name);
-      setNotice("分析任务已提交，正在处理...");
+      setAnalysisStageLabel(getReplicateStageLabel(data));
       const pollOptions = mode === "video"
-        ? { attempts: 120, intervalMs: 3000 }
+        ? {
+            attempts: 120,
+            intervalMs: 3000,
+            onProgress: (task) => setAnalysisStageLabel(getReplicateStageLabel(task))
+          }
         : { attempts: 80, intervalMs: 3000 };
-      const completed = data.status === "completed" && hasReplicateContent(data)
+      const completed = ["completed", "completed_with_warning"].includes(data.status) && hasReplicateContent(data)
         ? data
         : await waitForReplicateTask(data.id, pollOptions);
       if (completed.status === "failed") {
@@ -361,14 +396,21 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         tags: completed.tags || [],
         source: completed.source || mode,
         fileName: completed.fileName || selectedFile.name,
-        createdAt: completed.createdAt || formatBeijingDateTime()
+        createdAt: completed.createdAt || formatBeijingDateTime(),
+        model: completed.model || "",
+        provider: completed.provider || "",
+        analysisMode: completed.analysisMode || "",
+        qualityWarning: completed.qualityWarning || "",
+        analysis: completed.analysis || null
       };
 
       setCurrentResult(result);
       setRecentResults((items) => [result, ...items.filter((item) => item.id !== result.id)].slice(0, 20));
       setNotice("");
+      setAnalysisStageLabel("");
     } catch (error) {
       setNotice(error.message || "分析失败");
+      setAnalysisStageLabel("");
     } finally {
       setIsAnalyzing(false);
     }
@@ -378,6 +420,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     setSelectedFile(null);
     setCurrentResult(null);
     setNotice("");
+    setAnalysisStageLabel("");
   }
 
   function copyPrompt(result = currentResult) {
@@ -394,6 +437,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     setCurrentResult(null);
     setSelectedFile(null);
     setNotice("");
+    setAnalysisStageLabel("");
   }
 
   function openGeneration(prompt, target = "image") {
@@ -474,7 +518,14 @@ export function ReplicateView({ authUser, onOpenFeature }) {
               </div>
 
               <div className="marketing-composer__upload-wrap replicate-upload-area">
-                <ReplicateUpload mode={mode} fileState={selectedFile} onFile={handleFile} onClear={clearSelectedFile} isAnalyzing={isAnalyzing} />
+                <ReplicateUpload
+                  mode={mode}
+                  fileState={selectedFile}
+                  onFile={handleFile}
+                  onClear={clearSelectedFile}
+                  isAnalyzing={isAnalyzing}
+                  stageLabel={analysisStageLabel}
+                />
               </div>
 
               <div className="marketing-composer__footer marketing-tool-footer replicate-composer-footer">
@@ -486,7 +537,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 <strong>
                   {selectedFile ? (
                     <>
-                      预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 10 : 5} /> 积分
+                      预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 50 : 5} /> 积分
                     </>
                   ) : (
                     "请上传文件"
@@ -503,6 +554,11 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 </button>
               </div>
             </div>
+            {notice && !showRechargeAlert && (
+              <p className={`replicate-composer-notice ${/失败|错误|无法|超时/.test(notice) ? "is-error" : ""}`}>
+                {notice}
+              </p>
+            )}
             {showRechargeAlert && (
               <CreditAlertDialog
                 title="这次没有反推成功"

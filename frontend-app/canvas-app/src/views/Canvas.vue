@@ -662,6 +662,14 @@ const onConnect = (params) => {
   // Check connection types | 检查连接类型
   const sourceNode = nodes.value.find(n => n.id === params.source)
   const targetNode = nodes.value.find(n => n.id === params.target)
+
+  if (
+    ['text', 'llmConfig'].includes(sourceNode?.type)
+    && ['imageConfig', 'videoConfig'].includes(targetNode?.type)
+  ) {
+    window.$message?.info('请直接在生成节点的提示词框中输入内容')
+    return
+  }
   
   if (sourceNode?.type === 'image' && targetNode?.type === 'videoConfig') {
     // Use imageRole edge type | 使用图片角色边类型
@@ -669,19 +677,6 @@ const onConnect = (params) => {
       ...params,
       type: 'imageRole',
       data: { imageRole: 'first_frame_image' } // Default to first frame | 默认首帧
-    })
-  } else if (sourceNode?.type === 'text' && targetNode?.type === 'imageConfig') {
-    // Use promptOrder edge type | 使用提示词顺序边类型
-    // Calculate next order number | 计算下一个顺序号
-    const existingTextEdges = edges.value.filter(e => 
-      e.target === params.target && e.type === 'promptOrder'
-    )
-    const nextOrder = existingTextEdges.length + 1
-    
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: nextOrder }
     })
   } else if (sourceNode?.type === 'image' && targetNode?.type === 'imageConfig') {
     // Use imageOrder edge type | 使用图片顺序边类型
@@ -716,25 +711,6 @@ const onConnect = (params) => {
       ...params,
       type: 'imageOrder',
       data: { imageOrder: nextOrder }
-    })
-  } else if (sourceNode?.type === 'llmConfig' && targetNode?.type === 'imageConfig') {
-    // LLM output as prompt for image generation | LLM 输出作为图片生成提示词
-    const existingTextEdges = edges.value.filter(e =>
-      e.target === params.target && e.type === 'promptOrder'
-    )
-    const nextOrder = existingTextEdges.length + 1
-
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: nextOrder }
-    })
-  } else if (sourceNode?.type === 'llmConfig' && targetNode?.type === 'videoConfig') {
-    // LLM output as prompt for video generation | LLM 输出作为视频生成提示词
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: 1 }
     })
   } else {
     addEdge(params)
@@ -943,21 +919,10 @@ const sendMessage = async () => {
         await createTextToImageWorkflow(content, { x: baseX, y: baseY })
       }
     } else {
-      // Manual mode: just create nodes | 手动模式：仅创建节点
-      const textNodeId = addNode('text', { x: baseX, y: baseY }, { 
-        content: content, 
-        label: '提示词' 
-      })
-      
-      const imageConfigNodeId = addNode('imageConfig', { x: baseX + 400, y: baseY }, {
-        label: '生图配置'
-      })
-      
-      addEdge({
-        source: textNodeId,
-        target: imageConfigNodeId,
-        sourceHandle: 'right',
-        targetHandle: 'left'
+      // Manual mode: create a config node with its prompt embedded.
+      addNode('imageConfig', { x: baseX, y: baseY }, {
+        label: '生图配置',
+        prompt: content
       })
     }
   } catch (err) {

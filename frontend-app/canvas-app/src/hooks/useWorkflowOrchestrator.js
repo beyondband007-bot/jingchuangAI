@@ -339,39 +339,20 @@ export const useWorkflowOrchestrator = () => {
    * text → imageConfig (autoExecute) → image
    */
   const executeTextToImage = async (imagePrompt, position) => {
-    const nodeSpacing = 400
-    let x = position.x
-    
     addLog('info', '开始执行文生图工作流')
     currentStep.value = 1
-    totalSteps.value = 2
+    totalSteps.value = 1
     
-    // Step 1: Create text node for image | 创建图片提示词节点
-    const textNodeId = addNode('text', { x, y: position.y }, {
-      content: imagePrompt,
-      label: '图片提示词'
-    })
-    addLog('info', `创建图片提示词节点: ${textNodeId}`)
-    x += nodeSpacing
-    
-    // Step 2: Create imageConfig with autoExecute | 创建图片配置节点并自动执行
-    currentStep.value = 2
-    const imageConfigId = addNode('imageConfig', { x, y: position.y }, {
+    // Create imageConfig with the prompt embedded and auto-execute.
+    const imageConfigId = addNode('imageConfig', { x: position.x, y: position.y }, {
       label: '生图配置',
+      prompt: imagePrompt,
       autoExecute: true
     })
     addLog('info', `创建图片配置节点: ${imageConfigId}`)
-    
-    // Connect text → imageConfig
-    addEdge({
-      source: textNodeId,
-      target: imageConfigId,
-      sourceHandle: 'right',
-      targetHandle: 'left'
-    })
-    
+
     addLog('success', '文生图工作流已启动')
-    return { textNodeId, imageConfigId }
+    return { imageConfigId }
   }
   
   /**
@@ -389,37 +370,13 @@ export const useWorkflowOrchestrator = () => {
     currentStep.value = 1
     totalSteps.value = 5
     
-    // Step 1: Create image prompt text node | 创建图片提示词节点
-    const imageTextNodeId = addNode('text', { x, y: position.y }, {
-      content: imagePrompt,
-      label: '图片提示词'
-    })
-    addLog('info', `创建图片提示词节点: ${imageTextNodeId}`)
-    
-    // Step 2: Create video prompt text node (below image prompt) | 创建视频提示词节点
-    currentStep.value = 2
-    const videoTextNodeId = addNode('text', { x, y: position.y + rowSpacing }, {
-      content: videoPrompt,
-      label: '视频提示词'
-    })
-    addLog('info', `创建视频提示词节点: ${videoTextNodeId}`)
-    x += nodeSpacing
-    
-    // Step 3: Create imageConfig with autoExecute | 创建图片配置节点
-    currentStep.value = 3
+    // Create imageConfig with its prompt embedded.
     const imageConfigId = addNode('imageConfig', { x, y: position.y }, {
       label: '生图配置',
+      prompt: imagePrompt,
       autoExecute: true
     })
     addLog('info', `创建图片配置节点: ${imageConfigId}`)
-    
-    // Connect imageText → imageConfig
-    addEdge({
-      source: imageTextNodeId,
-      target: imageConfigId,
-      sourceHandle: 'right',
-      targetHandle: 'left'
-    })
     
     // Step 3: Wait for imageConfig to complete and get image node ID
     // 等待图片配置完成并获取图片节点 ID
@@ -441,17 +398,10 @@ export const useWorkflowOrchestrator = () => {
       currentStep.value = 4
       const videoConfigId = addNode('videoConfig', { x, y: position.y + rowSpacing }, {
         label: '图生视频',
+        prompt: videoPrompt,
         autoExecute: true
       })
       addLog('info', `创建视频配置节点: ${videoConfigId}`)
-      
-      // Connect videoText → videoConfig (for video prompt)
-      addEdge({
-        source: videoTextNodeId,
-        target: videoConfigId,
-        sourceHandle: 'right',
-        targetHandle: 'left'
-      })
       
       // Connect image → videoConfig (for image input)
       addEdge({
@@ -462,7 +412,7 @@ export const useWorkflowOrchestrator = () => {
       })
       
       addLog('success', '文生图生视频工作流已启动')
-      return { imageTextNodeId, videoTextNodeId, imageConfigId, imageNodeId, videoConfigId }
+      return { imageConfigId, imageNodeId, videoConfigId }
     } catch (err) {
       addLog('error', `工作流执行失败: ${err.message}`)
       throw err

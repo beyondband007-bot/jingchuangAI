@@ -73,7 +73,7 @@ const props = defineProps({
     type: Object,
     default: () => ({ x: 0, y: 0 })
   },
-  // 上下文类型：'text' | 'llmConfig'
+  // 上下文类型：'text' | 'llmConfig' | 'videoConfig'
   context: {
     type: String,
     default: 'text'
@@ -86,7 +86,7 @@ const props = defineProps({
   // 限制只显示已连接的节点 ID 列表（可选）
   connectedNodeIds: {
     type: Array,
-    default: () => []
+    default: null
   }
 })
 
@@ -114,6 +114,9 @@ const targetTypes = computed(() => {
   if (props.context === 'llmConfig') {
     return ['text']
   }
+  if (props.context === 'videoConfig') {
+    return ['image', 'video']
+  }
   return ['image']
 })
 
@@ -132,12 +135,13 @@ const availableNodes = computed(() => {
   return nodes.value.filter(node => {
     // 先检查类型
     if (!targetTypes.value.includes(node.type)) return false
-    // 再检查是否公开
-    if (!isNodePublic(node)) return false
-    // 如果指定了 connectedNodeIds，则只显示已连接的节点
-    if (props.connectedNodeIds.length > 0) {
+    // 显式传入 connectedNodeIds 时，以连线作为引用授权边界。
+    // 已连接的媒体无需额外开启“公开”，未连接节点仍不会出现在候选中。
+    if (Array.isArray(props.connectedNodeIds)) {
       return props.connectedNodeIds.includes(node.id)
     }
+    // 未限制连线的通用 @ 场景仍只展示公开节点
+    if (!isNodePublic(node)) return false
     return true
   })
 })

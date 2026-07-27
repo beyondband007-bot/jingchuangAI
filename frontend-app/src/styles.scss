@@ -16601,6 +16601,33 @@ body.studio-landing-active::-webkit-scrollbar-thumb {
   z-index: 4;
 }
 
+.replicate-view .replicate-result-diagnostics {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  color: #5b4b8a;
+  background: #f5f2ff;
+  border: 1px solid #e4dcff;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.replicate-view .replicate-result-diagnostics span {
+  font-weight: 800;
+}
+
+.replicate-view .replicate-result-diagnostics p {
+  margin: 0;
+}
+
+.replicate-view .replicate-result-diagnostics.has-warning {
+  color: #8a4b08;
+  background: #fff8e8;
+  border-color: #f6d58d;
+}
+
 @media (max-width: 720px) {
   .studio-landing {
     --nav-safe-offset: 118px;

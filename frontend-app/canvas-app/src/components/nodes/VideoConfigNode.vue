@@ -38,19 +38,30 @@
       <!-- Config options | 配置选项 -->
       <div class="p-3 space-y-3">
         <div class="space-y-1.5">
-          <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+            <button
+              type="button"
+              class="nodrag flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+              title="放大编辑提示词"
+              @click.stop="openPromptEditor"
+              @mousedown.stop
+            >
+              <n-icon :size="13"><ExpandOutline /></n-icon>
+              放大
+            </button>
+          </div>
           <textarea
+            ref="promptInputRef"
             v-model="localPrompt"
             rows="3"
-            placeholder="描述画面内容、动作和镜头，可直接在这里输入"
-            class="nodrag nowheel w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
+            placeholder="直接输入视频提示词，输入 @ 可引用已连接的图片或视频"
+            class="nodrag nowheel w-full resize-none rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
             @input="handlePromptInput"
+            @keydown="handlePromptKeydown"
             @mousedown.stop
             @wheel.stop
           />
-          <div v-if="connectedExternalPrompt" class="text-[11px] text-[var(--text-tertiary)]">
-            还会追加已连接的外部提示词
-          </div>
         </div>
 
         <!-- Model selector | 模型选择 -->
@@ -109,6 +120,10 @@
             :class="imagesByRole.referenceImages.length > 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             参考图 {{ imagesByRole.referenceImages.length > 0 ? `✓ ${imagesByRole.referenceImages.length}` : '○' }}
           </span>
+          <span class="px-2 py-0.5 rounded-full"
+            :class="connectedVideos.length > 0 ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
+            参考视频 {{ connectedVideos.length > 0 ? `✓ ${connectedVideos.length}` : '○' }}
+          </span>
         </div>
 
         <!-- Progress bar | 进度条 -->
@@ -151,6 +166,43 @@
       <NodeHandleMenu :nodeId="id" nodeType="videoConfig" :visible="showHandleMenu" :operations="[]" />
     </div>
 
+    <MentionsPicker
+      v-model:visible="showMentionsPicker"
+      :position="mentionsPosition"
+      context="videoConfig"
+      :connected-node-ids="connectedMediaNodeIds"
+      @select="handlePromptMentionSelect"
+    />
+
+    <n-modal v-model:show="isPromptExpanded" :mask-closable="true">
+      <div class="prompt-editor-modal nodrag nowheel" @mousedown.stop @wheel.stop>
+        <div class="flex items-center justify-between border-b border-[var(--border-color)] px-5 py-3">
+          <div>
+            <div class="text-base font-medium text-[var(--text-primary)]">视频提示词</div>
+            <div class="mt-0.5 text-xs text-[var(--text-tertiary)]">输入 @ 可引用当前已连接的图片或视频</div>
+          </div>
+          <button
+            type="button"
+            class="rounded-lg p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
+            title="收起编辑器"
+            @click="isPromptExpanded = false"
+          >
+            <n-icon :size="18"><ContractOutline /></n-icon>
+          </button>
+        </div>
+        <textarea
+          ref="expandedPromptInputRef"
+          v-model="localPrompt"
+          class="nodrag nowheel prompt-editor-textarea"
+          placeholder="描述画面内容、主体动作、镜头语言等，输入 @ 可引用已连接素材"
+          @input="handlePromptInput"
+          @keydown="handlePromptKeydown"
+          @mousedown.stop
+          @wheel.stop
+        />
+      </div>
+    </n-modal>
+
   </div>
 </template>
 
@@ -161,13 +213,15 @@
  */
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
-import { NIcon, NDropdown, NSpin } from 'naive-ui'
-import { ChevronForwardOutline, ChevronDownOutline, TrashOutline, VideocamOutline, CopyOutline, CreateOutline } from '@vicons/ionicons5'
+import { NIcon, NDropdown, NSpin, NModal } from 'naive-ui'
+import { ChevronForwardOutline, ChevronDownOutline, TrashOutline, VideocamOutline, CopyOutline, CreateOutline, ExpandOutline, ContractOutline } from '@vicons/ionicons5'
 import { useVideoGeneration } from '../../hooks'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes, edges, getNodeInputHash } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
+import MentionsPicker from '../MentionsPicker.vue'
 import { useModelStore } from '../../stores/pinia'
 import { getModelRatioOptions, getModelDurationOptions, getModelConfig, DEFAULT_VIDEO_MODEL } from '../../stores/models'
+import { parseMentions } from '../../hooks/useNodeRef'
 
 // 使用 Pinia store 获取模型选项（根据渠道过滤）
 const modelStore = useModelStore()
@@ -193,9 +247,63 @@ const localModel = ref(props.data?.model || DEFAULT_VIDEO_MODEL)
 const localRatio = ref(props.data?.ratio || '16:9')
 const localDuration = ref(props.data?.duration || props.data?.dur || 5)
 const localPrompt = ref(props.data?.prompt || '')
+const promptInputRef = ref(null)
+const expandedPromptInputRef = ref(null)
+const isPromptExpanded = ref(false)
+const showMentionsPicker = ref(false)
+const mentionsPosition = ref({ x: 0, y: 0 })
+const mentionSearchStart = ref(-1)
+const mentionCursorPosition = ref(-1)
 
-const handlePromptInput = () => {
+const openPromptEditor = () => {
+  isPromptExpanded.value = true
+  nextTick(() => {
+    expandedPromptInputRef.value?.focus()
+    const end = localPrompt.value.length
+    expandedPromptInputRef.value?.setSelectionRange(end, end)
+  })
+}
+
+const handlePromptInput = (event) => {
   updateNode(props.id, { prompt: localPrompt.value })
+  const input = event?.target
+  const cursorPosition = input?.selectionStart ?? localPrompt.value.length
+  const textBeforeCursor = localPrompt.value.slice(0, cursorPosition)
+  const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+  const textAfterAt = lastAtIndex >= 0 ? textBeforeCursor.slice(lastAtIndex + 1) : ''
+  const shouldShow = lastAtIndex >= 0 && !/\s/.test(textAfterAt) && !textAfterAt.includes('[')
+
+  if (shouldShow && input) {
+    const rect = input.getBoundingClientRect()
+    mentionSearchStart.value = lastAtIndex
+    mentionCursorPosition.value = cursorPosition
+    mentionsPosition.value = { x: rect.left + 10, y: rect.bottom + 5 }
+    showMentionsPicker.value = true
+  } else {
+    showMentionsPicker.value = false
+  }
+}
+
+const handlePromptKeydown = (event) => {
+  if (!showMentionsPicker.value) return
+  if (['Enter', 'Escape', 'ArrowDown', 'ArrowUp'].includes(event.key)) event.preventDefault()
+}
+
+const handlePromptMentionSelect = ({ nodeId, label, type }) => {
+  const start = mentionSearchStart.value
+  const end = mentionCursorPosition.value
+  if (start < 0 || end < start || !connectedMediaNodeIds.value.includes(nodeId)) return
+  const fallbackLabel = type === 'video' ? '视频' : '图片'
+  const mention = `@[${nodeId}|${label || fallbackLabel}]`
+  localPrompt.value = `${localPrompt.value.slice(0, start)}${mention} ${localPrompt.value.slice(end)}`
+  updateNode(props.id, { prompt: localPrompt.value })
+  showMentionsPicker.value = false
+  const nextCursor = start + mention.length + 1
+  nextTick(() => {
+    const input = isPromptExpanded.value ? expandedPromptInputRef.value : promptInputRef.value
+    input?.focus()
+    input?.setSelectionRange(nextCursor, nextCursor)
+  })
 }
 
 // Label editing state | Label 编辑状态
@@ -223,6 +331,56 @@ const connectedImages = computed(() => {
 
   return images
 })
+
+const connectedVideos = computed(() => {
+  const connectedEdges = edges.value.filter(e => e.target === props.id)
+  return connectedEdges
+    .map(edge => {
+      const sourceNode = nodes.value.find(node => node.id === edge.source)
+      if (sourceNode?.type !== 'video' || !sourceNode.data?.url) return null
+      return {
+        nodeId: sourceNode.id,
+        edgeId: edge.id,
+        url: sourceNode.data.url
+      }
+    })
+    .filter(Boolean)
+})
+
+const connectedMediaNodeIds = computed(() => [
+  ...new Set([
+    ...connectedImages.value.map(image => image.nodeId),
+    ...connectedVideos.value.map(video => video.nodeId)
+  ])
+])
+
+const resolveConnectedMediaMentions = (content = '') => {
+  const connectedMedia = new Map(connectedMediaNodeIds.value.map(nodeId => [
+    nodeId,
+    nodes.value.find(node => node.id === nodeId)
+  ]))
+  const imageMentions = []
+  const videoMentions = []
+  let resolvedContent = content
+
+  for (const mention of parseMentions(content)) {
+    const sourceNode = connectedMedia.get(mention.nodeId)
+    const mediaUrl = sourceNode?.data?.base64 || sourceNode?.data?.url
+    const escapedNodeId = mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const mentionPattern = new RegExp(`@\\[${escapedNodeId}(?:\\|[^\\]]+)?\\]`, 'g')
+    if (!mediaUrl || !['image', 'video'].includes(sourceNode?.type)) {
+      resolvedContent = resolvedContent.replace(mentionPattern, mention.name || '')
+      continue
+    }
+    const target = sourceNode.type === 'video' ? videoMentions : imageMentions
+    if (!target.some(item => item.nodeId === sourceNode.id)) {
+      target.push({ nodeId: sourceNode.id, url: mediaUrl })
+    }
+    resolvedContent = resolvedContent.replace(mentionPattern, sourceNode.type === 'video' ? '参考视频' : '参考图片')
+  }
+
+  return { resolvedContent, imageMentions, videoMentions }
+}
 
 // Get images by role | 按角色获取图片
 const imagesByRole = computed(() => {
@@ -337,18 +495,46 @@ const getConnectedInputs = () => {
     }
   }
 
-  const prompt = [localPrompt.value, externalPrompt]
+  const mentionResult = resolveConnectedMediaMentions(localPrompt.value)
+  const hasImageMentions = mentionResult.imageMentions.length > 0
+  const hasVideoMentions = mentionResult.videoMentions.length > 0
+  const hasConnectedImage = Boolean(first_frame_image || last_frame_image || images.length > 0)
+  const hasConnectedVideo = connectedVideos.value.length > 0
+  const mediaConflict = (hasImageMentions && hasVideoMentions)
+    || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
+
+  let reference_image = hasImageMentions ? mentionResult.imageMentions[0].url : ''
+  let reference_video = hasVideoMentions ? mentionResult.videoMentions[0].url : ''
+
+  if (hasVideoMentions) {
+    first_frame_image = ''
+    last_frame_image = ''
+    images.length = 0
+  } else if (hasImageMentions) {
+    reference_video = ''
+  } else if (hasConnectedVideo && !hasConnectedImage) {
+    reference_video = connectedVideos.value[0].url
+  }
+
+  const prompt = [mentionResult.resolvedContent, externalPrompt]
     .map(value => String(value || '').trim())
     .filter(Boolean)
     .join('\n\n')
-  return { prompt, externalPrompt, first_frame_image, last_frame_image, images }
+  return {
+    prompt,
+    externalPrompt,
+    first_frame_image,
+    last_frame_image,
+    images,
+    reference_image,
+    reference_video,
+    mediaConflict
+  }
 }
-
-const connectedExternalPrompt = computed(() => getConnectedInputs().externalPrompt)
 
 // Computed connected prompt | 计算连接的提示词
 const connectedPrompt = computed(() => {
-  return getConnectedInputs().prompt
+  return localPrompt.value.trim()
 })
 
 // Created video node ID | 创建的视频节点 ID
@@ -359,11 +545,17 @@ const handleGenerate = async () => {
   // 设置生成中状态
   isGenerating.value = true
 
-  const { prompt, first_frame_image, last_frame_image, images } = getConnectedInputs()
+  const { prompt, first_frame_image, last_frame_image, images, reference_image, reference_video, mediaConflict } = getConnectedInputs()
 
-  const hasInput = prompt || first_frame_image || last_frame_image || images.length > 0
+  if (mediaConflict) {
+    window.$message?.warning('一次视频生成只能引用图片或视频中的一种素材，请在提示词中 @ 指定其中一种')
+    isGenerating.value = false
+    return
+  }
+
+  const hasInput = prompt || first_frame_image || last_frame_image || images.length > 0 || reference_image || reference_video
   if (!hasInput) {
-    window.$message?.warning('请输入提示词，或连接文本/图片节点')
+    window.$message?.warning('请在节点内输入提示词，或连接图片/视频素材')
     isGenerating.value = false
     return
   }
@@ -427,6 +619,14 @@ const handleGenerate = async () => {
     // Add reference images (input_reference) | 添加参考图
     if (images.length > 0) {
       params.images = images
+    }
+
+    if (reference_image) {
+      params.reference_image = reference_image
+    }
+
+    if (reference_video) {
+      params.reference_video = reference_video
     }
 
     // Add ratio/size | 添加比例参数
@@ -572,5 +772,30 @@ watch(
 .video-config-node {
   cursor: default;
   position: relative;
+}
+
+.prompt-editor-modal {
+  display: flex;
+  width: min(920px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 80px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.prompt-editor-textarea {
+  min-height: 0;
+  flex: 1;
+  resize: none;
+  border: 0;
+  background: var(--bg-secondary);
+  padding: 20px;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.75;
+  outline: none;
 }
 </style>

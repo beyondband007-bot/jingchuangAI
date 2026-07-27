@@ -1,7 +1,9 @@
 import { spawn } from "child_process";
-import { mkdir, readFile, stat } from "fs/promises";
+import { createHash } from "crypto";
+import { mkdir, readFile, readdir, stat } from "fs/promises";
 import path from "path";
 import { ffmpegPath } from "../../shared/ffmpegPath.js";
+import { ffprobePath } from "../../shared/ffprobePath.js";
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
@@ -16,22 +18,104 @@ function runFfmpeg(args) {
   });
 }
 
-export async function getVideoDuration(videoPath) {
+function runFfprobe(args, timeoutMs = 30000) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(ffmpegPath, ["-i", videoPath], { windowsHide: true });
+    const proc = spawn(ffprobePath, args, { windowsHide: true });
+    let stdout = "";
     let stderr = "";
+    const timer = setTimeout(() => {
+      proc.kill();
+      reject(new Error("ffprobe timed out"));
+    }, timeoutMs);
+    proc.stdout.on("data", (data) => { stdout += data.toString(); });
     proc.stderr.on("data", (data) => { stderr += data.toString(); });
-    proc.on("close", () => {
-      const m = stderr.match(/Duration:\s+(\d+):(\d+):(\d+\.\d+)/);
-      if (m) {
-        const duration = parseInt(m[1]) * 3600 + parseInt(m[2]) * 60 + parseFloat(m[3]);
-        resolve(duration);
-      } else {
-        reject(new Error("cannot parse video duration from ffmpeg output"));
-      }
+    proc.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(stdout);
+      else reject(new Error(`ffprobe exited ${code}: ${stderr.slice(-400)}`));
     });
-    proc.on("error", reject);
+    proc.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
   });
+}
+
+async function probeVideoWithFfmpeg(videoPath) {
+  const output = await runFfmpeg([
+    "-hide_banner",
+    "-i", videoPath,
+    "-map", "0:v:0",
+    "-frames:v", "1",
+    "-f", "null",
+    "-"
+  ]);
+  const durationMatch = output.match(/Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/i);
+  const videoMatch = output.match(/Video:\s*([^,\s]+).*?(\d{2,5})x(\d{2,5})/i);
+  const formatMatch = output.match(/Input #0,\s*(.+?),\s*from\s/i);
+  if (!durationMatch || !videoMatch) {
+    throw new Error("ffmpeg returned incomplete video metadata");
+  }
+  const duration = (
+    Number(durationMatch[1]) * 3600
+    + Number(durationMatch[2]) * 60
+    + Number(durationMatch[3])
+  );
+  if (!Number.isFinite(duration) || duration <= 0) {
+    throw new Error("video duration is invalid");
+  }
+  const fileStat = await stat(videoPath);
+  return {
+    durationSeconds: duration,
+    width: Number(videoMatch[2] || 0),
+    height: Number(videoMatch[3] || 0),
+    codec: videoMatch[1] || "",
+    format: formatMatch?.[1] || "",
+    hasAudio: /Stream #.*Audio:/i.test(output),
+    sizeBytes: fileStat.size
+  };
+}
+
+export async function probeVideo(videoPath) {
+  let output;
+  try {
+    output = await runFfprobe([
+      "-v", "error",
+      "-show_streams",
+      "-show_format",
+      "-of", "json",
+      videoPath
+    ]);
+  } catch (error) {
+    console.warn(`[FFmpeg] ffprobe unavailable, using ffmpeg metadata fallback: ${error.message}`);
+    return probeVideoWithFfmpeg(videoPath);
+  }
+  let metadata;
+  try {
+    metadata = JSON.parse(output);
+  } catch {
+    throw new Error("ffprobe returned invalid metadata");
+  }
+
+  const videoStream = metadata.streams?.find((stream) => stream.codec_type === "video");
+  if (!videoStream) throw new Error("video stream not found");
+  const duration = Number(metadata.format?.duration || videoStream.duration);
+  if (!Number.isFinite(duration) || duration <= 0) throw new Error("video duration is invalid");
+
+  return {
+    durationSeconds: duration,
+    width: Number(videoStream.width || 0),
+    height: Number(videoStream.height || 0),
+    codec: videoStream.codec_name || "",
+    format: metadata.format?.format_name || "",
+    hasAudio: Boolean(metadata.streams?.some((stream) => stream.codec_type === "audio")),
+    sizeBytes: Number(metadata.format?.size || 0)
+  };
+}
+
+export async function getVideoDuration(videoPath) {
+  const metadata = await probeVideo(videoPath);
+  return metadata.durationSeconds;
 }
 
 export async function preserveOriginalAudio({ videoPath, originalVideoPath, outputPath }) {
@@ -121,6 +205,107 @@ export async function extractKeyFrames(videoPath, framesDir, count = 3) {
     throw new Error("failed to extract any frames from video");
   }
   return frames;
+}
+
+async function readAnalysisFrame(filePath, timestampSeconds) {
+  const buffer = await readFile(filePath);
+  if (!buffer.length) throw new Error("ffmpeg produced empty frame");
+  return {
+    base64: buffer.toString("base64"),
+    timestampSeconds: Math.max(0, Number(timestampSeconds) || 0),
+    hash: createHash("sha256").update(buffer).digest("hex")
+  };
+}
+
+async function extractFrameAt(videoPath, outputPath, timestampSeconds) {
+  await runFfmpeg([
+    "-ss", String(Math.max(0, timestampSeconds)),
+    "-i", videoPath,
+    "-frames:v", "1",
+    "-vf", "scale=1280:-2:force_original_aspect_ratio=decrease",
+    "-q:v", "3",
+    "-y",
+    outputPath
+  ]);
+  const fileStat = await stat(outputPath);
+  if (!fileStat.isFile() || !fileStat.size) throw new Error("ffmpeg produced empty frame");
+  return readAnalysisFrame(outputPath, timestampSeconds);
+}
+
+export async function extractVideoAnalysisFrames(videoPath, framesDir, {
+  count = 12,
+  sceneThreshold = 0.28,
+  metadata
+} = {}) {
+  await mkdir(framesDir, { recursive: true });
+  const videoMetadata = metadata || await probeVideo(videoPath);
+  const duration = videoMetadata.durationSeconds;
+  const targetCount = Math.max(4, Math.min(24, Math.round(Number(count) || 12)));
+  const sceneLimit = Math.max(2, Math.floor(targetCount / 2));
+  const candidates = [];
+
+  const scenePattern = path.join(framesDir, "scene_%03d.jpg");
+  try {
+    const sceneOutput = await runFfmpeg([
+      "-i", videoPath,
+      "-vf", `select=gt(scene\\,${Number(sceneThreshold) || 0.28}),showinfo,scale=1280:-2:force_original_aspect_ratio=decrease`,
+      "-vsync", "vfr",
+      "-frames:v", String(sceneLimit),
+      "-q:v", "3",
+      "-y",
+      scenePattern
+    ]);
+    const timestamps = Array.from(sceneOutput.matchAll(/pts_time:([0-9.]+)/g))
+      .map((match) => Number(match[1]))
+      .filter(Number.isFinite);
+    const sceneFiles = (await readdir(framesDir))
+      .filter((name) => /^scene_\d+\.jpg$/i.test(name))
+      .sort();
+    for (let index = 0; index < sceneFiles.length; index += 1) {
+      candidates.push(await readAnalysisFrame(
+        path.join(framesDir, sceneFiles[index]),
+        timestamps[index] ?? (duration * (index + 1)) / (sceneFiles.length + 1)
+      ));
+    }
+  } catch (error) {
+    console.warn(`[FFmpeg] Scene frame extraction failed, using uniform frames: ${error.message}`);
+  }
+
+  const uniformCount = targetCount;
+  const endPosition = Math.max(0, duration - Math.min(0.1, duration / 10));
+  for (let index = 0; index < uniformCount; index += 1) {
+    const ratio = uniformCount === 1 ? 0.5 : index / (uniformCount - 1);
+    const timestamp = Math.min(endPosition, Math.max(0, duration * ratio));
+    const outputPath = path.join(framesDir, `uniform_${String(index + 1).padStart(3, "0")}.jpg`);
+    try {
+      candidates.push(await extractFrameAt(videoPath, outputPath, timestamp));
+    } catch (error) {
+      console.warn(`[FFmpeg] Uniform frame ${index + 1} at ${timestamp}s failed: ${error.message}`);
+    }
+  }
+
+  const unique = [];
+  const hashes = new Set();
+  for (const frame of candidates.sort((left, right) => left.timestampSeconds - right.timestampSeconds)) {
+    if (hashes.has(frame.hash)) continue;
+    hashes.add(frame.hash);
+    unique.push({
+      base64: frame.base64,
+      timestampSeconds: frame.timestampSeconds
+    });
+  }
+
+  if (unique.length < 4) {
+    throw new Error(`insufficient valid video frames: ${unique.length}`);
+  }
+
+  if (unique.length <= targetCount) return unique;
+  const selected = [];
+  for (let index = 0; index < targetCount; index += 1) {
+    const sourceIndex = Math.round((index * (unique.length - 1)) / (targetCount - 1));
+    selected.push(unique[sourceIndex]);
+  }
+  return selected;
 }
 
 export async function composeFinalVideo({ videoPath, voicePath, bgmPath, bgmVolume, outputPath }) {
