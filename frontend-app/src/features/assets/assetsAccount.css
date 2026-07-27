@@ -1,0 +1,418 @@
+/* Account-settings dialog, avatar editor, and credentials controls. */
+.fm-account-settings-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(24, 22, 34, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.fm-account-settings-dialog {
+  position: relative;
+  width: min(460px, 100%);
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e5e2ef;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 28px 70px rgba(35, 29, 52, 0.22);
+}
+
+.fm-account-settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 22px 24px;
+  border-bottom: 1px solid #f0edf7;
+}
+
+.fm-account-settings-head h2 {
+  margin: 0;
+  color: #292733;
+  font-size: 20px;
+}
+
+.fm-account-settings-head button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #8d889e;
+  background: #f8f6ff;
+  border: 1px solid #ece7ff;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.fm-account-settings-head button:hover {
+  color: #6d3cff;
+  background: #f2edff;
+}
+
+.fm-account-settings-list {
+  display: grid;
+  padding: 8px 0;
+}
+
+.fm-account-settings-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 58px;
+  padding: 0 24px;
+  color: #292733;
+  text-align: left;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #f0edf7;
+  cursor: pointer;
+  font-size: 16px;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.fm-account-settings-list button:last-child {
+  border-bottom: 0;
+}
+
+.fm-account-settings-list button:hover {
+  color: #6d3cff;
+  background: #fbfaff;
+}
+
+.fm-account-settings-list svg {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.fm-account-settings-body {
+  display: grid;
+  gap: var(--space-14px);
+  padding: 16px 24px 24px;
+}
+
+.fm-account-settings-subhead {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.fm-account-settings-subhead button {
+  padding: 0;
+  color: #6d3cff;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.fm-account-settings-subhead strong {
+  color: #292733;
+  font-size: 17px;
+}
+
+.fm-account-settings-message {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.fm-account-settings-message.is-error {
+  color: #bd1f2d;
+  background: #fff0f2;
+  border: 1px solid #ffd6dc;
+}
+
+.fm-account-settings-message.is-success {
+  color: #168149;
+  background: #eefbf4;
+  border: 1px solid #ccefdc;
+}
+
+.fm-account-settings-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: 4px;
+  background: #f7f5ff;
+  border: 1px solid #ece7ff;
+  border-radius: var(--radius-lg);
+}
+
+.fm-account-settings-tabs button {
+  min-height: 36px;
+  color: #7c778d;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.fm-account-settings-tabs button.is-active {
+  color: #fff;
+  background: #6d3cff;
+  box-shadow: 0 8px 18px rgba(109, 60, 255, 0.22);
+}
+
+.fm-avatar-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 64px);
+  justify-content: space-between;
+  align-content: start;
+  gap: var(--space-3) var(--space-2);
+  max-height: 278px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 8px 8px 2px;
+}
+
+.fm-avatar-choice-grid button {
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  padding: 2px;
+  background: #faf9ff;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.fm-avatar-choice-grid button:hover,
+.fm-avatar-choice-grid button.is-selected {
+  border-color: #6d3cff;
+  box-shadow: 0 8px 18px rgba(109, 60, 255, 0.16);
+}
+
+.fm-avatar-choice-grid button:active {
+  transform: scale(0.97);
+}
+
+.fm-avatar-choice-grid img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #fff;
+  border-radius: var(--radius-control);
+}
+
+.fm-avatar-upload-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 46px;
+  color: #6d3cff;
+  background: #f7f5ff;
+  border: 1px dashed #cfc4ff;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.fm-avatar-upload-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fm-avatar-crop-wrap {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: #faf9ff;
+  border: 1px solid #ece7ff;
+  border-radius: var(--radius-lg);
+}
+
+.fm-avatar-crop-box,
+.fm-avatar-crop-empty {
+  width: 220px;
+  height: 220px;
+  border-radius: var(--radius-pill);
+}
+
+.fm-avatar-crop-box {
+  position: relative;
+  overflow: hidden;
+  background: #f0edf8;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.fm-avatar-crop-box:active {
+  cursor: grabbing;
+}
+
+.fm-avatar-crop-box::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(109, 60, 255, 0.45);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.fm-avatar-crop-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.fm-avatar-crop-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-10px);
+  color: #9a97a8;
+  background: #f2eff9;
+  border: 1px dashed #ddd6f3;
+  font-size: 13px;
+  text-align: center;
+}
+
+.fm-avatar-zoom-control {
+  display: grid;
+  gap: var(--space-2);
+  color: #7c778d;
+  font-size: 13px;
+}
+
+.fm-avatar-zoom-control input {
+  width: 100%;
+  accent-color: #6d3cff;
+}
+
+.fm-account-field {
+  display: grid;
+  gap: var(--space-2);
+  color: #7c778d;
+  font-size: 13px;
+}
+
+.fm-account-field input {
+  min-height: 44px;
+  width: 100%;
+  padding: 0 13px;
+  color: #292733;
+  background: #fff;
+  border: 1px solid #e5e2ef;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.fm-account-field input:focus {
+  border-color: #9b7bff;
+  box-shadow: 0 0 0 3px rgba(109, 60, 255, 0.12);
+}
+
+.fm-account-field input:disabled {
+  color: #8d889e;
+  background: #f8f7fb;
+}
+
+.fm-account-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: var(--space-2);
+}
+
+.fm-account-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: var(--space-10px);
+}
+
+.fm-account-code-row button,
+.fm-account-primary,
+.fm-account-secondary {
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: 14px;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.fm-account-code-row button {
+  color: #6d3cff;
+  background: #f2edff;
+}
+
+.fm-account-primary {
+  width: 100%;
+  color: #fff;
+  background: #6d3cff;
+  box-shadow: 0 10px 24px rgba(109, 60, 255, 0.24);
+}
+
+.fm-account-secondary {
+  width: 100%;
+  color: #6d3cff;
+  background: #f2edff;
+}
+
+.fm-account-step-indicator {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  color: #9a97a8;
+  font-size: 12px;
+}
+
+.fm-account-step-indicator span {
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0 8px;
+  background: #f8f7fb;
+  border: 1px solid #ece7ff;
+  border-radius: var(--radius-control);
+}
+
+.fm-account-step-indicator span.is-active {
+  color: #6d3cff;
+  background: #f2edff;
+  border-color: #d8ccff;
+}
+
+.fm-account-code-row button:hover:not(:disabled),
+.fm-account-primary:hover:not(:disabled),
+.fm-account-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.fm-account-code-row button:disabled,
+.fm-account-primary:disabled,
+.fm-account-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}

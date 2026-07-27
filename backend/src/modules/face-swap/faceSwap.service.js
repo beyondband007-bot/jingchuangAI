@@ -1,5 +1,6 @@
 import path from "path";
-import { unlink } from "fs/promises";
+import { mkdir, rename, stat, unlink, writeFile } from "fs/promises";
+import { randomUUID } from "crypto";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
@@ -10,13 +11,14 @@ import {
   getArkVideoGenerationTask,
   mapArkVideoGenerationState
 } from "../../providers/volcengine/videoGeneration.js";
-import { getVideoDuration } from "../../providers/ffmpeg/video.js";
+import { getVideoDuration, preserveOriginalAudio } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { calculateVideoPoints } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapFaceSwapAsset, mapFaceSwapTask } from "./faceSwap.mapper.js";
+import { buildFaceSwapPrompt } from "./faceSwapPrompt.js";
 import {
   createFaceSwapAsset,
   createFaceSwapTask,
@@ -38,8 +40,8 @@ import {
   toggleFaceSwapTaskFavorite
 } from "./faceSwap.repository.js";
 
-const defaultPrompt =
-  "将图片中的虚拟角色自然迁移到目标视频人物上，保持目标视频动作、镜头、光照、表情和画面风格一致，融合真实自然。";
+const resultDir = path.resolve(process.cwd(), config.media.storageDir, "face-swap", "results");
+const finalizingTasks = new Map();
 
 function getModelDefinitions() {
   return [
@@ -69,7 +71,7 @@ async function getSourceVideoDuration(videoAsset) {
     if (sourceDuration > 15) {
       throw createHttpError("视频时长不能超过 15 秒", 400);
     }
-    return Math.max(2, Math.ceil(sourceDuration));
+    return Math.max(4, Math.ceil(sourceDuration));
   } catch (error) {
     if (error.status) throw error;
     throw createHttpError(`无法读取视频时长：${error.message}`, 400);
@@ -116,9 +118,10 @@ export async function createAsset({ kind, file, user }) {
   if (!file) throw createHttpError(`${kind} file is required`, 400);
   if (!user?.id) throw createHttpError("请先登录", 401);
 
+  let duration = 0;
   if (kind === "video") {
     try {
-      await getSourceVideoDuration({ file_path: file.path });
+      duration = await getSourceVideoDuration({ file_path: file.path });
     } catch (error) {
       await unlink(file.path).catch(() => {});
       throw error;
@@ -151,7 +154,9 @@ export async function createAsset({ kind, file, user }) {
 
   const asset = mapFaceSwapAsset(await findFaceSwapAssetByIdForUser(assetId, kind, userId));
   if (!asset) throw createHttpError("上传资源保存失败，请重试", 500);
-  return asset;
+  return duration
+    ? { ...asset, duration, estimatedPoints: calculateVideoPoints(duration) }
+    : asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {
@@ -180,7 +185,7 @@ export async function createTask(payload) {
   if (!videoAsset) throw createHttpError("video asset not found", 400);
 
   const model = getModelByKey(payload.model);
-  const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
+  const prompt = buildFaceSwapPrompt(payload.prompt);
   const resolution = normalizeResolution(payload.resolution || model.resolution);
   const duration = await getSourceVideoDuration(videoAsset);
   const costPoints = calculateVideoPoints(duration);
@@ -227,12 +232,12 @@ export async function createTask(payload) {
       resolution,
       ratio: "adaptive",
       duration,
-      generateAudio: false,
+      generateAudio: true,
       watermark: false,
       content: [
         {
           type: "text",
-          text: `${prompt}\n图片1是需要保持身份和面部特征的虚拟形象，视频1是目标动作、镜头和场景参考。请将图片1中的虚拟角色自然融入视频1的人物动作与画面，保持光照、表情、镜头和画面风格一致。`
+          text: prompt
         },
         buildReferenceImage(imageUri),
         buildReferenceVideo(videoUri)
@@ -280,7 +285,14 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "face swap result missing video URL");
       } else {
-        await setFaceSwapTaskCompleted(id, result);
+        let finalizedResult;
+        try {
+          finalizedResult = await finalizeFaceSwapResult(id, task, result);
+        } catch (error) {
+          await refundTask(id, null, null, `换脸结果保留原音频失败：${error.message}`);
+          return;
+        }
+        await setFaceSwapTaskCompleted(id, finalizedResult);
       }
     } else if (mapped === "failed") {
       const result = extractArkVideoGenerationResult(record);
@@ -290,6 +302,65 @@ async function refreshTask(id) {
     }
   } catch (error) {
     await setFaceSwapTaskError(id, `查询视频换脸状态失败：${error.message}`);
+  }
+}
+
+async function finalizeFaceSwapResult(id, task, providerResult) {
+  const key = String(id);
+  if (finalizingTasks.has(key)) return finalizingTasks.get(key);
+
+  const promise = createFaceSwapResultWithOriginalAudio(id, task, providerResult)
+    .finally(() => finalizingTasks.delete(key));
+  finalizingTasks.set(key, promise);
+  return promise;
+}
+
+async function createFaceSwapResultWithOriginalAudio(id, task, providerResult) {
+  if (!task.video_file_path) {
+    throw createHttpError("original face swap video file is missing", 500);
+  }
+
+  await mkdir(resultDir, { recursive: true });
+  const resultFileName = `${id}-face-swap.mp4`;
+  const resultFilePath = path.join(resultDir, resultFileName);
+  const providerTempPath = path.join(resultDir, `${id}-${randomUUID()}-provider.mp4`);
+  const outputTempPath = path.join(resultDir, `${id}-${randomUUID()}-final.mp4`);
+  const localResult = {
+    resultUrl: `/media/face-swap/results/${resultFileName}`,
+    thumbnailUrl: providerResult.thumbnailUrl || ""
+  };
+
+  try {
+    const existing = await stat(resultFilePath);
+    if (existing.isFile() && existing.size > 0) return localResult;
+  } catch {
+    // The final file does not exist yet.
+  }
+
+  try {
+    const response = await fetch(providerResult.resultUrl, {
+      signal: AbortSignal.timeout(120_000)
+    });
+    if (!response.ok) {
+      throw createHttpError(`download face swap result failed with ${response.status}`, 502);
+    }
+    const videoBytes = Buffer.from(await response.arrayBuffer());
+    if (!videoBytes.length) {
+      throw createHttpError("downloaded face swap result is empty", 502);
+    }
+    await writeFile(providerTempPath, videoBytes);
+    await preserveOriginalAudio({
+      videoPath: providerTempPath,
+      originalVideoPath: task.video_file_path,
+      outputPath: outputTempPath
+    });
+    await rename(outputTempPath, resultFilePath);
+    return localResult;
+  } finally {
+    await Promise.allSettled([
+      unlink(providerTempPath),
+      unlink(outputTempPath)
+    ]);
   }
 }
 

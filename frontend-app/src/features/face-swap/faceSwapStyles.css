@@ -1,0 +1,4 @@
+/* Import order is intentional: workbench → dialogs → responsive overrides. */
+@import "./FaceSwapWorkbench.css";
+@import "./FaceSwapWorkbenchDialog.css";
+@import "./FaceSwapResponsive.css";

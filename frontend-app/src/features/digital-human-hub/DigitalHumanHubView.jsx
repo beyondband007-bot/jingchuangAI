@@ -2,8 +2,7 @@ import React from "react";
 import { DigitalHumanV2View } from "../digital-human-v2/DigitalHumanV2View";
 import { DigitalHumanHistoryView } from "./DigitalHumanHistoryView";
 import { openAssetsGallery } from "../../utils/openAssetsGallery";
-import "./digitalHumanHub.scss";
-import "./digitalHumanHistory.scss";
+import "./digitalHumanHub.css";
 
 const TAB_KEYS = {
   avatar: "avatar",

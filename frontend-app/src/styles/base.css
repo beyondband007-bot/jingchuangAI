@@ -1,0 +1,141 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--font-weight-default);
+}
+
+html:focus-within {
+  scroll-behavior: smooth;
+}
+
+html body {
+  min-height: var(--app-viewport-height);
+  background: var(--app-bg);
+  text-rendering: optimizeSpeed;
+  font-weight: var(--font-weight-default);
+  line-height: 1.5;
+  font-family: "PingFang SC";
+}
+
+a:not([class]) {
+  text-decoration-skip-ink: auto;
+}
+
+body b,
+body strong {
+  font-weight: var(--font-weight-default);
+}
+
+img,
+picture {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font-family: inherit;
+}
+
+html,
+body,
+#root {
+  overscroll-behavior: none;
+}
+
+.app-route-loading {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  color: var(--text-secondary);
+  background: var(--app-bg);
+  font-size: 14px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #888888 rgba(255, 255, 255, 0.04);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #888888;
+  border: 1px solid rgba(5, 5, 5, 0.78);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9a9a9a;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+textarea:focus {
+  outline: 0;
+  box-shadow: none;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not(
+    [type="range"]
+  ):focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lucide-loader-2 {
+  animation: spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lucide-loader-2 {
+    animation: none;
+  }
+}

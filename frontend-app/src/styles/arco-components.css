@@ -1,0 +1,17 @@
+/*
+ * Arco's bundled arco.css contains every component. The workbench uses only
+ * this small subset; keeping the shared base plus these component styles
+ * avoids shipping unused Calendar, Table, Form, DatePicker, etc. styles.
+ */
+@import "@arco-design/web-react/es/style/index.css";
+@import "@arco-design/web-react/es/Button/style/index.css";
+@import "@arco-design/web-react/es/Drawer/style/index.css";
+@import "@arco-design/web-react/es/Empty/style/index.css";
+@import "@arco-design/web-react/es/Input/style/index.css";
+@import "@arco-design/web-react/es/Layout/style/index.css";
+@import "@arco-design/web-react/es/Message/style/index.css";
+@import "@arco-design/web-react/es/Select/style/index.css";
+@import "@arco-design/web-react/es/Slider/style/index.css";
+@import "@arco-design/web-react/es/Spin/style/index.css";
+@import "@arco-design/web-react/es/Tag/style/index.css";
+@import "@arco-design/web-react/es/Upload/style/index.css";

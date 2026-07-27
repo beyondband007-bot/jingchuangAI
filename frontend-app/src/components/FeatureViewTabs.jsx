@@ -13,14 +13,14 @@ export function FeatureViewTabs({
   return (
     <div className={rootClass} aria-label={`${currentLabel}页面切换`}>
       <button
-        className={activeView === "home" ? "is-active" : ""}
+        className={`ui-feature-title ${activeView === "home" ? "is-active" : ""}`.trim()}
         type="button"
         onClick={onHome}
       >
         {currentLabel}
       </button>
       <button
-        className={activeView === "recent" ? "is-active" : ""}
+        className={`ui-feature-title ${activeView === "recent" ? "is-active" : ""}`.trim()}
         type="button"
         onClick={onHistory}
       >

@@ -1,0 +1,30 @@
+.feature-page-shell .coming-soon-panel {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  align-content: center;
+  padding: var(--space-5);
+  text-align: center;
+}
+
+.feature-page-shell .coming-soon-icon {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  color: #1677ff;
+  background: #eaf4ff;
+  border-radius: var(--radius-lg);
+}
+
+.feature-page-shell .coming-soon-panel h1 {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 28px;
+}
+
+.feature-page-shell .coming-soon-panel p {
+  max-width: 480px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.7;
+}

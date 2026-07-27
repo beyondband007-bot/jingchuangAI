@@ -7,6 +7,7 @@
     "dev": "node src/server.js",
     "dev:lan": "set HOST=0.0.0.0&& node src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
     "db:init": "node src/scripts/initDb.js",
     "db:check": "node src/scripts/checkDb.js"
   },
@@ -20,5 +21,8 @@
     "mysql2": "^3.15.3",
     "qrcode": "^1.5.4",
     "tencentcloud-sdk-nodejs": "^4.1.253"
+  },
+  "devDependencies": {
+    "@ffprobe-installer/ffprobe": "^2.1.2"
   }
 }

@@ -1,9 +1,14 @@
 import { randomUUID } from "crypto";
-import { mkdir, rm, writeFile } from "fs/promises";
+import { mkdir, rm } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
-import { analyzeImageWithMinimax, analyzeVideoFramesWithMinimax } from "../../providers/minimax/vision.js";
-import { extractKeyFrames } from "../../providers/ffmpeg/video.js";
+import { analyzeImageWithMinimax } from "../../providers/minimax/vision.js";
+import {
+  analyzeVideoForPrompt,
+  analyzeVideoFramesForPrompt
+} from "../../providers/qwen/videoReverse.js";
+import { uploadQwenTemporaryFile } from "../../providers/qwen/temporaryFile.js";
+import { extractVideoAnalysisFrames, probeVideo } from "../../providers/ffmpeg/video.js";
 import { createHttpError } from "../../shared/http.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
@@ -13,7 +18,8 @@ import {
   createReplicateTaskRow,
   failReplicateTaskRow,
   findReplicateTaskRow,
-  listReplicateTaskRows
+  listReplicateTaskRows,
+  updateReplicateTaskProgress
 } from "./replicate.repository.js";
 
 const maxImageBytes = 20 * 1024 * 1024;
@@ -54,6 +60,19 @@ function mapReplicateTask(row) {
     tags: parseJson(row.tags, []),
     model: row.model || "",
     frameCount: row.frame_count || undefined,
+    provider: row.provider || "",
+    analysisMode: row.analysis_mode || "",
+    stage: row.stage || (row.status === "processing" ? "queued" : row.status),
+    attemptCount: Number(row.attempt_count || 0),
+    providerRequestId: row.provider_request_id || "",
+    latencyMs: row.latency_ms == null ? undefined : Number(row.latency_ms),
+    inputTokens: row.input_tokens == null ? undefined : Number(row.input_tokens),
+    outputTokens: row.output_tokens == null ? undefined : Number(row.output_tokens),
+    durationSeconds: row.input_duration_seconds == null ? undefined : Number(row.input_duration_seconds),
+    fallbackReason: row.fallback_reason || "",
+    qualityWarning: row.quality_warning || "",
+    errorCode: row.error_code || "",
+    analysis: parseJson(row.analysis_json, null),
     favorite: Boolean(row.favorite),
     status: row.status || (row.prompt ? "completed" : "processing"),
     error: row.error_message || "",
@@ -85,33 +104,14 @@ function assertVideoFile(file) {
   }
 }
 
-async function extractVideoFrames(videoBuffer, fileName) {
-  const framesDir = path.resolve(process.cwd(), config.media.storageDir, "replicate", "frames");
-  await mkdir(framesDir, { recursive: true });
-
-  const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const tempVideoPath = path.join(framesDir, `${taskId}-input${getExt(fileName)}`);
-  const tempFramesDir = path.join(framesDir, taskId);
-  await writeFile(tempVideoPath, videoBuffer);
-
-  try {
-    const framesBase64 = await extractKeyFrames(tempVideoPath, tempFramesDir, 3);
-    return { framesBase64, taskId };
-  } catch (error) {
-    throw new Error(`视频抽帧失败：${error.message || "无法读取视频帧"}`);
-  } finally {
-    await rm(tempVideoPath, { force: true }).catch(() => {});
-    await rm(tempFramesDir, { recursive: true, force: true }).catch(() => {});
-  }
-}
-
 export function getConfig() {
   return {
     imageMaxBytes: maxImageBytes,
     videoMaxBytes: maxVideoBytes,
     imageFormats: ["jpg", "jpeg", "png", "webp", "gif"],
     videoFormats: ["mp4", "webm", "mov", "avi"],
-    videoFrameCount: 3
+    videoFrameCount: config.qwen.videoReverseFallbackFrames,
+    videoModel: config.qwen.videoReverseModel
   };
 }
 
@@ -137,8 +137,9 @@ async function finishReplicateTask(taskId, result) {
   const prompt = String(result.prompt || "").trim();
   const description = String(result.description || "").trim();
   if (!prompt && !description) {
-    await failReplicateTaskRow(taskId, "视觉分析未能生成提示词，请稍后重试");
-    return;
+    const error = new Error("视觉分析未能生成提示词，请稍后重试");
+    error.code = "OUTPUT_SCHEMA_INVALID";
+    throw error;
   }
 
   await completeReplicateTaskRow({
@@ -149,32 +150,168 @@ async function finishReplicateTask(taskId, result) {
     mood: result.mood,
     tags: result.tags,
     frameCount: result.frameCount,
-    model: result.model
+    model: result.model,
+    provider: result.provider,
+    analysisMode: result.analysisMode,
+    attemptCount: result.attemptCount,
+    providerRequestId: result.providerRequestId,
+    providerStatusCode: result.providerStatusCode,
+    latencyMs: result.latencyMs,
+    inputTokens: Number(result.usage?.prompt_tokens || result.usage?.input_tokens || 0),
+    outputTokens: Number(result.usage?.completion_tokens || result.usage?.output_tokens || 0),
+    fallbackReason: result.fallbackReason,
+    qualityWarning: result.qualityWarning,
+    analysis: result.analysis
   });
 }
 
 async function runImageAnalysis(taskId, file, userId, costPoints) {
   try {
+    await updateReplicateTaskProgress(taskId, {
+      stage: "analyzing_primary",
+      provider: "minimax",
+      model: "MiniMax-Text-01",
+      analysisMode: "image"
+    });
     const imageBase64 = Buffer.from(file.buffer).toString("base64");
     const result = await analyzeImageWithMinimax({
       imageBase64,
       mimeType: file.mimetype || "image/jpeg"
     });
+    result.provider = "minimax";
+    result.analysisMode = "image";
     await finishReplicateTask(taskId, result);
   } catch (error) {
-    await failReplicateTaskRow(taskId, cleanAnalysisError(error));
+    await failReplicateTaskRow(taskId, cleanAnalysisError(error), {
+      errorCode: error?.code || "PROVIDER_UNAVAILABLE",
+      provider: "minimax",
+      model: "MiniMax-Text-01",
+      analysisMode: "image"
+    });
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "image replicate failure refund" });
   }
 }
 
-async function runVideoAnalysis(taskId, file, userId, costPoints) {
+function calculateVideoAnalysisFps(durationSeconds) {
+  const maxFrames = Math.max(12, Number(config.qwen.videoReverseMaxFrames) || 120);
+  const duration = Math.max(0.1, Number(durationSeconds) || 0.1);
+  return Math.max(0.1, Math.min(2, Number((maxFrames / duration).toFixed(3))));
+}
+
+function describeFallbackReason(error) {
+  const code = String(error?.code || "PRIMARY_ANALYSIS_FAILED");
+  const message = cleanAnalysisError(error);
+  return `${code}: ${message}`.slice(0, 1000);
+}
+
+function needsFallback(result) {
+  const shots = result?.analysis?.shots;
+  const confidence = result?.analysis?.confidence;
+  return !Array.isArray(shots) || shots.length === 0 ||
+    (Number.isFinite(Number(confidence)) && Number(confidence) < 0.45);
+}
+
+async function runVideoAnalysis(taskId, file, metadata, userId, costPoints) {
+  const videoPath = file.path;
+  const framesDir = path.resolve(
+    process.cwd(),
+    config.media.storageDir,
+    "replicate",
+    "frames",
+    taskId
+  );
+  let primaryResult;
+  let primaryError;
   try {
-    const { framesBase64 } = await extractVideoFrames(file.buffer, file.originalname);
-    const result = await analyzeVideoFramesWithMinimax({ framesBase64 });
-    await finishReplicateTask(taskId, result);
+    await updateReplicateTaskProgress(taskId, {
+      stage: "preparing_media",
+      provider: "qwen",
+      model: config.qwen.videoReverseModel,
+      analysisMode: "direct_video"
+    });
+    const uploadedVideo = await uploadQwenTemporaryFile({
+      filePath: videoPath,
+      originalName: file.originalname,
+      mimeType: file.mimetype || "video/mp4",
+      model: config.qwen.videoReverseModel
+    });
+    await updateReplicateTaskProgress(taskId, { stage: "analyzing_primary" });
+    primaryResult = await analyzeVideoForPrompt({
+      videoUrl: uploadedVideo.url,
+      fps: calculateVideoAnalysisFps(metadata.durationSeconds),
+      model: config.qwen.videoReverseModel
+    });
+    if (!needsFallback(primaryResult)) {
+      await finishReplicateTask(taskId, primaryResult);
+      await rm(videoPath, { force: true }).catch(() => {});
+      return;
+    }
+    primaryError = Object.assign(new Error("原生视频分析结果缺少可靠的分镜或置信度过低"), {
+      code: "INSUFFICIENT_VISUAL_EVIDENCE"
+    });
   } catch (error) {
-    await failReplicateTaskRow(taskId, cleanAnalysisError(error));
-    await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "video replicate failure refund" });
+    primaryError = error;
+  }
+
+  const fallbackReason = describeFallbackReason(primaryError);
+  try {
+    await updateReplicateTaskProgress(taskId, {
+      stage: "analyzing_fallback",
+      analysisMode: "scene_frames",
+      fallbackReason,
+      attemptCount: primaryResult?.attemptCount || primaryError?.attemptCount || 0,
+      providerStatusCode: primaryError?.status
+    });
+    await mkdir(framesDir, { recursive: true });
+    const frames = await extractVideoAnalysisFrames(videoPath, framesDir, {
+      count: config.qwen.videoReverseFallbackFrames,
+      metadata
+    });
+    const fallbackResult = await analyzeVideoFramesForPrompt({
+      frames,
+      model: config.qwen.videoReverseModel
+    });
+    if (primaryResult?.usage) {
+      fallbackResult.usage = {
+        prompt_tokens:
+          Number(primaryResult.usage.prompt_tokens || primaryResult.usage.input_tokens || 0) +
+          Number(fallbackResult.usage?.prompt_tokens || fallbackResult.usage?.input_tokens || 0),
+        completion_tokens:
+          Number(primaryResult.usage.completion_tokens || primaryResult.usage.output_tokens || 0) +
+          Number(fallbackResult.usage?.completion_tokens || fallbackResult.usage?.output_tokens || 0)
+      };
+    }
+    fallbackResult.fallbackReason = fallbackReason;
+    fallbackResult.attemptCount =
+      Number(primaryResult?.attemptCount || primaryError?.attemptCount || 0) +
+      Number(fallbackResult.attemptCount || 0);
+    await finishReplicateTask(taskId, fallbackResult);
+  } catch (fallbackError) {
+    if (primaryResult) {
+      primaryResult.fallbackReason = fallbackReason;
+      primaryResult.qualityWarning =
+        `原生视频分析结果质量较低，关键帧增强分析失败：${cleanAnalysisError(fallbackError)}`;
+      await finishReplicateTask(taskId, primaryResult);
+      return;
+    }
+    await failReplicateTaskRow(taskId, cleanAnalysisError(fallbackError), {
+      errorCode: fallbackError?.code || "PROVIDER_UNAVAILABLE",
+      provider: "qwen",
+      model: config.qwen.videoReverseModel,
+      analysisMode: "scene_frames",
+      attemptCount: fallbackError?.attemptCount,
+      providerStatusCode: fallbackError?.status,
+      fallbackReason
+    });
+    await refundChargedCredits({
+      userId,
+      taskId,
+      amount: costPoints,
+      memo: "video replicate failure refund"
+    });
+  } finally {
+    await rm(framesDir, { recursive: true, force: true }).catch(() => {});
+    await rm(videoPath, { force: true }).catch(() => {});
   }
 }
 
@@ -208,22 +345,44 @@ export async function analyzeImage({ file, userId }) {
 }
 
 export async function analyzeVideo({ file, userId }) {
-  assertVideoFile(file);
+  try {
+    assertVideoFile(file);
+  } catch (error) {
+    if (file?.path) await rm(file.path, { force: true }).catch(() => {});
+    throw error;
+  }
+
+  let metadata;
+  try {
+    metadata = await probeVideo(file.path);
+  } catch (error) {
+    await rm(file.path, { force: true }).catch(() => {});
+    throw createHttpError(`视频文件无法读取：${error.message}`, 400);
+  }
 
   const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const costPoints = BILLING_RULES.replicateVideoPoints;
-  await chargeCredits({ userId, taskId, amount: costPoints, memo: "video replicate debit" });
+  try {
+    await chargeCredits({ userId, taskId, amount: costPoints, memo: "video replicate debit" });
+  } catch (error) {
+    await rm(file.path, { force: true }).catch(() => {});
+    throw error;
+  }
   try { await createReplicateTaskRow({
     id: taskId,
     userId,
     source: "video",
-    fileName: file.originalname
+    fileName: file.originalname,
+    stage: "queued",
+    inputDurationSeconds: metadata.durationSeconds,
+    inputSizeBytes: file.size
   }); } catch (error) {
+    await rm(file.path, { force: true }).catch(() => {});
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "video replicate refund" });
     throw error;
   }
 
-  runVideoAnalysis(taskId, file, userId, costPoints).catch((error) => {
+  runVideoAnalysis(taskId, file, metadata, userId, costPoints).catch((error) => {
     console.error("background video replicate analysis failed:", error);
   });
 
@@ -232,6 +391,9 @@ export async function analyzeVideo({ file, userId }) {
     source: "video",
     file_name: file.originalname,
     status: "processing",
+    stage: "queued",
+    input_duration_seconds: metadata.durationSeconds,
+    input_size_bytes: file.size,
     created_at: new Date()
   });
 }

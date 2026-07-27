@@ -62,16 +62,21 @@ export async function uploadDataUrl(dataUrl, path, filename = 'canvas-reference.
   if (!isDataUrl && !isLocalMedia) return source
 
   const response = await fetch(source, { credentials: 'include' })
-  if (!response.ok) throw new Error(`参考图读取失败（${response.status}）`)
+  if (!response.ok) throw new Error(`参考素材读取失败（${response.status}）`)
   const blob = await response.blob()
   const extensionByType = {
     'image/jpeg': '.jpg',
     'image/png': '.png',
     'image/webp': '.webp',
-    'image/gif': '.gif'
+    'image/gif': '.gif',
+    'video/mp4': '.mp4',
+    'video/quicktime': '.mov',
+    'video/webm': '.webm',
+    'video/x-msvideo': '.avi'
   }
-  const fallbackName = filename.replace(/\.[^.]+$/, '') + (extensionByType[blob.type] || '.png')
-  const file = new File([blob], fallbackName, { type: blob.type || 'image/png' })
+  const originalExtension = filename.match(/\.[^.]+$/)?.[0] || ''
+  const fallbackName = filename.replace(/\.[^.]+$/, '') + (extensionByType[blob.type] || originalExtension || '.bin')
+  const file = new File([blob], fallbackName, { type: blob.type || 'application/octet-stream' })
   const formData = new FormData()
   formData.append('file', file)
   const uploaded = await faceminiRequest(path, { method: 'POST', body: formData })

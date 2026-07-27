@@ -1,38 +1,42 @@
 <template>
   <!-- Canvas page | 画布页面 -->
-  <div class="h-screen w-screen flex flex-col bg-[var(--bg-primary)]">
+  <div class="canvas-workbench h-screen w-screen flex flex-col bg-[var(--bg-primary)]">
     <!-- Header | 顶部导航 -->
-    <AppHeader class="bg-[var(--bg-secondary)]">
+    <AppHeader class="canvas-workbench__header bg-[var(--bg-secondary)]">
       <template #left>
-        <button 
-          @click="goBack"
-          class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-        >
+      <button
+        @click="goBack"
+        class="canvas-header-icon-button"
+        data-tooltip="返回项目列表"
+        data-tooltip--bottom
+        aria-label="返回项目列表"
+      >
           <n-icon :size="20"><ChevronBackOutline /></n-icon>
         </button>
         <n-dropdown :options="projectOptions" @select="handleProjectAction">
-          <button class="flex items-center gap-1 hover:bg-[var(--bg-tertiary)] px-2 py-1 rounded-lg transition-colors">
-            <span class="font-medium">{{ projectName }}</span>
+          <button class="canvas-project-trigger flex items-center gap-1 hover:bg-[var(--bg-tertiary)] px-2 py-1 rounded-lg transition-colors">
+            <span class="canvas-project-title font-medium">{{ projectName }}</span>
             <n-icon :size="16"><ChevronDownOutline /></n-icon>
           </button>
         </n-dropdown>
       </template>
       <template #right>
-        <span class="text-xs" :class="saveState === 'error' || saveState === 'conflict' ? 'text-red-500' : 'text-[var(--text-secondary)]'" :title="saveError">
+        <span class="canvas-save-status text-xs" role="status" aria-live="polite" :class="saveState === 'error' || saveState === 'conflict' ? 'text-red-500' : 'text-[var(--text-secondary)]'" :data-tooltip="saveError || ''">
           {{ saveStatusLabel }}
         </span>
         <button 
           @click="showDownloadModal = true"
           class="p-2 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
           :class="{ 'text-[var(--accent-color)]': hasDownloadableAssets }"
-          title="批量下载素材"
+          data-tooltip="批量下载素材"
+          data-tooltip--bottom
+          aria-label="批量下载素材"
         >
           <n-icon :size="20"><DownloadOutline /></n-icon>
         </button>
         <button 
           @click="openMyAssets"
-          class="px-3 py-1.5 text-sm hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
-          title="打开我的资产"
+          class="canvas-assets-entry px-3 py-1.5 text-sm hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
         >
           我的资产
         </button>
@@ -91,18 +95,23 @@
       </div>
 
       <!-- Left toolbar | 左侧工具栏 -->
-      <aside class="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-2 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] shadow-lg z-10">
+      <aside class="canvas-toolbar absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 p-2 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] shadow-lg z-10" aria-label="画布工具">
         <button 
           @click="showNodeMenu = !showNodeMenu"
           class="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] transition-colors"
-          title="添加节点"
+          data-tooltip="添加节点"
+          data-tooltip--left
+          aria-label="添加节点"
+          :aria-expanded="showNodeMenu"
         >
           <n-icon :size="20"><AddOutline /></n-icon>
         </button>
         <button 
           @click="showWorkflowPanel = true"
           class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--bg-tertiary)] transition-colors"
-          title="工作流模板"
+          data-tooltip="工作流模板"
+          data-tooltip--left
+          aria-label="工作流模板"
         >
           <n-icon :size="20"><AppsOutline /></n-icon>
         </button>
@@ -113,7 +122,9 @@
           @click="tool.action"
           :disabled="tool.disabled && tool.disabled()"
           class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-          :title="tool.name"
+          :data-tooltip="tool.name"
+          data-tooltip--left
+          :aria-label="tool.name"
         >
           <n-icon :size="20"><component :is="tool.icon" /></n-icon>
         </button>
@@ -122,7 +133,7 @@
       <!-- Node menu popup | 节点菜单弹窗 -->
       <div 
         v-if="showNodeMenu"
-        class="absolute left-20 top-1/2 -translate-y-1/2 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] shadow-lg p-2 z-20"
+        class="canvas-menu absolute left-20 top-1/2 -translate-y-1/2 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-color)] shadow-lg p-2 z-20"
       >
         <button 
           v-for="nodeType in nodeTypeOptions" 
@@ -139,7 +150,7 @@
       <!-- Canvas context menu | 画布右键菜单 -->
       <div
         v-if="contextMenu.visible"
-        class="absolute z-40 min-w-[180px] rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-2 shadow-xl"
+        class="canvas-menu absolute z-40 min-w-[180px] rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-2 shadow-xl"
         :style="{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }"
         @click.stop
         @contextmenu.prevent
@@ -157,39 +168,41 @@
       </div>
 
       <!-- Bottom controls | 底部控制 -->
-      <div class="absolute bottom-4 left-4 flex items-center gap-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-color)] p-1">
+      <div class="canvas-viewport-controls absolute bottom-4 left-4 flex items-center gap-2 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-color)] p-1" aria-label="画布视图控制">
         <!-- <button 
           @click="showGrid = !showGrid" 
           :class="showGrid ? 'bg-[var(--accent-color)] text-white' : 'hover:bg-[var(--bg-tertiary)]'"
           class="p-2 rounded transition-colors"
-          title="切换网格"
         >
           <n-icon :size="16"><GridOutline /></n-icon>
         </button> -->
         <button 
           @click="fitView({ padding: 0.2 })" 
           class="p-2 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-          title="适应视图"
+          data-tooltip="适应视图"
+          aria-label="适应视图"
         >
           <n-icon :size="16"><LocateOutline /></n-icon>
         </button>
         <div class="flex items-center gap-1 px-2">
-          <button @click="zoomOut" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors">
+          <button @click="zoomOut" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" aria-label="缩小画布">
             <n-icon :size="14"><RemoveOutline /></n-icon>
           </button>
-          <span class="text-xs min-w-[40px] text-center">{{ Math.round(viewport.zoom * 100) }}%</span>
-          <button @click="zoomIn" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors">
+          <span class="text-xs min-w-[40px] text-center" aria-live="polite">{{ Math.round(viewport.zoom * 100) }}%</span>
+          <button @click="zoomIn" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" aria-label="放大画布">
             <n-icon :size="14"><AddOutline /></n-icon>
           </button>
         </div>
       </div>
 
       <!-- Bottom input panel (floating) | 底部输入面板（悬浮） -->
-      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20">
+      <div class="canvas-composer absolute bottom-4 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-20">
         <!-- Processing indicator | 处理中指示器 -->
-        <div 
+        <div
           v-if="isProcessing" 
           class="mb-3 p-3 bg-[var(--bg-primary)] rounded-xl border border-[var(--accent-color)] animate-pulse"
+          role="status"
+          aria-live="polite"
         >
           <div class="flex items-center gap-2 text-sm text-[var(--accent-color)] mb-2">
             <n-spin :size="14" />
@@ -200,7 +213,7 @@
           </div>
         </div>
 
-        <div class="bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)] p-3">
+        <div class="canvas-composer__surface bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)] p-3">
           <textarea
             v-model="chatInput"
             :placeholder="inputPlaceholder"
@@ -216,7 +229,7 @@
                 @click="handlePolish"
                 :disabled="isProcessing || !chatInput.trim()"
                 class="px-3 py-1.5 text-xs rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="AI 润色提示词"
+                data-tooltip="AI 润色提示词"
               >
                 ✨ AI 润色
               </button>
@@ -228,11 +241,11 @@
               </label>
               <button 
                 @click="sendMessage"
-                :disabled="isProcessing"
-                class="w-8 h-8 rounded-xl bg-[var(--accent-color)] hover:bg-[var(--accent-hover)] flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="isProcessing || !chatInput.trim()"
+                class="canvas-composer__send-button"
               >
                 <n-spin v-if="isProcessing" :size="16" />
-                <n-icon v-else :size="20" color="white"><SendOutline /></n-icon>
+                <n-icon v-else :size="18"><FlashOutline /></n-icon>
               </button>
             </div>
           </div>
@@ -249,7 +262,13 @@
           >
             {{ tag }}
           </button>
-          <button class="p-1 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors">
+          <button
+            class="canvas-composer__suggestion-refresh"
+            data-testid="canvas-refresh-canvas-suggestions"
+            data-tooltip="换一批推荐"
+            aria-label="换一批推荐"
+            @click="refreshSuggestions"
+          >
             <n-icon :size="14"><RefreshOutline /></n-icon>
           </button>
         </div>
@@ -298,7 +317,7 @@ import {
   ChevronDownOutline,
   AddOutline,
   ImageOutline,
-  SendOutline,
+  FlashOutline,
   RefreshOutline,
   TextOutline,
   VideocamOutline,
@@ -487,12 +506,59 @@ const nodeTypeOptions = [
 const inputPlaceholder = '你可以试着说"帮我生成一个二次元的卡通角色"'
 
 // Quick suggestions | 快捷建议
-const suggestions = [
-  '像个魔法森林',
-  '三只不同的小猫',
-  '生成多角度分镜',
-  '夏日田野环绕漫步'
+const CANVAS_SUGGESTION_BATCH_SIZE = 4
+const canvasSuggestionPool = [
+  '童话森林里的发光小屋',
+  '雨夜霓虹街头人像',
+  '生成三段分镜脚本',
+  '产品广告镜头设计',
+  '海边日落旅行短片',
+  '古风侠客角色设定',
+  '未来城市航拍视角',
+  '治愈系猫咪日常',
+  '咖啡馆品牌宣传图',
+  '赛博朋克机械少女',
+  '国潮茶饮包装方案',
+  '雪山露营纪录片',
+  '二次元冒险场景',
+  '北欧客厅软装设计',
+  '美食制作过程分镜',
+  '水墨山水动画灵感',
+  '时尚杂志封面人像',
+  '深海水母奇幻世界',
+  '儿童绘本角色设计',
+  '城市夜景延时摄影',
+  '夏日音乐节海报',
+  '复古胶片旅行影像',
+  '科技产品发布会主视觉',
+  '花店开业宣传短片'
 ]
+
+const pickSuggestions = (pool, count = CANVAS_SUGGESTION_BATCH_SIZE) => {
+  const shuffled = [...pool]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]]
+  }
+
+  return shuffled.slice(0, count)
+}
+
+const suggestions = ref(pickSuggestions(canvasSuggestionPool))
+
+const refreshSuggestions = () => {
+  const currentSuggestions = new Set(suggestions.value)
+  const availableSuggestions = canvasSuggestionPool.filter(
+    suggestion => !currentSuggestions.has(suggestion)
+  )
+
+  suggestions.value = pickSuggestions(
+    availableSuggestions.length >= CANVAS_SUGGESTION_BATCH_SIZE
+      ? availableSuggestions
+      : canvasSuggestionPool
+  )
+}
 
 // Add new node | 添加新节点
 const addNewNode = async (type, requestedPosition = null) => {
@@ -662,6 +728,14 @@ const onConnect = (params) => {
   // Check connection types | 检查连接类型
   const sourceNode = nodes.value.find(n => n.id === params.source)
   const targetNode = nodes.value.find(n => n.id === params.target)
+
+  if (
+    ['text', 'llmConfig'].includes(sourceNode?.type)
+    && ['imageConfig', 'videoConfig'].includes(targetNode?.type)
+  ) {
+    window.$message?.info('请直接在生成节点的提示词框中输入内容')
+    return
+  }
   
   if (sourceNode?.type === 'image' && targetNode?.type === 'videoConfig') {
     // Use imageRole edge type | 使用图片角色边类型
@@ -669,19 +743,6 @@ const onConnect = (params) => {
       ...params,
       type: 'imageRole',
       data: { imageRole: 'first_frame_image' } // Default to first frame | 默认首帧
-    })
-  } else if (sourceNode?.type === 'text' && targetNode?.type === 'imageConfig') {
-    // Use promptOrder edge type | 使用提示词顺序边类型
-    // Calculate next order number | 计算下一个顺序号
-    const existingTextEdges = edges.value.filter(e => 
-      e.target === params.target && e.type === 'promptOrder'
-    )
-    const nextOrder = existingTextEdges.length + 1
-    
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: nextOrder }
     })
   } else if (sourceNode?.type === 'image' && targetNode?.type === 'imageConfig') {
     // Use imageOrder edge type | 使用图片顺序边类型
@@ -716,25 +777,6 @@ const onConnect = (params) => {
       ...params,
       type: 'imageOrder',
       data: { imageOrder: nextOrder }
-    })
-  } else if (sourceNode?.type === 'llmConfig' && targetNode?.type === 'imageConfig') {
-    // LLM output as prompt for image generation | LLM 输出作为图片生成提示词
-    const existingTextEdges = edges.value.filter(e =>
-      e.target === params.target && e.type === 'promptOrder'
-    )
-    const nextOrder = existingTextEdges.length + 1
-
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: nextOrder }
-    })
-  } else if (sourceNode?.type === 'llmConfig' && targetNode?.type === 'videoConfig') {
-    // LLM output as prompt for video generation | LLM 输出作为视频生成提示词
-    addEdge({
-      ...params,
-      type: 'promptOrder',
-      data: { promptOrder: 1 }
     })
   } else {
     addEdge(params)
@@ -943,21 +985,10 @@ const sendMessage = async () => {
         await createTextToImageWorkflow(content, { x: baseX, y: baseY })
       }
     } else {
-      // Manual mode: just create nodes | 手动模式：仅创建节点
-      const textNodeId = addNode('text', { x: baseX, y: baseY }, { 
-        content: content, 
-        label: '提示词' 
-      })
-      
-      const imageConfigNodeId = addNode('imageConfig', { x: baseX + 400, y: baseY }, {
-        label: '生图配置'
-      })
-      
-      addEdge({
-        source: textNodeId,
-        target: imageConfigNodeId,
-        sourceHandle: 'right',
-        targetHandle: 'left'
+      // Manual mode: create a config node with its prompt embedded.
+      addNode('imageConfig', { x: baseX, y: baseY }, {
+        label: '生图配置',
+        prompt: content
       })
     }
   } catch (err) {
@@ -1050,5 +1081,255 @@ onUnmounted(() => {
 .canvas-flow {
   width: 100%;
   height: 100%;
+}
+
+.canvas-workbench {
+  color: var(--canvas-text);
+  background: var(--canvas-bg);
+}
+
+.canvas-workbench__header {
+  flex: 0 0 var(--app-header-height);
+  min-height: var(--app-header-height);
+  padding-right: var(--space-6);
+  padding-left: var(--space-6);
+  border-color: var(--canvas-border) !important;
+  box-shadow: none;
+}
+
+.canvas-header-icon-button,
+.canvas-composer__suggestion-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.canvas-header-icon-button {
+  width: 34px;
+  height: 34px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--canvas-radius-control);
+  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-header-icon-button:hover,
+.canvas-header-icon-button:focus-visible {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.canvas-project-trigger {
+  min-width: 0;
+}
+
+.canvas-project-title {
+  max-width: min(30vw, 280px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-flow .vue-flow__background {
+  color: var(--canvas-grid);
+}
+
+.canvas-toolbar,
+.canvas-viewport-controls,
+.canvas-menu,
+.canvas-composer__surface {
+  border-color: var(--canvas-border) !important;
+  background: var(--canvas-surface) !important;
+  box-shadow: var(--canvas-shadow-panel) !important;
+}
+
+.canvas-composer textarea {
+  border: 0;
+}
+
+.canvas-composer textarea:focus,
+.canvas-composer textarea:focus-visible {
+  border-color: transparent;
+  outline: 0;
+  box-shadow: none;
+}
+
+.canvas-composer__send-button {
+  display: inline-flex;
+  width: 44px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  background: var(--fm-brand, var(--brand-primary));
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-brand);
+  transition: background var(--duration-normal) var(--ease-standard), box-shadow var(--duration-normal) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-composer__send-button:hover:not(:disabled),
+.canvas-composer__send-button:focus-visible:not(:disabled) {
+  color: var(--color-white);
+  background: var(--brand-primary-strong);
+}
+
+.canvas-composer__send-button:disabled {
+  color: var(--text-faint);
+  background: var(--state-disabled);
+  border-color: var(--app-border);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.canvas-composer__suggestion-refresh {
+  width: 30px;
+  height: 30px;
+  color: var(--text-secondary);
+  background: var(--canvas-surface);
+  border: 1px solid var(--canvas-border);
+  border-radius: var(--radius-pill);
+  transition: color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
+}
+
+.canvas-composer__suggestion-refresh:hover,
+.canvas-composer__suggestion-refresh:focus-visible {
+  color: var(--fm-brand, var(--brand-primary));
+  background: var(--bg-tertiary);
+  border-color: var(--fm-brand, var(--brand-primary));
+}
+
+.canvas-toolbar {
+  padding: var(--space-2);
+  border-radius: var(--canvas-radius-panel);
+}
+
+.canvas-toolbar button,
+.canvas-viewport-controls button {
+  border-radius: var(--canvas-radius-control);
+}
+
+.canvas-toolbar button:first-child {
+  background: var(--canvas-action);
+}
+
+.canvas-toolbar button:first-child:hover,
+.canvas-toolbar button:first-child:focus-visible {
+  background: var(--canvas-action-hover);
+}
+
+.canvas-menu {
+  border-radius: var(--canvas-radius-panel);
+}
+
+.canvas-composer {
+  max-width: min(672px, calc(100% - 32px));
+}
+
+.canvas-composer__surface {
+  border-radius: var(--canvas-radius-panel);
+}
+
+.canvas-workbench .vue-flow__minimap {
+  overflow: hidden;
+  border: 1px solid var(--canvas-border);
+  border-radius: var(--canvas-radius-control);
+  background: var(--canvas-surface);
+  box-shadow: var(--shadow-control);
+}
+
+@media (max-width: 1024px) {
+  .canvas-workbench__header {
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+
+  .canvas-composer {
+    max-width: min(600px, calc(100% - 32px));
+  }
+}
+
+@media (max-width: 768px) {
+  .canvas-workbench__header {
+    padding-right: var(--space-3);
+    padding-left: var(--space-3);
+  }
+
+  .canvas-project-title {
+    max-width: 24vw;
+  }
+
+  .canvas-save-status {
+    max-width: 76px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .canvas-toolbar {
+    top: auto;
+    bottom: var(--space-4);
+    left: 50%;
+    flex-direction: row;
+    max-width: calc(100% - 32px);
+    transform: translateX(-50%);
+  }
+
+  .canvas-toolbar > div {
+    width: 1px;
+    height: 28px;
+    margin: 0 var(--space-1);
+  }
+
+  .canvas-viewport-controls {
+    bottom: var(--space-4);
+    left: var(--space-4);
+  }
+
+  .canvas-composer {
+    right: 0;
+    bottom: 76px;
+    left: 0;
+    max-width: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 375px) {
+  .canvas-workbench__header {
+    padding-right: var(--space-2);
+    padding-left: var(--space-2);
+  }
+
+  .canvas-composer {
+    bottom: 72px;
+    padding-right: var(--space-2);
+    padding-left: var(--space-2);
+  }
+
+  .canvas-workbench__header {
+    gap: var(--space-1);
+  }
+
+  .canvas-workbench__header > div {
+    gap: var(--space-1);
+  }
+
+  .canvas-project-title {
+    max-width: 72px;
+  }
+
+  .canvas-save-status {
+    display: none;
+  }
+
+  .canvas-assets-entry {
+    padding-right: var(--space-1) !important;
+    padding-left: var(--space-1) !important;
+    font-size: var(--font-size-xs) !important;
+  }
 }
 </style>

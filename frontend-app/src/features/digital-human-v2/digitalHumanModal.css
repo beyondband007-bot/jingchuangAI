@@ -1,0 +1,33 @@
+.dhv2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(18, 17, 24, 0.64);
+  backdrop-filter: blur(8px);
+}
+
+.dhv2-modal {
+  width: min(468px, 92vw);
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 32px 90px rgba(18, 13, 35, 0.34);
+}
+
+.dhv2-modal.is-ai { width: min(620px, 92vw); }
+.dhv2-modal.is-upload { width: min(680px, 92vw); }
+.dhv2-modal.is-upload.has-upload-preview { width: min(760px, 94vw); max-height: calc(100dvh - 32px); overflow: hidden; }
+.dhv2-modal.is-upload.has-upload-preview .dhv2-modal__body { max-height: calc(100dvh - 150px); overflow-y: auto; }
+.dhv2-modal__title-with-icon { display: inline-flex; align-items: center; gap: var(--space-1); }
+.dhv2-modal.is-upload .dhv2-modal__header strong { margin-top: 0; font-size: 16px; }
+.dhv2-modal.is-upload .dhv2-modal__body { max-height: none; padding: 16px 18px 20px; overflow: visible; }
+
+.dhv2-modal__header,
+.dhv2-modal__footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 16px; }
+.dhv2-modal__header { border-bottom: 1px solid var(--dhv2-border); }
+.dhv2-modal__header span { display: block; color: var(--dhv2-brand); font-size: 12px; }
+.dhv2-modal__header strong { display: block; margin-top: 4px; font-size: 16px; }
+.dhv2-modal__close { display: grid; place-items: center; width: 36px; height: 36px; color: var(--dhv2-muted); background: #ffffff; border: 1px solid var(--dhv2-border); border-radius: var(--radius-pill); cursor: pointer; }
+.dhv2-modal__body { display: grid; gap: var(--space-3); padding: 12px 16px; max-height: min(82vh, 820px); overflow-y: auto; }

@@ -1,0 +1,493 @@
+/* Image generation composer placement. */
+section.image-gen-view .image-composer-shell {
+  max-width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  );
+  width: min(
+    800px,
+    calc(100vw - var(--feature-sidebar-width) - 48px)
+  );
+  right: auto;
+  left: calc(
+    var(--feature-sidebar-width) + ((100vw - var(--feature-sidebar-width)) / 2)
+  );
+  transform: translateX(-50%) scale(1);
+  transform-origin: bottom center;
+  z-index: var(--z-sticky);
+  overflow: visible;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+  transition: none;
+  will-change: auto;
+}
+
+section.image-gen-view .image-composer-shell.is-inline {
+  position: relative;
+  inset: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: min(800px, calc(100% - 48px));
+  max-width: min(800px, calc(100% - 48px));
+  margin: 0 auto 150px;
+  transform: none;
+  transform-origin: center center;
+  z-index: 2;
+}
+
+@media (max-width: 1024px) {
+  section.image-gen-view .image-composer-shell.is-inline:not(.is-sticky) {
+    width: min(800px, calc(100% - 48px));
+    max-width: min(800px, calc(100% - 48px));
+    left: auto;
+    right: auto;
+    margin-right: auto;
+    margin-left: auto;
+    transform: none;
+  }
+
+  section.image-gen-view
+    .image-composer-shell.is-inline:not(.is-sticky)
+    .chatbot-ui-dialog {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+section.image-gen-view .image-composer-heading,
+.video-gen-view-root .video-composer-heading {
+  width: min(800px, calc(100vw - var(--feature-sidebar-width) - 48px));
+  margin: 120px auto 24px;
+  color: var(--text-primary);
+  font-size: var(--title-page-size);
+  line-height: var(--line-height-tight);
+  text-align: center;
+}
+
+.composer-sticky-spacer {
+  flex: 0 0 auto;
+  width: min(800px, calc(100vw - var(--feature-sidebar-width) - 48px));
+  max-width: 800px;
+  height: clamp(190px, 22vh, 240px);
+  margin: 120px auto 150px;
+  pointer-events: none;
+}
+
+section.image-gen-view .image-composer-shell.is-sticky {
+  position: fixed;
+  bottom: var(--space-5);
+}
+
+section.image-gen-view .image-composer-shell.is-sticky .image-prompt-dialog,
+section.image-gen-view .image-composer-shell.is-sticky .image-prompt-main-row,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-main-row
+  textarea,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-compact-submit,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .fm-prompt-reference-region,
+section.image-gen-view
+  .image-composer-shell.is-sticky
+  .image-prompt-controls-row {
+  transition: none;
+}
+
+section.image-gen-view .image-composer-shell.is-workbench {
+  position: relative;
+  inset: auto;
+  width: min(800px, 100%);
+  max-width: 800px;
+  margin: 0 auto;
+  transform: none;
+  z-index: 2;
+}
+
+section.image-gen-view .image-composer-placeholder,
+.video-gen-view-root .image-composer-placeholder {
+  pointer-events: none;
+}
+
+.image-composer-placeholder-dialog {
+  display: grid;
+  gap: var(--space-18px);
+  min-height: 152px;
+  padding: 20px 24px;
+  border: 1px solid rgba(226, 223, 236, 0.92);
+  border-radius: var(--radius-2xl);
+  background:
+    linear-gradient(90deg, #f4f2fb 25%, #ffffff 42%, #f4f2fb 64%);
+  background-size: 220% 100%;
+  animation: composer-placeholder-shimmer 1.2s ease-in-out infinite;
+}
+
+.image-composer-placeholder-line {
+  display: block;
+  width: min(360px, 74%);
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: #e2deee;
+}
+
+.image-composer-placeholder-line.is-main {
+  width: min(520px, 88%);
+  height: 28px;
+}
+
+@keyframes composer-placeholder-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+section.image-gen-view .image-composer-shell.is-collapsed {
+  min-height: 64px;
+  transform: translateX(-50%) scale(0.965) translateY(6px);
+}
+
+section.image-gen-view .image-composer-shell.is-inline.is-collapsed,
+section.image-gen-view .image-composer-shell.is-workbench.is-collapsed {
+  transform: scale(0.985) translateY(4px);
+}
+
+section.image-gen-view .image-prompt-dialog {
+  transform: translateZ(0);
+  transition:
+    min-height 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+section.image-gen-view .image-prompt-dialog.is-expanded {
+  overflow: visible;
+}
+
+section.image-gen-view .image-prompt-dialog.is-collapsed {
+  gap: 0;
+  min-height: 60px;
+  padding: 8px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+section.image-gen-view .image-prompt-main-row {
+  transition:
+    min-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    align-items 260ms ease;
+}
+
+section.image-gen-view .image-prompt-main-row.is-collapsed {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+section.image-gen-view .image-prompt-main-row textarea {
+  transition:
+    min-height 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+section.image-gen-view .image-prompt-main-row.is-collapsed textarea {
+  min-height: 28px;
+  max-height: 28px;
+}
+
+section.image-gen-view .image-prompt-compact-submit {
+  transition:
+    opacity 180ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+section.image-gen-view
+  .image-prompt-dialog.is-expanded
+  .image-prompt-compact-submit {
+  flex-basis: 0;
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  padding: 0;
+  border-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: scale(0.92);
+}
+
+section.image-gen-view .fm-prompt-reference-region,
+section.image-gen-view .image-prompt-controls-row {
+  max-height: 96px;
+  opacity: 1;
+  overflow: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition:
+    max-height 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease 80ms,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1) 60ms;
+}
+
+section.image-gen-view
+  .image-prompt-dialog.is-collapsed
+  .fm-prompt-reference-region,
+section.image-gen-view
+  .image-prompt-dialog.is-collapsed
+  .image-prompt-controls-row {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(6px) scale(0.98);
+  transition:
+    opacity 110ms ease,
+    transform 160ms ease,
+    max-height 220ms cubic-bezier(0.22, 1, 0.36, 1) 40ms;
+}
+
+section.image-gen-view .image-composer-shell.is-collapsed .chatbot-ui-dialog {
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}@media (prefers-reduced-motion: reduce) {
+  section.image-gen-view .image-composer-shell,
+  section.image-gen-view .image-prompt-dialog,
+  section.image-gen-view .image-prompt-main-row,
+  section.image-gen-view .image-prompt-main-row textarea,
+  section.image-gen-view .image-prompt-compact-submit,
+  section.image-gen-view .fm-prompt-reference-region,
+  section.image-gen-view .image-prompt-controls-row {
+    transition: none;
+  }
+}@media (max-width: 768px) {
+  .composer-sticky-spacer {
+    width: calc(100vw - 32px);
+    height: clamp(168px, 24vh, 210px);
+    margin: 72px auto 96px;
+  }
+
+  section.image-gen-view .image-composer-shell {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) scale(1);
+  }
+
+  section.image-gen-view .image-composer-shell.is-inline {
+    left: auto;
+    transform: none;
+  }
+
+  section.image-gen-view .image-composer-shell.is-collapsed {
+    transform: translateX(-50%) scale(0.985) translateY(3px);
+  }
+
+  section.image-gen-view .image-prompt-dialog {
+    transition-duration: 220ms;
+  }
+
+  section.image-gen-view .image-prompt-dialog.is-collapsed {
+    display: flex;
+    min-height: 60px;
+    height: 60px;
+    align-items: center;
+  }
+
+  section.image-gen-view
+    .image-prompt-dialog.is-collapsed
+    .image-prompt-main-row {
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    height: 44px;
+  }
+
+  section.image-gen-view
+    .image-prompt-dialog.is-collapsed
+    .image-prompt-reference-region,
+  section.image-gen-view
+    .image-prompt-dialog.is-collapsed
+    .image-prompt-controls-row {
+    display: none;
+  }
+
+}
+
+.image-workbench-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: stretch;
+  gap: var(--space-4);
+  width: var(--feature-content-width);
+  height: auto;
+  margin: 16px var(--feature-content-inline-offset) 0;
+}
+
+section.image-gen-view.is-generation-workbench .image-workbench-layout {
+  height: calc(var(--app-content-height) - var(--space-6));
+  min-height: 0;
+}
+
+.image-workbench-main,
+.image-workbench-history {
+  min-width: 0;
+  min-height: 0;
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--app-border);
+  border-radius: var(--radius-lg);
+}
+
+.image-workbench-main {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  height: 100%;
+  overflow: hidden;
+  padding: var(--space-4);
+}
+
+.image-workbench-context {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+}
+
+.image-workbench-thread-item {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.image-workbench-request-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.image-workbench-request-prompt {
+  color: #161616;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.image-workbench-request-meta {
+  color: #9a97a8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.image-workbench-generation-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: #b5b2c0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.image-workbench-generation-status .image-generating-spinner {
+  width: 18px;
+  height: 18px;
+  filter: drop-shadow(0 0 6px rgba(98, 59, 255, 0.28));
+}
+
+.image-workbench-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 360px;
+  text-align: center;
+}
+
+.image-workbench-empty-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  color: #fff;
+  background: rgba(141, 99, 255, 0.18);
+  border: 1px solid rgba(141, 99, 255, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.image-workbench-empty h2 {
+  margin: var(--space-4) 0 var(--space-2);
+  color: var(--text-primary);
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.image-workbench-empty p,
+.image-workbench-result-meta p,
+.image-workbench-status p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 12px;
+}
+
+.image-workbench-prompt {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.image-workbench-prompt span,
+.image-workbench-history-head span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.image-workbench-prompt p {
+  margin: 0;
+  width: fit-content;
+  max-width: min(720px, 82%);
+  padding: var(--space-3) var(--space-4);
+  color: #3d3a4a;
+  background: #f3f0ff;
+  border: 1px solid #e8e2ff;
+  border-radius: var(--space-4);
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.image-workbench-status {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 0;
+  place-content: start;
+  color: #6d6a7c;
+  text-align: left;
+}
+
+.image-workbench-status.is-failed {
+  padding: 0;
+}
+
+.image-workbench-status svg {
+  color: #ef6b6b;
+  animation: none;
+}

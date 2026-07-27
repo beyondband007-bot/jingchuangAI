@@ -281,15 +281,18 @@ export async function toggleImageTaskFavorite(id, userId) {
   );
 }
 
-export async function listInspirationFavoriteIds(userId) {
+export async function listInspirationFavorites(userId) {
   const [rows] = await getPool().query(
-    `SELECT inspiration_id
+    `SELECT inspiration_id, created_at
      FROM inspiration_favorites
      WHERE user_id = ?
      ORDER BY created_at DESC, id DESC`,
     [userId]
   );
-  return rows.map((row) => row.inspiration_id);
+  return rows.map((row) => ({
+    id: row.inspiration_id,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function findInspirationFavorite(userId, inspirationId) {

@@ -1,10 +1,10 @@
 ﻿import React, { useEffect, useRef, useState } from "react";
-import { ChevronRight, Clock, Music, Sparkles } from "lucide-react";
-import { AiMusicGenerationWorkbenchCard } from "../music-generation-ui/AiMusicGenerationWorkbenchCard";
+import "./musicStyles.css";
+import { Music } from "lucide-react";
 import { MusicCoverCropModal } from "../music-generation-ui/MusicCoverCropModal";
 import { MusicGeneratingPanel } from "./MusicGeneratingPanel";
 import { MusicFullPagePlayer } from "./MusicFullPagePlayer";
-import { MusicRecentGrid } from "./MusicRecentGrid";
+import { MusicHistoryList, MusicReferenceComposer } from "./MusicReferenceLayouts";
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile } from "../../api/mediaUrl.js";
@@ -14,6 +14,7 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { useToast } from "../../components/ToastProvider";
 
 const musicRecentStorageKey = "jingchuang.music.recentResults";
 
@@ -153,6 +154,7 @@ function randomMelodyDelayMs() {
 }
 
 export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
+  const { showToast: showGlobalToast, dismissToast } = useToast();
   const [prompt, setPrompt] = useState("");
   const [title, setTitle] = useState("");
   const [coverFile, setCoverFile] = useState(null);
@@ -162,7 +164,6 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [lyricsOptimizer, setLyricsOptimizer] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState("");
-  const [toast, setToast] = useState(null);
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playerTask, setPlayerTask] = useState(null);
@@ -172,7 +173,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [etaSeconds, setEtaSeconds] = useState(0);
   const [syncingIds, setSyncingIds] = useState({});
   const [coverEditItem, setCoverEditItem] = useState(null);
-  const toastTimerRef = useRef(null);
+  const delayedNavigationTimerRef = useRef(null);
   const pollTokenRef = useRef(0);
   const melodyTimerRef = useRef(null);
   const progressTimerRef = useRef(null);
@@ -214,15 +215,15 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     setLyricsOptimizer(false);
     setIsGenerating(false);
     setNotice("");
-    setToast(null);
     setViewTab("home");
     setPlayerTask(null);
     setShowPlayer(false);
     setSyncingIds({});
     resetGenerationFlow();
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
+    dismissToast();
+    if (delayedNavigationTimerRef.current) {
+      window.clearTimeout(delayedNavigationTimerRef.current);
+      delayedNavigationTimerRef.current = null;
     }
   }, [resetSignal]);
 
@@ -321,17 +322,18 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
   useEffect(() => () => {
     clearGenerationTimers();
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (delayedNavigationTimerRef.current) window.clearTimeout(delayedNavigationTimerRef.current);
   }, []);
 
   function showToast(type, message, { switchTab = false } = {}) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-      if (switchTab) setViewTab("recent");
-    }, 2000);
+    showGlobalToast(message, { type });
+    if (delayedNavigationTimerRef.current) window.clearTimeout(delayedNavigationTimerRef.current);
+    if (switchTab) {
+      delayedNavigationTimerRef.current = window.setTimeout(() => {
+        delayedNavigationTimerRef.current = null;
+        setViewTab("recent");
+      }, 2000);
+    }
   }
 
   function applyTaskUpdate(taskId, apiTask, fallback = {}) {
@@ -534,6 +536,18 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     resetGenerationFlow();
   }
 
+  function retryFailedItem(item) {
+    setPrompt(item?.prompt || "");
+    setTitle(item?.title || "");
+    setLyrics(item?.lyrics || "");
+    setIsInstrumental(Boolean(item?.isInstrumental));
+    setLyricsOptimizer(false);
+    setShowPlayer(false);
+    setPlayerTask(null);
+    setViewTab("home");
+    setNotice("已恢复失败任务的创作参数，请确认后重新生成。");
+  }
+
   async function syncLyricsInBackground(item, fallback = {}) {
     const context = { ...fallback, ...generationContextRef.current };
     const timelineIsSuspicious = hasSuspiciousLyricsTimeline(item);
@@ -705,84 +719,55 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               onDownloadItem={downloadRecentItem}
               onEditCoverItem={requestEditCoverItem}
               onDeleteItem={requestDeleteRecentItem}
+              onRetryItem={retryFailedItem}
             />
           ) : (
-            <div className="music-ref-layout">
-              {/* Hero */}
-              <div className="music-ref-hero">
-                <h1><Music size={40} /> 创建你的音乐</h1>
-                <p>输入歌词与风格，AI 为你创作独一无二的音乐作品 <Sparkles size={16} /></p>
-              </div>
-
-              {/* Form card */}
-              <div className="music-ref-form">
-                <AiMusicGenerationWorkbenchCard
-                  prompt={prompt}
-                  title={title}
-                  coverPreview={coverPreview}
-                  lyrics={lyrics}
-                  isInstrumental={isInstrumental}
-                  lyricsOptimizer={lyricsOptimizer}
-                  model="music-2.6-free"
-                  isGenerating={isGenerating}
-                  canGenerate={canGenerate}
-                  notice={notice}
-                  currentResult={null}
-                  onPromptChange={setPrompt}
-                  onTitleChange={setTitle}
-                  onCoverChange={handleCoverChange}
-                  onCoverRemove={handleCoverRemove}
-                  onLyricsChange={setLyrics}
-                  onToggleInstrumental={setIsInstrumental}
-                  onToggleLyricsOptimizer={setLyricsOptimizer}
-                  onGenerate={generate}
-                  onUseStyleTag={appendPrompt}
-                  onDownloadMp3={downloadMp3}
-                  onDownloadLyrics={downloadLyrics}
-                />
-              </div>
-
-              {/* Recent */}
-              <div className="music-ref-recent">
-                <div className="music-ref-section-head">
-                  <h3><Clock size={18} /> 最近生成</h3>
-                  <button type="button" className="music-ref-link" onClick={() => setViewTab("recent")}>
-                    查看全部 <ChevronRight size={14} />
-                  </button>
-                </div>
-                <MusicRecentGrid
-                  items={displayRecent}
-                  onSelectItem={openCompletedPlayer}
-                  onDownloadItem={downloadRecentItem}
-                  onEditCoverItem={requestEditCoverItem}
-                  onDeleteItem={requestDeleteRecentItem}
-                />
-              </div>
-            </div>
+            <MusicReferenceComposer
+              composerProps={{
+                prompt,
+                title,
+                coverPreview,
+                lyrics,
+                isInstrumental,
+                lyricsOptimizer,
+                model: "music-2.6-free",
+                isGenerating,
+                canGenerate,
+                notice,
+                currentResult: null,
+                onPromptChange: setPrompt,
+                onTitleChange: setTitle,
+                onCoverChange: handleCoverChange,
+                onCoverRemove: handleCoverRemove,
+                onLyricsChange: setLyrics,
+                onToggleInstrumental: setIsInstrumental,
+                onToggleLyricsOptimizer: setLyricsOptimizer,
+                onGenerate: generate,
+                onUseStyleTag: appendPrompt,
+                onDownloadMp3: downloadMp3,
+                onDownloadLyrics: downloadLyrics,
+              }}
+              recentItems={displayRecent}
+              onViewAll={() => setViewTab("recent")}
+              onSelectItem={openCompletedPlayer}
+              onDownloadItem={downloadRecentItem}
+              onEditCoverItem={requestEditCoverItem}
+              onDeleteItem={requestDeleteRecentItem}
+              onRetryItem={retryFailedItem}
+            />
           )
         ) : (
-          <div className="music-ref-layout">
-            <div className="music-ref-recent">
-              <div className="music-ref-section-head">
-                <h3><Clock size={18} /> 历史记录</h3>
-              </div>
-              <MusicRecentGrid
-                items={recentResults}
-                onSelectItem={openCompletedPlayer}
-                onDownloadItem={downloadRecentItem}
-                onEditCoverItem={requestEditCoverItem}
-                onDeleteItem={requestDeleteRecentItem}
-              />
-            </div>
-          </div>
+          <MusicHistoryList
+            items={recentResults}
+            onSelectItem={openCompletedPlayer}
+            onDownloadItem={downloadRecentItem}
+            onEditCoverItem={requestEditCoverItem}
+            onDeleteItem={requestDeleteRecentItem}
+            onRetryItem={retryFailedItem}
+          />
         )}
       </div>
 
-      {toast ? (
-        <div className={`music-toast music-toast--${toast.type}`}>
-          {toast.message}
-        </div>
-      ) : null}
       {showRechargeAlert && (
         <CreditAlertDialog
           title="这次没有生成音乐"

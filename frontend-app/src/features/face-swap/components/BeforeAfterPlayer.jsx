@@ -12,9 +12,14 @@ export function BeforeAfterPlayer({
   const beforeRef = useRef(null);
   const afterRef = useRef(null);
   const draggingRef = useRef(false);
+  const afterLayoutReadyRef = useRef(false);
   const [position, setPosition] = useState(50);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [videoLayout, setVideoLayout] = useState({
+    aspectRatio: "16 / 9",
+    orientation: "landscape",
+  });
 
   const syncTime = useCallback((source) => {
     const before = beforeRef.current;
@@ -25,6 +30,12 @@ export function BeforeAfterPlayer({
       target.currentTime = source.currentTime;
     }
   }, []);
+
+  useEffect(() => {
+    afterLayoutReadyRef.current = false;
+    setIsReady(false);
+    setVideoLayout({ aspectRatio: "16 / 9", orientation: "landscape" });
+  }, [beforeUrl, afterUrl]);
 
   useEffect(() => {
     const before = beforeRef.current;
@@ -99,13 +110,28 @@ export function BeforeAfterPlayer({
     }
   }
 
+  function captureVideoLayout(event, isAfterVideo = false) {
+    const width = Number(event.currentTarget?.videoWidth || 0);
+    const height = Number(event.currentTarget?.videoHeight || 0);
+    if (!width || !height) return;
+    if (!isAfterVideo && afterLayoutReadyRef.current) return;
+    if (isAfterVideo) afterLayoutReadyRef.current = true;
+
+    const orientation = height > width ? "portrait" : width > height ? "landscape" : "square";
+    setVideoLayout({
+      aspectRatio: `${width} / ${height}`,
+      orientation,
+    });
+  }
+
   if (!beforeUrl || !afterUrl) return null;
 
   return (
     <div className="fsw-compare">
       <div
         ref={containerRef}
-        className="fsw-compare__viewport"
+        className={`fsw-compare__viewport is-${videoLayout.orientation}`}
+        style={{ "--fsw-video-aspect": videoLayout.aspectRatio }}
         role="group"
         aria-label="换脸前后对比"
       >
@@ -117,6 +143,7 @@ export function BeforeAfterPlayer({
           muted
           playsInline
           preload="metadata"
+          onLoadedMetadata={(event) => captureVideoLayout(event, true)}
           onEnded={() => setIsPlaying(false)}
         />
         <div
@@ -131,6 +158,7 @@ export function BeforeAfterPlayer({
             muted
             playsInline
             preload="metadata"
+            onLoadedMetadata={(event) => captureVideoLayout(event)}
             onEnded={() => setIsPlaying(false)}
           />
         </div>

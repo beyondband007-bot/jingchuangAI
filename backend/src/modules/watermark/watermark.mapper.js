@@ -1,4 +1,8 @@
 import { formatBeijingDateTime } from "../../shared/time.js";
+import {
+  getProviderTaskProgress,
+  normalizeProviderTaskStatus,
+} from "../../shared/taskStatus.js";
 export function mapWatermarkAsset(row) {
   if (!row) return null;
   return {
@@ -14,7 +18,7 @@ export function mapWatermarkAsset(row) {
 }
 
 export function mapWatermarkTask(row) {
-  const status = row.status === "pending" ? "processing" : row.status;
+  const status = normalizeProviderTaskStatus(row.status);
   return {
     id: String(row.id),
     model: row.model_key,
@@ -27,7 +31,10 @@ export function mapWatermarkTask(row) {
     sourceFileName: row.source_original_name || "",
     sourceMimeType: row.source_mime_type || "",
     status,
-    progress: row.status === "completed" ? 100 : row.status === "failed" ? 0 : row.provider_task_id ? 68 : 24,
+    progress: getProviderTaskProgress({
+      status: row.status,
+      providerTaskId: row.provider_task_id,
+    }),
     resultUrl: row.result_url || "",
     thumbnailUrl: row.thumbnail_url || "",
     providerTaskId: row.provider_task_id || "",

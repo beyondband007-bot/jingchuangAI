@@ -1,0 +1,21 @@
+/* Shared status controls used by voice, transcription, and prompt replication. */
+.voice-current-chip,
+.voice-cloned-list button.is-active {
+  color: #ffffff;
+  background: linear-gradient(90deg, #ad6cfc 0%, #5a2cfc 100%);
+  border-color: #5a2cfc;
+}
+
+.voice-slider-row input,
+.voice-composer input[type="checkbox"],
+.voice-composer input[type="radio"] {
+  accent-color: var(--brand-primary);
+}
+
+.voice-recent-empty svg,
+.voice-recent-art,
+.voice-recent-icon-button,
+.voice-recent-icon-button:hover,
+.voice-recent-icon-button.is-favorite {
+  background: var(--brand-primary-soft-alt);
+}

@@ -1,0 +1,401 @@
+/* =========================================================
+   XHS note detail 1:1 preview (ArticleXhsNotePreview)
+   ========================================================= */
+
+.xhs-note-stage {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.xhs-note-phone {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  width: min(375px, calc(100% - 24px));
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 9 / 19.5;
+  flex: 0 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  border: 6px solid #5d5d5d;
+  border-radius: var(--radius-sm);
+  color: #111;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(38, 34, 45, 0.18);
+}
+
+/* 状态栏 */
+.xhs-note-statusbar {
+  display: flex;
+  height: 44px;
+  flex: 0 0 44px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 28px 10px 32px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.xhs-note-status-icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5px);
+}
+
+.xhs-note-status-icons i {
+  position: relative;
+  display: block;
+}
+
+.xhs-note-signal {
+  width: 17px;
+  height: 12px;
+  background: linear-gradient(
+    to right,
+    #111 0 18%,
+    transparent 18% 27%,
+    #111 27% 45%,
+    transparent 45% 54%,
+    #111 54% 72%,
+    transparent 72% 81%,
+    #111 81%
+  );
+  clip-path: polygon(
+    0 100%,
+    0 72%,
+    18% 72%,
+    18% 54%,
+    45% 54%,
+    45% 30%,
+    72% 30%,
+    72% 0,
+    100% 0,
+    100% 100%
+  );
+}
+
+.xhs-note-wifi-icon {
+  font-size: 14px;
+  color: #111;
+}
+
+.xhs-note-battery {
+  width: 22px;
+  height: 10px;
+  border: 1.5px solid #111;
+  border-radius: var(--radius-xs);
+}
+
+.xhs-note-battery::before {
+  position: absolute;
+  inset: 1px;
+  border-radius: var(--radius-xs);
+  background: #111;
+  content: "";
+}
+
+.xhs-note-battery::after {
+  position: absolute;
+  top: 2px;
+  right: -3px;
+  width: 2px;
+  height: 4px;
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: #111;
+  content: "";
+}
+
+/* 作者栏 */
+.xhs-note-authorbar {
+  display: flex;
+  height: 48px;
+  flex: 0 0 48px;
+  align-items: center;
+  gap: var(--space-10px);
+  padding: 0 14px;
+}
+
+.xhs-note-back,
+.xhs-note-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  color: #111;
+  background: transparent;
+  cursor: pointer;
+}
+
+.xhs-note-avatar {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: linear-gradient(135deg, #8d63ff, #ff5678);
+  font-size: 13px;
+}
+
+.xhs-note-avatar.is-small {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  font-size: 10px;
+}
+
+.xhs-note-author-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xhs-note-follow {
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid #ff2442;
+  border-radius: var(--radius-pill);
+  color: #ff2442;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Content overrides. */
+.xhs-note-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.xhs-note-body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Image carousel. */
+.xhs-note-carousel-shell {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.xhs-note-carousel {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex-shrink: 0;
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  cursor: grab;
+  touch-action: pan-x;
+}
+
+.xhs-note-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.xhs-note-carousel.is-dragging {
+  scroll-behavior: auto;
+  scroll-snap-type: none;
+  cursor: grabbing;
+}
+
+.xhs-note-carousel-btn {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.18);
+  border: 0;
+  border-radius: var(--radius-pill);
+  opacity: 0.72;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: opacity 160ms ease;
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+.xhs-note-carousel-shell:hover .xhs-note-carousel-btn {
+  opacity: 1;
+}
+
+.xhs-note-carousel-btn.is-prev {
+  left: 10px;
+}
+
+.xhs-note-carousel-btn.is-next {
+  right: 10px;
+}
+
+.xhs-note-image-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  flex: 0 0 100%;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #fff;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  user-select: none;
+}
+
+.xhs-note-image-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+}
+
+.xhs-note-page-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.42);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Carousel overrides. */
+.xhs-note-dots {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 24px;
+  padding-top: 10px;
+}
+
+.xhs-note-dots button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: #d1d1d1;
+  cursor: pointer;
+}
+
+.xhs-note-dots button.is-active {
+  width: 16px;
+  border-radius: var(--radius-pill);
+  background: #ff2442;
+}
+
+/* Copy overrides. */
+.xhs-note-copy {
+  padding: 12px 16px 16px;
+}
+
+.xhs-note-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.xhs-note-paragraph {
+  margin: 0 0 8px;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.xhs-note-paragraph:last-of-type {
+  margin-bottom: 4px;
+}
+
+.xhs-note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-10px);
+  margin: 8px 0 0;
+  color: #3b6a9c;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.xhs-note-meta {
+  margin: 10px 0 0;
+  color: #999;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.xhs-note-comment-prompt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10px);
+  padding: 10px 16px 0;
+}
+
+.xhs-note-comment-prompt p {
+  flex: 1;
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  color: #bbb;
+  background: #f5f5f5;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.xhs-note-empty-comments {
+  display: grid;
+  min-height: 120px;
+  padding: 8px 16px 24px;
+  place-items: center;
+  align-content: center;
+  color: #d8d8d8;
+}
+
+.xhs-note-empty-comments p {
+  margin: 6px 0 0;
+  color: #aaa;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.xhs-note-empty-comments strong {
+  color: #5b7ea6;
+}

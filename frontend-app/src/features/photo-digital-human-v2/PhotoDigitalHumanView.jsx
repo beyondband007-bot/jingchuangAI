@@ -7,6 +7,7 @@ import {
 } from "@arco-design/web-react";
 import { ImagePlus, Loader2, Upload as UploadIcon, X } from "lucide-react";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
+import { useToast } from "../../components/ToastProvider";
 import { usePhotoDigitalHumanData } from "./hooks/usePhotoDigitalHumanData";
 import {
   VOICE_UNAVAILABLE_HINT,
@@ -20,7 +21,7 @@ import {
   estimatePhotoSpeechSeconds,
   formatPhotoModelLabel,
 } from "./utils";
-import "./photoDigitalHumanV2.scss";
+import "./photoDigitalHumanV2.css";
 
 const DEFAULT_SCRIPT =
   "大家好，欢迎来到我们的 AI 创作平台。今天我会用一张照片，为你生成自然口型的数字人视频。";
@@ -41,6 +42,7 @@ function isAudioFile(file) {
 }
 
 export function PhotoDigitalHumanView({ isActive = true }) {
+  const { showToast } = useToast();
   const {
     options,
     voices,
@@ -54,7 +56,6 @@ export function PhotoDigitalHumanView({ isActive = true }) {
 
   const fileInputRef = useRef(null);
   const audioInputRef = useRef(null);
-  const toastTimerRef = useRef(null);
   const [portraitFile, setPortraitFile] = useState(null);
   const [portraitPreview, setPortraitPreview] = useState("");
   const [audioFile, setAudioFile] = useState(null);
@@ -67,7 +68,6 @@ export function PhotoDigitalHumanView({ isActive = true }) {
   const [aspectRatio, setAspectRatio] = useState(PHOTO_ASPECT_RATIO_OPTIONS[0].value);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTask, setActiveTask] = useState(null);
-  const [toastMessage, setToastMessage] = useState("");
 
   const selectedModel =
     options.models.find((item) => item.value === model) || options.models[0];
@@ -82,21 +82,6 @@ export function PhotoDigitalHumanView({ isActive = true }) {
       (audioFile || (voiceId && isDigitalHumanVoiceEnabled(voiceId))) &&
       !isSubmitting,
   );
-
-  function showToast(message) {
-    setToastMessage(message);
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage("");
-      toastTimerRef.current = null;
-    }, 2200);
-  }
-
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     if (!activeTask?.id) return;
@@ -405,7 +390,7 @@ export function PhotoDigitalHumanView({ isActive = true }) {
 
           <footer className="pdhv2-footer">
             <p className="pdhv2-footer__cost">
-              本次生成预计消耗 {costPoints} 积分
+              预计消耗 {costPoints} 积分
               {credits ? ` · 剩余 ${credits.balance} 积分` : ""}
             </p>
             <Button
@@ -432,7 +417,7 @@ export function PhotoDigitalHumanView({ isActive = true }) {
                 <span>{activeTask.time || activeTask.createdAt}</span>
               </div>
               {activeTask.status === "completed" && activeTask.resultUrl ? (
-                <video src={activeTask.resultUrl} controls playsInline />
+                <video src={activeTask.resultUrl} controls playsInline preload="metadata" />
               ) : activeTask.status === "failed" ? (
                 <p>{activeTask.error || "请稍后重试"}</p>
               ) : (
@@ -445,7 +430,6 @@ export function PhotoDigitalHumanView({ isActive = true }) {
         </div>
       </div>
 
-      {toastMessage ? <div className="pdhv2-toast">{toastMessage}</div> : null}
     </section>
   );
 }

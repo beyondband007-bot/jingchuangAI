@@ -20,11 +20,11 @@ export function normalizeArkVideoErrorMessage(body = {}) {
   const suffix = requestId ? `（RequestId: ${requestId}）` : "";
 
   if (/InputImageSensitiveContentDetected\.PrivacyInformation/i.test(code) || /input image may contain real person/i.test(message)) {
-    return `火山平台判定输入图片可能包含真人或隐私信息，请更换为明确的虚拟/卡通素材后再试${suffix}`;
+    return `素材未通过火山平台隐私内容审核：输入图片可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换图片后重试${suffix}`;
   }
 
   if (/InputVideoSensitiveContentDetected\.PrivacyInformation/i.test(code) || /input video may contain real person/i.test(message)) {
-    return `火山平台判定输入视频可能包含真人或隐私信息，请更换为明确的虚拟/卡通参考视频后再试${suffix}`;
+    return `素材未通过火山平台隐私内容审核：输入视频可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换视频后重试${suffix}`;
   }
 
   if (/asset .*not found/i.test(message) || /notfound.*asset/i.test(code)) {

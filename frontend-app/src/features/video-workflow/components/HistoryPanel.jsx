@@ -1,27 +1,27 @@
 import React from "react";
 import {
   Download,
-  History,
   Loader2,
   RefreshCcw,
   Star,
   Trash2,
   Video,
 } from "lucide-react";
+import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import { formatBeijingDateTime } from "../../../utils/time";
 
-export function HistoryPanel({ tasks, onRepeat, onDelete, onFavorite, emptyHint }) {
+export function HistoryPanel({ tasks, onRepeat, onDelete, onFavorite }) {
   return (
     <main className="vgw-history-page" aria-label="历史记录">
       <section className="vgw-history-page__card">
-        <h1>最近生成</h1>
         <div className="vgw-history__list">
           {tasks.length === 0 ? (
-            <div className="vgw-history__empty">
-              <History size={24} />
-              <strong>暂无生成记录</strong>
-              <p>{emptyHint || "完成的视频会显示在这里"}</p>
-            </div>
+            <HistoryEmptyState
+              className="vgw-history__empty"
+              fill
+              borderless
+              title="暂无历史记录"
+            />
           ) : (
             tasks.map((task) => (
               <article key={task.id} className={`vgw-history__item status-${task.status}`}>

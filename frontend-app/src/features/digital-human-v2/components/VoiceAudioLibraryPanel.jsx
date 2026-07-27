@@ -307,9 +307,6 @@ export function VoiceAudioLibraryPanel({
           );
         })}
 
-        {!pendingAudio && !uploadNotice && !clonedVoices.length ? (
-          <div className="dhv2-audio-library__empty">暂无我的音色，上传音频后点击确认解析</div>
-        ) : null}
       </div>
 
       {pendingAudio && showConfirmDialog ? (

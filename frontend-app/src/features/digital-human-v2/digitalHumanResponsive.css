@@ -1,0 +1,113 @@
+﻿@media (max-width: 768px) {
+  .dhv2-voice-modal-backdrop {
+    padding: 0;
+  }
+
+  .dhv2-voice-modal {
+    width: 100%;
+    height: 100%;
+  }
+
+  .dhv2-voice-modal .dhv2-voice-picker {
+    border-radius: 0;
+  }
+}
+
+.dhv2-video-spec {
+  display: grid;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.dhv2-generate-footer {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-10px);
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.dhv2-generate-footer__estimate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-0);
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 46px;
+  color: #6f6a7d;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dhv2-generate-footer__estimate strong {
+  color: var(--dhv2-brand);
+  font-size: 14px;
+}
+
+.dhv2-generate-footer__left {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.dhv2-generate-footer__credits {
+  margin: 0;
+  color: var(--dhv2-muted);
+  font-size: 12px;
+}
+
+.dhv2-spec-select {
+  width: 100%;
+}
+
+.dhv2-spec-select .custom-select-trigger {
+  min-height: 40px;
+  color: var(--dhv2-text);
+  background: #ffffff;
+  border-color: var(--dhv2-border);
+  border-radius: var(--radius-control);
+}
+
+.dhv2-spec-select .custom-select-trigger:hover,
+.dhv2-spec-select .custom-select-trigger:focus-visible,
+.dhv2-spec-select.is-open .custom-select-trigger {
+  border-color: #c8c0ff;
+  box-shadow: 0 0 0 2px rgba(98, 59, 255, 0.08);
+}
+
+.dhv2-cost-line {
+  margin: 0;
+  color: var(--dhv2-muted);
+  font-size: 12px;
+}
+
+.dhv2-generate-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 46px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b72ee, #5b28ff);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.dhv2-generate-button:disabled {
+  color: #b9b5c8;
+  background: #eceaf3;
+  cursor: not-allowed;
+}
+
+.dhv2-credits {
+  margin: 0;
+  color: var(--dhv2-muted);
+  font-size: 12px;
+  text-align: center;
+}

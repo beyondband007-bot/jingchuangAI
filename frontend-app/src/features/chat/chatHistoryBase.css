@@ -1,0 +1,92 @@
+/* Baseline list and row interactions for saved chat history. */
+.chat-history-rail {
+  background: #fff;
+}
+
+.chat-history-list {
+  gap: var(--space-3);
+}
+
+.chat-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: var(--space-0);
+  width: 100%;
+}
+
+.chat-history-item {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 10px 12px;
+  color: #172033;
+  background: #f8fafc;
+  border: 1px solid #edf1f5;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.chat-history-item:hover,
+.chat-history-item.is-selected {
+  background: #eef6ff;
+  border-color: #9ecbff;
+  box-shadow: 0 8px 20px rgba(22, 119, 255, 0.12);
+}
+
+.chat-history-delete {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  color: #98a2b3;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.chat-history-row:hover .chat-history-delete,
+.chat-history-row.is-selected .chat-history-delete,
+.chat-history-delete:focus-visible {
+  opacity: 1;
+}
+
+.chat-history-delete:hover,
+.chat-history-delete:focus-visible {
+  color: #dc2626;
+  background: #fff1f2;
+}
+
+.chat-history-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.chat-history-item span {
+  display: block;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chat-history-item small {
+  overflow: hidden;
+  color: #667085;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

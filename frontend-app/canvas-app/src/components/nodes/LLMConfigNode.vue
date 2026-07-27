@@ -4,7 +4,8 @@
     <!-- LLM Config node | LLM配置节点 -->
     <div
       class="llm-node bg-[var(--bg-secondary)] rounded-xl border min-w-[320px] max-w-[400px] relative transition-all duration-200"
-      :class="data.selected ? 'border-1 border-purple-500 shadow-lg shadow-purple-500/20' : 'border border-[var(--border-color)]'">
+      :class="{ 'is-selected': data.selected, 'is-processing': isGenerating || isSplitting }"
+      :aria-busy="isGenerating || isSplitting">
       <!-- Header | 头部 -->
       <div
         class="flex items-center justify-between px-3 py-2 border-b border-[var(--border-color)] bg-gradient-to-r from-purple-500/10 to-transparent">
@@ -14,20 +15,20 @@
           </n-icon>
           <span v-if="!isEditingLabel" @dblclick="startEditLabel"
             class="text-sm font-medium text-[var(--text-secondary)] cursor-text hover:bg-[var(--bg-tertiary)] px-1 rounded transition-colors"
-            title="双击编辑名称">{{ nodeLabel }}</span>
+            data-tooltip="双击编辑名称">{{ nodeLabel }}</span>
           <input v-else ref="labelInputRef" v-model="editingLabelValue" @blur="finishEditLabel"
             @keydown.enter="finishEditLabel" @keydown.escape="cancelEditLabel"
             class="text-sm font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] px-1 rounded outline-none border border-purple-500" />
         </div>
         <div class="flex items-center gap-1">
           <button @click="handleDuplicate" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-            title="复制节点">
+            data-tooltip="复制节点" aria-label="复制节点">
             <n-icon :size="14">
               <CopyOutline />
             </n-icon>
           </button>
           <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors"
-            title="删除节点">
+            data-tooltip="删除节点" aria-label="删除节点">
             <n-icon :size="14">
               <TrashOutline />
             </n-icon>
@@ -73,7 +74,7 @@
 
         <!-- Generate button | 生成按钮 -->
         <button @click="handleGenerate" :disabled="isGenerating"
-          class="w-full px-4 py-2 text-sm rounded-lg bg-purple-500 hover:bg-purple-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          class="w-full px-4 py-2 text-sm rounded-lg bg-[var(--canvas-action)] hover:bg-[var(--canvas-action-hover)] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
           <n-spin v-if="isGenerating" :size="14" />
           <n-icon v-else :size="14">
             <SparklesOutline />
@@ -142,7 +143,7 @@
 import { ref, watch, computed, nextTick, onMounted } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { NIcon, NSpin, NSelect } from 'naive-ui'
-import { TrashOutline, CopyOutline, ChatbubbleOutline, SparklesOutline, ListOutline, ImageOutline, VideocamOutline, DocumentTextOutline } from '@vicons/ionicons5'
+import { TrashOutline, CopyOutline, ChatbubbleOutline, SparklesOutline, ListOutline, ImageOutline, DocumentTextOutline } from '@vicons/ionicons5'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, addNodes, addEdges, nodes, edges, startBatchOperation, endBatchOperation } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
 import MentionsPicker from '../MentionsPicker.vue'
@@ -406,8 +407,6 @@ const mentionsPreview = computed(() => {
 
 // LLMConfig node menu operations | LLM配置节点菜单操作
 const operations = [
-  { type: 'imageConfig', label: '生图', icon: ImageOutline },
-  { type: 'videoConfig', label: '生视频', icon: VideocamOutline },
   { type: 'text', label: '文本', icon: DocumentTextOutline }
 ]
 
@@ -1128,6 +1127,23 @@ const doSplitToTextNodes = (segments) => {
 .llm-node {
   cursor: default;
   position: relative;
+  border-color: var(--canvas-border);
+}
+
+.llm-node.is-selected {
+  border-color: var(--canvas-action);
+  box-shadow: 0 0 0 3px var(--canvas-focus), var(--shadow-control);
+}
+
+.llm-node.is-processing::before {
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  left: 12px;
+  height: 3px;
+  content: "";
+  background: var(--brand-gradient);
+  border-radius: var(--radius-pill);
 }
 
 .llm-node textarea {

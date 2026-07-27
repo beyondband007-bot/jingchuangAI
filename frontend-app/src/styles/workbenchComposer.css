@@ -1,0 +1,76 @@
+/* Shared composer compatibility for image, video, and chat workbenches. */
+@scope (.feature-page-shell) {
+  .chat-composer .ui-send-button,
+  .sowa-composer .ui-send-button {
+    border-radius: var(--radius-pill);
+  }
+
+  .chat-composer .ui-send-button,
+  .sowa-composer .ui-send-button,
+  .card-action-link {
+    background: linear-gradient(135deg, var(--fm-brand-2), var(--fm-brand));
+    color: #fff;
+    border-color: transparent;
+  }
+
+  @media (max-width: 768px) {
+    .sowa-composer,
+    .llm-composer,
+    .chat-composer { width: calc(100vw - 32px); max-width: calc(100vw - 32px); min-width: 0; }
+    .sowa-composer textarea,
+    .llm-composer textarea,
+    .chat-composer textarea { width: 100%; max-width: 100%; min-width: 0; }
+    .sowa-composer > div,
+    .llm-composer > div,
+    .chat-composer > div { max-width: 100%; }
+    .sowa-composer > div:nth-child(2),
+    .sowa-composer > div:nth-child(2) > div { flex-wrap: wrap; }
+    .sowa-composer > div:nth-child(2) > div:first-child { width: 100%; }
+  }
+
+  .chat-view-root,
+  .chat-view-root.is-intro,
+  .chat-content-layout,
+  .chat-dialog-column,
+  .llm-intro-layout,
+  .chat-main-canvas,
+  .image-gen-view,
+  .video-gen-view,
+  .video-gen-view-root,
+  .image-workspace,
+  .video-gen-view-root .results-feed { background: #fff; color: var(--fm-ink); }
+
+  .sowa-composer,
+  .llm-composer,
+  .chat-composer,
+  .llm-composer.chat-composer,
+  .chat-view-root .llm-composer.chat-composer,
+  .chat-view-root.is-intro .llm-composer.chat-composer,
+  .image-composer,
+  .video-composer,
+  .prompt-composer { background: #fff; color: var(--fm-ink); border: 1px solid #d9d7e3; border-radius: var(--radius-2xl); box-shadow: none; }
+
+  .chat-view-root .llm-composer.chat-composer { border: 1px solid #d9d7e3; border-radius: var(--radius-2xl); background: #fff; color: var(--fm-ink); box-shadow: none; }
+
+  .sowa-composer textarea,
+  .llm-composer textarea,
+  .chat-composer textarea,
+  .image-composer textarea,
+  .video-composer textarea,
+  .prompt-composer textarea { background: transparent; color: var(--fm-ink); }
+
+  .sowa-composer textarea::placeholder,
+  .llm-composer textarea::placeholder,
+  .chat-composer textarea::placeholder { color: #c7c4d2; }
+
+  .chat-composer button,
+  .sowa-composer button,
+  .llm-composer button { background: #fff; color: #686679; border-color: #d8d5e4; }
+
+  .llm-round.primary:not(:disabled),
+  .chat-composer .ui-send-button:not(:disabled),
+  .sowa-composer .ui-send-button:not(:disabled),
+  .llm-composer .ui-send-button:not(:disabled) { background: var(--fm-brand); border-color: var(--fm-brand); box-shadow: 0 12px 26px rgba(104, 62, 255, 0.22); }
+
+  .llm-round.primary:disabled { background: #6d3cff; color: #b8b5c7; border: 1px solid #dedbea; box-shadow: none; }
+}

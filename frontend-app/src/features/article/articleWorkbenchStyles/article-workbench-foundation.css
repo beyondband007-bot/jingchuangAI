@@ -1,0 +1,280 @@
+/* Migrated article-only overrides from global legacy-facemini-home.css. */
+/* Keep this file imported after article component styles to preserve legacy override order. */
+
+/* legacy-facemini-home.css lines 3022-3306 */
+[data-feature-module="article"] .article-view-root {
+  padding: 0 32px 32px;
+  background: #fff;
+}
+
+.fm-popular-module-nav {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-20px);
+  margin: 0 -32px 24px;
+  padding: 0 42px;
+  border-bottom: 1px solid #dcd9e6;
+  background: #fff;
+}
+
+.fm-popular-module-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10px);
+}
+
+.fm-popular-module-tabs button,
+.fm-popular-inspire {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: #8d8999;
+}
+
+.fm-popular-module-tabs button.is-active,
+.fm-popular-inspire {
+  border-color: #7a82ff;
+  color: #7a82ff;
+  background: #fff;
+  box-shadow: 0 12px 24px rgba(122, 130, 255, 0.12);
+}
+
+.fm-popular-module-tabs button:disabled {
+  opacity: 0.45;
+}
+
+[data-feature-module="article"] .article-filter-tabs {
+  margin: -24px 0 18px;
+}
+
+.fm-popular-stepper {
+  margin-bottom: 18px;
+  padding: 20px 52px 18px;
+  border-radius: var(--radius-control);
+}
+
+[data-feature-module="article"] .article-workspace {
+  grid-template-columns: 410px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: var(--space-18px);
+  height: auto;
+  min-height: 0;
+  align-items: start;
+}
+
+[data-feature-module="article"] .article-form-panel,
+[data-feature-module="article"] .article-result-surface,
+[data-feature-module="article"] .article-cases-section {
+  border-color: #dedbe8;
+  border-radius: var(--radius-lg);
+}
+
+[data-feature-module="article"] .article-form-panel {
+  padding: 18px;
+  grid-column: 1;
+  grid-row: 1;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.fm-popular-platform-tabs {
+  display: flex;
+  gap: var(--space-1);
+  padding: 6px;
+  margin-bottom: 14px;
+  min-height: 44px;
+  border-radius: var(--radius-pill);
+  background: #f3f1f8;
+  overflow-x: auto;
+}
+
+.fm-popular-platform-tabs button {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: #8d8999;
+  font-size: 13px;
+}
+
+.fm-popular-platform-tabs button.is-active {
+  background: #fff;
+  color: #7a82ff;
+  box-shadow: 0 6px 14px rgba(47, 43, 68, 0.08);
+}
+
+.fm-popular-template-select {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: var(--space-10px);
+  align-items: center;
+  margin-bottom: 14px;
+  color: #2d2a37;
+}
+
+.fm-popular-template-select select {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d8d4e3;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: #777284;
+}
+
+[data-feature-module="article"] .article-field {
+  gap: var(--space-2);
+  margin-bottom: 14px;
+}
+
+[data-feature-module="article"] .article-field > span {
+  color: #2d2a37;
+}
+
+[data-feature-module="article"] .article-field textarea {
+  min-height: 145px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: #f0f1f8;
+  color: #2d2a37;
+  resize: none;
+}
+
+[data-feature-module="article"] .visual-option-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+[data-feature-module="article"] .visual-option-card {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #d8d4e3;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: #777284;
+  box-shadow: none;
+}
+
+[data-feature-module="article"] .visual-option-card img,
+[data-feature-module="article"] .visual-option-card p {
+  display: none;
+}
+
+[data-feature-module="article"] .visual-option-card.is-selected {
+  border-color: #7a82ff;
+  color: #7a82ff;
+  background: #f4f5ff;
+}
+
+[data-feature-module="article"] .article-recommendation {
+  border: 0;
+  border-radius: var(--radius-control);
+  background: #f0f1f8;
+}
+
+[data-feature-module="article"] .article-submit-row {
+  align-items: center;
+}
+
+[data-feature-module="article"] .article-submit-price-pill {
+  background: #7a6430;
+  color: #fff;
+  opacity: 0.75;
+}
+
+[data-feature-module="article"] .article-submit-row button {
+  height: 42px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, #9aa6ff, #6b7cff);
+  color: #fff;
+}
+
+[data-feature-module="article"] .article-result-surface {
+  min-height: 620px;
+  padding: 20px;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+[data-feature-module="article"] .article-empty-state,
+[data-feature-module="article"] .article-generating-state,
+[data-feature-module="article"] .article-failed-state {
+  min-height: 540px;
+  background: #fff;
+  border: 1px dashed #d7d3e3;
+}
+
+[data-feature-module="article"] .article-cases-section {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding: 16px 18px 18px;
+}
+
+[data-feature-module="article"] .article-cases-section .viral-showcase-card,
+[data-feature-module="article"] .article-cases-section .showcase-card,
+[data-feature-module="article"] .article-cases-section .viral-graphic-showcase {
+  display: none;
+}
+
+[data-feature-module="article"] .article-case-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-14px);
+  max-height: 230px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-feature-module="article"] .article-section-head span,
+[data-feature-module="article"] .article-section-head h2 {
+  color: #2d2a37;
+}
+
+[data-feature-module="article"] .article-case-card {
+  flex: 0 0 190px;
+  background: transparent;
+}
+
+[data-feature-module="article"] .article-case-card > button,
+[data-feature-module="article"] .article-case-card img {
+  height: 160px;
+}
+
+[data-feature-module="article"] .article-case-card > div {
+  margin-top: 0;
+  padding: 8px 2px 0;
+  background: transparent;
+  color: #302d3a;
+}
+
+[data-feature-module="article"] .article-case-card strong {
+  color: #302d3a;
+  font-size: 14px;
+}
+
+@media (max-width: 1024px) {
+  .fm-popular-module-nav {
+    margin-inline: -18px;
+    padding-inline: 18px;
+    align-items: flex-start;
+    flex-direction: column;
+    padding-block: 14px;
+  }
+
+  [data-feature-module="article"] .article-view-root {
+    padding-inline: 18px;
+  }
+
+  [data-feature-module="article"] .article-workspace {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,69 @@
+﻿/* legacy-facemini-home.css lines 8921-9827 */
+/* Inline quick template rail for the article workbench. */
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline {
+  grid-area: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  header {
+  padding: 0 0 10px;
+  border-bottom: 1px solid #e5e1ed;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  p {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  .article-quick-rail {
+  --article-quick-gap: var(--space-10px);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--article-quick-gap);
+  padding: 10px 0 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  .article-quick-rail
+  button {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-quick-section.is-inline
+  .article-quick-rail
+  img {
+  height: 100%;
+  object-fit: cover;
+}

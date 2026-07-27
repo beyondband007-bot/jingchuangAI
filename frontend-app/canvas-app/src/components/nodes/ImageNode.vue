@@ -4,7 +4,8 @@
     <!-- Image node | 图片节点 -->
     <div
       class="image-node bg-[var(--bg-secondary)] rounded-xl border min-w-[200px] max-w-[280px] relative transition-all duration-200"
-      :class="data.selected ? 'border-1 border-blue-500 shadow-lg shadow-blue-500/20' : 'border border-[var(--border-color)]'">
+      :class="{ 'is-selected': data.selected, 'is-processing': data.loading, 'is-error': data.error, 'is-stale': data.inputChanged }"
+      :aria-busy="data.loading">
       <!-- Header | 头部 -->
       <div class="px-3 py-2 border-b border-[var(--border-color)]">
         <div class="flex items-center justify-between">
@@ -13,7 +14,7 @@
               v-if="!isEditingLabel"
               @dblclick="startEditLabel"
               class="text-sm font-medium text-[var(--text-primary)] cursor-text hover:bg-[var(--bg-tertiary)] px-1 rounded transition-colors"
-              title="双击编辑名称"
+              data-tooltip="双击编辑名称"
             >{{ data.label || '图像生成结果' }}</span>
             <input
               v-else
@@ -29,7 +30,6 @@
               <template #trigger>
                 <button
                   class="flex items-center"
-                  title="设置公开（可被 @ 引用）"
                 >
                   <n-switch
                     :value="isPublic"
@@ -197,7 +197,8 @@
             <button 
               @click="clearMask"
               class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-              title="清除"
+              data-tooltip="清除"
+              aria-label="清除"
             >
               <n-icon :size="12" class="text-gray-400"><RefreshOutline /></n-icon>
             </button>
@@ -205,7 +206,7 @@
             <!-- Apply button | 应用按钮 -->
             <button 
               @click="applyInpaint"
-              class="px-2 py-0.5 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition-colors"
+              class="px-2 py-0.5 bg-[var(--canvas-action)] hover:bg-[var(--canvas-action-hover)] text-white text-xs rounded transition-colors"
             >
               应用
             </button>
@@ -895,7 +896,28 @@ const handleVideoGen = () => {
 .image-node {
   cursor: default;
   position: relative;
+  border-color: var(--canvas-border);
 }
+
+.image-node.is-selected {
+  border-color: var(--canvas-action);
+  box-shadow: 0 0 0 3px var(--canvas-focus), var(--shadow-control);
+}
+
+.image-node.is-processing::before {
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  left: 12px;
+  z-index: 2;
+  height: 3px;
+  content: "";
+  background: var(--brand-gradient);
+  border-radius: var(--radius-pill);
+}
+
+.image-node.is-error { border-color: var(--danger-border); }
+.image-node.is-stale { border-color: var(--warning-border); }
 
 /* Slider styling | 滑块样式 */
 .slider-purple::-webkit-slider-thumb {
@@ -904,7 +926,7 @@ const handleVideoGen = () => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: var(--canvas-action);
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -914,7 +936,7 @@ const handleVideoGen = () => {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #8b5cf6;
+  background: var(--canvas-action);
   cursor: pointer;
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);

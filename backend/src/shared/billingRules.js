@@ -12,7 +12,7 @@ export const BILLING_RULES = Object.freeze({
   voiceClonePoints: 2000,
   articleTextPoints: 10,
   replicateImagePoints: 5,
-  replicateVideoPoints: 10,
+  replicateVideoPoints: 50,
   textBasePoints: 2,
   textPointsPer1000Chars: 2,
   speechCharactersPerSecond: 4,
@@ -153,7 +153,7 @@ export function calculateBillingQuote(feature, payload = {}) {
     feature: key,
     points: items.reduce((sum, entry) => sum + entry.points, 0),
     items,
-    rulesVersion: "2026-06-24"
+    rulesVersion: "2026-07-27"
   };
 }
 
@@ -162,6 +162,6 @@ export function getPublicBillingRules() {
     ...BILLING_RULES,
     watermarkImagePoints: config.kie.watermarkImagePoints,
     watermarkVideoPoints: config.kie.watermarkVideoPoints,
-    rulesVersion: "2026-06-24"
+    rulesVersion: "2026-07-27"
   };
 }

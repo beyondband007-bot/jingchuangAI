@@ -1,5 +1,6 @@
 import React from "react";
 import { Message } from "@arco-design/web-react";
+import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import {
   Bot,
   Copy,
@@ -48,6 +49,7 @@ function DraftThumb({ draft }) {
         poster={draft.avatar?.poster || undefined}
         muted
         playsInline
+        preload="metadata"
       />
     );
   }
@@ -173,13 +175,14 @@ export function PreviewPanel({
         {isGenerating ? (
           <GeneratingState task={generatingTask} />
         ) : resultUrl ? (
-          <video src={resultUrl} controls playsInline />
+          <video src={resultUrl} controls playsInline preload="metadata" />
         ) : isFailed ? (
-          <div className="dhv2-preview__empty">
-            <Bot size={40} />
-            <strong>生成失败</strong>
-            <p>{activeTask?.error || "请稍后重试"}</p>
-          </div>
+          <HistoryEmptyState
+            className="dhv2-preview__empty"
+            title="生成失败"
+            compact
+            borderless
+          />
         ) : selectedAvatar && cover ? (
           coverIsVideo ? (
             <video
@@ -187,16 +190,18 @@ export function PreviewPanel({
               poster={selectedAvatar.poster || undefined}
               controls
               playsInline
+              preload="metadata"
             />
           ) : (
             <img src={cover} alt={selectedAvatar.name} />
           )
         ) : (
-          <div className="dhv2-preview__empty">
-            <Bot size={40} />
-            <strong>尚未生成数字人视频</strong>
-            <p>选择形象并填写脚本后，可在此预览生成结果</p>
-          </div>
+          <HistoryEmptyState
+            className="dhv2-preview__empty"
+            title="尚未生成数字人视频"
+            compact
+            borderless
+          />
         )}
       </div>
 

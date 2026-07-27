@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Button, Empty, Message, Spin, Tag } from "@arco-design/web-react";
+import { Button, Message, Spin, Tag } from "@arco-design/web-react";
 import { Download, Loader2, Play, RefreshCcw, Trash2, X } from "lucide-react";
 import { digitalHumanApi } from "../../api/digitalHumanApi";
 import { imageDigitalHumanApi } from "../../api/imageDigitalHumanApi";
@@ -7,7 +7,8 @@ import {
   useDeleteConfirmation,
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
-import "./digitalHumanHistory.scss";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import "./digitalHumanHistory.css";
 
 function getAvatarSource(task) {
   if (task?.taskType === "photo") return "mine";
@@ -317,7 +318,7 @@ export function DigitalHumanHistoryView({ isActive = true }) {
           })}
         </div>
       ) : (
-        <Empty className="dh-history__empty" description="暂无历史记录" />
+        <HistoryEmptyState className="dh-history__empty" title="暂无历史记录" />
       )}
 
       {deleteConfirmDialog}

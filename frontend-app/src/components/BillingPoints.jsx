@@ -62,7 +62,7 @@ export default function BillingPoints({
     <span
       className={`billing-points ${className}`.trim()}
       aria-label={`预计扣费 ${points} 积分`}
-      title={`预计扣费 ${points} 积分`}
+      data-tooltip={`预计扣费 ${points} 积分`}
     >
       {points}
     </span>

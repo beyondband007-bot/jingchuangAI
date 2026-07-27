@@ -1,0 +1,131 @@
+.llm-composer.chat-composer {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  margin: 0;
+}
+
+.llm-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.llm-composer-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10px);
+  margin-top: auto;
+}
+
+.llm-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 44px;
+}
+
+.llm-left,
+.llm-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10px);
+  min-width: 0;
+  line-height: 38px;
+}
+
+.llm-select-wrap {
+  position: relative;
+}
+
+.llm-select {
+  min-width: 142px;
+  color: var(--text-primary);
+  background: #ffffff;
+  border: 1px solid #dedbea;
+  box-shadow: 0 10px 22px rgba(28, 24, 44, 0.06);
+}
+
+.llm-select:hover,
+.llm-select:focus-visible,
+.llm-select-wrap.is-open .llm-select {
+  border-color: rgba(141, 99, 255, 0.48);
+  outline: 0;
+}
+
+.llm-select .bolt {
+  color: #8b6cff;
+}
+
+.llm-menu {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  z-index: 8;
+  display: none;
+  min-width: 280px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px;
+  background: rgba(28, 28, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+}
+
+.llm-select-wrap.is-open .llm-menu {
+  display: grid;
+  gap: var(--space-3px);
+}
+
+.llm-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10px);
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  color: #d5dae4;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+}
+
+.llm-menu button span {
+  color: inherit;
+  line-height: 1.25;
+}
+
+.llm-menu button small {
+  color: rgba(213, 218, 228, 0.68);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.llm-menu button:hover small,
+.llm-menu button.is-selected small {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.llm-menu button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.llm-composer .composer-notice {
+  min-height: 18px;
+  margin-top: 10px;
+  color: #24496f;
+  font-size: 13px;
+}
+
+.llm-composer .composer-notice.warning {
+  color: #b42318;
+}

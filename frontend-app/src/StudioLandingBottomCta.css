@@ -1,0 +1,27 @@
+.studio-landing .landing-bottom-cta {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-top: 112px;
+  padding: 16px 0 78px;
+  text-align: center;
+}
+
+.studio-landing .landing-bottom-cta h2 {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(1.35rem, 2.8vw, 2.8rem);
+  font-weight: var(--font-weight-light);
+  letter-spacing: -0.06em;
+  line-height: 1.05;
+}
+
+.studio-landing .landing-bottom-cta p {
+  margin: 0;
+  color: rgba(213, 208, 230, 0.7);
+  font-size: 0.95rem;
+}
+
+.studio-landing .landing-bottom-cta__button {
+  margin-top: 12px;
+}

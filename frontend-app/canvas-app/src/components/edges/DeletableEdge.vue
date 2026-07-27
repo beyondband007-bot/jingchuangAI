@@ -6,7 +6,7 @@
       type="button"
       class="nodrag nopan flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] shadow-sm transition-colors hover:bg-[var(--bg-tertiary)] hover:text-red-500"
       :style="labelStyle"
-      title="删除连线"
+      data-tooltip="删除连线"
       aria-label="删除连线"
       @click.stop="removeEdge(id)"
       @mousedown.stop

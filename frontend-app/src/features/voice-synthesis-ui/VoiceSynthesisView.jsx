@@ -1,4 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
+import "../audio-ui/audioResponsive.css";
+import "../audio-ui/audioStateControls.css";
+import "../audio-ui/voiceWorkbench.css";
+import "../audio-ui/voiceHistory.css";
 import { CheckCircle2, Download, Heart, Loader2, LockKeyhole, Mic, Music, Trash2 } from "lucide-react";
 import { VoiceSynthesisWorkbenchCard } from "./VoiceSynthesisWorkbenchCard";
 import { VoiceConversionLoading } from "../voice-conversion-ui/VoiceConversionLoading";
@@ -12,6 +16,8 @@ import {
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
+import { useToast } from "../../components/ToastProvider";
+import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 
 const voicePreviewText = "欢迎使用 Facemini AI 语音合成，现在开始试听目标音色的自然效果。";
 const voiceRecentStorageKey = "jingchuang.voice.recentResults";
@@ -96,6 +102,7 @@ export function VoiceSynthesisView({
   onOpenFeature,
   resetSignal = 0,
 }) {
+  const { showToast: showGlobalToast, dismissToast } = useToast();
   const [cloneAudio, setCloneAudio] = useState(null);
   const [uploading, setUploading] = useState("");
   const [notice, setNotice] = useState("");
@@ -118,20 +125,13 @@ export function VoiceSynthesisView({
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const [playingRecentId, setPlayingRecentId] = useState("");
-  const [toast, setToast] = useState(null);
-  const toastTimerRef = useRef(null);
   const uploadVersionRef = useRef(0);
   const synthesisProgressTimerRef = useRef(null);
   const synthesisStageTimerRef = useRef(null);
   const isGuest = Boolean(authUser?.isGuest);
 
   function showToast(type, message) {
-    setToast({ type, message });
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToast(null);
-      toastTimerRef.current = null;
-    }, 2200);
+    showGlobalToast(message, { type });
   }
 
   function requestLoginForGeneration() {
@@ -191,15 +191,10 @@ export function VoiceSynthesisView({
     setCurrentResult(null);
     setViewTab("home");
     setPlayingRecentId("");
-    setToast(null);
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current);
-      toastTimerRef.current = null;
-    }
+    dismissToast();
   }, [resetSignal]);
 
   useEffect(() => () => {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     if (synthesisProgressTimerRef.current) window.clearInterval(synthesisProgressTimerRef.current);
     if (synthesisStageTimerRef.current) window.clearInterval(synthesisStageTimerRef.current);
   }, []);
@@ -561,11 +556,7 @@ export function VoiceSynthesisView({
         {viewTab === "recent" && (
           <div className={`voice-recent-panel ${recentResults.length ? "has-items" : ""}`}>
             {recentResults.length === 0 ? (
-              <div className="voice-recent-empty">
-                <Music size={28} />
-                <strong>暂无生成记录</strong>
-                <p>生成完成后的 MP3 会显示在这里，可直接播放、收藏和下载。</p>
-              </div>
+              <HistoryEmptyState title="暂无生成记录" />
             ) : (
               recentResults.map((item) => (
                 <article className="voice-recent-card" key={item.id}>
@@ -585,19 +576,19 @@ export function VoiceSynthesisView({
                     playingId={playingRecentId}
                     onPlayingChange={setPlayingRecentId}
                   >
-                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} title="下载 MP3" aria-label="下载 MP3">
+                    <button className="voice-recent-icon-button" type="button" onClick={() => downloadResult(item)} data-tooltip="下载 MP3" aria-label="下载 MP3">
                       <Download size={16} />
                     </button>
                     <button
                       className={`voice-recent-icon-button ${item.favorite ? "is-favorite" : ""}`}
                       type="button"
                       onClick={() => toggleRecentFavorite(item.id)}
-                      title={item.favorite ? "取消收藏" : "收藏"}
+                      data-tooltip={item.favorite ? "取消收藏" : "收藏"}
                       aria-label={item.favorite ? "取消收藏" : "收藏"}
                     >
                       <Heart size={16} fill={item.favorite ? "currentColor" : "none"} />
                     </button>
-                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} title="删除" aria-label="删除">
+                    <button className="voice-recent-icon-button is-danger" type="button" onClick={() => deleteRecentResult(item.id)} data-tooltip="删除" aria-label="删除">
                       <Trash2 size={16} />
                     </button>
                   </VoiceRecentPlayer>
@@ -607,11 +598,6 @@ export function VoiceSynthesisView({
           </div>
         )}
       </div>
-      {toast ? (
-        <div className={`music-toast music-toast--${toast.type}`} role="status" aria-live="polite">
-          {toast.message}
-        </div>
-      ) : null}
       {showRechargeAlert && (
         <CreditAlertDialog
           title="这次没有生成语音"

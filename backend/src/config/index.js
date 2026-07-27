@@ -101,7 +101,12 @@ export const config = {
   qwen: {
     apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || "",
     baseUrl: process.env.QWEN_BASE_URL || "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    model: process.env.QWEN_MODEL || "qwen-vl-plus"
+    model: process.env.QWEN_MODEL || "qwen-vl-plus",
+    videoReverseModel: process.env.QWEN_VIDEO_REVERSE_MODEL || "qwen3.7-plus",
+    videoReverseTimeoutMs: Number(process.env.QWEN_VIDEO_REVERSE_TIMEOUT_MS || 180000),
+    videoReverseMaxAttempts: Number(process.env.QWEN_VIDEO_REVERSE_MAX_ATTEMPTS || 3),
+    videoReverseMaxFrames: Number(process.env.QWEN_VIDEO_REVERSE_MAX_FRAMES || 120),
+    videoReverseFallbackFrames: Number(process.env.QWEN_VIDEO_REVERSE_FALLBACK_FRAMES || 12)
   },
   deepseek: {
     apiKey: process.env.DEEPSEEK_API_KEY || "",

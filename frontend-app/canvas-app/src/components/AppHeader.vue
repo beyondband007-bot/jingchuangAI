@@ -12,18 +12,7 @@
     <div class="flex items-center gap-4">
       <!-- Center slot | 中间插槽 -->
       <slot name="center"></slot>
-      
-      <!-- Theme toggle | 主题切换 -->
-      <button 
-        @click="toggleTheme"
-        class="p-2 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors"
-      >
-        <n-icon :size="20">
-          <SunnyOutline v-if="isDark" />
-          <MoonOutline v-else />
-        </n-icon>
-      </button>
-      
+
       <!-- Right slot | 右侧插槽 -->
       <slot name="right"></slot>
     </div>
@@ -35,11 +24,15 @@
  * App Header component | 应用头部组件
  * Reusable header with slots for customization
  */
-import { NIcon } from 'naive-ui'
-import { 
-  SunnyOutline, 
-  MoonOutline
-} from '@vicons/ionicons5'
-import { isDark, toggleTheme } from '../stores/theme'
-
 </script>
+
+<style scoped>
+header {
+  min-height: var(--app-header-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  color: var(--canvas-text);
+  background: var(--canvas-surface);
+  border-color: var(--canvas-border);
+}
+</style>

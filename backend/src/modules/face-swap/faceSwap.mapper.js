@@ -1,5 +1,9 @@
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { decodeMojibakeFileName } from "../../shared/fileName.js";
+import {
+  getProviderTaskProgress,
+  normalizeProviderTaskStatus,
+} from "../../shared/taskStatus.js";
 
 function displayFileName(value, fallback = "") {
   return decodeMojibakeFileName(value || fallback);
@@ -20,7 +24,7 @@ export function mapFaceSwapAsset(row) {
 }
 
 export function mapFaceSwapTask(row) {
-  const status = row.status === "pending" ? "processing" : row.status;
+  const status = normalizeProviderTaskStatus(row.status);
   return {
     id: String(row.id),
     model: row.model_key,
@@ -35,7 +39,10 @@ export function mapFaceSwapTask(row) {
     imageFileName: displayFileName(row.image_original_name),
     videoFileName: displayFileName(row.video_original_name),
     status,
-    progress: row.status === "completed" ? 100 : row.status === "failed" ? 0 : row.provider_task_id ? 68 : 24,
+    progress: getProviderTaskProgress({
+      status: row.status,
+      providerTaskId: row.provider_task_id,
+    }),
     resultUrl: row.result_url || "",
     thumbnailUrl: row.thumbnail_url || "",
     providerTaskId: row.provider_task_id || "",

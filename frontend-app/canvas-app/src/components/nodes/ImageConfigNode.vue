@@ -4,14 +4,15 @@
     <!-- Image config node | 文生图配置节点 -->
     <div
       class="image-config-node bg-[var(--bg-secondary)] rounded-xl border min-w-[300px] transition-all duration-200"
-      :class="data.selected ? 'border-1 border-blue-500 shadow-lg shadow-blue-500/20' : 'border border-[var(--border-color)]'">
+      :class="{ 'is-selected': data.selected, 'is-processing': loading, 'is-error': error }"
+      :aria-busy="loading">
       <!-- Header | 头部 -->
       <div class="flex items-center justify-between px-3 py-2 border-b border-[var(--border-color)]">
         <span
           v-if="!isEditingLabel"
           @dblclick="startEditLabel"
           class="text-sm font-medium text-[var(--text-secondary)] cursor-text hover:bg-[var(--bg-tertiary)] px-1 rounded transition-colors"
-          title="双击编辑名称"
+          data-tooltip="双击编辑名称"
         >{{ data.label }}</span>
         <input
           v-else
@@ -23,12 +24,12 @@
           class="text-sm font-medium bg-[var(--bg-tertiary)] text-[var(--text-secondary)] px-1 rounded outline-none border border-blue-500"
         />
         <div class="flex items-center gap-1">
-          <button @click="handleDuplicate" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" title="复制节点">
+          <button @click="handleDuplicate" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" data-tooltip="复制节点" aria-label="复制节点">
             <n-icon :size="14">
               <CopyOutline />
             </n-icon>
           </button>
-          <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" title="删除节点">
+          <button @click="handleDelete" class="p-1 hover:bg-[var(--bg-tertiary)] rounded transition-colors" data-tooltip="删除节点" aria-label="删除节点">
             <n-icon :size="14">
               <TrashOutline />
             </n-icon>
@@ -39,21 +40,30 @@
       <!-- Config options | 配置选项 -->
       <div class="p-3 space-y-3">
         <div class="space-y-1.5">
-          <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+          <div class="flex items-center justify-between">
+            <label class="text-xs text-[var(--text-secondary)]">提示词</label>
+            <button
+              type="button"
+              class="nodrag flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-[var(--text-tertiary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
+              title="放大编辑提示词"
+              @click.stop="openPromptEditor"
+              @mousedown.stop
+            >
+              <n-icon :size="13"><ExpandOutline /></n-icon>
+              放大
+            </button>
+          </div>
           <textarea
             ref="promptInputRef"
             v-model="localPrompt"
             rows="3"
-            placeholder="描述你想生成的图片，可直接在这里输入"
-            class="nodrag nowheel w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
+            placeholder="直接输入图片提示词，输入 @ 可引用已连接的图片"
+            class="nodrag nowheel w-full resize-none rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
             @input="handlePromptInput"
             @keydown="handlePromptKeydown"
             @mousedown.stop
             @wheel.stop
           />
-          <div v-if="connectedPrompts.length" class="text-[11px] text-[var(--text-tertiary)]">
-            还会追加 {{ connectedPrompts.length }} 个已连接的外部提示词
-          </div>
         </div>
 
         <!-- Model selector | 模型选择 -->
@@ -103,8 +113,8 @@
         <div
           class="flex items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
           <span class="px-2 py-0.5 rounded-full"
-            :class="connectedPrompts.length > 0 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
-            外部提示 {{ connectedPrompts.length > 0 ? `${connectedPrompts.length}个` : '○' }}
+            :class="localPrompt.trim() ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
+            提示词 {{ localPrompt.trim() ? '✓' : '○' }}
           </span>
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedRefImages.length > 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
@@ -172,8 +182,38 @@
       v-model:visible="showMentionsPicker"
       :position="mentionsPosition"
       context="text"
+      :connected-node-ids="connectedImageNodeIds"
       @select="handlePromptMentionSelect"
     />
+
+    <n-modal v-model:show="isPromptExpanded" :mask-closable="true">
+      <div class="prompt-editor-modal nodrag nowheel" @mousedown.stop @wheel.stop>
+        <div class="flex items-center justify-between border-b border-[var(--border-color)] px-5 py-3">
+          <div>
+            <div class="text-base font-medium text-[var(--text-primary)]">图片提示词</div>
+            <div class="mt-0.5 text-xs text-[var(--text-tertiary)]">输入 @ 可引用当前已连接的图片</div>
+          </div>
+          <button
+            type="button"
+            class="rounded-lg p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]"
+            title="收起编辑器"
+            @click="isPromptExpanded = false"
+          >
+            <n-icon :size="18"><ContractOutline /></n-icon>
+          </button>
+        </div>
+        <textarea
+          ref="expandedPromptInputRef"
+          v-model="localPrompt"
+          class="nodrag nowheel prompt-editor-textarea"
+          placeholder="描述画面、构图、风格等，输入 @ 可引用已连接图片"
+          @input="handlePromptInput"
+          @keydown="handlePromptKeydown"
+          @mousedown.stop
+          @wheel.stop
+        />
+      </div>
+    </n-modal>
 
   </div>
 </template>
@@ -185,8 +225,8 @@
  */
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
-import { NIcon, NDropdown, NSpin } from 'naive-ui'
-import { ChevronDownOutline, ChevronForwardOutline, CopyOutline, TrashOutline, RefreshOutline, AddOutline, ImageOutline, CreateOutline } from '@vicons/ionicons5'
+import { NIcon, NDropdown, NSpin, NModal } from 'naive-ui'
+import { ChevronDownOutline, ChevronForwardOutline, CopyOutline, TrashOutline, RefreshOutline, AddOutline, ImageOutline, CreateOutline, ExpandOutline, ContractOutline } from '@vicons/ionicons5'
 import { useImageGeneration } from '../../hooks'
 import { updateNode, addNode, addEdge, nodes, edges, duplicateNode, removeNode, getNodeInputHash } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
@@ -219,10 +259,21 @@ const localSize = ref(props.data?.size || '2048x2048')
 const localQuality = ref(props.data?.quality || 'standard')
 const localPrompt = ref(props.data?.prompt || '')
 const promptInputRef = ref(null)
+const expandedPromptInputRef = ref(null)
+const isPromptExpanded = ref(false)
 const showMentionsPicker = ref(false)
 const mentionsPosition = ref({ x: 0, y: 0 })
 const mentionSearchStart = ref(-1)
 const mentionCursorPosition = ref(-1)
+
+const openPromptEditor = () => {
+  isPromptExpanded.value = true
+  nextTick(() => {
+    expandedPromptInputRef.value?.focus()
+    const end = localPrompt.value.length
+    expandedPromptInputRef.value?.setSelectionRange(end, end)
+  })
+}
 
 const handlePromptInput = (event) => {
   updateNode(props.id, { prompt: localPrompt.value })
@@ -259,8 +310,9 @@ const handlePromptMentionSelect = ({ nodeId, label }) => {
   showMentionsPicker.value = false
   const nextCursor = start + mention.length + 1
   nextTick(() => {
-    promptInputRef.value?.focus()
-    promptInputRef.value?.setSelectionRange(nextCursor, nextCursor)
+    const input = isPromptExpanded.value ? expandedPromptInputRef.value : promptInputRef.value
+    input?.focus()
+    input?.setSelectionRange(nextCursor, nextCursor)
   })
 }
 
@@ -373,6 +425,8 @@ onMounted(() => {
 // 解析 textNode 内容中的 @ 引用，转换为简短引用（如 图 1）并收集图片
 const resolveContentMentionsForImage = (content = '') => {
   const mentions = parseMentions(content)
+  const allowedNodeIds = new Set(connectedImageNodeIds.value)
+  let resolvedContent = content
 
   if (mentions.length === 0) {
     return { resolvedContent: content, refImages: [], imageMentions: [] }
@@ -381,6 +435,12 @@ const resolveContentMentionsForImage = (content = '') => {
   // 收集引用的图片节点
   const imageMentions = []
   for (const mention of mentions) {
+    const escapedNodeId = mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const mentionPattern = new RegExp(`@\\[${escapedNodeId}(?:\\|[^\\]]+)?\\]`, 'g')
+    if (!allowedNodeIds.has(mention.nodeId)) {
+      resolvedContent = resolvedContent.replace(mentionPattern, mention.name || '')
+      continue
+    }
     const referencedNode = nodes.value.find(n => n.id === mention.nodeId)
     if (referencedNode?.type === 'image') {
       const imageData = referencedNode.data?.base64 || referencedNode.data?.url
@@ -391,18 +451,19 @@ const resolveContentMentionsForImage = (content = '') => {
           imageData
         })
       }
+    } else {
+      resolvedContent = resolvedContent.replace(mentionPattern, mention.name || '')
     }
   }
 
   if (imageMentions.length === 0) {
-    return { resolvedContent: content, refImages: [], imageMentions: [] }
+    return { resolvedContent, refImages: [], imageMentions: [] }
   }
 
   // 按出现顺序排序
   imageMentions.sort((a, b) => a.order - b.order)
 
   // 替换 @[nodeId] 为按顺序的 "图1"、"图2" 等
-  let resolvedContent = content
   for (let i = 0; i < imageMentions.length; i++) {
     const mention = imageMentions[i]
     const mentionPattern = new RegExp(`@\\[${mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\|[^\\]]+)?\\]`, 'g')
@@ -439,6 +500,15 @@ const connectedTextNodeIds = computed(() => {
     }
   }
   return connectedIds
+})
+
+// 已直接连接到当前生图节点的图片，只有这些素材允许在提示词中被 @
+const connectedImageNodeIds = computed(() => {
+  const incomingEdges = edges.value.filter(e => e.target === props.id)
+  return [...new Set(incomingEdges
+    .map(edge => nodes.value.find(node => node.id === edge.source))
+    .filter(node => node?.type === 'image' && (node.data?.base64 || node.data?.url))
+    .map(node => node.id))]
 })
 
 // Get connected nodes | 获取连接的节点
@@ -654,7 +724,7 @@ const handleGenerate = async (mode = 'auto') => {
   const { prompt, prompts, refImages, refImagesWithOrder } = getConnectedInputs()
 
   if (!prompt && refImages.length === 0) {
-    window.$message?.warning('请输入提示词，或连接文本/图片节点')
+    window.$message?.warning('请在节点内输入提示词，或连接图片素材')
     return
   }
   
@@ -870,5 +940,51 @@ watch(
 .image-config-node {
   cursor: default;
   position: relative;
+  border-color: var(--canvas-border);
+}
+
+.image-config-node.is-selected {
+  border-color: var(--canvas-action);
+  box-shadow: 0 0 0 3px var(--canvas-focus), var(--shadow-control);
+}
+
+.image-config-node.is-processing::before {
+  position: absolute;
+  top: -1px;
+  right: 12px;
+  left: 12px;
+  height: 3px;
+  content: "";
+  background: var(--brand-gradient);
+  border-radius: var(--radius-pill);
+}
+
+.image-config-node.is-error {
+  border-color: var(--danger-border);
+}
+
+.prompt-editor-modal {
+  display: flex;
+  width: min(920px, calc(100vw - 48px));
+  height: min(680px, calc(100vh - 80px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+}
+
+.prompt-editor-textarea {
+  min-height: 0;
+  flex: 1;
+  resize: none;
+  border: 0;
+  background: var(--bg-secondary);
+  padding: 20px;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.75;
+  outline: none;
 }
 </style>

@@ -11,6 +11,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (id.includes('@vue-flow')) return 'vue-flow'
+          if (id.includes('naive-ui') || id.includes('@css-render')) return 'naive-ui'
+          if (id.includes('@vicons')) return 'canvas-icons'
+          if (id.includes('/vue/') || id.includes('vue-router') || id.includes('pinia')) return 'vue-runtime'
+          return undefined
+        }
+      }
+    }
+  },
   server: {
     proxy: {
       '/api': {

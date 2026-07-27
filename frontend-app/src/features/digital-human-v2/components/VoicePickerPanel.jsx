@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
 import { Play, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
+import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import {
   VOICE_CATEGORIES,
   VOICE_EMOTION_OPTIONS,
@@ -111,14 +112,14 @@ export function VoicePickerPanel({
             <div
               key={voice.id}
               className={`dhv2-voice-picker__item${isActive ? " is-active" : ""}${isEnabled ? "" : " is-disabled"}`}
-              title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
+              data-tooltip={isEnabled ? "" : VOICE_UNAVAILABLE_HINT}
             >
               <button
                 type="button"
                 className="dhv2-voice-picker__item-main"
                 disabled={!isEnabled}
                 aria-disabled={!isEnabled}
-                title={isEnabled ? undefined : VOICE_UNAVAILABLE_HINT}
+                data-tooltip={isEnabled ? "" : VOICE_UNAVAILABLE_HINT}
                 onClick={() => {
                   if (!isEnabled) return;
                   onVoiceIdChange?.(voice.id);
@@ -143,7 +144,12 @@ export function VoicePickerPanel({
           );
         })}
         {!filteredVoices.length ? (
-          <p className="dhv2-voice-picker__empty">该分类暂无音色</p>
+          <HistoryEmptyState
+            className="dhv2-voice-picker__empty"
+            title="该分类暂无音色"
+            compact
+            borderless
+          />
         ) : null}
       </div>
 

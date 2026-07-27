@@ -1,5 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
+import { randomUUID } from "crypto";
+import { mkdirSync } from "fs";
+import path from "path";
+import { config } from "../../config/index.js";
 import { createHttpError, sendError } from "../../shared/http.js";
 import {
   analyzeImage,
@@ -16,8 +20,16 @@ const imageUpload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
+const videoUploadDir = path.resolve(process.cwd(), config.media.storageDir, "replicate", "uploads");
+mkdirSync(videoUploadDir, { recursive: true });
 const videoUpload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (_req, _file, callback) => callback(null, videoUploadDir),
+    filename: (_req, file, callback) => {
+      const ext = path.extname(String(file.originalname || "")).toLowerCase().replace(/[^.a-z0-9]/g, "");
+      callback(null, `${Date.now()}-${randomUUID()}${ext}`);
+    }
+  }),
   limits: { fileSize: 100 * 1024 * 1024 }
 });
 

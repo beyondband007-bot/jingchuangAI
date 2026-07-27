@@ -184,7 +184,7 @@ export function InputSection({
     <section className={`vgw-step vgw-step--input is-${stepState}`} data-workflow-status={workflowStatus}>
       <div className="vgw-step__label">
         <span>01</span>
-        <strong>素材输入</strong>
+        <strong>素材选择</strong>
       </div>
       <div className="vgw-glass-card vgw-input-section">
         <div className="vgw-input-section__flow">
