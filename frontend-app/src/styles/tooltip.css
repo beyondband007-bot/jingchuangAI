@@ -21,7 +21,7 @@
   background: rgba(38, 36, 44, 0.94);
   border-radius: var(--radius-xs);
   box-shadow: 0 12px 24px rgba(25, 22, 36, 0.18);
-  font: var(--font-weight-default) 12px/1.25 "PingFang SC", "Microsoft YaHei", sans-serif;
+  font: var(--font-weight-default) 12px/1.25 "PingFang SC";
   white-space: nowrap;
   content: attr(data-tooltip);
   transform: translate(-50%, 4px);

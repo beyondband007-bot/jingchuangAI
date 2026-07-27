@@ -58,6 +58,11 @@ test("authenticated infinite canvas keeps the unified workbench shell", async ({
   await expect(createProject).toBeVisible();
   const homePrompt = canvasFrame.locator(".canvas-home__composer textarea");
   const homeSend = canvasFrame.locator(".canvas-home__send-button");
+  const suggestionTags = canvasFrame.locator(".canvas-home__composer > div:last-child button:not([data-testid])");
+  await expect(suggestionTags).toHaveCount(4);
+  const firstSuggestionBatch = (await suggestionTags.allTextContents()).join("|");
+  await canvasFrame.getByTestId("canvas-refresh-suggestions").click();
+  expect((await suggestionTags.allTextContents()).join("|")).not.toBe(firstSuggestionBatch);
   await expect(homeSend).toBeDisabled();
   await homePrompt.fill("创建一段画布故事");
   await expect(homeSend).toBeEnabled();

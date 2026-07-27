@@ -55,7 +55,7 @@
             >
               {{ tag }}
             </button>
-            <button class="p-1.5 hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors">
+            <button class="canvas-home__icon-button" data-testid="canvas-refresh-suggestions" data-tooltip="换一批推荐" aria-label="换一批推荐" @click="refreshSuggestions">
               <n-icon :size="16"><RefreshOutline /></n-icon>
             </button>
           </div>
@@ -143,7 +143,9 @@
               <n-dropdown :options="getProjectActions(project)" @select="(key) => handleProjectAction(key, project)" placement="bottom-end">
                 <button 
                   @click.stop
-                  class="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded-lg shadow hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                  class="canvas-home__icon-button canvas-home__project-menu-button"
+                  data-tooltip="项目操作"
+                  aria-label="项目操作"
                 >
                   <n-icon :size="16"><EllipsisHorizontalOutline /></n-icon>
                 </button>
@@ -254,13 +256,67 @@ const showRenameModal = ref(false)
 const renameValue = ref('')
 const renameTargetId = ref(null)
 
-// Suggestions tags | 建议标签
-const suggestions = [
+// Keep a broader inspiration pool while presenting four compact suggestions at a time.
+const SUGGESTION_BATCH_SIZE = 4
+const suggestionPool = [
   '雨中魔法森林',
-  '日式街面美食摄影',
+  '日式街头美食摄影',
   '瀑布水流飞溅',
-  '雨天富声旁边花语'
+  '雨天窗边的花语',
+  '赛博朋克霓虹夜市',
+  '清晨云海上的小屋',
+  '复古胶片感海边旅行',
+  '二次元角色设定图',
+  '北欧极简客厅设计',
+  '月球基地全景插画',
+  '水墨山川与孤舟',
+  '夏日果汁广告海报',
+  '童话风森林小鹿',
+  '未来城市空中花园',
+  '咖啡馆里的橘猫',
+  '电影感雨夜街景',
+  '国潮龙纹礼盒设计',
+  '深海发光水母群',
+  '手作陶艺工作台',
+  '雪山脚下的木屋',
+  '治愈系植物角落',
+  '蒸汽朋克机械鸟',
+  '宇航员漫步花田',
+  '日落时分的公路旅行',
+  '敦煌飞天壁画复原',
+  '极光下的玻璃小屋',
+  '未来感运动鞋海报',
+  '热带雨林树屋餐厅',
+  '黑胶唱片封面设计',
+  '樱花季校园电影镜头',
+  '沙漠中的蓝色巴士',
+  '法式甜品橱窗陈列',
+  '中世纪城堡晨雾',
+  '迷你盆景微距摄影',
+  '机械臂绘制水彩画',
+  '新中式茶室空间设计',
+  '夜空下的露营篝火',
+  '冰川湖畔野餐场景',
+  '轻奢香水产品静物',
+  '城市天台爵士乐队',
+  '像素风冒险游戏场景',
+  '海底图书馆奇幻插画',
+  '复古旅行明信片拼贴',
+  '彩色玻璃窗下的猫咪',
+  '未来医疗实验室',
+  '冬日市集暖光人像',
+  '海岛婚礼仪式布置',
+  '手绘植物百科全图'
 ]
+
+const shuffle = (items) => [...items].sort(() => Math.random() - 0.5)
+const suggestions = ref(shuffle(suggestionPool).slice(0, SUGGESTION_BATCH_SIZE))
+
+const refreshSuggestions = () => {
+  const current = new Set(suggestions.value)
+  const candidates = suggestionPool.filter((item) => !current.has(item))
+  suggestions.value = shuffle(candidates).slice(0, SUGGESTION_BATCH_SIZE)
+}
 
 // Format date | 格式化日期
 const formatDate = (date) => {
@@ -457,6 +513,34 @@ onMounted(async () => {
   border-color: var(--app-border);
   box-shadow: none;
   cursor: not-allowed;
+}
+
+.canvas-home__icon-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  line-height: 1;
+  transition: color var(--duration-normal) var(--ease-standard), background var(--duration-normal) var(--ease-standard);
+}
+
+.canvas-home__icon-button:hover,
+.canvas-home__icon-button:focus-visible {
+  color: var(--brand-primary);
+  background: var(--state-hover);
+}
+
+.canvas-home__project-menu-button {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-control);
 }
 
 .canvas-home__projects h2 {
