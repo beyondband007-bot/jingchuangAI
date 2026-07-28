@@ -21,8 +21,8 @@ assert(
 );
 assert(!/--accent-color:\s*#(?:22c55e|4ade80)/i.test(baseStyles), "Canvas must not restore the green default accent.");
 assert(baseStyles.includes("@media (prefers-reduced-motion: reduce)"), "Canvas must protect reduced-motion users.");
-assert(!appHeader.includes("stores/theme"), "Canvas must not expose an independent theme toggle.");
-assert(!existsSync(resolve(root, "src/stores/theme.js")), "Canvas must not retain an unused standalone theme store.");
+assert(appHeader.includes("stores/theme"), "Canvas must expose its canvas-only theme toggle.");
+assert(existsSync(resolve(root, "src/stores/theme.js")), "Canvas must retain its canvas-only theme store.");
 assert(viteConfig.includes("manualChunks"), "Canvas production build must keep vendor chunks split.");
 assert(canvasView.includes('aria-label="画布工具"'), "Canvas toolbar needs an accessible name.");
 assert(canvasView.includes('role="status"'), "Canvas must announce save or generation state.");

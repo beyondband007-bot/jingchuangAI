@@ -34,12 +34,39 @@
   --bg-primary: var(--canvas-bg);
   --bg-secondary: var(--canvas-surface);
   --bg-tertiary: var(--app-surface);
-  --text-primary: var(--canvas-text);
-  --text-secondary: var(--canvas-text-muted);
   --text-tertiary: var(--text-faint);
   --border-color: var(--canvas-border);
   --accent-color: var(--canvas-action);
   --accent-hover: var(--canvas-action-hover);
+}
+
+/* Applied only to the canvas iframe document, never the main workbench. */
+:root.canvas-dark {
+  --app-bg: #0b1120;
+  --app-surface: #172033;
+  --app-surface-muted: #0f172a;
+  --app-surface-raised: #1e293b;
+  --app-surface-subtle: rgba(148, 163, 184, 0.12);
+  --app-border: #334155;
+  --app-border-strong: #475569;
+  --surface-page: #0b1120;
+  --surface-panel: #1e293b;
+  --surface-menu: #1e293b;
+  --border-subtle: #334155;
+  --border-strong: #475569;
+  --state-hover: #263449;
+  --state-selected: #30255e;
+  --state-disabled: #1e293b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --canvas-grid: rgba(148, 163, 184, 0.22);
+  --canvas-action: #8b6cff;
+  --canvas-action-hover: #a78bfa;
+  --canvas-focus: rgba(167, 139, 250, 0.5);
+  --shadow-panel: 0 16px 24px rgba(0, 0, 0, 0.3);
+  --shadow-control: 0 8px 20px rgba(0, 0, 0, 0.24);
 }
 
 *,

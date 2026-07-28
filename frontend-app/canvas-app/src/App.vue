@@ -3,9 +3,10 @@
  * Root App component | 根组件
  * Provides naive-ui config and router view
  */
-import { onMounted, ref } from 'vue'
-import { NButton, NConfigProvider, NMessageProvider, NDialogProvider } from 'naive-ui'
+import { computed, onMounted, ref } from 'vue'
+import { NButton, NConfigProvider, NMessageProvider, NDialogProvider, darkTheme } from 'naive-ui'
 import { faceminiRequest } from './api/facemini'
+import { isDark } from './stores/theme'
 
 const authState = ref('loading')
 
@@ -28,7 +29,9 @@ const requestLogin = () => {
 }
 
 // Global theme overrides | 全局主题覆盖
-const themeOverrides = {
+const theme = computed(() => isDark.value ? darkTheme : null)
+
+const themeOverrides = computed(() => ({
   common: {
     fontFamily: '"PingFang SC"',
     primaryColor: '#5a2cfc',
@@ -38,9 +41,9 @@ const themeOverrides = {
     borderRadius: '12px',
     borderRadiusSmall: '8px',
     fontSize: '14px',
-    textColorBase: '#111827',
-    textColor2: '#475569',
-    borderColor: '#e2e8f0'
+    textColorBase: isDark.value ? '#f1f5f9' : '#111827',
+    textColor2: isDark.value ? '#cbd5e1' : '#475569',
+    borderColor: isDark.value ? '#334155' : '#e2e8f0'
   },
   Dialog: {
     borderRadius: '16px',
@@ -65,11 +68,11 @@ const themeOverrides = {
     borderRadius: '10px',
     heightMedium: '36px'
   }
-}
+}))
 </script>
 
 <template>
-  <n-config-provider :theme-overrides="themeOverrides">
+  <n-config-provider :theme="theme" :theme-overrides="themeOverrides">
     <n-message-provider>
       <n-dialog-provider>
         <div v-if="authState === 'loading'" class="canvas-auth-gate">正在验证登录状态…</div>
