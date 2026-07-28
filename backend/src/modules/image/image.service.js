@@ -8,6 +8,10 @@ import {
 import { createKieImageTask } from '../../providers/kie/image.js'
 import { uploadFileToKie } from '../../providers/kie/upload.js'
 import { debitCredits, refundCredits } from '../../shared/creditService.js'
+import {
+  persistGeneratedImages,
+  removeStoredGeneratedImages,
+} from '../../shared/generatedImageStorage.js'
 import { createHttpError } from '../../shared/http.js'
 import { getUserCredits } from '../../shared/userService.js'
 import { calculateImagePoints } from '../../shared/billingRules.js'
@@ -257,15 +261,16 @@ async function refreshTask(id) {
     const record = await getKieTask(task.provider_task_id)
     const mapped = mapKieState(record.data?.state)
     if (mapped === 'completed') {
-      const urls = extractResultUrls(record)
-      await setImageTaskCompleted(id, urls)
+      const providerUrls = extractResultUrls(record)
+      const localUrls = await persistGeneratedImages({ taskId: id, urls: providerUrls })
+      await setImageTaskCompleted(id, localUrls, { providerUrls })
     } else if (mapped === 'failed') {
       await refundTask(id, null, null, record.data?.failMsg || '创建任务失败')
     } else {
       await setImageTaskProcessing(id)
     }
   } catch (error) {
-    await setImageTaskError(id, `查询任务状态失败：${error.message}`)
+    await setImageTaskError(id, `同步任务结果失败：${error.message}`)
   }
 }
 
@@ -303,7 +308,13 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id, userId) {
-  return deleteImageTask(id, userId)
+  const result = await deleteImageTask(id, userId)
+  if (result.ok) {
+    await removeStoredGeneratedImages({ taskId: id }).catch((error) => {
+      console.warn(`delete local image result files for task ${id} failed:`, error.message)
+    })
+  }
+  return result
 }
 
 export async function toggleFavorite(id, userId) {

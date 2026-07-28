@@ -4,6 +4,7 @@ import { config } from "../../config/index.js";
 let sourceColumnPromise;
 let threadIdColumnPromise;
 let referenceImageUrlColumnPromise;
+let providerResultUrlsColumnAvailable;
 
 async function hasSourceColumn(connection = getPool()) {
   sourceColumnPromise ||= connection
@@ -42,6 +43,18 @@ async function hasThreadIdColumn(connection = getPool()) {
     .then(([rows]) => rows.length > 0)
     .catch(() => false);
   return threadIdColumnPromise;
+}
+
+async function hasProviderResultUrlsColumn(connection = getPool()) {
+  if (providerResultUrlsColumnAvailable === true) return true;
+  const [rows] = await connection.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'provider_result_urls'`,
+    [config.db.database]
+  );
+  providerResultUrlsColumnAvailable = rows.length > 0;
+  return providerResultUrlsColumnAvailable;
 }
 
 export async function findEnabledImageModels(connection = getPool()) {
@@ -232,11 +245,18 @@ export async function setImageTaskProviderTaskId(id, providerTaskId, { modelKey 
   ]);
 }
 
-export async function setImageTaskCompleted(id, urls) {
-  await getPool().query("UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, error_message = NULL WHERE id = ?", [
-    JSON.stringify(urls),
-    id
-  ]);
+export async function setImageTaskCompleted(id, urls, { providerUrls = [] } = {}) {
+  if (await hasProviderResultUrlsColumn()) {
+    await getPool().query(
+      "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ?",
+      [JSON.stringify(urls), JSON.stringify(providerUrls), id]
+    );
+    return;
+  }
+  await getPool().query(
+    "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, error_message = NULL WHERE id = ?",
+    [JSON.stringify(urls), id]
+  );
 }
 
 export async function setImageTaskProcessing(id) {

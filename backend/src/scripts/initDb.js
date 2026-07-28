@@ -414,6 +414,7 @@ async function createTables() {
       provider_task_id VARCHAR(160) NULL,
       reference_image_url TEXT NULL,
       result_urls JSON NULL,
+      provider_result_urls JSON NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
       favorite BOOLEAN NOT NULL DEFAULT FALSE,
@@ -475,6 +476,16 @@ async function createTables() {
   );
   if (referenceImageUrlColumns.length === 0) {
     await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN reference_image_url TEXT NULL AFTER provider_task_id");
+  }
+
+  const [providerResultUrlColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'image_generation_tasks' AND COLUMN_NAME = 'provider_result_urls'`,
+    [config.db.database]
+  );
+  if (providerResultUrlColumns.length === 0) {
+    await pool.query("ALTER TABLE image_generation_tasks ADD COLUMN provider_result_urls JSON NULL AFTER result_urls");
   }
 
   await pool.query(`

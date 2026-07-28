@@ -42,7 +42,13 @@ export function createApp() {
     }
   }));
   app.use(express.urlencoded({ extended: false, limit: "1mb" }));
-  app.use("/media", express.static(path.resolve(process.cwd(), config.media.storageDir)));
+  app.use(
+    "/media",
+    express.static(path.resolve(process.cwd(), config.media.storageDir), {
+      maxAge: "30d",
+      immutable: true
+    })
+  );
 
   app.get("/health", async (_req, res) => {
     try {
