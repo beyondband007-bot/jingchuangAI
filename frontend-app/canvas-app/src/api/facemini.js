@@ -72,7 +72,15 @@ export async function uploadDataUrl(dataUrl, path, filename = 'canvas-reference.
     'video/mp4': '.mp4',
     'video/quicktime': '.mov',
     'video/webm': '.webm',
-    'video/x-msvideo': '.avi'
+    'video/x-msvideo': '.avi',
+    'audio/mpeg': '.mp3',
+    'audio/wav': '.wav',
+    'audio/x-wav': '.wav',
+    'audio/mp4': '.m4a',
+    'audio/aac': '.aac',
+    'audio/ogg': '.ogg',
+    'audio/webm': '.webm',
+    'audio/flac': '.flac'
   }
   const originalExtension = filename.match(/\.[^.]+$/)?.[0] || ''
   const fallbackName = filename.replace(/\.[^.]+$/, '') + (extensionByType[blob.type] || originalExtension || '.bin')

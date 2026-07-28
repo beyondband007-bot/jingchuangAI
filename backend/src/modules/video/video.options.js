@@ -25,7 +25,16 @@ export function calculateVideoPoints(model, duration, count = 1) {
   return calculateUnifiedVideoPoints(duration) * Number(count);
 }
 
-export function validateVideoPayload({ prompt, model, ratio, duration, count, referenceImageUrl, referenceVideoUrl }) {
+export function validateVideoPayload({
+  prompt,
+  model,
+  ratio,
+  duration,
+  count,
+  referenceImageUrl,
+  referenceVideoUrl,
+  referenceAudioUrl
+}) {
   if (!prompt || !prompt.trim()) {
     throw createHttpError("prompt is required", 400);
   }
@@ -40,5 +49,8 @@ export function validateVideoPayload({ prompt, model, ratio, duration, count, re
   }
   if (referenceImageUrl && referenceVideoUrl) {
     throw createHttpError("cannot provide both reference image and reference video", 400);
+  }
+  if (referenceAudioUrl && !/^(?:https?:\/\/|\/media\/|asset:\/\/)/i.test(String(referenceAudioUrl))) {
+    throw createHttpError("invalid reference audio URL", 400);
   }
 }

@@ -51,6 +51,7 @@ export function mapVideoTask(row) {
     favorite: Boolean(row.favorite),
     error: row.error_message || null,
     referenceImageUrl: row.reference_image_url || null,
-    referenceVideoUrl: row.reference_video_url || null
+    referenceVideoUrl: row.reference_video_url || null,
+    referenceAudioUrl: row.reference_audio_url || null
   };
 }

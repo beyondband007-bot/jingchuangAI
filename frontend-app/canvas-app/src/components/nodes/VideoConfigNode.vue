@@ -56,7 +56,7 @@
             ref="promptInputRef"
             v-model="localPrompt"
             rows="3"
-            placeholder="直接输入视频提示词，输入 @ 可引用已连接的图片或视频"
+            placeholder="直接输入视频提示词，输入 @ 可引用已连接的图片、视频或音频"
             class="nodrag nowheel w-full resize-none rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
             @input="handlePromptInput"
             @keydown="handlePromptKeydown"
@@ -104,7 +104,7 @@
 
         <!-- Connected inputs indicator | 连接输入指示 -->
         <div
-          class="flex items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
+          class="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedPrompt ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             提示词 {{ connectedPrompt ? '✓' : '○' }}
@@ -124,6 +124,10 @@
           <span class="px-2 py-0.5 rounded-full"
             :class="connectedVideos.length > 0 ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             参考视频 {{ connectedVideos.length > 0 ? `✓ ${connectedVideos.length}` : '○' }}
+          </span>
+          <span class="px-2 py-0.5 rounded-full"
+            :class="connectedAudios.length > 0 ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
+            参考音频 {{ connectedAudios.length > 0 ? `✓ ${connectedAudios.length}` : '○' }}
           </span>
         </div>
 
@@ -180,7 +184,7 @@
         <div class="flex items-center justify-between border-b border-[var(--border-color)] px-5 py-3">
           <div>
             <div class="text-base font-medium text-[var(--text-primary)]">视频提示词</div>
-            <div class="mt-0.5 text-xs text-[var(--text-tertiary)]">输入 @ 可引用当前已连接的图片或视频</div>
+            <div class="mt-0.5 text-xs text-[var(--text-tertiary)]">输入 @ 可引用当前已连接的图片、视频或音频</div>
           </div>
           <button
             type="button"
@@ -294,7 +298,7 @@ const handlePromptMentionSelect = ({ nodeId, label, type }) => {
   const start = mentionSearchStart.value
   const end = mentionCursorPosition.value
   if (start < 0 || end < start || !connectedMediaNodeIds.value.includes(nodeId)) return
-  const fallbackLabel = type === 'video' ? '视频' : '图片'
+  const fallbackLabel = type === 'video' ? '视频' : type === 'audio' ? '音频' : '图片'
   const mention = `@[${nodeId}|${label || fallbackLabel}]`
   localPrompt.value = `${localPrompt.value.slice(0, start)}${mention} ${localPrompt.value.slice(end)}`
   updateNode(props.id, { prompt: localPrompt.value })
@@ -348,10 +352,26 @@ const connectedVideos = computed(() => {
     .filter(Boolean)
 })
 
+const connectedAudios = computed(() => {
+  const connectedEdges = edges.value.filter(e => e.target === props.id)
+  return connectedEdges
+    .map(edge => {
+      const sourceNode = nodes.value.find(node => node.id === edge.source)
+      if (sourceNode?.type !== 'audio' || !sourceNode.data?.url) return null
+      return {
+        nodeId: sourceNode.id,
+        edgeId: edge.id,
+        url: sourceNode.data.url
+      }
+    })
+    .filter(Boolean)
+})
+
 const connectedMediaNodeIds = computed(() => [
   ...new Set([
     ...connectedImages.value.map(image => image.nodeId),
-    ...connectedVideos.value.map(video => video.nodeId)
+    ...connectedVideos.value.map(video => video.nodeId),
+    ...connectedAudios.value.map(audio => audio.nodeId)
   ])
 ])
 
@@ -362,6 +382,7 @@ const resolveConnectedMediaMentions = (content = '') => {
   ]))
   const imageMentions = []
   const videoMentions = []
+  const audioMentions = []
   let resolvedContent = content
 
   for (const mention of parseMentions(content)) {
@@ -369,18 +390,27 @@ const resolveConnectedMediaMentions = (content = '') => {
     const mediaUrl = sourceNode?.data?.base64 || sourceNode?.data?.url
     const escapedNodeId = mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const mentionPattern = new RegExp(`@\\[${escapedNodeId}(?:\\|[^\\]]+)?\\]`, 'g')
-    if (!mediaUrl || !['image', 'video'].includes(sourceNode?.type)) {
+    if (!mediaUrl || !['image', 'video', 'audio'].includes(sourceNode?.type)) {
       resolvedContent = resolvedContent.replace(mentionPattern, mention.name || '')
       continue
     }
-    const target = sourceNode.type === 'video' ? videoMentions : imageMentions
+    const target = sourceNode.type === 'video'
+      ? videoMentions
+      : sourceNode.type === 'audio'
+        ? audioMentions
+        : imageMentions
     if (!target.some(item => item.nodeId === sourceNode.id)) {
       target.push({ nodeId: sourceNode.id, url: mediaUrl })
     }
-    resolvedContent = resolvedContent.replace(mentionPattern, sourceNode.type === 'video' ? '参考视频' : '参考图片')
+    const referenceLabel = sourceNode.type === 'video'
+      ? '参考视频'
+      : sourceNode.type === 'audio'
+        ? '参考音频'
+        : '参考图片'
+    resolvedContent = resolvedContent.replace(mentionPattern, referenceLabel)
   }
 
-  return { resolvedContent, imageMentions, videoMentions }
+  return { resolvedContent, imageMentions, videoMentions, audioMentions }
 }
 
 // Get images by role | 按角色获取图片
@@ -501,11 +531,14 @@ const getConnectedInputs = () => {
   const hasVideoMentions = mentionResult.videoMentions.length > 0
   const hasConnectedImage = Boolean(first_frame_image || last_frame_image || images.length > 0)
   const hasConnectedVideo = connectedVideos.value.length > 0
+  const hasAudioMentions = mentionResult.audioMentions.length > 0
+  const hasConnectedAudio = connectedAudios.value.length > 0
   const mediaConflict = (hasImageMentions && hasVideoMentions)
     || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
 
   let reference_image = hasImageMentions ? mentionResult.imageMentions[0].url : ''
   let reference_video = hasVideoMentions ? mentionResult.videoMentions[0].url : ''
+  let reference_audio = hasAudioMentions ? mentionResult.audioMentions[0].url : ''
 
   if (hasVideoMentions) {
     first_frame_image = ''
@@ -515,6 +548,9 @@ const getConnectedInputs = () => {
     reference_video = ''
   } else if (hasConnectedVideo && !hasConnectedImage) {
     reference_video = connectedVideos.value[0].url
+  }
+  if (!reference_audio && hasConnectedAudio) {
+    reference_audio = connectedAudios.value[0].url
   }
 
   const prompt = [mentionResult.resolvedContent, externalPrompt]
@@ -529,6 +565,7 @@ const getConnectedInputs = () => {
     images,
     reference_image,
     reference_video,
+    reference_audio,
     mediaConflict
   }
 }
@@ -546,7 +583,16 @@ const handleGenerate = async () => {
   // 设置生成中状态
   isGenerating.value = true
 
-  const { prompt, first_frame_image, last_frame_image, images, reference_image, reference_video, mediaConflict } = getConnectedInputs()
+  const {
+    prompt,
+    first_frame_image,
+    last_frame_image,
+    images,
+    reference_image,
+    reference_video,
+    reference_audio,
+    mediaConflict
+  } = getConnectedInputs()
 
   if (mediaConflict) {
     window.$message?.warning('一次视频生成只能引用图片或视频中的一种素材，请在提示词中 @ 指定其中一种')
@@ -554,7 +600,8 @@ const handleGenerate = async () => {
     return
   }
 
-  const hasInput = prompt || first_frame_image || last_frame_image || images.length > 0 || reference_image || reference_video
+  const hasInput = prompt || first_frame_image || last_frame_image || images.length > 0
+    || reference_image || reference_video || reference_audio
   if (!hasInput) {
     window.$message?.warning('请在节点内输入提示词，或连接图片/视频素材')
     isGenerating.value = false
@@ -628,6 +675,10 @@ const handleGenerate = async () => {
 
     if (reference_video) {
       params.reference_video = reference_video
+    }
+
+    if (reference_audio) {
+      params.reference_audio = reference_audio
     }
 
     // Add ratio/size | 添加比例参数

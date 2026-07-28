@@ -563,7 +563,9 @@ async function createTables() {
       provider_task_id VARCHAR(160) NULL,
       reference_image_url TEXT NULL,
       reference_video_url TEXT NULL,
+      reference_audio_url TEXT NULL,
       result_urls JSON NULL,
+      provider_result_urls JSON NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
       favorite BOOLEAN NOT NULL DEFAULT FALSE,
@@ -603,6 +605,26 @@ async function createTables() {
   );
   if (videoRefVideoColumns.length === 0) {
     await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_video_url TEXT NULL AFTER reference_image_url");
+  }
+
+  const [videoRefAudioColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'reference_audio_url'`,
+    [config.db.database]
+  );
+  if (videoRefAudioColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_audio_url TEXT NULL AFTER reference_video_url");
+  }
+
+  const [videoProviderResultColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'provider_result_urls'`,
+    [config.db.database]
+  );
+  if (videoProviderResultColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN provider_result_urls JSON NULL AFTER result_urls");
   }
 
   await pool.query(`

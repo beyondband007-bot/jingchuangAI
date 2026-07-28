@@ -12,6 +12,10 @@ import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import {
+  persistGeneratedVideos,
+  removeStoredGeneratedVideos
+} from "../../shared/generatedVideoStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapWatermarkAsset, mapWatermarkTask } from "./watermark.mapper.js";
 import {
@@ -249,7 +253,16 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "去水印结果缺少下载链接");
       } else {
-        await setWatermarkTaskCompleted(id, result);
+        if (task.media_type === "video") {
+          const [localUrl] = await persistGeneratedVideos({
+            taskId: id,
+            feature: "watermark-videos",
+            urls: [result.resultUrl]
+          });
+          await setWatermarkTaskCompleted(id, { ...result, resultUrl: localUrl });
+        } else {
+          await setWatermarkTaskCompleted(id, result);
+        }
       }
     } else if (mapped === "failed") {
       await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "去水印任务失败");
@@ -295,7 +308,16 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id) {
-  return deleteWatermarkTask(id);
+  const result = await deleteWatermarkTask(id);
+  if (result?.ok) {
+    await removeStoredGeneratedVideos({
+      taskId: id,
+      feature: "watermark-videos"
+    }).catch((error) => {
+      console.warn(`delete local watermark video for task ${id} failed:`, error.message);
+    });
+  }
+  return result;
 }
 
 export async function toggleFavorite(id) {

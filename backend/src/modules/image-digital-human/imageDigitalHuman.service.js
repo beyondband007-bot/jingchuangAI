@@ -16,6 +16,10 @@ import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import {
+  persistGeneratedVideos,
+  removeStoredGeneratedVideos
+} from "../../shared/generatedVideoStorage.js";
 import { calculateBillingQuote, estimateSpeechSeconds } from "../../shared/billingRules.js";
 import { formatBeijingClock, formatBeijingDateTime } from "../../shared/time.js";
 import { getDemoUser } from "../../shared/userService.js";
@@ -449,7 +453,12 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "图片数字人结果缺少视频链接");
       } else {
-        await setImageDigitalHumanTaskCompleted(id, result);
+        const [localUrl] = await persistGeneratedVideos({
+          taskId: id,
+          feature: "image-digital-human-videos",
+          urls: [result.resultUrl]
+        });
+        await setImageDigitalHumanTaskCompleted(id, { ...result, resultUrl: localUrl });
       }
     } else if (mapped === "failed") {
       if (isArkTask) {
@@ -499,8 +508,17 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
   }
 }
 
-export function deleteTask(id) {
-  return deleteImageDigitalHumanTaskRow(id);
+export async function deleteTask(id) {
+  const result = await deleteImageDigitalHumanTaskRow(id);
+  if (result?.ok) {
+    await removeStoredGeneratedVideos({
+      taskId: id,
+      feature: "image-digital-human-videos"
+    }).catch((error) => {
+      console.warn(`delete local image digital human video for task ${id} failed:`, error.message);
+    });
+  }
+  return result;
 }
 
 export async function regenerateTask(id) {

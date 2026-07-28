@@ -3,6 +3,7 @@ import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
   buildReferenceImage,
+  buildReferenceAudio,
   buildReferenceVideo,
   createArkVideoGenerationTask,
   extractArkVideoGenerationResult,
@@ -11,6 +12,10 @@ import {
 } from "../../providers/volcengine/videoGeneration.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import {
+  persistGeneratedVideos,
+  removeStoredGeneratedVideos
+} from "../../shared/generatedVideoStorage.js";
 import { getUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapVideoModel, mapVideoTask } from "./video.mapper.js";
@@ -66,7 +71,18 @@ export async function getTask(id, userId) {
 }
 
 export async function createTask(payload, userId) {
-  let { prompt, model, ratio, duration, mode = "first-frame", count = 1, referenceImageUrl, referenceVideoUrl, source } = payload;
+  let {
+    prompt,
+    model,
+    ratio,
+    duration,
+    mode = "first-frame",
+    count = 1,
+    referenceImageUrl,
+    referenceVideoUrl,
+    referenceAudioUrl,
+    source
+  } = payload;
 
   // 视频生成统一走 Ark Seedance 2.0，与换脸和动作迁移共用同一套凭据与任务链路。
   const forcedModelKey = "seedance_2_0_720p";
@@ -87,7 +103,16 @@ export async function createTask(payload, userId) {
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
     }
-    validateVideoPayload({ prompt, model: modelPrice, ratio, duration, count, referenceImageUrl, referenceVideoUrl });
+    validateVideoPayload({
+      prompt,
+      model: modelPrice,
+      ratio,
+      duration,
+      count,
+      referenceImageUrl,
+      referenceVideoUrl,
+      referenceAudioUrl
+    });
 
     costPoints = calculateVideoPoints(modelPrice, duration, count);
     const rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
@@ -103,7 +128,8 @@ export async function createTask(payload, userId) {
       costPoints,
       rmbCost,
       referenceImageUrl: referenceImageUrl || null,
-      referenceVideoUrl: referenceVideoUrl || null
+      referenceVideoUrl: referenceVideoUrl || null,
+      referenceAudioUrl: referenceAudioUrl || null
     });
 
     await debitCredits(connection, {
@@ -136,6 +162,13 @@ export async function createTask(payload, userId) {
         userId,
         url: referenceVideoUrl,
         kind: "video"
+      })));
+    }
+    if (referenceAudioUrl) {
+      content.push(buildReferenceAudio(await resolveArkReference({
+        userId,
+        url: referenceAudioUrl,
+        kind: "audio"
       })));
     }
 
@@ -187,6 +220,21 @@ export async function uploadReferenceVideo({ file }) {
   };
 }
 
+export async function uploadReferenceAudio({ file }) {
+  if (!file) {
+    throw createHttpError("file is required", 400);
+  }
+  const localUrl = `/media/video/references/${file.filename}`;
+
+  return {
+    url: localUrl,
+    referenceAudioUrl: localUrl,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size
+  };
+}
+
 function getReferenceFilePath(url) {
   const prefix = "/media/video/references/";
   const value = String(url || "").trim();
@@ -201,6 +249,15 @@ function getReferenceMimeType(kind, filePath) {
     if (extension === ".png") return "image/png";
     if (extension === ".webp") return "image/webp";
     return "image/jpeg";
+  }
+  if (kind === "audio") {
+    if (extension === ".wav") return "audio/wav";
+    if (extension === ".m4a") return "audio/mp4";
+    if (extension === ".aac") return "audio/aac";
+    if (extension === ".ogg") return "audio/ogg";
+    if (extension === ".webm") return "audio/webm";
+    if (extension === ".flac") return "audio/flac";
+    return "audio/mpeg";
   }
   if (extension === ".mov") return "video/quicktime";
   if (extension === ".webm") return "video/webm";
@@ -242,7 +299,9 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "video generation result missing video URL");
       } else {
-        await setVideoTaskCompleted(id, [result.resultUrl]);
+        const providerUrls = [result.resultUrl];
+        const localUrls = await persistGeneratedVideos({ taskId: id, urls: providerUrls });
+        await setVideoTaskCompleted(id, localUrls, { providerUrls });
       }
     } else if (mapped === "failed") {
       const result = extractArkVideoGenerationResult(record);
@@ -293,7 +352,13 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id, userId) {
-  return deleteVideoTask(id, userId);
+  const result = await deleteVideoTask(id, userId);
+  if (result.ok) {
+    await removeStoredGeneratedVideos({ taskId: id }).catch((error) => {
+      console.warn(`delete local video result files for task ${id} failed:`, error.message);
+    });
+  }
+  return result;
 }
 
 export async function toggleFavorite(id, userId) {

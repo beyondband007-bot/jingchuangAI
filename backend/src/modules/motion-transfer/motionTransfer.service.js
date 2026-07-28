@@ -13,6 +13,10 @@ import {
 import { getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import {
+  persistGeneratedVideos,
+  removeStoredGeneratedVideos
+} from "../../shared/generatedVideoStorage.js";
 import { calculateVideoPoints } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
@@ -296,7 +300,12 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "动作迁移结果缺少视频链接");
       } else {
-        await setMotionTransferTaskCompleted(id, result);
+        const [localUrl] = await persistGeneratedVideos({
+          taskId: id,
+          feature: "motion-transfer-videos",
+          urls: [result.resultUrl]
+        });
+        await setMotionTransferTaskCompleted(id, { ...result, resultUrl: localUrl });
       }
     } else if (mapped === "failed") {
       const result = extractArkVideoGenerationResult(record);
@@ -343,7 +352,16 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id) {
-  return deleteMotionTransferTask(id);
+  const result = await deleteMotionTransferTask(id);
+  if (result?.ok) {
+    await removeStoredGeneratedVideos({
+      taskId: id,
+      feature: "motion-transfer-videos"
+    }).catch((error) => {
+      console.warn(`delete local motion transfer video for task ${id} failed:`, error.message);
+    });
+  }
+  return result;
 }
 
 export async function toggleFavorite(id) {
