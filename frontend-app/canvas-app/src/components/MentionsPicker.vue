@@ -115,7 +115,7 @@ const targetTypes = computed(() => {
     return ['text']
   }
   if (props.context === 'videoConfig') {
-    return ['image', 'video']
+    return ['image', 'video', 'audio']
   }
   return ['image']
 })
@@ -209,6 +209,7 @@ function getNodeIcon(type) {
     llmConfig: '🤖',
     imageConfig: '🎨',
     video: '🎬',
+    audio: '🎵',
     videoConfig: '🎥'
   }
   return icons[type] || '📄'

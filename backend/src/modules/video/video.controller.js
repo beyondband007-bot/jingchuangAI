@@ -7,6 +7,7 @@ import {
   listTasks,
   toggleFavorite,
   uploadReferenceImage,
+  uploadReferenceAudio,
   uploadReferenceVideo
 } from "./video.service.js";
 
@@ -47,6 +48,14 @@ export async function uploadVideoReferenceImage(req, res) {
 export async function uploadVideoReferenceVideo(req, res) {
   try {
     res.status(201).json(await uploadReferenceVideo({ file: req.file }));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function uploadVideoReferenceAudio(req, res) {
+  try {
+    res.status(201).json(await uploadReferenceAudio({ file: req.file }));
   } catch (error) {
     sendError(res, error);
   }

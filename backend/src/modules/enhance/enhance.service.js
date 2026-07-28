@@ -15,6 +15,10 @@ import {
 import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import {
+  persistGeneratedVideos,
+  removeStoredGeneratedVideos
+} from "../../shared/generatedVideoStorage.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapEnhanceAsset, mapEnhanceTask } from "./enhance.mapper.js";
@@ -353,7 +357,16 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "画质增强结果缺少下载链接");
       } else {
-        await setEnhanceTaskCompleted(id, result);
+        if (task.media_type === "video") {
+          const [localUrl] = await persistGeneratedVideos({
+            taskId: id,
+            feature: "enhance-videos",
+            urls: [result.resultUrl]
+          });
+          await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl });
+        } else {
+          await setEnhanceTaskCompleted(id, result);
+        }
       }
     } else if (mapped === "failed") {
       await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "画质增强任务失败");
@@ -399,7 +412,16 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id) {
-  return deleteEnhanceTask(id);
+  const result = await deleteEnhanceTask(id);
+  if (result?.ok) {
+    await removeStoredGeneratedVideos({
+      taskId: id,
+      feature: "enhance-videos"
+    }).catch((error) => {
+      console.warn(`delete local enhanced video for task ${id} failed:`, error.message);
+    });
+  }
+  return result;
 }
 
 export async function toggleFavorite(id) {

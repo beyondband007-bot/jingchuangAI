@@ -1,3 +1,4 @@
+import path from "path";
 import { requireLoggedIn, sendError } from "../../shared/http.js";
 import {
   addNodeTask,
@@ -64,9 +65,15 @@ export const uploadCanvasMedia = withLoggedIn(async (req, res) => {
     return;
   }
   const mimeType = String(req.file.mimetype || "");
+  const extension = path.extname(req.file.originalname || "").toLowerCase();
+  const kind = mimeType.startsWith("video/")
+    ? "video"
+    : mimeType.startsWith("audio/") || [".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"].includes(extension)
+      ? "audio"
+      : "image";
   res.status(201).json({
     url: `/media/canvas/uploads/${req.file.filename}`,
-    kind: mimeType.startsWith("video/") ? "video" : "image",
+    kind,
     originalName: req.file.originalname,
     mimeType,
     size: req.file.size,

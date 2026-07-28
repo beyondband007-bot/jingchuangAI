@@ -1,5 +1,24 @@
 import { getPool } from "../../db/pool.js";
 
+let providerResultUrlsColumnPromise;
+
+async function hasProviderResultUrlsColumn() {
+  if (!providerResultUrlsColumnPromise) {
+    providerResultUrlsColumnPromise = getPool()
+      .query(
+        `SELECT COLUMN_NAME
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'video_generation_tasks'
+           AND COLUMN_NAME = 'provider_result_urls'
+         LIMIT 1`
+      )
+      .then(([rows]) => rows.length > 0)
+      .catch(() => false);
+  }
+  return providerResultUrlsColumnPromise;
+}
+
 export async function findEnabledVideoModels(connection = getPool()) {
   const [models] = await connection.query(
     `SELECT *
@@ -18,12 +37,41 @@ export async function findVideoModelPrice(connection, modelKey) {
   return models[0] || null;
 }
 
-export async function createVideoTask(connection, { userId, source, modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl, referenceVideoUrl }) {
+export async function createVideoTask(connection, {
+  userId,
+  source,
+  modelKey,
+  prompt,
+  ratio,
+  duration,
+  mode,
+  count,
+  costPoints,
+  rmbCost,
+  referenceImageUrl,
+  referenceVideoUrl,
+  referenceAudioUrl
+}) {
   const [result] = await connection.query(
     `INSERT INTO video_generation_tasks
-     (user_id, source, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost, reference_image_url, reference_video_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    [userId, source || "video", modelKey, prompt, ratio, duration, mode, count, costPoints, rmbCost, referenceImageUrl || null, referenceVideoUrl || null]
+     (user_id, source, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost,
+      reference_image_url, reference_video_url, reference_audio_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    [
+      userId,
+      source || "video",
+      modelKey,
+      prompt,
+      ratio,
+      duration,
+      mode,
+      count,
+      costPoints,
+      rmbCost,
+      referenceImageUrl || null,
+      referenceVideoUrl || null,
+      referenceAudioUrl || null
+    ]
   );
   return result.insertId;
 }
@@ -91,7 +139,14 @@ export async function setVideoTaskProviderTaskId(id, providerTaskId) {
   ]);
 }
 
-export async function setVideoTaskCompleted(id, urls) {
+export async function setVideoTaskCompleted(id, urls, { providerUrls = [] } = {}) {
+  if (await hasProviderResultUrlsColumn()) {
+    await getPool().query(
+      "UPDATE video_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ?",
+      [JSON.stringify(urls), JSON.stringify(providerUrls), id]
+    );
+    return;
+  }
   await getPool().query("UPDATE video_generation_tasks SET status = 'completed', result_urls = ? WHERE id = ?", [
     JSON.stringify(urls),
     id

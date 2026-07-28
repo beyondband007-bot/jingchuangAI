@@ -28,20 +28,27 @@ const mediaUpload = multer({
       const extensions = {
         "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif",
         "video/mp4": ".mp4", "video/quicktime": ".mov", "video/webm": ".webm", "video/x-msvideo": ".avi",
+        "audio/mpeg": ".mp3", "audio/wav": ".wav", "audio/x-wav": ".wav", "audio/mp4": ".m4a",
+        "audio/aac": ".aac", "audio/ogg": ".ogg", "audio/webm": ".webm", "audio/flac": ".flac",
       };
-      const ext = extensions[String(file.mimetype || "").toLowerCase()] || "";
+      const ext = extensions[String(file.mimetype || "").toLowerCase()]
+        || path.extname(file.originalname || "").toLowerCase();
       callback(null, `${Date.now()}-${Math.random().toString(16).slice(2)}${ext}`);
     },
   }),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     const type = String(file.mimetype || "").toLowerCase();
+    const extension = path.extname(file.originalname || "").toLowerCase();
     const allowedTypes = new Set([
       "image/jpeg", "image/png", "image/webp", "image/gif",
       "video/mp4", "video/quicktime", "video/webm", "video/x-msvideo",
+      "audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4",
+      "audio/aac", "audio/ogg", "audio/webm", "audio/flac",
     ]);
-    if (!allowedTypes.has(type)) {
-      callback(new Error("file must be an image or video"));
+    const allowedAudioExtensions = new Set([".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".webm"]);
+    if (!allowedTypes.has(type) && !allowedAudioExtensions.has(extension)) {
+      callback(new Error("file must be an image, video, or audio"));
       return;
     }
     callback(null, true);

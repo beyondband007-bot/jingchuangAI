@@ -30,6 +30,19 @@ async function mockCanvasWorkspace(page) {
   await page.route("**/api/me/credits", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ balance: 10000 }) }),
   );
+  await page.route("**/api/canvas/uploads/media", (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({
+        url: "/media/canvas/uploads/test-voice.mp3",
+        kind: "audio",
+        originalName: "test-voice.mp3",
+        mimeType: "audio/mpeg",
+        size: 12,
+      }),
+    }),
+  );
   await page.route("**/api/canvas/projects**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -118,7 +131,12 @@ test("authenticated infinite canvas keeps the unified workbench shell", async ({
 
   const toolbar = canvasFrame.locator(".canvas-toolbar");
   await expect(toolbar.locator("[title]")).toHaveCount(0);
-  await expect(toolbar.locator("[data-tooltip--left]")).toHaveCount(8);
+  await expect(toolbar.locator("[data-tooltip--left]")).toHaveCount(9);
+  await canvasFrame.getByRole("button", { name: "音频", exact: true }).click();
+  const audioNode = canvasFrame.locator(".audio-node");
+  await expect(audioNode).toBeVisible();
+  await audioNode.locator('input[type="file"]').setInputFiles({ name: "test-voice.mp3", mimeType: "audio/mpeg", buffer: Buffer.from("mock-audio") });
+  await expect(audioNode.locator("audio")).toHaveAttribute("src", "/media/canvas/uploads/test-voice.mp3");
 
   const body = canvasFrame.locator(".canvas-workbench");
   const hasHorizontalOverflow = await body.evaluate((element) => element.scrollWidth > element.clientWidth);

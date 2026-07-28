@@ -11,6 +11,7 @@ import {
   listVideoTasks,
   toggleVideoFavorite,
   uploadVideoReferenceImage,
+  uploadVideoReferenceAudio,
   uploadVideoReferenceVideo
 } from "./video.controller.js";
 
@@ -19,7 +20,7 @@ export const videoRouter = Router();
 const referenceDir = path.resolve(process.cwd(), config.media.storageDir, "video", "references");
 mkdirSync(referenceDir, { recursive: true });
 
-function createReferenceUpload({ allowedTypes, maxBytes, maxLabel, typeLabel }) {
+function createReferenceUpload({ allowedTypes, allowedExtensions = new Set(), maxBytes, maxLabel, typeLabel }) {
   const upload = multer({
     storage: multer.diskStorage({
       destination: (_req, _file, callback) => callback(null, referenceDir),
@@ -30,7 +31,8 @@ function createReferenceUpload({ allowedTypes, maxBytes, maxLabel, typeLabel }) 
     }),
     limits: { fileSize: maxBytes },
     fileFilter: (_req, file, callback) => {
-      if (!allowedTypes.has(String(file.mimetype || ""))) {
+      const extension = path.extname(file.originalname || "").toLowerCase();
+      if (!allowedTypes.has(String(file.mimetype || "")) && !allowedExtensions.has(extension)) {
         callback(new Error(`file must be a ${typeLabel}`));
         return;
       }
@@ -67,9 +69,27 @@ const uploadReferenceVideo = createReferenceUpload({
   typeLabel: "MP4, MOV, WebM, or AVI video"
 });
 
+const uploadReferenceAudio = createReferenceUpload({
+  allowedTypes: new Set([
+    "audio/mpeg",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/mp4",
+    "audio/aac",
+    "audio/ogg",
+    "audio/webm",
+    "audio/flac"
+  ]),
+  allowedExtensions: new Set([".mp3", ".wav", ".m4a", ".aac", ".ogg", ".webm", ".flac"]),
+  maxBytes: 50 * 1024 * 1024,
+  maxLabel: "50MB",
+  typeLabel: "MP3, WAV, M4A, AAC, OGG, WebM, or FLAC audio"
+});
+
 videoRouter.get("/models", getVideoModels);
 videoRouter.post("/uploads/reference-image", uploadReferenceImage, uploadVideoReferenceImage);
 videoRouter.post("/uploads/reference-video", uploadReferenceVideo, uploadVideoReferenceVideo);
+videoRouter.post("/uploads/reference-audio", uploadReferenceAudio, uploadVideoReferenceAudio);
 videoRouter.get("/tasks", listVideoTasks);
 videoRouter.post("/tasks", createVideoTask);
 videoRouter.get("/tasks/:id", getVideoTask);

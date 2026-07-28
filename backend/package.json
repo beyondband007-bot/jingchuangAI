@@ -10,7 +10,8 @@
     "test": "node --test",
     "db:init": "node src/scripts/initDb.js",
     "db:check": "node src/scripts/checkDb.js",
-    "media:backfill-images": "node src/scripts/backfillGeneratedImages.js"
+    "media:backfill-images": "node src/scripts/backfillGeneratedImages.js",
+    "media:backfill-videos": "node src/scripts/backfillGeneratedVideos.js"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

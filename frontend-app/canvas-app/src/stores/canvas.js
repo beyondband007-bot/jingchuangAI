@@ -264,6 +264,12 @@ const getDefaultNodeData = (type) => {
         duration: 0,
         label: '视频节点'
       }
+    case 'audio':
+      return {
+        url: '',
+        duration: 0,
+        label: '音频节点'
+      }
     case 'image':
       return {
         url: '',

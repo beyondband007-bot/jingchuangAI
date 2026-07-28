@@ -317,6 +317,7 @@ import {
   ChevronDownOutline,
   AddOutline,
   ImageOutline,
+  MusicalNotesOutline,
   FlashOutline,
   RefreshOutline,
   TextOutline,
@@ -409,6 +410,7 @@ import TextNode from '../components/nodes/TextNode.vue'
 import ImageConfigNode from '../components/nodes/ImageConfigNode.vue'
 import VideoNode from '../components/nodes/VideoNode.vue'
 import ImageNode from '../components/nodes/ImageNode.vue'
+import AudioNode from '../components/nodes/AudioNode.vue'
 import VideoConfigNode from '../components/nodes/VideoConfigNode.vue'
 import LLMConfigNode from '../components/nodes/LLMConfigNode.vue'
 import ImageRoleEdge from '../components/edges/ImageRoleEdge.vue'
@@ -428,6 +430,7 @@ const nodeTypes = {
   imageConfig: markRaw(ImageConfigNode),
   video: markRaw(VideoNode),
   image: markRaw(ImageNode),
+  audio: markRaw(AudioNode),
   videoConfig: markRaw(VideoConfigNode),
   llmConfig: markRaw(LLMConfigNode)
 }
@@ -465,7 +468,7 @@ const renameValue = ref('')
 // Check if has downloadable assets | 检查是否有可下载素材
 const hasDownloadableAssets = computed(() => {
   return nodes.value.some(n => 
-    (n.type === 'image' || n.type === 'video') && n.data?.url
+    ['image', 'video', 'audio'].includes(n.type) && n.data?.url
   )
 })
 
@@ -487,6 +490,7 @@ const projectOptions = [
 const tools = [
   { id: 'text', name: '文本', icon: TextOutline, action: () => addNewNode('text') },
   { id: 'image', name: '图片', icon: ImageOutline, action: () => addNewNode('image') },
+  { id: 'audio', name: '音频', icon: MusicalNotesOutline, action: () => addNewNode('audio') },
   { id: 'imageConfig', name: '生图配置', icon: ColorPaletteOutline, action: () => addNewNode('imageConfig') },
   { id: 'videoConfig', name: '视频生成', icon: VideocamOutline, action: () => addNewNode('videoConfig') },
   { id: 'undo', name: '撤销 (Ctrl+Z)', icon: ArrowUndoOutline, action: () => undo(), disabled: () => !canUndo() },
@@ -500,6 +504,7 @@ const nodeTypeOptions = [
   { type: 'imageConfig', name: '生图配置', icon: ColorPaletteOutline, color: '#22c55e' },
   { type: 'videoConfig', name: '视频生成配置', icon: VideocamOutline, color: '#f59e0b' },
   { type: 'image', name: '图片节点', icon: ImageOutline, color: '#8b5cf6' },
+  { type: 'audio', name: '音频节点', icon: MusicalNotesOutline, color: '#0ea5e9' },
   { type: 'video', name: '视频节点', icon: VideocamOutline, color: '#ef4444' }
 ]
 
@@ -607,8 +612,24 @@ const addNodeFromContextMenu = (type) => {
   addNewNode(type, position)
 }
 
+const audioFileExtensions = new Set(['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'webm'])
+
+const getMediaTypeForFile = (file) => {
+  const mimeType = String(file?.type || '').toLowerCase()
+  if (mimeType.startsWith('image/')) return 'image'
+  if (mimeType.startsWith('video/')) return 'video'
+  if (mimeType.startsWith('audio/')) return 'audio'
+  const extension = String(file?.name || '').split('.').pop()?.toLowerCase()
+  return audioFileExtensions.has(extension) ? 'audio' : ''
+}
+
 const containsMediaFiles = (dataTransfer) => Array.from(dataTransfer?.items || []).some(item =>
-  item.kind === 'file' && (item.type.startsWith('image/') || item.type.startsWith('video/'))
+  item.kind === 'file' && (
+    item.type.startsWith('image/')
+    || item.type.startsWith('video/')
+    || item.type.startsWith('audio/')
+    || getMediaTypeForFile(item.getAsFile())
+  )
 )
 
 const handleCanvasDragEnter = (event) => {
@@ -633,7 +654,7 @@ const handleCanvasDrop = async (event) => {
   closeContextMenu()
 
   const files = Array.from(event.dataTransfer?.files || []).filter(file =>
-    file.type.startsWith('image/') || file.type.startsWith('video/')
+    getMediaTypeForFile(file)
   )
   if (!files.length) return
 
@@ -641,12 +662,12 @@ const handleCanvasDrop = async (event) => {
   let uploadedCount = 0
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index]
-    const type = file.type.startsWith('video/') ? 'video' : 'image'
+    const type = getMediaTypeForFile(file)
     const position = { x: start.x + index * 36, y: start.y + index * 36 }
     const nodeId = addNode(type, position, {
       url: '',
       loading: true,
-      label: file.name || (type === 'video' ? '上传视频' : '上传图片'),
+      label: file.name || ({ video: '上传视频', audio: '上传音频', image: '上传图片' }[type]),
       fileName: file.name,
       fileType: file.type,
     })
@@ -656,7 +677,7 @@ const handleCanvasDrop = async (event) => {
       updateNode(nodeId, {
         url: uploaded.url,
         loading: false,
-        label: file.name || (type === 'video' ? '视频素材' : '图片素材'),
+        label: file.name || ({ video: '视频素材', audio: '音频素材', image: '图片素材' }[type]),
         updatedAt: Date.now(),
       })
       uploadedCount += 1

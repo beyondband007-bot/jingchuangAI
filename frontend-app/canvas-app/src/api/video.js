@@ -5,11 +5,13 @@ export async function createVideoTask(data) {
     || data.first_frame_image?.url || data.first_frame_image
     || data.images?.[0]?.url || data.images?.[0] || ''
   const videoReference = data.reference_video?.url || data.reference_video || ''
+  const audioReference = data.reference_audio?.url || data.reference_audio || ''
   if (imageReference && videoReference) {
     throw new Error('一次视频生成只能引用图片或视频中的一种素材')
   }
   const referenceImageUrl = await uploadDataUrl(imageReference, '/video/uploads/reference-image', 'canvas-video-reference.png')
   const referenceVideoUrl = await uploadDataUrl(videoReference, '/video/uploads/reference-video', 'canvas-video-reference.mp4')
+  const referenceAudioUrl = await uploadDataUrl(audioReference, '/video/uploads/reference-audio', 'canvas-video-reference.mp3')
   const task = await faceminiRequest('/video/tasks', {
     method: 'POST',
     body: JSON.stringify({
@@ -21,7 +23,8 @@ export async function createVideoTask(data) {
       count: 1,
       source: 'infinite-canvas',
       referenceImageUrl: referenceImageUrl || null,
-      referenceVideoUrl: referenceVideoUrl || null
+      referenceVideoUrl: referenceVideoUrl || null,
+      referenceAudioUrl: referenceAudioUrl || null
     })
   })
   await associateNodeTask({
