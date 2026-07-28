@@ -128,10 +128,6 @@ button:not(:disabled),
   transition: box-shadow var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
 }
 
-.vue-flow__node.selected {
-  box-shadow: 0 0 0 3px var(--canvas-focus), var(--canvas-shadow-panel);
-}
-
 .vue-flow__edge-path {
   stroke: var(--canvas-grid);
   stroke-width: 2;
