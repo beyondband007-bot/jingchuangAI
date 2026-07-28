@@ -1,6 +1,16 @@
 import { memo, useCallback, useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+function notificationSourcesForNav(navId) {
+  const sources = {
+    image: ["image"], video: ["video"], "digital-human": ["digital-human", "image-digital-human"],
+    motion: ["motion"], "face-swap": ["face-swap"], watermark: ["watermark"],
+    "remove-bg": ["remove-bg"], enhance: ["enhance"], article: ["article"],
+    music: ["music"], replicate: ["replicate"],
+  };
+  return sources[navId] || [];
+}
+
 export const AppSidebar = memo(function AppSidebar({
   activeNav,
   navItems,
@@ -8,6 +18,7 @@ export const AppSidebar = memo(function AppSidebar({
   onNavChange,
   onPrefetchNav,
   onOpenLanding,
+  notificationSummary,
 }) {
   const enableSidebarSearch = false;
   const query = "";
@@ -41,6 +52,12 @@ export const AppSidebar = memo(function AppSidebar({
   );
   const assetsItem = getNavItem("assets");
   const AssetsIcon = assetsItem?.icon;
+  const hasRunningTasks = useCallback(
+    (navId) => notificationSourcesForNav(navId).some(
+      (sourceType) => notificationSummary?.bySource?.[sourceType]?.runningCount > 0,
+    ),
+    [notificationSummary],
+  );
 
   return (
     <div className="app-sidebar">
@@ -71,6 +88,7 @@ export const AppSidebar = memo(function AppSidebar({
                 >
                   <Icon size={18} strokeWidth={1.9} />
                   <span>{item.label}</span>
+                  {hasRunningTasks(item.id) && <span className="fm-generation-red-dot" aria-label="有任务正在生成" />}
                 </button>
               </div>
             );
@@ -148,6 +166,7 @@ export const AppSidebar = memo(function AppSidebar({
                         <Icon size={15} strokeWidth={1.9} />
                       </span>
                       <span>{item.label}</span>
+                      {hasRunningTasks(item.id) && <span className="fm-generation-red-dot" aria-label="有任务正在生成" />}
                     </button>
                   );
                 })}

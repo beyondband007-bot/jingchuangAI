@@ -26,6 +26,18 @@ async function createDatabaseIfNeeded() {
   }
 }
 
+async function ensureIndex(pool, tableName, indexName, columns) {
+  const [rows] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?`,
+    [config.db.database, tableName, indexName],
+  );
+  if (rows.length === 0) {
+    await pool.query(`ALTER TABLE ${tableName} ADD INDEX ${indexName} (${columns})`);
+  }
+}
+
 async function createTables() {
   const pool = getPool();
 
@@ -1314,6 +1326,24 @@ async function createTables() {
     if (!replicateColumnNames.has(columnName)) {
       await pool.query(`ALTER TABLE replicate_tasks ADD COLUMN ${columnName} ${definition}`);
     }
+  }
+
+  const runningTaskTables = [
+    ["image_generation_tasks", "idx_image_tasks_user_status"],
+    ["video_generation_tasks", "idx_video_tasks_user_status"],
+    ["digital_human_tasks", "idx_digital_human_user_status"],
+    ["image_digital_human_tasks", "idx_image_digital_human_user_status"],
+    ["motion_transfer_tasks", "idx_motion_tasks_user_status"],
+    ["face_swap_tasks", "idx_face_swap_tasks_user_status"],
+    ["watermark_tasks", "idx_watermark_tasks_user_status"],
+    ["remove_bg_tasks", "idx_remove_bg_tasks_user_status"],
+    ["enhance_tasks", "idx_enhance_tasks_user_status"],
+    ["article_generation_packages", "idx_article_packages_user_status"],
+    ["music_tasks", "idx_music_tasks_user_status"],
+    ["replicate_tasks", "idx_replicate_tasks_user_status"],
+  ];
+  for (const [tableName, indexName] of runningTaskTables) {
+    await ensureIndex(pool, tableName, indexName, "user_id, status");
   }
 }
 
