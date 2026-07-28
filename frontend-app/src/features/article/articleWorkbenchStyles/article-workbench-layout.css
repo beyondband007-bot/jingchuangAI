@@ -163,7 +163,7 @@
   .fm-popular-template-select {
   grid-template-columns: 64px minmax(0, 1fr);
   gap: var(--space-10px);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 [data-feature-module="article"]
