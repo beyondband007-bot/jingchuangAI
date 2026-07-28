@@ -203,11 +203,32 @@
 }
 
 .fm-top-actions .fm-top-bell {
+  position: relative;
   width: 34px;
   height: 34px;
   padding: 0;
   color: #fff;
   background: var(--fm-brand);
+}
+
+.fm-generation-red-dot {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  width: 7px;
+  height: 7px;
+  margin: 0;
+  border: 1.5px solid #fff;
+  border-radius: 999px;
+  background: #f04438;
+  box-shadow: 0 1px 4px rgba(240, 68, 56, 0.34);
+  transform: translateY(-50%);
+}
+
+.fm-generation-red-dot--bell {
+  top: -2px;
+  right: -2px;
+  transform: none;
 }
 
 .fm-workbench-topbar button,

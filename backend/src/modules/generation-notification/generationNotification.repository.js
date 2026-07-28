@@ -1,0 +1,28 @@
+import { getPool } from "../../db/pool.js";
+
+const runningTaskSources = [
+  { sourceType: "image", tableName: "image_generation_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "video", tableName: "video_generation_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "digital-human", tableName: "digital_human_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "image-digital-human", tableName: "image_digital_human_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "motion", tableName: "motion_transfer_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "face-swap", tableName: "face_swap_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "watermark", tableName: "watermark_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "remove-bg", tableName: "remove_bg_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "enhance", tableName: "enhance_tasks", statuses: ["pending", "processing"] },
+  { sourceType: "article", tableName: "article_generation_packages", statuses: ["pending", "processing"] },
+  { sourceType: "music", tableName: "music_tasks", statuses: ["processing"] },
+  { sourceType: "replicate", tableName: "replicate_tasks", statuses: ["processing"] },
+];
+
+export async function getRunningTaskSummary(userId) {
+  const params = [];
+  const statements = runningTaskSources.map(({ sourceType, tableName, statuses }) => {
+    params.push(sourceType, userId, ...statuses);
+    return `SELECT ? AS source_type, COUNT(*) AS running_count
+      FROM ${tableName}
+      WHERE user_id = ? AND status IN (${statuses.map(() => "?").join(",")})`;
+  });
+  const [rows] = await getPool().query(statements.join(" UNION ALL "), params);
+  return rows.filter((row) => Number(row.running_count) > 0);
+}

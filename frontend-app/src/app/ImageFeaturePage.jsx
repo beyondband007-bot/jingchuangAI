@@ -62,6 +62,7 @@ import {
 } from "../features/invite/inviteUtils";
 import { ViralGraphicGeneratorShowcaseCard } from "../features/viral-graphic-generator-ui/ViralGraphicGeneratorShowcaseCard";
 import { invitationApi } from "../api/invitationApi";
+import { useGenerationNotifications } from "../features/generation-notifications/useGenerationNotifications";
 
 const InspirationLibraryDrawer = lazy(() =>
   import("../components/InspirationLibraryDrawer.jsx").then((module) => ({
@@ -123,6 +124,7 @@ function ImageFeaturePageContent({
     "video-voice": 0,
   });
   const [imageLaunchSeed, setImageLaunchSeed] = useState(null);
+  const { summary: notificationSummary } = useGenerationNotifications(authUser);
 
   useEffect(() => {
     if (showInvite) return;
@@ -407,6 +409,7 @@ function ImageFeaturePageContent({
             onNavChange={handleNavChange}
             onPrefetchNav={preloadFeatureView}
             onOpenLanding={onOpenLanding}
+            notificationSummary={notificationSummary}
           />
         }
         header={activeNav === "infinite-canvas" ? null : (
@@ -424,6 +427,7 @@ function ImageFeaturePageContent({
               onArticleModeChange={setArticleMode}
               digitalHumanMode={digitalHumanMode}
               onDigitalHumanModeChange={setDigitalHumanMode}
+              notificationSummary={notificationSummary}
             />
           </AppHeader>
         )}

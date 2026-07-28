@@ -35,6 +35,7 @@ export function WorkbenchTopbar({
   onArticleModeChange,
   digitalHumanMode = "avatar",
   onDigitalHumanModeChange,
+  notificationSummary,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
@@ -331,8 +332,13 @@ export function WorkbenchTopbar({
             </button>
           )}
           {isLoggedIn && (
-            <button className="fm-top-bell" type="button" aria-label="通知">
+            <button
+              className="fm-top-bell"
+              type="button"
+              aria-label={notificationSummary?.totalRunningCount ? "有任务正在生成" : "通知"}
+            >
               <Bell size={21} />
+              {notificationSummary?.totalRunningCount > 0 && <span className="fm-generation-red-dot fm-generation-red-dot--bell" aria-hidden="true" />}
             </button>
           )}
           {isLoggedIn ? (

@@ -25,6 +25,7 @@ import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
 import { billingRouter } from "./modules/billing/billing.routes.js";
 import { canvasRouter } from "./modules/canvas/canvas.routes.js";
+import { generationNotificationRouter } from "./modules/generation-notification/generationNotification.routes.js";
 import { sendError } from "./shared/http.js";
 import { attachCurrentUser, getUserCredits } from "./shared/userService.js";
 import { fetchProxiedMedia } from "./shared/mediaProxy.js";
@@ -60,6 +61,7 @@ export function createApp() {
   app.use("/api/payment", paymentPublicRouter);
   app.use("/api/v1", paymentPublicRouter);
   app.use("/api", attachCurrentUser);
+  app.use("/api/me/generation-notifications", generationNotificationRouter);
 
   app.get("/api/me/credits", async (req, res) => {
     try {
