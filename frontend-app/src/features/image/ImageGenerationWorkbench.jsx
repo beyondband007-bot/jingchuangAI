@@ -35,7 +35,7 @@ function ImageWorkbenchGeneratingStatus({ ImageGeneratingSpinnerComponent }) {
       aria-live="polite"
     >
       <ImageGeneratingSpinnerComponent size={18} />
-      <span>智能创意中...</span>
+      <span>智能创作中...</span>
     </div>
   );
 }

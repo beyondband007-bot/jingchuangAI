@@ -311,7 +311,7 @@
   border-radius: var(--radius-control);
   background: transparent;
   color: #24212d;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.5;
   box-shadow: none;
 }
@@ -321,7 +321,7 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field > span {
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.25;
 }
 
@@ -367,7 +367,7 @@
   border-radius: var(--radius-lg);
   color: #745cff;
   background: #fff;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 [data-feature-module="article"]
@@ -383,8 +383,8 @@
   .article-topic-field
   .article-reference-upload__pick
   svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__text {
@@ -398,7 +398,7 @@
 
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-topic-field .article-reference-upload__text span {
   color: #9a96a6;
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1.4;
   white-space: normal;
 }
