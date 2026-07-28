@@ -1,6 +1,6 @@
 <template>
   <!-- Home page | 首页 -->
-  <div class="min-h-screen h-screen overflow-y-auto bg-[var(--bg-primary)]">
+  <div class="min-h-screen h-screen overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)]">
     <!-- Header | 顶部导航 -->
     <AppHeader />
 
