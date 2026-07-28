@@ -338,6 +338,7 @@ import { useChat, useWorkflowOrchestrator } from '../hooks'
 import { useModelStore } from '../stores/pinia'
 import { projects, initProjectsStore, ensureProjectLoaded, renameProject, deleteProject, duplicateProject, flushProjectSave, saveState, saveError } from '../stores/projects'
 import { openMyAssets, uploadCanvasMedia } from '../api/facemini'
+import { resumeProjectImageTasks } from '../services/imageTaskRecovery'
 import { IMAGE_PROMPT_POLISH_SYSTEM_PROMPT, PROMPT_POLISH_MODEL, VIDEO_PROMPT_POLISH_SYSTEM_PROMPT } from '../config/promptPolish'
 
 // API Settings component | API 设置组件
@@ -1016,6 +1017,13 @@ const loadProjectById = async (projectId) => {
   if (projectId && projectId !== 'new') {
     await ensureProjectLoaded(projectId)
     loadProject(projectId)
+    await resumeProjectImageTasks({
+      projectId,
+      nodes: nodes.value,
+      edges: edges.value,
+      updateNode,
+      isCurrent: () => route.params.id === projectId
+    })
   } else {
     // New project - clear canvas | 新项目 - 清空画布
     clearCanvas()

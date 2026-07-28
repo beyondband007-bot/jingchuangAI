@@ -52,6 +52,7 @@ export async function getImageTask(req, res) {
       res.status(404).json({ error: "task not found" });
       return;
     }
+    res.set("Cache-Control", "no-store");
     res.json(task);
   } catch (error) {
     sendError(res, error);

@@ -8,6 +8,7 @@
     "prebuild": "npm run check:style-contract",
     "build": "vite build",
     "check:style-contract": "node ./scripts/check-style-contract.mjs",
+    "test:recovery": "node --test ./scripts/test-image-task-recovery.mjs ./scripts/test-image-task-polling.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

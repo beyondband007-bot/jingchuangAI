@@ -163,7 +163,7 @@ export const useImageGeneration = () => {
    * Generate image with fixed params | 固定参数生成图片
    * @param {Object} params - { model, prompt, size, n, image (optional ref image) }
    */
-  const generate = async (params) => {
+  const generate = async (params, options = {}) => {
     setLoading(true)
     images.value = []
     currentImage.value = null
@@ -192,10 +192,7 @@ export const useImageGeneration = () => {
       const adaptedParams = adaptRequest('image', requestData)
 
       // Call API | 调用 API
-      const response = await generateImage(adaptedParams, {
-        requestType: 'json',
-        endpoint: modelStore.getImageEndpoint()
-      })
+      const response = await generateImage(adaptedParams, options)
 
       // 适配响应数据
       const adaptedData = adaptResponse('image', response)

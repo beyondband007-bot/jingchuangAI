@@ -807,6 +807,7 @@ const handleGenerate = async (mode = 'auto') => {
       quality: localQuality.value,
       n: 1,
       nodeId: props.id,
+      resultNodeId: imageNodeId,
       inputHash: getNodeInputHash(props.id)
     }
 
@@ -815,12 +816,22 @@ const handleGenerate = async (mode = 'auto') => {
       params.image = refImages
     }
 
-    const result = await generate(params)
+    const result = await generate(params, {
+      onTaskCreated: task => {
+        updateNode(imageNodeId, {
+          taskId: String(task.id),
+          loading: true,
+          error: null,
+          updatedAt: Date.now()
+        })
+      }
+    })
 
     // Update image node with generated URL | 更新图片节点 URL
     if (result && result.length > 0) {
       updateNode(imageNodeId, {
         url: result[0].url,
+        ...(result[0].taskId ? { taskId: String(result[0].taskId) } : {}),
         loading: false,
         label: '文生图',
         model: localModel.value,

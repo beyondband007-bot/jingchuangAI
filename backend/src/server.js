@@ -1,6 +1,7 @@
 import { createApp } from "./app.js";
 import { config } from "./config/index.js";
 import { recoverStreamingChatMessages } from "./modules/chat/chat.service.js";
+import { recoverProcessingImageTasks } from "./modules/image/image.service.js";
 
 const app = createApp();
 
@@ -21,6 +22,24 @@ const chatRecoveryTimer = setInterval(async () => {
 }, 60_000);
 chatRecoveryTimer.unref();
 
+let imageTaskRecoveryRunning = false;
+async function runImageTaskRecovery() {
+  if (imageTaskRecoveryRunning) return;
+  imageTaskRecoveryRunning = true;
+  try {
+    await recoverProcessingImageTasks();
+  } catch (error) {
+    console.error("Failed to recover processing image tasks", error);
+  } finally {
+    imageTaskRecoveryRunning = false;
+  }
+}
+
 app.listen(config.port, config.host, () => {
   console.log(`Backend listening on http://${config.host}:${config.port}`);
 });
+
+const initialImageTaskRecovery = setTimeout(runImageTaskRecovery, 1_000);
+initialImageTaskRecovery.unref();
+const imageTaskRecoveryTimer = setInterval(runImageTaskRecovery, 10_000);
+imageTaskRecoveryTimer.unref();

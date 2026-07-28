@@ -1,7 +1,7 @@
 import { execFile } from "child_process";
 import { rename, stat } from "fs/promises";
 import { promisify } from "util";
-import ffmpeg from "@ffmpeg-installer/ffmpeg";
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 
 export const MUSIC_COMPRESS_THRESHOLD_BYTES = 5 * 1024 * 1024;
 const execFileAsync = promisify(execFile);
@@ -19,7 +19,7 @@ export async function compressMusicAudioFile(filePath) {
   let lastBitrate = "128k";
 
   for (const bitrate of bitrates) {
-    await execFileAsync(ffmpeg.path, [
+    await execFileAsync(ffmpegPath, [
       "-y",
       "-i", filePath,
       "-vn",

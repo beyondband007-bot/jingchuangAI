@@ -23,13 +23,18 @@ export const PROVIDERS = {
         ...(params.image ? { image: params.image } : {}),
         projectId: params.projectId,
         nodeId: params.nodeId,
+        resultNodeId: params.resultNodeId,
         inputHash: params.inputHash
       }),
       video: params => params
     },
     responseAdapter: {
       chat: response => response?.message?.content || '',
-      image: response => (response.data || []).map(item => ({ url: item.url || '', revisedPrompt: '' })),
+      image: response => (response.data || []).map(item => ({
+        url: item.url || '',
+        taskId: response.taskId || null,
+        revisedPrompt: ''
+      })),
       video: response => ({ ...response, url: response.video || response.url || '' })
     }
   },

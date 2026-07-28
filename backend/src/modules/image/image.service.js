@@ -118,7 +118,7 @@ export async function uploadReferenceImage({ file }) {
 }
 
 export async function listTasks({ userId, filter = 'all', source } = {}) {
-  await refreshProcessingTasks()
+  await recoverProcessingImageTasks()
   const rows = await listImageTaskRows({ userId, filter, source })
   return rows.map(mapImageTask)
 }
@@ -243,9 +243,10 @@ export async function createTask(payload, userId) {
   return getTask(taskId, userId)
 }
 
-async function refreshProcessingTasks() {
+export async function recoverProcessingImageTasks() {
   const rows = await findRefreshableImageTasks()
   await Promise.all(rows.map((row) => refreshTask(row.id)))
+  return rows.length
 }
 
 async function refreshTask(id) {

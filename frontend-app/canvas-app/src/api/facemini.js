@@ -96,3 +96,10 @@ export async function associateNodeTask({ projectId, nodeId, taskType, taskId, i
     body: JSON.stringify({ nodeId, taskType, taskId, inputHash })
   })
 }
+
+export async function listNodeTasks(projectId) {
+  if (!projectId) return []
+  return faceminiRequest(`/canvas/projects/${encodeURIComponent(projectId)}/node-tasks`, {
+    cache: 'no-store'
+  })
+}

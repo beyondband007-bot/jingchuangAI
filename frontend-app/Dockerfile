@@ -8,6 +8,8 @@ RUN npm ci
 COPY canvas-app/index.html ./
 COPY canvas-app/public ./public
 COPY canvas-app/src ./src
+COPY canvas-app/scripts ./scripts
+COPY src/styles /src/styles
 COPY canvas-app/vite.config.js canvas-app/postcss.config.js canvas-app/tailwind.config.js ./
 
 RUN npm run build
@@ -25,6 +27,7 @@ RUN npm ci
 COPY index.html ./
 COPY public ./public
 COPY src ./src
+COPY scripts ./scripts
 COPY vite.config.js ./
 COPY viteMediaProxyPlugin.js ./
 

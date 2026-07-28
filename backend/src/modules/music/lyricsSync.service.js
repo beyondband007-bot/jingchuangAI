@@ -8,7 +8,7 @@ import { mkdtemp, readFile, rm, stat } from "fs/promises";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
-import ffmpeg from "@ffmpeg-installer/ffmpeg";
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 import {
   createTencentAsrTask,
   waitForTencentAsrTask
@@ -58,7 +58,7 @@ async function compressAudioForTencentAsr(filePath) {
   const outputPath = path.join(tempDir, "audio-asr.mp3");
 
   try {
-    await execFileAsync(ffmpeg.path, [
+    await execFileAsync(ffmpegPath, [
       "-y",
       "-i", filePath,
       "-vn",
