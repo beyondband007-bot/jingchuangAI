@@ -36,14 +36,31 @@
               <n-icon :size="20"><ImageOutline /></n-icon>
             </div>
           </div>
-          <!-- 非 ImageNode 显示图标 -->
+          <!-- VideoNode 显示首帧预览 -->
+          <div v-else-if="node.type === 'video'" class="mentions-item-image">
+            <video
+              v-if="node.data?.url"
+              :src="getVideoPreviewUrl(node.data.url)"
+              muted
+              playsinline
+              preload="metadata"
+              @loadedmetadata="seekVideoPreview"
+            />
+            <div v-else class="mentions-item-image-placeholder">
+              <n-icon :size="20"><VideocamOutline /></n-icon>
+            </div>
+          </div>
+          <!-- AudioNode 显示音符缩略图 -->
+          <div v-else-if="node.type === 'audio'" class="mentions-item-image mentions-item-audio">
+            <n-icon :size="20"><MusicalNotesOutline /></n-icon>
+          </div>
+          <!-- 其他节点显示图标 -->
           <div v-else class="mentions-item-icon">
-            <n-icon :component="getNodeIcon(node.type)" />
+            {{ getNodeIcon(node.type) }}
           </div>
           <div class="mentions-item-content">
             <div class="mentions-item-label">
-              <!-- ImageNode 优先显示 publicProps.name -->
-              {{ node.type === 'image' ? (node.data?.publicProps?.name || node.data?.label || '未命名') : (node.data?.label || node.id) }}
+              {{ node.data?.label || node.data?.publicProps?.name || node.id }}
             </div>
             <div class="mentions-item-id">{{ node.id }}</div>
           </div>
@@ -59,7 +76,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { NPopover, NInput, NIcon } from 'naive-ui'
-import { ImageOutline } from '@vicons/ionicons5'
+import { ImageOutline, MusicalNotesOutline, VideocamOutline } from '@vicons/ionicons5'
 import { nodes } from '@/stores/canvas'
 
 const props = defineProps({
@@ -215,12 +232,21 @@ function getNodeIcon(type) {
   return icons[type] || '📄'
 }
 
+function getVideoPreviewUrl(url) {
+  const source = String(url || '')
+  if (!source || source.startsWith('blob:') || source.includes('#t=')) return source
+  return `${source}#t=0.1`
+}
+
+function seekVideoPreview(event) {
+  const video = event.currentTarget
+  if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return
+  video.currentTime = Math.min(0.1, Math.max(0, video.duration / 100))
+}
+
 // 选择节点
 function selectNode(node) {
-  // ImageNode 优先使用 publicProps.name，其他节点使用 label
-  const displayName = node.type === 'image'
-    ? (node.data?.publicProps?.name || node.data?.label || node.id)
-    : (node.data?.label || node.id)
+  const displayName = node.data?.label || node.data?.publicProps?.name || node.id
 
   emit('select', {
     nodeId: node.id,
@@ -308,10 +334,19 @@ function handleKeydown(event) {
   flex-shrink: 0;
 }
 
-.mentions-item-image img {
+.mentions-item-image img,
+.mentions-item-image video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.mentions-item-audio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color, #8b5cf6);
+  background: var(--bg-color, #f0f0f0);
 }
 
 .mentions-item-image-placeholder {

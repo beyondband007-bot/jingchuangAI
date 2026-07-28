@@ -8,7 +8,7 @@ const authenticatedUser = {
   isGuest: false,
 };
 
-function projectPayload(id = "canvas-style-project") {
+function projectPayload(id = "canvas-style-project", graph = { nodes: [], edges: [] }) {
   return {
     id,
     name: "样式回归项目",
@@ -16,13 +16,13 @@ function projectPayload(id = "canvas-style-project") {
     thumbnailUrl: "",
     createdAt: "2026-07-27T00:00:00.000Z",
     updatedAt: "2026-07-27T00:00:00.000Z",
-    graph: { nodes: [], edges: [] },
+    graph,
     viewport: { x: 0, y: 0, zoom: 1 },
   };
 }
 
-async function mockCanvasWorkspace(page) {
-  const projects = [];
+async function mockCanvasWorkspace(page, initialProjects = [], createdProjectGraph = null) {
+  const projects = [...initialProjects];
 
   await page.route("**/api/auth/me", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify({ user: authenticatedUser }) }),
@@ -50,7 +50,10 @@ async function mockCanvasWorkspace(page) {
       return route.fulfill({ contentType: "application/json", body: JSON.stringify(projects) });
     }
     if (request.method() === "POST" && path === "/api/canvas/projects") {
-      const project = projectPayload();
+      const project = projectPayload(
+        "canvas-style-project",
+        createdProjectGraph || { nodes: [], edges: [] },
+      );
       projects.push(project);
       return route.fulfill({ contentType: "application/json", body: JSON.stringify(project) });
     }
@@ -133,14 +136,56 @@ test("authenticated infinite canvas keeps the unified workbench shell", async ({
   await expect(toolbar.locator("[title]")).toHaveCount(0);
   await expect(toolbar.locator("[data-tooltip--left]")).toHaveCount(9);
   await canvasFrame.getByRole("button", { name: "音频", exact: true }).click();
-  const audioNode = canvasFrame.locator(".audio-node");
+  const audioNode = canvasFrame.locator(".audio-node").first();
   await expect(audioNode).toBeVisible();
+  await expect(audioNode.getByText("音频1", { exact: true })).toBeVisible();
   await audioNode.locator('input[type="file"]').setInputFiles({ name: "test-voice.mp3", mimeType: "audio/mpeg", buffer: Buffer.from("mock-audio") });
   await expect(audioNode.locator("audio")).toHaveAttribute("src", "/media/canvas/uploads/test-voice.mp3");
+  await expect(audioNode.getByText("音频1", { exact: true })).toBeVisible();
+  await canvasFrame.getByRole("button", { name: "音频", exact: true }).click();
+  await expect(canvasFrame.locator(".audio-node")).toHaveCount(2);
+  await expect(canvasFrame.locator(".audio-node").nth(1).getByText("音频2", { exact: true })).toBeVisible();
+
+  await canvasFrame.getByRole("button", { name: "图片", exact: true }).click();
+  await canvasFrame.getByRole("button", { name: "图片", exact: true }).click();
+  await expect(canvasFrame.locator(".image-node")).toHaveCount(2);
+  await expect(canvasFrame.locator(".image-node").nth(0).getByText("图片1", { exact: true })).toBeVisible();
+  await expect(canvasFrame.locator(".image-node").nth(1).getByText("图片2", { exact: true })).toBeVisible();
+
+  await canvasFrame.getByRole("button", { name: "添加节点", exact: true }).click();
+  await canvasFrame.getByRole("button", { name: "视频节点", exact: true }).click();
+  await canvasFrame.getByRole("button", { name: "添加节点", exact: true }).click();
+  await canvasFrame.getByRole("button", { name: "视频节点", exact: true }).click();
+  await expect(canvasFrame.locator(".video-node")).toHaveCount(2);
+  await expect(canvasFrame.locator(".video-node").nth(0).getByText("视频1", { exact: true })).toBeVisible();
+  await expect(canvasFrame.locator(".video-node").nth(1).getByText("视频2", { exact: true })).toBeVisible();
 
   const body = canvasFrame.locator(".canvas-workbench");
   const hasHorizontalOverflow = await body.evaluate((element) => element.scrollWidth > element.clientWidth);
   expect(hasHorizontalOverflow).toBe(false);
+});
+
+test("legacy media nodes receive stable project-scoped numbering", async ({ page }) => {
+  const mediaTypes = ["image", "video", "audio", "image", "video", "audio"];
+  const graph = {
+    nodes: mediaTypes.map((type, index) => ({
+      id: `node_${index}`,
+      type,
+      position: { x: 80 + index * 45, y: 100 + index * 35 },
+      data: { url: "", label: `旧名称${index + 1}` },
+    })),
+    edges: [],
+  };
+  await mockCanvasWorkspace(page, [], graph);
+  await page.goto("/#/infinite-canvas");
+
+  const canvasFrame = page.frameLocator('iframe[title="Facemini 无限画布"]');
+  await canvasFrame.getByTestId("canvas-create-project").click();
+  await expect(canvasFrame.locator(".canvas-workbench")).toBeVisible();
+  const canvasPage = page.frames().find((frame) => frame !== page.mainFrame());
+  await expect.poll(() => canvasPage.evaluate(() =>
+    window.__faceminiCanvasProjects.projects.value[0].canvasData.nodes.map((node) => node.data.label),
+  )).toEqual(["图片1", "视频1", "音频1", "图片2", "视频2", "音频2"]);
 });
 
 test("infinite canvas tool controls remain usable at the mobile breakpoint", async ({ page }) => {
