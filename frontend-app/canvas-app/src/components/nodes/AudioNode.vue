@@ -180,7 +180,7 @@ const startEditLabel = () => {
 
 const finishEditLabel = () => {
   const label = editingLabelValue.value.trim()
-  if (label) updateNode(props.id, { label })
+  if (label) updateNode(props.id, { label, allowMediaLabelChange: true })
   isEditingLabel.value = false
 }
 

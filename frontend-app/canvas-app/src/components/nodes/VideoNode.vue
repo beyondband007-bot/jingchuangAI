@@ -297,7 +297,7 @@ const startEditLabel = () => {
 const finishEditLabel = () => {
   const newLabel = editingLabelValue.value.trim()
   if (newLabel && newLabel !== props.data?.label) {
-    updateNode(props.id, { label: newLabel })
+    updateNode(props.id, { label: newLabel, allowMediaLabelChange: true })
   }
   isEditingLabel.value = false
 }

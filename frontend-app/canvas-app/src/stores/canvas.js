@@ -35,6 +35,11 @@ let isRestoring = false
 
 // Position change threshold for history | 位置变化阈值
 const POSITION_THRESHOLD = 10
+const MEDIA_NODE_PREFIXES = {
+  image: '图片',
+  video: '视频',
+  audio: '音频'
+}
 
 // Batch operation tracking | 批量操作跟踪
 let isBatchOperation = false
@@ -165,6 +170,95 @@ const checkSignificantChanges = (oldState, newState) => {
   return false
 }
 
+const getMediaIndexFromNode = (node) => {
+  const prefix = MEDIA_NODE_PREFIXES[node?.type]
+  if (!prefix) return 0
+  const storedIndex = Number(node.data?.mediaIndex)
+  if (Number.isInteger(storedIndex) && storedIndex > 0) return storedIndex
+  const labelMatch = String(node.data?.label || '').match(new RegExp(`^${prefix}(\\d+)$`))
+  return labelMatch ? Number(labelMatch[1]) : 0
+}
+
+const getNextMediaIndex = (type, sourceNodes = nodes.value) => {
+  if (!MEDIA_NODE_PREFIXES[type]) return 0
+  return sourceNodes.reduce((max, node) => (
+    node.type === type ? Math.max(max, getMediaIndexFromNode(node)) : max
+  ), 0) + 1
+}
+
+const buildNodeData = (type, data, now, sourceNodes = nodes.value) => {
+  const mergedData = {
+    ...getDefaultNodeData(type),
+    ...data,
+    createdAt: data.createdAt || now,
+    updatedAt: data.updatedAt || now
+  }
+  const prefix = MEDIA_NODE_PREFIXES[type]
+  if (!prefix) return mergedData
+
+  const mediaIndex = getNextMediaIndex(type, sourceNodes)
+  const label = `${prefix}${mediaIndex}`
+  return {
+    ...mergedData,
+    label,
+    mediaIndex,
+    ...(type === 'image'
+      ? { publicProps: { ...(mergedData.publicProps || {}), name: label } }
+      : {})
+  }
+}
+
+const normalizeLoadedMediaNodes = (sourceNodes = []) => {
+  const assignedIndexes = {
+    image: new Set(),
+    video: new Set(),
+    audio: new Set()
+  }
+  let changed = false
+
+  const normalizedNodes = sourceNodes.map(node => {
+    const prefix = MEDIA_NODE_PREFIXES[node.type]
+    if (!prefix) return node
+
+    const existingStoredIndex = Number(node.data?.mediaIndex)
+    const hasStoredIndex = Number.isInteger(existingStoredIndex) && existingStoredIndex > 0
+    let mediaIndex = getMediaIndexFromNode(node)
+    if (!mediaIndex || assignedIndexes[node.type].has(mediaIndex)) {
+      mediaIndex = 1
+      while (assignedIndexes[node.type].has(mediaIndex)) mediaIndex += 1
+    }
+    assignedIndexes[node.type].add(mediaIndex)
+
+    const canonicalLabel = `${prefix}${mediaIndex}`
+    const currentLabel = String(node.data?.label || '').trim()
+    const label = hasStoredIndex && existingStoredIndex === mediaIndex && currentLabel
+      ? currentLabel
+      : canonicalLabel
+    const publicProps = node.type === 'image'
+      ? { ...(node.data?.publicProps || {}), name: label }
+      : node.data?.publicProps
+    if (
+      !hasStoredIndex
+      || existingStoredIndex !== mediaIndex
+      || currentLabel !== label
+      || (node.type === 'image' && node.data?.publicProps?.name !== label)
+    ) {
+      changed = true
+    }
+    return {
+      ...node,
+      data: {
+        ...(node.data || {}),
+        label,
+        mediaIndex,
+        ...(node.type === 'image' ? { publicProps } : {})
+      }
+    }
+  })
+
+  return { nodes: normalizedNodes, changed }
+}
+
 // Add a new node | 添加新节点
 export const addNode = (type, position = { x: 100, y: 100 }, data = {}) => {
   const id = getNodeId()
@@ -173,12 +267,7 @@ export const addNode = (type, position = { x: 100, y: 100 }, data = {}) => {
     id,
     type,
     position,
-    data: {
-      ...getDefaultNodeData(type),
-      ...data,
-      createdAt: data.createdAt || now,
-      updatedAt: data.updatedAt || now
-    }
+    data: buildNodeData(type, data, now)
   }
   nodes.value = [...nodes.value, newNode]
   saveToHistory() // Save after adding node | 添加节点后保存
@@ -210,12 +299,7 @@ export const addNodes = (nodeSpecs, autoBatch = true) => {
       id,
       type,
       position,
-      data: {
-        ...getDefaultNodeData(type),
-        ...data,
-        createdAt: data.createdAt || now,
-        updatedAt: data.updatedAt || now
-      }
+      data: buildNodeData(type, data, now)
     }
     nodes.value = [...nodes.value, newNode]
     ids.push(id)
@@ -362,12 +446,28 @@ export const getNodeInputHash = (id) => {
 
 // Update node data | 更新节点数据
 export const updateNode = (id, data) => {
-  if (Object.keys(data || {}).some(key => INPUT_KEYS.has(key))) {
+  const updates = { ...(data || {}) }
+  const allowMediaLabelChange = Boolean(updates.allowMediaLabelChange)
+  delete updates.allowMediaLabelChange
+  if (Object.keys(updates).some(key => INPUT_KEYS.has(key))) {
     markDescendantResultsStale(id)
   }
-  nodes.value = nodes.value.map(node => 
-    node.id === id ? { ...node, data: { ...node.data, ...data } } : node
-  )
+  nodes.value = nodes.value.map(node => {
+    if (node.id !== id) return node
+    const nextUpdates = { ...updates }
+    if (MEDIA_NODE_PREFIXES[node.type] && Object.prototype.hasOwnProperty.call(nextUpdates, 'label')) {
+      if (!allowMediaLabelChange) {
+        delete nextUpdates.label
+      } else if (node.type === 'image') {
+        nextUpdates.publicProps = {
+          ...(node.data?.publicProps || {}),
+          ...(nextUpdates.publicProps || {}),
+          name: nextUpdates.label
+        }
+      }
+    }
+    return { ...node, data: { ...node.data, ...nextUpdates } }
+  })
 }
 
 // Remove node | 删除节点
@@ -396,7 +496,7 @@ export const duplicateNode = (id) => {
       x: sourceNode.position.x + 50,
       y: sourceNode.position.y + 50
     },
-    data: { ...sourceNode.data },
+    data: buildNodeData(sourceNode.type, { ...sourceNode.data, mediaIndex: undefined }, Date.now()),
     zIndex: maxZIndex + 1
   }
   nodes.value = [...nodes.value, newNode]
@@ -510,10 +610,13 @@ export const loadProject = (projectId) => {
   currentProjectId.value = projectId
   
   const canvasData = getProjectCanvas(projectId)
+  let mediaLabelsMigrated = false
   
   if (canvasData) {
     // Restore nodes | 恢复节点
-    nodes.value = canvasData.nodes || []
+    const normalizedMedia = normalizeLoadedMediaNodes(canvasData.nodes || [])
+    nodes.value = normalizedMedia.nodes
+    mediaLabelsMigrated = normalizedMedia.changed
     edges.value = canvasData.edges || []
     canvasViewport.value = canvasData.viewport || { x: 100, y: 50, zoom: 0.8 }
     
@@ -542,6 +645,7 @@ export const loadProject = (projectId) => {
   setTimeout(() => {
     autoSaveEnabled = true
     isRestoring = false
+    if (mediaLabelsMigrated) saveProject()
   }, 100)
 }
 
