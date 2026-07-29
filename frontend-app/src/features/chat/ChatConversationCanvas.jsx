@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, CheckCircle2, ChevronDown, Copy, FileText, Loader2, X } from "lucide-react";
+import { Bot, CheckCircle2, ChevronDown, Copy, FileText, X } from "lucide-react";
 
 const ChatMarkdown = lazy(() =>
   import("./ChatMarkdown").then((module) => ({ default: module.ChatMarkdown })),
@@ -37,6 +37,20 @@ const expandedChatModelValues = [
   "claude-opus-4-6",
   "claude-sonnet-4-6",
 ];
+
+function ChatGeneratingIcon({ size = 17, className = "" }) {
+  return (
+    <img
+      className={["chat-generating-icon", className].filter(Boolean).join(" ")}
+      src="/assets/svg/脸谱facemini定(1).svg"
+      alt=""
+      aria-hidden="true"
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+    />
+  );
+}
 
 export function getOrderedChatModels(models = [], isExpanded = false) {
   const modelMap = new Map(models.map((item) => [item.value, item]));
@@ -303,7 +317,11 @@ export function ChatConversationCanvas({ messages, isSubmitting, error }) {
               <span
                 className={`chat-message-avatar ${message.status === "failed" ? "is-error" : ""}`}
               >
-                <Bot size={17} />
+                {message.status === "streaming" ? (
+                  <ChatGeneratingIcon />
+                ) : (
+                  <Bot size={17} />
+                )}
               </span>
             )}
             <div
@@ -355,10 +373,10 @@ export function ChatConversationCanvas({ messages, isSubmitting, error }) {
         {isSubmitting && !hasStreamingMessage && (
           <div className="chat-message-row assistant">
             <span className="chat-message-avatar">
-              <Bot size={17} />
+              <ChatGeneratingIcon />
             </span>
             <div className="chat-message-bubble is-loading">
-              <Loader2 size={17} />
+              <ChatGeneratingIcon />
               <span>正在思考...</span>
             </div>
           </div>

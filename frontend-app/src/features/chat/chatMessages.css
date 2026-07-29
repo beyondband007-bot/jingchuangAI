@@ -151,8 +151,15 @@
   background: #fff;
 }
 
-.chat-message-bubble.is-loading svg {
+.chat-generating-icon {
+  display: block;
+  flex: 0 0 auto;
   animation: spin 1.1s linear infinite;
+  transform-origin: center center;
+}
+
+.chat-message-avatar .chat-generating-icon {
+  filter: drop-shadow(0 0 6px rgba(98, 59, 255, 0.35));
 }
 
 .chat-message-bubble.is-error {
@@ -305,7 +312,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chat-message-bubble.is-loading svg {
+  .chat-message-bubble.is-loading svg,
+  .chat-generating-icon {
     animation: none;
   }
 }
