@@ -21,7 +21,12 @@ export async function getImageModels(_req, res) {
 
 export async function listImageTasks(req, res) {
   try {
-    res.json(await listTasks({ userId: req.user.id, filter: req.query.filter || "all" }));
+    const source = req.query.source === "all" ? undefined : req.query.source || "image";
+    res.json(await listTasks({
+      userId: req.user.id,
+      filter: req.query.filter || "all",
+      source
+    }));
   } catch (error) {
     sendError(res, error);
   }

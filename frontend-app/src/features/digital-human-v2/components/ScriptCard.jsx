@@ -37,6 +37,7 @@ export function ScriptCard({
   onVoiceSpeedChange,
   onVoiceEmotionChange,
   previewRequestId = 0,
+  playbackRequestId = 0,
   previewPhase = "draft",
   onPreviewStateChange,
   onRegeneratePreview,
@@ -146,9 +147,18 @@ export function ScriptCard({
 
   function bindPreviewAudio(audio) {
     audioRef.current = audio;
-    audio.onplay = () => setIsPlaying(true);
-    audio.onpause = () => setIsPlaying(false);
-    audio.onended = () => setIsPlaying(false);
+    audio.onplay = () => {
+      setIsPlaying(true);
+      onPreviewStateChange?.({ isPlaying: true });
+    };
+    audio.onpause = () => {
+      setIsPlaying(false);
+      onPreviewStateChange?.({ isPlaying: false });
+    };
+    audio.onended = () => {
+      setIsPlaying(false);
+      onPreviewStateChange?.({ isPlaying: false });
+    };
   }
 
   useEffect(() => {
@@ -288,6 +298,11 @@ export function ScriptCard({
     if (!previewRequestId) return;
     previewScript({ shouldPlay: false, notifyParent: true, forceGenerate: true });
   }, [previewRequestId]);
+
+  useEffect(() => {
+    if (!playbackRequestId || !audioRef.current) return;
+    handlePreviewClick();
+  }, [playbackRequestId]);
 
   function handlePreviewClick() {
     if (isPlaying) {

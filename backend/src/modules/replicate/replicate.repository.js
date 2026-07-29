@@ -159,6 +159,17 @@ export async function failReplicateTaskRow(id, errorMessage, {
   );
 }
 
+export async function failInterruptedReplicateTasks(errorMessage) {
+  const [result] = await getPool().query(
+    `UPDATE replicate_tasks
+     SET status = 'failed',
+         error_message = ?
+     WHERE status = 'processing'`,
+    [String(errorMessage || "analysis interrupted").slice(0, 1000)]
+  );
+  return Number(result.affectedRows || 0);
+}
+
 export async function findReplicateTaskRow({ id, userId }) {
   const [rows] = await getPool().query(
     `SELECT *

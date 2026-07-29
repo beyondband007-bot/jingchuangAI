@@ -31,8 +31,10 @@ export const videoApi = {
     return modelsPromise;
   },
 
-  async getTasks({ filter = "all" } = {}) {
-    return request(`/api/video/tasks?filter=${encodeURIComponent(filter)}`);
+  async getTasks({ filter = "all", source = "video" } = {}) {
+    return request(
+      `/api/video/tasks?filter=${encodeURIComponent(filter)}&source=${encodeURIComponent(source)}`,
+    );
   },
 
   async uploadReferenceImage(file) {

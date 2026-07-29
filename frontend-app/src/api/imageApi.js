@@ -33,8 +33,10 @@ export const imageApi = {
     return modelsPromise;
   },
 
-  async getTasks({ filter = "all" } = {}) {
-    return request(`/api/image/tasks?filter=${encodeURIComponent(filter)}`);
+  async getTasks({ filter = "all", source = "image" } = {}) {
+    return request(
+      `/api/image/tasks?filter=${encodeURIComponent(filter)}&source=${encodeURIComponent(source)}`,
+    );
   },
 
   async getInspirationFavorites() {

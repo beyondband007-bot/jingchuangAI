@@ -241,6 +241,9 @@ section.video-generation-view .sowa-composer {
 }
 
 .video-gen-result-player-shell {
+  --video-result-aspect: auto;
+  --video-result-aspect-value: 1;
+
   width: min(920px, 100%);
   overflow: hidden;
   background: #0f1118;
@@ -251,13 +254,26 @@ section.video-generation-view .sowa-composer {
     0 0 0 1px rgba(255, 255, 255, 0.04) inset;
 }
 
+.video-gen-result-player-shell.has-known-aspect {
+  width: min(
+    920px,
+    100%,
+    calc(min(52vh, 520px) * var(--video-result-aspect-value))
+  );
+  aspect-ratio: var(--video-result-aspect);
+}
+
 .video-gen-result-player-shell video {
   display: block;
   width: 100%;
+  height: auto;
   max-height: min(52vh, 520px);
-  aspect-ratio: 16 / 9;
   background: #000;
   object-fit: contain;
+}
+
+.video-gen-result-player-shell.has-known-aspect video {
+  height: 100%;
 }
 
 .video-gen-result-meta {

@@ -131,6 +131,12 @@ export const exampleImages = imgInspirationManifest.map((item, index) => ({
   tags: [item.categoryLabel].filter(Boolean),
   model: "图片生成",
   ratio: item.ratio || "高清原图",
+  width: item.width || null,
+  height: item.height || null,
+  resolution:
+    item.width && item.height
+      ? `${item.width}×${item.height}`
+      : "",
   quality: "精选",
   price: "参考",
   aspect:
@@ -155,6 +161,9 @@ export const fmImageGenerationInspirations = exampleImages.map((item, index) => 
   source: item.hdSrc || item.src,
   fallbackSource: item.hdFallbackSrc || item.hdSrc || item.src,
   ratio: item.ratio,
+  width: item.width,
+  height: item.height,
+  resolution: item.resolution,
   aspect: item.aspect,
   model: item.model || "图片生成",
   material: "高清原图",

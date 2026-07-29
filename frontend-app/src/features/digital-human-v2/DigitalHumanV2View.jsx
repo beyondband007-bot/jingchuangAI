@@ -81,7 +81,9 @@ export function DigitalHumanV2View({
   const [speechDurationMs, setSpeechDurationMs] = useState(0);
   const [audioPreviewPhase, setAudioPreviewPhase] = useState("draft");
   const [audioPreviewRequestId, setAudioPreviewRequestId] = useState(0);
+  const [audioPlaybackRequestId, setAudioPlaybackRequestId] = useState(0);
   const [isAudioPreviewing, setIsAudioPreviewing] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [confirmedPreviewAudio, setConfirmedPreviewAudio] = useState(null);
   const [selectedScene, setSelectedScene] = useState(null);
   const [isUploadingScene, setIsUploadingScene] = useState(false);
@@ -222,6 +224,7 @@ export function DigitalHumanV2View({
   useEffect(() => {
     setAudioPreviewPhase("draft");
     setIsAudioPreviewing(false);
+    setIsAudioPlaying(false);
     setConfirmedPreviewAudio(null);
   }, [text, voiceId, voiceSpeed, voiceEmotion, voiceMode, cloneAudio]);
 
@@ -510,7 +513,12 @@ export function DigitalHumanV2View({
   }
 
   function handleAudioPreviewStateChange(state) {
-    setIsAudioPreviewing(Boolean(state?.isPreviewing));
+    if (state && Object.prototype.hasOwnProperty.call(state, "isPreviewing")) {
+      setIsAudioPreviewing(Boolean(state.isPreviewing));
+    }
+    if (state && Object.prototype.hasOwnProperty.call(state, "isPlaying")) {
+      setIsAudioPlaying(Boolean(state.isPlaying));
+    }
     if (state?.status === "ready") {
       if (state.audioFileId) {
         setConfirmedPreviewAudio({
@@ -527,6 +535,10 @@ export function DigitalHumanV2View({
 
   function handleConfirmAudioPreview() {
     setAudioPreviewPhase("confirmed");
+  }
+
+  function handlePlayAudioPreview() {
+    setAudioPlaybackRequestId((current) => current + 1);
   }
 
   async function handleRegenerateAiAvatar(request) {
@@ -787,6 +799,7 @@ export function DigitalHumanV2View({
         onSpeechDurationMsChange={setSpeechDurationMs}
         voices={voices}
         previewRequestId={audioPreviewRequestId}
+        playbackRequestId={audioPlaybackRequestId}
         previewPhase={audioPreviewPhase}
         onPreviewStateChange={handleAudioPreviewStateChange}
         onRegeneratePreview={handleRequestAudioPreview}
@@ -801,9 +814,11 @@ export function DigitalHumanV2View({
         isCloneMode={isCloneMode}
         estimatedCredits={estimatedGenerateCredits}
         isAudioPreviewing={isAudioPreviewing}
+        isAudioPlaying={isAudioPlaying}
         isSpeechTooLong={isSpeechTooLong}
         onPreviewAudio={handleRequestAudioPreview}
         onConfirmAudio={handleConfirmAudioPreview}
+        onPlayAudio={handlePlayAudioPreview}
         onGenerate={handleGenerate}
         showLibrary={showLibrary}
         avatars={avatars}

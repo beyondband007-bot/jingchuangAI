@@ -3,6 +3,14 @@ import { Copy, Image, Sparkles, Star, X } from "lucide-react";
 import { BaseModal } from "../../components/BaseModal";
 import "../../components/faceminiDetailModal.css";
 
+function formatInspirationResolution(item) {
+  if (item?.resolution) return String(item.resolution);
+  const width = Number(item?.width);
+  const height = Number(item?.height);
+  if (width > 0 && height > 0) return `${Math.round(width)}×${Math.round(height)}`;
+  return "—";
+}
+
 export function FaceminiInspirationModal({
   item,
   onClose,
@@ -116,7 +124,11 @@ export function FaceminiInspirationModal({
               <dd>{item.ratio || (isVideo ? "16:9" : "4:5")}</dd>
             </div>
             <div>
-              <dt>推荐模型</dt>
+              <dt>分辨率</dt>
+              <dd>{formatInspirationResolution(item)}</dd>
+            </div>
+            <div>
+              <dt>使用模型</dt>
               <dd>{item.model || (isVideo ? "Kling Video" : "Kling Image")}</dd>
             </div>
             <div>

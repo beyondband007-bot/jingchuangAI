@@ -65,9 +65,9 @@ export async function getModels() {
   };
 }
 
-export async function listTasks({ userId, filter = "all" } = {}) {
+export async function listTasks({ userId, filter = "all", source } = {}) {
   await refreshProcessingTasks();
-  const rows = await listVideoTaskRows({ userId, filter });
+  const rows = await listVideoTaskRows({ userId, filter, source });
   return rows.map(mapVideoTask);
 }
 

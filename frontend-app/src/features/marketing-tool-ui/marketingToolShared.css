@@ -30,6 +30,11 @@
   gap: var(--space-3);
 }
 
+.marketing-tool-panel.audio-tool-panel {
+  --marketing-text: var(--audio-page-title-color);
+  --marketing-muted: var(--audio-page-subtitle-color);
+}
+
 .marketing-tool-panel:has(.marketing-result) {
   gap: var(--space-3);
 }
@@ -61,6 +66,11 @@
   text-align: center;
 }
 
+.marketing-tool-panel.audio-tool-panel .marketing-panel-hero h1 {
+  font-size: var(--audio-page-title-size);
+  line-height: 1.2;
+}
+
 .marketing-tool-panel .marketing-panel-hero p {
   max-width: 760px;
   margin: 0 auto;
@@ -69,6 +79,10 @@
   line-height: 1.5;
   letter-spacing: 0;
   text-align: center;
+}
+
+.marketing-tool-panel.audio-tool-panel .marketing-panel-hero p {
+  font-size: var(--audio-page-subtitle-size);
 }
 
 .marketing-composer {

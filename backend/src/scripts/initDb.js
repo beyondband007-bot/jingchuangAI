@@ -572,6 +572,7 @@ async function createTables() {
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_video_tasks_user_created (user_id, created_at),
+      INDEX idx_video_tasks_source_created (source, user_id, created_at),
       INDEX idx_video_tasks_status (status),
       CONSTRAINT fk_video_tasks_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -585,6 +586,16 @@ async function createTables() {
   );
   if (videoSourceColumns.length === 0) {
     await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'video' AFTER user_id");
+  }
+
+  const [videoSourceIndexes] = await pool.query(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND INDEX_NAME = 'idx_video_tasks_source_created'`,
+    [config.db.database]
+  );
+  if (videoSourceIndexes.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD INDEX idx_video_tasks_source_created (source, user_id, created_at)");
   }
 
   const [videoRefImageColumns] = await pool.query(

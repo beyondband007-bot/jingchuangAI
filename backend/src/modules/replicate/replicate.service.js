@@ -16,11 +16,15 @@ import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.
 import {
   completeReplicateTaskRow,
   createReplicateTaskRow,
+  failInterruptedReplicateTasks,
   failReplicateTaskRow,
   findReplicateTaskRow,
   listReplicateTaskRows,
   updateReplicateTaskProgress
 } from "./replicate.repository.js";
+
+const INTERRUPTED_TASK_ERROR =
+  "\u4efb\u52a1\u56e0\u670d\u52a1\u91cd\u542f\u6216\u5f02\u5e38\u4e2d\u65ad\uff0c\u8bf7\u91cd\u65b0\u63d0\u4ea4";
 
 const maxImageBytes = 20 * 1024 * 1024;
 const maxVideoBytes = 100 * 1024 * 1024;
@@ -123,6 +127,10 @@ export async function getRecentReplicates(userId) {
 export async function getReplicateTask(id, userId) {
   const row = await findReplicateTaskRow({ id, userId });
   return row ? mapReplicateTask(row) : null;
+}
+
+export async function recoverInterruptedReplicateTasks() {
+  return failInterruptedReplicateTasks(INTERRUPTED_TASK_ERROR);
 }
 
 function cleanAnalysisError(error) {

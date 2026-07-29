@@ -76,9 +76,15 @@ export async function createVideoTask(connection, {
   return result.insertId;
 }
 
-export async function listVideoTaskRows({ userId, filter = "all" } = {}) {
+export async function listVideoTaskRows({ userId, filter = "all", source } = {}) {
   const params = [userId];
-  let where = "t.user_id = ? AND COALESCE(t.source, 'video') <> 'infinite-canvas'";
+  let where = "t.user_id = ?";
+  if (source) {
+    where += " AND COALESCE(t.source, 'video') = ?";
+    params.push(source);
+  } else {
+    where += " AND COALESCE(t.source, 'video') <> 'infinite-canvas'";
+  }
   if (filter === "favorite") {
     where += " AND t.favorite = TRUE";
   } else if (filter === "recent") {
@@ -122,7 +128,7 @@ export async function findRefreshableVideoTasks() {
 
 export async function findVideoTaskStatus(id) {
   const [rows] = await getPool().query(
-    `SELECT t.id, t.provider_task_id, t.status,
+    `SELECT t.id, t.user_id, t.provider_task_id, t.status,
             mp.provider_type, mp.provider_model, mp.mode
      FROM video_generation_tasks t
      LEFT JOIN video_model_prices mp ON mp.model_key = t.model_key
@@ -142,16 +148,17 @@ export async function setVideoTaskProviderTaskId(id, providerTaskId) {
 
 export async function setVideoTaskCompleted(id, urls, { providerUrls = [] } = {}) {
   if (await hasProviderResultUrlsColumn()) {
-    await getPool().query(
-      "UPDATE video_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ?",
+    const [result] = await getPool().query(
+      "UPDATE video_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ? AND status <> 'completed'",
       [JSON.stringify(urls), JSON.stringify(providerUrls), id]
     );
-    return;
+    return result.affectedRows > 0;
   }
-  await getPool().query("UPDATE video_generation_tasks SET status = 'completed', result_urls = ? WHERE id = ?", [
+  const [result] = await getPool().query("UPDATE video_generation_tasks SET status = 'completed', result_urls = ? WHERE id = ? AND status <> 'completed'", [
     JSON.stringify(urls),
     id
   ]);
+  return result.affectedRows > 0;
 }
 
 export async function setVideoTaskProcessing(id) {

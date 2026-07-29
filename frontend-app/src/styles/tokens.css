@@ -139,6 +139,11 @@
   --title-feature-size: var(--font-size-feature);
   --title-section-size: var(--font-size-section);
   --title-panel-size: var(--font-size-lg);
+  /* Shared heading contract for the audio creation modules. */
+  --audio-page-title-size: var(--title-page-size);
+  --audio-page-title-color: var(--text-primary);
+  --audio-page-subtitle-size: var(--font-size-md);
+  --audio-page-subtitle-color: #5f7d9a;
   --modal-radius: var(--radius-xl);
   --modal-padding: var(--space-5);
   --toast-radius: var(--radius-lg);

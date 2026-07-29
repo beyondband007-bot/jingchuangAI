@@ -23,7 +23,8 @@ import {
   attachAudioElement,
   formatAudioTime,
   getActiveLyricIndex,
-  getLyricSubtitle
+  getLyricSubtitle,
+  isLyricTimelineUsable
 } from "./musicPlayerUtils";
 import { MusicImmersiveStage } from "./MusicImmersiveStage";
 
@@ -302,6 +303,10 @@ export function MusicFullPagePlayer({
   );
 
   const timeline = Array.isArray(item?.lyricsTimeline) ? item.lyricsTimeline : [];
+  const canUseKaraokeTimeline = isLyricTimelineUsable(timeline, item?.durationMs);
+  const staticLyrics = timeline.length
+    ? timeline.map((line) => line.text).filter(Boolean)
+    : String(item?.lyrics || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const timelineKey = useMemo(
     () => timeline.map((line) => `${line.lineIndex}:${line.startMs}:${line.endMs}`).join("|"),
     [timeline]
@@ -322,6 +327,27 @@ export function MusicFullPagePlayer({
     [items]
   );
   const activeIndex = playableItems.findIndex((entry) => entry.id === item?.id);
+
+  useLayoutEffect(() => {
+    const panel = lyricScrollRef.current;
+    if (!panel || !canUseKaraokeTimeline) return undefined;
+
+    function updateScrollSpacer() {
+      panel.style.setProperty(
+        "--lyrics-scroll-spacer",
+        `${Math.max(0, panel.clientHeight / 2)}px`
+      );
+    }
+
+    updateScrollSpacer();
+    const observer = new ResizeObserver(updateScrollSpacer);
+    observer.observe(panel);
+
+    return () => {
+      observer.disconnect();
+      panel.style.removeProperty("--lyrics-scroll-spacer");
+    };
+  }, [canUseKaraokeTimeline, item?.id]);
 
   useEffect(() => () => {
     const audio = audioRef.current;
@@ -399,15 +425,15 @@ export function MusicFullPagePlayer({
   useEffect(() => {
     const audio = audioRef.current;
     const time = audio?.currentTime ?? currentTime;
-    setActiveLyricIndex(getActiveLyricIndex(timeline, time));
+    setActiveLyricIndex(canUseKaraokeTimeline ? getActiveLyricIndex(timeline, time) : -1);
 
     if (timelineKey && timelineKey !== prevTimelineKeyRef.current) {
       prevTimelineKeyRef.current = timelineKey;
-      if (audio && timeline.length) {
+      if (audio && canUseKaraokeTimeline) {
         setActiveLyricIndex(getActiveLyricIndex(timeline, audio.currentTime));
       }
     }
-  }, [timeline, timelineKey, currentTime]);
+  }, [timeline, timelineKey, currentTime, canUseKaraokeTimeline]);
 
   useEffect(() => {
     if (isInstrumentalMode || activeLyricIndex < 0) return;
@@ -557,14 +583,14 @@ export function MusicFullPagePlayer({
               </div>
             </aside>
             <section className="music-full-player__lyrics" ref={lyricScrollRef}>
-              <div className={`music-full-player__lyrics-inner${timeline.length ? " is-karaoke" : " is-static"}`}>
+              <div className={`music-full-player__lyrics-inner${canUseKaraokeTimeline ? " is-karaoke" : " is-static"}`}>
               {isLyricsSyncing && !timeline.length ? (
                 <div className="music-full-player__lyrics-status is-inline">
                   <Loader2 size={18} className="music-lyrics-sync-spinner" />
                   <p>正在后台同步歌词时间轴...</p>
                 </div>
               ) : null}
-              {timeline.length ? (
+              {canUseKaraokeTimeline ? (
                 timeline.map((line, index) => {
                   const isActive = index === activeLyricIndex;
                   const isNear = Math.abs(index - activeLyricIndex) <= 2;
@@ -575,7 +601,7 @@ export function MusicFullPagePlayer({
                   );
                 })
               ) : (
-                String(item.lyrics || "").split(/\r?\n/).filter(Boolean).map((line, index) => (
+                staticLyrics.map((line, index) => (
                   <p key={index} className="music-full-player__lyric-line">{line}</p>
                 ))
               )}

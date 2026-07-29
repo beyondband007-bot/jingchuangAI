@@ -302,8 +302,30 @@
   border-color: #efd05c;
 }
 .fm-scene-image {
+  position: relative;
+  display: flex;
+  align-items: stretch;
   height: 235px;
   overflow: hidden;
+}
+.fm-scene-entry {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 24px);
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: rgba(17, 17, 17, 0.72);
+  color: var(--color-white);
+  font-size: var(--font-size-xs);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .fm-scene-image h3 {
   position: absolute;

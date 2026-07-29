@@ -18,25 +18,28 @@ function normalizeOption(item) {
 }
 
 function parseRatio(value) {
-  const [width = 1, height = 1] = String(value || "1:1")
-    .split(":")
-    .map((part) => Number(part) || 1);
+  const match = String(value || "1:1").match(/(\d+)\s*:\s*(\d+)/);
+  if (!match) return { width: 1, height: 1 };
 
-  return { width, height };
+  return {
+    width: Number(match[1]) || 1,
+    height: Number(match[2]) || 1,
+  };
 }
 
 function RatioPreviewIcon({ ratio, selected = false }) {
   const { width, height } = parseRatio(ratio);
   const isPortrait = height > width;
   const isSquare = width === height;
+  const isUltraWide = !isPortrait && !isSquare && width / height >= 2;
 
   return (
     <span className="ratio-preview-slot" aria-hidden="true">
       <span
         className={`ratio-preview-icon ${selected ? "is-selected" : ""}`}
         style={{
-          width: isSquare ? "18px" : isPortrait ? "14px" : "22px",
-          height: isSquare ? "18px" : isPortrait ? "22px" : "14px"
+          width: isSquare ? "18px" : isPortrait ? "14px" : isUltraWide ? "26px" : "22px",
+          height: isSquare ? "18px" : isPortrait ? "22px" : isUltraWide ? "12px" : "14px",
         }}
       />
     </span>
@@ -212,8 +215,12 @@ export function CustomSelect({
         onClick={() => setOpen((current) => !current)}
       >
         {Icon ? <Icon size={16} /> : null}
-        {showRatioIcon && selectedOption ? <RatioPreviewIcon ratio={selectedOption.value} selected={open} /> : null}
-        <span>{selectedOption?.label ?? placeholder}</span>
+        <span className="custom-select-trigger__value">
+          {showRatioIcon && selectedOption ? (
+            <RatioPreviewIcon ratio={selectedOption.value} selected={open} />
+          ) : null}
+          <span>{selectedOption?.label ?? placeholder}</span>
+        </span>
         <ChevronDown className="custom-select-chevron" size={15} />
       </button>
       </div>

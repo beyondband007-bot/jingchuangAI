@@ -2,12 +2,25 @@ import { Download, Loader2, Play, RefreshCcw, Star, Trash2 } from "lucide-react"
 import { LazyPreviewVideo } from "../../components/LazyPreviewVideo";
 import { formatBeijingDateTime } from "../../utils/time";
 import { FaceminiInspirationModal } from "../image/FaceminiInspirationModal";
+import { parseVideoAspectRatio } from "./videoUtils";
 import "./videoCards.css";
 
 export function VideoPreview({ task, onOpen }) {
   const isProcessing =
     task.status === "pending" || task.status === "processing";
   const isFailed = task.status === "failed";
+
+  const syncIntrinsicAspect = (event) => {
+    const video = event.currentTarget;
+    if (!(video.videoWidth > 0) || !(video.videoHeight > 0)) return;
+
+    video
+      .closest(".video-result-preview")
+      ?.style.setProperty(
+        "--video-preview-aspect",
+        `${video.videoWidth} / ${video.videoHeight}`,
+      );
+  };
 
   if (task.video && !isFailed) {
     return (
@@ -23,6 +36,7 @@ export function VideoPreview({ task, onOpen }) {
           muted
           playsInline
           preload="none"
+          onLoadedMetadata={syncIntrinsicAspect}
         />
         <span className="video-preview-play">
           <Play size={18} fill="currentColor" />
@@ -69,12 +83,22 @@ export function VideoResultCard({
   const isFailed = card.status === "failed";
   const canUseCompletedActions = !isExample && isCompleted;
   const canRetryOrDelete = !isExample && (isCompleted || isFailed);
+  const cardAspect = parseVideoAspectRatio(card.ratio);
 
   return (
     <article
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
     >
-      <div className="result-preview video-result-preview">
+      <div
+        className="result-preview video-result-preview"
+        style={
+          cardAspect
+            ? {
+                "--video-preview-aspect": cardAspect.css,
+              }
+            : undefined
+        }
+      >
         <VideoPreview task={card} onOpen={isCompleted ? onOpen : undefined} />
         <span className="video-duration-badge">{card.duration}s</span>
       </div>
