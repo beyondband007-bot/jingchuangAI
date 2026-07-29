@@ -67,6 +67,100 @@ import {
   writeImageGenerationThread,
 } from "./imageGenerationSession";
 
+const imageInspirationShuffleSeedStorageKey =
+  "jingchuang:image-inspiration-shuffle-seed";
+
+function createImageInspirationShuffleSeed() {
+  try {
+    const storedSeed = window.sessionStorage.getItem(
+      imageInspirationShuffleSeedStorageKey,
+    );
+    if (storedSeed) return storedSeed;
+
+    const seed = `${Date.now()}-${Math.random()}`;
+    window.sessionStorage.setItem(imageInspirationShuffleSeedStorageKey, seed);
+    return seed;
+  } catch {
+    return `${Date.now()}-${Math.random()}`;
+  }
+}
+
+function seedToNumber(seed) {
+  let value = 2166136261;
+  for (const character of String(seed)) {
+    value ^= character.charCodeAt(0);
+    value = Math.imul(value, 16777619);
+  }
+  return value >>> 0;
+}
+
+function createSeededRandom(seed) {
+  let value = seedToNumber(seed);
+  return () => {
+    value += 0x6d2b79f5;
+    let next = value;
+    next = Math.imul(next ^ (next >>> 15), next | 1);
+    next ^= next + Math.imul(next ^ (next >>> 7), next | 61);
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleWithSeed(items, seed) {
+  const shuffled = [...items];
+  const random = createSeededRandom(seed);
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [
+      shuffled[swapIndex],
+      shuffled[index],
+    ];
+  }
+  return shuffled;
+}
+
+function getImageInspirationIdentity(item, index) {
+  if (item.id) return item.id;
+  return [
+    item.categoryId || "all",
+    item.file || item.hdSrc || item.src || `item-${index}`,
+  ].join(":");
+}
+
+function buildBalancedImageInspirationOrder(items, seed) {
+  const seenIds = new Set();
+  const categoryBuckets = new Map();
+
+  items.forEach((item, index) => {
+    const identity = getImageInspirationIdentity(item, index);
+    if (seenIds.has(identity)) return;
+    seenIds.add(identity);
+
+    const categoryId = item.categoryId || "other";
+    const bucket = categoryBuckets.get(categoryId) || [];
+    bucket.push(item);
+    categoryBuckets.set(categoryId, bucket);
+  });
+
+  const buckets = [...categoryBuckets.entries()].map(([categoryId, bucket]) => ({
+    categoryId,
+    items: shuffleWithSeed(bucket, `${seed}:${categoryId}`),
+  }));
+  const mixed = [];
+  let hasRemainingItems = true;
+
+  while (hasRemainingItems) {
+    hasRemainingItems = false;
+    buckets.forEach((bucket) => {
+      const item = bucket.items.shift();
+      if (!item) return;
+      mixed.push(item);
+      hasRemainingItems = true;
+    });
+  }
+
+  return mixed;
+}
+
 export function ImageGenerationView({
   authUser,
   onOpenAuth,
@@ -128,6 +222,10 @@ export function ImageGenerationView({
     readInspirationFavoriteIds(),
   );
   const imageComposerRef = useRef(null);
+  const imageInspirationShuffleSeedRef = useRef(null);
+  if (!imageInspirationShuffleSeedRef.current) {
+    imageInspirationShuffleSeedRef.current = createImageInspirationShuffleSeed();
+  }
   const wasActiveRef = useRef(isActive);
   const taskStatusSignatureRef = useRef("");
 
@@ -332,12 +430,20 @@ export function ImageGenerationView({
     () => buildImageHistoryThreads(cards),
     [cards, contextTaskIds],
   );
+  const balancedAllExampleImages = useMemo(
+    () =>
+      buildBalancedImageInspirationOrder(
+        exampleImages,
+        imageInspirationShuffleSeedRef.current,
+      ),
+    [],
+  );
   const filteredExampleImages = useMemo(() => {
-    if (imageInspirationCategory === "all") return exampleImages;
+    if (imageInspirationCategory === "all") return balancedAllExampleImages;
     return exampleImages.filter(
       (item) => item.categoryId === imageInspirationCategory,
     );
-  }, [imageInspirationCategory]);
+  }, [balancedAllExampleImages, imageInspirationCategory]);
   const imageExampleCards = useMemo(
     () =>
       filteredExampleImages.map((item, index) => {
