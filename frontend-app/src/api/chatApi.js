@@ -1,23 +1,16 @@
 import { API_BASE } from "../apiBase.js";
 import { cleanApiErrorMessage, requestJson as request } from "./request.js";
 
-const visibleChatModels = [
-  {
-    value: "deepseek-v4-pro",
-    description: "中文强，带货 / 直播 / 国风文案自然"
-  },
-  {
-    value: "qwen3.7-plus",
-    description: "均衡性价比，种草文案、标题创意初稿"
-  }
+const visibleChatModelValues = [
+  "deepseek-v4-pro",
+  "qwen3.7-plus",
+  "gpt-5-6-codex",
+  "gemini-3-6-flash-openai"
 ];
 
 function filterVisibleChatModels(options) {
-  const models = visibleChatModels
-    .map((visibleModel) => {
-      const model = options.models?.find((item) => item.value === visibleModel.value);
-      return model ? { ...model, description: visibleModel.description } : null;
-    })
+  const models = visibleChatModelValues
+    .map((modelValue) => options.models?.find((item) => item.value === modelValue) || null)
     .filter(Boolean);
 
   return {

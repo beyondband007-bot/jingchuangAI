@@ -20,6 +20,9 @@ function getVideoModelOptions(options, modelKey) {
 
 function pickDefaultVideoModel(models = []) {
   return (
+    models.find((item) => item.value === "seedance_2_0_720p")?.value ||
+    models.find((item) => item.value === "seedance_2_0_mini")?.value ||
+    models.find((item) => item.value === "kling_3_std")?.value ||
     models.find((item) => item.value === "kling_v1")?.value ||
     models.find((item) => item.value === "seedance_2_lite_t2v")?.value ||
     models[0]?.value ||

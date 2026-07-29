@@ -14,6 +14,7 @@ export function AvatarGeneratingModal({ job, onClose, onRegenerate, onSave }) {
   const [stageIndex, setStageIndex] = useState(0);
   const [task, setTask] = useState(job || null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const status = task?.status || job?.status || "processing";
   const isReady = status === "preview_ready" || status === "saved";
@@ -23,6 +24,7 @@ export function AvatarGeneratingModal({ job, onClose, onRegenerate, onSave }) {
   useEffect(() => {
     setTask(job || null);
     setSaving(false);
+    setSaveError(job?.status === "preview_ready" ? job?.error || "" : "");
     if (job?.progress) {
       setProgress(Math.max(12, Math.min(100, Number(job.progress) || 12)));
     }
@@ -83,8 +85,11 @@ export function AvatarGeneratingModal({ job, onClose, onRegenerate, onSave }) {
   async function handleSave() {
     if (!task?.id || saving) return;
     setSaving(true);
+    setSaveError("");
     try {
       await onSave?.(task);
+    } catch (error) {
+      setSaveError(error.message || "保存形象失败，请稍后重试");
     } finally {
       setSaving(false);
     }
@@ -141,6 +146,11 @@ export function AvatarGeneratingModal({ job, onClose, onRegenerate, onSave }) {
                   : STAGE_LABELS[stageIndex]}
             </strong>
             <p>{job.request?.prompt || job.prompt}</p>
+            {isReady && saveError ? (
+              <p className="dhv2-generating-modal__save-error" role="alert">
+                保存失败：{saveError}
+              </p>
+            ) : null}
             <div className="dhv2-generating-modal__tags">
               <span>{job.gender}</span>
               <span>{job.age}</span>
@@ -169,7 +179,7 @@ export function AvatarGeneratingModal({ job, onClose, onRegenerate, onSave }) {
               {isReady ? (
                 <button type="button" className="dhv2-button-primary" onClick={handleSave} disabled={saving}>
                   {saving ? <Loader2 size={16} className="dhv2-spinner" /> : null}
-                  保存形象
+                  {saveError ? "重新保存" : "保存形象"}
                 </button>
               ) : null}
             </div>

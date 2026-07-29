@@ -328,6 +328,7 @@ function ImageFeaturePageContent({
       <DigitalHumanHubView
         isActive={activeNav === "digital-human"}
         onOpenFeature={handleNavChange}
+        onViewModeChange={setDigitalHumanMode}
         viewMode={digitalHumanMode}
       />
     ),

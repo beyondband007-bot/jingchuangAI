@@ -71,6 +71,14 @@
   word-break: break-word;
 }
 
+.dhv2-generating-modal__meta .dhv2-generating-modal__save-error {
+  padding: 8px 10px;
+  color: #c93f49;
+  background: #fff3f4;
+  border: 1px solid #ffd4d8;
+  border-radius: var(--radius-control);
+}
+
 .dhv2-generating-modal__tags {
   display: flex;
   flex-wrap: wrap;

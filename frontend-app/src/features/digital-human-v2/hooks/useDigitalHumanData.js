@@ -186,6 +186,17 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     }
   }
 
+  async function refreshAvatars() {
+    const value = await digitalHumanApi.getAvatars();
+    const resolvedAvatarData = withOfficialAvatarFallback(value);
+    updateDataCache({ avatars: resolvedAvatarData });
+    setAvatars(resolvedAvatarData);
+    setSelectedAvatar((current) =>
+      resolveAvatarSelection(current, resolvedAvatarData)
+    );
+    return resolvedAvatarData;
+  }
+
   return {
     options,
     avatars,
@@ -199,5 +210,6 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     error,
     setError,
     refreshCredits,
+    refreshAvatars,
   };
 }

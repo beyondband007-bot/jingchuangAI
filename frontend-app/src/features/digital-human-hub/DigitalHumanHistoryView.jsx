@@ -112,7 +112,7 @@ function HistoryPreviewModal({ task, onClose }) {
   );
 }
 
-export function DigitalHumanHistoryView({ isActive = true }) {
+export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
   const [loading, setLoading] = useState(true);
   const [avatarTasks, setAvatarTasks] = useState([]);
   const [photoTasks, setPhotoTasks] = useState([]);
@@ -244,15 +244,34 @@ export function DigitalHumanHistoryView({ isActive = true }) {
             const status = getStatusTag(task.status);
             const isProcessing = !["completed", "failed"].includes(task.status);
             const canPreview = task.status === "completed" && Boolean(task.resultUrl);
+            const canResume = isProcessing && task.taskType === "avatar";
             return (
-              <article key={`${task.taskType}-${task.id}`} className="dh-history-card">
+              <article
+                key={`${task.taskType}-${task.id}`}
+                className={`dh-history-card${canResume ? " is-resumable" : ""}`}
+              >
+                {canResume ? (
+                  <button
+                    type="button"
+                    className="dh-history-card__resume-hitbox"
+                    aria-label={`返回 ${task.title} 的视频生成页面`}
+                    onClick={() => onResumeTask?.(task)}
+                  />
+                ) : null}
                 <button
                   type="button"
-                  className={`dh-history-card__media${canPreview ? " is-playable" : ""}`}
-                  disabled={!canPreview}
-                  aria-label={canPreview ? `播放 ${task.title}` : `${task.title} 预览`}
+                  className={`dh-history-card__media${canPreview ? " is-playable" : ""}${canResume ? " is-resumable" : ""}`}
+                  disabled={!canPreview && !canResume}
+                  aria-label={
+                    canPreview
+                      ? `播放 ${task.title}`
+                      : canResume
+                        ? `通过缩略图返回 ${task.title} 的视频生成页面`
+                        : `${task.title} 预览`
+                  }
                   onClick={() => {
                     if (canPreview) setPreviewTask(task);
+                    if (canResume) onResumeTask?.(task);
                   }}
                 >
                   {canPreview ? (

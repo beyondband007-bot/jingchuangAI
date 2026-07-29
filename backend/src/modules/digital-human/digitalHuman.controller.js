@@ -5,9 +5,11 @@ export function getDigitalHumanModels(_req, res) {
   res.json(service.getModels());
 }
 
-export async function getDigitalHumanAvatars(_req, res) {
+export async function getDigitalHumanAvatars(req, res) {
   try {
-    res.json(await service.getAvatars());
+    res.json(
+      await service.getAvatars(req.user?.isGuest ? null : req.user?.id)
+    );
   } catch (error) {
     sendError(res, error);
   }
@@ -119,7 +121,10 @@ export async function regenerateDigitalHumanTask(req, res) {
 
 export async function createDigitalHumanAvatar(req, res) {
   try {
-    res.status(201).json(await service.createArkAvatar(req.body || {}, req.file));
+    requireLoggedIn(req.user);
+    res.status(201).json(
+      await service.createArkAvatar(req.body || {}, req.file, req.user.id)
+    );
   } catch (error) {
     sendError(res, error);
   }

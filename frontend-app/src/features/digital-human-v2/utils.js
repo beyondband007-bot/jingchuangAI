@@ -435,7 +435,6 @@ export function getMineLibraryItems(photoTasks = []) {
 
 export function getDigitalHumanMineLibraryItems(mineAvatars = []) {
   return filterReadyMineAvatars(mineAvatars)
-    .filter(isAiCustomMineAvatar)
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))
     .map((avatar) => ({
       ...avatar,

@@ -21,6 +21,7 @@ import {
   findRefreshableArkVirtualAssets,
   findReusableArkVirtualAsset,
   listArkVirtualAssets,
+  updateArkVirtualAssetMetadata,
   updateArkVirtualAssetStatus
 } from "./arkVirtualAssets.repository.js";
 
@@ -57,6 +58,10 @@ export function isArkOpenApiConfigured() {
   return Boolean(config.ark.accessKeyId && config.ark.secretAccessKey);
 }
 
+export function shouldCreateLocalOnlyVirtualAsset(localOnly = false, arkConfigured = isArkOpenApiConfigured()) {
+  return Boolean(localOnly) || !arkConfigured;
+}
+
 function isLocalProviderAssetId(providerAssetId = "") {
   return String(providerAssetId || "").startsWith("local-");
 }
@@ -67,8 +72,29 @@ function isArkDownloadFailure(error) {
   return code === "InvalidParameter.DownloadFailed" || /download.*failed|bad gateway/i.test(message);
 }
 
+export function shouldFallbackToLocalVirtualAsset(error) {
+  const message = String(error?.message || "");
+  return (
+    isArkDownloadFailure(error) ||
+    /PUBLIC_MEDIA_BASE_URL|PUBLIC_BASE_URL|公网地址|火山引擎无法下载/i.test(
+      message
+    )
+  );
+}
+
 export function mapArkVirtualAsset(row) {
   if (!row) return null;
+  let metadata = row.metadata_json || {};
+  if (typeof metadata === "string") {
+    try {
+      metadata = JSON.parse(metadata);
+    } catch {
+      metadata = {};
+    }
+  }
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    metadata = {};
+  }
   return {
     id: String(row.id),
     groupId: String(row.group_id),
@@ -84,6 +110,7 @@ export function mapArkVirtualAsset(row) {
     assetUri: row.asset_uri || (row.provider_asset_id ? `asset://${row.provider_asset_id}` : ""),
     status: row.status,
     error: row.error_message || "",
+    metadata,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -153,9 +180,16 @@ export async function refreshProcessingVirtualAssets() {
   await Promise.allSettled(rows.map((row) => refreshVirtualAssetByRow(row)));
 }
 
-export async function listVirtualAssets({ feature = "digital-human" } = {}) {
+export async function listVirtualAssets({
+  feature = "digital-human",
+  userId
+} = {}) {
   await refreshProcessingVirtualAssets();
-  const rows = await listArkVirtualAssets({ feature: normalizeFeature(feature), projectName: config.ark.projectName });
+  const rows = await listArkVirtualAssets({
+    feature: normalizeFeature(feature),
+    projectName: config.ark.projectName,
+    userId
+  });
   return rows.map(mapArkVirtualAsset);
 }
 
@@ -188,7 +222,8 @@ async function createLocalOnlyVirtualAssetFromLocalFile({
   filePath,
   originalName,
   mimeType,
-  sizeBytes
+  sizeBytes,
+  metadata
 }) {
   const normalizedFeature = normalizeFeature(feature);
   const assetType = getAssetTypeFromMime(mimeType);
@@ -203,6 +238,7 @@ async function createLocalOnlyVirtualAssetFromLocalFile({
     projectName: config.ark.projectName
   });
   if (reusable) {
+    await updateArkVirtualAssetMetadata(reusable.id, metadata);
     const refreshed = await refreshVirtualAssetByRow(reusable, { force: true });
     return mapArkVirtualAsset(refreshed);
   }
@@ -222,7 +258,8 @@ async function createLocalOnlyVirtualAssetFromLocalFile({
     mimeType,
     sizeBytes,
     sourceHash,
-    providerAssetId
+    providerAssetId,
+    metadata
   });
   await updateArkVirtualAssetStatus(id, { status: "active", publicUrl });
   return mapArkVirtualAsset(await findArkVirtualAssetByInternalId(id));
@@ -235,13 +272,15 @@ export async function createVirtualAssetFromLocalFile({
   filePath,
   originalName,
   mimeType,
-  sizeBytes
+  sizeBytes,
+  localOnly = false,
+  metadata
 }) {
   const normalizedFeature = normalizeFeature(feature);
   const assetType = getAssetTypeFromMime(mimeType);
   if (!assetType) throw createHttpError("unsupported asset file type", 400);
 
-  if (!isArkOpenApiConfigured()) {
+  if (shouldCreateLocalOnlyVirtualAsset(localOnly)) {
     return createLocalOnlyVirtualAssetFromLocalFile({
       userId,
       feature: normalizedFeature,
@@ -249,7 +288,8 @@ export async function createVirtualAssetFromLocalFile({
       filePath,
       originalName,
       mimeType,
-      sizeBytes
+      sizeBytes,
+      metadata
     });
   }
 
@@ -261,13 +301,24 @@ export async function createVirtualAssetFromLocalFile({
     sourceHash,
     projectName: config.ark.projectName
   });
-  if (reusable) return mapArkVirtualAsset(await refreshVirtualAssetByRow(reusable));
+  if (reusable) {
+    await updateArkVirtualAssetMetadata(reusable.id, metadata);
+    return mapArkVirtualAsset(await refreshVirtualAssetByRow(reusable));
+  }
 
   const group = await ensureVirtualAssetGroup({ userId, feature: normalizedFeature });
-  const publicUrl = buildPublicMediaUrl(localUrl);
-  await assertPublicMediaUrlAccessible(publicUrl, assetType === "Video" ? "视频" : assetType === "Image" ? "图片" : "素材");
+  let publicUrl = localUrl;
   let result;
   try {
+    publicUrl = buildPublicMediaUrl(localUrl);
+    await assertPublicMediaUrlAccessible(
+      publicUrl,
+      assetType === "Video"
+        ? "视频"
+        : assetType === "Image"
+          ? "图片"
+          : "素材"
+    );
     result = await createArkAsset({
       projectName: config.ark.projectName,
       groupId: group.provider_group_id,
@@ -276,7 +327,7 @@ export async function createVirtualAssetFromLocalFile({
       name: originalName || path.basename(filePath)
     });
   } catch (error) {
-    if (!isArkDownloadFailure(error)) throw error;
+    if (!shouldFallbackToLocalVirtualAsset(error)) throw error;
     console.warn(`[ark-assets] Ark could not download ${publicUrl}; saving local-only virtual asset`);
     return createLocalOnlyVirtualAssetFromLocalFile({
       userId,
@@ -285,7 +336,8 @@ export async function createVirtualAssetFromLocalFile({
       filePath,
       originalName,
       mimeType,
-      sizeBytes
+      sizeBytes,
+      metadata
     });
   }
   const providerAssetId = result.Id || result.id;
@@ -308,7 +360,8 @@ export async function createVirtualAssetFromLocalFile({
     mimeType,
     sizeBytes,
     sourceHash,
-    providerAssetId
+    providerAssetId,
+    metadata
   });
 
   return mapArkVirtualAsset(await findArkVirtualAssetByInternalId(id));

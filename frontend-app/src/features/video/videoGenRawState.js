@@ -70,6 +70,33 @@ export function createInitialRawState(nowMs = Date.now()) {
 }
 
 /**
+ * Restores the waiting-stage clock for a task that was opened from history.
+ * Backdating the virtual start time keeps progress moving instead of leaving
+ * the restored page frozen at the server-side checkpoint.
+ *
+ * @param {{ progress?: number, durationMs?: number, nowMs?: number }} options
+ * @returns {GenerationRawState}
+ */
+export function createResumedRawState({
+  progress = 0,
+  durationMs = VIRTUAL_PROGRESS_DURATION_MS,
+  nowMs = Date.now(),
+} = {}) {
+  const safeProgress = clamp(Number(progress) || 0, 0, VIRTUAL_PROGRESS_MAX);
+  const safeDurationMs =
+    Number.isFinite(Number(durationMs)) && Number(durationMs) > 0
+      ? Number(durationMs)
+      : VIRTUAL_PROGRESS_DURATION_MS;
+  const elapsedMs = (safeProgress / VIRTUAL_PROGRESS_MAX) * safeDurationMs;
+
+  return {
+    status: "generating",
+    progress: safeProgress,
+    startedAtMs: nowMs - elapsedMs,
+  };
+}
+
+/**
  * Loading UI tick: simulate a 5-minute generation timeline.
  * @param {GenerationRawState} prev
  * @param {{ taskComplete?: boolean, nowMs?: number, durationMs?: number }} options

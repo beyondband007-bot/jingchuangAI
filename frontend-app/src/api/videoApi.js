@@ -2,7 +2,6 @@ import { requestJson as request } from "./request.js";
 import { createTaskPollingController } from "./taskPolling.js";
 import { getCachedCredits, refreshCachedCredits } from "./creditsCache.js";
 const taskPolling = createTaskPollingController();
-const FORCED_VIDEO_MODEL = "seedance_2_0_720p";
 let modelsPromise;
 
 export const videoApi = {
@@ -103,10 +102,7 @@ export const videoApi = {
   async createTask(payload) {
     const task = await request("/api/video/tasks", {
       method: "POST",
-      body: JSON.stringify({
-        ...payload,
-        model: FORCED_VIDEO_MODEL
-      })
+      body: JSON.stringify(payload)
     });
     taskPolling.notifyNow();
     return task;
@@ -128,7 +124,7 @@ export const videoApi = {
     const task = await request(`/api/video/tasks/${id}`);
     const created = await this.createTask({
       prompt: task.prompt,
-      model: FORCED_VIDEO_MODEL,
+      model: task.modelKey,
       ratio: task.ratio,
       duration: task.duration,
       mode: task.mode || "first-frame",

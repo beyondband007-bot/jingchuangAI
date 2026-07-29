@@ -48,3 +48,22 @@ test("keeps the existing image and video reference conflict rule", () => {
     /cannot provide both reference image and reference video/
   );
 });
+
+test("rejects unsupported video and audio references for Kling 3.0", () => {
+  const klingModel = {
+    ...model,
+    provider_model: "kling-3.0/video"
+  };
+
+  assert.throws(
+    () => validateVideoPayload({
+      prompt: "生成带原生音效的视频",
+      model: klingModel,
+      ratio: "16:9",
+      duration: 5,
+      count: 1,
+      referenceAudioUrl: "/media/voice.mp3"
+    }),
+    /Kling 3.0 currently supports prompt and optional reference image only/
+  );
+});

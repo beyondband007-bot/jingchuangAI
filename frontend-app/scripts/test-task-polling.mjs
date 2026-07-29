@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createTaskPollingController } from "../src/api/taskPolling.js";
+import {
+  VIRTUAL_PROGRESS_MAX,
+  createResumedRawState,
+  tickRawState,
+} from "../src/features/video/videoGenRawState.js";
 
 function installBrowserStub() {
   const originalWindow = globalThis.window;
@@ -76,4 +81,28 @@ test("stops background polling and refreshes once when the page becomes visible"
   } finally {
     browser.restore();
   }
+});
+
+test("restores a running generation from its current progress and keeps moving", () => {
+  const durationMs = 300_000;
+  const nowMs = 1_000_000;
+  const resumed = createResumedRawState({
+    progress: 68,
+    durationMs,
+    nowMs,
+  });
+
+  assert.equal(resumed.status, "generating");
+  assert.equal(resumed.progress, 68);
+  assert.equal(
+    resumed.startedAtMs,
+    nowMs - (68 / VIRTUAL_PROGRESS_MAX) * durationMs,
+  );
+
+  const next = tickRawState(resumed, {
+    durationMs,
+    nowMs: nowMs + 1_000,
+  });
+  assert.ok(next.progress > resumed.progress);
+  assert.ok(next.progress <= VIRTUAL_PROGRESS_MAX);
 });

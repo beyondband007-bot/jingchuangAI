@@ -13,6 +13,16 @@ const modelOptionMeta = {
     description: "均衡性价比，适合种草文案、标题创意初稿",
     icon: `${iconBase}/qwen.svg`,
   },
+  "gpt-5-6-codex": {
+    title: "GPT5.6-codex",
+    description: "旗舰编程推理，适合复杂代码、调试与自动化",
+    icon: `${iconBase}/openai.svg`,
+  },
+  "gemini-3-6-flash-openai": {
+    title: "Gemini 3.6",
+    description: "高效多模态，适合图文理解、知识工作与创意生成",
+    icon: `${iconBase}/gemini.svg`,
+  },
   "qwen3.6-plus": {
     title: "Qwen 3.6 Plus",
     description: "轻量低成本，适合批量短文案",
@@ -87,6 +97,16 @@ const modelOptionMeta = {
     title: "Seedance 2.0",
     description: "多模态旗舰视频模型，人物稳定、运镜流畅",
     icon: `${iconBase}/spark.svg`,
+  },
+  seedance_2_0_mini: {
+    title: "Seedance 2.0 Mini",
+    description: "高速高性价比，适合快速出片与批量视频创作",
+    icon: `${iconBase}/spark.svg`,
+  },
+  kling_3_std: {
+    title: "Kling 3.0",
+    description: "电影级画质，原生音效与镜头叙事更自然",
+    icon: `${iconBase}/kling.svg`,
   },
 };
 

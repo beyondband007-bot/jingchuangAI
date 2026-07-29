@@ -10,8 +10,15 @@ import {
   getArkVideoGenerationTask,
   mapArkVideoGenerationState
 } from "../../providers/volcengine/videoGeneration.js";
+import {
+  createKieVideoTask,
+  extractVideoResultUrls,
+  getKieVideoTask,
+  mapKieVideoState
+} from "../../providers/kie/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { buildPublicMediaUrl } from "../../shared/publicMedia.js";
 import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
@@ -84,13 +91,6 @@ export async function createTask(payload, userId) {
     source
   } = payload;
 
-  // 视频生成统一走 Ark Seedance 2.0，与换脸和动作迁移共用同一套凭据与任务链路。
-  const forcedModelKey = "seedance_2_0_720p";
-  if (model !== forcedModelKey) {
-    console.log(`[video] user selected ${model}, forcing to ${forcedModelKey}`);
-    model = forcedModelKey;
-  }
-
   const pool = getPool();
   const connection = await pool.getConnection();
   let taskId;
@@ -149,38 +149,51 @@ export async function createTask(payload, userId) {
   connection.release();
 
   try {
-    const content = [{ type: "text", text: prompt.trim() }];
-    if (referenceImageUrl) {
-      content.push(buildReferenceImage(await resolveArkReference({
-        userId,
-        url: referenceImageUrl,
-        kind: "image"
-      })));
-    }
-    if (referenceVideoUrl) {
-      content.push(buildReferenceVideo(await resolveArkReference({
-        userId,
-        url: referenceVideoUrl,
-        kind: "video"
-      })));
-    }
-    if (referenceAudioUrl) {
-      content.push(buildReferenceAudio(await resolveArkReference({
-        userId,
-        url: referenceAudioUrl,
-        kind: "audio"
-      })));
-    }
+    let provider;
+    if (modelPrice.provider_type === "ark") {
+      const content = [{ type: "text", text: prompt.trim() }];
+      if (referenceImageUrl) {
+        content.push(buildReferenceImage(await resolveArkReference({
+          userId,
+          url: referenceImageUrl,
+          kind: "image"
+        })));
+      }
+      if (referenceVideoUrl) {
+        content.push(buildReferenceVideo(await resolveArkReference({
+          userId,
+          url: referenceVideoUrl,
+          kind: "video"
+        })));
+      }
+      if (referenceAudioUrl) {
+        content.push(buildReferenceAudio(await resolveArkReference({
+          userId,
+          url: referenceAudioUrl,
+          kind: "audio"
+        })));
+      }
 
-    const provider = await createArkVideoGenerationTask({
-      model: config.ark.videoModel,
-      content,
-      resolution: "720p",
-      ratio,
-      duration: Number(duration),
-      generateAudio: true,
-      watermark: false
-    });
+      provider = await createArkVideoGenerationTask({
+        model: config.ark.videoModel,
+        content,
+        resolution: "720p",
+        ratio,
+        duration: Number(duration),
+        generateAudio: true,
+        watermark: false
+      });
+    } else {
+      provider = await createKieVideoTask({
+        model: modelPrice,
+        prompt: prompt.trim(),
+        ratio,
+        duration: Number(duration),
+        referenceImageUrl: resolveKieReference(referenceImageUrl),
+        referenceVideoUrl: resolveKieReference(referenceVideoUrl),
+        referenceAudioUrl: resolveKieReference(referenceAudioUrl)
+      });
+    }
     await setVideoTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("create video task failed:", error.message, error.body || "");
@@ -282,6 +295,14 @@ async function resolveArkReference({ userId, url, kind }) {
   return waitForVirtualAssetReference(asset.id);
 }
 
+function resolveKieReference(url) {
+  const value = String(url || "").trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (/^\/media\//i.test(value)) return buildPublicMediaUrl(value);
+  throw createHttpError("Kie video references must use an HTTP URL or uploaded media URL", 400);
+}
+
 async function refreshProcessingTasks() {
   const rows = await findRefreshableVideoTasks();
   await Promise.all(rows.map((row) => refreshTask(row.id)));
@@ -292,24 +313,44 @@ async function refreshTask(id) {
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
 
   try {
-    const record = await getArkVideoGenerationTask({ taskId: task.provider_task_id });
-    const mapped = mapArkVideoGenerationState(record);
+    const isArkTask = task.provider_type === "ark";
+    const record = isArkTask
+      ? await getArkVideoGenerationTask({ taskId: task.provider_task_id })
+      : await getKieVideoTask({
+          taskId: task.provider_task_id,
+          providerType: task.provider_type
+        });
+    const mapped = isArkTask
+      ? mapArkVideoGenerationState(record)
+      : mapKieVideoState(record, task.provider_type);
     if (mapped === "completed") {
-      const result = extractArkVideoGenerationResult(record);
-      if (!result.resultUrl) {
+      const providerUrls = isArkTask
+        ? [extractArkVideoGenerationResult(record).resultUrl].filter(Boolean)
+        : extractVideoResultUrls(record, task.provider_type);
+      if (!providerUrls.length) {
         await refundTask(id, null, null, "video generation result missing video URL");
       } else {
-        const providerUrls = [result.resultUrl];
         const localUrls = await persistGeneratedVideos({ taskId: id, urls: providerUrls });
         await setVideoTaskCompleted(id, localUrls, { providerUrls });
       }
     } else if (mapped === "failed") {
-      const result = extractArkVideoGenerationResult(record);
-      if (result.errorMessage) {
-        await refundTask(id, null, null, result.errorMessage);
+      const arkError = isArkTask
+        ? extractArkVideoGenerationResult(record).errorMessage
+        : "";
+      if (arkError) {
+        await refundTask(id, null, null, arkError);
         return;
       }
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "视频任务失败");
+      await refundTask(
+        id,
+        null,
+        null,
+        record.data?.failMsg ||
+          record.data?.errorMessage ||
+          record.data?.error ||
+          record.msg ||
+          "视频任务失败"
+      );
     } else {
       await setVideoTaskProcessing(id);
     }

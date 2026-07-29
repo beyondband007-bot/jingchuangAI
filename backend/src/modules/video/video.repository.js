@@ -122,7 +122,8 @@ export async function findRefreshableVideoTasks() {
 
 export async function findVideoTaskStatus(id) {
   const [rows] = await getPool().query(
-    `SELECT t.id, t.provider_task_id, t.status, mp.provider_type
+    `SELECT t.id, t.provider_task_id, t.status,
+            mp.provider_type, mp.provider_model, mp.mode
      FROM video_generation_tasks t
      LEFT JOIN video_model_prices mp ON mp.model_key = t.model_key
      WHERE t.id = ?

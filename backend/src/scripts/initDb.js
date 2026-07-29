@@ -736,6 +736,7 @@ async function createTables() {
       asset_uri VARCHAR(220) NULL,
       status ENUM('processing','active','failed') NOT NULL DEFAULT 'processing',
       error_message TEXT NULL,
+      metadata_json JSON NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_ark_asset_user_feature (user_id, feature, created_at),
@@ -746,6 +747,45 @@ async function createTables() {
       CONSTRAINT fk_ark_virtual_assets_group FOREIGN KEY (group_id) REFERENCES ark_virtual_asset_groups(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [arkAssetColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'ark_virtual_assets'`,
+    [config.db.database]
+  );
+  const arkAssetColumnNames = new Set(arkAssetColumns.map((row) => row.COLUMN_NAME));
+  if (!arkAssetColumnNames.has("metadata_json")) {
+    await pool.query(
+      "ALTER TABLE ark_virtual_assets ADD COLUMN metadata_json JSON NULL AFTER error_message"
+    );
+  }
+  await pool.query(
+    `UPDATE ark_virtual_assets
+     SET metadata_json = JSON_OBJECT(
+       'source', 'upload',
+       'name',
+       CASE
+         WHEN original_name REGEXP '^[0-9a-fA-F-]{24,}\\.[A-Za-z0-9]+$' THEN '我的形象'
+         ELSE COALESCE(NULLIF(SUBSTRING_INDEX(original_name, '.', 1), ''), '我的形象')
+       END
+     )
+     WHERE feature = 'digital-human'
+       AND asset_type = 'Image'
+       AND local_url NOT LIKE '%/digital-human/avatars/ai/%'
+       AND metadata_json IS NULL`
+  );
+  await pool.query(
+    `UPDATE ark_virtual_assets
+     SET metadata_json = JSON_SET(metadata_json, '$.name', '我的形象')
+     WHERE feature = 'digital-human'
+       AND asset_type = 'Image'
+       AND local_url NOT LIKE '%/digital-human/avatars/ai/%'
+       AND original_name REGEXP '^[0-9a-fA-F-]{24,}\\.[A-Za-z0-9]+$'
+       AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.source')) = 'upload'
+       AND JSON_UNQUOTE(JSON_EXTRACT(metadata_json, '$.name')) =
+         SUBSTRING_INDEX(original_name, '.', 1)`
+  );
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS image_digital_human_tasks (
@@ -1457,14 +1497,16 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16'), JSON_ARRAY(8), '16:9', 8, TRUE, 30),
         ('sora_2', 'jobs', 'sora-2/text-to-video', 'Sora 2', 'first-frame', 'per_second', 11, 0.105,
           JSON_ARRAY('16:9','9:16'), JSON_ARRAY(10,15), '16:9', 10, FALSE, 40),
-        ('kling_3_std', 'jobs', 'kling-3.0/video', 'Kling 3.0 Std', 'std', 'per_second', 49, 0.490,
-          JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 50),
+        ('kling_3_std', 'jobs', 'kling-3.0/video', 'Kling 3.0', 'std', 'per_second', 120, 0.490,
+          JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 6, TRUE, 90),
         ('kling_3_pro', 'jobs', 'kling-3.0/video', 'Kling 3.0 Pro', 'pro', 'per_second', 63, 0.630,
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 60),
         ('kling_3_4k', 'jobs', 'kling-3.0/video', 'Kling 3.0 4K', '4K', 'per_second', 235, 2.345,
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
         ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
+        ('seedance_2_0_mini', 'jobs', 'bytedance/seedance-2-mini', 'Seedance 2.0 Mini', 'mini', 'per_second', 120, 0.875,
+          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4','21:9'), JSON_ARRAY(2,3,4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 6, TRUE, 85),
         ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
       ON DUPLICATE KEY UPDATE
@@ -1486,8 +1528,14 @@ async function seedDemoData() {
     await connection.query("UPDATE image_model_prices SET base_points = 30");
     await connection.query(`
       UPDATE video_model_prices
-      SET base_points = CASE WHEN model_key = 'seedance_2_0_720p' THEN 120 ELSE base_points END,
-          enabled = CASE WHEN model_key = 'seedance_2_0_720p' THEN TRUE ELSE FALSE END
+      SET base_points = CASE
+            WHEN model_key IN ('seedance_2_0_720p', 'seedance_2_0_mini', 'kling_3_std') THEN 120
+            ELSE base_points
+          END,
+          enabled = CASE
+            WHEN model_key IN ('seedance_2_0_720p', 'seedance_2_0_mini', 'kling_3_std') THEN TRUE
+            ELSE FALSE
+          END
     `);
 
     await connection.query(`
@@ -1497,8 +1545,10 @@ async function seedDemoData() {
         ('deepseek-v4-pro', 'deepseek', 'deepseek-v4-pro', 'DeepSeek V4 Pro', 1.000, 1, TRUE, 5),
         ('qwen3.6-plus', 'qwen', 'qwen3.6-plus', 'Qwen 3.6 Plus', 1.000, 1, TRUE, 7),
         ('qwen3.7-plus', 'qwen', 'qwen3.7-plus', 'Qwen 3.7 Plus', 1.000, 1, TRUE, 8),
+        ('gpt-5-6-codex', 'kie', 'gpt-5-6-sol', 'GPT5.6-codex', 4.000, 1, TRUE, 9),
         ('gpt-5-4', 'kie', 'gpt-5.4-codex', 'GPT-5.4-codex', 4.000, 1, TRUE, 10),
         ('gpt-5-5', 'kie', 'gpt-5-5', 'GPT-5.5-codex', 4.000, 1, TRUE, 20),
+        ('gemini-3-6-flash-openai', 'kie', 'gemini-3-6-flash-openai', 'Gemini 3.6', 4.000, 1, TRUE, 29),
         ('gemini-3-pro', 'kie', 'gemini-3-pro', 'Gemini 3 Pro', 4.000, 1, TRUE, 30),
         ('gemini-3.1-pro-openai', 'kie', 'gemini-3.1-pro-openai', 'Gemini 3.1 pro', 4.000, 1, TRUE, 40),
         ('claude-sonnet-4-6', 'kie', 'claude-sonnet-4-6', 'Claude Sonnet 4.6', 4.000, 1, TRUE, 50),

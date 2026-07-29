@@ -1,9 +1,45 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { Bot, CheckCircle2, ChevronDown, Copy, FileText, Loader2, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Copy, FileText, X } from "lucide-react";
 
 const ChatMarkdown = lazy(() =>
   import("./ChatMarkdown").then((module) => ({ default: module.ChatMarkdown })),
 );
+
+function ChatThinkingIndicator() {
+  return (
+    <span className="chat-thinking-indicator" role="status" aria-label="正在思考">
+      <span className="chat-thinking-label">正在思考</span>
+      <span className="chat-thinking-dots" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </span>
+    </span>
+  );
+}
+
+function ChatAssistantAvatar({ isThinking = false, isError = false }) {
+  return (
+    <span
+      className={[
+        "chat-message-avatar",
+        isThinking ? "is-thinking" : "",
+        isError ? "is-error" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <img
+        className="chat-message-avatar-logo"
+        src="/assets/svg/脸谱facemini定(1).svg"
+        alt=""
+        aria-hidden="true"
+        width="22"
+        height="22"
+      />
+    </span>
+  );
+}
 
 async function writeClipboardText(text) {
   const value = String(text || "").trim();
@@ -28,7 +64,12 @@ async function writeClipboardText(text) {
 
 export const emptyChatOptions = { models: [], reasoningEfforts: [], defaultModel: "" };
 const chatContextRoles = new Set(["system", "user", "assistant"]);
-const collapsedChatModelValues = ["deepseek-v4-pro", "qwen3.7-plus"];
+const collapsedChatModelValues = [
+  "deepseek-v4-pro",
+  "qwen3.7-plus",
+  "gpt-5-6-codex",
+  "gemini-3-6-flash-openai",
+];
 const expandedChatModelValues = [
   "qwen3.6-plus",
   "gpt-5-4",
@@ -300,11 +341,12 @@ export function ChatConversationCanvas({ messages, isSubmitting, error }) {
         {messages.map((message) => (
           <div className={`chat-message-row ${message.role}`} key={message.id}>
             {message.role === "assistant" && (
-              <span
-                className={`chat-message-avatar ${message.status === "failed" ? "is-error" : ""}`}
-              >
-                <Bot size={17} />
-              </span>
+              <ChatAssistantAvatar
+                isThinking={
+                  message.status === "streaming" && !message.content?.trim()
+                }
+                isError={message.status === "failed"}
+              />
             )}
             <div
               className={`chat-message-bubble ${message.status === "failed" ? "is-error" : ""} ${message.status === "streaming" ? "is-streaming" : ""}`}
@@ -324,7 +366,11 @@ export function ChatConversationCanvas({ messages, isSubmitting, error }) {
                     </Suspense>
                   ) : (
                     message.content ||
-                    (message.status === "streaming" ? "正在思考..." : "")
+                    (message.status === "streaming" ? (
+                      <ChatThinkingIndicator />
+                    ) : (
+                      ""
+                    ))
                   )}
                   <ChatAttachmentList
                     attachments={message.attachments || []}
@@ -354,12 +400,9 @@ export function ChatConversationCanvas({ messages, isSubmitting, error }) {
         ))}
         {isSubmitting && !hasStreamingMessage && (
           <div className="chat-message-row assistant">
-            <span className="chat-message-avatar">
-              <Bot size={17} />
-            </span>
+            <ChatAssistantAvatar isThinking />
             <div className="chat-message-bubble is-loading">
-              <Loader2 size={17} />
-              <span>正在思考...</span>
+              <ChatThinkingIndicator />
             </div>
           </div>
         )}

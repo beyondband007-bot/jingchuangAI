@@ -3,6 +3,7 @@ import { videoApi } from "../../api/videoApi";
 import { deriveVideoGenState } from "./deriveVideoGenState";
 import {
   createInitialRawState,
+  createResumedRawState,
   getVirtualProgressDurationMs,
   tickRawState,
 } from "./videoGenRawState";
@@ -14,7 +15,11 @@ const PROGRESS_TICK_MS = 1000;
  * State machine: idle → generating → done → idle.
  * Exposes derivedState only — raw state never leaves this hook.
  */
-export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
+export function useVideoGenStateMachine({
+  onFailed,
+  onReturnToList,
+  taskApi = videoApi,
+}) {
   const [rawState, setRawState] = useState(
     /** @type {import('./videoGenRawState').GenerationRawState | null} */ (null),
   );
@@ -26,9 +31,11 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   const doneTimerRef = useRef(null);
   const onFailedRef = useRef(onFailed);
   const onReturnToListRef = useRef(onReturnToList);
+  const taskApiRef = useRef(taskApi);
 
   onFailedRef.current = onFailed;
   onReturnToListRef.current = onReturnToList;
+  taskApiRef.current = taskApi;
 
   const derivedState = useMemo(
     () =>
@@ -77,6 +84,25 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
   function attachTaskId(taskId) {
     setSession((current) =>
       current ? { ...current, taskId } : null,
+    );
+  }
+
+  function resumeGeneration(payload) {
+    clearDoneTimer();
+    taskDoneRef.current = false;
+    completedTaskRef.current = null;
+
+    const duration = Number(payload.duration) || 0;
+    setSession({
+      prompt: payload.prompt || "",
+      duration,
+      taskId: String(payload.taskId),
+    });
+    setRawState(
+      createResumedRawState({
+        progress: payload.progress,
+        durationMs: getVirtualProgressDurationMs(duration),
+      }),
     );
   }
 
@@ -142,9 +168,9 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
 
     async function syncTask() {
       try {
-        const tasks = await videoApi.getTasks({ filter: "all" });
+        const tasks = await taskApiRef.current.getTasks({ filter: "all" });
         if (!mounted) return;
-        const task = tasks.find((item) => item.id === taskId);
+        const task = tasks.find((item) => String(item.id) === String(taskId));
         if (!task) return;
 
         if (task.status === "completed") {
@@ -167,7 +193,7 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
     }
 
     syncTask();
-    const unsubscribe = videoApi.subscribe(syncTask);
+    const unsubscribe = taskApiRef.current.subscribe(syncTask);
     return () => {
       mounted = false;
       unsubscribe();
@@ -188,6 +214,7 @@ export function useVideoGenStateMachine({ onFailed, onReturnToList }) {
     isGenStageActive,
     startGeneration,
     attachTaskId,
+    resumeGeneration,
     failGeneration,
     resetToIdle,
   };

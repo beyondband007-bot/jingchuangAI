@@ -2,6 +2,9 @@ import { config } from "../../config/index.js";
 import { requestKie } from "./client.js";
 
 const chatTimeoutMs = Number(process.env.KIE_CHAT_TIMEOUT_MS || 60000);
+const geminiEndpointModelOverrides = new Map([
+  ["gemini-3-6-flash-openai", "gemini-3-6-flash-openai"]
+]);
 
 function hasAttachments(message) {
   return Array.isArray(message.attachments) && message.attachments.length > 0;
@@ -117,14 +120,16 @@ function getChatProvider(model) {
   return "codex";
 }
 
-function getCodexResponsePath(model) {
+export function getCodexResponsePath(model) {
   const providerModel = String(model.provider_model || model.model_key || "");
   return providerModel.includes("codex") ? "/api/v1/responses" : "/codex/v1/responses";
 }
 
-function getGeminiChatPath(model) {
+export function getGeminiChatPath(model) {
   const providerModel = String(model.provider_model || model.model_key || "");
-  const endpointModel = providerModel.replace(/-openai$/, "");
+  const endpointModel =
+    geminiEndpointModelOverrides.get(providerModel) ||
+    providerModel.replace(/-openai$/, "");
   return `/${endpointModel}/v1/chat/completions`;
 }
 
@@ -190,14 +195,31 @@ function extractStreamText(record) {
   return extractChatText(record);
 }
 
-function extractOpenAiChatText(record) {
+export function extractGeminiCandidateText(record) {
+  const candidates =
+    record?.candidates ||
+    record?.data?.candidates ||
+    record?.response?.candidates ||
+    [];
+  const chunks = [];
+
+  for (const candidate of candidates) {
+    for (const part of candidate?.content?.parts || []) {
+      if (typeof part?.text === "string") chunks.push(part.text);
+    }
+  }
+
+  return chunks.join("");
+}
+
+export function extractOpenAiChatText(record) {
   if (typeof record?.choices?.[0]?.message?.content === "string") {
     return record.choices[0].message.content.trim();
   }
   if (typeof record?.data?.choices?.[0]?.message?.content === "string") {
     return record.data.choices[0].message.content.trim();
   }
-  return extractStreamText(record).trim();
+  return extractGeminiCandidateText(record).trim() || extractStreamText(record).trim();
 }
 
 function extractClaudeText(record) {
@@ -227,6 +249,29 @@ function appendFromSnapshot(current, snapshot) {
   }
 
   return { text: snapshot, delta: snapshot };
+}
+
+export function appendStreamFragment(current, fragment) {
+  if (!fragment) return { text: current, delta: "" };
+  if (!current) return { text: fragment, delta: fragment };
+  if (fragment.length > current.length && fragment.startsWith(current)) {
+    const delta = fragment.slice(current.length);
+    return { text: fragment, delta };
+  }
+
+  return { text: current + fragment, delta: fragment };
+}
+
+export function extractKieUsage(record) {
+  return (
+    record?.usage ||
+    record?.usageMetadata ||
+    record?.data?.usage ||
+    record?.data?.usageMetadata ||
+    record?.response?.usage ||
+    record?.response?.usageMetadata ||
+    null
+  );
 }
 
 function ensureKieKey() {
@@ -286,7 +331,7 @@ function buildClaudeBody({ model, messages, reasoningEffort, stream }) {
   return body;
 }
 
-function getEndpointAndBody({ model, messages, reasoningEffort, stream }) {
+export function getEndpointAndBody({ model, messages, reasoningEffort, stream }) {
   const provider = getChatProvider(model);
   if (provider === "gemini") {
     return {
@@ -331,7 +376,7 @@ export async function createKieChatResponse({ model, messages, reasoningEffort }
 
   return {
     text,
-    usage: result.usage || result.data?.usage || null,
+    usage: extractKieUsage(result),
     kieCreditsConsumed: extractKieCredits(result),
     raw: result
   };
@@ -384,7 +429,7 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
     await onDelta(fullText);
     return {
       text: fullText.trim(),
-      usage: body.usage || body.data?.usage || null,
+      usage: extractKieUsage(body),
       kieCreditsConsumed: extractKieCredits(body),
       raw: body
     };
@@ -415,6 +460,16 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
       text += delta;
       await onDelta(delta);
       return;
+    }
+
+    if (request.provider === "gemini") {
+      const fragment = extractGeminiCandidateText(record);
+      if (fragment) {
+        const next = appendStreamFragment(text, fragment);
+        text = next.text;
+        if (next.delta) await onDelta(next.delta);
+        return;
+      }
     }
 
     const fullText =
@@ -464,7 +519,7 @@ export async function createKieChatStream({ model, messages, reasoningEffort, on
 
   return {
     text: text.trim(),
-    usage: finalRecord?.usage || finalRecord?.data?.usage || null,
+    usage: extractKieUsage(finalRecord),
     kieCreditsConsumed: extractKieCredits(finalRecord),
     raw: finalRecord
   };

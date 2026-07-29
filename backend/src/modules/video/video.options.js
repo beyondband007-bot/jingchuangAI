@@ -50,6 +50,12 @@ export function validateVideoPayload({
   if (referenceImageUrl && referenceVideoUrl) {
     throw createHttpError("cannot provide both reference image and reference video", 400);
   }
+  if (
+    String(model.provider_model || "").includes("kling-3.0") &&
+    (referenceVideoUrl || referenceAudioUrl)
+  ) {
+    throw createHttpError("Kling 3.0 currently supports prompt and optional reference image only", 400);
+  }
   if (referenceAudioUrl && !/^(?:https?:\/\/|\/media\/|asset:\/\/)/i.test(String(referenceAudioUrl))) {
     throw createHttpError("invalid reference audio URL", 400);
   }

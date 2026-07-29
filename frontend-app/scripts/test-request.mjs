@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { requestJson } from "../src/api/request.js";
+import { cleanApiErrorMessage, requestJson } from "../src/api/request.js";
 
 function jsonResponse(body, status = 200) {
   return {
@@ -79,4 +79,10 @@ test("does not merge GET requests with independent cancellation or cache semanti
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("preserves a clear Seedance provider error for the digital-human toast", () => {
+  const message =
+    "Seedance 2.0 数字人生成失败：素材未通过火山平台隐私内容审核，请确认人物授权后重试";
+  assert.equal(cleanApiErrorMessage({ message, status: 502 }), message);
 });

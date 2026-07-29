@@ -13,6 +13,8 @@ import { DigitalHumanWorkspace } from "./components/DigitalHumanWorkspace";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
 import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
+import { VideoGenStage } from "../video/VideoGenStage";
+import { useVideoGenStateMachine } from "../video/useVideoGenStateMachine";
 import {
   VIDEO_SPEC_OPTIONS,
   VOICE_UNAVAILABLE_HINT,
@@ -35,7 +37,12 @@ import "./digitalHumanV2Styles.css";
 const DEFAULT_SCRIPT = "";
 const MAX_SPEECH_DURATION_MS = 15 * 1000;
 
-export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
+export function DigitalHumanV2View({
+  isActive = true,
+  onOpenAssets,
+  resumeTask,
+  onResumeTaskHandled,
+}) {
   const { showToast } = useToast();
   const {
     options,
@@ -49,6 +56,7 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     error,
     setError,
     refreshCredits,
+    refreshAvatars,
   } = useDigitalHumanData({ isActive });
 
   const [avatarSource, setAvatarSource] = useState("official");
@@ -77,6 +85,24 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   const [confirmedPreviewAudio, setConfirmedPreviewAudio] = useState(null);
   const [selectedScene, setSelectedScene] = useState(null);
   const [isUploadingScene, setIsUploadingScene] = useState(false);
+  const digitalHumanGen = useVideoGenStateMachine({
+    taskApi: digitalHumanApi,
+    onFailed: (message) => {
+      setIsSubmitting(false);
+      setActiveTask((current) =>
+        current
+          ? { ...current, status: "failed", error: message || "数字人视频生成失败" }
+          : current,
+      );
+      setRightView("preview");
+      showToast(message || "数字人视频生成失败");
+    },
+    onReturnToList: (task) => {
+      if (task) setActiveTask(task);
+      setIsSubmitting(false);
+      setRightView("preview");
+    },
+  });
 
   const model = options.defaults?.model || options.models[0]?.value || "";
   const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
@@ -104,6 +130,51 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     },
     [speechDurationMs, text],
   );
+  const isGenerationStageActive = Boolean(
+    isActive && digitalHumanGen.isGenStageActive && digitalHumanGen.derivedState,
+  );
+  const digitalHumanGenerationState = useMemo(() => {
+    const derivedState = digitalHumanGen.derivedState;
+    if (!derivedState) return null;
+    return {
+      ...derivedState,
+      header: {
+        ...derivedState.header,
+        title: derivedState.meta.isDone
+          ? "数字人视频生成完成"
+          : "数字人视频生成中",
+      },
+      progress: {
+        ...derivedState.progress,
+        etaText: derivedState.meta.isDone ? "" : "预计需要5-8分钟",
+      },
+      tip: {
+        title: "生成说明",
+        text: "AI 正在同步数字人身份、口型、音频与场景光影，生成完成后将自动展示。",
+      },
+    };
+  }, [digitalHumanGen.derivedState]);
+
+  useEffect(() => {
+    const shell = document.querySelector(".feature-page-shell");
+    const featureMain = document.querySelector(
+      ".app-shell__content.feature-main",
+    );
+
+    shell?.classList.toggle(
+      "is-video-generation-stage",
+      isGenerationStageActive,
+    );
+    featureMain?.classList.toggle(
+      "is-video-generation-stage",
+      isGenerationStageActive,
+    );
+
+    return () => {
+      shell?.classList.remove("is-video-generation-stage");
+      featureMain?.classList.remove("is-video-generation-stage");
+    };
+  }, [isGenerationStageActive]);
 
   useEffect(() => {
     const nextVoiceId = pickEnabledVoiceId(voices, voiceId);
@@ -111,6 +182,21 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       setVoiceId(nextVoiceId);
     }
   }, [voiceId, voices]);
+
+  useEffect(() => {
+    if (!resumeTask?.id || !resumeTask?.resumeToken) return;
+
+    setIsSubmitting(false);
+    setActiveTask(resumeTask);
+    setRightView("preview");
+    digitalHumanGen.resumeGeneration({
+      taskId: resumeTask.id,
+      prompt: resumeTask.text || "",
+      duration: resumeTask.duration || estimateSpeechSeconds(resumeTask.text || ""),
+      progress: resumeTask.progress || 0,
+    });
+    onResumeTaskHandled?.(resumeTask.resumeToken);
+  }, [resumeTask?.resumeToken]);
 
   useEffect(() => {
     if (!isActive || loading) return;
@@ -224,8 +310,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     }
     if (isAvatarChanged) {
       resetFormConfig();
-      setVoiceSpeed(1);
-      setVoiceEmotion("中性");
+      setVoiceSpeed(Number(item.defaultVoiceSpeed) || 1);
+      setVoiceEmotion(item.defaultVoiceEmotion || "中性");
     }
     setSelectedAvatar(item);
   }
@@ -276,6 +362,13 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
     setIsSubmitting(true);
     setRightView("preview");
     setActiveTask(null);
+    digitalHumanGen.startGeneration({
+      prompt: text.trim(),
+      duration:
+        speechDurationMs > 0
+          ? Math.ceil(speechDurationMs / 1000)
+          : estimateSpeechSeconds(text),
+    });
     try {
       if (isCloneMode) {
         if (cloneAudio.cachedVoice?.id) {
@@ -303,7 +396,12 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         avatarName: selectedAvatar.name,
         driveMode: !isCloneMode && confirmedPreviewAudio?.audioFileId ? "audio" : "text",
         text: text.trim(),
-        performance: "",
+        performance:
+          selectedAvatar.performance ||
+          selectedAvatar.description ||
+          selectedAvatar.name ||
+          "",
+        avatarDescription: selectedAvatar.description || "",
         voiceId: resolvedVoiceId,
         model,
         speed: voiceSpeed,
@@ -325,10 +423,13 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       }
       await refreshCredits();
       setActiveTask(task);
+      digitalHumanGen.attachTaskId(String(task.id));
       setRightView("preview");
       showToast("已提交生成任务");
     } catch (submitError) {
-      showToast(submitError.message || "数字人视频创建失败");
+      digitalHumanGen.failGeneration(
+        submitError.message || "数字人视频创建失败",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -371,7 +472,11 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         return;
       }
       const avatar = await digitalHumanApi.createAvatar(payload);
-      setSelectedAvatar(avatar);
+      const refreshedAvatars = await refreshAvatars();
+      const savedAvatar = refreshedAvatars.mine.find(
+        (item) => String(item.id) === String(avatar.id),
+      );
+      setSelectedAvatar(savedAvatar || avatar);
       setAvatarSource("mine");
       setSelectedMineLibraryId(`avatar-${avatar.id}`);
       if (payload.voiceId) setVoiceId(payload.voiceId);
@@ -380,8 +485,8 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
       setRightView("library");
       setIsCreateOpen(false);
       showToast("形象已保存并使用");
-    } catch {
-      showToast("个人形象创建失败");
+    } catch (createError) {
+      showToast(createError.message || "个人形象创建失败", { type: "error" });
     } finally {
       setIsSubmitting(false);
     }
@@ -470,17 +575,37 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         name: "AI Custom Avatar",
       });
       if (result?.avatar) {
-        setSelectedAvatar(result.avatar);
+        const refreshedAvatars = await refreshAvatars();
+        const persistedAvatar = refreshedAvatars.mine.find(
+          (item) => String(item.id) === String(result.avatar.id),
+        );
+        const request = task.request || aiGeneratingJob?.request || {};
+        const selectedAiAvatar = {
+          ...(persistedAvatar || result.avatar),
+          description:
+            request.prompt ||
+            persistedAvatar?.description ||
+            result.avatar.description ||
+            "",
+          performance:
+            request.performance ||
+            `保持${request.style || "自然写实"}的人物气质，正视镜头，自然口播`,
+        };
+        setSelectedAvatar(selectedAiAvatar);
         setAvatarSource("mine");
         setSelectedMineLibraryId(`avatar-${result.avatar.id}`);
       }
       setAiGeneratingJob(null);
       showToast("个人形象创建成功");
     } catch (saveError) {
+      const message = saveError.message || "保存形象失败，请稍后重试";
       setAiGeneratingJob((current) => current ? {
         ...current,
-        error: saveError.message || "Save avatar failed",
+        ...task,
+        error: message,
       } : null);
+      showToast(message, { type: "error" });
+      throw new Error(message);
     }
   }
 
@@ -497,10 +622,28 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
   });
 
   async function regenerateTask(id) {
-    const task = await digitalHumanApi.regenerateTask(id);
-    await refreshCredits();
-    setActiveTask(task);
-    setRightView("preview");
+    const sourceTask = tasks.find((task) => String(task.id) === String(id));
+    digitalHumanGen.startGeneration({
+      prompt: sourceTask?.text || text.trim(),
+      duration: sourceTask?.duration || estimateSpeechSeconds(text),
+    });
+    setIsSubmitting(true);
+    try {
+      const task = await digitalHumanApi.regenerateTask(id);
+      if (task?.status === "failed") {
+        throw new Error(task.error || "数字人视频重新生成失败");
+      }
+      await refreshCredits();
+      setActiveTask(task);
+      digitalHumanGen.attachTaskId(String(task.id));
+      setRightView("preview");
+    } catch (regenerateError) {
+      digitalHumanGen.failGeneration(
+        regenerateError.message || "数字人视频重新生成失败",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   const { requestRegenerate } = useRegenerateConfirmation({
@@ -612,6 +755,10 @@ export function DigitalHumanV2View({ isActive = true, onOpenAssets }) {
         <div className="dhv2-loading">加载数字人模块...</div>
       </section>
     );
+  }
+
+  if (isGenerationStageActive && digitalHumanGenerationState) {
+    return <VideoGenStage derivedState={digitalHumanGenerationState} />;
   }
 
   return (

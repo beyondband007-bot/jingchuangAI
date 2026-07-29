@@ -4,7 +4,17 @@ function ratioToSora(ratio) {
   return ratio === "9:16" ? "portrait" : "landscape";
 }
 
-function createJobsInput(model, { prompt, ratio, duration, referenceImageUrl, referenceVideoUrl }) {
+export function createJobsInput(
+  model,
+  {
+    prompt,
+    ratio,
+    duration,
+    referenceImageUrl,
+    referenceVideoUrl,
+    referenceAudioUrl
+  }
+) {
   if (model.provider_model.includes("sora-2")) {
     const input = {
       prompt,
@@ -22,6 +32,31 @@ function createJobsInput(model, { prompt, ratio, duration, referenceImageUrl, re
     return input;
   }
 
+  if (model.provider_model.includes("seedance-2-mini")) {
+    const input = {
+      prompt,
+      return_last_frame: false,
+      generate_audio: true,
+      resolution: "720p",
+      aspect_ratio: ratio,
+      duration: Number(duration),
+      web_search: false
+    };
+    const hasMultimodalReferences = Boolean(referenceVideoUrl || referenceAudioUrl);
+    if (referenceImageUrl && hasMultimodalReferences) {
+      input.reference_image_urls = [referenceImageUrl];
+    } else if (referenceImageUrl) {
+      input.first_frame_url = referenceImageUrl;
+    }
+    if (referenceVideoUrl) {
+      input.reference_video_urls = [referenceVideoUrl];
+    }
+    if (referenceAudioUrl) {
+      input.reference_audio_urls = [referenceAudioUrl];
+    }
+    return input;
+  }
+
   if (model.provider_model.includes("kling-3.0")) {
     const input = {
       prompt,
@@ -32,10 +67,7 @@ function createJobsInput(model, { prompt, ratio, duration, referenceImageUrl, re
       multi_shots: false
     };
     if (referenceImageUrl) {
-      input.image_url = referenceImageUrl;
-    }
-    if (referenceVideoUrl) {
-      input.video_url = referenceVideoUrl;
+      input.image_urls = [referenceImageUrl];
     }
     return input;
   }
@@ -72,7 +104,15 @@ function createJobsInput(model, { prompt, ratio, duration, referenceImageUrl, re
   return input;
 }
 
-export async function createKieVideoTask({ model, prompt, ratio, duration, referenceImageUrl, referenceVideoUrl }) {
+export async function createKieVideoTask({
+  model,
+  prompt,
+  ratio,
+  duration,
+  referenceImageUrl,
+  referenceVideoUrl,
+  referenceAudioUrl
+}) {
   if (model.provider_type === "veo") {
     const body = {
       prompt,
@@ -106,7 +146,14 @@ export async function createKieVideoTask({ model, prompt, ratio, duration, refer
     method: "POST",
     body: JSON.stringify({
       model: model.provider_model,
-      input: createJobsInput(model, { prompt, ratio, duration, referenceImageUrl, referenceVideoUrl })
+      input: createJobsInput(model, {
+        prompt,
+        ratio,
+        duration,
+        referenceImageUrl,
+        referenceVideoUrl,
+        referenceAudioUrl
+      })
     })
   });
 

@@ -58,14 +58,18 @@ export async function createArkVirtualAssetRow({
   mimeType,
   sizeBytes,
   sourceHash,
-  providerAssetId
+  providerAssetId,
+  metadata
 }) {
   const assetUri = `asset://${providerAssetId}`;
+  const metadataJson = metadata && typeof metadata === "object"
+    ? JSON.stringify(metadata)
+    : null;
   const [result] = await getPool().query(
     `INSERT INTO ark_virtual_assets
      (user_id, group_id, feature, asset_type, local_url, public_url, file_path, original_name, mime_type,
-      size_bytes, source_hash, provider_asset_id, asset_uri, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing')`,
+      size_bytes, source_hash, provider_asset_id, asset_uri, status, metadata_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'processing', ?)`,
     [
       userId,
       groupId,
@@ -79,10 +83,19 @@ export async function createArkVirtualAssetRow({
       sizeBytes,
       sourceHash,
       providerAssetId,
-      assetUri
+      assetUri,
+      metadataJson
     ]
   );
   return result.insertId;
+}
+
+export async function updateArkVirtualAssetMetadata(id, metadata) {
+  if (!metadata || typeof metadata !== "object") return;
+  await getPool().query(
+    "UPDATE ark_virtual_assets SET metadata_json = ? WHERE id = ?",
+    [JSON.stringify(metadata), id]
+  );
 }
 
 export async function findArkVirtualAssetById(id) {
@@ -110,16 +123,23 @@ export async function findArkVirtualAssetByInternalId(id) {
   return rows[0] || null;
 }
 
-export async function listArkVirtualAssets({ feature = "digital-human", projectName, limit = 100 } = {}) {
+export async function listArkVirtualAssets({
+  feature = "digital-human",
+  projectName,
+  limit = 100,
+  userId
+} = {}) {
+  const hasUserId = Number(userId) > 0;
   const [rows] = await getPool().query(
     `SELECT a.*, g.provider_group_id, g.project_name
      FROM ark_virtual_assets a
      INNER JOIN ark_virtual_asset_groups g ON g.id = a.group_id
      INNER JOIN users u ON u.id = a.user_id
-     WHERE u.external_id = ? AND a.feature = ? AND g.project_name = ?
+     WHERE ${hasUserId ? "a.user_id = ?" : "u.external_id = ?"}
+       AND a.feature = ? AND g.project_name = ?
      ORDER BY a.created_at DESC, a.id DESC
      LIMIT ?`,
-    [getCurrentExternalId(), feature, projectName, limit]
+    [hasUserId ? Number(userId) : getCurrentExternalId(), feature, projectName, limit]
   );
   return rows;
 }
