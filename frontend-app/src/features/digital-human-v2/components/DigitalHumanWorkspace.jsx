@@ -70,11 +70,11 @@ export function DigitalHumanWorkspace(props) {
     text, onTextChange, onOptimizeRequest, voiceId, onVoiceIdChange,
     voiceSpeed, onVoiceSpeedChange, voiceEmotion, onVoiceEmotionChange,
     voiceMode, onVoiceModeChange, isMineAvatar, cloneAudio, onCloneAudioChange,
-    onSpeechDurationMsChange, voices, previewRequestId, previewPhase,
+    onSpeechDurationMsChange, voices, previewRequestId, playbackRequestId, previewPhase,
     onPreviewStateChange, onRegeneratePreview, selectedScene, isUploadingScene,
     onPickScene, onClearScene, videoSpec, onVideoSpecChange, canGenerate,
-    isSubmitting, isCloneMode, estimatedCredits, isAudioPreviewing, isSpeechTooLong,
-    onPreviewAudio, onConfirmAudio, onGenerate, showLibrary, avatars,
+    isSubmitting, isCloneMode, estimatedCredits, isAudioPreviewing, isAudioPlaying, isSpeechTooLong,
+    onPreviewAudio, onConfirmAudio, onPlayAudio, onGenerate, showLibrary, avatars,
     selectedMineLibraryId, aspectRatio, onAspectRatioChange, fillMode,
     onFillModeChange, onSelectAvatar, onSelectMineItem, onConfirmAvatar,
     onCloseLibrary, activeTask, onDeleteTask, onRegenerateTask, onReset,
@@ -110,6 +110,7 @@ export function DigitalHumanWorkspace(props) {
             onVoiceSpeedChange={onVoiceSpeedChange}
             onVoiceEmotionChange={onVoiceEmotionChange}
             previewRequestId={previewRequestId}
+            playbackRequestId={playbackRequestId}
             previewPhase={previewPhase}
             onPreviewStateChange={onPreviewStateChange}
             onRegeneratePreview={onRegeneratePreview}
@@ -124,9 +125,11 @@ export function DigitalHumanWorkspace(props) {
           estimatedCredits={estimatedCredits}
           audioPreviewPhase={previewPhase}
           isAudioPreviewing={isAudioPreviewing}
+          isAudioPlaying={isAudioPlaying}
           isSpeechTooLong={isSpeechTooLong}
           onPreviewAudio={onPreviewAudio}
           onConfirmAudio={onConfirmAudio}
+          onPlayAudio={onPlayAudio}
           onGenerate={onGenerate}
         />
       </aside>

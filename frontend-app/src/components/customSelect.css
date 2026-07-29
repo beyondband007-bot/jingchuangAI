@@ -35,7 +35,15 @@
     transform 160ms ease;
 }
 
-.custom-select-trigger > span {
+.custom-select-trigger__value {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.custom-select-trigger__value > span:last-child {
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -45,7 +53,7 @@
 }
 
 .ratio-preview-slot,
-.custom-select-trigger > .ratio-preview-slot {
+.custom-select-trigger .ratio-preview-slot {
   display: inline-flex;
   flex: 0 0 30px;
   width: 30px;
@@ -58,7 +66,7 @@
 .ratio-preview-icon {
   display: block;
   border: 1.5px solid rgba(204, 204, 204, 0.72);
-  border-radius: var(--radius-xs);
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.06);
 }
 
