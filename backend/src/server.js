@@ -2,8 +2,14 @@ import { createApp } from "./app.js";
 import { config } from "./config/index.js";
 import { recoverStreamingChatMessages } from "./modules/chat/chat.service.js";
 import { recoverProcessingImageTasks } from "./modules/image/image.service.js";
+import { recoverInterruptedReplicateTasks } from "./modules/replicate/replicate.service.js";
 
 const app = createApp();
+
+const recoveredReplicateTasks = await recoverInterruptedReplicateTasks();
+if (recoveredReplicateTasks > 0) {
+  console.log(`Recovered ${recoveredReplicateTasks} interrupted replicate task(s)`);
+}
 
 const recoveredChatMessages = await recoverStreamingChatMessages();
 if (recoveredChatMessages > 0) {
