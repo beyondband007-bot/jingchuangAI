@@ -8,6 +8,7 @@ import { MusicHistoryList, MusicReferenceComposer } from "./MusicReferenceLayout
 import { musicApi } from "./musicApi";
 import { formatBeijingDateTime, formatBeijingStamp } from "../../utils/time";
 import { downloadMediaFile } from "../../api/mediaUrl.js";
+import { needsLyricTimelineRepair } from "./musicPlayerUtils";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import {
   CreditAlertDialog,
@@ -113,16 +114,6 @@ function hasSyncedLyrics(task) {
   return task.lyricsSyncStatus === "completed"
     && Array.isArray(task.lyricsTimeline)
     && task.lyricsTimeline.length > 0;
-}
-
-function hasSuspiciousLyricsTimeline(task) {
-  const timeline = task?.lyricsTimeline || [];
-  if (!timeline.length) return false;
-  const firstStart = Number(timeline[0]?.startMs || 0);
-  const durationMs = Number(task?.durationMs || 0);
-  if (firstStart > 15000) return true;
-  if (durationMs > 0 && firstStart > durationMs * 0.35) return true;
-  return false;
 }
 
 function shouldSyncLyricsAfterGeneration(mapped, fallback = {}) {
@@ -550,17 +541,15 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
   async function syncLyricsInBackground(item, fallback = {}) {
     const context = { ...fallback, ...generationContextRef.current };
-    const timelineIsSuspicious = hasSuspiciousLyricsTimeline(item);
+    const needsTimelineRepair = needsLyricTimelineRepair(item?.lyricsTimeline, item?.durationMs);
     const needsSync = shouldSyncLyricsAfterGeneration(item, context)
-      && (!hasSyncedLyrics(item) || timelineIsSuspicious);
+      && (!hasSyncedLyrics(item) || needsTimelineRepair);
     if (!needsSync) return;
 
     const taskId = item.id;
     setSyncingIds((current) => ({ ...current, [taskId]: true }));
     try {
-      const synced = await syncLyricsAndGetTask(taskId, {
-        force: timelineIsSuspicious,
-      });
+      const synced = await syncLyricsAndGetTask(taskId, { force: needsTimelineRepair });
       const mapped = mapTaskFromApi(synced, { ...item, ...context });
       setRecentResults((items) => updateRecentItem(items, taskId, mapped));
       setPlayerTask((current) => (current?.id === taskId ? mapped : current));
@@ -589,7 +578,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     setIsGenerating(false);
     setRecentResults((items) => updateRecentItem(items, item.id, mapped));
 
-    if (!hasSyncedLyrics(mapped) || hasSuspiciousLyricsTimeline(mapped)) {
+    if (!hasSyncedLyrics(mapped) || needsLyricTimelineRepair(mapped.lyricsTimeline, mapped.durationMs)) {
       setNotice("歌词时间轴同步中，完成后将自动逐字高亮。");
       void syncLyricsInBackground(mapped, item).finally(() => {
         setNotice((current) => (

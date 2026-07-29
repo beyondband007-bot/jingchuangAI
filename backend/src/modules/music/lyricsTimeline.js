@@ -185,12 +185,14 @@ export function buildLyricsTimeline({ lyricLines, words, durationMs = 0 }) {
 
   const timeline = [];
   let searchStart = 0;
+  let lastMatchedEndMs = 0;
 
   for (const line of lyricLines) {
     const best = findBestWordWindow({
       line,
       words,
-      searchStart
+      searchStart,
+      maxStartMs: lastMatchedEndMs > 0 ? lastMatchedEndMs + 18000 : 0
     });
 
     if (best && best.score >= 0.48) {
@@ -203,6 +205,7 @@ export function buildLyricsTimeline({ lyricLines, words, durationMs = 0 }) {
         source: "tencent-asr"
       });
       searchStart = Math.max(searchStart, best.end + 1);
+      lastMatchedEndMs = words[best.end].endMs;
     } else {
       timeline.push({
         lineIndex: line.lineIndex,
@@ -216,7 +219,10 @@ export function buildLyricsTimeline({ lyricLines, words, durationMs = 0 }) {
   }
 
   return anchorTimelineToStart(
-    fillMissingTimeline(demoteSuspiciousFirstMatch(timeline), durationMs),
+    fillMissingTimeline(
+      demoteMatchesWithoutRoom(demoteSuspiciousFirstMatch(timeline)),
+      durationMs
+    ),
     durationMs
   );
 }
@@ -248,6 +254,42 @@ function demoteSuspiciousFirstMatch(timeline) {
   return timeline;
 }
 
+function demoteMatchesWithoutRoom(timeline) {
+  let lastMatchedEndMs = 0;
+  let missingCount = 0;
+
+  return timeline.map((line) => {
+    const startMs = Number(line.startMs || 0);
+    const endMs = Number(line.endMs || 0);
+    const isMatched = line.source === "tencent-asr" && endMs > startMs;
+
+    if (!isMatched) {
+      missingCount += 1;
+      return line;
+    }
+
+    // Do not keep a later lyric match when there is not enough real time to
+    // place all unmatched lines before it. Keeping it made fillMissingTimeline
+    // create estimated lines past this match, then append an earlier timestamp.
+    const availableMs = startMs - lastMatchedEndMs;
+    const requiredMs = missingCount * 1500;
+    if (missingCount > 0 && availableMs < requiredMs) {
+      missingCount += 1;
+      return {
+        ...line,
+        startMs: null,
+        endMs: null,
+        confidence: 0,
+        source: "fallback"
+      };
+    }
+
+    lastMatchedEndMs = endMs;
+    missingCount = 0;
+    return line;
+  });
+}
+
 function anchorTimelineToStart(timeline, durationMs = 0) {
   if (!timeline.length) return timeline;
 
@@ -274,24 +316,16 @@ function anchorTimelineToStart(timeline, durationMs = 0) {
     }
   }
 
-  const firstStart = Number(result[0].startMs || 0);
-  if (firstStart > 12000 && durationMs > 0) {
-    const shift = firstStart - 2000;
-    for (const line of result) {
-      line.startMs = Math.max(0, Number(line.startMs || 0) - shift);
-      line.endMs = Math.max(Number(line.startMs || 0) + 500, Number(line.endMs || 0) - shift);
-    }
-  }
-
   return result;
 }
 
-function findBestWordWindow({ line, words, searchStart }) {
+function findBestWordWindow({ line, words, searchStart, maxStartMs = 0 }) {
   let best = null;
   const maxWindowWords = 18;
   const maxExtraChars = 8;
 
   for (let start = searchStart; start < words.length; start += 1) {
+    if (maxStartMs > 0 && words[start].startMs > maxStartMs) break;
     let text = "";
 
     for (let end = start; end < Math.min(words.length, start + maxWindowWords); end += 1) {
@@ -339,18 +373,20 @@ function fillMissingTimeline(timeline, durationMs = 0) {
     const prev = startIndex > 0 ? result[startIndex - 1] : null;
     const next = index < result.length ? result[index] : null;
     const rangeStart = Number.isFinite(prev?.endMs) ? prev.endMs : 0;
+    const minimumSegmentMs = 500;
+    const configuredDurationMs = Number(durationMs || 0);
     const rangeEnd = Number.isFinite(next?.startMs)
       ? next.startMs
-      : Math.max(rangeStart + count * 6000, Number(durationMs || 0));
-    const range = Math.max(count * 1500, rangeEnd - rangeStart);
-    const segment = Math.max(1500, Math.floor(range / count));
+      : (configuredDurationMs > rangeStart
+        ? configuredDurationMs
+        : rangeStart + count * minimumSegmentMs);
+    const range = Math.max(count * minimumSegmentMs, rangeEnd - rangeStart);
+    const segment = Math.max(minimumSegmentMs, Math.floor(range / count));
 
     for (let offset = 0; offset < count; offset += 1) {
       const line = result[startIndex + offset];
       line.startMs = rangeStart + segment * offset;
-      line.endMs = offset === count - 1 && next
-        ? Math.min(rangeEnd, line.startMs + segment)
-        : line.startMs + segment;
+      line.endMs = Math.min(rangeEnd, line.startMs + segment);
     }
   }
 

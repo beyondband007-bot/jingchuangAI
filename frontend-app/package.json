@@ -29,7 +29,7 @@
     "check:sass-imports": "node ./scripts/check-sass-imports.mjs",
     "audit:selectors": "node ./scripts/audit-css-selectors.mjs",
     "test": "npm run test:unit && npm run test:routes",
-    "test:unit": "node --test ./scripts/test-task-polling.mjs ./scripts/test-request.mjs",
+    "test:unit": "node --test ./scripts/test-task-polling.mjs ./scripts/test-request.mjs ./scripts/test-music-player-utils.mjs",
     "test:polling": "node --test ./scripts/test-task-polling.mjs",
     "test:routes": "playwright test"
   },
