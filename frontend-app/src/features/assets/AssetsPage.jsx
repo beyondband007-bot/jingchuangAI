@@ -259,8 +259,8 @@ export function AssetsPage({
             keyword: "",
           })
           .catch(() => ({ transactions: [] })),
-        imageApi.getTasks({ filter: "all" }).catch(() => []),
-        videoApi.getTasks({ filter: "all" }).catch(() => []),
+        imageApi.getTasks({ filter: "all", source: "all" }).catch(() => []),
+        videoApi.getTasks({ filter: "all", source: "all" }).catch(() => []),
         digitalHumanApi.getTasks().catch(() => []),
         imageDigitalHumanApi.getTasks().catch(() => []),
         articleApi.getTasks({ filter: "all" }).catch(() => []),

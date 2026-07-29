@@ -1,8 +1,30 @@
 import { getPool } from "../../db/pool.js";
 
 const runningTaskSources = [
-  { sourceType: "image", tableName: "image_generation_tasks", statuses: ["pending", "processing"] },
-  { sourceType: "video", tableName: "video_generation_tasks", statuses: ["pending", "processing"] },
+  {
+    sourceType: "image",
+    tableName: "image_generation_tasks",
+    statuses: ["pending", "processing"],
+    source: "image"
+  },
+  {
+    sourceType: "infinite-canvas",
+    tableName: "image_generation_tasks",
+    statuses: ["pending", "processing"],
+    source: "infinite-canvas"
+  },
+  {
+    sourceType: "video",
+    tableName: "video_generation_tasks",
+    statuses: ["pending", "processing"],
+    source: "video"
+  },
+  {
+    sourceType: "infinite-canvas",
+    tableName: "video_generation_tasks",
+    statuses: ["pending", "processing"],
+    source: "infinite-canvas"
+  },
   { sourceType: "digital-human", tableName: "digital_human_tasks", statuses: ["pending", "processing"] },
   { sourceType: "image-digital-human", tableName: "image_digital_human_tasks", statuses: ["pending", "processing"] },
   { sourceType: "motion", tableName: "motion_transfer_tasks", statuses: ["pending", "processing"] },
@@ -17,11 +39,13 @@ const runningTaskSources = [
 
 export async function getRunningTaskSummary(userId) {
   const params = [];
-  const statements = runningTaskSources.map(({ sourceType, tableName, statuses }) => {
+  const statements = runningTaskSources.map(({ sourceType, tableName, statuses, source }) => {
     params.push(sourceType, userId, ...statuses);
+    if (source) params.push(source);
     return `SELECT ? AS source_type, COUNT(*) AS running_count
       FROM ${tableName}
-      WHERE user_id = ? AND status IN (${statuses.map(() => "?").join(",")})`;
+      WHERE user_id = ? AND status IN (${statuses.map(() => "?").join(",")})
+      ${source ? "AND source = ?" : ""}`;
   });
   const [rows] = await getPool().query(statements.join(" UNION ALL "), params);
   return rows.filter((row) => Number(row.running_count) > 0);

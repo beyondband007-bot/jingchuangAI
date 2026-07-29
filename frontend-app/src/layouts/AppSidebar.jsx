@@ -3,7 +3,8 @@ import { ChevronDown } from "lucide-react";
 
 function notificationSourcesForNav(navId) {
   const sources = {
-    image: ["image"], video: ["video"], "digital-human": ["digital-human", "image-digital-human"],
+    image: ["image"], video: ["video"], "infinite-canvas": ["infinite-canvas"],
+    "digital-human": ["digital-human", "image-digital-human"],
     motion: ["motion"], "face-swap": ["face-swap"], watermark: ["watermark"],
     "remove-bg": ["remove-bg"], enhance: ["enhance"], article: ["article"],
     music: ["music"], replicate: ["replicate"],

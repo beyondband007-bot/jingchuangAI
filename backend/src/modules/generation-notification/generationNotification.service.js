@@ -8,7 +8,8 @@ export async function getRunningSummary(userId) {
   rows.forEach((row) => {
     const runningCount = Number(row.running_count || 0);
     totalRunningCount += runningCount;
-    bySource[row.source_type] = { runningCount };
+    const previousCount = bySource[row.source_type]?.runningCount || 0;
+    bySource[row.source_type] = { runningCount: previousCount + runningCount };
   });
 
   return { totalRunningCount, bySource, generatedAt: new Date().toISOString() };

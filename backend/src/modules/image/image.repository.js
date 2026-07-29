@@ -225,7 +225,7 @@ export async function findRefreshableImageTasks() {
 
 export async function findImageTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status FROM image_generation_tasks WHERE id = ? LIMIT 1",
+    "SELECT id, user_id, provider_task_id, status FROM image_generation_tasks WHERE id = ? LIMIT 1",
     [id]
   );
   return rows[0] || null;
@@ -247,16 +247,17 @@ export async function setImageTaskProviderTaskId(id, providerTaskId, { modelKey 
 
 export async function setImageTaskCompleted(id, urls, { providerUrls = [] } = {}) {
   if (await hasProviderResultUrlsColumn()) {
-    await getPool().query(
-      "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ?",
+    const [result] = await getPool().query(
+      "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ? AND status <> 'completed'",
       [JSON.stringify(urls), JSON.stringify(providerUrls), id]
     );
-    return;
+    return result.affectedRows > 0;
   }
-  await getPool().query(
-    "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, error_message = NULL WHERE id = ?",
+  const [result] = await getPool().query(
+    "UPDATE image_generation_tasks SET status = 'completed', result_urls = ?, error_message = NULL WHERE id = ? AND status <> 'completed'",
     [JSON.stringify(urls), id]
   );
+  return result.affectedRows > 0;
 }
 
 export async function setImageTaskProcessing(id) {
