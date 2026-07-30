@@ -55,9 +55,6 @@ export function MusicHistoryList({
   return (
     <div className="music-ref-layout">
       <div className="music-ref-recent">
-        <div className="music-ref-section-head">
-          <h3><Clock size={18} /> 历史记录</h3>
-        </div>
         <MusicRecentGrid
           items={items}
           onSelectItem={onSelectItem}

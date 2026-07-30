@@ -1,7 +1,7 @@
 /* Music lyrics and history-list layout. */
 /* Rebased local override: music history and toast. */
 .music-generation-view {
-  background: var(--app-surface-muted);
+  background: var(--app-bg);
 }
 
 .music-recent-sync-row {
