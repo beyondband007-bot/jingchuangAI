@@ -25,13 +25,49 @@ export function calculateVideoPoints(model, duration, count = 1) {
   return calculateUnifiedVideoPoints(duration) * Number(count);
 }
 
+function cleanMediaUrl(value) {
+  return String(value || "").trim();
+}
+
+function uniqueMediaUrls(values = []) {
+  return [...new Set(values.map(cleanMediaUrl).filter(Boolean))];
+}
+
+export function normalizeVideoImageInputs({
+  mode = "first-frame",
+  referenceImageUrl,
+  firstFrameImageUrl,
+  lastFrameImageUrl,
+  referenceImageUrls
+} = {}) {
+  let firstFrame = cleanMediaUrl(firstFrameImageUrl);
+  const lastFrame = cleanMediaUrl(lastFrameImageUrl);
+  const references = uniqueMediaUrls(Array.isArray(referenceImageUrls) ? referenceImageUrls : []);
+  const legacyImage = cleanMediaUrl(referenceImageUrl);
+
+  if (legacyImage && !firstFrame && references.length === 0) {
+    if (mode === "first-frame") firstFrame = legacyImage;
+    else references.push(legacyImage);
+  }
+
+  return {
+    firstFrameImageUrl: firstFrame || null,
+    lastFrameImageUrl: lastFrame || null,
+    referenceImageUrls: references
+  };
+}
+
 export function validateVideoPayload({
   prompt,
   model,
   ratio,
   duration,
   count,
+  mode,
   referenceImageUrl,
+  firstFrameImageUrl,
+  lastFrameImageUrl,
+  referenceImageUrls,
   referenceVideoUrl,
   referenceAudioUrl
 }) {
@@ -47,16 +83,44 @@ export function validateVideoPayload({
   if (!videoCountOptions.includes(Number(count))) {
     throw createHttpError("invalid generation count", 400);
   }
-  if (referenceImageUrl && referenceVideoUrl) {
+  const imageInputs = normalizeVideoImageInputs({
+    mode,
+    referenceImageUrl,
+    firstFrameImageUrl,
+    lastFrameImageUrl,
+    referenceImageUrls
+  });
+  const hasFrameImages = Boolean(imageInputs.firstFrameImageUrl || imageInputs.lastFrameImageUrl);
+  const hasReferenceImages = imageInputs.referenceImageUrls.length > 0;
+  const allImageUrls = [
+    imageInputs.firstFrameImageUrl,
+    imageInputs.lastFrameImageUrl,
+    ...imageInputs.referenceImageUrls
+  ].filter(Boolean);
+  const validMediaUrl = /^(?:https?:\/\/|\/media\/|asset:\/\/)/i;
+
+  if ((hasFrameImages || hasReferenceImages) && referenceVideoUrl) {
     throw createHttpError("cannot provide both reference image and reference video", 400);
+  }
+  if (imageInputs.lastFrameImageUrl && !imageInputs.firstFrameImageUrl) {
+    throw createHttpError("last frame requires first frame", 400);
+  }
+  if (hasFrameImages && hasReferenceImages) {
+    throw createHttpError("frame images cannot be combined with reference images", 400);
+  }
+  if (imageInputs.referenceImageUrls.length > 9) {
+    throw createHttpError("too many reference images", 400);
+  }
+  if (allImageUrls.some((url) => !validMediaUrl.test(url))) {
+    throw createHttpError("invalid reference image URL", 400);
   }
   if (
     String(model.provider_model || "").includes("kling-3.0") &&
-    (referenceVideoUrl || referenceAudioUrl)
+    (referenceVideoUrl || referenceAudioUrl || imageInputs.lastFrameImageUrl || imageInputs.referenceImageUrls.length > 1)
   ) {
     throw createHttpError("Kling 3.0 currently supports prompt and optional reference image only", 400);
   }
-  if (referenceAudioUrl && !/^(?:https?:\/\/|\/media\/|asset:\/\/)/i.test(String(referenceAudioUrl))) {
+  if (referenceAudioUrl && !validMediaUrl.test(String(referenceAudioUrl))) {
     throw createHttpError("invalid reference audio URL", 400);
   }
 }

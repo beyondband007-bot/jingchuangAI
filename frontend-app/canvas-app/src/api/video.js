@@ -1,15 +1,46 @@
 import { associateNodeTask, faceminiRequest, notifyCreditsChanged, uploadDataUrl } from './facemini'
+import { resolveVideoImageSources } from '../utils/videoRequest'
 
 export async function createVideoTask(data) {
-  const imageReference = data.reference_image?.url || data.reference_image
-    || data.first_frame_image?.url || data.first_frame_image
-    || data.images?.[0]?.url || data.images?.[0] || ''
+  const {
+    firstFrameImage,
+    lastFrameImage,
+    referenceImages
+  } = resolveVideoImageSources(data)
   const videoReference = data.reference_video?.url || data.reference_video || ''
   const audioReference = data.reference_audio?.url || data.reference_audio || ''
-  if (imageReference && videoReference) {
+  const hasFrameImages = Boolean(firstFrameImage || lastFrameImage)
+  const hasImageReferences = referenceImages.length > 0
+  if ((hasFrameImages || hasImageReferences) && videoReference) {
     throw new Error('一次视频生成只能引用图片或视频中的一种素材')
   }
-  const referenceImageUrl = await uploadDataUrl(imageReference, '/video/uploads/reference-image', 'canvas-video-reference.png')
+  if (lastFrameImage && !firstFrameImage) {
+    throw new Error('设置尾帧时必须同时设置首帧')
+  }
+  if (hasFrameImages && hasImageReferences) {
+    throw new Error('首尾帧模式不能同时使用普通参考图')
+  }
+  if (referenceImages.length > 9) {
+    throw new Error('一次视频生成最多支持 9 张参考图')
+  }
+
+  const firstFrameImageUrl = await uploadDataUrl(
+    firstFrameImage,
+    '/video/uploads/reference-image',
+    'canvas-video-first-frame.png'
+  )
+  const lastFrameImageUrl = await uploadDataUrl(
+    lastFrameImage,
+    '/video/uploads/reference-image',
+    'canvas-video-last-frame.png'
+  )
+  const referenceImageUrls = await Promise.all(referenceImages.map((image, index) =>
+    uploadDataUrl(
+      image,
+      '/video/uploads/reference-image',
+      `canvas-video-reference-${index + 1}.png`
+    )
+  ))
   const referenceVideoUrl = await uploadDataUrl(videoReference, '/video/uploads/reference-video', 'canvas-video-reference.mp4')
   const referenceAudioUrl = await uploadDataUrl(audioReference, '/video/uploads/reference-audio', 'canvas-video-reference.mp3')
   const task = await faceminiRequest('/video/tasks', {
@@ -19,10 +50,16 @@ export async function createVideoTask(data) {
       prompt: data.prompt || '',
       ratio: data.size || data.ratio || '16:9',
       duration: Number(data.seconds || data.duration || 5),
-      mode: 'first-frame',
+      mode: hasImageReferences
+        ? 'reference-image'
+        : lastFrameImageUrl
+          ? 'first-last-frame'
+          : 'first-frame',
       count: 1,
       source: 'infinite-canvas',
-      referenceImageUrl: referenceImageUrl || null,
+      firstFrameImageUrl: firstFrameImageUrl || null,
+      lastFrameImageUrl: lastFrameImageUrl || null,
+      referenceImageUrls,
       referenceVideoUrl: referenceVideoUrl || null,
       referenceAudioUrl: referenceAudioUrl || null
     })

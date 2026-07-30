@@ -16,6 +16,7 @@ import { useApiConfig } from './useApiConfig'
 import { useProvider } from './useProvider'
 import { useModelStore } from '@/stores/pinia'
 import { currentProjectId } from '@/stores/canvas'
+import { resolveVideoRequestDuration } from '@/utils/videoRequest'
 
 /**
  * Base API state hook | 基础 API 状态 Hook
@@ -248,8 +249,10 @@ export const useVideoGeneration = () => {
     if (params.images?.length) requestData.images = params.images
     if (params.reference_image) requestData.reference_image = params.reference_image
     if (params.reference_video) requestData.reference_video = params.reference_video
+    if (params.reference_audio) requestData.reference_audio = params.reference_audio
     if (params.ratio) requestData.size = params.ratio
-    if (params.dur) requestData.seconds = params.dur
+    const duration = resolveVideoRequestDuration(params)
+    if (duration !== null) requestData.duration = duration
     requestData.resolution = params.resolution || modelConfig?.defaultParams?.resolution || '720p'
     requestData.generate_audio = params.generateAudio ?? modelConfig?.defaultParams?.generateAudio ?? false
 
