@@ -6,6 +6,7 @@ import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers
 import { createHttpError } from "../../shared/http.js";
 import { calculateBillingQuote } from "../../shared/billingRules.js";
 import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
+import { decodeMojibakeFileName } from "../../shared/fileName.js";
 import { createVoiceConvertTaskRow, listVoiceConvertTaskRows } from "./voiceConvert.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 
@@ -207,13 +208,13 @@ function parseJson(value, fallback) {
   }
 }
 
-function mapVoiceConvertTask(row) {
+export function mapVoiceConvertTask(row) {
   return {
     id: row.id,
-    title: row.title,
+    title: decodeMojibakeFileName(row.title),
     voiceId: row.voice_id || "",
-    voiceName: row.voice_name || "目标音色",
-    sourceFileName: row.source_file_name || "",
+    voiceName: decodeMojibakeFileName(row.voice_name || "目标音色"),
+    sourceFileName: decodeMojibakeFileName(row.source_file_name || ""),
     audioUrl: row.audio_url,
     durationMs: row.duration_ms || 0,
     sourceDurationMs: row.source_duration_ms || 0,
