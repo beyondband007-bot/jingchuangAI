@@ -121,7 +121,6 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
           className="ui-upload-clear-button"
           role="button"
           tabIndex={0}
-          data-tooltip="取消上传"
           aria-label="取消上传"
           onClick={clearFile}
           onKeyDown={(event) => {

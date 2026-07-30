@@ -144,7 +144,6 @@ export function VoiceConversionWorkbenchCard({
   speed,
   volume,
   pitch,
-  notice,
   isConverting,
   demoAudio,
   resultAudio,
@@ -360,8 +359,6 @@ export function VoiceConversionWorkbenchCard({
               ) : null}
             </div>
           ) : null}
-
-          {notice ? <div className="composer-notice warning">{notice}</div> : null}
         </div>
       </div>
     </section>

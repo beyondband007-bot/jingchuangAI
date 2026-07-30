@@ -277,7 +277,6 @@
   background: #ffffff;
   border-color: rgba(244, 119, 106, 0.78);
   outline: none;
-  transform: translateY(-1px);
 }
 
 .ui-field {

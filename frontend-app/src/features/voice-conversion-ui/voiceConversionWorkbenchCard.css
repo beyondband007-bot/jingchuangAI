@@ -144,6 +144,7 @@
   height: 30px;
   padding: 0;
   border-radius: var(--radius-pill);
+  background: var(--app-bg);
   cursor: pointer;
   font-size: 18px;
   line-height: 1;

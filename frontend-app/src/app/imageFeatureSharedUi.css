@@ -5,6 +5,7 @@
 .feature-page-shell .video-gen-view-root {
   color: var(--text-primary);
   background: var(--app-bg);
+  padding: var(--space-5);
 }
 
 .feature-page-shell .image-results-feed,
