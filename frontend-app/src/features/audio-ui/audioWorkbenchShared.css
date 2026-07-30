@@ -462,6 +462,19 @@
   padding: 32px 0 0;
 }
 
+@media (max-width: 1440px) {
+  .voice-synthesis-view-root .voice-recent-panel,
+  .voice-convert-view-root .voice-recent-panel {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  }
+
+  .voice-synthesis-view-root .voice-recent-card,
+  .voice-convert-view-root .voice-recent-card {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .voice-synthesis-workspace__top,
   .voice-conversion-workbench__workspace {

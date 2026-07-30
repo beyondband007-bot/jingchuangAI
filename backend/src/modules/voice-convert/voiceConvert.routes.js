@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { normalizeUploadOriginalName } from "../../shared/fileName.js";
 import { convertVoice, listVoiceConvertTasks, uploadTargetAudio } from "./voiceConvert.controller.js";
 
 export const voiceConvertRouter = Router();
@@ -17,6 +18,7 @@ const sourceUpload = multer({
 function uploadTargetSingle(req, res, next) {
   targetUpload.single("audio")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }
@@ -28,6 +30,7 @@ function uploadTargetSingle(req, res, next) {
 function uploadSourceSingle(req, res, next) {
   sourceUpload.single("sourceAudio")(req, res, (error) => {
     if (!error) {
+      normalizeUploadOriginalName(req.file);
       next();
       return;
     }
