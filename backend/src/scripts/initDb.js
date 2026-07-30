@@ -562,6 +562,9 @@ async function createTables() {
       status ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
       provider_task_id VARCHAR(160) NULL,
       reference_image_url TEXT NULL,
+      first_frame_image_url TEXT NULL,
+      last_frame_image_url TEXT NULL,
+      reference_image_urls JSON NULL,
       reference_video_url TEXT NULL,
       reference_audio_url TEXT NULL,
       result_urls JSON NULL,
@@ -608,6 +611,36 @@ async function createTables() {
     await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_image_url TEXT NULL AFTER provider_task_id");
   }
 
+  const [videoFirstFrameColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'first_frame_image_url'`,
+    [config.db.database]
+  );
+  if (videoFirstFrameColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN first_frame_image_url TEXT NULL AFTER reference_image_url");
+  }
+
+  const [videoLastFrameColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'last_frame_image_url'`,
+    [config.db.database]
+  );
+  if (videoLastFrameColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN last_frame_image_url TEXT NULL AFTER first_frame_image_url");
+  }
+
+  const [videoReferenceImagesColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'reference_image_urls'`,
+    [config.db.database]
+  );
+  if (videoReferenceImagesColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_image_urls JSON NULL AFTER last_frame_image_url");
+  }
+
   const [videoRefVideoColumns] = await pool.query(
     `SELECT COLUMN_NAME
      FROM INFORMATION_SCHEMA.COLUMNS
@@ -615,7 +648,7 @@ async function createTables() {
     [config.db.database]
   );
   if (videoRefVideoColumns.length === 0) {
-    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_video_url TEXT NULL AFTER reference_image_url");
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN reference_video_url TEXT NULL AFTER reference_image_urls");
   }
 
   const [videoRefAudioColumns] = await pool.query(

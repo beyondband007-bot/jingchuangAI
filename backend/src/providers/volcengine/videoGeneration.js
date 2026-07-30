@@ -123,12 +123,24 @@ export function extractArkVideoGenerationResult(record = {}) {
   };
 }
 
-export function buildReferenceImage(url) {
+export function buildImageInput(url, role) {
   return {
     type: "image_url",
-    role: "reference_image",
+    role,
     image_url: { url }
   };
+}
+
+export function buildFirstFrameImage(url) {
+  return buildImageInput(url, "first_frame");
+}
+
+export function buildLastFrameImage(url) {
+  return buildImageInput(url, "last_frame");
+}
+
+export function buildReferenceImage(url) {
+  return buildImageInput(url, "reference_image");
 }
 
 export function buildReferenceVideo(url) {

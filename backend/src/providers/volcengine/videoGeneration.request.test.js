@@ -1,6 +1,29 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createArkVideoGenerationTask } from "./videoGeneration.js";
+import {
+  buildFirstFrameImage,
+  buildLastFrameImage,
+  buildReferenceImage,
+  createArkVideoGenerationTask
+} from "./videoGeneration.js";
+
+test("builds distinct Ark image roles for frames and references", () => {
+  assert.deepEqual(buildFirstFrameImage("asset://first"), {
+    type: "image_url",
+    role: "first_frame",
+    image_url: { url: "asset://first" }
+  });
+  assert.deepEqual(buildLastFrameImage("asset://last"), {
+    type: "image_url",
+    role: "last_frame",
+    image_url: { url: "asset://last" }
+  });
+  assert.deepEqual(buildReferenceImage("asset://reference"), {
+    type: "image_url",
+    role: "reference_image",
+    image_url: { url: "asset://reference" }
+  });
+});
 
 test("sends digital-human output spec and exact duration to Ark", async () => {
   const originalFetch = globalThis.fetch;

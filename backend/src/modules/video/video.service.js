@@ -2,6 +2,8 @@ import path from "path";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
+  buildFirstFrameImage,
+  buildLastFrameImage,
   buildReferenceImage,
   buildReferenceAudio,
   buildReferenceVideo,
@@ -26,7 +28,12 @@ import {
 import { getUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapVideoModel, mapVideoTask } from "./video.mapper.js";
-import { calculateVideoPoints, validateVideoPayload, videoCountOptions } from "./video.options.js";
+import {
+  calculateVideoPoints,
+  normalizeVideoImageInputs,
+  validateVideoPayload,
+  videoCountOptions
+} from "./video.options.js";
 import {
   createVideoTask,
   deleteVideoTask,
@@ -86,6 +93,9 @@ export async function createTask(payload, userId) {
     mode = "first-frame",
     count = 1,
     referenceImageUrl,
+    firstFrameImageUrl,
+    lastFrameImageUrl,
+    referenceImageUrls,
     referenceVideoUrl,
     referenceAudioUrl,
     source
@@ -109,10 +119,30 @@ export async function createTask(payload, userId) {
       ratio,
       duration,
       count,
+      mode,
       referenceImageUrl,
+      firstFrameImageUrl,
+      lastFrameImageUrl,
+      referenceImageUrls,
       referenceVideoUrl,
       referenceAudioUrl
     });
+    const imageInputs = normalizeVideoImageInputs({
+      mode,
+      referenceImageUrl,
+      firstFrameImageUrl,
+      lastFrameImageUrl,
+      referenceImageUrls
+    });
+    firstFrameImageUrl = imageInputs.firstFrameImageUrl;
+    lastFrameImageUrl = imageInputs.lastFrameImageUrl;
+    referenceImageUrls = imageInputs.referenceImageUrls;
+    if (
+      modelPrice.provider_type !== "ark"
+      && (lastFrameImageUrl || referenceImageUrls.length > 1)
+    ) {
+      throw createHttpError("selected video provider does not support these image roles", 400);
+    }
 
     costPoints = calculateVideoPoints(modelPrice, duration, count);
     const rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
@@ -127,7 +157,10 @@ export async function createTask(payload, userId) {
       count: Number(count),
       costPoints,
       rmbCost,
-      referenceImageUrl: referenceImageUrl || null,
+      referenceImageUrl: referenceImageUrl || firstFrameImageUrl || referenceImageUrls[0] || null,
+      firstFrameImageUrl,
+      lastFrameImageUrl,
+      referenceImageUrls,
       referenceVideoUrl: referenceVideoUrl || null,
       referenceAudioUrl: referenceAudioUrl || null
     });
@@ -152,10 +185,24 @@ export async function createTask(payload, userId) {
     let provider;
     if (modelPrice.provider_type === "ark") {
       const content = [{ type: "text", text: prompt.trim() }];
-      if (referenceImageUrl) {
+      if (firstFrameImageUrl) {
+        content.push(buildFirstFrameImage(await resolveArkReference({
+          userId,
+          url: firstFrameImageUrl,
+          kind: "image"
+        })));
+      }
+      if (lastFrameImageUrl) {
+        content.push(buildLastFrameImage(await resolveArkReference({
+          userId,
+          url: lastFrameImageUrl,
+          kind: "image"
+        })));
+      }
+      for (const imageUrl of referenceImageUrls) {
         content.push(buildReferenceImage(await resolveArkReference({
           userId,
-          url: referenceImageUrl,
+          url: imageUrl,
           kind: "image"
         })));
       }
@@ -189,7 +236,7 @@ export async function createTask(payload, userId) {
         prompt: prompt.trim(),
         ratio,
         duration: Number(duration),
-        referenceImageUrl: resolveKieReference(referenceImageUrl),
+        referenceImageUrl: resolveKieReference(firstFrameImageUrl || referenceImageUrls[0] || referenceImageUrl),
         referenceVideoUrl: resolveKieReference(referenceVideoUrl),
         referenceAudioUrl: resolveKieReference(referenceAudioUrl)
       });

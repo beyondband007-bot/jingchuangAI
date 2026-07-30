@@ -9,6 +9,7 @@
     "build": "vite build",
     "check:style-contract": "node ./scripts/check-style-contract.mjs",
     "test:recovery": "node --test ./scripts/test-image-task-recovery.mjs ./scripts/test-image-task-polling.mjs",
+    "test:video-duration": "node --test ./scripts/test-video-request-duration.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

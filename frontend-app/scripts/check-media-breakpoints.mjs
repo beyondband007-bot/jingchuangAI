@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-const roots = ["src", "public/new_page"];
+const roots = ["src"];
 const styleExtensions = new Set([".css", ".scss", ".html"]);
 const allowedWidths = new Set(["375", "768", "1024", "1440", "1920"]);
 
