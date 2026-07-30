@@ -9,7 +9,7 @@
   min-height: auto;
   height: auto;
   max-height: none;
-  padding: 8px 24px 0 24px;
+  padding: var(--space-5);
   overflow: visible;
   background: transparent;
 }
@@ -22,7 +22,7 @@
   min-height: 0;
   height: auto;
   max-height: none;
-  padding: 8px 24px 0 24px;
+  padding: var(--space-5);
   overflow: visible;
   background: transparent;
 }
@@ -76,7 +76,6 @@
 .music-ref-layout {
   width: 100%;
   margin: 0 auto;
-  padding: 20px 0 0;
   background: transparent;
   border-radius: 0;
 }
@@ -145,7 +144,7 @@
     0 24px 70px rgba(98, 59, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px) saturate(150%);
-  padding: 28px;
+  padding: var(--space-5);
 }
 
 .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__studio::after {

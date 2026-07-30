@@ -58,7 +58,7 @@
   }
 
   .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__card {
-    padding: 20px;
+    padding: var(--space-4);
   }
 
   .music-generation-view .music-ref-form .ai-music-workbench--ref .ai-music-workbench__mode-tabs {

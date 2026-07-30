@@ -27,7 +27,8 @@
   box-sizing: border-box;
   width: 400px;
   max-width: 400px;
-  min-height: 0;
+  min-width: 0;
+  min-height: 225px;
   padding: 20px 24px 18px;
   gap: var(--space-2);
   overflow: hidden;
@@ -40,7 +41,8 @@
 .voice-synthesis-view-root .voice-recent-card,
 .voice-convert-view-root .voice-recent-card,
 .music-generation-view .voice-recent-card {
-  aspect-ratio: 16 / 9;
+  height: auto;
+  aspect-ratio: auto;
 }
 
 .voice-recent-art {

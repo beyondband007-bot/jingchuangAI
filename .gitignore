@@ -14,6 +14,7 @@ frontend-app/test-results/
 .env.production
 .env.local
 .env.*.local
+docker-compose.override.yml
 secrets/payment-keys/
 
 # Logs

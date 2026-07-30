@@ -239,7 +239,7 @@
 
 .card-actions .card-action-link:hover {
   color: #fff;
-  background: var(--brand-primary-soft);
+  background: var(--fm-brand);
   border-color: var(--brand-primary-border);
 }
 
