@@ -114,7 +114,7 @@ function parseCoverDataUrl(value) {
 function assertTitle(title) {
   const trimmed = normalizeString(title);
   if (!trimmed) return "";
-  if (trimmed.length > 100) throw createHttpError("歌曲标题长度不能超过 100 个字符", 400);
+  if (trimmed.length > 20) throw createHttpError("歌曲名称不能超过 20 个字符", 400);
   return trimmed;
 }
 
@@ -331,7 +331,7 @@ async function runMusicGeneration(
 
 export async function generateMusic(payload, userId) {
   const prompt = assertPrompt(payload.prompt);
-  const title = assertTitle(payload.title);
+  const title = assertRequiredTitle(payload.title);
   const isInstrumental = Boolean(payload.isInstrumental);
   const lyrics = assertLyrics(payload.lyrics, isInstrumental);
   const model = normalizeString(payload.model) || "music-2.6-free";

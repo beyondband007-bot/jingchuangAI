@@ -20,7 +20,7 @@ export function MusicRenameDialog({ item, onClose, onConfirm }) {
   const trimmedName = name.trim();
   const currentName = getLyricSubtitle(item).trim();
   const canSubmit = Boolean(trimmedName)
-    && trimmedName.length <= 100
+    && trimmedName.length <= 20
     && trimmedName !== currentName
     && !isSubmitting;
 
@@ -58,7 +58,7 @@ export function MusicRenameDialog({ item, onClose, onConfirm }) {
             id="music-rename-input"
             className="ui-input"
             value={name}
-            maxLength={100}
+            maxLength={20}
             placeholder="请输入歌曲名称"
             aria-describedby="music-rename-hint"
             aria-invalid={Boolean(error)}
@@ -71,7 +71,7 @@ export function MusicRenameDialog({ item, onClose, onConfirm }) {
             <span className={error ? "is-error" : ""}>
               {error || (trimmedName ? "修改后会同步更新歌曲卡片与播放器中的名称。" : "歌曲名称不能为空。")}
             </span>
-            <span>{name.length}/100</span>
+            <span>{name.length}/20</span>
           </div>
         </div>
         <div className="ui-modal__actions music-rename-actions">

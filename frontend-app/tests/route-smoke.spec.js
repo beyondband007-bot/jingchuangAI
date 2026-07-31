@@ -568,6 +568,8 @@ for (const viewport of [375, 768, 1024, 1440, 1920]) {
 test("music route keeps its default workbench visually stable", async ({ page }) => {
   await page.goto("/#/music");
   await expect(page.locator(".music-canvas")).toBeVisible();
+  await expect(page.locator(".ai-music-workbench__title-input input")).toHaveAttribute("maxlength", "20");
+  await expect(page.locator(".ai-music-workbench__generate")).toBeDisabled();
   await expect(page.locator(".music-canvas")).toHaveScreenshot(
     "music-generation-empty.png",
   );
@@ -594,6 +596,7 @@ test("music exposes a stable generating state", async ({ page }) => {
   const inputs = page.locator(".ai-music-workbench textarea");
   await inputs.nth(0).fill("温暖的流行音乐");
   await inputs.nth(1).fill("这是用于视觉回归的歌词");
+  await page.locator(".ai-music-workbench__title-input input").fill("视觉回归音乐");
   await page.locator(".ai-music-workbench__generate").click();
   await expect(page.locator(".music-gen-waiting-layout")).toBeVisible();
   await expect(page.locator(".music-gen-waiting-card")).toHaveScreenshot(
@@ -621,6 +624,7 @@ test("music generating waveform respects reduced-motion preferences", async ({ p
   const inputs = page.locator(".ai-music-workbench textarea");
   await inputs.nth(0).fill("减少动态效果验证");
   await inputs.nth(1).fill("用于验证静态波形的歌词");
+  await page.locator(".ai-music-workbench__title-input input").fill("减少动态效果");
   await page.locator(".ai-music-workbench__generate").click();
   await expect(page.locator(".music-gen-waiting-layout")).toBeVisible();
   await expect(page.locator(".music-gen-waiting-wave span").first()).toHaveAttribute(
@@ -649,6 +653,13 @@ test("music opens a completed result in the full player", async ({ page }) => {
   const player = page.locator(".music-full-player");
   await expect(player).toBeVisible();
   await expect(player).toHaveScreenshot("music-generation-result.png");
+
+  await player.getByRole("button", { name: "返回创作" }).click();
+  await page.getByRole("button", { name: "历史记录" }).click();
+  await page.locator(".music-ref-recent-card").click();
+  await page.getByRole("button", { name: "返回", exact: true }).click();
+  await expect(player).toBeHidden();
+  await expect(page.locator(".music-ref-recent-card")).toBeVisible();
 });
 
 test("music card can rename a completed song", async ({ page }) => {

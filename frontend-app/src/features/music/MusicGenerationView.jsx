@@ -174,9 +174,10 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const step2DurationRef = useRef(0);
   const generationContextRef = useRef({ lyrics: "", isInstrumental: false });
 
+  const hasRequiredMusicFields = prompt.trim().length > 0 && title.trim().length > 0;
   const canGenerate = isInstrumental
-    ? prompt.trim().length > 0
-    : prompt.trim().length > 0 && lyrics.trim().length > 0;
+    ? hasRequiredMusicFields
+    : hasRequiredMusicFields && lyrics.trim().length > 0;
 
   useEffect(() => {
     let mounted = true;
@@ -222,9 +223,13 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     }
   }, [resetSignal]);
 
-  function closePlayerAndGoHome() {
+  function closePlayer() {
     setShowPlayer(false);
     setPlayerTask(null);
+  }
+
+  function closePlayerAndGoHome() {
+    closePlayer();
     setViewTab("home");
   }
 
@@ -405,6 +410,10 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   async function generate() {
     if (!prompt.trim()) {
       setNotice("请输入风格描述。");
+      return;
+    }
+    if (!title.trim()) {
+      setNotice("请输入歌曲名称。");
       return;
     }
     if (!isInstrumental && !lyrics.trim() && !lyricsOptimizer) {
@@ -710,7 +719,8 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
           <MusicFullPagePlayer
             item={playerTask}
             items={recentResults}
-            onBack={closePlayerAndGoHome}
+            onBack={closePlayer}
+            backLabel={viewTab === "recent" ? "返回" : "返回创作"}
             onSelectItem={selectPlayerTrack}
           />
         ) : viewTab === "home" ? (
