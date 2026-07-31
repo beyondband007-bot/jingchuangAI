@@ -134,7 +134,7 @@
 .feature-page-shell .video-prompt-dialog.is-collapsed {
   min-height: 60px;
   gap: 0;
-  padding: 8px;
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-xl);
 }
 
