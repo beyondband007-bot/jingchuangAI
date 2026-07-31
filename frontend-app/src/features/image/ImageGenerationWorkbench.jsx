@@ -15,7 +15,7 @@ function getImageTaskResults(task) {
   if (Array.isArray(task?.images) && task.images.length) {
     return task.images.filter(Boolean);
   }
-  const primary = task?.imageUrl || task?.image;
+  const primary = task?.image || task?.imageUrl;
   return primary ? [primary] : [];
 }
 

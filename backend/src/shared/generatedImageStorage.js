@@ -1,7 +1,10 @@
+import { execFile } from "child_process";
 import { randomUUID } from "crypto";
 import { mkdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { promisify } from "util";
 import { config } from "../config/index.js";
+import { ffmpegPath } from "./ffmpegPath.js";
 import { createHttpError } from "./http.js";
 import { parseProxyTargetUrl } from "./mediaProxy.js";
 
@@ -11,6 +14,8 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 // refresh. Keep each refresh bounded instead of blocking history APIs with
 // several long download attempts in one request.
 const DEFAULT_ATTEMPTS = 1;
+const THUMBNAIL_WIDTH = 500;
+const execFileAsync = promisify(execFile);
 
 const imageExtensions = new Map([
   ["image/jpeg", ".jpg"],
@@ -135,6 +140,62 @@ async function downloadImage({
   );
 }
 
+async function createThumbnail({ outputDir, publicDir, originalUrl, index }) {
+  const thumbnailName = `thumbnail-${index + 1}.jpg`;
+  const thumbnailPath = path.join(outputDir, thumbnailName);
+  if (await fileExistsWithContent(thumbnailPath)) {
+    return `${publicDir}/${thumbnailName}`;
+  }
+
+  const originalName = path.basename(new URL(originalUrl, "http://local").pathname);
+  const originalPath = path.join(outputDir, originalName);
+  const tempPath = path.join(outputDir, `.${thumbnailName}.${randomUUID()}.jpg`);
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-i",
+      originalPath,
+      "-frames:v",
+      "1",
+      "-vf",
+      `scale='min(${THUMBNAIL_WIDTH},iw)':-2`,
+      "-q:v",
+      "3",
+      tempPath
+    ]);
+    await rename(tempPath, thumbnailPath);
+    return `${publicDir}/${thumbnailName}`;
+  } catch (error) {
+    await unlink(tempPath).catch(() => {});
+    throw createHttpError(`generated image thumbnail ${index + 1} could not be created: ${error.message}`, 502);
+  }
+}
+
+async function createGeneratedImageThumbnails({
+  taskId,
+  originalUrls,
+  storageDir = config.media.storageDir
+}) {
+  const normalizedTaskId = String(taskId || "").trim();
+  if (!/^\d+$/.test(normalizedTaskId)) {
+    throw createHttpError("generated image task id is invalid", 500);
+  }
+  const urls = Array.isArray(originalUrls)
+    ? originalUrls.map((url) => String(url || "").trim()).filter(Boolean)
+    : [];
+  if (!urls.length) {
+    throw createHttpError("generated image original URL is missing", 500);
+  }
+
+  const outputDir = path.resolve(process.cwd(), storageDir, "generated", "images", normalizedTaskId);
+  const publicDir = `/media/generated/images/${normalizedTaskId}`;
+  return Promise.all(
+    urls.map((originalUrl, index) =>
+      createThumbnail({ outputDir, publicDir, originalUrl, index })
+    )
+  );
+}
+
 export async function persistGeneratedImages({
   taskId,
   urls,
@@ -157,7 +218,7 @@ export async function persistGeneratedImages({
   const publicDir = `/media/generated/images/${normalizedTaskId}`;
   await mkdir(outputDir, { recursive: true });
 
-  return Promise.all(
+  const originalUrls = await Promise.all(
     sourceUrls.map((sourceUrl, index) =>
       downloadImage({
         sourceUrl,
@@ -172,6 +233,13 @@ export async function persistGeneratedImages({
       })
     )
   );
+  await createGeneratedImageThumbnails({
+    taskId: normalizedTaskId,
+    originalUrls,
+    storageDir
+  });
+
+  return originalUrls;
 }
 
 export async function removeStoredGeneratedImages({

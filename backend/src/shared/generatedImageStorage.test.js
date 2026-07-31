@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
+import { ffmpegPath } from "./ffmpegPath.js";
 import {
   persistGeneratedImages,
   removeStoredGeneratedImages
 } from "./generatedImageStorage.js";
+
+const execFileAsync = promisify(execFile);
 
 async function withTempStorage(run) {
   const storageDir = await mkdtemp(path.join(os.tmpdir(), "generated-image-storage-"));
@@ -19,7 +24,18 @@ async function withTempStorage(run) {
 
 test("persists generated images under a stable public media URL", async () => {
   await withTempStorage(async (storageDir) => {
-    const imageBytes = Buffer.from("test-image");
+    const sourcePath = path.join(storageDir, "source.png");
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-f",
+      "lavfi",
+      "-i",
+      "color=c=#3264a8:s=1200x600",
+      "-frames:v",
+      "1",
+      sourcePath
+    ]);
+    const imageBytes = await readFile(sourcePath);
     const urls = await persistGeneratedImages({
       taskId: 42,
       urls: ["https://tempfile.aiquickdraw.com/example.png"],
@@ -40,9 +56,15 @@ test("persists generated images under a stable public media URL", async () => {
       await readFile(path.join(storageDir, "generated", "images", "42", "result-1.png")),
       imageBytes
     );
+    const thumbnail = await readFile(path.join(storageDir, "generated", "images", "42", "thumbnail-1.jpg"));
+    assert.deepEqual(thumbnail.subarray(0, 2), Buffer.from([0xff, 0xd8]));
     await removeStoredGeneratedImages({ taskId: 42, storageDir });
     await assert.rejects(
       readFile(path.join(storageDir, "generated", "images", "42", "result-1.png")),
+      /ENOENT/
+    );
+    await assert.rejects(
+      stat(path.join(storageDir, "generated", "images", "42", "thumbnail-1.jpg")),
       /ENOENT/
     );
   });
