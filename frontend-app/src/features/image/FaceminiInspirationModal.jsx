@@ -30,11 +30,13 @@ export function FaceminiInspirationModal({
 }) {
   const [activeSrc, setActiveSrc] = useState(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState(null);
+  const [videoDimensions, setVideoDimensions] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setActiveSrc(null);
     setActiveVideoSrc(null);
+    setVideoDimensions(null);
     setIsFavorite(Boolean(item?.favorite) || Boolean(getInitialFavorite?.(item)));
   }, [getInitialFavorite, item?.id]);
 
@@ -62,6 +64,9 @@ export function FaceminiInspirationModal({
   const fallbackVideoSrc =
     item.videoFallbackSrc || item.videoFallback || item.mp4 || null;
   const videoSrc = activeVideoSrc || primaryVideoSrc;
+  const resolution = videoDimensions
+    ? `${videoDimensions.width}×${videoDimensions.height}`
+    : formatInspirationResolution(item);
 
   return (
     <BaseModal
@@ -82,6 +87,12 @@ export function FaceminiInspirationModal({
               playsInline
               autoPlay
               muted
+              onLoadedMetadata={(event) => {
+                const { videoWidth: width, videoHeight: height } = event.currentTarget;
+                if (width > 0 && height > 0) {
+                  setVideoDimensions({ width, height });
+                }
+              }}
               onError={() => {
                 if (fallbackVideoSrc && videoSrc !== fallbackVideoSrc) {
                   setActiveVideoSrc(fallbackVideoSrc);
@@ -132,15 +143,11 @@ export function FaceminiInspirationModal({
             </div>
             <div>
               <dt>分辨率</dt>
-              <dd>{formatInspirationResolution(item)}</dd>
+              <dd>{resolution}</dd>
             </div>
             <div>
               <dt>使用模型</dt>
               <dd>{item.model || (isVideo ? "Kling Video" : "Kling Image")}</dd>
-            </div>
-            <div>
-              <dt>素材</dt>
-              <dd>{item.material || (isVideo ? "视频封面" : "高清原图")}</dd>
             </div>
           </dl>
           <div className="fm-detail-actions">
