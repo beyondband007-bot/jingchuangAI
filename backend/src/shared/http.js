@@ -1,5 +1,9 @@
 export function sendError(res, error, fallbackStatus = 503) {
-  res.status(error.status || fallbackStatus).json({ error: error.message });
+  const body = { error: error.message };
+  const detail = error.errorDetail || error.videoErrorDetail;
+  if (error.code) body.code = error.code;
+  if (detail) body.errorDetail = detail;
+  res.status(error.status || fallbackStatus).json(body);
 }
 
 export function createHttpError(message, status = 500) {

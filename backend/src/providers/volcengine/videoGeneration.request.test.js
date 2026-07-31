@@ -4,7 +4,8 @@ import {
   buildFirstFrameImage,
   buildLastFrameImage,
   buildReferenceImage,
-  createArkVideoGenerationTask
+  createArkVideoGenerationTask,
+  normalizeArkVideoErrorDetail
 } from "./videoGeneration.js";
 
 test("builds distinct Ark image roles for frames and references", () => {
@@ -67,4 +68,35 @@ test("sends digital-human output spec and exact duration to Ark", async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("maps Ark reference download failures to an indexed user-facing error", () => {
+  const detail = normalizeArkVideoErrorDetail({
+    error: {
+      code: "InvalidParameter",
+      message: "The parameter `content[2].image_url` specified in the request is not valid: resource download failed. Request id: request-123",
+      param: "content[2].image_url"
+    }
+  });
+
+  assert.equal(detail.code, "VIDEO_REFERENCE_DOWNLOAD_FAILED");
+  assert.equal(detail.referenceIndex, 2);
+  assert.equal(detail.requestId, "request-123");
+  assert.match(detail.message, /第2张参考图/);
+});
+
+test("maps Ark text moderation separately from reference image moderation", () => {
+  const detail = normalizeArkVideoErrorDetail({
+    error: {
+      code: "InputTextSensitiveContentDetected",
+      message: "The request failed because the input text 'content[0]' may contain sensitive information. Request id: request-text-123",
+      param: "content[0]"
+    }
+  });
+
+  assert.equal(detail.code, "VIDEO_PROMPT_CONTENT_REJECTED");
+  assert.equal(detail.referenceType, null);
+  assert.equal(detail.referenceIndex, null);
+  assert.equal(detail.requestId, "request-text-123");
+  assert.match(detail.message, /与参考图片无关/);
 });

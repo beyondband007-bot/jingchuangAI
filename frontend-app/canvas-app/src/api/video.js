@@ -1,5 +1,6 @@
 import { associateNodeTask, faceminiRequest, notifyCreditsChanged, uploadDataUrl } from './facemini'
 import { resolveVideoImageSources } from '../utils/videoRequest'
+import { createVideoError } from '../utils/videoError'
 
 export async function createVideoTask(data) {
   const {
@@ -85,7 +86,7 @@ export async function pollVideoTask(taskId, maxAttempts = 120, interval = 5000) 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const result = await getVideoTaskStatus(taskId)
     if (result.status === 'completed') return result
-    if (result.status === 'failed') throw new Error(result.error || '视频生成失败')
+    if (result.status === 'failed') throw createVideoError(result)
     await new Promise(resolve => setTimeout(resolve, interval))
   }
   throw new Error('视频生成仍在处理中，请稍后回到当前画布查看结果')

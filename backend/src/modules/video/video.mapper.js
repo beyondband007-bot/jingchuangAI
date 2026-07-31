@@ -1,4 +1,5 @@
 import { formatBeijingDateTime } from "../../shared/time.js";
+import { parseVideoTaskError } from "./video.errors.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -29,6 +30,10 @@ export function mapVideoModel(row) {
 export function mapVideoTask(row) {
   const urls = parseJson(row.result_urls, []);
   const duration = Number(row.duration);
+  const errorDetail = parseVideoTaskError(row.error_message, {
+    refunded: Boolean(row.refunded),
+    points: Number(row.cost_points || 0)
+  });
   return {
     id: row.id,
     model: row.display_name || row.model_key,
@@ -50,7 +55,9 @@ export function mapVideoTask(row) {
     status: row.status,
     providerTaskId: row.provider_task_id || null,
     favorite: Boolean(row.favorite),
-    error: row.error_message || null,
+    error: errorDetail?.message || null,
+    errorDetail,
+    refunded: Boolean(row.refunded),
     referenceImageUrl: row.reference_image_url || null,
     firstFrameImageUrl: row.first_frame_image_url || null,
     lastFrameImageUrl: row.last_frame_image_url || null,

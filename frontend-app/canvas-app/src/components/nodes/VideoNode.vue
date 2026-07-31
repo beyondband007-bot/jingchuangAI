@@ -72,10 +72,20 @@
       <!-- Error state | 错误状态 -->
       <div 
         v-else-if="data.error"
-        class="aspect-video rounded-lg bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center gap-2 border border-red-200 dark:border-red-800"
+        class="aspect-video rounded-lg bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center gap-2 border border-red-200 dark:border-red-800 px-5 text-center"
       >
         <n-icon :size="32" class="text-red-500"><CloseCircleOutline /></n-icon>
-        <span class="text-sm text-red-500">{{ data.error }}</span>
+        <span class="text-sm font-medium text-red-600 dark:text-red-400">{{ errorTitle }}</span>
+        <span class="max-h-20 overflow-y-auto text-xs leading-5 text-red-500">{{ data.error }}</span>
+        <span
+          v-if="data.errorDetail?.refunded"
+          class="rounded-full bg-red-100 px-2 py-1 text-[11px] text-red-600 dark:bg-red-950/60 dark:text-red-300"
+        >
+          {{ data.errorDetail.points ? `${data.errorDetail.points} 积分已退回` : '积分已退回' }}
+        </span>
+        <span v-if="data.errorDetail?.requestId" class="max-w-full truncate text-[10px] text-red-400">
+          错误编号：{{ data.errorDetail.requestId }}
+        </span>
       </div>
       <!-- Video preview | 视频预览 -->
       <div 
@@ -144,7 +154,7 @@
  * Video node component | 视频节点组件
  * Displays and manages video content
  */
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { Handle, Position, useVueFlow } from '@vue-flow/core'
 import { NIcon, NSpin } from 'naive-ui'
 import { TrashOutline, ExpandOutline, VideocamOutline, CopyOutline, CloseCircleOutline, DownloadOutline, EyeOutline, CreateOutline } from '@vicons/ionicons5'
@@ -152,6 +162,7 @@ import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes } from '
 import { useVideoGeneration } from '../../hooks/useApi'
 import NodeHandleMenu from './NodeHandleMenu.vue'
 import { uploadCanvasMedia } from '../../api/facemini'
+import { getVideoErrorTitle } from '../../utils/videoError'
 
 const props = defineProps({
   id: String,
@@ -172,6 +183,7 @@ const showHandleMenu = ref(false)
 const isEditingLabel = ref(false)
 const editingLabelValue = ref('')
 const labelInputRef = ref(null)
+const errorTitle = computed(() => getVideoErrorTitle(props.data?.errorDetail || {}))
 
 // Video node menu operations | 视频节点菜单操作
 const operations = [
@@ -224,6 +236,7 @@ const startPolling = async (taskId) => {
     updateNode(props.id, {
       loading: false,
       error: err.message || '生成失败',
+      errorDetail: err.errorDetail || err.body?.errorDetail || null,
       label: '生成失败',
       taskId: null  // 清除 taskId
     })

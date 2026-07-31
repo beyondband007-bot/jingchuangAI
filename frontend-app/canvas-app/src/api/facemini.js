@@ -19,6 +19,8 @@ async function parseResponse(response) {
     const error = new Error(body?.error || body?.message || `请求失败（${response.status}）`)
     error.status = response.status
     error.body = body
+    error.code = body?.code || body?.errorDetail?.code
+    error.errorDetail = body?.errorDetail || null
     throw error
   }
   return body

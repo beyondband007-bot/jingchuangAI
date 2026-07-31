@@ -1,7 +1,10 @@
 import { readFile } from "fs/promises";
+import { createHash } from "crypto";
+import path from "path";
 import { config } from "../../config/index.js";
 
 const uploadCache = new Map();
+const uploadCacheTtlMs = 60 * 60 * 1000;
 const retryableNetworkCodes = new Set([
   "ECONNRESET",
   "ETIMEDOUT",
@@ -86,16 +89,21 @@ function assertUploadSuccess(response, body) {
 export async function uploadFileToKie({ filePath, fileName, mimeType = "application/octet-stream", uploadPath = "digital-human" }) {
   ensureKieKey();
 
-  const cacheKey = `${filePath}:${uploadPath}:${fileName}:${mimeType}`;
-  if (uploadCache.has(cacheKey)) {
-    return uploadCache.get(cacheKey);
-  }
-
   const bytes = await readFile(filePath);
+  const contentHash = createHash("sha256").update(bytes).digest("hex");
+  const extension = path.extname(fileName || filePath).toLowerCase();
+  const uploadFileName = `${contentHash}${extension}`;
+  const cacheKey = `${contentHash}:${uploadPath}:${mimeType}`;
+  const cached = uploadCache.get(cacheKey);
+  if (cached?.expiresAt > Date.now()) {
+    return { ...cached.result, cached: true };
+  }
+  uploadCache.delete(cacheKey);
+
   const formData = new FormData();
-  formData.append("file", new Blob([bytes], { type: mimeType }), fileName);
+  formData.append("file", new Blob([bytes], { type: mimeType }), uploadFileName);
   formData.append("uploadPath", uploadPath);
-  formData.append("fileName", fileName);
+  formData.append("fileName", uploadFileName);
 
   const response = await postUploadFormData(`${normalizeBaseUrl()}/api/file-stream-upload`, {
     apiKey: config.kie.apiKey,
@@ -119,7 +127,10 @@ export async function uploadFileToKie({ filePath, fileName, mimeType = "applicat
     throw error;
   }
 
-  const result = { url, raw: body };
-  uploadCache.set(cacheKey, result);
+  const result = { url, raw: body, contentHash, fileName: uploadFileName };
+  uploadCache.set(cacheKey, {
+    result,
+    expiresAt: Date.now() + uploadCacheTtlMs
+  });
   return result;
 }
