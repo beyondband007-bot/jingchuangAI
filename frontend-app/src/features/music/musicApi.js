@@ -63,5 +63,18 @@ export const musicApi = {
       audioUrl: toApiUrl(item.audioUrl),
       coverUrl: toApiUrl(item.coverUrl)
     };
+  },
+
+  async updateTaskTitle(id, title) {
+    const item = await request(`/api/music/tasks/${encodeURIComponent(id)}/title`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title })
+    });
+    return {
+      ...item,
+      audioUrl: toApiUrl(item.audioUrl),
+      coverUrl: toApiUrl(item.coverUrl)
+    };
   }
 };

@@ -139,6 +139,7 @@ export function MusicGeneratingPanel({
   onSelectItem,
   onDownloadItem,
   onEditCoverItem,
+  onRenameItem,
   onDeleteItem,
   onRetryItem,
 }) {
@@ -226,6 +227,7 @@ export function MusicGeneratingPanel({
           onSelectItem={onSelectItem}
           onDownloadItem={onDownloadItem}
           onEditCoverItem={onEditCoverItem}
+          onRenameItem={onRenameItem}
           onDeleteItem={onDeleteItem}
           onRetryItem={onRetryItem}
         />

@@ -1,5 +1,14 @@
 import { Router } from "express";
-import { getConfig, getRecent, getTask, generate, syncLyrics, deleteTask, updateTaskCover } from "./music.controller.js";
+import {
+  deleteTask,
+  generate,
+  getConfig,
+  getRecent,
+  getTask,
+  syncLyrics,
+  updateTaskCover,
+  updateTaskTitle
+} from "./music.controller.js";
 
 export const musicRouter = Router();
 
@@ -9,5 +18,6 @@ musicRouter.get("/tasks", getRecent);
 musicRouter.get("/tasks/:id", getTask);
 musicRouter.delete("/tasks/:id", deleteTask);
 musicRouter.post("/tasks/:id/cover", updateTaskCover);
+musicRouter.patch("/tasks/:id/title", updateTaskTitle);
 musicRouter.post("/generate", generate);
 musicRouter.post("/tasks/:id/sync-lyrics", syncLyrics);

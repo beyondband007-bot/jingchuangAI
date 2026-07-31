@@ -2,6 +2,7 @@
 import "./musicStyles.css";
 import { Music } from "lucide-react";
 import { MusicCoverCropModal } from "../music-generation-ui/MusicCoverCropModal";
+import { MusicRenameDialog } from "./MusicRenameDialog";
 import { MusicGeneratingPanel } from "./MusicGeneratingPanel";
 import { MusicFullPagePlayer } from "./MusicFullPagePlayer";
 import { MusicHistoryList, MusicReferenceComposer } from "./MusicReferenceLayouts";
@@ -164,6 +165,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [etaSeconds, setEtaSeconds] = useState(0);
   const [syncingIds, setSyncingIds] = useState({});
   const [coverEditItem, setCoverEditItem] = useState(null);
+  const [renameItem, setRenameItem] = useState(null);
   const delayedNavigationTimerRef = useRef(null);
   const pollTokenRef = useRef(0);
   const melodyTimerRef = useRef(null);
@@ -210,6 +212,8 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     setPlayerTask(null);
     setShowPlayer(false);
     setSyncingIds({});
+    setCoverEditItem(null);
+    setRenameItem(null);
     resetGenerationFlow();
     dismissToast();
     if (delayedNavigationTimerRef.current) {
@@ -602,7 +606,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
       return;
     }
     try {
-      const safeName = String(item.prompt || "ai-music").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40);
+      const safeName = String(item.title || item.prompt || "ai-music").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40);
       await downloadMediaFile(item.audioUrl, `${safeName}-${formatBeijingStamp()}.mp3`);
       showToast("success", "音乐已下载。");
     } catch (error) {
@@ -634,6 +638,21 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     }
   }
 
+  function requestRenameItem(item) {
+    if (!item?.id || item.status === "processing") return;
+    setRenameItem(item);
+  }
+
+  async function handleRenameConfirm(nextTitle) {
+    if (!renameItem?.id) return;
+
+    const taskId = renameItem.id;
+    const updated = await musicApi.updateTaskTitle(taskId, nextTitle);
+    applyTaskUpdate(taskId, updated, renameItem);
+    setRenameItem(null);
+    showToast("success", "歌曲名称已修改。");
+  }
+
   async function performDeleteMusicTask(id) {
     await musicApi.deleteTask(id);
     if (playerTask?.id === id) {
@@ -659,7 +678,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
   function requestDeleteRecentItem(item) {
     requestDeleteMusicTask(item.id, {
-      targetName: item.prompt || "AI 音乐",
+      targetName: item.title || item.prompt || "AI 音乐",
     });
   }
 
@@ -707,6 +726,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               onSelectItem={openCompletedPlayer}
               onDownloadItem={downloadRecentItem}
               onEditCoverItem={requestEditCoverItem}
+              onRenameItem={requestRenameItem}
               onDeleteItem={requestDeleteRecentItem}
               onRetryItem={retryFailedItem}
             />
@@ -741,6 +761,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
               onSelectItem={openCompletedPlayer}
               onDownloadItem={downloadRecentItem}
               onEditCoverItem={requestEditCoverItem}
+              onRenameItem={requestRenameItem}
               onDeleteItem={requestDeleteRecentItem}
               onRetryItem={retryFailedItem}
             />
@@ -751,6 +772,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
             onSelectItem={openCompletedPlayer}
             onDownloadItem={downloadRecentItem}
             onEditCoverItem={requestEditCoverItem}
+            onRenameItem={requestRenameItem}
             onDeleteItem={requestDeleteRecentItem}
             onRetryItem={retryFailedItem}
           />
@@ -772,6 +794,11 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
         initialPreview={coverEditItem?.coverUrl || ""}
         onClose={() => setCoverEditItem(null)}
         onConfirm={handleCoverEditConfirm}
+      />
+      <MusicRenameDialog
+        item={renameItem}
+        onClose={() => setRenameItem(null)}
+        onConfirm={handleRenameConfirm}
       />
     </section>
   );

@@ -13,7 +13,8 @@ import {
   listMusicTaskRows,
   deleteMusicTaskRow,
   updateMusicTaskAudioMeta,
-  updateMusicTaskCoverUrl
+  updateMusicTaskCoverUrl,
+  updateMusicTaskTitle
 } from "./music.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { compressMusicAudioFile, MUSIC_COMPRESS_THRESHOLD_BYTES } from "./musicAudio.js";
@@ -114,6 +115,12 @@ function assertTitle(title) {
   const trimmed = normalizeString(title);
   if (!trimmed) return "";
   if (trimmed.length > 100) throw createHttpError("歌曲标题长度不能超过 100 个字符", 400);
+  return trimmed;
+}
+
+function assertRequiredTitle(title) {
+  const trimmed = assertTitle(title);
+  if (!trimmed) throw createHttpError("请输入歌曲名称", 400);
   return trimmed;
 }
 
@@ -244,6 +251,21 @@ export async function updateMusicTaskCover(id, userId, payload = {}) {
   return mapMusicTask({
     ...existing,
     cover_url: savedCover.publicPath
+  });
+}
+
+export async function updateMusicTaskName(id, userId, payload = {}) {
+  const existing = await findMusicTaskRow({ id, userId });
+  if (!existing) {
+    throw createHttpError("音乐任务不存在", 404);
+  }
+
+  const title = assertRequiredTitle(payload.title);
+  await updateMusicTaskTitle(id, userId, title);
+
+  return mapMusicTask({
+    ...existing,
+    title
   });
 }
 

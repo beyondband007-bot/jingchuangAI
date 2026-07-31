@@ -651,6 +651,46 @@ test("music opens a completed result in the full player", async ({ page }) => {
   await expect(player).toHaveScreenshot("music-generation-result.png");
 });
 
+test("music card can rename a completed song", async ({ page }) => {
+  const task = {
+    id: "music-rename",
+    prompt: "温暖的流行音乐",
+    title: "原歌曲名称",
+    lyrics: "第一句歌词",
+    status: "completed",
+    audioUrl: "data:audio/mpeg;base64,",
+    durationMs: 180000,
+    createdAt: "2026-01-01 12:00:00",
+  };
+  let submittedTitle = "";
+
+  await page.route("**/api/music/tasks", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify([task]),
+  }));
+  await page.route("**/api/music/tasks/music-rename/title", async (route) => {
+    const payload = route.request().postDataJSON();
+    submittedTitle = payload.title;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ...task, title: payload.title }),
+    });
+  });
+
+  await page.goto("/#/music");
+  await page.locator(".music-ref-recent-more").click();
+  await page.getByRole("menuitem", { name: "修改名称" }).click();
+
+  const dialog = page.getByRole("dialog", { name: "修改歌曲名称" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("歌曲名称").fill("新的歌曲名称");
+  await dialog.getByRole("button", { name: "保存" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".music-ref-recent-main strong")).toHaveText("新的歌曲名称");
+  expect(submittedTitle).toBe("新的歌曲名称");
+});
+
 test("music renders failed tasks without a misleading play action", async ({ page }) => {
   await page.route("**/api/music/tasks", (route) => route.fulfill({
     contentType: "application/json",

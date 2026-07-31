@@ -123,6 +123,16 @@ export async function updateMusicTaskCoverUrl(id, coverUrl) {
   );
 }
 
+export async function updateMusicTaskTitle(id, userId, title) {
+  const [result] = await getPool().query(
+    `UPDATE music_tasks
+     SET title = ?
+     WHERE id = ? AND user_id = ?`,
+    [title, id, userId]
+  );
+  return result.affectedRows > 0;
+}
+
 export async function deleteMusicTaskRow(id, userId) {
   const [result] = await getPool().query(
     `DELETE FROM music_tasks
