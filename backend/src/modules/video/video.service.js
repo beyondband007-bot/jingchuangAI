@@ -55,6 +55,30 @@ import {
   toggleVideoTaskFavorite
 } from "./video.repository.js";
 
+function inferVideoResolution(model = {}) {
+  const description = [
+    model.display_name,
+    model.model_key,
+    model.provider_model,
+    model.mode
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/[_-]/g, " ");
+  const match = description.match(/\b(\d{3,4}\s*p|\d+\s*k)\b/i);
+  if (match) return match[1].replace(/\s+/g, "").toUpperCase();
+
+  if (
+    model.provider_type === "ark" ||
+    String(model.provider_model || "").includes("seedance-2-mini") ||
+    String(model.provider_model || "").includes("wan/2-7")
+  ) {
+    return "720P";
+  }
+
+  return null;
+}
+
 export async function getCredits(userId) {
   return getUserCredits(userId);
 }
@@ -110,6 +134,7 @@ export async function createTask(payload, userId) {
   let rmbCost;
   let arkContent;
   let kieReferences;
+  let resolution;
 
   const lookupConnection = await pool.getConnection();
   try {
@@ -148,6 +173,7 @@ export async function createTask(payload, userId) {
       throw createHttpError("selected video provider does not support these image roles", 400);
     }
 
+    resolution = inferVideoResolution(modelPrice);
     costPoints = calculateVideoPoints(modelPrice, duration, count);
     rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
   } finally {
@@ -243,6 +269,7 @@ export async function createTask(payload, userId) {
       modelKey: model,
       prompt: prompt.trim(),
       ratio,
+      resolution,
       duration: Number(duration),
       mode,
       count: Number(count),
@@ -277,7 +304,7 @@ export async function createTask(payload, userId) {
       provider = await createArkVideoGenerationTask({
         model: config.ark.videoModel,
         content: arkContent,
-        resolution: "720p",
+        resolution: (resolution || "720P").toLowerCase(),
         ratio,
         duration: Number(duration),
         generateAudio: true,

@@ -5,6 +5,13 @@ import "../../components/faceminiDetailModal.css";
 
 function formatInspirationResolution(item) {
   if (item?.resolution) return String(item.resolution);
+  if (item?.quality) return String(item.quality);
+  const modelDescription = [item?.model, item?.modelKey, item?.providerModel, item?.mode]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/[_-]/g, " ");
+  const modelResolution = modelDescription.match(/\b(\d{3,4}\s*p|\d+\s*k)\b/i);
+  if (modelResolution) return modelResolution[1].replace(/\s+/g, "").toUpperCase();
   const width = Number(item?.width);
   const height = Number(item?.height);
   if (width > 0 && height > 0) return `${Math.round(width)}×${Math.round(height)}`;
@@ -23,11 +30,13 @@ export function FaceminiInspirationModal({
 }) {
   const [activeSrc, setActiveSrc] = useState(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState(null);
+  const [videoDimensions, setVideoDimensions] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setActiveSrc(null);
     setActiveVideoSrc(null);
+    setVideoDimensions(null);
     setIsFavorite(Boolean(item?.favorite) || Boolean(getInitialFavorite?.(item)));
   }, [getInitialFavorite, item?.id]);
 
@@ -55,6 +64,9 @@ export function FaceminiInspirationModal({
   const fallbackVideoSrc =
     item.videoFallbackSrc || item.videoFallback || item.mp4 || null;
   const videoSrc = activeVideoSrc || primaryVideoSrc;
+  const resolution = videoDimensions
+    ? `${videoDimensions.width}×${videoDimensions.height}`
+    : formatInspirationResolution(item);
 
   return (
     <BaseModal
@@ -75,6 +87,12 @@ export function FaceminiInspirationModal({
               playsInline
               autoPlay
               muted
+              onLoadedMetadata={(event) => {
+                const { videoWidth: width, videoHeight: height } = event.currentTarget;
+                if (width > 0 && height > 0) {
+                  setVideoDimensions({ width, height });
+                }
+              }}
               onError={() => {
                 if (fallbackVideoSrc && videoSrc !== fallbackVideoSrc) {
                   setActiveVideoSrc(fallbackVideoSrc);
@@ -125,15 +143,11 @@ export function FaceminiInspirationModal({
             </div>
             <div>
               <dt>分辨率</dt>
-              <dd>{formatInspirationResolution(item)}</dd>
+              <dd>{resolution}</dd>
             </div>
             <div>
               <dt>使用模型</dt>
               <dd>{item.model || (isVideo ? "Kling Video" : "Kling Image")}</dd>
-            </div>
-            <div>
-              <dt>素材</dt>
-              <dd>{item.material || (isVideo ? "视频封面" : "高清原图")}</dd>
             </div>
           </dl>
           <div className="fm-detail-actions">

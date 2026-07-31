@@ -113,7 +113,25 @@ export const imageInspirationCategoryTabs = [
   { id: "chahua", label: "风格插画" },
 ];
 
-export const exampleImages = imgInspirationManifest.map((item, index) => ({
+const imageInspirationModelByCategory = {
+  baokuan: "GPT Image 2",
+  sheying: "GPT Image 2",
+  dianshang: "Nano Banana Pro",
+  dongman: "Nano Banana Pro",
+  chahua: "Nano Banana Pro",
+};
+
+// Attach display metadata to each catalog material once so all entry points
+// (image generation, creation center, and favorites) use the same model.
+export const imageInspirationMaterials = imgInspirationManifest.map((item) => ({
+  ...item,
+  model:
+    item.model ||
+    imageInspirationModelByCategory[item.categoryId] ||
+    "GPT Image 2",
+}));
+
+export const exampleImages = imageInspirationMaterials.map((item, index) => ({
   file: `${item.baseName}.webp`,
   categoryId: item.categoryId,
   categoryLabel: item.categoryLabel,
@@ -129,7 +147,7 @@ export const exampleImages = imgInspirationManifest.map((item, index) => ({
   style: item.categoryLabel || "",
   mood: "",
   tags: [item.categoryLabel].filter(Boolean),
-  model: "图片生成",
+  model: item.model,
   ratio: item.ratio || "高清原图",
   width: item.width || null,
   height: item.height || null,
@@ -165,7 +183,7 @@ export const fmImageGenerationInspirations = exampleImages.map((item, index) => 
   height: item.height,
   resolution: item.resolution,
   aspect: item.aspect,
-  model: item.model || "图片生成",
+  model: item.model || "GPT Image 2",
   material: "高清原图",
 }));
 
@@ -452,22 +470,30 @@ export const fmImageInspirations = [
     "爆款图文",
     "厨房台面上的料理机产品摄影，水果、玻璃杯和暖色自然光，干净家居商业广告，适合电商主图和详情页视觉。",
   ],
-].map(([id, title, category, prompt], index) => ({
-  id,
-  title,
-  category,
-  prompt,
-  thumbnail: faceminiAsset(`inspirations/image/thumbs/${id}.webp`),
-  source: faceminiAsset(
-    `inspirations/image/originals/${getFaceminiImageOriginalFile(id)}`,
-  ),
-  dimensions: fmImageDimensions[id],
-  ratio: formatFaceminiImageRatio(id),
-  aspect:
-    fmImageDimensions[id]?.[0] && fmImageDimensions[id]?.[1]
-      ? fmImageDimensions[id][0] / fmImageDimensions[id][1]
-      : "portrait",
-}));
+].map(([id, title, category, prompt], index) => {
+  const [width, height] = fmImageDimensions[id] || [];
+  const isGeneratedImage = category === "图片灵感" || category === "爆款图文";
+
+  return {
+    id,
+    title,
+    category,
+    prompt,
+    thumbnail: faceminiAsset(`inspirations/image/thumbs/${id}.webp`),
+    source: faceminiAsset(
+      `inspirations/image/originals/${getFaceminiImageOriginalFile(id)}`,
+    ),
+    dimensions: fmImageDimensions[id],
+    width,
+    height,
+    resolution: width && height ? `${width}×${height}` : "",
+    ratio: formatFaceminiImageRatio(id),
+    aspect: width && height ? width / height : "portrait",
+    model: isGeneratedImage
+      ? (index % 2 === 0 ? "GPT Image 2" : "Nano Banana Pro")
+      : undefined,
+  };
+});
 
 export const fmDigitalHumanInspirations = [
   [
@@ -632,7 +658,7 @@ export function getCreationCenterInspirations(activeTab, videoInspirations = [])
 }
 
 const fmInspirationCategoryRouteMap = {
-  图片灵感: { feature: "image", target: "image", model: "Kling Image" },
+  图片灵感: { feature: "image", target: "image", model: "GPT Image 2" },
   视频灵感: { feature: "video", target: "video", model: "Kling Video" },
   数字人形象: {
     feature: "digital-human",

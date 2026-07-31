@@ -178,7 +178,7 @@ section.image-gen-view .image-prompt-dialog.is-expanded {
 section.image-gen-view .image-prompt-dialog.is-collapsed {
   gap: 0;
   min-height: 60px;
-  padding: 8px;
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-xl);
   overflow: hidden;
 }

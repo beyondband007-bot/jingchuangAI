@@ -554,6 +554,7 @@ async function createTables() {
       model_key VARCHAR(80) NOT NULL,
       prompt TEXT NOT NULL,
       ratio VARCHAR(20) NOT NULL,
+      resolution VARCHAR(40) NULL,
       duration INT NOT NULL,
       mode VARCHAR(40) NOT NULL DEFAULT 'first-frame',
       video_count INT NOT NULL DEFAULT 1,
@@ -589,6 +590,16 @@ async function createTables() {
   );
   if (videoSourceColumns.length === 0) {
     await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN source VARCHAR(40) NOT NULL DEFAULT 'video' AFTER user_id");
+  }
+
+  const [videoResolutionColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'resolution'`,
+    [config.db.database]
+  );
+  if (videoResolutionColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN resolution VARCHAR(40) NULL AFTER ratio");
   }
 
   const [videoSourceIndexes] = await pool.query(

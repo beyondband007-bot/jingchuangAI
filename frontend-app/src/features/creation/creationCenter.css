@@ -105,10 +105,10 @@
 .fm-image-card-remix {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  bottom: 20px;
   z-index: 2;
-  min-width: 126px;
-  height: 42px;
+  min-width: 120px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

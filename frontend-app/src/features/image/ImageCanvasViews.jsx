@@ -302,6 +302,7 @@ export function ImagePreviewLightbox({
         width: task.width,
         height: task.height,
         resolution: task.resolution,
+        quality: task.quality,
         model: task.model || task.modelKey || "Kling Image",
         material: "高清原图",
         favorite: Boolean(task.favorite),

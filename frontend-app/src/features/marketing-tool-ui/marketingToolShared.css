@@ -273,6 +273,7 @@
   min-height: 214px;
   padding: 0;
   border-style: solid;
+  gap: 0;
 }
 
 .marketing-composer__upload.has-preview img,

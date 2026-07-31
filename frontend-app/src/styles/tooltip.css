@@ -3,6 +3,11 @@
   position: relative;
 }
 
+/* Upload clear controls are anchored to their preview container. */
+.ui-upload-clear-button[data-tooltip] {
+  position: absolute;
+}
+
 [data-tooltip]::before,
 [data-tooltip]::after {
   position: absolute;

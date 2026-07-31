@@ -153,6 +153,26 @@ function getAssetTaskPreview(type, task) {
   return task?.image || task?.thumbnailUrl || task?.cover || "";
 }
 
+function getAssetTaskResolution(task) {
+  const explicitResolution = String(task?.resolution || "").trim();
+  if (explicitResolution) return explicitResolution;
+
+  // Image tasks call this setting `quality`; keep the details modal's
+  // terminology consistent without losing the value returned by the API.
+  const quality = String(task?.quality || "").trim();
+  if (quality) return quality;
+
+  // Video records created before the resolution column was added do not have
+  // a dedicated value. Some model names contain an unambiguous output tier,
+  // which lets their existing history display correctly as well.
+  const modelDescription = [task?.model, task?.modelKey, task?.providerModel, task?.mode]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/[_-]/g, " ");
+  const match = modelDescription.match(/\b(\d{3,4}\s*p|\d+\s*k)\b/i);
+  return match ? match[1].replace(/\s+/g, "").toUpperCase() : "";
+}
+
 export function isDigitalHumanAssetType(type) {
   return type === "数字人" || type === "照片数字人";
 }
@@ -193,6 +213,7 @@ export function mapAssetTasks(type, tasks = []) {
       title: getAssetTaskTitle(type, task),
       category: type,
       model: task.model || task.modelKey || task.providerModel || "",
+      resolution: getAssetTaskResolution(task),
       ratio:
         task.ratio ||
         task.resolution ||

@@ -252,13 +252,11 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 1440px) {
+@media (max-width: 1024px) {
   .voice-synthesis-workspace__top {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 1024px) {
   .voice-synthesis-workspace {
     padding: 18px;
   }

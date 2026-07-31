@@ -30,7 +30,7 @@ export function ToastProvider({ children }) {
   }, []);
 
   const showToast = useCallback((message, options = {}) => {
-    const normalizedMessage = String(message || "").trim();
+    const normalizedMessage = String(message || "").trim().replace(/[。．.]+$/u, "");
     if (!normalizedMessage) return;
     if (timerRef.current) window.clearTimeout(timerRef.current);
     const type = toastIcons[options.type] ? options.type : "info";

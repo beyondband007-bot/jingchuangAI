@@ -135,6 +135,13 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   }
 
   useEffect(() => {
+    if (!notice || isRechargeRequiredMessage(notice)) return undefined;
+    showToast(/失败|错误|不能|需|请先/.test(notice) ? "warning" : "info", notice);
+    const timer = window.setTimeout(() => setNotice(""), 2000);
+    return () => window.clearTimeout(timer);
+  }, [notice, showGlobalToast]);
+
+  useEffect(() => {
     try {
       const safeItems = recentResults.map(({ audioDataUrl, ...item }) => item);
       window.localStorage.setItem(voiceConvertRecentStorageKey, JSON.stringify(safeItems));
@@ -351,11 +358,9 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
       setCurrentResult(generatedResult);
       setRecentResults((items) => [generatedResult, ...items].slice(0, 20));
       setViewTab("result");
-      showToast("success", "音色转换成功");
       setNotice(result.rhythmMeta?.adjusted ? "转换完成，已按源音频时长自动校准语速。" : "转换完成。");
     } catch (error) {
       stopConversionProgress();
-      showToast("error", "音色转换失败，请稍后重试");
       setNotice(error.message || "音色转换失败");
     } finally {
       setIsConverting(false);
@@ -450,7 +455,6 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
                 speed={speed}
                 volume={volume}
                 pitch={pitch}
-                notice={notice}
                 demoAudio={demoAudio}
                 resultAudio={resultAudio}
                 onPickTarget={uploadTargetFile}
