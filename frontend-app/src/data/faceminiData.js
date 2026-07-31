@@ -592,7 +592,7 @@ export const fmCreationScenes = [
   [
     "自媒体创作",
     "脚本、种草、朋友圈文案一键生成",
-    "creation/scenes/self-media.png",
+    "creation/scenes/self-media.jpg",
     ["小红书", "抖音", "朋友圈"],
     "article",
     "进入自媒体文案",
@@ -600,7 +600,7 @@ export const fmCreationScenes = [
   [
     "电商美工",
     "主图、海报、详情页视觉快速出图",
-    "creation/scenes/ecommerce-design.png",
+    "creation/scenes/ecommerce-design.jpg",
     ["淘宝", "京东", "拼多多"],
     "image",
     "进入图片生成",
@@ -608,7 +608,7 @@ export const fmCreationScenes = [
   [
     "虚拟主播",
     "选形象配音色，口型自然对口播",
-    "creation/scenes/virtual-anchor.png",
+    "creation/scenes/virtual-anchor.jpg",
     ["抖音", "淘宝直播", "视频号"],
     "digital-human",
     "进入数字人形象",
@@ -616,7 +616,7 @@ export const fmCreationScenes = [
   [
     "文案带货",
     "标题、标语、带货话术智能撰写",
-    "creation/scenes/copy-selling.png",
+    "creation/scenes/copy-selling.jpg",
     ["淘宝", "抖音", "小红书"],
     "article",
     "进入带货文案",
@@ -624,7 +624,7 @@ export const fmCreationScenes = [
   [
     "品牌宣传",
     "海报文案物料，一站式制作",
-    "creation/scenes/brand-promo.png",
+    "creation/scenes/brand-promo.jpg",
     ["公众号", "抖音", "品牌私域"],
     "article",
     "进入品牌宣传",
@@ -632,7 +632,7 @@ export const fmCreationScenes = [
   [
     "母婴种草",
     "育儿干货、好物测评、宝宝文案",
-    "creation/scenes/mom-baby.png",
+    "creation/scenes/mom-baby.jpg",
     ["小红书", "抖音", "宝宝树"],
     "article",
     "进入母婴种草",
