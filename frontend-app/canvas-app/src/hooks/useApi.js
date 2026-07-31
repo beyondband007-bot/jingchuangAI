@@ -17,6 +17,7 @@ import { useProvider } from './useProvider'
 import { useModelStore } from '@/stores/pinia'
 import { currentProjectId } from '@/stores/canvas'
 import { resolveVideoRequestDuration } from '@/utils/videoRequest'
+import { createVideoError } from '@/utils/videoError'
 
 /**
  * Base API state hook | 基础 API 状态 Hook
@@ -264,6 +265,9 @@ export const useVideoGeneration = () => {
       requestType: 'json',
       endpoint: modelStore.getVideoEndpoint()
     })
+    if (task.status === 'failed' || task.status === 'error') {
+      throw createVideoError(task)
+    }
 
     // Check if async (need polling) | 检查是否异步
     const isAsync = modelConfig?.async !== false
@@ -316,7 +320,7 @@ export const useVideoGeneration = () => {
 
       // Check for failure | 检查是否失败
       if (result.status === 'failed' || result.status === 'error') {
-        throw new Error(result.error?.message || result.message || '视频生成失败')
+        throw createVideoError(result)
       }
 
       // Wait before next poll | 等待下次轮询

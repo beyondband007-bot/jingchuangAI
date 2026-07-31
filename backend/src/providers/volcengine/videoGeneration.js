@@ -13,29 +13,117 @@ function extractArkRequestId(message = "") {
   return match?.[1] || "";
 }
 
-export function normalizeArkVideoErrorMessage(body = {}) {
+function extractReferenceIndex(body = {}) {
+  const param = String(body?.error?.param || body?.param || body?.error?.message || body?.message || "");
+  const match = param.match(/content\[(\d+)\]/i);
+  const contentIndex = Number(match?.[1]);
+  return Number.isInteger(contentIndex) && contentIndex > 0 ? contentIndex : null;
+}
+
+export function normalizeArkVideoErrorDetail(body = {}) {
   const code = String(body?.error?.code || body?.code || "");
   const message = String(body?.error?.message || body?.message || body?.error || "");
   const requestId = body?.request_id || body?.RequestId || extractArkRequestId(message);
   const suffix = requestId ? `（RequestId: ${requestId}）` : "";
+  const referenceIndex = extractReferenceIndex(body);
 
   if (/InputImageSensitiveContentDetected\.PrivacyInformation/i.test(code) || /input image may contain real person/i.test(message)) {
-    return `素材未通过火山平台隐私内容审核：输入图片可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换图片后重试${suffix}`;
+    return {
+      code: "VIDEO_REFERENCE_PRIVACY_REJECTED",
+      message: `素材未通过火山平台隐私内容审核：输入图片可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换图片后重试${suffix}`,
+      stage: "provider_submit",
+      referenceType: "image",
+      referenceIndex,
+      requestId: requestId || null
+    };
   }
 
   if (/InputVideoSensitiveContentDetected\.PrivacyInformation/i.test(code) || /input video may contain real person/i.test(message)) {
-    return `素材未通过火山平台隐私内容审核：输入视频可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换视频后重试${suffix}`;
+    return {
+      code: "VIDEO_REFERENCE_PRIVACY_REJECTED",
+      message: `素材未通过火山平台隐私内容审核：输入视频可能包含真人或隐私信息。请确认已获得人物授权；若仍被拦截，请更换视频后重试${suffix}`,
+      stage: "provider_submit",
+      referenceType: "video",
+      referenceIndex,
+      requestId: requestId || null
+    };
+  }
+
+  if (/InputTextSensitiveContentDetected/i.test(code) || /input text 'content\[0\]' may contain sensitive information/i.test(message)) {
+    return {
+      code: "VIDEO_PROMPT_CONTENT_REJECTED",
+      message: `提示词未通过 Seedance 文本安全审核。该错误与参考图片无关，平台未返回具体触发词；请缩短提示词或分段改写后重试${suffix}`,
+      stage: "provider_submit",
+      referenceType: null,
+      referenceIndex: null,
+      requestId: requestId || null
+    };
+  }
+
+  if (/resource download failed/i.test(message) || (/InvalidParameter/i.test(code) && /image_url/i.test(message))) {
+    const index = referenceIndex || 1;
+    return {
+      code: "VIDEO_REFERENCE_DOWNLOAD_FAILED",
+      message: `Seedance 无法下载第${index}张参考图，请重新上传素材后重试${suffix}`,
+      stage: "provider_submit",
+      referenceType: "image",
+      referenceIndex: index,
+      requestId: requestId || null
+    };
+  }
+
+  if (/SensitiveContentDetected/i.test(code) || /sensitive content/i.test(message)) {
+    const referenceType = /InputVideo/i.test(code)
+      ? "video"
+      : /InputImage/i.test(code)
+        ? "image"
+        : null;
+    return {
+      code: referenceType ? "VIDEO_REFERENCE_CONTENT_REJECTED" : "VIDEO_INPUT_CONTENT_REJECTED",
+      message: referenceType
+        ? `参考素材未通过火山平台内容安全审核，请更换素材后重试${suffix}`
+        : `输入内容未通过火山平台安全审核，平台未返回具体触发项，请简化输入后重试${suffix}`,
+      stage: "provider_submit",
+      referenceType,
+      referenceIndex: referenceType ? referenceIndex : null,
+      requestId: requestId || null
+    };
   }
 
   if (/asset .*not found/i.test(message) || /notfound.*asset/i.test(code)) {
-    return `火山视频生成接口无法访问该 asset:// 资产，通常是资产库 Project 与视频生成 API Key 命名空间未打通${suffix}`;
+    return {
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `火山视频生成接口无法访问该 asset:// 资产，通常是资产库 Project 与视频生成 API Key 命名空间未打通${suffix}`,
+      stage: "provider_submit",
+      referenceType: null,
+      referenceIndex,
+      requestId: requestId || null
+    };
   }
 
   if (/copyright/i.test(code) || /copyright restrictions/i.test(message)) {
-    return `AI模型判断提示词可能涉及版权问题，请调整后再上传${suffix}`;
+    return {
+      code: "VIDEO_PROMPT_COPYRIGHT_REJECTED",
+      message: `AI模型判断提示词可能涉及版权问题，请调整后再上传${suffix}`,
+      stage: "provider_submit",
+      referenceType: null,
+      referenceIndex: null,
+      requestId: requestId || null
+    };
   }
 
-  return message || `Ark request failed${suffix}`;
+  return {
+    code: "VIDEO_PROVIDER_REQUEST_FAILED",
+    message: message || `Ark request failed${suffix}`,
+    stage: "provider_submit",
+    referenceType: null,
+    referenceIndex,
+    requestId: requestId || null
+  };
+}
+
+export function normalizeArkVideoErrorMessage(body = {}) {
+  return normalizeArkVideoErrorDetail(body).message;
 }
 
 async function requestArk(path, options = {}) {
@@ -58,9 +146,12 @@ async function requestArk(path, options = {}) {
   }
 
   if (!response.ok) {
-    const error = new Error(normalizeArkVideoErrorMessage(body) || `Ark request failed with ${response.status}`);
+    const detail = normalizeArkVideoErrorDetail(body);
+    const error = new Error(detail.message || `Ark request failed with ${response.status}`);
     error.status = response.status;
     error.body = body;
+    error.code = detail.code;
+    error.videoErrorDetail = detail;
     throw error;
   }
 
@@ -116,10 +207,12 @@ export function mapArkVideoGenerationState(record = {}) {
 }
 
 export function extractArkVideoGenerationResult(record = {}) {
+  const errorDetail = record?.error ? normalizeArkVideoErrorDetail(record) : null;
   return {
     resultUrl: record?.content?.video_url || record?.content?.url || "",
     thumbnailUrl: record?.content?.last_frame_url || record?.content?.thumbnail_url || "",
-    errorMessage: record?.error ? normalizeArkVideoErrorMessage(record) : ""
+    errorMessage: errorDetail?.message || "",
+    errorDetail
   };
 }
 

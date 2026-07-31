@@ -1,4 +1,3 @@
-import path from "path";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
@@ -20,14 +19,17 @@ import {
 } from "../../providers/kie/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
-import { buildPublicMediaUrl } from "../../shared/publicMedia.js";
 import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
 import { getUserCredits } from "../../shared/userService.js";
-import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapVideoModel, mapVideoTask } from "./video.mapper.js";
+import { serializeVideoTaskError } from "./video.errors.js";
+import {
+  resolveArkVideoReference,
+  resolveKieVideoReference
+} from "./video.references.js";
 import {
   calculateVideoPoints,
   normalizeVideoImageInputs,
@@ -102,14 +104,16 @@ export async function createTask(payload, userId) {
   } = payload;
 
   const pool = getPool();
-  const connection = await pool.getConnection();
   let taskId;
   let costPoints;
   let modelPrice;
+  let rmbCost;
+  let arkContent;
+  let kieReferences;
 
+  const lookupConnection = await pool.getConnection();
   try {
-    await connection.beginTransaction();
-    modelPrice = await findVideoModelPrice(connection, model);
+    modelPrice = await findVideoModelPrice(lookupConnection, model);
     if (!modelPrice) {
       throw createHttpError("model not found", 400);
     }
@@ -145,7 +149,94 @@ export async function createTask(payload, userId) {
     }
 
     costPoints = calculateVideoPoints(modelPrice, duration, count);
-    const rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
+    rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
+  } finally {
+    lookupConnection.release();
+  }
+
+  let referenceIndex = 0;
+  if (modelPrice.provider_type === "ark") {
+    arkContent = [{ type: "text", text: prompt.trim() }];
+    if (firstFrameImageUrl) {
+      referenceIndex += 1;
+      arkContent.push(buildFirstFrameImage(await resolveArkVideoReference({
+        userId,
+        url: firstFrameImageUrl,
+        kind: "image",
+        referenceIndex
+      })));
+    }
+    if (lastFrameImageUrl) {
+      referenceIndex += 1;
+      arkContent.push(buildLastFrameImage(await resolveArkVideoReference({
+        userId,
+        url: lastFrameImageUrl,
+        kind: "image",
+        referenceIndex
+      })));
+    }
+    for (const imageUrl of referenceImageUrls) {
+      referenceIndex += 1;
+      arkContent.push(buildReferenceImage(await resolveArkVideoReference({
+        userId,
+        url: imageUrl,
+        kind: "image",
+        referenceIndex
+      })));
+    }
+    if (referenceVideoUrl) {
+      referenceIndex += 1;
+      arkContent.push(buildReferenceVideo(await resolveArkVideoReference({
+        userId,
+        url: referenceVideoUrl,
+        kind: "video",
+        referenceIndex
+      })));
+    }
+    if (referenceAudioUrl) {
+      referenceIndex += 1;
+      arkContent.push(buildReferenceAudio(await resolveArkVideoReference({
+        userId,
+        url: referenceAudioUrl,
+        kind: "audio",
+        referenceIndex
+      })));
+    }
+  } else {
+    const imageUrl = firstFrameImageUrl || referenceImageUrls[0] || referenceImageUrl;
+    kieReferences = {};
+    if (imageUrl) {
+      referenceIndex += 1;
+      kieReferences.imageUrl = await resolveKieVideoReference({
+        userId,
+        url: imageUrl,
+        kind: "image",
+        referenceIndex
+      });
+    }
+    if (referenceVideoUrl) {
+      referenceIndex += 1;
+      kieReferences.videoUrl = await resolveKieVideoReference({
+        userId,
+        url: referenceVideoUrl,
+        kind: "video",
+        referenceIndex
+      });
+    }
+    if (referenceAudioUrl) {
+      referenceIndex += 1;
+      kieReferences.audioUrl = await resolveKieVideoReference({
+        userId,
+        url: referenceAudioUrl,
+        kind: "audio",
+        referenceIndex
+      });
+    }
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
     taskId = await createVideoTask(connection, {
       userId,
       source,
@@ -175,55 +266,17 @@ export async function createTask(payload, userId) {
     await connection.commit();
   } catch (error) {
     await connection.rollback();
-    connection.release();
     throw error;
+  } finally {
+    connection.release();
   }
-
-  connection.release();
 
   try {
     let provider;
     if (modelPrice.provider_type === "ark") {
-      const content = [{ type: "text", text: prompt.trim() }];
-      if (firstFrameImageUrl) {
-        content.push(buildFirstFrameImage(await resolveArkReference({
-          userId,
-          url: firstFrameImageUrl,
-          kind: "image"
-        })));
-      }
-      if (lastFrameImageUrl) {
-        content.push(buildLastFrameImage(await resolveArkReference({
-          userId,
-          url: lastFrameImageUrl,
-          kind: "image"
-        })));
-      }
-      for (const imageUrl of referenceImageUrls) {
-        content.push(buildReferenceImage(await resolveArkReference({
-          userId,
-          url: imageUrl,
-          kind: "image"
-        })));
-      }
-      if (referenceVideoUrl) {
-        content.push(buildReferenceVideo(await resolveArkReference({
-          userId,
-          url: referenceVideoUrl,
-          kind: "video"
-        })));
-      }
-      if (referenceAudioUrl) {
-        content.push(buildReferenceAudio(await resolveArkReference({
-          userId,
-          url: referenceAudioUrl,
-          kind: "audio"
-        })));
-      }
-
       provider = await createArkVideoGenerationTask({
         model: config.ark.videoModel,
-        content,
+        content: arkContent,
         resolution: "720p",
         ratio,
         duration: Number(duration),
@@ -236,15 +289,15 @@ export async function createTask(payload, userId) {
         prompt: prompt.trim(),
         ratio,
         duration: Number(duration),
-        referenceImageUrl: resolveKieReference(firstFrameImageUrl || referenceImageUrls[0] || referenceImageUrl),
-        referenceVideoUrl: resolveKieReference(referenceVideoUrl),
-        referenceAudioUrl: resolveKieReference(referenceAudioUrl)
+        referenceImageUrl: kieReferences.imageUrl || null,
+        referenceVideoUrl: kieReferences.videoUrl || null,
+        referenceAudioUrl: kieReferences.audioUrl || null
       });
     }
     await setVideoTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
     console.error("create video task failed:", error.message, error.body || "");
-    await refundTask(taskId, userId, costPoints, `创建视频任务失败：${error.message}`);
+    await refundTask(taskId, userId, costPoints, error);
   }
 
   return getTask(taskId, userId);
@@ -295,61 +348,6 @@ export async function uploadReferenceAudio({ file }) {
   };
 }
 
-function getReferenceFilePath(url) {
-  const prefix = "/media/video/references/";
-  const value = String(url || "").trim();
-  if (!value.startsWith(prefix)) return "";
-  const fileName = path.basename(value.slice(prefix.length));
-  return path.resolve(process.cwd(), config.media.storageDir, "video", "references", fileName);
-}
-
-function getReferenceMimeType(kind, filePath) {
-  const extension = path.extname(filePath).toLowerCase();
-  if (kind === "image") {
-    if (extension === ".png") return "image/png";
-    if (extension === ".webp") return "image/webp";
-    return "image/jpeg";
-  }
-  if (kind === "audio") {
-    if (extension === ".wav") return "audio/wav";
-    if (extension === ".m4a") return "audio/mp4";
-    if (extension === ".aac") return "audio/aac";
-    if (extension === ".ogg") return "audio/ogg";
-    if (extension === ".webm") return "audio/webm";
-    if (extension === ".flac") return "audio/flac";
-    return "audio/mpeg";
-  }
-  if (extension === ".mov") return "video/quicktime";
-  if (extension === ".webm") return "video/webm";
-  if (extension === ".avi") return "video/x-msvideo";
-  return "video/mp4";
-}
-
-async function resolveArkReference({ userId, url, kind }) {
-  if (/^asset:\/\//i.test(url)) return url;
-  const filePath = getReferenceFilePath(url);
-  if (!filePath) return url;
-
-  const asset = await createVirtualAssetFromLocalFile({
-    userId,
-    feature: `video-generation-${kind}`,
-    localUrl: url,
-    filePath,
-    originalName: path.basename(filePath),
-    mimeType: getReferenceMimeType(kind, filePath),
-    sizeBytes: 0
-  });
-  return waitForVirtualAssetReference(asset.id);
-}
-
-function resolveKieReference(url) {
-  const value = String(url || "").trim();
-  if (!value) return null;
-  if (/^https?:\/\//i.test(value)) return value;
-  if (/^\/media\//i.test(value)) return buildPublicMediaUrl(value);
-  throw createHttpError("Kie video references must use an HTTP URL or uploaded media URL", 400);
-}
-
 async function refreshProcessingTasks() {
   const rows = await findRefreshableVideoTasks();
   await Promise.all(rows.map((row) => refreshTask(row.id)));
@@ -381,9 +379,10 @@ async function refreshTask(id) {
         await setVideoTaskCompleted(id, localUrls, { providerUrls });
       }
     } else if (mapped === "failed") {
-      const arkError = isArkTask
-        ? extractArkVideoGenerationResult(record).errorMessage
-        : "";
+      const arkResult = isArkTask
+        ? extractArkVideoGenerationResult(record)
+        : null;
+      const arkError = arkResult?.errorDetail || arkResult?.errorMessage || "";
       if (arkError) {
         await refundTask(id, null, null, arkError);
         return;
@@ -406,7 +405,7 @@ async function refreshTask(id) {
   }
 }
 
-async function refundTask(id, userIdArg, costPointsArg, message) {
+async function refundTask(id, userIdArg, costPointsArg, error) {
   const connection = await getPool().getConnection();
   try {
     await connection.beginTransaction();
@@ -418,7 +417,11 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 
     const userId = userIdArg || task.user_id;
     const costPoints = costPointsArg || task.cost_points;
-    await setVideoTaskFailed(connection, id, message);
+    const storedError = serializeVideoTaskError(error, {
+      refunded: true,
+      points: costPoints
+    });
+    await setVideoTaskFailed(connection, id, storedError);
 
     if (!task.refunded) {
       await refundCredits(connection, {

@@ -728,6 +728,7 @@ const handleGenerate = async () => {
     updateNode(videoNodeId, {
       loading: false,
       error: err.message || '生成失败',
+      errorDetail: err.errorDetail || err.body?.errorDetail || null,
       label: '生成失败',
       updatedAt: Date.now()
     })
