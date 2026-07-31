@@ -1,4 +1,7 @@
 .video-result-card {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
   background: #fff;
   border-color: var(--fm-line);
   border-radius: var(--radius-control);
@@ -10,11 +13,24 @@
   position: relative;
   display: block;
   width: calc(100% - 32px);
-  min-height: 180px;
-  aspect-ratio: var(--video-preview-aspect, auto);
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  flex: 1 1 auto;
   margin: 16px 16px 0;
   overflow: hidden;
   background: #9fb6cc;
+}
+
+.video-result-card .result-meta {
+  display: flex;
+  flex: none;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.video-result-card .card-actions {
+  margin-top: auto;
 }
 
 .video-result-preview video {

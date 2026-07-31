@@ -43,6 +43,7 @@ export async function createVideoTask(connection, {
   modelKey,
   prompt,
   ratio,
+  resolution,
   duration,
   mode,
   count,
@@ -57,16 +58,17 @@ export async function createVideoTask(connection, {
 }) {
   const [result] = await connection.query(
     `INSERT INTO video_generation_tasks
-     (user_id, source, model_key, prompt, ratio, duration, mode, video_count, cost_points, rmb_cost,
+     (user_id, source, model_key, prompt, ratio, resolution, duration, mode, video_count, cost_points, rmb_cost,
       reference_image_url, first_frame_image_url, last_frame_image_url, reference_image_urls,
       reference_video_url, reference_audio_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
     [
       userId,
       source || "video",
       modelKey,
       prompt,
       ratio,
+      resolution || null,
       duration,
       mode,
       count,

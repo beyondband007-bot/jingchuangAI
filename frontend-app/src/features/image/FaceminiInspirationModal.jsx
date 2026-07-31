@@ -5,6 +5,13 @@ import "../../components/faceminiDetailModal.css";
 
 function formatInspirationResolution(item) {
   if (item?.resolution) return String(item.resolution);
+  if (item?.quality) return String(item.quality);
+  const modelDescription = [item?.model, item?.modelKey, item?.providerModel, item?.mode]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/[_-]/g, " ");
+  const modelResolution = modelDescription.match(/\b(\d{3,4}\s*p|\d+\s*k)\b/i);
+  if (modelResolution) return modelResolution[1].replace(/\s+/g, "").toUpperCase();
   const width = Number(item?.width);
   const height = Number(item?.height);
   if (width > 0 && height > 0) return `${Math.round(width)}×${Math.round(height)}`;

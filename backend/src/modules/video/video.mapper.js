@@ -35,6 +35,7 @@ export function mapVideoTask(row) {
     modelKey: row.model_key,
     source: row.source || "video",
     ratio: row.ratio,
+    resolution: row.resolution || null,
     duration,
     mode: row.mode || "first-frame",
     count: row.video_count,
