@@ -195,7 +195,7 @@ const isPolling = ref(false)
 
 // Watch for taskId changes and start polling | 监听 taskId 变化并开始轮询
 watch(() => props.data?.taskId, (taskId) => {
-  if (taskId && !props.data?.url && !isPolling.value) {
+  if (taskId && !props.data?.url && !props.data?.recoveringTask && !isPolling.value) {
     startPolling(taskId)
   }
 })
@@ -203,7 +203,7 @@ watch(() => props.data?.taskId, (taskId) => {
 // 页面刷新后恢复轮询 | Resume polling after page refresh
 onMounted(() => {
   const { taskId, url } = props.data || {}
-  if (taskId && !url && !isPolling.value) {
+  if (taskId && !url && !props.data?.recoveringTask && !isPolling.value) {
     startPolling(taskId)
   }
 })
@@ -228,7 +228,7 @@ const startPolling = async (taskId) => {
       loading: false,
       progress: 100,
       label: '视频生成',
-      taskId: null  // 清除 taskId
+      taskId
     })
     window.$message?.success('视频生成成功')
   } catch (err) {
@@ -238,7 +238,7 @@ const startPolling = async (taskId) => {
       error: err.message || '生成失败',
       errorDetail: err.errorDetail || err.body?.errorDetail || null,
       label: '生成失败',
-      taskId: null  // 清除 taskId
+      taskId
     })
     window.$message?.error(err.message || '视频生成失败')
   } finally {

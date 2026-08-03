@@ -99,7 +99,7 @@ export async function getModels() {
 }
 
 export async function listTasks({ userId, filter = "all", source } = {}) {
-  await refreshProcessingTasks();
+  await recoverProcessingVideoTasks();
   const rows = await listVideoTaskRows({ userId, filter, source });
   return rows.map(mapVideoTask);
 }
@@ -375,9 +375,10 @@ export async function uploadReferenceAudio({ file }) {
   };
 }
 
-async function refreshProcessingTasks() {
+export async function recoverProcessingVideoTasks() {
   const rows = await findRefreshableVideoTasks();
   await Promise.all(rows.map((row) => refreshTask(row.id)));
+  return rows.length;
 }
 
 async function refreshTask(id) {

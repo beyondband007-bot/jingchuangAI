@@ -340,6 +340,7 @@ import { useModelStore } from '../stores/pinia'
 import { projects, initProjectsStore, ensureProjectLoaded, renameProject, deleteProject, duplicateProject, flushProjectSave, saveState, saveError } from '../stores/projects'
 import { openMyAssets, uploadCanvasMedia } from '../api/facemini'
 import { resumeProjectImageTasks } from '../services/imageTaskRecovery'
+import { resumeProjectVideoTasks } from '../services/videoTaskRecovery'
 import { IMAGE_PROMPT_POLISH_SYSTEM_PROMPT, PROMPT_POLISH_MODEL, VIDEO_PROMPT_POLISH_SYSTEM_PROMPT } from '../config/promptPolish'
 
 // API Settings component | API 设置组件
@@ -1039,6 +1040,13 @@ const loadProjectById = async (projectId) => {
     await ensureProjectLoaded(projectId)
     loadProject(projectId)
     await resumeProjectImageTasks({
+      projectId,
+      nodes: nodes.value,
+      edges: edges.value,
+      updateNode,
+      isCurrent: () => route.params.id === projectId
+    })
+    await resumeProjectVideoTasks({
       projectId,
       nodes: nodes.value,
       edges: edges.value,

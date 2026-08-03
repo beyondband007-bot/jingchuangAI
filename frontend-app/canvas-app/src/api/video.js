@@ -2,7 +2,9 @@ import { associateNodeTask, faceminiRequest, notifyCreditsChanged, uploadDataUrl
 import { resolveVideoImageSources } from '../utils/videoRequest'
 import { createVideoError } from '../utils/videoError'
 
-export async function createVideoTask(data) {
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+export async function createVideoTask(data, { onTaskCreated = () => {} } = {}) {
   const {
     firstFrameImage,
     lastFrameImage,
@@ -65,29 +67,53 @@ export async function createVideoTask(data) {
       referenceAudioUrl: referenceAudioUrl || null
     })
   })
+  onTaskCreated(task)
   await associateNodeTask({
     projectId: data.projectId,
-    nodeId: data.nodeId,
+    nodeId: data.resultNodeId || data.nodeId,
     taskType: 'video',
     taskId: task.id,
     inputHash: data.inputHash
+  }).catch(error => {
+    console.warn('[Canvas] 视频任务关联保存失败，节点内 taskId 将用于恢复:', error.message)
   })
   notifyCreditsChanged()
   return task
 }
 
 export async function getVideoTaskStatus(taskId) {
-  const task = await faceminiRequest(`/video/tasks/${encodeURIComponent(taskId)}`)
+  const task = await faceminiRequest(`/video/tasks/${encodeURIComponent(taskId)}`, {
+    cache: 'no-store'
+  })
   if (['completed', 'failed'].includes(task.status)) notifyCreditsChanged()
-  return { ...task, url: task.video || null }
+  return { ...task, url: task.video || task.url || null }
 }
 
-export async function pollVideoTask(taskId, maxAttempts = 120, interval = 5000) {
+export async function pollVideoTask(taskId, {
+  maxAttempts = 120,
+  interval = 5000,
+  onStatus = () => {}
+} = {}) {
+  let lastError = null
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = await getVideoTaskStatus(taskId)
-    if (result.status === 'completed') return result
-    if (result.status === 'failed') throw createVideoError(result)
-    await new Promise(resolve => setTimeout(resolve, interval))
+    try {
+      const result = await getVideoTaskStatus(taskId)
+      lastError = null
+      onStatus(result)
+      if (result.status === 'completed' && result.url) return result
+      if (result.status === 'failed') {
+        const terminalError = createVideoError(result)
+        terminalError.terminalTask = true
+        throw terminalError
+      }
+    } catch (error) {
+      if (error.terminalTask || [401, 403, 404].includes(error.status)) throw error
+      lastError = error
+    }
+    if (attempt < maxAttempts - 1) await wait(interval)
   }
-  throw new Error('视频生成仍在处理中，请稍后回到当前画布查看结果')
+  if (lastError) {
+    throw new Error(`视频任务状态同步失败：${lastError.message || '网络异常'}`)
+  }
+  throw new Error('视频生成仍在处理中，请稍后重新打开当前画布自动恢复结果')
 }

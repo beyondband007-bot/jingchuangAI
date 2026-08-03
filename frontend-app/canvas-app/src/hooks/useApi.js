@@ -242,6 +242,7 @@ export const useVideoGeneration = () => {
       prompt: params.prompt || '',
       projectId: currentProjectId.value,
       nodeId: params.nodeId,
+      resultNodeId: params.resultNodeId,
       inputHash: params.inputHash
     }
     // Add optional params | 添加可选参数
@@ -262,8 +263,7 @@ export const useVideoGeneration = () => {
 
     // Call API to create task | 调用 API 创建任务
     const task = await createVideoTask(adaptedParams, {
-      requestType: 'json',
-      endpoint: modelStore.getVideoEndpoint()
+      onTaskCreated: params.onTaskCreated
     })
     if (task.status === 'failed' || task.status === 'error') {
       throw createVideoError(task)

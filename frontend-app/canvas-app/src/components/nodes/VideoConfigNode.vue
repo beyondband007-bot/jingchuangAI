@@ -646,7 +646,20 @@ const handleGenerate = async () => {
     const params = {
       model: localModel.value,
       nodeId: props.id,
-      inputHash: getNodeInputHash(props.id)
+      resultNodeId: videoNodeId,
+      inputHash: getNodeInputHash(props.id),
+      onTaskCreated: task => {
+        const taskId = task?.id || task?.task_id || task?.taskId
+        if (!taskId) return
+        updateNode(videoNodeId, {
+          taskId,
+          loading: true,
+          label: '视频生成中...',
+          model: localModel.value,
+          inputChanged: false,
+          updatedAt: Date.now()
+        })
+      }
     }
 
     // Add prompt if provided | 如果有提示词则添加

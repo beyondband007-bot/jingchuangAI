@@ -1,12 +1,4 @@
 services:
-  backend:
-    ports:
-      - "${BACKEND_DEV_BIND_ADDRESS:-127.0.0.1}:${BACKEND_DEV_PORT:-3006}:3006"
-    # Keep the Docker backend and a locally started backend on the same media
-    # directory while developing, so completed task rows always have playable files.
-    volumes:
-      - ./backend/storage:/app/storage
-
   frontend-dev:
     image: node:22-alpine
     working_dir: /app

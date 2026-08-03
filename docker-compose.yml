@@ -117,8 +117,13 @@ services:
       ALIPAY_PRIVATE_KEY_PATH: ${ALIPAY_PRIVATE_KEY_PATH:-/run/secrets/payment-keys/app_private_key.pem}
       ALIPAY_PUBLIC_KEY_PATH: ${ALIPAY_PUBLIC_KEY_PATH:-/run/secrets/payment-keys/alipay_public_key.pem}
       ALIPAY_PUBLIC_BASE_URL: ${ALIPAY_PUBLIC_BASE_URL:-${PUBLIC_BASE_URL:-}}
+    ports:
+      - "${BACKEND_DEV_BIND_ADDRESS:-127.0.0.1}:${BACKEND_DEV_PORT:-3006}:3006"
     volumes:
-      - jingchuang_ai_media:/app/storage
+      # Keep every Compose invocation and a locally started backend on the same
+      # durable directory. Switching storage mounts makes valid /media URLs
+      # appear to disappear after a redeploy.
+      - ./backend/storage:/app/storage
       - ./secrets/payment-keys:/run/secrets/payment-keys:ro
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3006/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
@@ -153,6 +158,5 @@ services:
 
 volumes:
   jingchuang_ai_mysql_data:
-  jingchuang_ai_media:
   jingchuang_ai_caddy_data:
   jingchuang_ai_caddy_config:

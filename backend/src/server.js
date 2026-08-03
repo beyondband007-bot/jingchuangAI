@@ -2,6 +2,7 @@ import { createApp } from "./app.js";
 import { config } from "./config/index.js";
 import { recoverStreamingChatMessages } from "./modules/chat/chat.service.js";
 import { recoverProcessingImageTasks } from "./modules/image/image.service.js";
+import { recoverProcessingVideoTasks } from "./modules/video/video.service.js";
 import { recoverInterruptedReplicateTasks } from "./modules/replicate/replicate.service.js";
 
 const app = createApp();
@@ -49,3 +50,21 @@ const initialImageTaskRecovery = setTimeout(runImageTaskRecovery, 1_000);
 initialImageTaskRecovery.unref();
 const imageTaskRecoveryTimer = setInterval(runImageTaskRecovery, 10_000);
 imageTaskRecoveryTimer.unref();
+
+let videoTaskRecoveryRunning = false;
+async function runVideoTaskRecovery() {
+  if (videoTaskRecoveryRunning) return;
+  videoTaskRecoveryRunning = true;
+  try {
+    await recoverProcessingVideoTasks();
+  } catch (error) {
+    console.error("Failed to recover processing video tasks", error);
+  } finally {
+    videoTaskRecoveryRunning = false;
+  }
+}
+
+const initialVideoTaskRecovery = setTimeout(runVideoTaskRecovery, 1_500);
+initialVideoTaskRecovery.unref();
+const videoTaskRecoveryTimer = setInterval(runVideoTaskRecovery, 10_000);
+videoTaskRecoveryTimer.unref();

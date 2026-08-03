@@ -8,7 +8,7 @@
     "prebuild": "npm run check:style-contract",
     "build": "vite build",
     "check:style-contract": "node ./scripts/check-style-contract.mjs",
-    "test:recovery": "node --test ./scripts/test-image-task-recovery.mjs ./scripts/test-image-task-polling.mjs",
+    "test:recovery": "node --test ./scripts/test-image-task-recovery.mjs ./scripts/test-image-task-polling.mjs ./scripts/test-video-task-recovery.mjs",
     "test:video-duration": "node --test ./scripts/test-video-request-duration.mjs",
     "test:video-error": "node --test ./scripts/test-video-error-message.mjs",
     "preview": "vite preview"
