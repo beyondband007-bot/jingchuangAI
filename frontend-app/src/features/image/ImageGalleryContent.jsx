@@ -91,7 +91,7 @@ export function ImageGalleryContent({
         <>
           <WaterfallGrid
             className={`image-results-feed ${hasCompletedNotice ? "has-completed-notice" : ""}`}
-            gap={6}
+            gap={12}
             maxColumns={6}
             reductionThreshold={4}
             items={galleryItems}
