@@ -32,7 +32,15 @@ const runningTaskSources = [
   { sourceType: "watermark", tableName: "watermark_tasks", statuses: ["pending", "processing"] },
   { sourceType: "remove-bg", tableName: "remove_bg_tasks", statuses: ["pending", "processing"] },
   { sourceType: "enhance", tableName: "enhance_tasks", statuses: ["pending", "processing"] },
-  { sourceType: "article", tableName: "article_generation_packages", statuses: ["pending", "processing"] },
+  // Article packages are only a container. Their stored status can lag behind
+  // the image jobs when a user leaves before the history view refreshes it, so
+  // use the child jobs as the source of truth for the sidebar notification.
+  {
+    sourceType: "article",
+    tableName: "image_generation_tasks",
+    statuses: ["pending", "processing"],
+    source: "article"
+  },
   { sourceType: "music", tableName: "music_tasks", statuses: ["processing"] },
   { sourceType: "replicate", tableName: "replicate_tasks", statuses: ["processing"] },
 ];
