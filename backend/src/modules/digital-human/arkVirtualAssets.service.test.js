@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createVirtualAssetFromRemoteUrl,
+  isLocalProviderAssetId,
   shouldCreateLocalOnlyVirtualAsset,
   shouldFallbackToLocalVirtualAsset
 } from "./arkVirtualAssets.service.js";
+
+test("does not classify a real Ark provider id as a previous local fallback", () => {
+  assert.equal(isLocalProviderAssetId("local-7d031cc7"), true);
+  assert.equal(isLocalProviderAssetId("asset-20260803120000-portrait"), false);
+});
 
 test("honors localOnly even when Ark credentials are configured", () => {
   assert.equal(shouldCreateLocalOnlyVirtualAsset(true, true), true);

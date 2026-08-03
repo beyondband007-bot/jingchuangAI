@@ -1,7 +1,13 @@
 import path from "path";
 import { stat } from "fs/promises";
 import { config } from "../../config/index.js";
+import {
+  createVirtualAssetFromLocalFile,
+  createVirtualAssetFromRemoteUrl,
+  waitForVirtualAssetReference
+} from "../digital-human/arkVirtualAssets.service.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { buildPublicMediaUrl } from "../../shared/publicMedia.js";
 import { createVideoTaskError } from "./video.errors.js";
 
 const MEDIA_PREFIX = "/media/video/references/";
@@ -38,6 +44,32 @@ export function getVideoReferenceMimeType(kind, filePath) {
 
 function expectedContentType(kind) {
   return kind === "image" ? "image/" : kind === "video" ? "video/" : "audio/";
+}
+
+function getTrustedAssetFeature(kind) {
+  return `video-generation-${kind}`;
+}
+
+function getRemoteReferenceFileName(url, kind, referenceIndex) {
+  try {
+    const fileName = path.basename(new URL(url).pathname);
+    if (fileName) return fileName;
+  } catch {
+    // The caller validates the URL before this fallback is used.
+  }
+  return `video-reference-${referenceIndex}.${kind === "image" ? "png" : kind === "video" ? "mp4" : "mp3"}`;
+}
+
+function assertTrustedAssetReference(reference, { kind, referenceIndex }) {
+  if (/^asset:\/\/(?!local-)/i.test(String(reference || "").trim())) return reference;
+  throw createVideoTaskError({
+    code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+    message: `第${referenceIndex}个参考素材未能进入火山可信资产库。视频任务尚未提交，未扣除积分。请稍后重试或重新上传素材。`,
+    status: 502,
+    stage: "reference_asset",
+    referenceType: kind,
+    referenceIndex
+  });
 }
 
 export async function assertVideoReferenceUrlAccessible({
@@ -89,8 +121,9 @@ export async function resolveArkVideoReference({
   url,
   kind,
   referenceIndex,
-  uploadImpl = uploadFileToKie,
-  fetchImpl = globalThis.fetch,
+  createLocalAssetImpl = createVirtualAssetFromLocalFile,
+  createRemoteAssetImpl = createVirtualAssetFromRemoteUrl,
+  waitForAssetReferenceImpl = waitForVirtualAssetReference,
   storageDir = config.media.storageDir
 }) {
   const value = String(url || "").trim();
@@ -98,8 +131,75 @@ export async function resolveArkVideoReference({
   if (/^asset:\/\/(?!local-)/i.test(value)) return value;
   if (/^asset:\/\/local-/i.test(value)) {
     throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+      message: `第${referenceIndex}个参考素材只有本地占位地址，未进入火山可信资产库。请重新上传后重试。视频任务尚未提交，未扣除积分。`,
+      status: 422,
+      stage: "reference_asset",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+
+  const filePath = getVideoReferenceFilePath(value, storageDir);
+  try {
+    let asset;
+    if (filePath) {
+      const fileStat = await stat(filePath);
+      if (!fileStat.isFile() || fileStat.size <= 0) throw new Error("reference file is empty");
+      asset = await createLocalAssetImpl({
+        userId,
+        feature: getTrustedAssetFeature(kind),
+        localUrl: value,
+        filePath,
+        originalName: path.basename(filePath),
+        mimeType: getVideoReferenceMimeType(kind, filePath),
+        sizeBytes: fileStat.size
+      });
+    } else {
+      const remoteUrl = /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
+      if (!/^https?:\/\//i.test(remoteUrl)) throw new Error("reference URL must be HTTP(S) or uploaded media");
+      const originalName = getRemoteReferenceFileName(remoteUrl, kind, referenceIndex);
+      asset = await createRemoteAssetImpl({
+        userId,
+        feature: getTrustedAssetFeature(kind),
+        url: remoteUrl,
+        originalName,
+        mimeType: getVideoReferenceMimeType(kind, originalName),
+        sizeBytes: 0
+      });
+    }
+
+    const reference = await waitForAssetReferenceImpl(asset.id);
+    return assertTrustedAssetReference(reference, { kind, referenceIndex });
+  } catch (cause) {
+    if (cause?.errorDetail) throw cause;
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+      message: `第${referenceIndex}个参考素材进入火山可信资产库失败，请检查素材和网络后重试。视频任务尚未提交，未扣除积分。`,
+      status: 502,
+      stage: "reference_asset",
+      referenceType: kind,
+      referenceIndex,
+      cause
+    });
+  }
+}
+
+export async function resolveKieVideoReference({
+  userId,
+  url,
+  kind,
+  referenceIndex,
+  uploadImpl = uploadFileToKie,
+  fetchImpl = globalThis.fetch,
+  storageDir = config.media.storageDir
+}) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^asset:\/\//i.test(value)) {
+    throw createVideoTaskError({
       code: "VIDEO_REFERENCE_URL_UNREACHABLE",
-      message: `第${referenceIndex}个参考素材只有本地占位地址，Seedance 无法访问。请重新上传后重试。视频任务尚未提交，未扣除积分。`,
+      message: `第${referenceIndex}个参考素材是火山资产地址，当前 KIE 模型无法访问。请重新上传后重试。视频任务尚未提交，未扣除积分。`,
       status: 422,
       stage: "reference_preflight",
       referenceType: kind,
@@ -108,20 +208,26 @@ export async function resolveArkVideoReference({
   }
 
   const filePath = getVideoReferenceFilePath(value, storageDir);
-  if (!filePath) return value;
+  if (!filePath) return /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
 
-  let fileStat;
-  let upload;
   try {
-    fileStat = await stat(filePath);
+    const fileStat = await stat(filePath);
     if (!fileStat.isFile() || fileStat.size <= 0) throw new Error("reference file is empty");
-    upload = await uploadImpl({
+    const upload = await uploadImpl({
       filePath,
       fileName: path.basename(filePath),
       mimeType: getVideoReferenceMimeType(kind, filePath),
       uploadPath: `video-references/${userId}`
     });
+    await assertVideoReferenceUrlAccessible({
+      url: upload.url,
+      kind,
+      referenceIndex,
+      fetchImpl
+    });
+    return upload.url;
   } catch (cause) {
+    if (cause?.errorDetail) throw cause;
     throw createVideoTaskError({
       code: "VIDEO_REFERENCE_UPLOAD_FAILED",
       message: `第${referenceIndex}个参考素材上传临时素材服务失败，请检查网络后重试。视频任务尚未提交，未扣除积分。`,
@@ -132,28 +238,4 @@ export async function resolveArkVideoReference({
       cause
     });
   }
-
-  await assertVideoReferenceUrlAccessible({
-    url: upload.url,
-    kind,
-    referenceIndex,
-    fetchImpl
-  });
-  return upload.url;
-}
-
-export async function resolveKieVideoReference(options) {
-  const value = String(options?.url || "").trim();
-  if (!value) return "";
-  if (/^asset:\/\//i.test(value)) {
-    throw createVideoTaskError({
-      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
-      message: `第${options.referenceIndex}个参考素材是火山资产地址，当前 KIE 模型无法访问。请重新上传后重试。视频任务尚未提交，未扣除积分。`,
-      status: 422,
-      stage: "reference_preflight",
-      referenceType: options.kind,
-      referenceIndex: options.referenceIndex
-    });
-  }
-  return resolveArkVideoReference(options);
 }

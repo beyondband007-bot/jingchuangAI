@@ -27,4 +27,4 @@ RUN mkdir -p /app/storage
 
 EXPOSE 3006
 
-CMD ["node", "src/server.js"]
+CMD ["sh", "-lc", "npm run db:init && npm start"]

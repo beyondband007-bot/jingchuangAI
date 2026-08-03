@@ -21,6 +21,7 @@ import {
   findRefreshableArkVirtualAssets,
   findReusableArkVirtualAsset,
   listArkVirtualAssets,
+  updateArkVirtualAssetGroupProvider,
   updateArkVirtualAssetMetadata,
   updateArkVirtualAssetStatus
 } from "./arkVirtualAssets.repository.js";
@@ -62,7 +63,7 @@ export function shouldCreateLocalOnlyVirtualAsset(localOnly = false, arkConfigur
   return Boolean(localOnly) || !arkConfigured;
 }
 
-function isLocalProviderAssetId(providerAssetId = "") {
+export function isLocalProviderAssetId(providerAssetId = "") {
   return String(providerAssetId || "").startsWith("local-");
 }
 
@@ -119,7 +120,7 @@ export function mapArkVirtualAsset(row) {
 export async function ensureVirtualAssetGroup({ userId, feature }) {
   const normalizedFeature = normalizeFeature(feature);
   const existing = await findArkVirtualAssetGroupByFeature(userId, normalizedFeature, config.ark.projectName);
-  if (existing) return existing;
+  if (existing && !isLocalProviderAssetId(existing.provider_group_id)) return existing;
 
   const name = getGroupName(normalizedFeature);
   const result = await createArkAssetGroup({
@@ -135,13 +136,18 @@ export async function ensureVirtualAssetGroup({ userId, feature }) {
     throw error;
   }
 
-  const id = await createArkVirtualAssetGroupRow({
-    userId,
-    feature: normalizedFeature,
-    name,
-    providerGroupId,
-    projectName: config.ark.projectName
-  });
+  let id = existing?.id;
+  if (existing) {
+    await updateArkVirtualAssetGroupProvider(existing.id, { name, providerGroupId });
+  } else {
+    id = await createArkVirtualAssetGroupRow({
+      userId,
+      feature: normalizedFeature,
+      name,
+      providerGroupId,
+      projectName: config.ark.projectName
+    });
+  }
   return findArkVirtualAssetGroupByFeature(userId, normalizedFeature, config.ark.projectName) || { id, provider_group_id: providerGroupId };
 }
 
@@ -235,7 +241,8 @@ async function createLocalOnlyVirtualAssetFromLocalFile({
     feature: normalizedFeature,
     assetType,
     sourceHash,
-    projectName: config.ark.projectName
+    projectName: config.ark.projectName,
+    providerKind: "local"
   });
   if (reusable) {
     await updateArkVirtualAssetMetadata(reusable.id, metadata);
@@ -299,7 +306,8 @@ export async function createVirtualAssetFromLocalFile({
     feature: normalizedFeature,
     assetType,
     sourceHash,
-    projectName: config.ark.projectName
+    projectName: config.ark.projectName,
+    providerKind: "ark"
   });
   if (reusable) {
     await updateArkVirtualAssetMetadata(reusable.id, metadata);
@@ -394,7 +402,8 @@ export async function createVirtualAssetFromRemoteUrl({
     feature: normalizedFeature,
     assetType,
     sourceHash,
-    projectName: config.ark.projectName
+    projectName: config.ark.projectName,
+    providerKind: "ark"
   });
   if (reusable) return mapArkVirtualAsset(await refreshVirtualAssetByRow(reusable));
 

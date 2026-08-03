@@ -19,6 +19,15 @@ export async function createArkVirtualAssetGroupRow({ userId, feature, name, pro
   return result.insertId;
 }
 
+export async function updateArkVirtualAssetGroupProvider(id, { name, providerGroupId }) {
+  await getPool().query(
+    `UPDATE ark_virtual_asset_groups
+     SET name = ?, provider_group_id = ?, status = 'ready', error_message = NULL
+     WHERE id = ?`,
+    [name, providerGroupId, id]
+  );
+}
+
 export async function findArkVirtualAssetGroupById(id) {
   const [rows] = await getPool().query(
     `SELECT g.*
@@ -31,14 +40,28 @@ export async function findArkVirtualAssetGroupById(id) {
   return rows[0] || null;
 }
 
-export async function findReusableArkVirtualAsset({ userId, feature, assetType, sourceHash, projectName }) {
+export async function findReusableArkVirtualAsset({
+  userId,
+  feature,
+  assetType,
+  sourceHash,
+  projectName,
+  providerKind = "any",
+  pool = getPool()
+}) {
   if (!sourceHash) return null;
-  const [rows] = await getPool().query(
+  const providerFilter = providerKind === "ark"
+    ? "AND a.provider_asset_id NOT LIKE 'local-%'"
+    : providerKind === "local"
+      ? "AND a.provider_asset_id LIKE 'local-%'"
+      : "";
+  const [rows] = await pool.query(
     `SELECT a.*, g.provider_group_id, g.project_name
      FROM ark_virtual_assets a
      INNER JOIN ark_virtual_asset_groups g ON g.id = a.group_id
      WHERE a.user_id = ? AND a.feature = ? AND a.asset_type = ? AND a.source_hash = ?
        AND a.status IN ('active','processing') AND g.project_name = ?
+       ${providerFilter}
      ORDER BY a.status = 'active' DESC, a.id DESC
      LIMIT 1`,
     [userId, feature, assetType, sourceHash, projectName]
