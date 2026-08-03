@@ -49,10 +49,11 @@
   grid-template-columns: 120px minmax(0, 1fr) auto;
   gap: var(--space-14px);
   align-items: center;
-  padding: 14px;
+  padding: var(--space-4);
   background: #ffffff;
   border: 1px solid #ebe7f4;
   border-radius: var(--radius-lg);
+  max-height: 200px;
 }
 
 .dh-history-card.is-resumable {

@@ -12,6 +12,7 @@ frontend-app/test-results/
 # Environment and secrets
 .env
 .env.production
+.env.production.example
 .env.local
 .env.*.local
 docker-compose.override.yml
