@@ -1529,7 +1529,6 @@ async function seedDemoData() {
         ('four_o_image', '4o Image', 21, FALSE),
         ('nano_banana_pro', 'Nano Banana Pro', 63, TRUE),
         ('flux_2_pro', 'Flux 2 Pro', 18, TRUE),
-        ('imagen_4_fast', 'Imagen 4 Fast', 14, TRUE),
         ('seedream_4_5', 'Seedream 4.5', 22, TRUE),
         ('nano_banana2', 'nano_banana2', 25, FALSE),
         ('midjourney', 'Midjourney', 35, FALSE)
@@ -1580,6 +1579,7 @@ async function seedDemoData() {
         sort_order = VALUES(sort_order)
     `);
 
+    await connection.query("DELETE FROM image_model_prices WHERE model_key = 'imagen_4_fast'");
     await connection.query("UPDATE image_model_prices SET base_points = 30");
     await connection.query(`
       UPDATE video_model_prices

@@ -78,11 +78,6 @@ const modelOptionMeta = {
     description: "电影级光影质感，写实大片、科幻 3A、氛围感商业视觉效果拉满",
     icon: `${iconBase}/flux.svg`,
   },
-  imagen_4_fast: {
-    title: "Imagen 4 Fast",
-    description: "极速轻量化，出图快，适合快速打稿、批量生成素材",
-    icon: `${iconBase}/spark.svg`,
-  },
   seedream_4_5: {
     title: "Seedream 4.5",
     description: "国风 / 电商优化，适合商品图、中式场景、日常写实创作",

@@ -9,7 +9,6 @@ export function mapImageModelToKie(modelKey) {
     four_o_image: "4o-image",
     nano_banana_pro: "nano-banana-pro",
     flux_2_pro: "flux-2/pro-text-to-image",
-    imagen_4_fast: "google/imagen4-fast",
     seedream_4_5: "seedream/4.5-text-to-image",
     nano_banana2: "nano-banana-2"
   };
@@ -25,11 +24,31 @@ function mapGptImageQuality(quality) {
   return qualityMap[quality] || "medium";
 }
 
-export async function createKieImageTask({ prompt, modelKey, ratio, quality, referenceImageUrls = [] }) {
+export function buildKieImageInput({ prompt, modelKey, ratio, quality, referenceImageUrls = [] }) {
+  if (modelKey === "flux_2_pro") {
+    return {
+      prompt,
+      aspect_ratio: ratio || "1:1",
+      resolution: quality === "2K" ? "2K" : "1K",
+      nsfw_checker: false
+    };
+  }
+
+  if (modelKey === "seedream_4_5") {
+    return {
+      prompt,
+      aspect_ratio: ratio || "1:1",
+      // Kie Seedream 4.5 exposes basic (2K) and high (4K). The product's
+      // current 1K/2K choices both belong to the non-4K tier.
+      quality: "basic",
+      nsfw_checker: false
+    };
+  }
+
   const isGptImage15ImageToImage = modelKey === "gpt_image_1_5_i2i";
   const isGptImage2ImageToImage = modelKey === "gpt_image_2_i2i";
   const isGptImage2 = modelKey === "gpt_image_2" || isGptImage2ImageToImage;
-  const input = isGptImage15ImageToImage
+  return isGptImage15ImageToImage
     ? {
         prompt,
         input_urls: referenceImageUrls,
@@ -43,16 +62,20 @@ export async function createKieImageTask({ prompt, modelKey, ratio, quality, ref
           aspect_ratio: ratio || "auto",
           resolution: quality || "2K"
         }
-    : {
-        prompt,
-        aspect_ratio: ratio || "auto",
-        resolution: quality || "2K",
-        ...(isGptImage2 ? {} : {
-          output_format: "jpg",
-          google_search: false,
-          image_input: referenceImageUrls
-        })
-      };
+      : {
+          prompt,
+          aspect_ratio: ratio || "auto",
+          resolution: quality || "2K",
+          ...(isGptImage2 ? {} : {
+            output_format: "jpg",
+            google_search: false,
+            image_input: referenceImageUrls
+          })
+        };
+}
+
+export async function createKieImageTask({ prompt, modelKey, ratio, quality, referenceImageUrls = [] }) {
+  const input = buildKieImageInput({ prompt, modelKey, ratio, quality, referenceImageUrls });
 
   const body = {
     model: mapImageModelToKie(modelKey),
