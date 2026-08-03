@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Play, RotateCcw, Trash2 } from "lucide-react";
+import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { getLyricSubtitle } from "./musicPlayerUtils";
 import "./musicRecentGrid.css";
 
@@ -41,6 +41,7 @@ export function MusicRecentGrid({
   onSelectItem,
   onDownloadItem,
   onEditCoverItem,
+  onRenameItem,
   onDeleteItem,
   onRetryItem,
   emptyText = "还没有生成过音乐，快来创作第一首吧 ✨"
@@ -214,6 +215,18 @@ export function MusicRecentGrid({
                       </button>
                       {isMenuOpen ? (
                         <div className="music-ref-recent-menu" role="menu">
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setOpenMenuId(null);
+                              onRenameItem?.(item);
+                            }}
+                          >
+                            <Pencil size={14} />
+                            修改名称
+                          </button>
                           <button
                             type="button"
                             role="menuitem"

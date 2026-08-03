@@ -98,7 +98,7 @@ export function AiMusicGenerationWorkbenchCard({
             <label className="ai-music-workbench__field-title ai-music-workbench__field-title--compact">
               <Type size={17} />
               歌曲名称
-              <small>选填</small>
+              <small>必填</small>
             </label>
             <div className="ai-music-workbench__title-input">
               <input
@@ -106,10 +106,11 @@ export function AiMusicGenerationWorkbenchCard({
                 value={title}
                 onChange={(event) => onTitleChange(event.target.value)}
                 placeholder="为你的作品取个名字"
-                maxLength={100}
+                maxLength={20}
+                required
                 disabled={isGenerating}
               />
-              <em>{title.length} / 100</em>
+              <em>{title.length} / 20</em>
             </div>
 
             <label className="ai-music-workbench__field-title ai-music-workbench__field-title--compact">

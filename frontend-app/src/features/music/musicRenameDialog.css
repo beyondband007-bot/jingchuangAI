@@ -1,0 +1,51 @@
+.music-rename-dialog {
+  width: min(440px, 100%);
+}
+
+.music-rename-dialog .ui-modal__header {
+  padding-right: 64px;
+}
+
+.music-rename-body {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.music-rename-body label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.music-rename-body .ui-input {
+  min-height: 44px;
+}
+
+.music-rename-hint {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.music-rename-hint span:first-child {
+  min-width: 0;
+}
+
+.music-rename-hint span:last-child {
+  flex: none;
+}
+
+.music-rename-hint .is-error {
+  color: var(--danger);
+}
+
+.music-rename-actions {
+  padding-top: 0;
+}
+
+.music-rename-actions .ui-button {
+  min-width: 88px;
+}

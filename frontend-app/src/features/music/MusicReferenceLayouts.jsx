@@ -10,6 +10,7 @@ export function MusicReferenceComposer({
   onSelectItem,
   onDownloadItem,
   onEditCoverItem,
+  onRenameItem,
   onDeleteItem,
   onRetryItem,
 }) {
@@ -36,6 +37,7 @@ export function MusicReferenceComposer({
           onSelectItem={onSelectItem}
           onDownloadItem={onDownloadItem}
           onEditCoverItem={onEditCoverItem}
+          onRenameItem={onRenameItem}
           onDeleteItem={onDeleteItem}
           onRetryItem={onRetryItem}
         />
@@ -49,6 +51,7 @@ export function MusicHistoryList({
   onSelectItem,
   onDownloadItem,
   onEditCoverItem,
+  onRenameItem,
   onDeleteItem,
   onRetryItem,
 }) {
@@ -60,6 +63,7 @@ export function MusicHistoryList({
           onSelectItem={onSelectItem}
           onDownloadItem={onDownloadItem}
           onEditCoverItem={onEditCoverItem}
+          onRenameItem={onRenameItem}
           onDeleteItem={onDeleteItem}
           onRetryItem={onRetryItem}
         />

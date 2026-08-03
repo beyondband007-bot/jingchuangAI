@@ -273,6 +273,7 @@ export function MusicFullPagePlayer({
   item,
   items = [],
   onBack,
+  backLabel = "返回创作",
   onSelectItem,
   autoPlay = true
 }) {
@@ -556,7 +557,7 @@ export function MusicFullPagePlayer({
       <div className="music-full-player__toolbar">
         <button type="button" className="music-full-player__back" onClick={onBack}>
           <ArrowLeft size={18} />
-          返回创作
+          {backLabel}
         </button>
       </div>
 

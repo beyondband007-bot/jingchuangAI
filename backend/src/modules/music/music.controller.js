@@ -70,3 +70,12 @@ export async function updateTaskCover(req, res) {
     sendError(res, error);
   }
 }
+
+export async function updateTaskTitle(req, res) {
+  try {
+    const task = await service.updateMusicTaskName(req.params.id, req.user.id, req.body || {});
+    res.json(task);
+  } catch (error) {
+    sendError(res, error);
+  }
+}

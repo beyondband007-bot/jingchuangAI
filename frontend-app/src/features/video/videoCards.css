@@ -1,7 +1,7 @@
 .video-result-card {
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: auto;
   background: #fff;
   border-color: var(--fm-line);
   border-radius: var(--radius-control);
@@ -15,8 +15,8 @@
   width: calc(100% - 32px);
   height: auto;
   min-height: 0;
-  aspect-ratio: auto;
-  flex: 1 1 auto;
+  aspect-ratio: 16 / 9;
+  flex: 0 0 auto;
   margin: 16px 16px 0;
   overflow: hidden;
   background: #9fb6cc;

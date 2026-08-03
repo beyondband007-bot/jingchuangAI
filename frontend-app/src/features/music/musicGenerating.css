@@ -98,8 +98,10 @@
 }
 
 .music-gen-waiting-step-track {
+  position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
 }
 
@@ -145,19 +147,19 @@
 }
 
 .music-gen-waiting-step-line {
-  flex: 1 1 auto;
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 23px);
+  z-index: 0;
+  width: calc(100% + var(--space-2) - 46px);
   height: 2px;
-  margin: 0 6px;
   background: #e8e4f2;
   border-radius: var(--radius-pill);
+  transform: translateY(-50%);
 }
 
 .music-gen-waiting-step-line.is-done {
   background: linear-gradient(90deg, #8b7df7, #6b5ce7);
-}
-
-.music-gen-waiting-step.is-last .music-gen-waiting-step-track {
-  justify-content: center;
 }
 
 .music-gen-waiting-step-copy strong {
@@ -246,7 +248,6 @@
     row-gap: var(--space-20px);
   }
 
-  .music-gen-waiting-step.is-last .music-gen-waiting-step-track,
   .music-gen-waiting-step:nth-child(2) .music-gen-waiting-step-line {
     display: none;
   }
