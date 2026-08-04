@@ -98,11 +98,33 @@
 [data-feature-module="article"]
   .article-view-root.article-popular-workbench
   .article-form-panel__scroll {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
   grid-row: 1;
   min-height: 0;
   max-height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-form-panel.is-image-config {
+  height: auto;
+  max-height: none;
+  align-self: flex-start;
+  overflow: visible;
+}
+
+[data-feature-module="article"]
+  .article-view-root.article-popular-workbench
+  .article-form-panel.is-image-config
+  .article-form-panel__scroll {
+  flex: 0 0 auto;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 [data-feature-module="article"]

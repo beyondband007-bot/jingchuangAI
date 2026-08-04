@@ -111,7 +111,7 @@ export function ArticleImageConfigPanel({
       </div>
       <div className="article-step-action-row">
         <p className="article-credit-hint">
-          预计消耗 <strong><BillingPoints feature="article" payload={{ imageCount: form.imageCount }} fallbackPoints={10 + Math.max(1, form.imageCount) * 30} /></strong>{" "}
+          预计消耗 <strong><BillingPoints feature="image" payload={{ count: form.imageCount }} fallbackPoints={Math.max(1, form.imageCount) * 30} /></strong>{" "}
           积分
         </p>
         <div className="article-step-buttons">

@@ -20,7 +20,12 @@ export function useGenerationNotifications(authUser) {
         setSummary(next || EMPTY_SUMMARY);
         return next;
       })
-      .catch(() => EMPTY_SUMMARY)
+      .catch(() => {
+        // Do not retain a previous running-task badge when the summary request
+        // fails. Keeping it turns a transient network error into a stale red dot.
+        setSummary(EMPTY_SUMMARY);
+        return EMPTY_SUMMARY;
+      })
       .finally(() => {
         requestRef.current = null;
       });

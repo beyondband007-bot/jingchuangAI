@@ -39,6 +39,8 @@
   min-height: 0;
   overflow: auto;
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: var(--space-3);
   padding: 16px 20px 24px;
 }

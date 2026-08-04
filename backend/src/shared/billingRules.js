@@ -133,7 +133,7 @@ export function calculateBillingQuote(feature, payload = {}) {
     case "enhance":
       items.push(item(mediaKind === "video" ? "video-enhance" : "image",
         mediaKind === "video" ? "视频画质提升" : "图片画质提升",
-        mediaKind === "video" ? 0 : BILLING_RULES.imagePointsPerItem));
+        mediaKind === "video" ? config.kie.enhanceVideoPoints : config.kie.enhanceImagePoints));
       break;
     case "remove-bg":
       items.push(item("image", "智能抠图", BILLING_RULES.imagePointsPerItem));
@@ -153,7 +153,7 @@ export function calculateBillingQuote(feature, payload = {}) {
     feature: key,
     points: items.reduce((sum, entry) => sum + entry.points, 0),
     items,
-    rulesVersion: "2026-07-27"
+    rulesVersion: "2026-08-04"
   };
 }
 
@@ -162,6 +162,8 @@ export function getPublicBillingRules() {
     ...BILLING_RULES,
     watermarkImagePoints: config.kie.watermarkImagePoints,
     watermarkVideoPoints: config.kie.watermarkVideoPoints,
-    rulesVersion: "2026-07-27"
+    enhanceImagePoints: config.kie.enhanceImagePoints,
+    enhanceVideoPoints: config.kie.enhanceVideoPoints,
+    rulesVersion: "2026-08-04"
   };
 }

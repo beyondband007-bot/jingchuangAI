@@ -169,6 +169,21 @@
   cursor: not-allowed;
 }
 
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-generate-fab__points {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3px);
+  padding-left: var(--space-2);
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+[data-feature-module="article"] .article-view-root.article-popular-workbench .article-generate-fab__points .billing-points {
+  font-weight: 600;
+}
+
 [data-feature-module="article"] .article-view-root.article-popular-workbench .article-fresh-template-preview {
   overflow: hidden;
 }
