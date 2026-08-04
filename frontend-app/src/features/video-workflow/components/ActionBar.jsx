@@ -1,5 +1,5 @@
 import React from "react";
-import { Download, Loader2, LockKeyhole, RefreshCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Loader2, LockKeyhole, RefreshCcw, Sparkles } from "lucide-react";
 
 export function ActionBar({
   workflowStatus,
@@ -31,10 +31,16 @@ export function ActionBar({
             </button>
           </>
         ) : workflowStatus === "failed" ? (
-          <button type="button" className="vgw-action-btn vgw-action-btn--primary" onClick={onRetry}>
-            <RefreshCcw size={18} />
-            重试
-          </button>
+          <>
+            <button type="button" className="vgw-action-btn vgw-action-btn--secondary" onClick={onNewTask}>
+              <ArrowLeft size={18} />
+              返回
+            </button>
+            <button type="button" className="vgw-action-btn vgw-action-btn--primary" onClick={onRetry}>
+              <RefreshCcw size={18} />
+              重试
+            </button>
+          </>
         ) : (
           <button
             type="button"

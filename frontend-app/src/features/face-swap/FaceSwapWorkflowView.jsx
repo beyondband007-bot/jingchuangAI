@@ -19,6 +19,14 @@ export function FaceSwapWorkflowView({ isActive = true }) {
       activeTaskKey="jingchuang-ai:face-swap:active-task-id"
       moduleId="face-swap"
       emptyOptions={emptyOptions}
+      estimatedTimeText="3-5 分钟"
+      progressSimulation={{
+        initialProgress: 1,
+        holdProgress: 90,
+        minDurationMs: 3 * 60 * 1000,
+        maxDurationMs: 5 * 60 * 1000,
+        finishDurationMs: 1200,
+      }}
       header={{
         title: "视频换脸生成",
         description: "上传人脸与目标视频，AI 将身份自然融合到每一帧画面",

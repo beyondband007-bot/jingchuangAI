@@ -15,7 +15,13 @@ import { InputSection } from "./components/InputSection";
 import { ProcessTimeline } from "./components/ProcessTimeline";
 import { ResultViewer } from "./components/ResultViewer";
 import { WorkflowHeader } from "./components/WorkflowHeader";
-import { deriveWorkflowStatus, readVideoFileDuration } from "./utils";
+import {
+  createSimulatedProgressDuration,
+  deriveWorkflowStatus,
+  getSimulatedProgress,
+  isRestorableWorkflowTask,
+  readVideoFileDuration,
+} from "./utils";
 import "./videoWorkflow.css";
 import "./videoWorkflowStates.css";
 
@@ -52,7 +58,10 @@ function createInitialTaskState(activeTaskKey) {
     error: "",
     activeTaskId: readActiveTaskId(),
     resultUrl: "",
+    pendingResultUrl: "",
     sourceVideoUrl: "",
+    progressStartedAt: 0,
+    progressDurationMs: 0,
     input: {
       imageAsset: null,
       videoAsset: null,
@@ -79,6 +88,8 @@ export function VideoGenerationWorkflow({
   buildCreatePayload,
   renderExtraConfig,
   emptyOptions,
+  estimatedTimeText = "1-3 分钟",
+  progressSimulation = null,
 }) {
   const { showToast, dismissToast } = useToast();
   const [options, setOptions] = useState(emptyOptions);
@@ -88,6 +99,12 @@ export function VideoGenerationWorkflow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const activeRef = useRef(isActive);
+  const usesSimulatedProgress = Boolean(progressSimulation);
+  const initialProgress = Number(progressSimulation?.initialProgress ?? 1);
+  const holdProgress = Number(progressSimulation?.holdProgress ?? 90);
+  const minDurationMs = Number(progressSimulation?.minDurationMs ?? 3 * 60 * 1000);
+  const maxDurationMs = Number(progressSimulation?.maxDurationMs ?? 5 * 60 * 1000);
+  const finishDurationMs = Number(progressSimulation?.finishDurationMs ?? 1200);
 
   function readActiveTaskId() {
     try {
@@ -114,13 +131,17 @@ export function VideoGenerationWorkflow({
   const workflowStatus = useMemo(() => {
     return deriveWorkflowStatus({
       uploadingField: taskState.input.uploadingField,
-      taskStatus: activeTask?.status || (isSubmitting ? "processing" : "idle"),
-      progress: activeTask?.progress ?? taskState.progress,
+      taskStatus: usesSimulatedProgress
+        ? taskState.status
+        : activeTask?.status || (isSubmitting ? "processing" : taskState.status),
+      progress: usesSimulatedProgress ? taskState.progress : activeTask?.progress ?? taskState.progress,
     });
-  }, [taskState, activeTask, isSubmitting]);
+  }, [taskState, activeTask, isSubmitting, usesSimulatedProgress]);
 
-  const progress = activeTask?.progress ?? (workflowStatus === "uploading" ? 12 : taskState.progress);
-  const resultUrl = workflowStatus === "done" ? activeTask?.resultUrl || taskState.resultUrl : "";
+  const progress = usesSimulatedProgress
+    ? taskState.progress
+    : activeTask?.progress ?? (workflowStatus === "uploading" ? 12 : taskState.progress);
+  const resultUrl = workflowStatus === "done" ? taskState.resultUrl || activeTask?.resultUrl : "";
   const sourceVideoUrl =
     taskState.input.videoPreview || activeTask?.motionVideoUrl || taskState.sourceVideoUrl;
   const errorMessage = taskState.error || activeTask?.error || "";
@@ -166,7 +187,73 @@ export function VideoGenerationWorkflow({
   }
 
   function patchTaskState(patch) {
-    setTaskState((current) => ({ ...current, ...patch }));
+    setTaskState((current) => ({
+      ...current,
+      ...(typeof patch === "function" ? patch(current) : patch),
+    }));
+  }
+
+  function getProgressStart(task) {
+    const createdAt = Date.parse(task?.createdAt || "");
+    return Number.isFinite(createdAt) ? Math.min(createdAt, Date.now()) : Date.now();
+  }
+
+  function getProgressDuration() {
+    return createSimulatedProgressDuration(minDurationMs, maxDurationMs);
+  }
+
+  function applyCompletedTask(current, task) {
+    if (!usesSimulatedProgress) {
+      return {
+        activeTaskId: task.id,
+        status: "done",
+        progress: 100,
+        resultUrl: task.resultUrl || "",
+        pendingResultUrl: "",
+        sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
+        error: "",
+      };
+    }
+    if (
+      String(current.activeTaskId) === String(task.id) &&
+      (current.status === "finishing" || current.status === "done")
+    ) {
+      return {};
+    }
+    return {
+      activeTaskId: task.id,
+      status: "finishing",
+      progress: holdProgress,
+      resultUrl: "",
+      pendingResultUrl: task.resultUrl || "",
+      sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
+      error: "",
+    };
+  }
+
+  function applyProcessingTask(current, task) {
+    if (!usesSimulatedProgress) {
+      return {
+        activeTaskId: task.id,
+        status: task.progress >= 84 ? "rendering" : "processing",
+        progress: task.progress || current.progress || 24,
+        resultUrl: "",
+        sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
+        error: "",
+      };
+    }
+    const nextProgress = Math.max(initialProgress, Number(current.progress) || 0);
+    return {
+      activeTaskId: task.id,
+      status: nextProgress >= 84 ? "rendering" : "processing",
+      progress: nextProgress,
+      progressStartedAt: current.progressStartedAt || getProgressStart(task),
+      progressDurationMs: current.progressDurationMs || getProgressDuration(),
+      resultUrl: "",
+      pendingResultUrl: "",
+      sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
+      error: "",
+    };
   }
 
   function applyTaskSnapshot(task) {
@@ -174,39 +261,94 @@ export function VideoGenerationWorkflow({
 
     if (task.status === "failed") {
       const failureMessage = formatTaskFailure(task.error, moduleId);
-      writeActiveTaskId(task.id);
-      patchTaskState({
+      writeActiveTaskId(null);
+      patchTaskState((current) => ({
         status: "failed",
-        progress: task.progress || 0,
+        progress: usesSimulatedProgress ? current.progress : task.progress || 0,
         error: failureMessage,
-        activeTaskId: task.id,
+        activeTaskId: null,
         resultUrl: "",
-      });
+        pendingResultUrl: "",
+      }));
       showNotice(failureMessage, 12000);
       return;
     }
 
     if (task.status === "completed") {
-      patchTaskState({
-        activeTaskId: task.id,
-        status: "done",
-        progress: 100,
-        resultUrl: task.resultUrl || "",
-        sourceVideoUrl: task.motionVideoUrl || "",
-        error: "",
-      });
+      patchTaskState((current) => applyCompletedTask(current, task));
       return;
     }
 
-    patchTaskState({
-      activeTaskId: task.id,
-      status: task.progress >= 84 ? "rendering" : "processing",
-      progress: task.progress || 24,
-      resultUrl: "",
-      sourceVideoUrl: task.motionVideoUrl || "",
-      error: "",
-    });
+    patchTaskState((current) => applyProcessingTask(current, task));
   }
+
+  useEffect(() => {
+    if (
+      !usesSimulatedProgress ||
+      (taskState.status !== "processing" && taskState.status !== "rendering") ||
+      !taskState.progressStartedAt ||
+      !taskState.progressDurationMs
+    ) {
+      return undefined;
+    }
+
+    function updateProgress() {
+      setTaskState((current) => {
+        if (current.status !== "processing" && current.status !== "rendering") return current;
+        const nextProgress = getSimulatedProgress({
+          startedAt: current.progressStartedAt,
+          durationMs: current.progressDurationMs,
+          initialProgress,
+          holdProgress,
+        });
+        return {
+          ...current,
+          status: nextProgress >= 84 ? "rendering" : "processing",
+          progress: Math.max(current.progress, nextProgress),
+        };
+      });
+    }
+
+    updateProgress();
+    const timer = window.setInterval(updateProgress, 1000);
+    return () => window.clearInterval(timer);
+  }, [
+    usesSimulatedProgress,
+    taskState.status,
+    taskState.activeTaskId,
+    taskState.progressStartedAt,
+    taskState.progressDurationMs,
+    initialProgress,
+    holdProgress,
+  ]);
+
+  useEffect(() => {
+    if (!usesSimulatedProgress || taskState.status !== "finishing") return undefined;
+    const startedAt = Date.now();
+
+    function finishProgress() {
+      const ratio = Math.min(1, (Date.now() - startedAt) / Math.max(1, finishDurationMs));
+      setTaskState((current) => {
+        if (current.status !== "finishing") return current;
+        if (ratio >= 1) {
+          return {
+            ...current,
+            status: "done",
+            progress: 100,
+            resultUrl: current.pendingResultUrl,
+            pendingResultUrl: "",
+          };
+        }
+        return {
+          ...current,
+          progress: holdProgress + (100 - holdProgress) * ratio,
+        };
+      });
+    }
+
+    const timer = window.setInterval(finishProgress, 80);
+    return () => window.clearInterval(timer);
+  }, [usesSimulatedProgress, taskState.status, taskState.activeTaskId, finishDurationMs, holdProgress]);
 
   useEffect(() => {
     activeRef.current = isActive;
@@ -268,8 +410,20 @@ export function VideoGenerationWorkflow({
 
         const cachedId = readActiveTaskId();
         const cachedTask = taskData.find((t) => String(t.id) === String(cachedId));
-        if (cachedTask) {
+        if (isRestorableWorkflowTask(cachedTask)) {
           applyTaskSnapshot(cachedTask);
+        } else if (cachedId) {
+          writeActiveTaskId(null);
+          patchTaskState({
+            status: "idle",
+            progress: 0,
+            error: "",
+            activeTaskId: null,
+            resultUrl: "",
+            pendingResultUrl: "",
+            progressStartedAt: 0,
+            progressDurationMs: 0,
+          });
         }
       } catch (error) {
         if (mounted) showNotice(error.message || "加载失败");
@@ -294,28 +448,22 @@ export function VideoGenerationWorkflow({
               return {
                 ...current,
                 status: "failed",
-                progress: task.progress || 0,
+                progress: usesSimulatedProgress ? current.progress : task.progress || 0,
                 error: failureMessage,
+                activeTaskId: null,
                 resultUrl: "",
+                pendingResultUrl: "",
               };
             }
             if (task.status === "completed") {
               return {
                 ...current,
-                status: "done",
-                progress: 100,
-                resultUrl: task.resultUrl || "",
-                sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
-                error: "",
+                ...applyCompletedTask(current, task),
               };
             }
             return {
               ...current,
-              status: task.progress >= 84 ? "rendering" : "processing",
-              progress: task.progress || current.progress,
-              resultUrl: task.resultUrl || "",
-              sourceVideoUrl: task.motionVideoUrl || current.sourceVideoUrl,
-              error: "",
+              ...applyProcessingTask(current, task),
             };
           });
         })
@@ -458,9 +606,12 @@ export function VideoGenerationWorkflow({
     patchTaskState({
       error: "",
       status: "processing",
-      progress: 8,
+      progress: usesSimulatedProgress ? initialProgress : 8,
+      progressStartedAt: usesSimulatedProgress ? Date.now() : 0,
+      progressDurationMs: usesSimulatedProgress ? getProgressDuration() : 0,
       activeTaskId: null,
       resultUrl: "",
+      pendingResultUrl: "",
     });
 
     try {
@@ -479,6 +630,7 @@ export function VideoGenerationWorkflow({
         progress: 0,
         error: failureMessage,
         activeTaskId: null,
+        pendingResultUrl: "",
       });
       showNotice(failureMessage, 12000);
     } finally {
@@ -522,6 +674,9 @@ export function VideoGenerationWorkflow({
       error: "",
       activeTaskId: null,
       resultUrl: "",
+      pendingResultUrl: "",
+      progressStartedAt: 0,
+      progressDurationMs: 0,
     });
     writeActiveTaskId(null);
   }
@@ -618,7 +773,7 @@ export function VideoGenerationWorkflow({
       </div>
       <div className="vgw-config-chip vgw-config-chip--meta">
         <span>预计时长</span>
-        <strong>1-3 分钟</strong>
+        <strong>{estimatedTimeText}</strong>
       </div>
     </>
   );

@@ -54,6 +54,32 @@ export function readVideoFileDuration(file) {
   });
 }
 
+export function createSimulatedProgressDuration(minDurationMs, maxDurationMs, random = Math.random) {
+  const min = Math.max(1, Number(minDurationMs) || 1);
+  const max = Math.max(min, Number(maxDurationMs) || min);
+  const ratio = Math.min(1, Math.max(0, Number(random()) || 0));
+  return Math.round(min + (max - min) * ratio);
+}
+
+export function getSimulatedProgress({
+  startedAt,
+  durationMs,
+  now = Date.now(),
+  initialProgress = 1,
+  holdProgress = 90,
+}) {
+  const initial = Math.max(0, Number(initialProgress) || 0);
+  const hold = Math.max(initial, Number(holdProgress) || initial);
+  const duration = Math.max(1, Number(durationMs) || 1);
+  const start = Number(startedAt);
+  const current = Number(now);
+  const elapsed = Number.isFinite(start) && Number.isFinite(current)
+    ? Math.max(0, current - start)
+    : 0;
+  const ratio = Math.min(1, elapsed / duration);
+  return Math.min(hold, initial + (hold - initial) * ratio);
+}
+
 export const PROCESSING_STEPS = [
   { id: "detect", label: "素材检测", threshold: 0 },
   { id: "analyze", label: "结构分析", threshold: 20 },
@@ -81,12 +107,21 @@ export function getStepState(stepIndex, progress, isDone, isFailed = false) {
 
 export function deriveWorkflowStatus({ uploadingField, taskStatus, progress }) {
   if (uploadingField) return "uploading";
-  if (taskStatus === "completed") return "done";
-  if (taskStatus === "processing" || taskStatus === "pending") {
+  if (taskStatus === "completed" || taskStatus === "done") return "done";
+  if (
+    taskStatus === "processing" ||
+    taskStatus === "pending" ||
+    taskStatus === "rendering" ||
+    taskStatus === "finishing"
+  ) {
     return progress >= 84 ? "rendering" : "processing";
   }
   if (taskStatus === "failed") return "failed";
   return "idle";
+}
+
+export function isRestorableWorkflowTask(task) {
+  return Boolean(task) && task.status !== "failed";
 }
 
 export const WORKFLOW_STATUS_LABELS = {
