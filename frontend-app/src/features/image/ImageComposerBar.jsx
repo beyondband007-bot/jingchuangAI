@@ -127,8 +127,9 @@ export function ComposerBar({
       return;
     }
 
-    if (referenceImage && model !== "gpt_image_2") {
-      showToast("当前模型暂不支持参考图，请切换 GPT Image 2");
+    const selectedModel = options.models.find((item) => item.value === model);
+    if (referenceImage && selectedModel?.supportsReferenceImage === false) {
+      showToast("当前模型不支持参考图");
       return;
     }
 

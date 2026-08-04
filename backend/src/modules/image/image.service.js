@@ -46,6 +46,7 @@ import {
   imageQualityOptions,
   imageRatioOptions,
   qualityMultiplier,
+  supportsImageReference,
   validateImagePayload,
 } from './image.options.js'
 
@@ -91,7 +92,12 @@ export async function getCredits(userId) {
 export async function getModels() {
   const models = await findEnabledImageModels()
   return {
-    models: models.filter((model) => !hiddenImageModelKeys.has(model.value)),
+    models: models
+      .filter((model) => !hiddenImageModelKeys.has(model.value))
+      .map((model) => ({
+        ...model,
+        supportsReferenceImage: supportsImageReference(model.value),
+      })),
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
     counts: imageCountOptions,

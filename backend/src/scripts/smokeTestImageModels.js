@@ -1,5 +1,8 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { getPool } from "../db/pool.js";
 import { getKieTask, requestKie } from "../providers/kie/client.js";
+import { uploadFileToKie } from "../providers/kie/upload.js";
 import { createTask, getCredits, getTask } from "../modules/image/image.service.js";
 
 const runId = process.env.IMAGE_SMOKE_RUN_ID || `codex-image-model-smoke-${Date.now()}`;
@@ -9,7 +12,14 @@ const pollIntervalMs = Number(process.env.IMAGE_SMOKE_POLL_INTERVAL_MS || 5000);
 const prompt =
   process.env.IMAGE_SMOKE_PROMPT ||
   "A minimalist studio photograph of a small red paper boat on calm blue water, soft daylight, clean background, no text";
-const supportedModelKeys = new Set(["flux_2_pro", "seedream_4_5"]);
+const referencePath = String(process.env.IMAGE_SMOKE_REFERENCE_PATH || "").trim();
+const reportPath = String(process.env.IMAGE_SMOKE_REPORT_PATH || "").trim();
+const supportedModelKeys = new Set([
+  "gpt_image_2",
+  "nano_banana_pro",
+  "flux_2_pro",
+  "seedream_4_5",
+]);
 const modelKeys = String(
   process.env.IMAGE_SMOKE_MODELS || "flux_2_pro,seedream_4_5",
 )
@@ -47,6 +57,19 @@ async function run() {
     getProviderCredits(),
   ]);
 
+  let referenceImageUrl = "";
+  if (referencePath) {
+    console.log(`[${runId}] uploading reference image ${referencePath}`);
+    const upload = await uploadFileToKie({
+      filePath: referencePath,
+      fileName: path.basename(referencePath),
+      mimeType: "image/png",
+      uploadPath: "image-generation-smoke",
+    });
+    referenceImageUrl = upload.url;
+    console.log(`[${runId}] reference image uploaded`);
+  }
+
   const tasks = [];
   for (const model of modelKeys) {
     const task = await createTask(
@@ -58,6 +81,7 @@ async function run() {
         count: 1,
         source: "codex-smoke-test",
         threadId: runId,
+        referenceImageUrl: referenceImageUrl || null,
       },
       userId,
     );
@@ -81,7 +105,7 @@ async function run() {
   const placeholders = taskIds.map(() => "?").join(",");
   const [rows] = await getPool().query(
     `SELECT id, model_key, provider_task_id, status, cost_points, refunded,
-            result_urls, provider_result_urls, error_message
+            reference_image_url, result_urls, provider_result_urls, error_message
      FROM image_generation_tasks
      WHERE id IN (${placeholders})
      ORDER BY id ASC`,
@@ -111,6 +135,9 @@ async function run() {
     runId,
     userId,
     prompt,
+    reference: referencePath
+      ? { localPath: referencePath, uploadedUrl: referenceImageUrl }
+      : null,
     startedWith: {
       appCredits: Number(appCreditsBefore.balance),
       providerCredits: providerCreditsBefore,
@@ -130,6 +157,7 @@ async function run() {
       status: row.status,
       costPoints: Number(row.cost_points),
       refunded: Boolean(row.refunded),
+      referenceImageUrl: row.reference_image_url || null,
       localResultUrls: parseJson(row.result_urls),
       providerResultUrls: parseJson(row.provider_result_urls),
       error: row.error_message || null,
@@ -138,6 +166,11 @@ async function run() {
   };
 
   console.log(`IMAGE_SMOKE_REPORT=${JSON.stringify(report)}`);
+  if (reportPath) {
+    await mkdir(path.dirname(reportPath), { recursive: true });
+    await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    console.log(`[${runId}] report written to ${reportPath}`);
+  }
   if (report.tasks.some((task) => task.status !== "completed")) {
     process.exitCode = 1;
   }

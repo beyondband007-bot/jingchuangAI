@@ -10,6 +10,24 @@ export const gptImage2ModelKey = "gpt_image_2";
 export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 export const imageToImageModelKey = gptImage2ImageToImageModelKey;
 
+const imageReferenceModelKeys = new Set([
+  gptImage2ModelKey,
+  gptImage2ImageToImageModelKey,
+  "gpt_image_1_5_i2i",
+  "nano_banana_pro",
+  "flux_2_pro",
+  "seedream_4_5",
+]);
+
+const referenceRequiredModelKeys = new Set([
+  gptImage2ImageToImageModelKey,
+  "gpt_image_1_5_i2i",
+]);
+
+export function supportsImageReference(modelKey) {
+  return imageReferenceModelKeys.has(modelKey);
+}
+
 export function qualityMultiplier(quality) {
   return imageQualityOptions.find((item) => item.value === quality)?.multiplier || 1;
 }
@@ -18,11 +36,11 @@ export function validateImagePayload({ prompt, ratio, quality, count, model, ref
   if (!prompt || !prompt.trim()) {
     throw createHttpError("prompt is required", 400);
   }
-  if (model === gptImage2ImageToImageModelKey && !referenceImageUrl) {
+  if (referenceRequiredModelKeys.has(model) && !referenceImageUrl) {
     throw createHttpError("reference image is required for image-to-image generation", 400);
   }
-  if (referenceImageUrl && model !== gptImage2ModelKey && model !== gptImage2ImageToImageModelKey) {
-    throw createHttpError("当前模型暂不支持参考图，请切换 GPT Image 2", 400);
+  if (referenceImageUrl && !supportsImageReference(model)) {
+    throw createHttpError("当前模型不支持参考图", 400);
   }
   if (
     !imageRatioOptions.includes(ratio) ||
