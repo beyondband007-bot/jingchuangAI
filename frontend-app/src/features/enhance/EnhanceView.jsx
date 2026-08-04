@@ -254,6 +254,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   const isReady = options.models.length > 0;
   const selectedModel = options.models.find((item) => item.kind === mode) || options.models[0];
   const upscaleFactor = options.defaults?.upscaleFactor || selectedModel?.upscaleFactor || "2";
+  const estimatedPoints = Number(selectedModel?.basePoints);
   const canSubmit = Boolean(isReady && sourceAsset && !uploading && !isSubmitting);
 
   function changeMode(nextMode) {
@@ -342,7 +343,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
         <strong>
           {sourceAsset ? (
             <>
-              预计消耗 <BillingPoints feature="enhance" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 0 : 30} /> 积分
+              预计消耗 <BillingPoints points={estimatedPoints} /> 积分
             </>
           ) : (
             "请上传文件"

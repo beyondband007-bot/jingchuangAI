@@ -13,6 +13,7 @@ import {
   PopularStepper,
 } from "./ArticleFormPanels";
 import { ArticleImageConfigPanel } from "./ArticleImageConfigPanel";
+import BillingPoints from "../../components/BillingPoints.jsx";
 
 /**
  * The article workspace's left-side editor.  Keeping the interactive form in
@@ -66,7 +67,7 @@ export function ArticleFormPanel({
   submitError,
 }) {
   return (
-    <aside className="article-form-panel">
+    <aside className={`article-form-panel${step >= 3 ? " is-image-config" : ""}`}>
       {step < 3 ? (
         <>
           <div className="article-form-panel__scroll">
@@ -208,7 +209,16 @@ export function ArticleFormPanel({
           <div className="article-generate-fab-wrap">
             <button className="article-generate-fab" type="button" onClick={onGenerateDraft} disabled={isDraftSubmitting || isReferenceUploading}>
               {isDraftSubmitting ? <Loader2 size={17} className="is-spinning" /> : <ArrowUp size={17} />}
-              {isDraftSubmitting ? "生成中" : "生成标题&正文"}
+              {isDraftSubmitting ? (
+                "生成中"
+              ) : (
+                <>
+                  生成标题&正文
+                  <span className="article-generate-fab__points">
+                    <BillingPoints feature="article" payload={{}} fallbackPoints={10} /> 积分
+                  </span>
+                </>
+              )}
             </button>
           </div>
         </>

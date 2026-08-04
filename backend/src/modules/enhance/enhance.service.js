@@ -19,7 +19,6 @@ import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
-import { BILLING_RULES } from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapEnhanceAsset, mapEnhanceTask } from "./enhance.mapper.js";
 import {
@@ -214,7 +213,7 @@ export async function createTask(payload, requestUser = null) {
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const upscaleFactor = normalizeUpscaleFactor(payload.upscaleFactor, model.upscaleFactor);
-  const costPoints = sourceAsset.kind === "video" ? 0 : BILLING_RULES.imagePointsPerItem;
+  const costPoints = Number(model.basePoints || 0);
 
   const connection = await getPool().getConnection();
   let userId;
