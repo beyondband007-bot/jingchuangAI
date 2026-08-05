@@ -244,6 +244,7 @@ export async function createTask(payload, userId) {
     if (firstFrameImageUrl) {
       referenceIndex += 1;
       resolvedFirstFrame = await resolveMinimaxVideoReference({
+        userId,
         url: firstFrameImageUrl,
         kind: "image",
         referenceIndex
@@ -252,6 +253,7 @@ export async function createTask(payload, userId) {
     if (lastFrameImageUrl) {
       referenceIndex += 1;
       resolvedLastFrame = await resolveMinimaxVideoReference({
+        userId,
         url: lastFrameImageUrl,
         kind: "image",
         referenceIndex
@@ -260,6 +262,7 @@ export async function createTask(payload, userId) {
     for (const imageUrl of referenceImageUrls) {
       referenceIndex += 1;
       resolvedReferenceImages.push(await resolveMinimaxVideoReference({
+        userId,
         url: imageUrl,
         kind: "image",
         referenceIndex
@@ -268,6 +271,7 @@ export async function createTask(payload, userId) {
     if (referenceVideoUrl) {
       referenceIndex += 1;
       resolvedReferenceVideo = await resolveMinimaxVideoReference({
+        userId,
         url: referenceVideoUrl,
         kind: "video",
         referenceIndex
@@ -276,6 +280,7 @@ export async function createTask(payload, userId) {
     if (referenceAudioUrl) {
       referenceIndex += 1;
       resolvedReferenceAudio = await resolveMinimaxVideoReference({
+        userId,
         url: referenceAudioUrl,
         kind: "audio",
         referenceIndex

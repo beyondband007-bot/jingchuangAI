@@ -12,6 +12,25 @@ import { createVideoTaskError } from "./video.errors.js";
 
 const MEDIA_PREFIX = "/media/video/references/";
 
+export function getLocalMediaFilePath(url, storageDir = config.media.storageDir) {
+  const value = String(url || "").trim();
+  if (!value.startsWith("/media/")) return "";
+
+  let mediaPath;
+  try {
+    mediaPath = decodeURIComponent(value.split(/[?#]/, 1)[0]).replace(/^\/media\/?/, "");
+  } catch {
+    return "";
+  }
+  if (!mediaPath || mediaPath.includes("\0") || mediaPath.includes("\\")) return "";
+
+  const storageRoot = path.resolve(process.cwd(), storageDir);
+  const filePath = path.resolve(storageRoot, mediaPath);
+  const relativePath = path.relative(storageRoot, filePath);
+  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) return "";
+  return filePath;
+}
+
 export function getVideoReferenceFilePath(url, storageDir = config.media.storageDir) {
   const value = String(url || "").trim();
   if (!value.startsWith(MEDIA_PREFIX)) return "";
@@ -186,10 +205,13 @@ export async function resolveArkVideoReference({
 }
 
 export async function resolveMinimaxVideoReference({
+  userId,
   url,
   kind,
   referenceIndex,
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  uploadImpl = uploadFileToKie,
+  storageDir = config.media.storageDir
 }) {
   const value = String(url || "").trim();
   if (!value) return "";
@@ -202,6 +224,38 @@ export async function resolveMinimaxVideoReference({
       referenceType: kind,
       referenceIndex
     });
+  }
+
+  const filePath = getLocalMediaFilePath(value, storageDir);
+  if (filePath) {
+    try {
+      const fileStat = await stat(filePath);
+      if (!fileStat.isFile() || fileStat.size <= 0) throw new Error("reference file is empty");
+      const upload = await uploadImpl({
+        filePath,
+        fileName: path.basename(filePath),
+        mimeType: getVideoReferenceMimeType(kind, filePath),
+        uploadPath: `minimax-h3-references/${userId}`
+      });
+      await assertVideoReferenceUrlAccessible({
+        url: upload.url,
+        kind,
+        referenceIndex,
+        fetchImpl
+      });
+      return upload.url;
+    } catch (cause) {
+      if (cause?.errorDetail) throw cause;
+      throw createVideoTaskError({
+        code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+        message: `第${referenceIndex}个参考素材上传临时文件服务失败，请检查网络后重试。视频任务尚未提交，未扣除积分。`,
+        status: 502,
+        stage: "reference_upload",
+        referenceType: kind,
+        referenceIndex,
+        cause
+      });
+    }
   }
 
   const publicUrl = /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
