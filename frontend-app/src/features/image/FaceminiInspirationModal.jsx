@@ -18,6 +18,42 @@ function formatInspirationResolution(item) {
   return "—";
 }
 
+const catalogRatios = [
+  ["16:9", 16 / 9],
+  ["9:16", 9 / 16],
+  ["4:3", 4 / 3],
+  ["3:4", 3 / 4],
+  ["3:2", 3 / 2],
+  ["2:3", 2 / 3],
+  ["1:1", 1],
+];
+
+function formatInspirationRatio(dimensions, fallback, isCatalogMaterial) {
+  if (!isCatalogMaterial && fallback) return fallback;
+
+  const width = Number(dimensions?.width);
+  const height = Number(dimensions?.height);
+  if (width > 0 && height > 0) {
+    if (isCatalogMaterial) {
+      const actualRatio = width / height;
+      return catalogRatios.reduce((nearest, candidate) =>
+        Math.abs(candidate[1] - actualRatio) < Math.abs(nearest[1] - actualRatio)
+          ? candidate
+          : nearest,
+      )[0];
+    }
+    const greatestCommonDivisor = (left, right) => {
+      let a = Math.round(left);
+      let b = Math.round(right);
+      while (b) [a, b] = [b, a % b];
+      return a;
+    };
+    const divisor = greatestCommonDivisor(width, height);
+    return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
+  }
+  return fallback;
+}
+
 export function FaceminiInspirationModal({
   item,
   onClose,
@@ -30,12 +66,14 @@ export function FaceminiInspirationModal({
 }) {
   const [activeSrc, setActiveSrc] = useState(null);
   const [activeVideoSrc, setActiveVideoSrc] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState(null);
   const [videoDimensions, setVideoDimensions] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     setActiveSrc(null);
     setActiveVideoSrc(null);
+    setImageDimensions(null);
     setVideoDimensions(null);
     setIsFavorite(Boolean(item?.favorite) || Boolean(getInitialFavorite?.(item)));
   }, [getInitialFavorite, item?.id]);
@@ -64,8 +102,9 @@ export function FaceminiInspirationModal({
   const fallbackVideoSrc =
     item.videoFallbackSrc || item.videoFallback || item.mp4 || null;
   const videoSrc = activeVideoSrc || primaryVideoSrc;
-  const resolution = videoDimensions
-    ? `${videoDimensions.width}×${videoDimensions.height}`
+  const mediaDimensions = videoDimensions || imageDimensions;
+  const resolution = mediaDimensions
+    ? `${mediaDimensions.width}×${mediaDimensions.height}`
     : formatInspirationResolution(item);
 
   return (
@@ -108,6 +147,12 @@ export function FaceminiInspirationModal({
                   setActiveSrc(fallbackSrc);
                 }
               }}
+              onLoad={(event) => {
+                const { naturalWidth: width, naturalHeight: height } = event.currentTarget;
+                if (width > 0 && height > 0) {
+                  setImageDimensions({ width, height });
+                }
+              }}
             />
           )}
         </div>
@@ -139,7 +184,11 @@ export function FaceminiInspirationModal({
           <dl>
             <div>
               <dt>比例</dt>
-              <dd>{item.ratio || (isVideo ? "16:9" : "4:5")}</dd>
+              <dd>{formatInspirationRatio(
+                mediaDimensions,
+                item.ratio || (isVideo ? "16:9" : "4:5"),
+                Boolean(item.categoryId),
+              )}</dd>
             </div>
             <div>
               <dt>分辨率</dt>

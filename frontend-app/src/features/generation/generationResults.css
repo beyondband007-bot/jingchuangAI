@@ -70,7 +70,8 @@
   --waterfall-gap: var(--space-1);
   width: var(--feature-content-width);
   max-width: none;
-  margin: 14px var(--feature-content-inline-offset) 0;
+  margin-top: var(--space-5);
+  padding: 0 0 240px;
 }
 
 .image-results-feed .result-card.is-image-gallery {
