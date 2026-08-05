@@ -33,6 +33,16 @@ export const VIDEO_MODELS = [{
   resolutions: ['720p'],
   defaultResolution: '720p',
   defaultParams: { ratio: '16:9', duration: 5, resolution: '720p', generateAudio: true }
+}, {
+  label: 'MiniMax H3 2K',
+  key: 'minimax_h3_2k',
+  provider: ['kie'],
+  type: 't2v+i2v+r2v',
+  ratios: ['21:9', ...VIDEO_RATIO_LIST.map(item => item.key)],
+  durs: Array.from({ length: 12 }, (_, index) => index + 4).map(key => ({ label: `${key}s`, key })),
+  resolutions: ['2K'],
+  defaultResolution: '2K',
+  defaultParams: { ratio: '16:9', duration: 4, resolution: '2K', generateAudio: true }
 }]
 
 export const CHAT_MODELS = [

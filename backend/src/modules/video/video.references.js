@@ -185,6 +185,45 @@ export async function resolveArkVideoReference({
   }
 }
 
+export async function resolveMinimaxVideoReference({
+  url,
+  kind,
+  referenceIndex,
+  fetchImpl = globalThis.fetch
+}) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^asset:\/\//i.test(value)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `第${referenceIndex}个参考素材是火山资产地址，MiniMax H3 无法访问。请重新上传素材后重试。视频任务尚未提交，未扣除积分。`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+
+  const publicUrl = /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
+  if (!/^https?:\/\//i.test(publicUrl)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `第${referenceIndex}个参考素材不是 MiniMax H3 可访问的公网地址。视频任务尚未提交，未扣除积分。`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+  await assertVideoReferenceUrlAccessible({
+    url: publicUrl,
+    kind,
+    referenceIndex,
+    fetchImpl
+  });
+  return publicUrl;
+}
+
 export async function resolveKieVideoReference({
   userId,
   url,

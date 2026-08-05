@@ -17,6 +17,13 @@ import {
   getKieVideoTask,
   mapKieVideoState
 } from "../../providers/kie/video.js";
+import {
+  buildMinimaxH3Content,
+  createMinimaxH3VideoTask,
+  extractMinimaxH3VideoResult,
+  getMinimaxH3VideoTask,
+  mapMinimaxH3VideoState
+} from "../../providers/minimax/videoGeneration.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
@@ -28,7 +35,8 @@ import { mapVideoModel, mapVideoTask } from "./video.mapper.js";
 import { serializeVideoTaskError } from "./video.errors.js";
 import {
   resolveArkVideoReference,
-  resolveKieVideoReference
+  resolveKieVideoReference,
+  resolveMinimaxVideoReference
 } from "./video.references.js";
 import {
   calculateVideoPoints,
@@ -133,6 +141,7 @@ export async function createTask(payload, userId) {
   let modelPrice;
   let rmbCost;
   let arkContent;
+  let minimaxContent;
   let kieReferences;
   let resolution;
 
@@ -166,10 +175,8 @@ export async function createTask(payload, userId) {
     firstFrameImageUrl = imageInputs.firstFrameImageUrl;
     lastFrameImageUrl = imageInputs.lastFrameImageUrl;
     referenceImageUrls = imageInputs.referenceImageUrls;
-    if (
-      modelPrice.provider_type !== "ark"
-      && (lastFrameImageUrl || referenceImageUrls.length > 1)
-    ) {
+    const supportsAdvancedImageRoles = ["ark", "minimax"].includes(modelPrice.provider_type);
+    if (!supportsAdvancedImageRoles && (lastFrameImageUrl || referenceImageUrls.length > 1)) {
       throw createHttpError("selected video provider does not support these image roles", 400);
     }
 
@@ -228,6 +235,60 @@ export async function createTask(payload, userId) {
         referenceIndex
       })));
     }
+  } else if (modelPrice.provider_type === "minimax") {
+    const resolvedReferenceImages = [];
+    let resolvedFirstFrame = null;
+    let resolvedLastFrame = null;
+    let resolvedReferenceVideo = null;
+    let resolvedReferenceAudio = null;
+    if (firstFrameImageUrl) {
+      referenceIndex += 1;
+      resolvedFirstFrame = await resolveMinimaxVideoReference({
+        url: firstFrameImageUrl,
+        kind: "image",
+        referenceIndex
+      });
+    }
+    if (lastFrameImageUrl) {
+      referenceIndex += 1;
+      resolvedLastFrame = await resolveMinimaxVideoReference({
+        url: lastFrameImageUrl,
+        kind: "image",
+        referenceIndex
+      });
+    }
+    for (const imageUrl of referenceImageUrls) {
+      referenceIndex += 1;
+      resolvedReferenceImages.push(await resolveMinimaxVideoReference({
+        url: imageUrl,
+        kind: "image",
+        referenceIndex
+      }));
+    }
+    if (referenceVideoUrl) {
+      referenceIndex += 1;
+      resolvedReferenceVideo = await resolveMinimaxVideoReference({
+        url: referenceVideoUrl,
+        kind: "video",
+        referenceIndex
+      });
+    }
+    if (referenceAudioUrl) {
+      referenceIndex += 1;
+      resolvedReferenceAudio = await resolveMinimaxVideoReference({
+        url: referenceAudioUrl,
+        kind: "audio",
+        referenceIndex
+      });
+    }
+    minimaxContent = buildMinimaxH3Content({
+      prompt: prompt.trim(),
+      firstFrameImageUrl: resolvedFirstFrame,
+      lastFrameImageUrl: resolvedLastFrame,
+      referenceImageUrls: resolvedReferenceImages,
+      referenceVideoUrl: resolvedReferenceVideo,
+      referenceAudioUrl: resolvedReferenceAudio
+    });
   } else {
     const imageUrl = firstFrameImageUrl || referenceImageUrls[0] || referenceImageUrl;
     kieReferences = {};
@@ -310,6 +371,14 @@ export async function createTask(payload, userId) {
         generateAudio: true,
         watermark: false
       });
+    } else if (modelPrice.provider_type === "minimax") {
+      provider = await createMinimaxH3VideoTask({
+        content: minimaxContent,
+        resolution: resolution || "2K",
+        ratio,
+        duration: Number(duration),
+        watermark: false
+      });
     } else {
       provider = await createKieVideoTask({
         model: modelPrice,
@@ -387,19 +456,26 @@ async function refreshTask(id) {
 
   try {
     const isArkTask = task.provider_type === "ark";
+    const isMinimaxTask = task.provider_type === "minimax";
     const record = isArkTask
       ? await getArkVideoGenerationTask({ taskId: task.provider_task_id })
-      : await getKieVideoTask({
-          taskId: task.provider_task_id,
-          providerType: task.provider_type
-        });
+      : isMinimaxTask
+        ? await getMinimaxH3VideoTask({ taskId: task.provider_task_id })
+        : await getKieVideoTask({
+            taskId: task.provider_task_id,
+            providerType: task.provider_type
+          });
     const mapped = isArkTask
       ? mapArkVideoGenerationState(record)
-      : mapKieVideoState(record, task.provider_type);
+      : isMinimaxTask
+        ? mapMinimaxH3VideoState(record)
+        : mapKieVideoState(record, task.provider_type);
     if (mapped === "completed") {
       const providerUrls = isArkTask
         ? [extractArkVideoGenerationResult(record).resultUrl].filter(Boolean)
-        : extractVideoResultUrls(record, task.provider_type);
+        : isMinimaxTask
+          ? [extractMinimaxH3VideoResult(record).resultUrl].filter(Boolean)
+          : extractVideoResultUrls(record, task.provider_type);
       if (!providerUrls.length) {
         await refundTask(id, null, null, "video generation result missing video URL");
       } else {
@@ -407,12 +483,13 @@ async function refreshTask(id) {
         await setVideoTaskCompleted(id, localUrls, { providerUrls });
       }
     } else if (mapped === "failed") {
-      const arkResult = isArkTask
-        ? extractArkVideoGenerationResult(record)
-        : null;
-      const arkError = arkResult?.errorDetail || arkResult?.errorMessage || "";
-      if (arkError) {
-        await refundTask(id, null, null, arkError);
+      const providerError = isArkTask
+        ? extractArkVideoGenerationResult(record).errorDetail || extractArkVideoGenerationResult(record).errorMessage
+        : isMinimaxTask
+          ? extractMinimaxH3VideoResult(record).errorMessage
+          : "";
+      if (providerError) {
+        await refundTask(id, null, null, providerError);
         return;
       }
       await refundTask(
