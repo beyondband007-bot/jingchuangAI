@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateVideoPoints,
   normalizeVideoImageInputs,
   validateVideoPayload
 } from "./video.options.js";
@@ -9,6 +10,17 @@ const model = {
   supported_ratios: JSON.stringify(["16:9"]),
   supported_durations: JSON.stringify([5])
 };
+
+test("charges MiniMax H3 at its configured 60 points per second", () => {
+  assert.equal(calculateVideoPoints({
+    price_unit: "per_second",
+    base_points: 60
+  }, 4), 240);
+});
+
+test("keeps the unified video rate as a fallback for legacy model rows", () => {
+  assert.equal(calculateVideoPoints({}, 4), 480);
+});
 
 test("accepts reference audio together with an image reference", () => {
   assert.doesNotThrow(() => validateVideoPayload({

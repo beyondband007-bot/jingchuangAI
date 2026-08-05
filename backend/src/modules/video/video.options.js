@@ -1,5 +1,8 @@
 import { createHttpError } from "../../shared/http.js";
-import { calculateVideoPoints as calculateUnifiedVideoPoints } from "../../shared/billingRules.js";
+import {
+  calculateVideoPoints as calculateUnifiedVideoPoints,
+  ceilSeconds
+} from "../../shared/billingRules.js";
 
 export const videoCountOptions = [1];
 
@@ -22,6 +25,10 @@ export function getModelDurations(model) {
 }
 
 export function calculateVideoPoints(model, duration, count = 1) {
+  const pointsPerSecond = Number(model?.base_points);
+  if (model?.price_unit === "per_second" && Number.isFinite(pointsPerSecond) && pointsPerSecond > 0) {
+    return Math.max(1, Math.ceil(ceilSeconds(duration) * pointsPerSecond * Number(count)));
+  }
   return calculateUnifiedVideoPoints(duration) * Number(count);
 }
 
