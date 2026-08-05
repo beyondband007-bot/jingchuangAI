@@ -52,6 +52,43 @@ test("keeps the existing image and video reference conflict rule", () => {
   );
 });
 
+test("allows MiniMax H3 to combine reference image, video, and audio", () => {
+  const h3Model = {
+    ...model,
+    provider_type: "minimax",
+    provider_model: "MiniMax-H3"
+  };
+  assert.doesNotThrow(() => validateVideoPayload({
+    prompt: "Use all references to generate a coherent scene",
+    model: h3Model,
+    ratio: "16:9",
+    duration: 5,
+    count: 1,
+    referenceImageUrls: ["/media/image.png"],
+    referenceVideoUrl: "/media/video.mp4",
+    referenceAudioUrl: "/media/voice.mp3"
+  }));
+});
+
+test("rejects MiniMax H3 reference audio without an image or video", () => {
+  const h3Model = {
+    ...model,
+    provider_type: "minimax",
+    provider_model: "MiniMax-H3"
+  };
+  assert.throws(
+    () => validateVideoPayload({
+      prompt: "Generate from audio",
+      model: h3Model,
+      ratio: "16:9",
+      duration: 5,
+      count: 1,
+      referenceAudioUrl: "/media/voice.mp3"
+    }),
+    /requires a reference image or video/
+  );
+});
+
 test("rejects unsupported video and audio references for Kling 3.0", () => {
   const klingModel = {
     ...model,

@@ -53,7 +53,8 @@ async function requestMinimaxOnce(path, options = {}) {
     const rawMessage =
       body?.base_resp?.status_msg ||
       body?.message ||
-      body?.error ||
+      body?.error?.message ||
+      (typeof body?.error === "string" ? body.error : "") ||
       body?.raw ||
       `Minimax request failed with ${response.status}`;
     const isRateLimited = response.status === 429 || /rate limit|rpm|too many requests/i.test(String(rawMessage));
@@ -69,6 +70,7 @@ async function requestMinimaxOnce(path, options = {}) {
     );
     error.status = isRateLimited ? 429 : isInsufficientBalance ? 402 : response.ok ? 502 : response.status;
     error.body = body;
+    error.requestId = body?.request_id || null;
     throw error;
   }
 
