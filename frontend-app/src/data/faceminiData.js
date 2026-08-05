@@ -121,10 +121,62 @@ const imageInspirationModelByCategory = {
   chahua: "Nano Banana Pro",
 };
 
+// The source package contains a number of images whose descriptive fields were
+// exported against a different file. Keep the catalog keyed by its stable id,
+// rather than relying on the source-file order.
+const imageInspirationContentFixes = {
+  "dongman-055": "夜幕下，一位身穿黑色礼服的女子站在城市高楼的落地窗前，窗外灯火璀璨，画面优雅而都市感十足。",
+  "dongman-057": "昏暗酒吧内，一位戴礼帽的男子坐在窗边，暖黄台灯映照桌面的酒杯，氛围复古而神秘。",
+  "dongman-059": "一位白发女子身着飘逸古装，静坐于莲花与云雾环绕的水面，画面清冷而梦幻。",
+  "dongman-060": "一位身着深绿色礼服的女子站在古典庭院的水边，灯笼和石桥映出朦胧的东方奇幻氛围。",
+  "dongman-061": "一名黑衣战士在巨大的宇宙飞船残骸前持剑而立，冷色光影展现宏大的科幻战场。",
+  "dongman-062": "一位白发狐耳人物身着银白长袍立于冰雪城池中，周围环绕寒气与灵光，风格冷艳奇幻。",
+  "dongman-064": "一位蒙眼的黑衣女剑士手持长剑站在玫瑰丛前，画面神秘、优雅且带有危险感。",
+  "dongman-065": "雨夜霓虹都市中，一位身穿黑色皮衣的女子回眸而立，赛博光影营造冷峻氛围。",
+  "dongman-066": "烛光与玫瑰环绕的室内，一位身穿黑色礼服的女子凝视前方，呈现哥特式华丽气质。",
+  "dongman-070": "冰蓝色王座上，一位白发冰雪女王身披华丽礼服，周围冰晶闪耀，画面冷艳而梦幻。",
+  "dongman-071": "一位身穿黑色礼服的哥特女子端坐于华丽王座，红色玫瑰窗与烛火营造神秘高贵感。",
+  "dongman-072": "一位身穿红色赛车服的女赛车手站在赛道前，背后赛车与烟雾交织，画面充满速度感。",
+  "dongman-073": "末日荒原上，一名骑着摩托车的战士穿过尘土飞扬的公路，画面粗粝而充满冒险感。",
+  "dongman-077": "战场硝烟中，一位披甲战士手持武器迎向远处军队与雷云，呈现史诗般的战争场景。",
+  "dongman-078": "烈焰与巨龙环绕的战场上，一名持剑骑士正面迎战，画面热烈而充满奇幻张力。",
+  "dongman-080": "幽暗宝殿中，一位金甲王者端坐在石质王座上，金色光芒与尘埃交织，气势庄严。",
+  "dongman-083": "雨后都市街头，一位身穿黑色礼服的女子站在酒店门前，金色灯光映在湿润地面上。",
+  "dongman-085": "夕阳下的日式神社与樱花之间，一位持刀武者摆出战斗姿态，画面热烈而唯美。",
+  "dongman-086": "阴雨火车站台上，一位背影少年望向远方铁轨，氛围安静而略带忧伤。",
+  "dongman-087": "烟花照亮夜空，一位身穿红白和服的女子仰望绚丽焰火，画面节庆感浓郁而梦幻。",
+  "dongman-088": "日落时分的海边公路延伸至远方，暖橙天空与海面相映，氛围宁静而开阔。",
+  "dongman-089": "废弃仓库内，一束天光照亮空荡的地面与陈旧机械，呈现孤寂的工业感。",
+  "dongman-090": "雷暴夜色下，破碎公路穿过荒凉原野，远方闪电划破乌云，呈现末日般的辽阔。",
+  "dongman-091": "月光照亮寂静海面与远处山影，巨大的残月悬在天空，画面神秘而宁静。",
+  "dongman-092": "霓虹地铁车厢中，一位黑衣女战士手持长剑，冷色灯光营造紧张的赛博战斗氛围。",
+  "dongman-093": "巨大的蓝紫色魔法阵在城市夜空中旋转，中心人物被星光与符文环绕，画面神秘壮观。",
+  "dongman-094": "夕阳海岸被分割成三段画面，一位少年在不同距离眺望海面，氛围温暖而治愈。",
+  "dongman-095": "幽蓝水族馆中，一位蓝发女子侧身凝视水中鲸影，画面宁静、深邃且富有梦幻感。",
+  "dongman-097": "日出照亮层叠云海与山峰，金色晨光洒向远方，呈现辽阔宁静的自然景观。",
+  "dongman-098": "幽暗遗迹中，一位披斗篷的女战士站在蓝色符文与巨石之间，氛围神秘而危险。",
+  "dongman-100": "宇宙飞船舷窗前，一位短发女性身着白色未来制服，窗外是深邃星空与飞船结构。",
+  "dongman-101": "红色警报笼罩的未来工厂中，两名人物站在燃烧的城市残骸前，呈现灾难科幻场景。",
+  "dongman-102": "血红满月下，一位披黑甲的骑士持剑站在荒原，画面暗黑而充满压迫感。",
+  "dongman-103": "云海与雪山之间，一位披斗篷的旅者站在峰顶眺望日出，画面壮丽而孤寂。",
+  "dongman-107": "戴着虚拟现实头显的人站在蓝色全息城市前，悬浮信息屏环绕，呈现沉浸式未来科技感。",
+  "dongman-108": "戴头盔的赛博人物站在蓝色城市屏幕前，冷色灯光与数据面板营造未来感。",
+  "dongman-110": "夜晚的日式街道挂满灯笼，水面游动着金鱼，远处烟花绽放，画面繁华而梦幻。",
+  "dongman-121": "风雪中的群山与松林在月光下延伸，远方山谷隐约透出灯火，画面清冷壮阔。",
+  "dongman-124": "幽暗森林深处，一位戴面具的人站在积水小径中央，古老石门与雾气营造神秘氛围。",
+};
+
 // Attach display metadata to each catalog material once so all entry points
 // (image generation, creation center, and favorites) use the same model.
 export const imageInspirationMaterials = imgInspirationManifest.map((item) => ({
   ...item,
+  ...(imageInspirationContentFixes[item.id]
+    ? {
+        title: imageInspirationContentFixes[item.id],
+        prompt: imageInspirationContentFixes[item.id],
+        description: imageInspirationContentFixes[item.id],
+      }
+    : {}),
   model:
     item.model ||
     imageInspirationModelByCategory[item.categoryId] ||
@@ -171,6 +223,7 @@ function summarizeInspirationTitle(text, fallback = "AI 图片案例") {
 
 export const fmImageGenerationInspirations = exampleImages.map((item, index) => ({
   id: `image-gen-${item.categoryId || "all"}-${item.file || index}`,
+  categoryId: item.categoryId,
   title: summarizeInspirationTitle(item.description || item.prompt, item.label),
   category: item.categoryLabel || "图片灵感",
   prompt: item.prompt,
