@@ -49,7 +49,7 @@ export function ArticleHistoryGrid({
               <div className="article-history-meta">
                 <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
                 <p>
-                  {taskImages.length || task.count || 1} 张 · {task.ratio} · {task.quality} ·{" "}
+                  {taskImages.length || task.count || 1} 张 · {task.ratio} ·{" "}
                   {formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}
                 </p>
                 <div className="article-history-actions">
