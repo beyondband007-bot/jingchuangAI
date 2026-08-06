@@ -1386,6 +1386,7 @@ async function createTables() {
       user_id BIGINT UNSIGNED NOT NULL,
       source VARCHAR(20) NOT NULL,
       file_name VARCHAR(255) NOT NULL,
+      source_url VARCHAR(1000) NULL,
       prompt MEDIUMTEXT NULL,
       description MEDIUMTEXT NULL,
       style VARCHAR(160) NULL,
@@ -1448,7 +1449,8 @@ async function createTables() {
     ["fallback_reason", "TEXT NULL AFTER input_size_bytes"],
     ["quality_warning", "TEXT NULL AFTER fallback_reason"],
     ["error_code", "VARCHAR(64) NULL AFTER quality_warning"],
-    ["analysis_json", "JSON NULL AFTER error_code"]
+    ["analysis_json", "JSON NULL AFTER error_code"],
+    ["source_url", "VARCHAR(1000) NULL AFTER file_name"]
   ];
   for (const [columnName, definition] of replicateColumnsToAdd) {
     if (!replicateColumnNames.has(columnName)) {
