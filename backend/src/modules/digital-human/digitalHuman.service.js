@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "crypto";
 import path from "path";
 import { promisify } from "util";
 import { ffmpegPath } from "../../shared/ffmpegPath.js";
+import { decodeMojibakeFileName } from "../../shared/fileName.js";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
@@ -330,11 +331,12 @@ export function mapVirtualAssetToAvatar(asset) {
     metadata.source ||
     (isAiCustomAvatarAsset(asset) ? "ai-custom" : "upload");
   const isAiCustom = source === "ai-custom";
+  const rawName =
+    metadata.name ||
+    (isAiCustom ? "AI Custom Avatar" : asset.fileName || `Ark Avatar ${asset.id}`);
   return {
     id: `ark-asset-${asset.id}`,
-    name:
-      metadata.name ||
-      (isAiCustom ? "AI Custom Avatar" : asset.fileName || `Ark Avatar ${asset.id}`),
+    name: decodeMojibakeFileName(rawName),
     description:
       metadata.description ||
       (asset.status === "failed"
@@ -399,7 +401,7 @@ function mapTask(row) {
   return {
     id: String(row.id),
     avatarId: row.avatar_id,
-    avatarName: row.avatar_name,
+    avatarName: decodeMojibakeFileName(row.avatar_name || ""),
     voiceId: row.voice_id,
     voiceName: row.voice_name,
     model: row.model_key,
@@ -954,7 +956,7 @@ export async function saveAiCustomAvatarTask(id, payload = {}, userId) {
   }
 
   const saved = await downloadAiAvatarPreview(task.imageUrl, id);
-  const avatarName = normalizeAiAvatarText(payload.name, "AI Custom Avatar");
+  const avatarName = decodeMojibakeFileName(normalizeAiAvatarText(payload.name, "AI Custom Avatar"));
   const asset = await createVirtualAssetFromLocalFile({
     userId,
     feature: "digital-human",
@@ -1408,7 +1410,7 @@ export async function createArkAvatar(payload, file, userId) {
   );
   const metadata = {
     source: "upload",
-    name: name.trim(),
+    name: decodeMojibakeFileName(name.trim()),
     description,
     performance: normalizePromptText(payload.performance),
     scene: normalizePromptText(payload.scene, 80),

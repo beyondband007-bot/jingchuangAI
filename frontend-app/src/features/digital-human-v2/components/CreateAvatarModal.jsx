@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Info, Loader2, RefreshCcw, Upload, X } from "lucide-react";
 import { VOICE_EMOTION_OPTIONS, isDigitalHumanVoiceEnabled } from "../utils";
+import { stripFileExtension } from "../../../utils/fileName";
 
 const AGE_OPTIONS = ["儿童", "少年", "青年", "轻熟", "中年", "老年"];
 const SKIN_OPTIONS = ["#f3d4bf", "#c79a61", "#9f6b39", "#7a4a22", "#5d3518"];
@@ -11,7 +12,7 @@ const SCENE_OPTIONS = ["企业服务", "知识科普", "生活分享", "活动�
 const DEFAULT_PERFORMANCE = "面带微笑，眼神专注自信地说话，双手动作自然，固定镜头，对着镜头讲解内容，偶尔看向镜头位置，动作自然。";
 
 function getNameFromFile(file) {
-  const name = String(file?.name || "").replace(/\.[^/.]+$/, "").trim();
+  const name = stripFileExtension(String(file?.name || "")).trim();
   return name || "我的形象";
 }
 
