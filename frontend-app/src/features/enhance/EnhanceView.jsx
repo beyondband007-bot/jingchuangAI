@@ -7,7 +7,6 @@ import {
   Loader2,
   Plus,
   Wand2,
-  X,
   Zap
 } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
@@ -26,8 +25,8 @@ import { enhanceApi } from "./enhanceApi";
 import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
-import { PageTitle } from "../../components/PageTitle";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -170,74 +169,6 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function EnhanceUploadSlot({ mode, sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
-  const inputRef = useRef(null);
-  const isVideo = mode === "video";
-  function clearFile(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClear?.();
-  }
-
-  return (
-    <button className={`marketing-composer__upload marketing-tool-upload watermark-upload-slot enhance-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={isVideo ? "video/*" : "image/*"}
-        hidden
-        onChange={(event) => {
-          const file = event.target.files?.[0] || null;
-          event.target.value = "";
-          onSelect(file);
-        }}
-      />
-      {previewUrl ? (
-        isVideo ? (
-          <video src={previewUrl} muted playsInline preload="metadata" />
-        ) : (
-          <img src={previewUrl} alt="上传素材预览" />
-        )
-      ) : (
-        <>
-          <span className="marketing-upload-icon" aria-hidden="true">
-            <img src="/assets/marketing/upload.svg" alt="" />
-          </span>
-          <strong>{isVideo ? "上传视频文件" : "上传图片文件"}</strong>
-          <span>{isVideo ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG/WebP，最大 10MB"}</span>
-        </>
-      )}
-      {previewUrl && !isUploading && (
-        <span
-          className="ui-upload-clear-button"
-          role="button"
-          tabIndex={0}
-          aria-label="取消上传"
-          onClick={clearFile}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") clearFile(event);
-          }}
-        >
-          <X size={13} />
-        </span>
-      )}
-      {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
-      {isUploading && (
-        <span className="watermark-uploading">
-          <Loader2 size={16} />
-          上传中
-        </span>
-      )}
-      {!isUploading && previewUrl && (
-        <span className="watermark-upload-kind">
-          {isVideo ? <Film size={14} /> : <Image size={14} />}
-          更换素材
-        </span>
-      )}
-    </button>
-  );
-}
-
 function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
@@ -319,41 +250,56 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
-    <div className="marketing-composer marketing-composer--inline marketing-tool-card watermark-composer enhance-composer" aria-label="画质增强上传面板">
-      <div className="marketing-composer__tabs marketing-tool-tabs watermark-mode-tabs enhance-mode-tabs">
-        <button className={mode === "image" ? "is-active" : ""} type="button" disabled={!isReady} onClick={() => changeMode("image")}>
-          <Image size={15} />
-          图片增强
-        </button>
-        <button className={mode === "video" ? "is-active" : ""} type="button" disabled={!isReady} onClick={() => changeMode("video")}>
-          <Film size={15} />
-          视频增强
-        </button>
-      </div>
-      <EnhanceUploadSlot
-        mode={mode}
-        sourceAsset={sourceAsset}
-        previewUrl={previewUrl}
-        isUploading={uploading}
-        onSelect={selectSource}
-        onClear={clearSource}
-      />
-      <div className="marketing-composer__footer marketing-tool-footer watermark-composer-footer enhance-composer-footer">
-        <span>{notice || (mode === "video" ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音` : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}</span>
-        <strong>
-          {sourceAsset ? (
-            <>
-              预计消耗 <BillingPoints points={estimatedPoints} /> 积分
-            </>
-          ) : (
-            "请上传文件"
-          )}
-        </strong>
-        <button className="ui-send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始提升">
-          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
-        </button>
-      </div>
-    </div>
+    <MarketingToolComposer
+      ariaLabel="画质增强上传面板"
+      className="watermark-composer enhance-composer"
+      tabs={[
+        { id: "image", label: "图片增强", icon: <Image size={15} /> },
+        { id: "video", label: "视频增强", icon: <Film size={15} /> },
+      ]}
+      activeTabId={mode}
+      onTabChange={changeMode}
+      tabsDisabled={!isReady}
+      upload={(
+        <MarketingToolUploadSlot
+          className="watermark-upload-slot enhance-upload-slot"
+          accept={mode === "video" ? "video/*" : "image/*"}
+          disabled={!isReady}
+          hasPreview={Boolean(previewUrl)}
+          hasFile={Boolean(sourceAsset)}
+          previewUrl={previewUrl}
+          isVideo={mode === "video"}
+          emptyTitle={mode === "video" ? "上传视频文件" : "上传图片文件"}
+          emptyHint={mode === "video" ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG/WebP，最大 10MB"}
+          onSelect={selectSource}
+          onClear={clearSource}
+          isBusy={uploading}
+          busyLabel="上传中"
+          previewMeta={sourceAsset ? `${sourceAsset.fileName} · ${formatBytes(sourceAsset.sizeBytes)}` : ""}
+          previewBadge={!uploading && previewUrl ? (
+            <span className="watermark-upload-kind">
+              {mode === "video" ? <Film size={14} /> : <Image size={14} />}
+              更换素材
+            </span>
+          ) : null}
+        />
+      )}
+      footerHint={notice || (mode === "video"
+        ? `AI 将以 ${upscaleFactor}x 提升视频清晰度并保留原始声音`
+        : `AI 将以 ${upscaleFactor}x 提升图片细节和清晰度`)}
+      footerStatus={sourceAsset ? (
+        <>
+          预计消耗 <BillingPoints points={estimatedPoints} /> 积分
+        </>
+      ) : (
+        "请上传文件"
+      )}
+      actionIcon={<Zap size={18} />}
+      actionLabel="开始提升"
+      onAction={submit}
+      actionDisabled={!canSubmit}
+      actionLoading={isSubmitting}
+    />
   );
 }
 
@@ -495,14 +441,11 @@ export function EnhanceView({ onOpenFeature }) {
       />
       <div className={`marketing-canvas enhance-canvas ${showCenterState ? "has-active-task" : ""} ${viewTab !== "home" ? "is-list" : ""} ${showRecentEmpty ? "is-empty" : ""}`}>
         {showEmptyHero && (
-          <MarketingToolPanel className="watermark-home-panel enhance-home-panel">
-            <div className="marketing-panel-hero watermark-hero-empty enhance-hero-empty">
-              <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
-                <Wand2 size={36} />
-              </span>
-              <PageTitle className="marketing-panel-hero__title">画质提升</PageTitle>
-              <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
-            </div>
+          <MarketingToolPanel
+            title="画质提升"
+            subtitle="上传图片或者视频，AI 一键提升清晰度、细节和整体质感"
+            className="watermark-home-panel enhance-home-panel"
+          >
             <EnhanceComposer
               options={options}
               onSubmit={createTask}
@@ -511,14 +454,11 @@ export function EnhanceView({ onOpenFeature }) {
           </MarketingToolPanel>
         )}
         {showCenterState && showCompletedResult ? (
-          <MarketingToolPanel className="watermark-state-panel enhance-state-panel">
-            <div className="marketing-panel-hero watermark-hero-empty enhance-hero-empty">
-              <span className="marketing-panel-hero__icon watermark-hero-icon enhance-hero-icon">
-                <Wand2 size={36} />
-              </span>
-              <PageTitle className="marketing-panel-hero__title">画质提升</PageTitle>
-              <p className="marketing-panel-hero__subtitle">上传图片或者视频，AI 一键提升清晰度、细节和整体质感</p>
-            </div>
+          <MarketingToolPanel
+            title="画质提升"
+            subtitle="上传图片或者视频，AI 一键提升清晰度、细节和整体质感"
+            className="watermark-state-panel enhance-state-panel"
+          >
             <EnhanceCenterState
               task={submittedTask}
               isSubmitting={isSubmitting && !submittedTask}

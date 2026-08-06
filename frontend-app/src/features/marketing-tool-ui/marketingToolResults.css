@@ -233,7 +233,8 @@
 }
 
 .marketing-tool--enhance.enhance-view-root,
-.marketing-tool--cutout.remove-bg-view-root {
+.marketing-tool--cutout.remove-bg-view-root,
+.marketing-tool--prompt-reverse.replicate-view {
   background: #f6f7f9;
 }
 

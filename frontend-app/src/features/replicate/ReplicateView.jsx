@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "../audio-ui/audioStateControls.css";
 import "./replicateExperience.css";
@@ -20,6 +20,7 @@ import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
 import { formatBeijingDateTime } from "../../utils/time";
 import { resolveMediaUrl } from "../../api/mediaUrl.js";
 import {
@@ -132,8 +133,6 @@ const ReplicateUpload = forwardRef(function ReplicateUpload(
   { mode, fileState, onFile, onClear, isAnalyzing, stageLabel },
   ref,
 ) {
-  const inputRef = useRef(null);
-  const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -143,13 +142,6 @@ const ReplicateUpload = forwardRef(function ReplicateUpload(
   const isInteractive = !isAnalyzing;
   const accept = isImage ? ".jpg,.jpeg,.png,.gif,.webp,image/*" : ".mp4,.mov,.avi,.webm,video/*";
   const hint = isImage ? "支持 jpg / png / gif / webp，最大 20MB" : "支持 mp4 / mov / webm / avi，最大 100MB";
-
-  useImperativeHandle(ref, () => ({
-    openFilePicker() {
-      if (!isInteractive) return;
-      inputRef.current?.click();
-    },
-  }), [isInteractive]);
 
   useEffect(() => {
     const file = fileState?.file;
@@ -163,114 +155,46 @@ const ReplicateUpload = forwardRef(function ReplicateUpload(
     return () => URL.revokeObjectURL(url);
   }, [fileState?.file]);
 
-  function clearFile(event) {
-    event.preventDefault();
-    event.stopPropagation();
-    onClear?.();
-  }
-
-  function handleDrop(event) {
-    event.preventDefault();
-    setDragOver(false);
-    if (!isInteractive) return;
-    const file = event.dataTransfer.files?.[0];
-    if (file) onFile(file);
-  }
-
-  function openFilePicker() {
-    if (!isInteractive) return;
-    inputRef.current?.click();
-  }
-
-  const slotClassName = [
-    "marketing-composer__upload",
-    "marketing-tool-upload",
-    "replicate-upload-slot",
-    dragOver && isInteractive ? "drag-over" : "",
-    hasFile ? "has-file" : "",
-    hasPreview ? "has-preview" : "",
-    isAnalyzing ? "is-analyzing" : "",
-  ].filter(Boolean).join(" ");
-
   return (
-    <div
-      className={slotClassName}
-      aria-disabled={!isInteractive}
-      aria-busy={isAnalyzing}
-      onDragOver={(event) => {
-        if (!isInteractive) return;
-        event.preventDefault();
-        setDragOver(true);
-      }}
-      onDragLeave={() => {
-        if (!isInteractive) return;
-        setDragOver(false);
-      }}
-      onDrop={handleDrop}
-    >
-      <input
-        ref={inputRef}
-        type="file"
+    <>
+      <MarketingToolUploadSlot
+        ref={ref}
+        className={`replicate-upload-slot${isAnalyzing ? " is-analyzing" : ""}`}
+        dragDrop
         accept={accept}
-        style={{ display: "none" }}
         disabled={!isInteractive}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          if (file) onFile(file);
-        }}
-      />
-      {hasPreview ? (
-        <>
-          {isImage ? (
+        ariaBusy={isAnalyzing}
+        hasPreview={hasPreview}
+        hasFile={hasFile}
+        previewUrl={previewUrl}
+        isVideo={!isImage}
+        emptyTitle={isImage ? "上传图片素材" : "上传视频素材"}
+        emptyHint={hint}
+        onSelect={onFile}
+        onClear={onClear}
+        overlay={isAnalyzing ? (
+          <span className="replicate-upload-analyzing">
+            <Loader2 size={22} className="is-spinning" />
+            <strong>{stageLabel || "正在反推提示词..."}</strong>
+          </span>
+        ) : null}
+        renderPreview={({ previewUrl: url, isVideo }) => (
+          isVideo ? (
+            <div className="marketing-tool-upload__video-preview">
+              <video src={url} muted playsInline preload="metadata" controls />
+            </div>
+          ) : (
             <button
               type="button"
-              className="replicate-upload-preview-trigger"
+              className="marketing-tool-upload__preview-trigger"
               onClick={() => setLightboxOpen(true)}
               aria-label="放大预览图片"
             >
-              <img src={previewUrl} alt={fileState.name || "上传图片预览"} />
+              <img src={url} alt={fileState?.name || "上传图片预览"} />
             </button>
-          ) : (
-            <div className="replicate-upload-video-preview">
-              <video src={previewUrl} muted playsInline preload="metadata" controls />
-            </div>
-          )}
-          {isAnalyzing && (
-            <span className="replicate-upload-analyzing">
-              <Loader2 size={22} className="is-spinning" />
-              <strong>{stageLabel || "正在反推提示词..."}</strong>
-            </span>
-          )}
-          {hasFile && isInteractive && (
-            <span
-              className="ui-upload-clear-button"
-              role="button"
-              tabIndex={0}
-              aria-label="取消上传"
-              onClick={clearFile}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") clearFile(event);
-              }}
-            >
-              <X size={13} />
-            </span>
-          )}
-        </>
-      ) : (
-        <button
-          type="button"
-          className="replicate-upload-empty"
-          onClick={openFilePicker}
-          disabled={!isInteractive}
-        >
-          <span className="replicate-upload-icon">
-            <img src="/assets/marketing/upload.svg" alt="" />
-          </span>
-          <strong>{isImage ? "上传图片素材" : "上传视频素材"}</strong>
-          <small>{hint}</small>
-        </button>
-      )}
+          )
+        )}
+      />
       {lightboxOpen && isImage ? (
         <ReplicateMediaLightbox
           url={previewUrl}
@@ -278,7 +202,7 @@ const ReplicateUpload = forwardRef(function ReplicateUpload(
           onClose={() => setLightboxOpen(false)}
         />
       ) : null}
-    </div>
+    </>
   );
 });
 
@@ -433,16 +357,6 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
         />
       ) : null}
     </article>
-  );
-}
-
-function ReplicatePageHeader() {
-  return (
-    <div className="marketing-panel-hero voice-hero-empty replicate-hero-empty">
-      <p className="marketing-panel-hero__subtitle">
-        上传图片或视频，自动理解主体、风格与镜头语言，生成可用于创作的提示词
-      </p>
-    </div>
   );
 }
 
@@ -687,9 +601,11 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
       <div className={`marketing-canvas replicate-canvas ${viewTab === "recent" ? "is-recent" : ""} ${viewTab === "recent" && recentResults.length === 0 ? "is-empty" : ""}`}>
         {viewTab === "home" ? (
-          <MarketingToolPanel className="replicate-home-stack">
-            <ReplicatePageHeader />
-
+          <MarketingToolPanel
+            title="反推提示词"
+            subtitle="上传图片或视频，自动理解主体、风格与镜头语言，生成可用于创作的提示词"
+            className="replicate-home-panel"
+          >
             {currentResult && (
               <ReplicateResult
                 result={currentResult}
@@ -703,37 +619,21 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
             {!currentResult && (
             <>
-            <div className="marketing-composer marketing-composer--inline marketing-tool-card replicate-floating-composer">
-              <div className="marketing-composer__tabs marketing-tool-tabs replicate-mode-toggle" aria-label="选择反推类型">
-                <button
-                  type="button"
-                  className={mode === "image" ? "active" : ""}
-                  onClick={() => {
-                    if (isAnalyzing) return;
-                    setMode("image");
-                    setSelectedFile(null);
-                  }}
-                  disabled={isAnalyzing}
-                >
-                  <Image size={15} />
-                  图片反推
-                </button>
-                <button
-                  type="button"
-                  className={mode === "video" ? "active" : ""}
-                  onClick={() => {
-                    if (isAnalyzing) return;
-                    setMode("video");
-                    setSelectedFile(null);
-                  }}
-                  disabled={isAnalyzing}
-                >
-                  <Film size={15} />
-                  视频反推
-                </button>
-              </div>
-
-              <div className="marketing-composer__upload-wrap replicate-upload-area">
+            <MarketingToolComposer
+              ariaLabel="反推提示词上传面板"
+              className="replicate-composer"
+              tabs={[
+                { id: "image", label: "图片反推", icon: <Image size={15} /> },
+                { id: "video", label: "视频反推", icon: <Film size={15} /> },
+              ]}
+              activeTabId={mode}
+              onTabChange={(nextMode) => {
+                if (isAnalyzing) return;
+                setMode(nextMode);
+                setSelectedFile(null);
+              }}
+              tabsDisabled={isAnalyzing}
+              upload={(
                 <ReplicateUpload
                   ref={uploadRef}
                   mode={mode}
@@ -743,38 +643,31 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                   isAnalyzing={isAnalyzing}
                   stageLabel={analysisStageLabel}
                 />
-              </div>
-
-              <div className="marketing-composer__footer marketing-tool-footer replicate-composer-footer">
-                {selectedFile ? (
-                  <strong className="replicate-composer-cost">
-                    预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 50 : 5} /> 积分
-                  </strong>
-                ) : (
-                  <span className="replicate-composer-status">请先上传文件</span>
-                )}
-                {selectedFile ? (
-                  <button
-                    type="button"
-                    className="replicate-reupload-button"
-                    onClick={() => uploadRef.current?.openFilePicker()}
-                    disabled={isAnalyzing}
-                  >
-                    <Upload size={15} />
-                    重新上传文件
-                  </button>
-                ) : null}
+              )}
+              footerStatus={selectedFile ? (
+                <>
+                  预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 50 : 5} /> 积分
+                </>
+              ) : (
+                "请上传文件"
+              )}
+              footerExtra={selectedFile ? (
                 <button
-                  className="ui-send-button"
                   type="button"
-                  onClick={startReplicate}
-                  disabled={isAnalyzing || !selectedFile}
-                  aria-label="开始反推"
+                  className="marketing-tool-composer__secondary-action"
+                  onClick={() => uploadRef.current?.openFilePicker()}
+                  disabled={isAnalyzing}
                 >
-                  {isAnalyzing ? <Loader2 size={16} /> : <Sparkles size={16} />}
+                  <Upload size={15} />
+                  重新上传文件
                 </button>
-              </div>
-            </div>
+              ) : null}
+              actionIcon={<Sparkles size={16} />}
+              actionLabel="开始反推"
+              onAction={startReplicate}
+              actionDisabled={isAnalyzing || !selectedFile}
+              actionLoading={isAnalyzing}
+            />
             {notice && !showRechargeAlert && (
               <p className={`replicate-composer-notice ${/失败|错误|无法|超时|需小于/.test(notice) ? "is-error" : ""}`}>
                 {notice}
