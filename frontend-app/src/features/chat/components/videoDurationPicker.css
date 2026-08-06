@@ -1,0 +1,222 @@
+.video-duration-picker {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.video-duration-picker.is-disabled {
+  opacity: 0.56;
+}
+
+.video-duration-picker__trigger {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.video-duration-picker__trigger svg {
+  flex: 0 0 auto;
+  color: #8b8798;
+}
+
+.video-duration-picker.is-open .video-duration-picker__trigger,
+.video-duration-picker.is-open .video-duration-picker__trigger svg {
+  color: var(--fm-brand, #7b61ff);
+}
+
+.video-duration-picker__panel {
+  position: fixed;
+  z-index: var(--z-dropdown, 1200);
+  box-sizing: border-box;
+  padding: 14px 16px 16px;
+  color: #2f2a3a;
+  background: #ffffff;
+  border: 1px solid #ebe7f2;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(41, 33, 68, 0.14);
+  animation: video-duration-picker-enter 160ms ease-out;
+}
+
+.video-duration-picker__panel--top {
+  transform-origin: bottom center;
+}
+
+.video-duration-picker__panel--bottom {
+  transform-origin: top center;
+}
+
+.video-duration-picker__title {
+  margin-bottom: 14px;
+  color: #8b8798;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.video-duration-picker__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.video-duration-picker__slider-wrap {
+  position: relative;
+  min-width: 0;
+  padding: 4px 2px 22px;
+}
+
+.video-duration-picker__slider {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.video-duration-picker__slider:focus-visible {
+  outline: none;
+}
+
+.video-duration-picker__slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #6f6a7c 0%,
+    #6f6a7c var(--duration-fill, 0%),
+    #e6e2ec var(--duration-fill, 0%),
+    #e6e2ec 100%
+  );
+}
+
+.video-duration-picker__slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #6f6a7c;
+  box-shadow: 0 1px 4px rgba(47, 42, 58, 0.28);
+}
+
+.video-duration-picker__slider::-moz-range-track {
+  height: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #e6e2ec;
+}
+
+.video-duration-picker__slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #6f6a7c;
+}
+
+.video-duration-picker__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #6f6a7c;
+  box-shadow: 0 1px 4px rgba(47, 42, 58, 0.28);
+}
+
+.video-duration-picker__ticks {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 22px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.video-duration-picker__tick {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+  color: #9a95a8;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.video-duration-picker__tick i {
+  display: block;
+  width: 1px;
+  height: 6px;
+  margin-bottom: 4px;
+  background: #cfc9d8;
+}
+
+.video-duration-picker__tick em {
+  font-style: normal;
+}
+
+.video-duration-picker__input-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+  height: 36px;
+  padding: 0 10px;
+  background: #f3f1f6;
+  border-radius: 10px;
+}
+
+.video-duration-picker__input-box input {
+  width: 28px;
+  min-width: 0;
+  padding: 0;
+  color: #2f2a3a;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  appearance: textfield;
+}
+
+.video-duration-picker__input-box input::-webkit-outer-spin-button,
+.video-duration-picker__input-box input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.video-duration-picker__input-box span {
+  color: #8b8798;
+  font-size: 13px;
+  line-height: 1;
+}
+
+@keyframes video-duration-picker-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .video-duration-picker__panel {
+    width: min(360px, calc(100vw - 16px)) !important;
+  }
+
+  .video-duration-picker__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .video-duration-picker__input-box {
+    justify-self: end;
+  }
+}

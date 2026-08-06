@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { ModelOptionContent } from "./modelOptionMeta.jsx";
 import { PromptDropdown } from "./PromptDropdown.jsx";
 import { PromptRatioPreview } from "./PromptRatioPreview.jsx";
+import { VideoDurationPicker } from "./VideoDurationPicker.jsx";
 
 export function VideoPromptDialog({
   ariaLabel,
@@ -47,13 +48,6 @@ export function VideoPromptDialog({
   useEffect(() => {
     resizePromptTextarea();
   }, [value, collapsed]);
-
-  const normalizedDurationOptions = durationOptions.map((item) => {
-    if (typeof item === "object" && item !== null) {
-      return { ...item, label: item.label ?? `${item.value}s` };
-    }
-    return { value: item, label: `${item}s` };
-  });
 
   if (collapsed) {
     return (
@@ -198,15 +192,12 @@ export function VideoPromptDialog({
             width={160}
           />
 
-          <PromptDropdown
-            ariaLabel="选择视频时长"
-            className="fm-prompt-dropdown"
+          <VideoDurationPicker
+            value={duration}
             onChange={onDurationChange}
-            options={normalizedDurationOptions}
+            options={durationOptions}
             placement={dropdownPlacement}
             triggerClassName="fm-prompt-control"
-            value={duration}
-            width={160}
           />
 
           {onRandom && (
