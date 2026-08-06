@@ -3,6 +3,7 @@ import { videoApi } from "../../api/videoApi";
 import { VideoPromptDialog } from "../chat/components/VideoPromptDialog";
 import { ReferenceMediaSlot } from "../image/imageSharedUi";
 import { useToast } from "../../components/ToastProvider";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 
 function getVideoModelOptions(options, modelKey) {
   const selectedModel =
@@ -131,6 +132,18 @@ export function VideoComposerBar({
   async function handleReferenceSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const isImage = String(file.type || "").startsWith("image/");
+    const isVideo = String(file.type || "").startsWith("video/");
+    const sizeError = isImage
+      ? getFileSizeLimitError(file, UPLOAD_SIZE_LIMITS.videoReferenceImage, "参考图片")
+      : isVideo
+        ? getFileSizeLimitError(file, UPLOAD_SIZE_LIMITS.videoReferenceVideo, "参考视频")
+        : "";
+    if (sizeError) {
+      showVideoComposerToast(sizeError);
+      event.target.value = "";
+      return;
+    }
 
     setIsUploadingReference(true);
     try {

@@ -339,6 +339,7 @@ import { useChat, useWorkflowOrchestrator } from '../hooks'
 import { useModelStore } from '../stores/pinia'
 import { projects, initProjectsStore, ensureProjectLoaded, renameProject, deleteProject, duplicateProject, flushProjectSave, saveState, saveError } from '../stores/projects'
 import { openMyAssets, uploadCanvasMedia } from '../api/facemini'
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from '../../../src/utils/uploadLimits.js'
 import { resumeProjectImageTasks } from '../services/imageTaskRecovery'
 import { resumeProjectVideoTasks } from '../services/videoTaskRecovery'
 import { IMAGE_PROMPT_POLISH_SYSTEM_PROMPT, PROMPT_POLISH_MODEL, VIDEO_PROMPT_POLISH_SYSTEM_PROMPT } from '../config/promptPolish'
@@ -663,6 +664,11 @@ const handleCanvasDrop = async (event) => {
   let uploadedCount = 0
   for (let index = 0; index < files.length; index += 1) {
     const file = files[index]
+    const sizeError = getFileSizeLimitError(file, UPLOAD_SIZE_LIMITS.canvasMedia, '文件')
+    if (sizeError) {
+      window.$message?.error(`${file.name || '文件'}上传失败：${sizeError}`)
+      continue
+    }
     const type = getMediaTypeForFile(file)
     const position = { x: start.x + index * 36, y: start.y + index * 36 }
     const nodeId = addNode(type, position, {

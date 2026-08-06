@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Info, Loader2, RefreshCcw, Upload, X } from "lucide-react";
 import { VOICE_EMOTION_OPTIONS, isDigitalHumanVoiceEnabled } from "../utils";
 import { stripFileExtension } from "../../../utils/fileName";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../../utils/uploadLimits";
 
 const AGE_OPTIONS = ["儿童", "少年", "青年", "轻熟", "中年", "老年"];
 const SKIN_OPTIONS = ["#f3d4bf", "#c79a61", "#9f6b39", "#7a4a22", "#5d3518"];
@@ -61,6 +62,15 @@ export function CreateAvatarModal({
     if (!file || isSubmitting) return;
     if (!String(file.type || "").startsWith("image/")) {
       setNotice("请选择 JPG、PNG 或 WebP 图片");
+      return;
+    }
+    const sizeError = getFileSizeLimitError(
+      file,
+      UPLOAD_SIZE_LIMITS.digitalHumanImage,
+      "形象图片",
+    );
+    if (sizeError) {
+      setNotice(sizeError);
       return;
     }
     setNotice("");

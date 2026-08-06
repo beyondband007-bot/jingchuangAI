@@ -3,6 +3,7 @@ import { imageApi } from "../../api/imageApi";
 import { ImagePromptDialog } from "../chat/components/ImagePromptDialog";
 import { ReferenceImageSlot } from "./imageSharedUi";
 import { useToast } from "../../components/ToastProvider";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 
 export function ComposerBar({
   options,
@@ -93,6 +94,16 @@ export function ComposerBar({
   async function handleReferenceSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const sizeError = getFileSizeLimitError(
+      file,
+      UPLOAD_SIZE_LIMITS.imageReference,
+      "参考图",
+    );
+    if (sizeError) {
+      showToast(sizeError);
+      event.target.value = "";
+      return;
+    }
 
     setIsUploadingReference(true);
     try {

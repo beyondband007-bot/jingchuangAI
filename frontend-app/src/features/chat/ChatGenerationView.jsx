@@ -6,6 +6,7 @@ import { CustomSelect } from "../../components/CustomSelect";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { useToast } from "../../components/ToastProvider";
 import { chatApi } from "../../api/chatApi";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 import { ChatHistoryRail } from "./ChatHistoryRail";
 import {
   appendChatStreamChunk,
@@ -120,6 +121,16 @@ function ChatComposerBar({
     if (!file) return;
     if (attachments.length >= 5) {
       setNotice("单次最多上传 5 个附件。");
+      event.target.value = "";
+      return;
+    }
+    const sizeError = getFileSizeLimitError(
+      file,
+      UPLOAD_SIZE_LIMITS.chatAttachment,
+      "附件",
+    );
+    if (sizeError) {
+      setNotice(sizeError);
       event.target.value = "";
       return;
     }
