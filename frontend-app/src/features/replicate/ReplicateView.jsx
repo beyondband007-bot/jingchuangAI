@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import "../audio-ui/audioStateControls.css";
 import "./replicateExperience.css";
 import {
@@ -18,15 +19,17 @@ import { replicateApi } from "./replicateApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
-import { PageTitle } from "../../components/PageTitle";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { formatBeijingDateTime } from "../../utils/time";
+import { resolveMediaUrl } from "../../api/mediaUrl.js";
 import {
   CreditAlertDialog,
   isRechargeRequiredMessage,
 } from "../../components/CreditAlertDialog";
 
 const replicateRecentStorageKey = "jingchuang.replicate.recentResults";
+const maxImageBytes = 20 * 1024 * 1024;
+const maxVideoBytes = 100 * 1024 * 1024;
 
 function loadRecentResults() {
   try {
@@ -44,13 +47,6 @@ function downloadText(fileName, text) {
   link.download = fileName;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function formatBytes(bytes) {
-  const size = Number(bytes || 0);
-  if (!size) return "";
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(0)}KB`;
-  return `${(size / 1024 / 1024).toFixed(1)}MB`;
 }
 
 function hasReplicateContent(task) {
@@ -96,10 +92,50 @@ async function waitForReplicateTask(taskId, {
   throw new Error("分析仍在处理中，请稍后查看历史记录");
 }
 
-function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageLabel }) {
+function ReplicateMediaLightbox({ url, title, kind = "image", onClose }) {
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  if (!url) return null;
+
+  return createPortal(
+    <div className="replicate-media-lightbox" role="dialog" aria-modal="true" aria-label={`预览${title}`}>
+      <button type="button" className="replicate-media-lightbox__backdrop" aria-label="关闭预览" onClick={onClose} />
+      <figure className="replicate-media-lightbox__panel" onClick={(event) => event.stopPropagation()}>
+        <button type="button" className="replicate-media-lightbox__close" onClick={onClose} aria-label="关闭">
+          <X size={18} />
+        </button>
+        {kind === "video" ? (
+          <video src={url} controls autoPlay playsInline preload="metadata" />
+        ) : (
+          <img src={url} alt={title} />
+        )}
+      </figure>
+    </div>,
+    document.body,
+  );
+}
+
+const ReplicateUpload = forwardRef(function ReplicateUpload(
+  { mode, fileState, onFile, onClear, isAnalyzing, stageLabel },
+  ref,
+) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const isImage = mode === "image";
   const hasFile = Boolean(fileState?.name);
@@ -108,10 +144,18 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
   const accept = isImage ? ".jpg,.jpeg,.png,.gif,.webp,image/*" : ".mp4,.mov,.avi,.webm,video/*";
   const hint = isImage ? "支持 jpg / png / gif / webp，最大 20MB" : "支持 mp4 / mov / webm / avi，最大 100MB";
 
+  useImperativeHandle(ref, () => ({
+    openFilePicker() {
+      if (!isInteractive) return;
+      inputRef.current?.click();
+    },
+  }), [isInteractive]);
+
   useEffect(() => {
     const file = fileState?.file;
     if (!file) {
       setPreviewUrl("");
+      setLightboxOpen(false);
       return undefined;
     }
     const url = URL.createObjectURL(file);
@@ -133,6 +177,11 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
     if (file) onFile(file);
   }
 
+  function openFilePicker() {
+    if (!isInteractive) return;
+    inputRef.current?.click();
+  }
+
   const slotClassName = [
     "marketing-composer__upload",
     "marketing-tool-upload",
@@ -143,24 +192,22 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
     isAnalyzing ? "is-analyzing" : "",
   ].filter(Boolean).join(" ");
 
-  const slotProps = {
-    className: slotClassName,
-    "aria-disabled": !isInteractive,
-    "aria-busy": isAnalyzing,
-    onDragOver: (event) => {
-      if (!isInteractive) return;
-      event.preventDefault();
-      setDragOver(true);
-    },
-    onDragLeave: () => {
-      if (!isInteractive) return;
-      setDragOver(false);
-    },
-    onDrop: handleDrop,
-  };
-
-  const slotBody = (
-    <>
+  return (
+    <div
+      className={slotClassName}
+      aria-disabled={!isInteractive}
+      aria-busy={isAnalyzing}
+      onDragOver={(event) => {
+        if (!isInteractive) return;
+        event.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => {
+        if (!isInteractive) return;
+        setDragOver(false);
+      }}
+      onDrop={handleDrop}
+    >
       <input
         ref={inputRef}
         type="file"
@@ -176,9 +223,18 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
       {hasPreview ? (
         <>
           {isImage ? (
-            <img src={previewUrl} alt={fileState.name || "上传图片预览"} />
+            <button
+              type="button"
+              className="replicate-upload-preview-trigger"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="放大预览图片"
+            >
+              <img src={previewUrl} alt={fileState.name || "上传图片预览"} />
+            </button>
           ) : (
-            <video src={previewUrl} muted playsInline preload="metadata" />
+            <div className="replicate-upload-video-preview">
+              <video src={previewUrl} muted playsInline preload="metadata" controls />
+            </div>
           )}
           {isAnalyzing && (
             <span className="replicate-upload-analyzing">
@@ -200,44 +256,192 @@ function ReplicateUpload({ mode, fileState, onFile, onClear, isAnalyzing, stageL
               <X size={13} />
             </span>
           )}
-          <small>{`${isImage ? "图片" : "视频"} · ${formatBytes(fileState.size)}`}</small>
         </>
       ) : (
-        <>
+        <button
+          type="button"
+          className="replicate-upload-empty"
+          onClick={openFilePicker}
+          disabled={!isInteractive}
+        >
           <span className="replicate-upload-icon">
             <img src="/assets/marketing/upload.svg" alt="" />
           </span>
           <strong>{isImage ? "上传图片素材" : "上传视频素材"}</strong>
           <small>{hint}</small>
-        </>
+        </button>
       )}
-    </>
+      {lightboxOpen && isImage ? (
+        <ReplicateMediaLightbox
+          url={previewUrl}
+          title={fileState?.name || "上传图片预览"}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
+    </div>
   );
-
-  if (!isInteractive) {
-    return <div {...slotProps}>{slotBody}</div>;
-  }
-
-  return (
-    <button
-      type="button"
-      {...slotProps}
-      onClick={() => inputRef.current?.click()}
-    >
-      {slotBody}
-    </button>
-  );
-}
+});
 
 function buildPromptText(result) {
   return String(result?.prompt || result?.description || "").trim();
 }
 
+function ReplicatePromptHoverTooltip({ text, open, anchorRef }) {
+  const [style, setStyle] = useState(null);
+
+  useEffect(() => {
+    if (!open || !anchorRef.current || !text) {
+      setStyle(null);
+      return undefined;
+    }
+
+    function updatePosition() {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const maxWidth = Math.min(360, window.innerWidth - 24);
+      const left = Math.min(
+        Math.max(12, rect.left),
+        window.innerWidth - maxWidth - 12,
+      );
+      const preferBelow = rect.bottom + 12;
+      const estimatedHeight = Math.min(220, Math.ceil(String(text).length / 22) * 18 + 24);
+      const top =
+        preferBelow + estimatedHeight > window.innerHeight - 12
+          ? Math.max(12, rect.top - estimatedHeight - 8)
+          : preferBelow;
+
+      setStyle({
+        top: `${top}px`,
+        left: `${left}px`,
+        maxWidth: `${maxWidth}px`,
+      });
+    }
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [anchorRef, open, text]);
+
+  if (!open || !text || !style) return null;
+
+  return createPortal(
+    <div className="replicate-card-title-tooltip is-portal" role="tooltip" style={style}>
+      {text}
+    </div>,
+    document.body,
+  );
+}
+
+function ReplicateRecentCard({ item, onCopy, onDownload }) {
+  const promptText = buildPromptText(item);
+  const titleText = promptText || item.fileName || "分析结果";
+  const metaLabel = `${item.source === "video" ? "视频" : "图片"} · ${item.createdAt}`;
+  const isVideo = item.source === "video";
+  const mediaUrl = resolveMediaUrl(item.sourceUrl);
+  const videoRef = useRef(null);
+  const titleRef = useRef(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  function ensureVideoPosterFrame(event) {
+    const video = event.currentTarget;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+    if (video.currentTime > 0.05) return;
+    try {
+      video.currentTime = Math.min(0.1, video.duration * 0.01);
+    } catch {
+      // Some browsers reject seeking before enough data is buffered.
+    }
+  }
+
+  return (
+    <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""}`}>
+      <div className={`replicate-card-media ${isVideo ? "is-video" : "is-image"}`}>
+        {mediaUrl ? (
+          isVideo ? (
+            <div className="replicate-card-video">
+              <video
+                ref={videoRef}
+                src={mediaUrl}
+                controls
+                playsInline
+                preload="metadata"
+                onLoadedMetadata={ensureVideoPosterFrame}
+                aria-label={item.fileName || "上传视频预览"}
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="replicate-card-image-trigger"
+              onClick={() => setLightboxOpen(true)}
+              aria-label="放大预览图片"
+            >
+              <img src={mediaUrl} alt={item.fileName || "上传图片预览"} />
+            </button>
+          )
+        ) : (
+          <span className="replicate-card-media-fallback" aria-hidden="true">
+            {isVideo ? <FileVideo size={28} /> : <FileImage size={28} />}
+          </span>
+        )}
+      </div>
+      <div className="replicate-card-body">
+        <strong
+          ref={titleRef}
+          className="replicate-card-title"
+          tabIndex={0}
+          onMouseEnter={() => setTooltipOpen(Boolean(promptText))}
+          onMouseLeave={() => setTooltipOpen(false)}
+          onFocus={() => setTooltipOpen(Boolean(promptText))}
+          onBlur={() => setTooltipOpen(false)}
+        >
+          <span className="replicate-card-title-text">{titleText}</span>
+        </strong>
+        <div className="replicate-card-meta-row">
+          <span className="replicate-card-meta">{metaLabel}</span>
+          <div className="replicate-card-actions">
+            <button type="button" onClick={() => onCopy(item)} title="复制" aria-label="复制">
+              <Copy size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDownload(item)}
+              title="下载"
+              aria-label="下载"
+            >
+              <Download size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+      <ReplicatePromptHoverTooltip
+        text={promptText}
+        open={tooltipOpen}
+        anchorRef={titleRef}
+      />
+      {lightboxOpen && !isVideo ? (
+        <ReplicateMediaLightbox
+          url={mediaUrl}
+          title={item.fileName || "上传图片预览"}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
+    </article>
+  );
+}
+
 function ReplicatePageHeader() {
   return (
     <div className="marketing-panel-hero voice-hero-empty replicate-hero-empty">
-      <PageTitle className="marketing-panel-hero__title">反推提示词</PageTitle>
-      <p className="marketing-panel-hero__subtitle">上传参考图片或视频，自动理解主体、风格、镜头语言与画面细节，用于 AI 图片 / 视频生成</p>
+      <p className="marketing-panel-hero__subtitle">
+        上传图片或视频，自动理解主体、风格与镜头语言，生成可用于创作的提示词
+      </p>
     </div>
   );
 }
@@ -303,7 +507,7 @@ function ReplicateResult({
         <div className="marketing-result__footer-actions">
           <div className="marketing-result__actions">
             <button type="button" onClick={onReset}>
-              处理新素材
+              重新生成
             </button>
             <button type="button" onClick={onCopy}>
               复制提示词
@@ -325,6 +529,7 @@ function ReplicateResult({
 }
 
 export function ReplicateView({ authUser, onOpenFeature }) {
+  const uploadRef = useRef(null);
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -352,6 +557,13 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   function handleFile(file) {
     setNotice("");
     setAnalysisStageLabel("");
+    const maxBytes = mode === "image" ? maxImageBytes : maxVideoBytes;
+    if (file.size > maxBytes) {
+      setSelectedFile(null);
+      setCurrentResult(null);
+      setNotice(mode === "image" ? "图片文件需小于 20MB" : "视频文件需小于 100MB");
+      return;
+    }
     setSelectedFile({ file, name: file.name, size: file.size, type: file.type });
     setCurrentResult(null);
   }
@@ -398,6 +610,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         description: completed.description || "",
         tags: completed.tags || [],
         source: completed.source || mode,
+        sourceUrl: completed.sourceUrl || "",
         fileName: completed.fileName || selectedFile.name,
         createdAt: completed.createdAt || formatBeijingDateTime(),
         model: completed.model || "",
@@ -522,6 +735,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
 
               <div className="marketing-composer__upload-wrap replicate-upload-area">
                 <ReplicateUpload
+                  ref={uploadRef}
                   mode={mode}
                   fileState={selectedFile}
                   onFile={handleFile}
@@ -532,20 +746,24 @@ export function ReplicateView({ authUser, onOpenFeature }) {
               </div>
 
               <div className="marketing-composer__footer marketing-tool-footer replicate-composer-footer">
-                <span className="replicate-composer-hint">
-                  {mode === "video"
-                    ? "视频会分析镜头运动、节奏与动态变化，处理时间通常更长。"
-                    : "图片用于反推画面风格和主体细节。"}
-                </span>
-                <strong>
-                  {selectedFile ? (
-                    <>
-                      预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 50 : 5} /> 积分
-                    </>
-                  ) : (
-                    "请上传文件"
-                  )}
-                </strong>
+                {selectedFile ? (
+                  <strong className="replicate-composer-cost">
+                    预计消耗 <BillingPoints feature="replicate" payload={{ kind: mode }} fallbackPoints={mode === "video" ? 50 : 5} /> 积分
+                  </strong>
+                ) : (
+                  <span className="replicate-composer-status">请先上传文件</span>
+                )}
+                {selectedFile ? (
+                  <button
+                    type="button"
+                    className="replicate-reupload-button"
+                    onClick={() => uploadRef.current?.openFilePicker()}
+                    disabled={isAnalyzing}
+                  >
+                    <Upload size={15} />
+                    重新上传文件
+                  </button>
+                ) : null}
                 <button
                   className="ui-send-button"
                   type="button"
@@ -558,7 +776,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
               </div>
             </div>
             {notice && !showRechargeAlert && (
-              <p className={`replicate-composer-notice ${/失败|错误|无法|超时/.test(notice) ? "is-error" : ""}`}>
+              <p className={`replicate-composer-notice ${/失败|错误|无法|超时|需小于/.test(notice) ? "is-error" : ""}`}>
                 {notice}
               </p>
             )}
@@ -580,28 +798,17 @@ export function ReplicateView({ authUser, onOpenFeature }) {
               <HistoryEmptyState title="暂无历史记录" />
             ) : (
               recentResults.map((item) => (
-                <article className="replicate-recent-card" key={item.id}>
-                  <div className="replicate-card-icon">
-                    {item.source === "video" ? <FileVideo size={22} /> : <FileImage size={22} />}
-                  </div>
-                  <div className="replicate-card-info">
-                    <strong>{item.description?.slice(0, 64) || item.prompt?.slice(0, 64) || "分析结果"}</strong>
-                    <span>{item.source === "video" ? "视频" : "图片"} · {item.createdAt}</span>
-                  </div>
-                  <div className="replicate-card-actions">
-                    <button type="button" onClick={() => copyPrompt(item)} title="复制" aria-label="复制">
-                      <Copy size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => downloadText(`replicate-${item.id || Date.now()}.txt`, item.prompt || item.description || "")}
-                      title="下载"
-                      aria-label="下载"
-                    >
-                      <Download size={14} />
-                    </button>
-                  </div>
-                </article>
+                <ReplicateRecentCard
+                  key={item.id}
+                  item={item}
+                  onCopy={copyPrompt}
+                  onDownload={(entry) =>
+                    downloadText(
+                      `replicate-${entry.id || Date.now()}.txt`,
+                      entry.prompt || entry.description || ""
+                    )
+                  }
+                />
               ))
             )}
           </div>
