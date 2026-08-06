@@ -12,10 +12,17 @@ export async function createVideoTask(data, { onTaskCreated = () => {} } = {}) {
   } = resolveVideoImageSources(data)
   const videoReference = data.reference_video?.url || data.reference_video || ''
   const audioReference = data.reference_audio?.url || data.reference_audio || ''
+  const isMinimaxH3 = data.model === 'minimax_h3_2k'
   const hasFrameImages = Boolean(firstFrameImage || lastFrameImage)
   const hasImageReferences = referenceImages.length > 0
-  if ((hasFrameImages || hasImageReferences) && videoReference) {
+  if ((hasFrameImages || (!isMinimaxH3 && hasImageReferences)) && videoReference) {
     throw new Error('一次视频生成只能引用图片或视频中的一种素材')
+  }
+  if (isMinimaxH3 && hasFrameImages && audioReference) {
+    throw new Error('MiniMax H3 首尾帧模式不能同时使用参考音频')
+  }
+  if (isMinimaxH3 && audioReference && !hasImageReferences && !videoReference) {
+    throw new Error('MiniMax H3 参考音频必须搭配参考图片或视频')
   }
   if (lastFrameImage && !firstFrameImage) {
     throw new Error('设置尾帧时必须同时设置首帧')
@@ -49,11 +56,12 @@ export async function createVideoTask(data, { onTaskCreated = () => {} } = {}) {
   const task = await faceminiRequest('/video/tasks', {
     method: 'POST',
     body: JSON.stringify({
-      model: 'seedance_2_0_720p',
+      model: data.model || 'seedance_2_0_720p',
       prompt: data.prompt || '',
       ratio: data.size || data.ratio || '16:9',
+      resolution: data.resolution || null,
       duration: Number(data.seconds || data.duration || 5),
-      mode: hasImageReferences
+      mode: hasImageReferences || videoReference || audioReference
         ? 'reference-image'
         : lastFrameImageUrl
           ? 'first-last-frame'

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  calculateVideoPoints,
   normalizeVideoImageInputs,
   validateVideoPayload
 } from "./video.options.js";
@@ -9,6 +10,17 @@ const model = {
   supported_ratios: JSON.stringify(["16:9"]),
   supported_durations: JSON.stringify([5])
 };
+
+test("charges MiniMax H3 at its configured 60 points per second", () => {
+  assert.equal(calculateVideoPoints({
+    price_unit: "per_second",
+    base_points: 60
+  }, 4), 240);
+});
+
+test("keeps the unified video rate as a fallback for legacy model rows", () => {
+  assert.equal(calculateVideoPoints({}, 4), 480);
+});
 
 test("accepts reference audio together with an image reference", () => {
   assert.doesNotThrow(() => validateVideoPayload({
@@ -49,6 +61,43 @@ test("keeps the existing image and video reference conflict rule", () => {
       referenceAudioUrl: "/media/voice.mp3"
     }),
     /cannot provide both reference image and reference video/
+  );
+});
+
+test("allows MiniMax H3 to combine reference image, video, and audio", () => {
+  const h3Model = {
+    ...model,
+    provider_type: "minimax",
+    provider_model: "MiniMax-H3"
+  };
+  assert.doesNotThrow(() => validateVideoPayload({
+    prompt: "Use all references to generate a coherent scene",
+    model: h3Model,
+    ratio: "16:9",
+    duration: 5,
+    count: 1,
+    referenceImageUrls: ["/media/image.png"],
+    referenceVideoUrl: "/media/video.mp4",
+    referenceAudioUrl: "/media/voice.mp3"
+  }));
+});
+
+test("rejects MiniMax H3 reference audio without an image or video", () => {
+  const h3Model = {
+    ...model,
+    provider_type: "minimax",
+    provider_model: "MiniMax-H3"
+  };
+  assert.throws(
+    () => validateVideoPayload({
+      prompt: "Generate from audio",
+      model: h3Model,
+      ratio: "16:9",
+      duration: 5,
+      count: 1,
+      referenceAudioUrl: "/media/voice.mp3"
+    }),
+    /requires a reference image or video/
   );
 });
 

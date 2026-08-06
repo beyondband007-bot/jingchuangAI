@@ -428,6 +428,7 @@ const imagesByRole = computed(() => {
 
 // Get current model config | 获取当前模型配置
 const currentModelConfig = computed(() => getModelConfig(localModel.value))
+const allowsMixedReferences = computed(() => localModel.value === 'minimax_h3_2k')
 
 // Model options from Pinia store (filtered by provider) | 从 Pinia store 获取模型选项（根据渠道过滤）
 const modelOptions = computed(() => modelStore.videoModelOptions)
@@ -533,21 +534,37 @@ const getConnectedInputs = () => {
   const hasConnectedVideo = connectedVideos.value.length > 0
   const hasAudioMentions = mentionResult.audioMentions.length > 0
   const hasConnectedAudio = connectedAudios.value.length > 0
-  const mediaConflict = (hasImageMentions && hasVideoMentions)
-    || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
+  const hasFrameImage = Boolean(first_frame_image || last_frame_image)
+  const mediaConflict = allowsMixedReferences.value
+    ? hasFrameImage && (hasImageMentions || hasVideoMentions || hasConnectedVideo || hasAudioMentions || hasConnectedAudio)
+    : (hasImageMentions && hasVideoMentions)
+      || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
 
   let reference_image = hasImageMentions ? mentionResult.imageMentions[0].url : ''
   let reference_video = hasVideoMentions ? mentionResult.videoMentions[0].url : ''
   let reference_audio = hasAudioMentions ? mentionResult.audioMentions[0].url : ''
 
-  if (hasVideoMentions) {
-    first_frame_image = ''
-    last_frame_image = ''
-    images.length = 0
-  } else if (hasImageMentions) {
-    reference_video = ''
-  } else if (hasConnectedVideo && !hasConnectedImage) {
-    reference_video = connectedVideos.value[0].url
+  if (allowsMixedReferences.value) {
+    if (hasImageMentions) {
+      first_frame_image = ''
+      last_frame_image = ''
+      images.length = 0
+      images.push(...mentionResult.imageMentions.map(item => item.url))
+      reference_image = ''
+    }
+    if (!reference_video && hasConnectedVideo) {
+      reference_video = connectedVideos.value[0].url
+    }
+  } else {
+    if (hasVideoMentions) {
+      first_frame_image = ''
+      last_frame_image = ''
+      images.length = 0
+    } else if (hasImageMentions) {
+      reference_video = ''
+    } else if (hasConnectedVideo && !hasConnectedImage) {
+      reference_video = connectedVideos.value[0].url
+    }
   }
   if (!reference_audio && hasConnectedAudio) {
     reference_audio = connectedAudios.value[0].url

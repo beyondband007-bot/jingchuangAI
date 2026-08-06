@@ -291,6 +291,7 @@ export function ImagePreviewLightbox({
       getInitialFavorite={getInitialFavorite}
       item={{
         id: task.id,
+        categoryId: task.categoryId,
         title: task.title || "AI 图片创作",
         category: "图片灵感",
         prompt: task.prompt,

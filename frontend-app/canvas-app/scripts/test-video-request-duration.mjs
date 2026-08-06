@@ -6,7 +6,7 @@ import {
 } from '../src/utils/videoRequest.js'
 
 test('preserves supported duration selections in video task requests', () => {
-  for (const duration of [5, 10, 15]) {
+  for (const duration of [4, 5, 10, 15]) {
     assert.equal(resolveVideoRequestDuration({ duration }), duration)
   }
 })

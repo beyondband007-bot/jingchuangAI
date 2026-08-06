@@ -117,7 +117,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .marketing-result__actions button,

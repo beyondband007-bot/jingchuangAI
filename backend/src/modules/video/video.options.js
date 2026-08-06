@@ -1,5 +1,8 @@
 import { createHttpError } from "../../shared/http.js";
-import { calculateVideoPoints as calculateUnifiedVideoPoints } from "../../shared/billingRules.js";
+import {
+  calculateVideoPoints as calculateUnifiedVideoPoints,
+  ceilSeconds
+} from "../../shared/billingRules.js";
 
 export const videoCountOptions = [1];
 
@@ -22,6 +25,10 @@ export function getModelDurations(model) {
 }
 
 export function calculateVideoPoints(model, duration, count = 1) {
+  const pointsPerSecond = Number(model?.base_points);
+  if (model?.price_unit === "per_second" && Number.isFinite(pointsPerSecond) && pointsPerSecond > 0) {
+    return Math.max(1, Math.ceil(ceilSeconds(duration) * pointsPerSecond * Number(count)));
+  }
   return calculateUnifiedVideoPoints(duration) * Number(count);
 }
 
@@ -92,6 +99,7 @@ export function validateVideoPayload({
   });
   const hasFrameImages = Boolean(imageInputs.firstFrameImageUrl || imageInputs.lastFrameImageUrl);
   const hasReferenceImages = imageInputs.referenceImageUrls.length > 0;
+  const isMinimaxH3 = model.provider_type === "minimax" && model.provider_model === "MiniMax-H3";
   const allImageUrls = [
     imageInputs.firstFrameImageUrl,
     imageInputs.lastFrameImageUrl,
@@ -99,7 +107,7 @@ export function validateVideoPayload({
   ].filter(Boolean);
   const validMediaUrl = /^(?:https?:\/\/|\/media\/|asset:\/\/)/i;
 
-  if ((hasFrameImages || hasReferenceImages) && referenceVideoUrl) {
+  if (!isMinimaxH3 && (hasFrameImages || hasReferenceImages) && referenceVideoUrl) {
     throw createHttpError("cannot provide both reference image and reference video", 400);
   }
   if (imageInputs.lastFrameImageUrl && !imageInputs.firstFrameImageUrl) {
@@ -107,6 +115,12 @@ export function validateVideoPayload({
   }
   if (hasFrameImages && hasReferenceImages) {
     throw createHttpError("frame images cannot be combined with reference images", 400);
+  }
+  if (isMinimaxH3 && hasFrameImages && (referenceVideoUrl || referenceAudioUrl)) {
+    throw createHttpError("frame images cannot be combined with multimodal references", 400);
+  }
+  if (isMinimaxH3 && referenceAudioUrl && !(hasReferenceImages || referenceVideoUrl)) {
+    throw createHttpError("MiniMax H3 reference audio requires a reference image or video", 400);
   }
   if (imageInputs.referenceImageUrls.length > 9) {
     throw createHttpError("too many reference images", 400);
@@ -122,5 +136,8 @@ export function validateVideoPayload({
   }
   if (referenceAudioUrl && !validMediaUrl.test(String(referenceAudioUrl))) {
     throw createHttpError("invalid reference audio URL", 400);
+  }
+  if (referenceVideoUrl && !validMediaUrl.test(String(referenceVideoUrl))) {
+    throw createHttpError("invalid reference video URL", 400);
   }
 }

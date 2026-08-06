@@ -1,15 +1,19 @@
 import { config } from "../../config/index.js";
 import { requestKie } from "./client.js";
 
-export function mapImageModelToKie(modelKey) {
+export function mapImageModelToKie(modelKey, { hasReferenceImages = false } = {}) {
   const modelMap = {
     gpt_image_1_5_i2i: "gpt-image/1.5-image-to-image",
     gpt_image_2: "gpt-image-2-text-to-image",
     gpt_image_2_i2i: "gpt-image-2-image-to-image",
     four_o_image: "4o-image",
     nano_banana_pro: "nano-banana-pro",
-    flux_2_pro: "flux-2/pro-text-to-image",
-    seedream_4_5: "seedream/4.5-text-to-image",
+    flux_2_pro: hasReferenceImages
+      ? "flux-2/pro-image-to-image"
+      : "flux-2/pro-text-to-image",
+    seedream_4_5: hasReferenceImages
+      ? "seedream/4.5-edit"
+      : "seedream/4.5-text-to-image",
     nano_banana2: "nano-banana-2"
   };
   return modelMap[modelKey] || config.kie.imageModel;
@@ -28,6 +32,7 @@ export function buildKieImageInput({ prompt, modelKey, ratio, quality, reference
   if (modelKey === "flux_2_pro") {
     return {
       prompt,
+      ...(referenceImageUrls.length ? { input_urls: referenceImageUrls } : {}),
       aspect_ratio: ratio || "1:1",
       resolution: quality === "2K" ? "2K" : "1K",
       nsfw_checker: false
@@ -37,11 +42,22 @@ export function buildKieImageInput({ prompt, modelKey, ratio, quality, reference
   if (modelKey === "seedream_4_5") {
     return {
       prompt,
+      ...(referenceImageUrls.length ? { image_urls: referenceImageUrls } : {}),
       aspect_ratio: ratio || "1:1",
       // Kie Seedream 4.5 exposes basic (2K) and high (4K). The product's
       // current 1K/2K choices both belong to the non-4K tier.
       quality: "basic",
       nsfw_checker: false
+    };
+  }
+
+  if (modelKey === "nano_banana_pro") {
+    return {
+      prompt,
+      image_input: referenceImageUrls,
+      aspect_ratio: ratio || "auto",
+      resolution: quality || "2K",
+      output_format: "png"
     };
   }
 
@@ -78,7 +94,9 @@ export async function createKieImageTask({ prompt, modelKey, ratio, quality, ref
   const input = buildKieImageInput({ prompt, modelKey, ratio, quality, referenceImageUrls });
 
   const body = {
-    model: mapImageModelToKie(modelKey),
+    model: mapImageModelToKie(modelKey, {
+      hasReferenceImages: referenceImageUrls.length > 0
+    }),
     input
   };
 

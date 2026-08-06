@@ -5,9 +5,84 @@ import path from "path";
 import test from "node:test";
 import {
   assertVideoReferenceUrlAccessible,
+  getLocalMediaFilePath,
   resolveArkVideoReference,
-  resolveKieVideoReference
+  resolveKieVideoReference,
+  resolveMinimaxVideoReference
 } from "./video.references.js";
+
+test("resolves a canvas media path inside the configured storage root", () => {
+  const storageDir = path.join("tmp", "video-storage");
+  assert.equal(
+    getLocalMediaFilePath("/media/canvas/uploads/product.png", storageDir),
+    path.resolve(process.cwd(), storageDir, "canvas", "uploads", "product.png")
+  );
+  assert.equal(getLocalMediaFilePath("/media/../secrets.txt", storageDir), "");
+});
+
+test("uploads MiniMax H3 canvas references to the temporary file service", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "minimax-reference-"));
+  const canvasDir = path.join(tempDir, "canvas", "uploads");
+  await mkdir(canvasDir, { recursive: true });
+  await writeFile(path.join(canvasDir, "product.png"), Buffer.from("png-bytes"));
+
+  let uploadArgs;
+  try {
+    const result = await resolveMinimaxVideoReference({
+      userId: 18,
+      url: "/media/canvas/uploads/product.png",
+      kind: "image",
+      referenceIndex: 1,
+      storageDir: tempDir,
+      uploadImpl: async (args) => {
+        uploadArgs = args;
+        return { url: "https://tempfile.example.com/product.png" };
+      },
+      fetchImpl: async () => new Response(Buffer.from("x"), {
+        status: 206,
+        headers: { "Content-Type": "image/png" }
+      })
+    });
+
+    assert.equal(result, "https://tempfile.example.com/product.png");
+    assert.equal(uploadArgs.filePath, path.join(canvasDir, "product.png"));
+    assert.equal(uploadArgs.uploadPath, "minimax-h3-references/18");
+    assert.equal(uploadArgs.mimeType, "image/png");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("returns a no-charge error when MiniMax H3 temporary upload fails", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "minimax-reference-"));
+  const canvasDir = path.join(tempDir, "canvas", "uploads");
+  await mkdir(canvasDir, { recursive: true });
+  await writeFile(path.join(canvasDir, "product.png"), Buffer.from("png-bytes"));
+
+  try {
+    await assert.rejects(
+      resolveMinimaxVideoReference({
+        userId: 18,
+        url: "/media/canvas/uploads/product.png",
+        kind: "image",
+        referenceIndex: 2,
+        storageDir: tempDir,
+        uploadImpl: async () => {
+          throw new Error("network timeout");
+        }
+      }),
+      (error) => {
+        assert.equal(error.code, "VIDEO_REFERENCE_UPLOAD_FAILED");
+        assert.equal(error.errorDetail.stage, "reference_upload");
+        assert.equal(error.errorDetail.referenceIndex, 2);
+        assert.match(error.message, /未扣除积分/);
+        return true;
+      }
+    );
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
 
 test("resolves local references shared by normal video and infinite canvas through a trusted Ark asset", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "video-reference-"));
