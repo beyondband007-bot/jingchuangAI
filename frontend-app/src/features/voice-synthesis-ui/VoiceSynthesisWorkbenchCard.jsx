@@ -40,7 +40,6 @@ export function VoiceSynthesisWorkbenchCard({
   uploading,
   isGenerating,
   notice,
-  demoAudio,
   resultAudio,
   onPickCloneAudio,
   onClearCloneAudio,
@@ -81,55 +80,84 @@ export function VoiceSynthesisWorkbenchCard({
               </div>
 
               <div className="voice-synthesis-workspace__upload-grid">
-                <button
-                  className={`voice-synthesis-workspace__dropzone ${hasCloneAudio ? "has-file" : ""}`}
-                  type="button"
-                  onClick={() => cloneInputRef.current?.click()}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                  }}
-                  onDrop={handleCloneDrop}
-                  disabled={uploading}
-                >
-                  <input
-                    ref={cloneInputRef}
-                    type="file"
-                    accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      pickCloneFile(file);
-                    }}
-                    disabled={uploading}
-                  />
-                  <div className="voice-synthesis-workspace__dropzone-icon">
-                    {uploading ? <Upload size={42} /> : <Mic2 size={42} />}
-                  </div>
-                  <h3>{cloneAudio ? cloneAudio.fileName : "点击或拖拽音频文件到此处上传"}</h3>
-                  <p>{cloneAudio ? `时长 ${Math.max(1, Math.round((cloneAudio.durationMs || 0) / 1000))} 秒` : "支持 mp3、m4a、wav，建议 10 秒到 5 分钟"}</p>
-                  <div className="voice-synthesis-workspace__dropzone-actions">
-                    {cloneAudio && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          onClearCloneAudio();
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            onClearCloneAudio();
-                          }
-                        }}
+                {hasCloneAudio ? (
+                  <div className="voice-synthesis-workspace__dropzone has-file">
+                    <div className="voice-synthesis-workspace__dropzone-icon">
+                      <Mic2 size={42} />
+                    </div>
+                    <h3>{cloneAudio.fileName}</h3>
+                    <p>{`时长 ${Math.max(1, Math.round((cloneAudio.durationMs || 0) / 1000))} 秒`}</p>
+                    {cloneAudio.previewUrl ? (
+                      <div
+                        className="voice-synthesis-workspace__upload-preview"
+                        onClick={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                      >
+                        <audio
+                          src={cloneAudio.previewUrl}
+                          controls
+                          preload="metadata"
+                          controlsList="nodownload noplaybackrate"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="voice-synthesis-workspace__dropzone-actions">
+                      <button
+                        type="button"
+                        onClick={() => cloneInputRef.current?.click()}
+                        disabled={uploading}
+                      >
+                        重新上传
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onClearCloneAudio()}
+                        disabled={uploading}
                       >
                         清除音频
-                      </span>
-                    )}
+                      </button>
+                    </div>
+                    <input
+                      ref={cloneInputRef}
+                      type="file"
+                      accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        pickCloneFile(file);
+                      }}
+                      disabled={uploading}
+                    />
                   </div>
-                </button>
+                ) : (
+                  <button
+                    className="voice-synthesis-workspace__dropzone"
+                    type="button"
+                    onClick={() => cloneInputRef.current?.click()}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                    }}
+                    onDrop={handleCloneDrop}
+                    disabled={uploading}
+                  >
+                    <input
+                      ref={cloneInputRef}
+                      type="file"
+                      accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        pickCloneFile(file);
+                      }}
+                      disabled={uploading}
+                    />
+                    <div className="voice-synthesis-workspace__dropzone-icon">
+                      {uploading ? <Upload size={42} /> : <Mic2 size={42} />}
+                    </div>
+                    <h3>点击或拖拽音频文件到此处上传</h3>
+                    <p>支持 mp3、m4a、wav，建议 10 秒到 5 分钟</p>
+                  </button>
+                )}
 
                 <aside className="voice-synthesis-workspace__requirements">
                   <h3>音色要求</h3>
@@ -137,7 +165,7 @@ export function VoiceSynthesisWorkbenchCard({
                     <li>人声清晰，尽量避免噪声和混响。</li>
                     <li>建议使用单人独白音频，情绪稳定。</li>
                     <li>语速适中，口齿清楚，更利于克隆。</li>
-                    <li>上传后将用于生成相似音色，不会展示。</li>
+                    <li>上传后可先试听确认，再用于生成相似音色。</li>
                   </ul>
                 </aside>
               </div>
@@ -226,31 +254,25 @@ export function VoiceSynthesisWorkbenchCard({
                   disabled={isGenerating || uploading || !hasReadyVoice || !text.trim()}
                 >
                   <Wand2 size={18} />
+                  消耗{" "}
                   <BillingPoints
                     feature="voice"
                     payload={{ text }}
                     fallbackPoints={2000}
-                  />
-                  {isGenerating ? "生成中..." : "生成语音"}
+                  />{" "}
+                  积分
+                  {isGenerating ? " · 生成中..." : " · 生成语音"}
                 </button>
               </section>
             </div>
           </div>
 
-          {(demoAudio || resultAudio) && (
+          {resultAudio && (
             <section className="voice-synthesis-workspace__panel voice-synthesis-workspace__audio-panel">
-              {demoAudio && (
-                <div>
-                  <span>音色试听</span>
-                  <audio src={demoAudio} controls preload="metadata" />
-                </div>
-              )}
-              {resultAudio && (
-                <div>
-                  <span>合成结果</span>
-                  <audio src={resultAudio} controls preload="metadata" />
-                </div>
-              )}
+              <div>
+                <span>合成结果</span>
+                <audio src={resultAudio} controls preload="metadata" />
+              </div>
             </section>
           )}
 
