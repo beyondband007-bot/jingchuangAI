@@ -257,7 +257,7 @@ function normalizeCopyDraft(value, fallbackPayload) {
   const title = normalizeText(value?.title, 120) || `${fallbackPayload.topic.slice(0, 26)}，真实好用的种草分享`;
   const body = normalizeText(value?.body, 4000);
   if (!body) {
-    throw createHttpError("DeepSeek copy response missing body", 502);
+    throw createHttpError("Facemini copy response missing body", 502);
   }
   const tags = normalizeTags(value?.tags?.length ? value.tags : fallbackPayload.keywords || fallbackPayload.topic);
   return { title, body, tags };
@@ -485,12 +485,12 @@ export async function createCopyDraft(payload, userId) {
     });
   } catch (error) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "article copy refund" });
-    throw createHttpError(`DeepSeek 文案生成失败：${error.message}`, error.status || 502);
+    throw createHttpError(`Facemini 文案生成失败：${error.message}`, error.status || 502);
   }
   const parsed = extractJsonObject(provider.text);
   if (!parsed) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "article copy invalid response refund" });
-    throw createHttpError("DeepSeek copy response is not valid JSON", 502);
+    throw createHttpError("Facemini copy response is not valid JSON", 502);
   }
   const copy = normalizeCopyDraft(parsed, copyPrompt);
   const imagePromptPlan = buildImagePromptPlan({ copy, payload: { ...payload, ...copyPrompt } });

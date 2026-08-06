@@ -28,7 +28,7 @@ export function ArticleResultStage({
         <div className="article-result-empty">
           <Loader2 size={58} className="is-spinning" />
           <h2>正在生成标题正文</h2>
-          <p>DeepSeek 正在根据场景、模板、字数和卖点整理文案草案</p>
+          <p>Facemini 正在根据场景、模板、字数和卖点整理文案草案</p>
         </div>
       ) : isGenerating ? (
         <div className="article-result-empty">
