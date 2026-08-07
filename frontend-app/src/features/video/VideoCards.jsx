@@ -1,3 +1,4 @@
+﻿import { useEffect, useId, useRef, useState } from "react";
 import { Download, Loader2, Play, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { LazyPreviewVideo } from "../../components/LazyPreviewVideo";
 import { formatBeijingDateTime } from "../../utils/time";
@@ -68,6 +69,66 @@ function getVideoGenerationTypeLabel(card) {
   return hasVideoReferenceImage(card) ? "图生视频" : "文生视频";
 }
 
+function VideoResultPrompt({ text }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const bubbleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!wrapRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  if (!text) {
+    return (
+      <div className="video-result-prompt-wrap">
+        <p className="video-result-prompt" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`video-result-prompt-wrap has-tooltip${isOpen ? " is-open" : ""}`}
+    >
+      <button
+        type="button"
+        className="video-result-prompt"
+        aria-expanded={isOpen}
+        aria-controls={bubbleId}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        {text}
+      </button>
+      <div
+        id={bubbleId}
+        className="video-result-prompt-bubble"
+        role="tooltip"
+        aria-hidden={!isOpen}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
 export function VideoResultCard({
   card,
   onDelete,
@@ -104,17 +165,7 @@ export function VideoResultCard({
             ) || card.time}
           </span>
         </div>
-        <div
-          className={`video-result-prompt-wrap${promptText ? " has-tooltip" : ""}`}
-          tabIndex={promptText ? 0 : undefined}
-        >
-          <p className="video-result-prompt">{promptText}</p>
-          {promptText ? (
-            <div className="video-result-prompt-bubble" role="tooltip">
-              {promptText}
-            </div>
-          ) : null}
-        </div>
+        <VideoResultPrompt text={promptText} />
         <div className="card-actions">
           <button
             className={`icon-circle ${card.favorite ? "is-favorite" : ""}`}

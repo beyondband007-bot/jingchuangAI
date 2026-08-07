@@ -333,12 +333,26 @@
 .replicate-card-title {
   position: relative;
   display: block;
+  width: 100%;
   min-width: 0;
+  margin: 0;
+  padding: 0;
   color: #173a5e;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.4;
+  text-align: left;
+  background: transparent;
+  border: 0;
   outline: none;
+  cursor: default;
+}
+
+.replicate-card-title.has-tooltip {
+  cursor: pointer;
+}
+
+.replicate-card-title:disabled {
   cursor: default;
 }
 
@@ -384,13 +398,6 @@
   opacity: 1;
   pointer-events: auto;
   transform: none;
-}
-
-.replicate-card-title:hover .replicate-card-title-tooltip:not(.is-portal),
-.replicate-card-title:focus-visible .replicate-card-title-tooltip:not(.is-portal) {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {

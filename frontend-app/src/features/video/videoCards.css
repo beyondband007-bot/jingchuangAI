@@ -1,4 +1,4 @@
-.video-result-card {
+﻿.video-result-card {
   display: flex;
   flex-direction: column;
   height: auto;
@@ -29,8 +29,7 @@
   flex-direction: column;
 }
 
-.video-result-card:has(.video-result-prompt-wrap.has-tooltip:hover),
-.video-result-card:has(.video-result-prompt-wrap.has-tooltip:focus-within) {
+.video-result-card:has(.video-result-prompt-wrap.has-tooltip.is-open) {
   overflow: visible;
   z-index: 8;
 }
@@ -167,22 +166,28 @@
   z-index: 1;
 }
 
-.video-result-prompt-wrap.has-tooltip {
-  cursor: help;
+.video-result-prompt-wrap.has-tooltip .video-result-prompt {
+  cursor: pointer;
 }
 
 .video-result-card .result-meta .video-result-prompt {
   --video-prompt-line-height: 22px;
   box-sizing: border-box;
   display: -webkit-box;
+  width: 100%;
   height: calc(var(--video-prompt-line-height) * 2 + 20px);
   min-height: calc(var(--video-prompt-line-height) * 2 + 20px);
   max-height: calc(var(--video-prompt-line-height) * 2 + 20px);
   margin: 0;
   padding: 6px 12px;
   overflow: hidden;
+  color: inherit;
+  font: inherit;
   line-height: 26px;
+  text-align: left;
   text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -224,13 +229,13 @@
   transform: rotate(45deg);
 }
 
-.video-result-prompt-wrap.has-tooltip:hover .video-result-prompt-bubble,
-.video-result-prompt-wrap.has-tooltip:focus-within .video-result-prompt-bubble {
+.video-result-prompt-wrap.has-tooltip.is-open .video-result-prompt-bubble {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
 }
+
 
 .video-inspiration-card {
   display: grid;
