@@ -29,8 +29,15 @@
   flex-direction: column;
 }
 
+.video-result-card:has(.video-result-prompt-wrap.has-tooltip:hover),
+.video-result-card:has(.video-result-prompt-wrap.has-tooltip:focus-within) {
+  overflow: visible;
+  z-index: 8;
+}
+
 .video-result-card .card-actions {
   margin-top: auto;
+  padding-top: 12px;
 }
 
 .video-result-preview video {
@@ -155,13 +162,23 @@
   color: #8a819d;
 }
 
-.video-result-card .result-meta p {
+.video-result-prompt-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.video-result-prompt-wrap.has-tooltip {
+  cursor: help;
+}
+
+.video-result-card .result-meta .video-result-prompt {
   --video-prompt-line-height: 22px;
   box-sizing: border-box;
   display: -webkit-box;
   height: calc(var(--video-prompt-line-height) * 2 + 20px);
   min-height: calc(var(--video-prompt-line-height) * 2 + 20px);
   max-height: calc(var(--video-prompt-line-height) * 2 + 20px);
+  margin: 0;
   padding: 6px 12px;
   overflow: hidden;
   line-height: 26px;
@@ -169,6 +186,50 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
+}
+
+.video-result-prompt-bubble {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 9;
+  box-sizing: border-box;
+  max-height: 240px;
+  overflow: auto;
+  padding: 10px 12px;
+  color: #ffffff;
+  background: rgba(38, 36, 44, 0.96);
+  border-radius: 10px;
+  box-shadow: 0 12px 24px rgba(25, 22, 36, 0.18);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms ease;
+}
+
+.video-result-prompt-bubble::after {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  background: rgba(38, 36, 44, 0.96);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.video-result-prompt-wrap.has-tooltip:hover .video-result-prompt-bubble,
+.video-result-prompt-wrap.has-tooltip:focus-within .video-result-prompt-bubble {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .video-inspiration-card {

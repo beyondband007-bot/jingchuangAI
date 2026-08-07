@@ -56,6 +56,18 @@ function normalizeVideoResultMessage(card) {
   return message || card?.prompt || "";
 }
 
+function hasVideoReferenceImage(card) {
+  if (card?.referenceImageUrl || card?.firstFrameImageUrl) return true;
+  if (Array.isArray(card?.referenceImageUrls)) {
+    return card.referenceImageUrls.some((url) => Boolean(String(url || "").trim()));
+  }
+  return false;
+}
+
+function getVideoGenerationTypeLabel(card) {
+  return hasVideoReferenceImage(card) ? "图生视频" : "文生视频";
+}
+
 export function VideoResultCard({
   card,
   onDelete,
@@ -68,6 +80,8 @@ export function VideoResultCard({
   const isFailed = card.status === "failed";
   const canUseCompletedActions = !isExample && isCompleted;
   const canRetryOrDelete = !isExample && (isCompleted || isFailed);
+  const promptText = normalizeVideoResultMessage(card);
+  const generationTypeLabel = getVideoGenerationTypeLabel(card);
   return (
     <article
       className={`result-card video-result-card status-${card.status} ${isExample ? "is-example" : ""}`}
@@ -81,7 +95,7 @@ export function VideoResultCard({
           <span className="model-tag">{card.model}</span>
           <span className="ratio-tag">{card.ratio}</span>
           <span className="quality-tag">{card.duration}秒</span>
-          <span className="count-tag">首帧</span>
+          <span className="count-tag">{generationTypeLabel}</span>
         </div>
         <div className="time-row">
           <span>
@@ -90,7 +104,17 @@ export function VideoResultCard({
             ) || card.time}
           </span>
         </div>
-        <p>{normalizeVideoResultMessage(card)}</p>
+        <div
+          className={`video-result-prompt-wrap${promptText ? " has-tooltip" : ""}`}
+          tabIndex={promptText ? 0 : undefined}
+        >
+          <p className="video-result-prompt">{promptText}</p>
+          {promptText ? (
+            <div className="video-result-prompt-bubble" role="tooltip">
+              {promptText}
+            </div>
+          ) : null}
+        </div>
         <div className="card-actions">
           <button
             className={`icon-circle ${card.favorite ? "is-favorite" : ""}`}

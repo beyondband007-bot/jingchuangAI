@@ -6,6 +6,7 @@ import {
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { useToast } from "../../components/ToastProvider";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 import { takePendingGenerationSeed } from "../generation/generationState";
 import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
@@ -568,6 +569,15 @@ export function DigitalHumanV2View({
 
   async function handlePickScene(file) {
     if (!file) return;
+    const sizeError = getFileSizeLimitError(
+      file,
+      UPLOAD_SIZE_LIMITS.digitalHumanImage,
+      "场景图",
+    );
+    if (sizeError) {
+      showToast(sizeError);
+      return;
+    }
     setIsUploadingScene(true);
     try {
       const scene = await digitalHumanApi.uploadScene(file);

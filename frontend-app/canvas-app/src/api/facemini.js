@@ -1,3 +1,5 @@
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from '../../../src/utils/uploadLimits.js'
+
 const API_ROOT = '/api'
 
 function notifyHost(type, detail = {}) {
@@ -94,6 +96,16 @@ export async function uploadDataUrl(dataUrl, path, filename = 'canvas-reference.
 }
 
 export async function uploadCanvasMedia(file) {
+  const sizeError = getFileSizeLimitError(
+    file,
+    UPLOAD_SIZE_LIMITS.canvasMedia,
+    '文件',
+  )
+  if (sizeError) {
+    const error = new Error(sizeError)
+    error.code = 'FILE_TOO_LARGE'
+    throw error
+  }
   const formData = new FormData()
   formData.append('file', file)
   return faceminiRequest('/canvas/uploads/media', { method: 'POST', body: formData })

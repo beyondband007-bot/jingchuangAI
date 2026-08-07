@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, rm } from "fs/promises";
+import { copyFile, mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax } from "../../providers/minimax/vision.js";
@@ -36,6 +36,7 @@ const allowedVideoTypes = new Set([
   "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"
 ]);
 const allowedVideoExts = new Set([".mp4", ".webm", ".mov", ".avi"]);
+const replicateSourcesDir = path.resolve(process.cwd(), config.media.storageDir, "replicate", "sources");
 
 function getExt(fileName = "") {
   const match = String(fileName).toLowerCase().match(/\.[a-z0-9]+$/);
@@ -57,6 +58,7 @@ function mapReplicateTask(row) {
     id: row.id,
     source: row.source,
     fileName: row.file_name,
+    sourceUrl: row.source_url || "",
     prompt: row.prompt || "",
     description: row.description || "",
     style: row.style || "",
@@ -81,6 +83,30 @@ function mapReplicateTask(row) {
     status: row.status || (row.prompt ? "completed" : "processing"),
     error: row.error_message || "",
     createdAt: formatBeijingDateTime(row.created_at)
+  };
+}
+
+function sourcePublicUrl(fileName) {
+  return `/media/replicate/sources/${fileName}`;
+}
+
+async function persistSourceMedia(taskId, file, { fallbackExt = ".bin" } = {}) {
+  await mkdir(replicateSourcesDir, { recursive: true });
+  const ext = getExt(file.originalname) || fallbackExt;
+  const storedName = `${taskId}${ext}`;
+  const targetPath = path.join(replicateSourcesDir, storedName);
+
+  if (file.buffer) {
+    await writeFile(targetPath, file.buffer);
+  } else if (file.path) {
+    await copyFile(file.path, targetPath);
+  } else {
+    throw createHttpError("上传文件无效", 400);
+  }
+
+  return {
+    sourceUrl: sourcePublicUrl(storedName),
+    sourcePath: targetPath
   };
 }
 
@@ -251,7 +277,6 @@ async function runVideoAnalysis(taskId, file, metadata, userId, costPoints) {
     });
     if (!needsFallback(primaryResult)) {
       await finishReplicateTask(taskId, primaryResult);
-      await rm(videoPath, { force: true }).catch(() => {});
       return;
     }
     primaryError = Object.assign(new Error("原生视频分析结果缺少可靠的分镜或置信度过低"), {
@@ -319,7 +344,6 @@ async function runVideoAnalysis(taskId, file, metadata, userId, costPoints) {
     });
   } finally {
     await rm(framesDir, { recursive: true, force: true }).catch(() => {});
-    await rm(videoPath, { force: true }).catch(() => {});
   }
 }
 
@@ -329,12 +353,18 @@ export async function analyzeImage({ file, userId }) {
   const taskId = `replicate-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const costPoints = BILLING_RULES.replicateImagePoints;
   await chargeCredits({ userId, taskId, amount: costPoints, memo: "image replicate debit" });
-  try { await createReplicateTaskRow({
-    id: taskId,
-    userId,
-    source: "image",
-    fileName: file.originalname
-  }); } catch (error) {
+
+  let sourceUrl = "";
+  try {
+    ({ sourceUrl } = await persistSourceMedia(taskId, file, { fallbackExt: ".jpg" }));
+    await createReplicateTaskRow({
+      id: taskId,
+      userId,
+      source: "image",
+      fileName: file.originalname,
+      sourceUrl
+    });
+  } catch (error) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "image replicate refund" });
     throw error;
   }
@@ -347,6 +377,7 @@ export async function analyzeImage({ file, userId }) {
     id: taskId,
     source: "image",
     file_name: file.originalname,
+    source_url: sourceUrl,
     status: "processing",
     created_at: new Date()
   });
@@ -376,21 +407,40 @@ export async function analyzeVideo({ file, userId }) {
     await rm(file.path, { force: true }).catch(() => {});
     throw error;
   }
-  try { await createReplicateTaskRow({
-    id: taskId,
-    userId,
-    source: "video",
-    fileName: file.originalname,
-    stage: "queued",
-    inputDurationSeconds: metadata.durationSeconds,
-    inputSizeBytes: file.size
-  }); } catch (error) {
+
+  let sourceUrl = "";
+  let sourcePath = file.path;
+  try {
+    ({ sourceUrl, sourcePath } = await persistSourceMedia(taskId, file, { fallbackExt: ".mp4" }));
+    await createReplicateTaskRow({
+      id: taskId,
+      userId,
+      source: "video",
+      fileName: file.originalname,
+      sourceUrl,
+      stage: "queued",
+      inputDurationSeconds: metadata.durationSeconds,
+      inputSizeBytes: file.size
+    });
+  } catch (error) {
     await rm(file.path, { force: true }).catch(() => {});
+    await rm(sourcePath, { force: true }).catch(() => {});
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "video replicate refund" });
     throw error;
   }
 
-  runVideoAnalysis(taskId, file, metadata, userId, costPoints).catch((error) => {
+  // Prefer the durable source copy for analysis; drop the multer temp upload.
+  if (sourcePath !== file.path) {
+    await rm(file.path, { force: true }).catch(() => {});
+  }
+
+  runVideoAnalysis(
+    taskId,
+    { ...file, path: sourcePath },
+    metadata,
+    userId,
+    costPoints
+  ).catch((error) => {
     console.error("background video replicate analysis failed:", error);
   });
 
@@ -398,6 +448,7 @@ export async function analyzeVideo({ file, userId }) {
     id: taskId,
     source: "video",
     file_name: file.originalname,
+    source_url: sourceUrl,
     status: "processing",
     stage: "queued",
     input_duration_seconds: metadata.durationSeconds,

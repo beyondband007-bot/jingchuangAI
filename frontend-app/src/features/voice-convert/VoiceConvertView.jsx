@@ -44,6 +44,13 @@ function makeVoiceId() {
   return `VoiceConvert_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function revokePreviewUrl(audioState) {
+  const url = audioState?.previewUrl;
+  if (typeof url === "string" && url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function readAudioDuration(file) {
   return new Promise((resolve) => {
     const audio = document.createElement("audio");
@@ -129,6 +136,22 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   const sourcePickVersionRef = useRef(0);
   const progressTimerRef = useRef(null);
   const stageTimerRef = useRef(null);
+  const targetPreviewUrlRef = useRef("");
+  const sourcePreviewUrlRef = useRef("");
+
+  function replaceTargetPreviewUrl(nextUrl = "") {
+    if (targetPreviewUrlRef.current && targetPreviewUrlRef.current !== nextUrl) {
+      revokePreviewUrl({ previewUrl: targetPreviewUrlRef.current });
+    }
+    targetPreviewUrlRef.current = nextUrl || "";
+  }
+
+  function replaceSourcePreviewUrl(nextUrl = "") {
+    if (sourcePreviewUrlRef.current && sourcePreviewUrlRef.current !== nextUrl) {
+      revokePreviewUrl({ previewUrl: sourcePreviewUrlRef.current });
+    }
+    sourcePreviewUrlRef.current = nextUrl || "";
+  }
 
   function showToast(type, message) {
     showGlobalToast(message, { type });
@@ -164,6 +187,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     if (!resetSignal) return;
     targetUploadVersionRef.current += 1;
     sourcePickVersionRef.current += 1;
+    replaceTargetPreviewUrl("");
+    replaceSourcePreviewUrl("");
     setTargetAudio(null);
     setSourceAudio(null);
     setUploading("");
@@ -189,6 +214,8 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   useEffect(() => () => {
     if (progressTimerRef.current) window.clearInterval(progressTimerRef.current);
     if (stageTimerRef.current) window.clearInterval(stageTimerRef.current);
+    replaceTargetPreviewUrl("");
+    replaceSourcePreviewUrl("");
   }, []);
 
   async function uploadTargetFile(file) {
@@ -207,11 +234,14 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
 
       const result = await voiceConvertApi.uploadTargetAudio(file, durationMs);
       if (uploadVersion !== targetUploadVersionRef.current) return;
+      const previewUrl = URL.createObjectURL(file);
+      replaceTargetPreviewUrl(previewUrl);
       setTargetAudio({
         ...result,
         fileName: normalizeUploadFileName(file.name),
         size: file.size,
-        durationMs
+        durationMs,
+        previewUrl,
       });
       setCurrentVoice(null);
       setDemoAudio("");
@@ -227,6 +257,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   }
 
   function clearTargetAudio() {
+    replaceTargetPreviewUrl("");
     setTargetAudio(null);
     setCurrentVoice(null);
     setDemoAudio("");
@@ -236,6 +267,7 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
   }
 
   function clearSourceAudio() {
+    replaceSourcePreviewUrl("");
     setSourceAudio(null);
     setResultAudio("");
     setResultUrl("");
@@ -253,11 +285,14 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
       if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
         throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm。");
       }
+      const previewUrl = URL.createObjectURL(file);
+      replaceSourcePreviewUrl(previewUrl);
       setSourceAudio({
         file,
         fileName: normalizeUploadFileName(file.name),
         size: file.size,
-        durationMs
+        durationMs,
+        previewUrl,
       });
       setResultAudio("");
       setResultUrl("");

@@ -42,6 +42,13 @@ function makeVoiceId() {
   return `VoiceClone_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function revokePreviewUrl(audioState) {
+  const url = audioState?.previewUrl;
+  if (typeof url === "string" && url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+  }
+}
+
 function readAudioDuration(file) {
   return new Promise((resolve) => {
     const audio = document.createElement("audio");
@@ -128,7 +135,15 @@ export function VoiceSynthesisView({
   const uploadVersionRef = useRef(0);
   const synthesisProgressTimerRef = useRef(null);
   const synthesisStageTimerRef = useRef(null);
+  const clonePreviewUrlRef = useRef("");
   const isGuest = Boolean(authUser?.isGuest);
+
+  function replaceClonePreviewUrl(nextUrl = "") {
+    if (clonePreviewUrlRef.current && clonePreviewUrlRef.current !== nextUrl) {
+      revokePreviewUrl({ previewUrl: clonePreviewUrlRef.current });
+    }
+    clonePreviewUrlRef.current = nextUrl || "";
+  }
 
   function showToast(type, message) {
     showGlobalToast(message, { type });
@@ -171,6 +186,7 @@ export function VoiceSynthesisView({
   useEffect(() => {
     if (!resetSignal) return;
     uploadVersionRef.current += 1;
+    replaceClonePreviewUrl("");
     setCloneAudio(null);
     setUploading("");
     setNotice("");
@@ -197,6 +213,7 @@ export function VoiceSynthesisView({
   useEffect(() => () => {
     if (synthesisProgressTimerRef.current) window.clearInterval(synthesisProgressTimerRef.current);
     if (synthesisStageTimerRef.current) window.clearInterval(synthesisStageTimerRef.current);
+    replaceClonePreviewUrl("");
   }, []);
 
   async function uploadFile(file) {
@@ -215,11 +232,14 @@ export function VoiceSynthesisView({
 
       const result = await voiceApi.uploadCloneAudio(file, durationMs);
       if (uploadVersion !== uploadVersionRef.current) return;
+      const previewUrl = URL.createObjectURL(file);
+      replaceClonePreviewUrl(previewUrl);
       setCloneAudio({
         ...result,
         fileName: file.name,
         size: file.size,
-        durationMs
+        durationMs,
+        previewUrl,
       });
       if (result.cachedVoice?.id) {
         setCurrentVoice(result.cachedVoice);
@@ -241,6 +261,7 @@ export function VoiceSynthesisView({
   }
 
   function clearCloneAudio() {
+    replaceClonePreviewUrl("");
     setCloneAudio(null);
     setCurrentVoice(null);
     setDemoAudio("");

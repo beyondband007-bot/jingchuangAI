@@ -125,7 +125,6 @@ export function FaceminiInspirationModal({
               controls
               playsInline
               autoPlay
-              muted
               onLoadedMetadata={(event) => {
                 const { videoWidth: width, videoHeight: height } = event.currentTarget;
                 if (width > 0 && height > 0) {

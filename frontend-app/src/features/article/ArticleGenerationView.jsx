@@ -42,6 +42,7 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import { formatBeijingDateTime } from "../../utils/time";
 import { useToast } from "../../components/ToastProvider";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -398,6 +399,15 @@ export function ArticleGenerationView({
     for (const file of files) {
       if (!/^image\/(jpeg|png|webp)$/.test(file.type || "")) {
         showToast("请上传 JPG、PNG 或 WebP 图片");
+        continue;
+      }
+      const sizeError = getFileSizeLimitError(
+        file,
+        UPLOAD_SIZE_LIMITS.imageReference,
+        "参考图",
+      );
+      if (sizeError) {
+        showToast(sizeError);
         continue;
       }
       validFiles.push(file);

@@ -5,15 +5,25 @@ export async function createReplicateTaskRow({
   userId,
   source,
   fileName,
+  sourceUrl,
   stage = "queued",
   inputDurationSeconds,
   inputSizeBytes
 }) {
   await getPool().query(
     `INSERT INTO replicate_tasks
-     (id, user_id, source, file_name, status, stage, input_duration_seconds, input_size_bytes)
-     VALUES (?, ?, ?, ?, 'processing', ?, ?, ?)`,
-    [id, userId, source, fileName, stage, inputDurationSeconds || null, inputSizeBytes || null]
+     (id, user_id, source, file_name, source_url, status, stage, input_duration_seconds, input_size_bytes)
+     VALUES (?, ?, ?, ?, ?, 'processing', ?, ?, ?)`,
+    [
+      id,
+      userId,
+      source,
+      fileName,
+      sourceUrl || null,
+      stage,
+      inputDurationSeconds || null,
+      inputSizeBytes || null
+    ]
   );
 }
 

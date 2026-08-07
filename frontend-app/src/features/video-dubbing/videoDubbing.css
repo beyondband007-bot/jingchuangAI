@@ -61,6 +61,57 @@
   width: 100%;
 }
 
+.video-dubbing-view-root .video-dub-upload-slot.has-preview {
+  cursor: default;
+  background: #11131a;
+  border-style: solid;
+}
+
+.video-dubbing-view-root .video-dub-upload-slot.has-preview:hover {
+  background: #11131a;
+  border-color: var(--marketing-border-muted, #c9c5d6);
+  box-shadow: none;
+  transform: none;
+}
+
+.video-dubbing-view-root .video-dub-upload-preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #11131a;
+}
+
+.video-dubbing-view-root .video-dub-upload-preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 214px;
+  max-height: 280px;
+  object-fit: contain;
+  background: #11131a;
+}
+
+.video-dubbing-view-root .video-dub-upload-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: #fff;
+  background: rgba(17, 19, 26, 0.72);
+  font-size: 13px;
+}
+
+.video-dubbing-view-root .video-dub-upload-slot .is-spinning,
+.video-dubbing-view-root .video-dub-upload-slot .lucide-loader-2 {
+  animation: video-dub-spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .video-dubbing-view-root .audio-tool-panel .audio-tool-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -183,13 +234,38 @@
   color: #fff;
 }
 
+.video-dub-recent-overlay.is-processing {
+  place-content: center;
+  gap: var(--space-2);
+  text-align: center;
+}
+
+.video-dub-recent-overlay.is-processing span {
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.video-dub-recent-overlay.is-processing .is-spinning,
+.video-dub-recent-overlay.is-processing .lucide-loader-2 {
+  animation: video-dub-spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .video-dub-recent-overlay.is-failed {
   background: rgba(220, 50, 50, 0.45);
   font-size: 13px;
 }
 
+@keyframes video-dub-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .video-dubbing-view-root .lucide-loader-2 {
+  .video-dubbing-view-root .lucide-loader-2,
+  .video-dub-recent-overlay.is-processing .is-spinning {
     animation: none;
   }
 }
@@ -211,34 +287,6 @@
 .video-dub-recent-info span {
   font-size: 11px;
   color: #9ab;
-}
-
-.video-dub-recent-stage {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 14px 4px;
-  font-size: 12px;
-  color: var(--brand-primary-strong);
-  background: var(--brand-primary-soft-alt);
-  border-color: var(--brand-primary-border);
-}
-
-.video-dub-progress-bar {
-  flex: 1;
-  height: 4px;
-  background: #e5eaf2;
-  border-radius: var(--radius-xs);
-  overflow: hidden;
-}
-
-.video-dub-progress-fill {
-  height: 100%;
-  color: var(--brand-primary-strong);
-  background: var(--brand-primary-strong);
-  border-color: var(--brand-primary-border);
-  border-radius: var(--radius-xs);
-  transition: width 0.3s ease;
 }
 
 .video-dub-recent-play {
@@ -318,6 +366,29 @@
 .video-dub-recent-icon-button.is-danger:hover {
   color: #dc3232;
   background: #fee;
+}
+
+.video-dub-recent-delete {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #5a7a9a;
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  border-radius: var(--radius-control);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+
+.video-dub-recent-delete:hover {
+  color: #dc3232;
+  background: #fff;
 }
 
 .video-dub-player-modal {

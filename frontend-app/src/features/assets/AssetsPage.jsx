@@ -13,6 +13,7 @@ import { loadTencentCaptchaScript } from "../auth/tencentCaptcha";
 import { articleApi } from "../article/articleApi";
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { useToast } from "../../components/ToastProvider";
+import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 import { FaceminiInspirationModal } from "../image/FaceminiInspirationModal";
 import { VideoInspirationModal } from "../video/VideoCards";
 import {
@@ -1007,6 +1008,15 @@ export function AssetsPage({
       showAccountToast("请选择 JPG、PNG 或 WebP 图片", "error");
       return;
     }
+    const sizeError = getFileSizeLimitError(
+      file,
+      UPLOAD_SIZE_LIMITS.accountAvatar,
+      "头像图片",
+    );
+    if (sizeError) {
+      showAccountToast(sizeError, "error");
+      return;
+    }
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
     setAvatarUploadSrc((current) => {
@@ -1095,6 +1105,14 @@ export function AssetsPage({
     try {
       const blob = await drawCroppedAvatarBlob();
       const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+      const sizeError = getFileSizeLimitError(
+        file,
+        UPLOAD_SIZE_LIMITS.accountAvatar,
+        "头像图片",
+      );
+      if (sizeError) {
+        throw new Error(sizeError);
+      }
       const result = await authApi.uploadAvatar({
         file,
         owner: authUser?.id || "user",

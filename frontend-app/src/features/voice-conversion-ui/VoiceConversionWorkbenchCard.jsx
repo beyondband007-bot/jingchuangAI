@@ -52,49 +52,63 @@ function UploadBox({
     onClear();
   }
 
-  return (
-    <button
-      className={`voice-conversion-workbench__upload-box ${
-        tone === "video" ? "is-video" : ""
-      } ${fileState ? "has-file" : ""}`}
-      type="button"
-      onClick={() => inputRef.current?.click()}
-      onDragOver={(event) => {
-        event.preventDefault();
-      }}
-      onDrop={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        pickFile(event.dataTransfer.files?.[0]);
-      }}
+  function openPicker() {
+    if (!isUploading) inputRef.current?.click();
+  }
+
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept={accept}
       disabled={isUploading}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        disabled={isUploading}
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          pickFile(file);
-        }}
-      />
-      <div className="voice-conversion-workbench__upload-icon">
-        <Icon size={56} />
-      </div>
-      <strong className="voice-conversion-workbench__upload-strong">
-        {fileState?.fileName || title}
-      </strong>
-      <span className="voice-conversion-workbench__upload-note">
-        {fileState
-          ? `时长 ${Math.max(
-              1,
-              Math.round((fileState.durationMs || 0) / 1000),
-            )} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`
-          : note}
-      </span>
-      {fileState ? (
+      onChange={(event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        pickFile(file);
+      }}
+    />
+  );
+
+  if (fileState) {
+    return (
+      <div
+        className={`voice-conversion-workbench__upload-box has-file ${
+          tone === "video" ? "is-video" : ""
+        }`}
+      >
+        {fileInput}
+        <div className="voice-conversion-workbench__upload-icon">
+          <Icon size={56} />
+        </div>
+        <strong className="voice-conversion-workbench__upload-strong">
+          {fileState.fileName || title}
+        </strong>
+        <span className="voice-conversion-workbench__upload-note">
+          {`时长 ${Math.max(
+            1,
+            Math.round((fileState.durationMs || 0) / 1000),
+          )} 秒 · ${(fileState.size / 1024 / 1024).toFixed(1)}MB`}
+        </span>
+        {fileState.previewUrl ? (
+          <div
+            className="voice-conversion-workbench__upload-preview"
+            onClick={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <audio
+              src={fileState.previewUrl}
+              controls
+              preload="metadata"
+              controlsList="nodownload noplaybackrate"
+            />
+          </div>
+        ) : null}
+        <div className="voice-conversion-workbench__upload-actions">
+          <button type="button" onClick={openPicker} disabled={isUploading}>
+            重新上传
+          </button>
+        </div>
         <span
           role="button"
           tabIndex={0}
@@ -107,7 +121,35 @@ function UploadBox({
         >
           ×
         </span>
-      ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      className={`voice-conversion-workbench__upload-box ${
+        tone === "video" ? "is-video" : ""
+      }`}
+      type="button"
+      onClick={openPicker}
+      onDragOver={(event) => {
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        pickFile(event.dataTransfer.files?.[0]);
+      }}
+      disabled={isUploading}
+    >
+      {fileInput}
+      <div className="voice-conversion-workbench__upload-icon">
+        <Icon size={56} />
+      </div>
+      <strong className="voice-conversion-workbench__upload-strong">
+        {title}
+      </strong>
+      <span className="voice-conversion-workbench__upload-note">{note}</span>
     </button>
   );
 }
@@ -321,12 +363,14 @@ export function VoiceConversionWorkbenchCard({
               disabled={isConverting || !targetAudio || !sourceAudio}
             >
               <Play size={18} />
+              消耗{" "}
               <BillingPoints
                 feature="voice-convert"
                 payload={{ durationMs: sourceAudio?.durationMs || 0 }}
                 fallbackPoints={2000}
-              />
-              {isConverting ? "转换中..." : "开始转换"}
+              />{" "}
+              积分
+              {isConverting ? " · 转换中..." : " · 开始转换"}
             </button>
 
             {resultAudio ? (

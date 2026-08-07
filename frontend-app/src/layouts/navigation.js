@@ -55,7 +55,7 @@ export const navSections = [
     id: "vision",
     label: "视觉生成",
     icon: Box,
-    children: ["image", "video", "face-swap", "motion"],
+    children: ["image", "video", "motion"],
   },
   { type: "item", id: "digital-human" },
   { type: "item", id: "article" },
