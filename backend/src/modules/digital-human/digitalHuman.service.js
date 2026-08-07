@@ -509,8 +509,12 @@ async function resolveImageAssetFile(assetPath, label) {
   return imagePath;
 }
 
+export function getAvatarIdentityAssetPath(avatar = {}) {
+  return avatar.referenceImage || avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+}
+
 async function getAvatarIdentityImageFile(avatar) {
-  const assetPath = avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+  const assetPath = getAvatarIdentityAssetPath(avatar);
   return resolveImageAssetFile(assetPath, "avatar");
 }
 
@@ -624,7 +628,7 @@ async function createProviderTask(taskId, payload) {
   const avatarImagePath = await getAvatarIdentityImageFile(avatar);
   const sceneImagePath = await getAvatarSceneImageFile(avatar, uploadedScene);
 
-  console.log(`[digital-human] task ${taskId}: preparing public provider assets`);
+  console.log(`[digital-human] task ${taskId}: preparing public provider assets with identity reference ${path.basename(avatarImagePath)}`);
   const [kieAudioUpload, kieAvatarImageProviderUrl, kieSceneImageProviderUrl] = await Promise.all([
     uploadFileToKie({
       filePath: savedAudio.filePath,
@@ -645,7 +649,7 @@ async function createProviderTask(taskId, payload) {
     const [avatarReference, sceneReference, audioReference] = await Promise.all([
       createSeedanceVirtualReferenceFromUrl({
         userId,
-        feature: "digital-human-avatar-three-view",
+        feature: "digital-human-avatar-reference",
         url: kieAvatarImageProviderUrl,
         originalName: path.basename(avatarImagePath),
         mimeType: getImageMimeType(avatarImagePath)

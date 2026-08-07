@@ -207,9 +207,15 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (prefers-reduced-motion: reduce) {
   .video-duration-picker__panel {
-    width: min(360px, calc(100vw - 16px)) !important;
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .video-duration-picker__panel {
+    max-width: calc(100vw - 16px);
   }
 
   .video-duration-picker__body {

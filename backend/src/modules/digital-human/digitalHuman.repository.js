@@ -71,12 +71,12 @@ export async function setDigitalHumanTaskProviderStarted(id, { providerTaskId, p
 }
 
 export async function setDigitalHumanTaskProcessing(id) {
-  await getPool().query("UPDATE digital_human_tasks SET status = 'processing' WHERE id = ?", [id]);
+  await getPool().query("UPDATE digital_human_tasks SET status = 'processing', error_message = NULL WHERE id = ?", [id]);
 }
 
 export async function setDigitalHumanTaskCompleted(id, { resultUrl, thumbnailUrl }) {
   await getPool().query(
-    "UPDATE digital_human_tasks SET status = 'completed', result_url = ?, thumbnail_url = ? WHERE id = ?",
+    "UPDATE digital_human_tasks SET status = 'completed', result_url = ?, thumbnail_url = ?, error_message = NULL WHERE id = ?",
     [resultUrl, thumbnailUrl, id]
   );
 }

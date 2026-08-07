@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-async function mockDigitalHumanWorkspace(page, { onTasks } = {}) {
+async function mockDigitalHumanWorkspace(page, { onTasks, onAvatars, onAiAvatar } = {}) {
   await page.route("**/api/digital-human/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -13,7 +13,13 @@ async function mockDigitalHumanWorkspace(page, { onTasks } = {}) {
         }),
       });
     }
+      if (path.includes("/avatars/ai-custom")) {
+        return onAiAvatar
+          ? onAiAvatar(route, path)
+          : route.fulfill({ contentType: "application/json", body: "{}" });
+      }
       if (path.endsWith("/avatars")) {
+        if (onAvatars) return onAvatars(route);
         return route.fulfill({ contentType: "application/json", body: JSON.stringify({ public: [], mine: [] }) });
       }
       if (path.endsWith("/voices/preview")) {
@@ -220,6 +226,75 @@ test("digital human mine libraries keep their creation entry without redundant e
   await page.getByRole("tab", { name: "我的音色", exact: true }).click();
   await expect(page.locator(".dhv2-audio-create-card")).toBeVisible();
   await expect(page.getByText("暂无我的音色", { exact: true })).toHaveCount(0);
+});
+
+test("AI custom avatar stays in My Avatars while generating and saves automatically", async ({ page }) => {
+  let taskPollCount = 0;
+  let avatarSaved = false;
+
+  await mockDigitalHumanWorkspace(page, {
+    onAvatars: (route) => route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        public: [],
+        mine: avatarSaved
+          ? [{
+              id: "ark-asset-ai-1",
+              name: "美妆博主",
+              status: "ready",
+              source: "ai-custom",
+              cover: "/media/digital-human/avatars/ai/beauty-host.png",
+              createdAt: "2026-08-07 12:00:00",
+            }]
+          : [],
+      }),
+    }),
+    onAiAvatar: (route, path) => {
+      const method = route.request().method();
+      if (method === "POST" && path.endsWith("/ai-custom")) {
+        return route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({ id: "ai-avatar-1", status: "processing", progress: 24 }),
+        });
+      }
+      if (method === "POST" && path.endsWith("/save")) {
+        avatarSaved = true;
+        return route.fulfill({
+          status: 201,
+          contentType: "application/json",
+          body: JSON.stringify({ status: "saved", avatar: { id: "ark-asset-ai-1" } }),
+        });
+      }
+      taskPollCount += 1;
+      return route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(taskPollCount === 1
+          ? { id: "ai-avatar-1", status: "processing", progress: 68 }
+          : {
+              id: "ai-avatar-1",
+              status: "preview_ready",
+              progress: 100,
+              imageUrl: "https://example.com/beauty-host.png",
+            }),
+      });
+    },
+  });
+
+  await page.goto("/#/digital-human");
+  await page.getByRole("tab", { name: "我的形象", exact: true }).click();
+  await page.locator(".dhv2-library__toolbar").getByRole("button", { name: "AI 定制", exact: true }).click();
+  await page.locator(".dhv2-ai-desc").fill("美妆博主");
+  await page.getByRole("button", { name: "生成", exact: true }).click();
+
+  const generatingCard = page.locator(".dhv2-ai-generation-card");
+  await expect(generatingCard).toBeVisible();
+  await expect(generatingCard).toContainText("正在生成");
+  await expect(page.locator(".dhv2-modal--generating")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "保存形象", exact: true })).toHaveCount(0);
+
+  await expect(generatingCard).toHaveCount(0, { timeout: 10000 });
+  await expect(page.getByRole("button", { name: "选择美妆博主", exact: true })).toBeVisible();
 });
 
 test("digital human preview stays inside the workspace after selecting an avatar", async ({ page }) => {

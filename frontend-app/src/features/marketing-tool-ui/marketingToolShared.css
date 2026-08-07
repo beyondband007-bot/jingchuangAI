@@ -490,7 +490,7 @@
   background: var(--marketing-field);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 768px) {
   .marketing-composer__footer {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;

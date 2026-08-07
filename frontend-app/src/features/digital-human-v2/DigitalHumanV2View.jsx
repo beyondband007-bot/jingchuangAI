@@ -12,7 +12,6 @@ import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { DigitalHumanWorkspace } from "./components/DigitalHumanWorkspace";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
-import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
 import { VideoGenStage } from "../video/VideoGenStage";
 import { useVideoGenStateMachine } from "../video/useVideoGenStateMachine";
@@ -37,6 +36,28 @@ import "./digitalHumanV2Styles.css";
 
 const DEFAULT_SCRIPT = "";
 const MAX_SPEECH_DURATION_MS = 15 * 1000;
+const AI_AVATAR_PENDING_STORAGE_KEY = "dhv2-pending-ai-avatar";
+
+function loadPendingAiAvatarJob() {
+  try {
+    const value = JSON.parse(localStorage.getItem(AI_AVATAR_PENDING_STORAGE_KEY));
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistPendingAiAvatarJob(job) {
+  try {
+    if (job) {
+      localStorage.setItem(AI_AVATAR_PENDING_STORAGE_KEY, JSON.stringify(job));
+    } else {
+      localStorage.removeItem(AI_AVATAR_PENDING_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore unavailable or full storage. The in-memory flow still works.
+  }
+}
 
 export function DigitalHumanV2View({
   isActive = true,
@@ -73,7 +94,7 @@ export function DigitalHumanV2View({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState("upload");
-  const [aiGeneratingJob, setAiGeneratingJob] = useState(null);
+  const [aiGeneratingJob, setAiGeneratingJob] = useState(loadPendingAiAvatarJob);
   const [scriptOptimizeRequest, setScriptOptimizeRequest] = useState(null);
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
@@ -223,6 +244,89 @@ export function DigitalHumanV2View({
   }, [drafts]);
 
   useEffect(() => {
+    persistPendingAiAvatarJob(aiGeneratingJob);
+  }, [aiGeneratingJob]);
+
+  useEffect(() => {
+    const taskId = aiGeneratingJob?.id;
+    if (!isActive || !taskId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let polling = false;
+    const request = aiGeneratingJob.request || {};
+
+    async function syncAiAvatarTask() {
+      if (polling) return;
+      polling = true;
+      try {
+        const task = await digitalHumanApi.getAiAvatarTask(taskId);
+        if (cancelled) return;
+
+        if (task?.status === "failed") {
+          setAiGeneratingJob((current) => current ? { ...current, ...task, request } : null);
+          return;
+        }
+
+        if (task?.status === "preview_ready" || task?.status === "saved") {
+          setAiGeneratingJob((current) => current ? {
+            ...current,
+            ...task,
+            request,
+            status: "saving",
+            progress: 100,
+          } : null);
+          try {
+            if (task.status !== "saved") {
+              await digitalHumanApi.saveAiAvatarTask(taskId, {
+                name: String(request.prompt || "AI 定制形象").slice(0, 30),
+              });
+            }
+            persistPendingAiAvatarJob(null);
+            if (cancelled) {
+              setAiGeneratingJob(null);
+              return;
+            }
+            await refreshAvatars().catch(() => null);
+            setAiGeneratingJob(null);
+            showToast("AI 定制形象已自动保存到我的形象");
+            return;
+          } catch (saveError) {
+            if (!cancelled) {
+              setAiGeneratingJob((current) => current ? {
+                ...current,
+                ...task,
+                request,
+                status: "save_failed",
+                error: saveError.message || "自动保存失败，请稍后重试",
+              } : null);
+            }
+          }
+          return;
+        }
+
+        setAiGeneratingJob((current) => current ? { ...current, ...task, request } : null);
+      } catch (pollError) {
+        if (pollError?.status === 404 && !cancelled) {
+          persistPendingAiAvatarJob(null);
+          setAiGeneratingJob(null);
+        }
+        // A temporary polling error should not turn a running provider task into a failed task.
+      } finally {
+        polling = false;
+      }
+    }
+
+    syncAiAvatarTask();
+    const timer = window.setInterval(syncAiAvatarTask, 3500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [aiGeneratingJob?.id, isActive]);
+
+  useEffect(() => {
     setAudioPreviewPhase("draft");
     setIsAudioPreviewing(false);
     setIsAudioPlaying(false);
@@ -336,9 +440,8 @@ export function DigitalHumanV2View({
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
     setIsCreateOpen(false);
-    setAiGeneratingJob(null);
     setError("");
-    Message.success("已恢复默认配置");
+    showToast("已恢复默认配置");
   }
 
   async function handleGenerate() {
@@ -543,19 +646,29 @@ export function DigitalHumanV2View({
   }
 
   async function handleRegenerateAiAvatar(request) {
-    if (!request) return;
+    const sourceJob = request || aiGeneratingJob;
+    if (!sourceJob) return;
+    if (sourceJob.status === "save_failed" && sourceJob.id) {
+      setAiGeneratingJob((current) => current ? {
+        ...current,
+        status: "processing",
+        error: "",
+      } : null);
+      return;
+    }
+    const nextRequest = sourceJob.request || sourceJob;
     setAiGeneratingJob({
-      ...request,
-      request,
+      ...nextRequest,
+      request: nextRequest,
       status: "creating",
     });
     try {
-      const task = await digitalHumanApi.createAiAvatar(request);
+      const task = await digitalHumanApi.createAiAvatar(nextRequest);
       await refreshCredits();
       setAiGeneratingJob({
-        ...request,
+        ...nextRequest,
         ...task,
-        request,
+        request: nextRequest,
       });
     } catch (createError) {
       setAiGeneratingJob((current) => current ? {
@@ -587,47 +700,6 @@ export function DigitalHumanV2View({
       showToast(uploadError.message || "场景图上传失败");
     } finally {
       setIsUploadingScene(false);
-    }
-  }
-
-  async function handleSaveAiAvatar(task) {
-    if (!task?.id) return;
-    try {
-      const result = await digitalHumanApi.saveAiAvatarTask(task.id, {
-        name: "AI Custom Avatar",
-      });
-      if (result?.avatar) {
-        const refreshedAvatars = await refreshAvatars();
-        const persistedAvatar = refreshedAvatars.mine.find(
-          (item) => String(item.id) === String(result.avatar.id),
-        );
-        const request = task.request || aiGeneratingJob?.request || {};
-        const selectedAiAvatar = {
-          ...(persistedAvatar || result.avatar),
-          description:
-            request.prompt ||
-            persistedAvatar?.description ||
-            result.avatar.description ||
-            "",
-          performance:
-            request.performance ||
-            `保持${request.style || "自然写实"}的人物气质，正视镜头，自然口播`,
-        };
-        setSelectedAvatar(selectedAiAvatar);
-        setAvatarSource("mine");
-        setSelectedMineLibraryId(`avatar-${result.avatar.id}`);
-      }
-      setAiGeneratingJob(null);
-      showToast("个人形象创建成功");
-    } catch (saveError) {
-      const message = saveError.message || "保存形象失败，请稍后重试";
-      setAiGeneratingJob((current) => current ? {
-        ...current,
-        ...task,
-        error: message,
-      } : null);
-      showToast(message, { type: "error" });
-      throw new Error(message);
     }
   }
 
@@ -702,6 +774,12 @@ export function DigitalHumanV2View({
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
       Message.info("开发中");
+      return;
+    }
+    if (mode === "ai" && aiGeneratingJob) {
+      setAvatarSource("mine");
+      setRightView("library");
+      showToast("已有 AI 定制形象正在处理中，请在我的形象中查看进度");
       return;
     }
     setCreateMode(mode);
@@ -850,6 +928,8 @@ export function DigitalHumanV2View({
         onApplyDraft={handleApplyDraft}
         onDeleteDraft={handleDeleteDraft}
         onOpenAssets={onOpenAssets}
+        aiGeneratingJob={aiGeneratingJob}
+        onRetryAiAvatar={handleRegenerateAiAvatar}
       />
 
       {isCreateOpen ? (
@@ -862,15 +942,6 @@ export function DigitalHumanV2View({
           initialVoiceId={voiceId}
           initialVoiceSpeed={voiceSpeed}
           initialVoiceEmotion={voiceEmotion}
-        />
-      ) : null}
-
-      {aiGeneratingJob ? (
-        <AvatarGeneratingModal
-          job={aiGeneratingJob}
-          onClose={() => setAiGeneratingJob(null)}
-          onRegenerate={handleRegenerateAiAvatar}
-          onSave={handleSaveAiAvatar}
         />
       ) : null}
 

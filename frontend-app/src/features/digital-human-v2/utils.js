@@ -471,6 +471,8 @@ export function snapshotAvatar(avatar) {
     name: avatar.name || "",
     cover: avatar.cover || "",
     poster: avatar.poster || "",
+    referenceImage: avatar.referenceImage || "",
+    views: Array.isArray(avatar.views) ? avatar.views.slice(0, 4) : [],
     tags: Array.isArray(avatar.tags) ? avatar.tags.slice(0, 4) : [],
     aspectRatio: avatar.aspectRatio || avatar.ratio || "",
   };
@@ -506,6 +508,8 @@ export function resolveAvatarFromDraft(draft, avatarData) {
       ...draft.avatar,
       cover: draft.avatar.cover || "",
       poster: draft.avatar.poster || "",
+      referenceImage: draft.avatar.referenceImage || "",
+      views: Array.isArray(draft.avatar.views) ? draft.avatar.views.slice(0, 4) : [],
     };
   }
   return null;

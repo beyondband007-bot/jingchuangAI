@@ -548,85 +548,60 @@ export const fmImageInspirations = [
   };
 });
 
-export const fmDigitalHumanInspirations = [
-  [
-    "public-anchor-dialogue",
-    "主播对话",
-    "双主播围绕热点话题自然互动，一问一答拆解观点，节奏轻松、信息密度高，适合直播切片和访谈口播。",
-  ],
-  [
-    "public-product",
-    "产品讲解员",
-    "以亲和专业的语气介绍产品卖点，结合使用场景、核心功能和购买理由，像短视频带货主播一样清晰种草。",
-  ],
-  [
-    "public-medical",
-    "健康科普员",
-    "用通俗易懂的表达科普健康知识，先点出现象，再解释原因和日常建议，语气温和可信，避免夸大承诺。",
-  ],
-  [
-    "public-home-lady",
-    "居家知性女性",
-    "在温暖居家场景中分享生活经验、好物心得或情绪陪伴，表达自然细腻，营造松弛、可信赖的陪伴感。",
-  ],
-  [
-    "public-real-estate",
-    "房地产经纪人",
-    "以专业经纪人的口吻介绍房源亮点，讲清区位、户型、配套和适合人群，表达稳重利落，突出真实看房感。",
-  ],
-  [
-    "public-travel",
-    "文旅推荐官",
-    "像本地向导一样推荐目的地，串联景点亮点、路线体验和拍照氛围，语言有画面感，激发立即出发的兴趣。",
-  ],
-  [
-    "public-fashion-host",
-    "时尚类女主播",
-    "用精致自信的语气讲解穿搭、妆容或潮流单品，突出风格关键词、适配场景和细节质感，节奏轻快高级。",
-  ],
-  [
-    "public-knowledge-host",
-    "知识科普类女主播",
-    "把复杂知识拆成清楚的三点，用案例开场、逻辑递进、结尾总结，适合科普、教育和观点类短视频。",
-  ],
-  [
-    "public-executive-lady",
-    "职场女高管",
-    "以成熟干练的管理者视角分享商业判断、团队管理或职业成长建议，表达坚定克制，观点清晰有分量。",
-  ],
-  [
-    "public-business-host",
-    "职场轻商务女主播",
-    "用轻商务风格介绍办公工具、效率方法或品牌服务，语气专业但不生硬，突出解决问题和提升效率的价值。",
-  ],
-  [
-    "public-finance",
-    "财经主播",
-    "以财经主播口吻解读市场变化、行业趋势或投资常识，先给结论再讲逻辑，表达冷静理性，提醒风险边界。",
-  ],
-  [
-    "public-operations",
-    "运营达人",
-    "从运营实战角度拆解增长方法、活动策划或内容策略，强调目标、动作和复盘指标，语言直接、可执行。",
-  ],
-].map(([avatarId, title, prompt, assetName]) => {
-  const fileName = assetName || title;
-  return {
-    id: `digital-human-${avatarId}`,
-    avatarId,
-    title,
-    category: "数字人形象",
-    prompt,
-    thumbnail: `/assets/digital-human/posters/${fileName}.jpg`,
-    poster: `/assets/digital-human/posters/${fileName}.jpg`,
-    source: `/assets/digital-human/${fileName}.mp4`,
-    videoSrc: `/assets/digital-human/${fileName}.mp4`,
-    ratio: "3s",
-    model: "kling-ai-avatar-pro",
-    material: "视频封面",
-    aspect: "wide",
-  };
-});
+const officialDigitalHumanDefinitions = [
+  ["dh-05", "数字人1 清妍", "生活分享、品牌展示与轻松口播。", "png", "通用口播"],
+  ["dh-06", "数字人2 晚晴", "时尚发布、活动主持与质感内容。", "png", "通用口播"],
+  ["dh-07", "数字人3 知夏", "亲和讲解、日常分享与实用内容。", "jpg", "通用口播"],
+  ["dh-08", "数字人4 念安", "生活方式、好物分享与轻快口播。", "png", "通用口播"],
+  ["dh-09", "数字人5 若溪", "潮流内容、品牌种草与短视频口播。", "jpg", "通用口播"],
+  ["dh-10", "数字人6 知微", "专业讲解、知识科普与企业内容。", "png", "通用口播"],
+  ["dh-11", "数字人7 星澜", "自然分享、生活美学与温柔叙述。", "png", "通用口播"],
+  ["dh-12", "数字人8 语宁", "生活记录、轻松互动与氛围内容。", "png", "通用口播"],
+  ["dh-13", "数字人9 可昕", "服务介绍、亲和沟通与品牌内容。", "png", "通用口播"],
+  ["dh-14", "数字人10 映雪", "文化分享、艺术推荐与知性讲解。", "png", "通用口播"],
+  ["dh-15", "数字人11 雅晴", "展览导览、知识分享与现场讲解。", "jpg", "通用口播"],
+  ["dh-16", "数字人12 清禾", "旅行分享、生活方式与自然口播。", "jpg", "通用口播"],
+  ["dh-17", "数字人13 婉柔", "品质生活、礼仪文化与优雅表达。", "jpg", "通用口播"],
+  ["dh-18", "数字人14 予安", "手作分享、空间介绍与温暖叙述。", "jpg", "通用口播"],
+  ["dh-19", "数字人15 书瑶", "商务介绍、品牌传播与专业表达。", "jpg", "通用口播"],
+];
+
+function getOfficialDigitalHumanAssetDirectory(avatarId) {
+  return `/assets/digital-human/official-v2/${avatarId}`;
+}
+
+function getOfficialDigitalHumanViews(assetDirectory) {
+  return [
+    { type: "front", label: "正视图", url: `${assetDirectory}/views/front.png` },
+    { type: "side", label: "侧视图", url: `${assetDirectory}/views/side.png` },
+    { type: "back", label: "背视图", url: `${assetDirectory}/views/back.png` },
+    { type: "face", label: "面部图", url: `${assetDirectory}/views/face.png` },
+  ];
+}
+
+export const fmDigitalHumanInspirations = officialDigitalHumanDefinitions.map(
+  ([avatarId, title, prompt, referenceExtension, category]) => {
+    const assetDirectory = getOfficialDigitalHumanAssetDirectory(avatarId);
+    return {
+      id: `digital-human-official-${avatarId}`,
+      avatarId: `official-${avatarId}`,
+      title,
+      category: "数字人形象",
+      prompt,
+      thumbnail: `${assetDirectory}/poster.jpg`,
+      poster: `${assetDirectory}/poster.jpg`,
+      source: `${assetDirectory}/preview.mp4`,
+      videoSrc: `${assetDirectory}/preview.mp4`,
+      referenceImage: `${assetDirectory}/reference-front.${referenceExtension}`,
+      views: getOfficialDigitalHumanViews(assetDirectory),
+      tags: [category, "中文口播"],
+      ratio: "4s",
+      model: "MiniMax-H3",
+      material: "数字人视频",
+      aspect: "portrait",
+    };
+  },
+);
 
 export const digitalHumanOfficialAvatarFallbacks = fmDigitalHumanInspirations.map(
   (item) => ({
@@ -635,9 +610,12 @@ export const digitalHumanOfficialAvatarFallbacks = fmDigitalHumanInspirations.ma
     description: `适合${item.title}类数字人口播、讲解与短视频内容`,
     language: "中文 / 通用",
     status: "ready",
+    tags: item.tags,
     cover: item.source,
     assetPath: item.source,
     poster: item.poster,
+    referenceImage: item.referenceImage,
+    views: item.views,
   }),
 );
 

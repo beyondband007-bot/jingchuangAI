@@ -1,5 +1,5 @@
 import React from "react";
-import { getAvatarCategoryLabel, isVideoCover } from "../utils";
+import { isVideoCover } from "../utils";
 import { Play } from "lucide-react";
 
 export function AvatarCard({
@@ -12,9 +12,7 @@ export function AvatarCard({
   const cover = avatar.cover;
   const isVideo = isVideoCover(cover);
   const isAiCustom = String(cover || "").includes("/digital-human/avatars/ai/");
-  const category = isAiCustom ? "AI Custom" : getAvatarCategoryLabel(avatar);
-  const name = isAiCustom ? "AI Custom Avatar" : avatar.name || "My Avatar";
-  const overlayLabel = variant === "mine" ? `${name} · ${category}` : category;
+  const name = avatar.name || (isAiCustom ? "AI 定制形象" : "我的形象");
 
   return (
     <article
@@ -26,7 +24,7 @@ export function AvatarCard({
         type="button"
         className="dhv2-avatar-card__cover"
         onClick={() => onSelect?.(avatar)}
-        aria-label={`Select ${name}`}
+        aria-label={`选择${name}`}
       >
         {cover ? (
           isVideo ? (
@@ -47,9 +45,6 @@ export function AvatarCard({
           <span className="dhv2-avatar-card__play" aria-hidden="true">
             <Play size={18} fill="currentColor" />
           </span>
-        ) : null}
-        {variant !== "mine" ? (
-          <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
         ) : null}
       </button>
       {variant === "default" ? (

@@ -3,6 +3,7 @@ import { Plus, Sparkles, X } from "lucide-react";
 import { CustomSelect } from "../../../components/CustomSelect";
 import { AvatarCard } from "./AvatarCard";
 import { AvatarConfirmOverlay } from "./AvatarConfirmOverlay";
+import { AiAvatarGenerationCard } from "./AiAvatarGenerationCard";
 import { VoiceAudioLibraryPanel } from "./VoiceAudioLibraryPanel";
 import {
   ASPECT_RATIO_OPTIONS,
@@ -34,6 +35,8 @@ export function AvatarLibraryPanel({
   onCreateAvatar,
   onVoiceSaved,
   refreshCredits,
+  aiGeneratingJob,
+  onRetryAiAvatar,
   onClose,
 }) {
   const [previewAvatar, setPreviewAvatar] = useState(null);
@@ -116,7 +119,7 @@ export function AvatarLibraryPanel({
             {isAudio
               ? `我的音色：共计 ${clonedVoiceCount} 个`
               : isMine
-                ? `我的形象：共计 ${mineList.length} 个`
+                ? `我的形象：共计 ${mineList.length + (aiGeneratingJob ? 1 : 0)} 个`
                 : `官方形象：共计 ${officialList.length} 个`}
           </span>
         </div>
@@ -184,6 +187,10 @@ export function AvatarLibraryPanel({
             </button>
           ) : null}
 
+          {isMine && aiGeneratingJob ? (
+            <AiAvatarGenerationCard job={aiGeneratingJob} onRetry={onRetryAiAvatar} />
+          ) : null}
+
           {list.map((item) => (
             <AvatarCard
               key={item.libraryId || item.id}
@@ -208,18 +215,8 @@ export function AvatarLibraryPanel({
       {previewAvatar ? (
         <AvatarConfirmOverlay
           avatar={previewAvatar}
-          voices={voices}
-          voiceId={voiceId}
-          onVoiceIdChange={onVoiceIdChange}
-          voiceSpeed={voiceSpeed}
-          onVoiceSpeedChange={onVoiceSpeedChange}
-          voiceEmotion={voiceEmotion}
-          onVoiceEmotionChange={onVoiceEmotionChange}
           onClose={() => setPreviewAvatar(null)}
-          onConfirm={({ avatar, voiceId: nextVoiceId, speed, emotion }) => {
-            onVoiceIdChange?.(nextVoiceId);
-            onVoiceSpeedChange?.(speed);
-            onVoiceEmotionChange?.(emotion);
+          onConfirm={(avatar) => {
             onSelectAvatar?.(avatar);
             onConfirmAvatar?.(avatar);
             setPreviewAvatar(null);

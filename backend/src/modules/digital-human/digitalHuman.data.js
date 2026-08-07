@@ -8,128 +8,47 @@ export const digitalHumanModels = [
   }
 ];
 
+const officialAvatarAssetRoot = "/assets/digital-human/official-v2";
+
+function createOfficialAvatar({ id, name, description, referenceExtension, category }) {
+  const assetDirectory = `${officialAvatarAssetRoot}/${id}`;
+  return {
+    id: `official-${id}`,
+    name,
+    description,
+    language: "中文 / 通用",
+    status: "ready",
+    category,
+    tags: [category, "中文口播"],
+    cover: `${assetDirectory}/preview.mp4`,
+    assetPath: `${assetDirectory}/preview.mp4`,
+    poster: `${assetDirectory}/poster.jpg`,
+    referenceImage: `${assetDirectory}/reference-front.${referenceExtension}`,
+    views: [
+      { type: "front", label: "正视图", url: `${assetDirectory}/views/front.png` },
+      { type: "side", label: "侧视图", url: `${assetDirectory}/views/side.png` },
+      { type: "back", label: "背视图", url: `${assetDirectory}/views/back.png` },
+      { type: "face", label: "面部图", url: `${assetDirectory}/views/face.png` }
+    ]
+  };
+}
+
 export const publicAvatars = [
-  {
-    id: "public-anchor-dialogue",
-    name: "主播对话",
-    description: "适合主播对话类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/主播对话.mp4",
-    assetPath: "/assets/digital-human/主播对话.mp4",
-    threeView: "/assets/digital-human/three-view/主播对话.png"
-  },
-  {
-    id: "public-product",
-    name: "产品讲解员",
-    description: "适合产品讲解员类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/产品讲解员.mp4",
-    assetPath: "/assets/digital-human/产品讲解员.mp4",
-    threeView: "/assets/digital-human/three-view/产品讲解员.png"
-  },
-  {
-    id: "public-medical",
-    name: "健康科普员",
-    description: "适合健康科普员类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/健康科普员.mp4",
-    assetPath: "/assets/digital-human/健康科普员.mp4",
-    poster: "/assets/digital-human/posters/健康科普员.jpg",
-    threeView: "/assets/digital-human/three-view/健康科普员.png"
-  },
-  {
-    id: "public-home-lady",
-    name: "居家知性女性",
-    description: "适合居家知性女性类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/居家知性女性.mp4",
-    assetPath: "/assets/digital-human/居家知性女性.mp4",
-    threeView: "/assets/digital-human/three-view/居家知性女性.png"
-  },
-  {
-    id: "public-real-estate",
-    name: "房地产经纪人",
-    description: "适合房地产经纪人类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/房地产经纪人.mp4",
-    assetPath: "/assets/digital-human/房地产经纪人.mp4",
-    threeView: "/assets/digital-human/three-view/房地产经纪人.png"
-  },
-  {
-    id: "public-travel",
-    name: "文旅推荐官",
-    description: "适合文旅推荐官类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/文旅推荐官.mp4",
-    assetPath: "/assets/digital-human/文旅推荐官.mp4",
-    threeView: "/assets/digital-human/three-view/文旅推荐官.png"
-  },
-  {
-    id: "public-fashion-host",
-    name: "时尚类女主播",
-    description: "适合时尚类女主播类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/时尚类女主播.mp4",
-    assetPath: "/assets/digital-human/时尚类女主播.mp4",
-    threeView: "/assets/digital-human/three-view/时尚类女主播.png"
-  },
-  {
-    id: "public-knowledge-host",
-    name: "知识科普类女主播",
-    description: "适合知识科普类女主播类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/知识科普类女主播.mp4",
-    assetPath: "/assets/digital-human/知识科普类女主播.mp4",
-    threeView: "/assets/digital-human/three-view/知识科普类女主播.png"
-  },
-  {
-    id: "public-executive-lady",
-    name: "职场女高管",
-    description: "适合职场女高管类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/职场女高管.mp4",
-    assetPath: "/assets/digital-human/职场女高管.mp4",
-    threeView: "/assets/digital-human/three-view/职场女高管.png"
-  },
-  {
-    id: "public-business-host",
-    name: "职场轻商务女主播",
-    description: "适合职场轻商务女主播类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/职场轻商务女主播.mp4",
-    assetPath: "/assets/digital-human/职场轻商务女主播.mp4",
-    threeView: "/assets/digital-human/three-view/职场轻商务女主播.png"
-  },
-  {
-    id: "public-finance",
-    name: "财经主播",
-    description: "适合财经主播类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/财经主播.mp4",
-    assetPath: "/assets/digital-human/财经主播.mp4",
-    threeView: "/assets/digital-human/three-view/财经主播.png"
-  },
-  {
-    id: "public-operations",
-    name: "运营达人",
-    description: "适合运营达人类数字人口播、讲解与短视频内容",
-    language: "中文 / 通用",
-    status: "ready",
-    cover: "/assets/digital-human/运营达人.mp4",
-    assetPath: "/assets/digital-human/运营达人.mp4",
-    threeView: "/assets/digital-human/three-view/运营达人.png"
-  }
+  createOfficialAvatar({ id: "dh-05", name: "数字人1 清妍", description: "适合生活分享、品牌展示与轻松口播", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-06", name: "数字人2 晚晴", description: "适合时尚发布、活动主持与质感内容", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-07", name: "数字人3 知夏", description: "适合亲和讲解、日常分享与实用内容", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-08", name: "数字人4 念安", description: "适合生活方式、好物分享与轻快口播", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-09", name: "数字人5 若溪", description: "适合潮流内容、品牌种草与短视频口播", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-10", name: "数字人6 知微", description: "适合专业讲解、知识科普与企业内容", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-11", name: "数字人7 星澜", description: "适合自然分享、生活美学与温柔叙述", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-12", name: "数字人8 语宁", description: "适合生活记录、轻松互动与氛围内容", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-13", name: "数字人9 可昕", description: "适合服务介绍、亲和沟通与品牌内容", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-14", name: "数字人10 映雪", description: "适合文化分享、艺术推荐与知性讲解", referenceExtension: "png", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-15", name: "数字人11 雅晴", description: "适合展览导览、知识分享与现场讲解", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-16", name: "数字人12 清禾", description: "适合旅行分享、生活方式与自然口播", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-17", name: "数字人13 婉柔", description: "适合品质生活、礼仪文化与优雅表达", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-18", name: "数字人14 予安", description: "适合手作分享、空间介绍与温暖叙述", referenceExtension: "jpg", category: "通用口播" }),
+  createOfficialAvatar({ id: "dh-19", name: "数字人15 书瑶", description: "适合商务介绍、品牌传播与专业表达", referenceExtension: "jpg", category: "通用口播" })
 ];
 
 export const voices = [

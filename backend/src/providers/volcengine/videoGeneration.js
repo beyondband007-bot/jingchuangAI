@@ -1,4 +1,9 @@
 import { config } from "../../config/index.js";
+import { isRetryableArkOpenApiError } from "./openapi.js";
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function ensureArkKey() {
   if (!config.ark.apiKey) {
@@ -128,34 +133,51 @@ export function normalizeArkVideoErrorMessage(body = {}) {
 
 async function requestArk(path, options = {}) {
   ensureArkKey();
-  const response = await fetch(`${config.ark.baseUrl}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${config.ark.apiKey}`,
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...(options.headers || {})
+  const method = String(options.method || "GET").toUpperCase();
+  const maxAttempts = method === "GET" || method === "HEAD" ? 3 : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(`${config.ark.baseUrl}${path}`, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${config.ark.apiKey}`,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      });
+
+      const text = await response.text();
+      let body;
+      try {
+        body = text ? JSON.parse(text) : {};
+      } catch {
+        body = { raw: text };
+      }
+
+      if (!response.ok) {
+        const detail = normalizeArkVideoErrorDetail(body);
+        const error = new Error(detail.message || `Ark request failed with ${response.status}`);
+        error.status = response.status;
+        error.body = body;
+        error.code = detail.code;
+        error.videoErrorDetail = detail;
+        throw error;
+      }
+
+      return body;
+    } catch (error) {
+      if (!isRetryableArkOpenApiError(error) || attempt >= maxAttempts) throw error;
+      const waitMs = 400 * 2 ** (attempt - 1);
+      const code = error?.cause?.code || error?.code || error?.status || "unknown";
+      console.warn(
+        `[ark-video] transient ${method} failure (${code}); retrying ${attempt + 1}/${maxAttempts} in ${waitMs}ms`
+      );
+      await delay(waitMs);
     }
-  });
-
-  const text = await response.text();
-  let body;
-  try {
-    body = text ? JSON.parse(text) : {};
-  } catch {
-    body = { raw: text };
   }
 
-  if (!response.ok) {
-    const detail = normalizeArkVideoErrorDetail(body);
-    const error = new Error(detail.message || `Ark request failed with ${response.status}`);
-    error.status = response.status;
-    error.body = body;
-    error.code = detail.code;
-    error.videoErrorDetail = detail;
-    throw error;
-  }
-
-  return body;
+  throw new Error(`Ark ${method} request exhausted retries`);
 }
 
 export async function createArkVideoGenerationTask({

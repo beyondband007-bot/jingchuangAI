@@ -423,7 +423,7 @@
   gap: var(--space-1);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .replicate-view .replicate-recent-list {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
@@ -629,7 +629,7 @@
   border-color: #f6d58d;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 768px) {
   .replicate-view .marketing-result.replicate-result-composer .marketing-result__body {
     grid-template-columns: 1fr;
   }

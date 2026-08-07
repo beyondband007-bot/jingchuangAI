@@ -10,6 +10,7 @@ COPY canvas-app/public ./public
 COPY canvas-app/src ./src
 COPY canvas-app/scripts ./scripts
 COPY src/styles /src/styles
+COPY src/utils/uploadLimits.js /src/utils/uploadLimits.js
 COPY canvas-app/vite.config.js canvas-app/postcss.config.js canvas-app/tailwind.config.js ./
 
 RUN npm run build

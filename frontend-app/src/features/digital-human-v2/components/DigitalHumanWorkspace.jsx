@@ -79,6 +79,7 @@ export function DigitalHumanWorkspace(props) {
     onFillModeChange, onSelectAvatar, onSelectMineItem, onConfirmAvatar,
     onCloseLibrary, activeTask, onDeleteTask, onRegenerateTask, onReset,
     onSaveDraft, drafts, onApplyDraft, onDeleteDraft, onOpenAssets,
+    aiGeneratingJob, onRetryAiAvatar,
   } = props;
 
   return (
@@ -156,6 +157,8 @@ export function DigitalHumanWorkspace(props) {
           onSelectMineItem={onSelectMineItem}
           onConfirmAvatar={onConfirmAvatar}
           onCreateAvatar={onCreateAvatar}
+          aiGeneratingJob={aiGeneratingJob}
+          onRetryAiAvatar={onRetryAiAvatar}
           onClose={selectedAvatar ? onCloseLibrary : null}
         />
       ) : (

@@ -1,44 +1,37 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Message } from "@arco-design/web-react";
-import { Play, Star } from "lucide-react";
-import { digitalHumanApi } from "../../../api/digitalHumanApi";
-import {
-  VOICE_UNAVAILABLE_HINT,
-  getAvatarTags,
-  getVoiceEmotionValue,
-  getVoiceMatchHint,
-  isDigitalHumanVoiceEnabled,
-  isVideoCover,
-  matchVoiceForAvatar,
-} from "../utils";
-import { VoicePickerPanel } from "./VoicePickerPanel";
+import { Star, X } from "lucide-react";
+import { getAvatarTags, isVideoCover } from "../utils";
 
-export function AvatarConfirmOverlay({
-  avatar,
-  voices = [],
-  voiceId,
-  onVoiceIdChange,
-  voiceSpeed = 1,
-  onVoiceSpeedChange,
-  voiceEmotion = "中性",
-  onVoiceEmotionChange,
-  onClose,
-  onConfirm,
-}) {
-  const audioRef = useRef(null);
-  const [isPreviewing, setIsPreviewing] = useState(false);
+const REQUIRED_VIEW_TYPES = ["front", "side", "back", "face"];
+const VIEW_LABELS = {
+  front: "正视图",
+  side: "侧视图",
+  back: "背视图",
+  face: "面部图",
+};
 
+function getAvatarViews(avatar) {
+  const viewsByType = new Map(
+    (Array.isArray(avatar?.views) ? avatar.views : [])
+      .filter((item) => item?.type)
+      .map((item) => [item.type, item]),
+  );
+
+  return REQUIRED_VIEW_TYPES.map((type) => {
+    const item = viewsByType.get(type);
+    return {
+      type,
+      label: item?.label || VIEW_LABELS[type],
+      url: item?.url || "",
+    };
+  });
+}
+
+export function AvatarConfirmOverlay({ avatar, onClose, onConfirm }) {
+  const videoRef = useRef(null);
   const tags = useMemo(() => getAvatarTags(avatar), [avatar]);
-  const voiceHint = useMemo(() => getVoiceMatchHint(avatar), [avatar]);
-  const selectedVoice = voices.find((voice) => voice.id === voiceId) || voices[0];
-
-  useEffect(() => {
-    const matched = matchVoiceForAvatar(avatar, voices);
-    if (matched?.id) onVoiceIdChange?.(matched.id);
-    onVoiceSpeedChange?.(1);
-    onVoiceEmotionChange?.("中性");
-  }, [avatar, voices]);
+  const views = useMemo(() => getAvatarViews(avatar), [avatar]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -50,58 +43,16 @@ export function AvatarConfirmOverlay({
   }, [onClose]);
 
   useEffect(() => {
+    const video = videoRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      if (!video) return;
+      video.pause();
+      video.currentTime = 0;
     };
-  }, []);
-
-  async function previewVoice(targetVoiceId = voiceId) {
-    if (!targetVoiceId) {
-      Message.info("暂无可试听音色");
-      return;
-    }
-
-    setIsPreviewing(true);
-    try {
-      const result = await digitalHumanApi.previewVoice({
-        text: "你好，这是当前音色的试听效果。",
-        voiceId: targetVoiceId,
-        speed: voiceSpeed,
-        volume: 1,
-        pitch: 0,
-        emotion: getVoiceEmotionValue(voiceEmotion),
-      });
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
-      const audio = new Audio(result.audioDataUrl);
-      audioRef.current = audio;
-      await audio.play();
-    } catch (error) {
-      Message.error(error?.message || "音色试听失败");
-    } finally {
-      setIsPreviewing(false);
-    }
-  }
+  }, [avatar?.id]);
 
   function handleConfirm() {
-    if (!selectedVoice?.id) {
-      Message.info("请先选择音色");
-      return;
-    }
-    if (!isDigitalHumanVoiceEnabled(selectedVoice.id)) {
-      Message.info(VOICE_UNAVAILABLE_HINT);
-      return;
-    }
-    onConfirm?.({
-      avatar,
-      voiceId: selectedVoice.id,
-      speed: voiceSpeed,
-      emotion: voiceEmotion,
-    });
+    onConfirm?.(avatar);
   }
 
   return createPortal(
@@ -117,6 +68,14 @@ export function AvatarConfirmOverlay({
         onClick={(event) => event.stopPropagation()}
       >
         <section className="dhv2-avatar-confirm">
+          <button
+            type="button"
+            className="dhv2-avatar-confirm__close"
+            aria-label="关闭形象确认"
+            onClick={onClose}
+          >
+            <X size={18} />
+          </button>
           <div className="dhv2-avatar-confirm__body">
             <div className="dhv2-avatar-confirm__left">
               <header className="dhv2-avatar-confirm__head">
@@ -137,12 +96,12 @@ export function AvatarConfirmOverlay({
                 <span className="dhv2-avatar-confirm__badge">适配视频 / 直播</span>
                 {isVideoCover(avatar.cover) ? (
                   <video
+                    ref={videoRef}
                     src={avatar.cover}
                     poster={avatar.poster || undefined}
-                    muted
+                    controls
                     playsInline
-                    autoPlay
-                    loop
+                    preload="metadata"
                   />
                 ) : (
                   <img src={avatar.cover} alt={avatar.name} />
@@ -150,19 +109,29 @@ export function AvatarConfirmOverlay({
               </div>
             </div>
 
-            <div className="dhv2-avatar-confirm__aside">
-              <VoicePickerPanel
-                voices={voices}
-                avatar={avatar}
-                voiceId={voiceId}
-                onVoiceIdChange={onVoiceIdChange}
-                voiceSpeed={voiceSpeed}
-                onVoiceSpeedChange={onVoiceSpeedChange}
-                voiceEmotion={voiceEmotion}
-                onVoiceEmotionChange={onVoiceEmotionChange}
-                onClose={onClose}
-              />
-            </div>
+            <aside className="dhv2-avatar-confirm__aside" aria-label="数字人四视图">
+              <div className="dhv2-avatar-confirm__views-head">
+                <strong>数字人四视图</strong>
+                <span>正视、侧视、背视、面部特写</span>
+              </div>
+              <div className="dhv2-avatar-confirm__views-grid">
+                {views.map((view, index) => (
+                  <figure className="dhv2-avatar-confirm__view" key={view.type}>
+                    <div className="dhv2-avatar-confirm__view-media">
+                      {view.url ? (
+                        <img src={view.url} alt={`${avatar.name} ${view.label}`} />
+                      ) : (
+                        <span>暂缺视图</span>
+                      )}
+                    </div>
+                    <figcaption>
+                      <span>{index + 1}</span>
+                      {view.label}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </aside>
           </div>
 
           <footer className="dhv2-avatar-confirm__actions">

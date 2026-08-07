@@ -7,8 +7,11 @@ import {
   createArkAssetGroup,
   getArkAsset,
   getArkAssetError,
+  listArkAssetGroups,
+  listArkAssets,
   mapArkAssetStatus
 } from "../../providers/volcengine/assets.js";
+import { retryArkCreateWithReconciliation } from "../../providers/volcengine/openapi.js";
 import { buildPublicMediaUrl, assertPublicMediaUrlAccessible } from "../../shared/publicMedia.js";
 import { getDemoUser } from "../../shared/userService.js";
 import { createHttpError } from "../../shared/http.js";
@@ -53,6 +56,63 @@ function hashText(value) {
 
 function getGroupName(feature) {
   return `${config.ark.virtualAssetGroupName}-${feature}`;
+}
+
+function getGroupDescription(userId, feature) {
+  return `Facemini virtual assets user:${userId} feature:${feature}`;
+}
+
+function getProviderItems(result) {
+  return Array.isArray(result?.Items) ? result.Items : Array.isArray(result?.items) ? result.items : [];
+}
+
+function getProviderAssetName(sourceHash, originalName = "") {
+  const extension = path.extname(String(originalName || "")).toLowerCase().slice(0, 12);
+  return `facemini-${String(sourceHash || "").slice(0, 48)}${extension}`;
+}
+
+async function findRemoteAssetGroup({ name, description }) {
+  const result = await listArkAssetGroups({
+    name,
+    pageNumber: 1,
+    pageSize: 100,
+    projectName: config.ark.projectName
+  });
+  return getProviderItems(result).find(
+    (item) =>
+      String(item?.Name || item?.name || "") === name &&
+      String(item?.Description || item?.description || "") === description &&
+      String(item?.ProjectName || item?.project_name || config.ark.projectName) === config.ark.projectName
+  );
+}
+
+async function createRemoteAssetSafely({ groupId, url, assetType, name }) {
+  return retryArkCreateWithReconciliation({
+    label: `CreateAsset:${assetType}`,
+    findExisting: async () => {
+      const result = await listArkAssets({
+        groupIds: [groupId],
+        pageNumber: 1,
+        pageSize: 100,
+        projectName: config.ark.projectName
+      });
+      return getProviderItems(result).find(
+        (item) =>
+          String(item?.GroupId || item?.group_id || "") === String(groupId) &&
+          String(item?.Name || item?.name || "") === name &&
+          String(item?.URL || item?.url || "") === url &&
+          String(item?.AssetType || item?.asset_type || "") === assetType
+      );
+    },
+    create: () =>
+      createArkAsset({
+        projectName: config.ark.projectName,
+        groupId,
+        url,
+        assetType,
+        name
+      })
+  });
 }
 
 export function isArkOpenApiConfigured() {
@@ -123,10 +183,16 @@ export async function ensureVirtualAssetGroup({ userId, feature }) {
   if (existing && !isLocalProviderAssetId(existing.provider_group_id)) return existing;
 
   const name = getGroupName(normalizedFeature);
-  const result = await createArkAssetGroup({
-    projectName: config.ark.projectName,
-    name,
-    description: `Facemini AI AIGC assets for ${normalizedFeature}`
+  const description = getGroupDescription(userId, normalizedFeature);
+  const result = await retryArkCreateWithReconciliation({
+    label: `CreateAssetGroup:${normalizedFeature}`,
+    findExisting: () => findRemoteAssetGroup({ name, description }),
+    create: () =>
+      createArkAssetGroup({
+        projectName: config.ark.projectName,
+        name,
+        description
+      })
   });
   const providerGroupId = result.Id || result.id;
   if (!providerGroupId) {
@@ -327,12 +393,11 @@ export async function createVirtualAssetFromLocalFile({
           ? "图片"
           : "素材"
     );
-    result = await createArkAsset({
-      projectName: config.ark.projectName,
+    result = await createRemoteAssetSafely({
       groupId: group.provider_group_id,
       url: publicUrl,
       assetType,
-      name: originalName || path.basename(filePath)
+      name: getProviderAssetName(sourceHash, originalName || path.basename(filePath))
     });
   } catch (error) {
     if (!shouldFallbackToLocalVirtualAsset(error)) throw error;
@@ -408,12 +473,14 @@ export async function createVirtualAssetFromRemoteUrl({
   if (reusable) return mapArkVirtualAsset(await refreshVirtualAssetByRow(reusable));
 
   const group = await ensureVirtualAssetGroup({ userId, feature: normalizedFeature });
-  const result = await createArkAsset({
-    projectName: config.ark.projectName,
+  const result = await createRemoteAssetSafely({
     groupId: group.provider_group_id,
     url: remoteUrl,
     assetType,
-    name: originalName || path.basename(new URL(remoteUrl).pathname) || `${normalizedFeature}-${assetType.toLowerCase()}`
+    name: getProviderAssetName(
+      sourceHash,
+      originalName || path.basename(new URL(remoteUrl).pathname) || `${normalizedFeature}-${assetType.toLowerCase()}`
+    )
   });
   const providerAssetId = result.Id || result.id;
   if (!providerAssetId) {

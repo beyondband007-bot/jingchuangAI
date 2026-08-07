@@ -13,9 +13,10 @@ import {
   failVoiceCloneAsset,
   findCompletedVoiceCloneAssetByHash,
   findVoiceCloneAssetByHash,
+  isRetryableVoiceCloneAsset,
   listVoiceCloneAssetRows,
   listVoiceSynthesisTaskRows,
-  retryFailedVoiceCloneAssetProcessing
+  retryVoiceCloneAssetProcessing
 } from "./voice.repository.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 
@@ -65,6 +66,10 @@ function normalizeVoiceId(value = "") {
     throw createHttpError("voiceId 需以字母开头，长度为 8-256 个字符，仅支持字母、数字、- 和 _", 400);
   }
   return voiceId;
+}
+
+export function resolveVoiceCloneId(value, now = Date.now(), suffix = randomUUID().slice(0, 8)) {
+  return normalizeVoiceId(value || `VoiceClone_${now}_${suffix}`);
 }
 
 function normalizeEmotion(value) {
@@ -260,6 +265,15 @@ export async function createClone(payload, userId) {
   const previewText = String(payload.previewText || payload.text || "").trim();
   const model = String(payload.model || config.minimax.ttsModel || "").trim();
   const name = String(payload.name || "").trim();
+  const voiceId = resolveVoiceCloneId(payload.voiceId || payload.voice_id);
+
+  if (!previewText) throw createHttpError("请输入试听文本", 400);
+  if (previewText.length > 1000) throw createHttpError("试听文本长度不能超过 1000 个字符", 400);
+  if ((promptAudioFileId && !promptText) || (!promptAudioFileId && promptText)) {
+    throw createHttpError("提示音频和提示文本需同时提供", 400);
+  }
+
+  let ownsProcessingAsset = false;
 
   if (audioHash) {
     const cachedVoice = await findCompletedVoiceCloneAssetByHash({ userId, audioHash });
@@ -272,17 +286,20 @@ export async function createClone(payload, userId) {
       };
     }
 
+    if (!cloneAudioFileId) throw createHttpError("请上传复刻音频", 400);
+
     try {
       await createVoiceCloneAssetProcessing({
         userId,
         audioHash,
-        voiceId: normalizeVoiceId(payload.voiceId || payload.voice_id || `VoiceClone_${Date.now()}_${randomUUID().slice(0, 8)}`),
+        voiceId,
         voiceName: name,
         sourceFileName: payload.sourceFileName || payload.localName || "",
         sourceMimeType: payload.sourceMimeType || payload.mimeType || "",
         sourceSize: Number(payload.sourceSize || payload.size || 0),
         durationMs: normalizeDurationMs(payload.durationMs)
       });
+      ownsProcessingAsset = true;
     } catch (error) {
       if (error?.code !== "ER_DUP_ENTRY") throw error;
 
@@ -295,11 +312,11 @@ export async function createClone(payload, userId) {
           points: 0
         };
       }
-      if (existing?.status === "failed" || existing?.status === "expired") {
-        const retryStarted = await retryFailedVoiceCloneAssetProcessing({
+      if (isRetryableVoiceCloneAsset(existing)) {
+        const retryStarted = await retryVoiceCloneAssetProcessing({
           userId,
           audioHash,
-          voiceId: normalizeVoiceId(payload.voiceId || payload.voice_id || `VoiceClone_${Date.now()}_${randomUUID().slice(0, 8)}`),
+          voiceId,
           voiceName: name,
           sourceFileName: payload.sourceFileName || payload.localName || "",
           sourceMimeType: payload.sourceMimeType || payload.mimeType || "",
@@ -307,27 +324,25 @@ export async function createClone(payload, userId) {
           durationMs: normalizeDurationMs(payload.durationMs)
         });
         if (!retryStarted) {
-          throw createHttpError("voice clone is already processing", 409);
+          throw createHttpError("该音色正在解析，请稍后再试", 409);
         }
+        ownsProcessingAsset = true;
       } else {
-        throw createHttpError("voice clone is already processing", 409);
+        throw createHttpError("该音色正在解析，请稍后再试", 409);
       }
     }
   }
 
   if (!cloneAudioFileId) throw createHttpError("请上传复刻音频", 400);
-  const voiceId = normalizeVoiceId(payload.voiceId || payload.voice_id);
-  if (!previewText) throw createHttpError("请输入试听文本", 400);
-  if (previewText.length > 1000) throw createHttpError("试听文本长度不能超过 1000 个字符", 400);
-  if ((promptAudioFileId && !promptText) || (!promptAudioFileId && promptText)) {
-    throw createHttpError("提示音频和提示文本需同时提供", 400);
-  }
 
   const clonePoints = BILLING_RULES.voiceClonePoints;
-  if (clonePoints > 0) {
-    await chargeVoiceGeneration({ userId, memo: "voice clone debit", amount: clonePoints });
-  }
+  let charged = false;
   try {
+    if (clonePoints > 0) {
+      await chargeVoiceGeneration({ userId, memo: "voice clone debit", amount: clonePoints });
+      charged = true;
+    }
+
     const result = await createCloneFromUpload({
       cloneAudioFileId,
       voiceId,
@@ -355,8 +370,10 @@ export async function createClone(payload, userId) {
       points: clonePoints
     };
   } catch (error) {
-    await failVoiceCloneAsset({ userId, audioHash, errorMessage: error.message });
-    if (clonePoints > 0) {
+    if (ownsProcessingAsset) {
+      await failVoiceCloneAsset({ userId, audioHash, errorMessage: error.message });
+    }
+    if (charged) {
       await refundVoiceGeneration({ userId, memo: "voice clone refund", amount: clonePoints });
     }
     throw error;

@@ -14,8 +14,20 @@ function mapVoiceCloneAssetRow(row) {
     status: row.status || "completed",
     providerActivatedAt: row.provider_activated_at,
     lastUsedAt: row.last_used_at,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
   };
+}
+
+export const VOICE_CLONE_PROCESSING_STALE_MS = 15 * 60 * 1000;
+
+export function isRetryableVoiceCloneAsset(asset, now = Date.now()) {
+  if (!asset) return false;
+  if (asset.status === "failed" || asset.status === "expired") return true;
+  if (asset.status !== "processing") return false;
+
+  const updatedAt = new Date(asset.updatedAt || asset.createdAt || 0).getTime();
+  return Number.isFinite(updatedAt) && now - updatedAt >= VOICE_CLONE_PROCESSING_STALE_MS;
 }
 
 export async function createVoiceSynthesisTaskRow({
@@ -165,7 +177,7 @@ export async function touchVoiceCloneAssetLastUsed({ userId, voiceId }) {
   );
 }
 
-export async function retryFailedVoiceCloneAssetProcessing({
+export async function retryVoiceCloneAssetProcessing({
   userId,
   audioHash,
   voiceId,
@@ -179,7 +191,14 @@ export async function retryFailedVoiceCloneAssetProcessing({
     `UPDATE voice_clone_assets
      SET voice_id = ?, voice_name = ?, source_file_name = ?, source_mime_type = ?,
          source_size = ?, duration_ms = ?, status = 'processing', error_message = NULL
-     WHERE user_id = ? AND audio_sha256 = ? AND status IN ('failed', 'expired')`,
+     WHERE user_id = ? AND audio_sha256 = ?
+       AND (
+         status IN ('failed', 'expired')
+         OR (
+           status = 'processing'
+           AND updated_at <= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 15 MINUTE)
+         )
+       )`,
     [
       voiceId,
       voiceName || null,
