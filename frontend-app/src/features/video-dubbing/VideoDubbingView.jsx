@@ -170,7 +170,12 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
         ) : (
           <Film size={34} />
         )}
-        {isProcessing && <div className="video-dub-recent-overlay"><Loader2 size={18} /></div>}
+        {isProcessing && (
+          <div className="video-dub-recent-overlay is-processing" role="status" aria-live="polite">
+            <Loader2 size={28} className="is-spinning" />
+            <span>{STAGE_LABELS[item.stage] || item.stage || "生成中"}</span>
+          </div>
+        )}
         {isFailed && <div className="video-dub-recent-overlay is-failed"><span>失败</span></div>}
         {isCompleted && item.result?.videoUrl && (
           <button
@@ -182,17 +187,18 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
             <Play size={16} fill="currentColor" />
           </button>
         )}
+        {(isCompleted || isFailed) && (
+          <button
+            className="video-dub-recent-delete"
+            type="button"
+            onClick={() => onDelete(item.id)}
+            title="删除"
+            aria-label="删除"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
       </div>
-      {isProcessing && item.stage && (
-        <div className="video-dub-recent-stage">
-          <span>{STAGE_LABELS[item.stage] || item.stage}</span>
-          {typeof item.progress === "number" && (
-            <div className="video-dub-progress-bar">
-              <div className="video-dub-progress-fill" style={{ width: `${item.progress}%` }} />
-            </div>
-          )}
-        </div>
-      )}
       <div className="video-dub-recent-info">
         <strong>{item.sourceFileName || "视频配音"}</strong>
         <span>
@@ -223,28 +229,6 @@ function VideoCard({ item, isFavorite, onPlay, onDownload, onDelete, onToggleFav
             >
               <Download size={15} />
             </button>
-            <button
-              className="video-dub-recent-icon-button is-danger"
-              type="button"
-              onClick={() => onDelete(item.id)}
-              title="删除"
-              aria-label="删除"
-            >
-              <Trash2 size={15} />
-            </button>
-        </div>
-      )}
-      {isFailed && (
-        <div className="video-dub-recent-actions">
-          <button
-            className="video-dub-recent-icon-button is-danger"
-            type="button"
-            onClick={() => onDelete(item.id)}
-            title="删除"
-            aria-label="删除"
-          >
-            <Trash2 size={15} />
-          </button>
         </div>
       )}
     </article>
