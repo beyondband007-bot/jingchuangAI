@@ -41,7 +41,7 @@ export function ArticleHistoryGrid({
                   </span>
                 ) : (
                   <span className="article-history-loading">
-                    <Loader2 size={26} className="is-spinning" />
+                    <Loader2 size={26} className="article-history-loading__spinner" />
                     生成中
                   </span>
                 )}

@@ -70,3 +70,25 @@
   background: #fff;
   color: #aaa6b6;
 }
+
+[data-feature-module="article"] .article-dynamic-loading {
+  gap: 16px;
+  padding: 36px 28px;
+}
+
+[data-feature-module="article"] .article-dynamic-loading__spinner {
+  color: #6b63f6;
+  animation: article-dynamic-loading-spin 1s linear infinite;
+}
+
+@keyframes article-dynamic-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-feature-module="article"] .article-dynamic-loading__spinner {
+    animation: none;
+  }
+}

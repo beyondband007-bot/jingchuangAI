@@ -52,6 +52,19 @@
 
 [data-feature-module="article"] .article-history-loading svg {
   color: #7a82ff;
+  animation: article-history-loading-spin 1s linear infinite;
+}
+
+@keyframes article-history-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-feature-module="article"] .article-history-loading svg {
+    animation: none;
+  }
 }
 
 [data-feature-module="article"] .article-history-card.status-failed {

@@ -244,7 +244,7 @@ function buildPromptText(result) {
   return String(result?.prompt || result?.description || "").trim();
 }
 
-function ReplicatePromptHoverTooltip({ text, open, anchorRef }) {
+function ReplicatePromptTooltip({ text, open, anchorRef, tooltipRef }) {
   const [style, setStyle] = useState(null);
 
   useEffect(() => {
@@ -288,7 +288,12 @@ function ReplicatePromptHoverTooltip({ text, open, anchorRef }) {
   if (!open || !text || !style) return null;
 
   return createPortal(
-    <div className="replicate-card-title-tooltip is-portal" role="tooltip" style={style}>
+    <div
+      ref={tooltipRef}
+      className="replicate-card-title-tooltip is-portal"
+      role="tooltip"
+      style={style}
+    >
       {text}
     </div>,
     document.body,
@@ -313,8 +318,33 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
   const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceUrl);
   const videoRef = useRef(null);
   const titleRef = useRef(null);
+  const tooltipRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
+  const canTogglePrompt = Boolean(promptText) && !isProcessing;
+
+  useEffect(() => {
+    if (!tooltipOpen) return undefined;
+
+    function handlePointerDown(event) {
+      const target = event.target;
+      if (titleRef.current?.contains(target) || tooltipRef.current?.contains(target)) {
+        return;
+      }
+      setTooltipOpen(false);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setTooltipOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [tooltipOpen]);
 
   function ensureVideoPosterFrame(event) {
     const video = event.currentTarget;
@@ -372,17 +402,19 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
         ) : null}
       </div>
       <div className="replicate-card-body">
-        <strong
+        <button
+          type="button"
           ref={titleRef}
-          className="replicate-card-title"
-          tabIndex={isProcessing ? -1 : 0}
-          onMouseEnter={() => setTooltipOpen(Boolean(promptText))}
-          onMouseLeave={() => setTooltipOpen(false)}
-          onFocus={() => setTooltipOpen(Boolean(promptText))}
-          onBlur={() => setTooltipOpen(false)}
+          className={`replicate-card-title${canTogglePrompt ? " has-tooltip" : ""}`}
+          aria-expanded={canTogglePrompt ? tooltipOpen : undefined}
+          disabled={!canTogglePrompt}
+          onClick={() => {
+            if (!canTogglePrompt) return;
+            setTooltipOpen((open) => !open);
+          }}
         >
           <span className="replicate-card-title-text">{titleText}</span>
-        </strong>
+        </button>
         <div className="replicate-card-meta-row">
           <span className="replicate-card-meta">{metaLabel}</span>
           {!isProcessing && !isFailed ? (
@@ -402,10 +434,11 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
           ) : null}
         </div>
       </div>
-      <ReplicatePromptHoverTooltip
+      <ReplicatePromptTooltip
         text={promptText}
         open={tooltipOpen}
         anchorRef={titleRef}
+        tooltipRef={tooltipRef}
       />
       {lightboxOpen && !isVideo ? (
         <ReplicateMediaLightbox

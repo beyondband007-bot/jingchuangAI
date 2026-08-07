@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   Download,
   Film,
@@ -10,6 +10,66 @@ import {
   X,
 } from "lucide-react";
 import "./imageSharedUi.css";
+
+function ResultPrompt({ text }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const bubbleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!wrapRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  if (!text) {
+    return (
+      <div className="result-prompt-wrap">
+        <p className="result-prompt" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`result-prompt-wrap has-tooltip${isOpen ? " is-open" : ""}`}
+    >
+      <button
+        type="button"
+        className="result-prompt"
+        aria-expanded={isOpen}
+        aria-controls={bubbleId}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        {text}
+      </button>
+      <div
+        id={bubbleId}
+        className="result-prompt-bubble"
+        role="tooltip"
+        aria-hidden={!isOpen}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
 
 export function ResultCard({
   card,
@@ -34,6 +94,7 @@ export function ResultCard({
     displaySrc && onPreview && !isProcessing && !isFailed,
   );
   const shouldShowPlaceholder = isProcessing || isFailed || !displaySrc;
+  const promptText = String(card.error || card.prompt || "").trim();
 
   return (
     <article
@@ -111,7 +172,7 @@ export function ResultCard({
             <span>{card.time || "示例"}</span>
             <strong>{card.price}</strong>
           </div>
-          <p>{card.error || card.prompt}</p>
+          <ResultPrompt text={promptText} />
           <div className="card-actions">
             <button
               className={`icon-circle ${card.favorite ? "is-favorite" : ""}`}

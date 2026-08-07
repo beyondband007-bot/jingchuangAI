@@ -1,8 +1,9 @@
 import React from "react";
-import { Loader2, Sparkles, X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { ArticleFullPreviewMedia } from "./ArticleFullPreviewMedia";
 import { ArticlePopularResultPanel } from "./ArticlePopularResultPanel";
 import { ArticleStyleTemplatePreview } from "./ArticleStyleTemplatePreview";
+import { ArticleDynamicLoading } from "./ArticleDynamicLoading";
 
 export function ArticleResultStage({
   showStyleTemplatePreview, activeVisualStyleLabel, form, isDraftSubmitting,
@@ -24,18 +25,8 @@ export function ArticleResultStage({
             : `${form.platform} · ${form.ratio}`}
         </span>
       </header>
-      {isDraftSubmitting ? (
-        <div className="article-result-empty">
-          <Loader2 size={58} className="is-spinning" />
-          <h2>正在生成标题正文</h2>
-          <p>Facemini 正在根据场景、模板、字数和卖点整理文案草案</p>
-        </div>
-      ) : isGenerating ? (
-        <div className="article-result-empty">
-          <Loader2 size={58} className="is-spinning" />
-          <h2>正在生成配图</h2>
-          <p>请稍等片刻，生成完成后会自动展示结果</p>
-        </div>
+      {isDraftSubmitting || isGenerating ? (
+        <ArticleDynamicLoading title="正在生成中" />
       ) : step < 3 && !draftCopy ? (
         <div className="article-result-empty">
           <Sparkles size={92} />
