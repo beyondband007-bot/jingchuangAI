@@ -12,7 +12,7 @@
 }
 
 .marketing-composer__tabs button:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.72;
 }
 
@@ -495,10 +495,35 @@
   z-index: 3;
   display: grid;
   place-content: center;
+  justify-items: center;
   gap: var(--space-10px);
   color: #623bff;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(2px);
+}
+
+.replicate-view .replicate-upload-analyzing .is-spinning,
+.replicate-view .replicate-upload-analyzing .lucide-loader-2,
+.replicate-view .replicate-composer .ui-send-button .is-spinning,
+.replicate-view .replicate-composer .ui-send-button .lucide-loader-2 {
+  animation: replicate-spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes replicate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replicate-view .replicate-upload-analyzing .is-spinning,
+  .replicate-view .replicate-upload-analyzing .lucide-loader-2,
+  .replicate-view .replicate-composer .ui-send-button .is-spinning,
+  .replicate-view .replicate-composer .ui-send-button .lucide-loader-2 {
+    animation: none;
+  }
 }
 
 .replicate-view .replicate-upload-analyzing strong {
@@ -516,7 +541,7 @@
 
 .replicate-view .marketing-result.replicate-result-composer .marketing-result__body {
   grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
-  gap: 16px;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -551,10 +576,6 @@
   border-radius: 10px;
   font-size: 12px;
   line-height: 1.5;
-}
-
-.replicate-view .replicate-result-diagnostics span {
-  font-weight: 800;
 }
 
 .replicate-view .replicate-result-diagnostics p {

@@ -173,8 +173,8 @@ const ReplicateUpload = forwardRef(function ReplicateUpload(
         onSelect={onFile}
         onClear={onClear}
         overlay={isAnalyzing ? (
-          <span className="replicate-upload-analyzing">
-            <Loader2 size={22} className="is-spinning" />
+          <span className="replicate-upload-analyzing" role="status" aria-live="polite">
+            <Loader2 size={28} className="is-spinning" />
             <strong>{stageLabel || "正在反推提示词..."}</strong>
           </span>
         ) : null}
@@ -402,17 +402,12 @@ function ReplicateResult({
         </figure>
 
         <div className="replicate-result-prompt">
-          <label htmlFor="replicate-result-prompt">Prompt</label>
-          <textarea id="replicate-result-prompt" readOnly value={promptText} />
-          {isVideo && (
-            <div className={`replicate-result-diagnostics ${result.qualityWarning ? "has-warning" : ""}`}>
-              <span>
-                {result.analysisMode === "scene_frames" ? "关键帧增强分析" : "原生视频理解"}
-                {result.model ? ` · ${result.model}` : ""}
-              </span>
-              {result.qualityWarning && <p>{result.qualityWarning}</p>}
+          <textarea id="replicate-result-prompt" readOnly value={promptText} aria-label="反推提示词" />
+          {isVideo && result.qualityWarning ? (
+            <div className="replicate-result-diagnostics has-warning">
+              <p>{result.qualityWarning}</p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
