@@ -284,6 +284,45 @@
   background: linear-gradient(160deg, #f4f0ff, #eef5ff);
 }
 
+.replicate-card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.42);
+  text-align: center;
+}
+
+.replicate-card-overlay.is-processing {
+  color: #ffffff;
+}
+
+.replicate-card-overlay.is-processing span {
+  max-width: 80%;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.replicate-card-overlay.is-processing .is-spinning,
+.replicate-card-overlay.is-processing .lucide-loader-2 {
+  animation: replicate-spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.replicate-card-overlay.is-failed {
+  background: rgba(220, 50, 50, 0.45);
+  font-size: 13px;
+}
+
+.replicate-recent-card.is-processing .replicate-card-image-trigger {
+  cursor: default;
+}
+
 .replicate-card-body {
   display: grid;
   gap: 10px;
@@ -521,7 +560,9 @@
   .replicate-view .replicate-upload-analyzing .is-spinning,
   .replicate-view .replicate-upload-analyzing .lucide-loader-2,
   .replicate-view .replicate-composer .ui-send-button .is-spinning,
-  .replicate-view .replicate-composer .ui-send-button .lucide-loader-2 {
+  .replicate-view .replicate-composer .ui-send-button .lucide-loader-2,
+  .replicate-card-overlay.is-processing .is-spinning,
+  .replicate-card-overlay.is-processing .lucide-loader-2 {
     animation: none;
   }
 }

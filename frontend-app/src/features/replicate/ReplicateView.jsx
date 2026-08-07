@@ -72,6 +72,40 @@ function getReplicateStageLabel(task) {
   return replicateStageLabels[task?.stage] || "正在反推提示词...";
 }
 
+function isReplicateProcessing(item) {
+  return item?.status === "processing" || String(item?.id || "").startsWith("pending-");
+}
+
+function isReplicateFailed(item) {
+  return item?.status === "failed";
+}
+
+function buildHistoryTaskFromApi(task, fallback = {}) {
+  return {
+    id: task.id || fallback.id,
+    prompt: task.prompt || "",
+    description: task.description || "",
+    tags: task.tags || [],
+    source: task.source || fallback.source || "image",
+    sourceUrl: task.sourceUrl || fallback.sourceUrl || "",
+    localPreviewUrl: fallback.localPreviewUrl || "",
+    fileName: task.fileName || fallback.fileName || "",
+    createdAt: task.createdAt || fallback.createdAt || formatBeijingDateTime(),
+    model: task.model || "",
+    provider: task.provider || "",
+    analysisMode: task.analysisMode || "",
+    qualityWarning: task.qualityWarning || "",
+    analysis: task.analysis || null,
+    stage: task.stage || fallback.stage || "",
+    status: task.status || fallback.status || "processing",
+    error: task.error || "",
+  };
+}
+
+function upsertRecentResult(items, nextItem) {
+  return [nextItem, ...items.filter((item) => item.id !== nextItem.id)].slice(0, 20);
+}
+
 async function waitForReplicateTask(taskId, {
   attempts = 80,
   intervalMs = 3000,
@@ -263,10 +297,20 @@ function ReplicatePromptHoverTooltip({ text, open, anchorRef }) {
 
 function ReplicateRecentCard({ item, onCopy, onDownload }) {
   const promptText = buildPromptText(item);
-  const titleText = promptText || item.fileName || "分析结果";
-  const metaLabel = `${item.source === "video" ? "视频" : "图片"} · ${item.createdAt}`;
+  const isProcessing = isReplicateProcessing(item);
+  const isFailed = isReplicateFailed(item);
+  const titleText = isProcessing
+    ? (item.fileName || "正在反推提示词")
+    : (promptText || item.fileName || "分析结果");
+  const metaLabel = `${item.source === "video" ? "视频" : "图片"} · ${
+    isProcessing
+      ? getReplicateStageLabel(item)
+      : isFailed
+        ? (item.error || "分析失败")
+        : item.createdAt
+  }`;
   const isVideo = item.source === "video";
-  const mediaUrl = resolveMediaUrl(item.sourceUrl);
+  const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceUrl);
   const videoRef = useRef(null);
   const titleRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -284,7 +328,7 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
   }
 
   return (
-    <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""}`}>
+    <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""} ${isProcessing ? "is-processing" : ""} ${isFailed ? "is-failed" : ""}`}>
       <div className={`replicate-card-media ${isVideo ? "is-video" : "is-image"}`}>
         {mediaUrl ? (
           isVideo ? (
@@ -292,7 +336,7 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
               <video
                 ref={videoRef}
                 src={mediaUrl}
-                controls
+                controls={!isProcessing}
                 playsInline
                 preload="metadata"
                 onLoadedMetadata={ensureVideoPosterFrame}
@@ -303,8 +347,9 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
             <button
               type="button"
               className="replicate-card-image-trigger"
-              onClick={() => setLightboxOpen(true)}
+              onClick={() => !isProcessing && setLightboxOpen(true)}
               aria-label="放大预览图片"
+              disabled={isProcessing}
             >
               <img src={mediaUrl} alt={item.fileName || "上传图片预览"} />
             </button>
@@ -314,12 +359,23 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
             {isVideo ? <FileVideo size={28} /> : <FileImage size={28} />}
           </span>
         )}
+        {isProcessing ? (
+          <div className="replicate-card-overlay is-processing" role="status" aria-live="polite">
+            <Loader2 size={28} className="is-spinning" />
+            <span>{getReplicateStageLabel(item)}</span>
+          </div>
+        ) : null}
+        {isFailed ? (
+          <div className="replicate-card-overlay is-failed">
+            <span>失败</span>
+          </div>
+        ) : null}
       </div>
       <div className="replicate-card-body">
         <strong
           ref={titleRef}
           className="replicate-card-title"
-          tabIndex={0}
+          tabIndex={isProcessing ? -1 : 0}
           onMouseEnter={() => setTooltipOpen(Boolean(promptText))}
           onMouseLeave={() => setTooltipOpen(false)}
           onFocus={() => setTooltipOpen(Boolean(promptText))}
@@ -329,19 +385,21 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
         </strong>
         <div className="replicate-card-meta-row">
           <span className="replicate-card-meta">{metaLabel}</span>
-          <div className="replicate-card-actions">
-            <button type="button" onClick={() => onCopy(item)} title="复制" aria-label="复制">
-              <Copy size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDownload(item)}
-              title="下载"
-              aria-label="下载"
-            >
-              <Download size={14} />
-            </button>
-          </div>
+          {!isProcessing && !isFailed ? (
+            <div className="replicate-card-actions">
+              <button type="button" onClick={() => onCopy(item)} title="复制" aria-label="复制">
+                <Copy size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDownload(item)}
+                title="下载"
+                aria-label="下载"
+              >
+                <Download size={14} />
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
       <ReplicatePromptHoverTooltip
@@ -439,6 +497,7 @@ function ReplicateResult({
 
 export function ReplicateView({ authUser, onOpenFeature }) {
   const uploadRef = useRef(null);
+  const isAnalyzingRef = useRef(false);
   const [mode, setMode] = useState("image");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -448,20 +507,89 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   const [viewTab, setViewTab] = useState("home");
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const isGuest = Boolean(authUser?.isGuest);
+  const processingTaskIds = recentResults
+    .filter((item) => isReplicateProcessing(item) && !String(item.id).startsWith("pending-"))
+    .map((item) => item.id)
+    .join(",");
 
   useEffect(() => {
-    window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(recentResults));
+    isAnalyzingRef.current = isAnalyzing;
+  }, [isAnalyzing]);
+
+  useEffect(() => {
+    const serializable = recentResults.map(({ localPreviewUrl, ...rest }) => rest);
+    window.localStorage.setItem(replicateRecentStorageKey, JSON.stringify(serializable));
   }, [recentResults]);
 
   useEffect(() => {
     let mounted = true;
     replicateApi.getTasks().then((items) => {
-      if (mounted) setRecentResults(items);
+      if (!mounted) return;
+      setRecentResults((current) => {
+        const serverItems = (items || []).map((task) => buildHistoryTaskFromApi(task));
+        const serverIds = new Set(serverItems.map((item) => item.id));
+        const localPending = current.filter((item) => (
+          String(item.id).startsWith("pending-")
+          || (isReplicateProcessing(item) && !serverIds.has(item.id))
+        ));
+        return [...localPending, ...serverItems].slice(0, 20);
+      });
     }).catch(() => {});
     return () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!processingTaskIds || isAnalyzingRef.current) return undefined;
+    const ids = processingTaskIds.split(",").filter(Boolean);
+    if (!ids.length) return undefined;
+
+    let cancelled = false;
+
+    async function refreshProcessingTasks() {
+      const updates = await Promise.all(ids.map(async (id) => {
+        try {
+          return await replicateApi.getTask(id);
+        } catch {
+          return null;
+        }
+      }));
+      if (cancelled) return;
+
+      setRecentResults((items) => {
+        let next = items;
+        for (const task of updates) {
+          if (!task) continue;
+          next = next.map((item) => {
+            if (item.id !== task.id) return item;
+            if (["completed", "completed_with_warning"].includes(task.status) && hasReplicateContent(task)) {
+              return buildHistoryTaskFromApi(task, item);
+            }
+            if (task.status === "failed") {
+              return buildHistoryTaskFromApi(task, item);
+            }
+            return {
+              ...item,
+              status: task.status || item.status,
+              stage: task.stage || item.stage,
+              sourceUrl: task.sourceUrl || item.sourceUrl,
+              fileName: task.fileName || item.fileName,
+              error: task.error || item.error,
+            };
+          });
+        }
+        return next;
+      });
+    }
+
+    refreshProcessingTasks();
+    const timer = window.setInterval(refreshProcessingTasks, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [processingTaskIds]);
 
   function handleFile(file) {
     setNotice("");
@@ -491,18 +619,83 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     setNotice("");
     setAnalysisStageLabel("正在上传并校验素材...");
     setIsAnalyzing(true);
+
+    const pendingId = `pending-${Date.now()}`;
+    const localPreviewUrl = URL.createObjectURL(selectedFile.file);
+    let activeTaskId = pendingId;
+
+    setRecentResults((items) => upsertRecentResult(items, {
+      id: pendingId,
+      status: "processing",
+      stage: "queued",
+      source: mode,
+      fileName: selectedFile.name,
+      sourceUrl: "",
+      localPreviewUrl,
+      createdAt: formatBeijingDateTime(),
+      prompt: "",
+      description: "",
+      error: "",
+    }));
+
     try {
       const data = mode === "image"
         ? await replicateApi.analyzeImage(selectedFile.file, selectedFile.name)
         : await replicateApi.analyzeVideo(selectedFile.file, selectedFile.name);
+
+      activeTaskId = data.id || pendingId;
       setAnalysisStageLabel(getReplicateStageLabel(data));
+      setRecentResults((items) => {
+        const withoutPending = items.filter((item) => item.id !== pendingId && item.id !== activeTaskId);
+        return upsertRecentResult(withoutPending, buildHistoryTaskFromApi(data, {
+          id: activeTaskId,
+          source: mode,
+          fileName: selectedFile.name,
+          localPreviewUrl,
+          status: "processing",
+          stage: data.stage || "queued",
+        }));
+      });
+
       const pollOptions = mode === "video"
         ? {
             attempts: 120,
             intervalMs: 3000,
-            onProgress: (task) => setAnalysisStageLabel(getReplicateStageLabel(task))
+            onProgress: (task) => {
+              setAnalysisStageLabel(getReplicateStageLabel(task));
+              setRecentResults((items) => items.map((item) => (
+                item.id === task.id
+                  ? {
+                      ...item,
+                      status: task.status || item.status,
+                      stage: task.stage || item.stage,
+                      sourceUrl: task.sourceUrl || item.sourceUrl,
+                      fileName: task.fileName || item.fileName,
+                      error: task.error || item.error,
+                    }
+                  : item
+              )));
+            },
           }
-        : { attempts: 80, intervalMs: 3000 };
+        : {
+            attempts: 80,
+            intervalMs: 3000,
+            onProgress: (task) => {
+              setAnalysisStageLabel(getReplicateStageLabel(task));
+              setRecentResults((items) => items.map((item) => (
+                item.id === task.id
+                  ? {
+                      ...item,
+                      status: task.status || item.status,
+                      stage: task.stage || item.stage,
+                      sourceUrl: task.sourceUrl || item.sourceUrl,
+                      fileName: task.fileName || item.fileName,
+                      error: task.error || item.error,
+                    }
+                  : item
+              )));
+            },
+          };
       const completed = ["completed", "completed_with_warning"].includes(data.status) && hasReplicateContent(data)
         ? data
         : await waitForReplicateTask(data.id, pollOptions);
@@ -513,29 +706,34 @@ export function ReplicateView({ authUser, onOpenFeature }) {
         throw new Error("分析完成但没有生成提示词，请重试");
       }
 
-      const result = {
-        id: completed.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        prompt: completed.prompt || "",
-        description: completed.description || "",
-        tags: completed.tags || [],
-        source: completed.source || mode,
-        sourceUrl: completed.sourceUrl || "",
-        fileName: completed.fileName || selectedFile.name,
-        createdAt: completed.createdAt || formatBeijingDateTime(),
-        model: completed.model || "",
-        provider: completed.provider || "",
-        analysisMode: completed.analysisMode || "",
-        qualityWarning: completed.qualityWarning || "",
-        analysis: completed.analysis || null
-      };
+      const result = buildHistoryTaskFromApi(completed, {
+        source: mode,
+        fileName: selectedFile.name,
+        localPreviewUrl: "",
+      });
 
       setCurrentResult(result);
-      setRecentResults((items) => [result, ...items.filter((item) => item.id !== result.id)].slice(0, 20));
+      setRecentResults((items) => upsertRecentResult(
+        items.filter((item) => item.id !== pendingId),
+        result,
+      ));
       setNotice("");
       setAnalysisStageLabel("");
+      URL.revokeObjectURL(localPreviewUrl);
     } catch (error) {
       setNotice(error.message || "分析失败");
       setAnalysisStageLabel("");
+      setRecentResults((items) => items.map((item) => (
+        item.id === activeTaskId || item.id === pendingId
+          ? {
+              ...item,
+              id: activeTaskId,
+              status: "failed",
+              error: error.message || "分析失败",
+              localPreviewUrl: item.localPreviewUrl || localPreviewUrl,
+            }
+          : item
+      )));
     } finally {
       setIsAnalyzing(false);
     }
