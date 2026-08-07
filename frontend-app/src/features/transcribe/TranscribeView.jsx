@@ -270,6 +270,9 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
         createdAt: formatBeijingDateTime()
       };
       setResult(nextResult);
+      // A completed result is its own state. Clear the selected upload so it
+      // cannot remain visible or be submitted again beneath the result.
+      setAudioFile(null);
       setRecentResults((items) => [nextResult, ...items].slice(0, 20));
       showToast("success", "转录成功");
       setNotice("转录完成");
@@ -352,33 +355,30 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
               />
             )}
 
-            <div className="marketing-composer audio-tool-composer">
-              <div className="voice-upload-grid">
-                <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
-              </div>
-              <div className="marketing-composer__footer audio-tool-footer">
-                <strong className="audio-credit-hint">
-                  {audioFile ? (
-                    <>
-                      预计消耗 <em><BillingPoints feature="transcribe" payload={{ durationMs: audioFile?.durationMs || 0 }} fallbackPoints={1} /></em> 积分
-                    </>
-                  ) : (
-                    "请上传文件"
-                  )}
-                </strong>
-                <div className="audio-tool-actions">
-                  {result && (
-                    <button className="voice-download" type="button" onClick={() => downloadText(result)}>
-                      <Download size={15} />
+            {!result && (
+              <div className="marketing-composer audio-tool-composer">
+                <div className="voice-upload-grid">
+                  <TranscribeUploadSlot fileState={audioFile} isUploading={isTranscribing} onPick={pickAudioFile} onClear={clearAudioFile} />
+                </div>
+                <div className="marketing-composer__footer audio-tool-footer">
+                  <strong className="audio-credit-hint">
+                    {audioFile ? (
+                      <>
+                        预计消耗 <em><BillingPoints feature="transcribe" payload={{ durationMs: audioFile?.durationMs || 0 }} fallbackPoints={1} /></em> 积分
+                      </>
+                    ) : (
+                      "请上传文件"
+                    )}
+                  </strong>
+                  <div className="audio-tool-actions">
+                    <button className="ui-send-button voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
+                      {isTranscribing ? <Loader2 size={16} /> : <FileAudio size={16} />}
+                      开始转录
                     </button>
-                  )}
-                  <button className="ui-send-button voice-generate-button" type="button" onClick={submitTranscribe} disabled={isTranscribing || !audioFile}>
-                    {isTranscribing ? <Loader2 size={16} /> : <FileAudio size={16} />}
-                    开始转录
-                  </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </MarketingToolPanel>
         )}
 
