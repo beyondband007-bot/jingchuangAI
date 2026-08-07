@@ -453,7 +453,7 @@ export function ScriptCard({
           onClick={handleOptimizeClick}
         >
           <Sparkles size={12} />
-          AI 优化台词
+          AI 优化台词丨4 积分
         </button>
       </div>
 

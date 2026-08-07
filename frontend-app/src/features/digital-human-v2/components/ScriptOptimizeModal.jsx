@@ -78,7 +78,7 @@ export function ScriptOptimizeModal({ request, onClose, onApply }) {
       className="dhv2-modal-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="AI 优化台词"
+      aria-label="AI 优化台词丨4 积分"
       onMouseDown={onClose}
     >
       <div
@@ -88,7 +88,7 @@ export function ScriptOptimizeModal({ request, onClose, onApply }) {
         <header className="dhv2-modal__header">
           <div>
             <span>AI 优化</span>
-            <strong>AI 优化台词</strong>
+            <strong>AI 优化台词丨4 积分</strong>
             <p className="dhv2-script-optimize-modal__hint">
               已选中部分文字，优化后将替换选中片段
             </p>
