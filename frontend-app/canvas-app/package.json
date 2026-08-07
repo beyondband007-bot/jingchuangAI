@@ -10,7 +10,7 @@
     "check:style-contract": "node ./scripts/check-style-contract.mjs",
     "test:recovery": "node --test ./scripts/test-image-task-recovery.mjs ./scripts/test-image-task-polling.mjs ./scripts/test-video-task-recovery.mjs",
     "test:video-duration": "node --test ./scripts/test-video-request-duration.mjs",
-    "test:video-error": "node --test ./scripts/test-video-error-message.mjs",
+    "test:video-error": "node --test ./scripts/test-video-error-message.mjs ./scripts/test-video-node-state.mjs ./scripts/test-prompt-media-mentions.mjs ./scripts/test-video-image-mode.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -4,8 +4,8 @@
     <!-- Video node | 视频节点 -->
     <div 
       class="video-node bg-[var(--bg-secondary)] rounded-xl border w-[400px] relative transition-all duration-200"
-      :class="{ 'is-selected': data.selected, 'is-processing': data.loading || (data.taskId && !data.url), 'is-error': data.error, 'is-stale': data.inputChanged }"
-      :aria-busy="data.loading || (data.taskId && !data.url)"
+      :class="{ 'is-selected': data.selected, 'is-processing': displayState === 'loading', 'is-error': displayState === 'error', 'is-stale': data.inputChanged }"
+      :aria-busy="displayState === 'loading'"
       
     >
     <!-- Header | 头部 -->
@@ -50,9 +50,27 @@
       <div v-if="data.inputChanged && data.url" class="mb-2 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-700 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
         输入已变化，当前仍保留上次生成结果。重新生成后会更新。
       </div>
+      <!-- Error state | 错误状态 -->
+      <div
+        v-if="displayState === 'error'"
+        class="aspect-video rounded-lg bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center gap-2 border border-red-200 dark:border-red-800 px-5 text-center"
+      >
+        <n-icon :size="32" class="text-red-500"><CloseCircleOutline /></n-icon>
+        <span class="text-sm font-medium text-red-600 dark:text-red-400">{{ errorTitle }}</span>
+        <span class="max-h-20 overflow-y-auto text-xs leading-5 text-red-500">{{ data.error }}</span>
+        <span
+          v-if="data.errorDetail?.refunded"
+          class="rounded-full bg-red-100 px-2 py-1 text-[11px] text-red-600 dark:bg-red-950/60 dark:text-red-300"
+        >
+          {{ data.errorDetail.points ? `${data.errorDetail.points} 积分已退回` : '积分已退回' }}
+        </span>
+        <span v-if="data.errorDetail?.requestId" class="max-w-full truncate text-[10px] text-red-400">
+          错误编号：{{ data.errorDetail.requestId }}
+        </span>
+      </div>
       <!-- Loading state | 加载状态 -->
       <div 
-        v-if="(data.taskId && !data.url) || (data.loading && !data.taskId)"
+        v-else-if="displayState === 'loading'"
         class="aspect-video rounded-lg bg-gradient-to-br from-cyan-400 via-blue-300 to-amber-200 flex flex-col items-center justify-center gap-3 relative overflow-hidden"
       >
         <!-- Animated gradient overlay | 动画渐变遮罩 -->
@@ -69,27 +87,9 @@
 
         <span class="text-sm text-white font-medium relative z-10">{{ data.taskId ? '创作中，预计等待 1 分钟' : '任务创建中...' }}</span>
       </div>
-      <!-- Error state | 错误状态 -->
-      <div 
-        v-else-if="data.error"
-        class="aspect-video rounded-lg bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center gap-2 border border-red-200 dark:border-red-800 px-5 text-center"
-      >
-        <n-icon :size="32" class="text-red-500"><CloseCircleOutline /></n-icon>
-        <span class="text-sm font-medium text-red-600 dark:text-red-400">{{ errorTitle }}</span>
-        <span class="max-h-20 overflow-y-auto text-xs leading-5 text-red-500">{{ data.error }}</span>
-        <span
-          v-if="data.errorDetail?.refunded"
-          class="rounded-full bg-red-100 px-2 py-1 text-[11px] text-red-600 dark:bg-red-950/60 dark:text-red-300"
-        >
-          {{ data.errorDetail.points ? `${data.errorDetail.points} 积分已退回` : '积分已退回' }}
-        </span>
-        <span v-if="data.errorDetail?.requestId" class="max-w-full truncate text-[10px] text-red-400">
-          错误编号：{{ data.errorDetail.requestId }}
-        </span>
-      </div>
       <!-- Video preview | 视频预览 -->
       <div 
-        v-else-if="data.url"
+        v-else-if="displayState === 'video'"
         class="aspect-video rounded-lg overflow-hidden bg-black"
       >
         <video 
@@ -163,6 +163,7 @@ import { useVideoGeneration } from '../../hooks/useApi'
 import NodeHandleMenu from './NodeHandleMenu.vue'
 import { uploadCanvasMedia } from '../../api/facemini'
 import { getVideoErrorTitle } from '../../utils/videoError'
+import { getVideoNodeDisplayState } from '../../utils/videoNodeState'
 
 const props = defineProps({
   id: String,
@@ -184,6 +185,7 @@ const isEditingLabel = ref(false)
 const editingLabelValue = ref('')
 const labelInputRef = ref(null)
 const errorTitle = computed(() => getVideoErrorTitle(props.data?.errorDetail || {}))
+const displayState = computed(() => getVideoNodeDisplayState(props.data || {}))
 
 // Video node menu operations | 视频节点菜单操作
 const operations = [

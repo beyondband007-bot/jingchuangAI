@@ -1557,11 +1557,13 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 60),
         ('kling_3_4k', 'jobs', 'kling-3.0/video', 'Kling 3.0 4K', '4K', 'per_second', 235, 2.345,
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
-        ('minimax_h3_2k', 'minimax', 'MiniMax-H3', 'MiniMax H3 2K', 'multimodal', 'per_second', 60, 0.530,
+        ('minimax_h3_2k', 'minimax', 'MiniMax-H3', 'MiniMax H3', 'multimodal', 'per_second', 96, 0.800,
           JSON_ARRAY('21:9','16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 4, TRUE, 75),
-        ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0 720P', 'first-frame', 'per_second', 88, 0.875,
+        ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0', 'first-frame', 'per_second', 120, 0.994,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
-        ('seedance_2_0_mini', 'jobs', 'bytedance/seedance-2-mini', 'Seedance 2.0 Mini', 'mini', 'per_second', 120, 0.875,
+        ('seedance_tc', 'tencent_vod', 'VS/2.0', 'Seedance TC', 'multimodal', 'per_second', 120, 0.994,
+          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, TRUE, 82),
+        ('seedance_2_0_mini', 'jobs', 'bytedance/seedance-2-mini', 'Seedance 2.0 Mini', 'mini', 'per_second', 123, 0.875,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4','21:9'), JSON_ARRAY(2,3,4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 6, TRUE, 85),
         ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
@@ -1586,12 +1588,15 @@ async function seedDemoData() {
     await connection.query(`
       UPDATE video_model_prices
       SET base_points = CASE
-            WHEN model_key = 'minimax_h3_2k' THEN 60
-            WHEN model_key IN ('seedance_2_0_720p', 'seedance_2_0_mini', 'kling_3_std') THEN 120
+            WHEN model_key = 'minimax_h3_2k' THEN 96
+            WHEN model_key = 'seedance_2_0_720p' THEN 120
+            WHEN model_key = 'seedance_tc' THEN 120
+            WHEN model_key = 'seedance_2_0_mini' THEN 123
+            WHEN model_key = 'kling_3_std' THEN 120
             ELSE base_points
           END,
           enabled = CASE
-            WHEN model_key IN ('minimax_h3_2k', 'seedance_2_0_720p', 'seedance_2_0_mini', 'kling_3_std') THEN TRUE
+            WHEN model_key IN ('minimax_h3_2k', 'seedance_2_0_720p', 'seedance_tc', 'seedance_2_0_mini', 'kling_3_std') THEN TRUE
             ELSE FALSE
           END
     `);

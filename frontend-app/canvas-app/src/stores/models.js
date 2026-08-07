@@ -129,7 +129,12 @@ export const getModelResolutionOptions = (modelKey) => {
 
   return model.resolutions.map(res => {
     const option = SEEDANCE_RESOLUTION_OPTIONS.find(o => o.key === res)
-    return option || { label: res, key: res }
+    const points = model.resolutionPoints?.[res]
+    const estimated = model.estimatedResolutions?.includes(res)
+    return {
+      ...(option || { label: res, key: res }),
+      label: `${res}${estimated ? '（预估）' : ''}${points ? ` · ${points}积分/秒` : ''}`
+    }
   })
 }
 

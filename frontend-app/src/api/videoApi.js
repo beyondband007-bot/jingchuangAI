@@ -55,19 +55,27 @@ export const videoApi = {
     });
   },
 
-  calculatePrice({ model, duration, count = 1, models = [] }) {
+  calculatePrice({ model, resolution, models = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
-    if (!selectedModel || !duration) return "0 积分";
-    const points = selectedModel.priceUnit === "per_task"
-      ? selectedModel.basePoints * count
-      : selectedModel.basePoints * Number(duration) * count;
-    return `${Math.ceil(points)} 积分`;
+    if (!selectedModel) return "0积分/s";
+    const resolutionOption = selectedModel.resolutions?.find(
+      (item) => item.value === resolution
+    );
+    const pointsPerSecond = resolutionOption?.pointsPerSecond || selectedModel.basePoints;
+    const estimatePrefix = resolutionOption?.estimated ? "预估 " : "";
+    return `${estimatePrefix}${Math.ceil(pointsPerSecond)}积分/s`;
   },
 
-  calculateRmb({ model, duration, count = 1, models = [] }) {
+  calculateRmb({ model, duration, resolution, count = 1, models = [] }) {
     const selectedModel = models.find((item) => item.value === model) || models[0];
-    if (!selectedModel || !selectedModel.rmbPerSecond || !duration) return "";
-    return `约 ￥${(selectedModel.rmbPerSecond * Number(duration) * count).toFixed(1)}`;
+    const resolutionOption = selectedModel?.resolutions?.find(
+      (item) => item.value === resolution
+    );
+    const rmbPerSecond = resolutionOption
+      ? resolutionOption.rmbPerSecond
+      : selectedModel?.rmbPerSecond;
+    if (!selectedModel || !rmbPerSecond || !duration) return "";
+    return `约 ￥${(rmbPerSecond * Number(duration) * count).toFixed(1)}`;
   },
 
   getRandomPrompt() {
@@ -128,6 +136,7 @@ export const videoApi = {
       prompt: task.prompt,
       model: task.modelKey,
       ratio: task.ratio,
+      resolution: task.resolution,
       duration: task.duration,
       mode: task.mode || "first-frame",
       count: task.count || 1,

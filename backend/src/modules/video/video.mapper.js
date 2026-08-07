@@ -1,5 +1,9 @@
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { parseVideoTaskError } from "./video.errors.js";
+import {
+  getDefaultVideoResolution,
+  getVideoResolutionOptions
+} from "./video.resolutions.js";
 function parseJson(value, fallback) {
   if (!value) return fallback;
   if (typeof value === "object") return value;
@@ -11,6 +15,7 @@ function parseJson(value, fallback) {
 }
 
 export function mapVideoModel(row) {
+  const resolutions = getVideoResolutionOptions(row);
   return {
     value: row.model_key,
     label: row.display_name,
@@ -22,6 +27,8 @@ export function mapVideoModel(row) {
     rmbPerSecond: Number(row.rmb_per_second || 0),
     ratios: parseJson(row.supported_ratios, []),
     durations: parseJson(row.supported_durations, []),
+    resolutions,
+    defaultResolution: getDefaultVideoResolution(row),
     defaultRatio: row.default_ratio,
     defaultDuration: row.default_duration
   };

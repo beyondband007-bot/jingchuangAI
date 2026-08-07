@@ -8,7 +8,8 @@ import {
   getLocalMediaFilePath,
   resolveArkVideoReference,
   resolveKieVideoReference,
-  resolveMinimaxVideoReference
+  resolveMinimaxVideoReference,
+  resolveTencentVodVideoReference
 } from "./video.references.js";
 
 test("resolves a canvas media path inside the configured storage root", () => {
@@ -255,6 +256,106 @@ test("keeps KIE video models on the temporary upload path", async () => {
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
+});
+
+test("preflights public Tencent VOD references without converting them to Ark assets", async () => {
+  let requestedUrl;
+  const result = await resolveTencentVodVideoReference({
+    url: "https://cdn.example.com/product.png",
+    kind: "image",
+    referenceIndex: 1,
+    fetchImpl: async (url) => {
+      requestedUrl = url;
+      return new Response(Buffer.from("image"), {
+        status: 206,
+        headers: { "Content-Type": "image/png" }
+      });
+    }
+  });
+
+  assert.equal(result, "https://cdn.example.com/product.png");
+  assert.equal(requestedUrl, "https://cdn.example.com/product.png");
+});
+
+test("uploads a local Tencent VOD reference before preflight", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "tencent-vod-reference-"));
+  const referencesDir = path.join(tempDir, "video", "references");
+  await mkdir(referencesDir, { recursive: true });
+  const filePath = path.join(referencesDir, "product.png");
+  await writeFile(filePath, Buffer.from("png-bytes"));
+  let uploadArgs;
+  let requestedUrl;
+  try {
+    const result = await resolveTencentVodVideoReference({
+      url: "/media/video/references/product.png",
+      kind: "image",
+      referenceIndex: 1,
+      storageDir: tempDir,
+      uploadImpl: async (args) => {
+        uploadArgs = args;
+        return { url: "https://vod.example.com/product.png", fileId: "file-123" };
+      },
+      fetchImpl: async (url) => {
+        requestedUrl = url;
+        return new Response(Buffer.from("image"), {
+          status: 206,
+          headers: { "Content-Type": "image/png" }
+        });
+      }
+    });
+
+    assert.equal(result, "https://vod.example.com/product.png");
+    assert.equal(uploadArgs.filePath, filePath);
+    assert.equal(uploadArgs.kind, "image");
+    assert.equal(requestedUrl, "https://vod.example.com/product.png");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("returns an explicit no-charge error when Tencent VOD upload fails", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "tencent-vod-reference-"));
+  const referencesDir = path.join(tempDir, "video", "references");
+  await mkdir(referencesDir, { recursive: true });
+  await writeFile(path.join(referencesDir, "product.png"), Buffer.from("png-bytes"));
+  try {
+    await assert.rejects(
+      resolveTencentVodVideoReference({
+        url: "/media/video/references/product.png",
+        kind: "image",
+        referenceIndex: 1,
+        storageDir: tempDir,
+        uploadImpl: async () => {
+          throw new Error("ApplyUpload denied");
+        }
+      }),
+      (error) => {
+        assert.equal(error.code, "VIDEO_REFERENCE_UPLOAD_FAILED");
+        assert.equal(error.errorDetail.stage, "reference_upload");
+        assert.equal(error.errorDetail.referenceIndex, 1);
+        assert.match(error.message, /未扣除积分/);
+        return true;
+      }
+    );
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("rejects Ark-only asset references before submitting a Tencent VOD task", async () => {
+  await assert.rejects(
+    resolveTencentVodVideoReference({
+      url: "asset://asset-20260803121000-existing",
+      kind: "image",
+      referenceIndex: 2
+    }),
+    (error) => {
+      assert.equal(error.code, "VIDEO_REFERENCE_URL_UNREACHABLE");
+      assert.equal(error.errorDetail.stage, "reference_preflight");
+      assert.equal(error.errorDetail.referenceIndex, 2);
+      return true;
+    }
+  );
 });
 
 test("returns an explicit no-charge error when KIE upload fails", async () => {

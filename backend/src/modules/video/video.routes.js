@@ -7,6 +7,7 @@ import {
   createVideoTask,
   deleteVideoTask,
   getVideoModels,
+  getTencentVideoPortraitElements,
   getVideoTask,
   listVideoTasks,
   toggleVideoFavorite,
@@ -87,6 +88,7 @@ const uploadReferenceAudio = createReferenceUpload({
 });
 
 videoRouter.get("/models", getVideoModels);
+videoRouter.get("/tencent/portrait-elements", getTencentVideoPortraitElements);
 videoRouter.post("/uploads/reference-image", uploadReferenceImage, uploadVideoReferenceImage);
 videoRouter.post("/uploads/reference-video", uploadReferenceVideo, uploadVideoReferenceVideo);
 videoRouter.post("/uploads/reference-audio", uploadReferenceAudio, uploadVideoReferenceAudio);

@@ -22,27 +22,71 @@ export const VIDEO_RATIO_LIST = [
   { label: '4:3', key: '4:3' },
   { label: '3:4', key: '3:4' }
 ]
-export const SEEDANCE_RESOLUTION_OPTIONS = [{ label: '720p', key: '720p' }]
+export const SEEDANCE_RESOLUTION_OPTIONS = [
+  { label: '480P', key: '480P' },
+  { label: '720P', key: '720P' },
+  { label: '768P', key: '768P' },
+  { label: '1080P', key: '1080P' },
+  { label: '2K', key: '2K' },
+  { label: '4K', key: '4K' }
+]
 export const VIDEO_MODELS = [{
-  label: 'Seedance 2.0 720p',
+  label: 'Seedance 2.0',
   key: 'seedance_2_0_720p',
   provider: ['kie'],
   type: 't2v+i2v',
   ratios: VIDEO_RATIO_LIST.map(item => item.key),
   durs: [4, 5, 6, 8, 10, 15].map(key => ({ label: `${key} 秒`, key })),
-  resolutions: ['720p'],
-  defaultResolution: '720p',
-  defaultParams: { ratio: '16:9', duration: 5, resolution: '720p', generateAudio: true }
+  resolutions: ['480P', '720P', '1080P'],
+  resolutionPoints: { '480P': 54, '720P': 120, '1080P': 270 },
+  estimatedResolutions: ['480P', '720P', '1080P'],
+  defaultResolution: '720P',
+  defaultParams: { ratio: '16:9', duration: 6, resolution: '720P', generateAudio: true }
 }, {
-  label: 'MiniMax H3 2K',
+  label: 'Seedance TC',
+  key: 'seedance_tc',
+  provider: ['kie'],
+  type: 't2v+i2v+r2v',
+  ratios: VIDEO_RATIO_LIST.map(item => item.key),
+  durs: [4, 5, 6, 8, 10, 15].map(key => ({ label: `${key}s`, key })),
+  resolutions: ['480P', '720P', '1080P'],
+  resolutionPoints: { '480P': 54, '720P': 120, '1080P': 270 },
+  estimatedResolutions: ['480P', '720P', '1080P'],
+  defaultResolution: '720P',
+  defaultParams: { ratio: '16:9', duration: 6, resolution: '720P', generateAudio: true }
+}, {
+  label: 'MiniMax H3',
   key: 'minimax_h3_2k',
   provider: ['kie'],
   type: 't2v+i2v+r2v',
   ratios: ['21:9', ...VIDEO_RATIO_LIST.map(item => item.key)],
   durs: Array.from({ length: 12 }, (_, index) => index + 4).map(key => ({ label: `${key}s`, key })),
-  resolutions: ['2K'],
+  resolutions: ['768P', '2K'],
+  resolutionPoints: { '768P': 60, '2K': 96 },
   defaultResolution: '2K',
   defaultParams: { ratio: '16:9', duration: 4, resolution: '2K', generateAudio: true }
+}, {
+  label: 'Seedance 2.0 Mini',
+  key: 'seedance_2_0_mini',
+  provider: ['kie'],
+  type: 't2v+i2v+r2v',
+  ratios: ['21:9', ...VIDEO_RATIO_LIST.map(item => item.key)],
+  durs: Array.from({ length: 14 }, (_, index) => index + 2).map(key => ({ label: `${key}s`, key })),
+  resolutions: ['480P', '720P'],
+  resolutionPoints: { '480P': 57, '720P': 123 },
+  defaultResolution: '720P',
+  defaultParams: { ratio: '16:9', duration: 6, resolution: '720P', generateAudio: true }
+}, {
+  label: 'Kling 3.0',
+  key: 'kling_3_std',
+  provider: ['kie'],
+  type: 't2v+i2v',
+  ratios: ['16:9', '9:16', '1:1'],
+  durs: Array.from({ length: 13 }, (_, index) => index + 3).map(key => ({ label: `${key}s`, key })),
+  resolutions: ['720P', '1080P', '4K'],
+  resolutionPoints: { '720P': 120, '1080P': 162, '4K': 402 },
+  defaultResolution: '720P',
+  defaultParams: { ratio: '16:9', duration: 6, resolution: '720P', generateAudio: true }
 }]
 
 export const CHAT_MODELS = [

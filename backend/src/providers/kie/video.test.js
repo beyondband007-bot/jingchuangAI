@@ -12,6 +12,7 @@ test("builds the documented Seedance 2.0 Mini multimodal input", () => {
       prompt: "A cinematic city sunrise",
       ratio: "16:9",
       duration: 6,
+      resolution: "480P",
       referenceImageUrl: "https://cdn.example.com/reference.png",
       referenceVideoUrl: "https://cdn.example.com/reference.mp4",
       referenceAudioUrl: "https://cdn.example.com/reference.mp3"
@@ -22,7 +23,7 @@ test("builds the documented Seedance 2.0 Mini multimodal input", () => {
     prompt: "A cinematic city sunrise",
     return_last_frame: false,
     generate_audio: true,
-    resolution: "720p",
+    resolution: "480p",
     aspect_ratio: "16:9",
     duration: 6,
     web_search: false,
@@ -74,4 +75,18 @@ test("builds Kling 3.0 image input with the required image_urls array", () => {
     image_urls: ["https://cdn.example.com/runner.png"]
   });
   assert.equal("image_url" in input, false);
+});
+
+test("maps the selected Kling resolution to its provider mode", () => {
+  const proInput = createJobsInput(
+    { provider_model: "kling-3.0/video", mode: "std" },
+    { prompt: "A product reveal", ratio: "16:9", duration: 5, resolution: "1080P" }
+  );
+  const fourKInput = createJobsInput(
+    { provider_model: "kling-3.0/video", mode: "std" },
+    { prompt: "A product reveal", ratio: "16:9", duration: 5, resolution: "4K" }
+  );
+
+  assert.equal(proInput.mode, "pro");
+  assert.equal(fourKInput.mode, "4K");
 });

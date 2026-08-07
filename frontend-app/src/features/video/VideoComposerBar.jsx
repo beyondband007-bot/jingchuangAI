@@ -15,6 +15,10 @@ function getVideoModelOptions(options, modelKey) {
     durations: selectedModel?.durations?.length
       ? selectedModel.durations
       : options.durations || [],
+    resolutions: (selectedModel?.resolutions || []).map((item) => ({
+      ...item,
+      label: item.value,
+    })),
   };
 }
 
@@ -53,6 +57,9 @@ export function VideoComposerBar({
   const [duration, setDuration] = useState(
     modelOptions.model?.defaultDuration || modelOptions.durations[0] || "",
   );
+  const [resolution, setResolution] = useState(
+    modelOptions.model?.defaultResolution || modelOptions.resolutions[0]?.value || "",
+  );
   const [referenceImage, setReferenceImage] = useState(null);
   const [referenceVideo, setReferenceVideo] = useState(null);
   const [isUploadingReference, setIsUploadingReference] = useState(false);
@@ -74,8 +81,12 @@ export function VideoComposerBar({
         setDuration(
           nextOptions.model.defaultDuration || nextOptions.durations[0] || "",
         );
+      if (!nextOptions.resolutions.some((item) => item.value === resolution))
+        setResolution(
+          nextOptions.model.defaultResolution || nextOptions.resolutions[0]?.value || "",
+        );
     }
-  }, [duration, model, options, ratio]);
+  }, [duration, model, options, ratio, resolution]);
 
   useEffect(() => {
     setPrompt("");
@@ -95,14 +106,7 @@ export function VideoComposerBar({
   const count = 1;
   const price = videoApi.calculatePrice({
     model,
-    duration,
-    count,
-    models: options.models,
-  });
-  const rmb = videoApi.calculateRmb({
-    model,
-    duration,
-    count,
+    resolution,
     models: options.models,
   });
   const canSubmit =
@@ -110,19 +114,8 @@ export function VideoComposerBar({
     model &&
     ratio &&
     duration &&
+    (!modelOptions.resolutions.length || resolution) &&
     !isUploadingReference;
-
-  function clearPrompt() {
-    setPrompt("");
-    setReferenceImage(null);
-    setReferenceVideo(null);
-    showVideoComposerToast("已清空提示词");
-  }
-
-  function fillRandomPrompt() {
-    setPrompt(videoApi.getRandomPrompt());
-    showVideoComposerToast("已填入随机提示词");
-  }
 
   function handleAddPrompt() {
     referenceInputRef.current?.click();
@@ -166,6 +159,7 @@ export function VideoComposerBar({
       model,
       ratio,
       duration: Number(duration),
+      resolution,
       mode: "first-frame",
       count,
       referenceImageUrl: referenceImage?.url || null,
@@ -204,8 +198,6 @@ export function VideoComposerBar({
         canSubmit={canSubmit}
         notice=""
         onAdd={handleAddPrompt}
-        onRandom={fillRandomPrompt}
-        onClear={clearPrompt}
         model={model}
         onModelChange={setModel}
         modelOptions={options.models}
@@ -215,8 +207,10 @@ export function VideoComposerBar({
         duration={duration}
         onDurationChange={setDuration}
         durationOptions={modelOptions.durations}
+        resolution={resolution}
+        onResolutionChange={setResolution}
+        resolutionOptions={modelOptions.resolutions}
         price={price}
-        rmb={rmb}
         referenceSlot={
           <ReferenceMediaSlot
             image={referenceImage}

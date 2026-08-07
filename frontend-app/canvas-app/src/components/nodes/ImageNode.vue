@@ -444,7 +444,7 @@ const handleSelect = (item) => {
       sourceHandle: 'right',
       targetHandle: 'left',
       type: 'imageRole',
-      data: { imageRole: 'first_frame_image' }
+      data: { imageRole: 'input_reference' }
     })
 
     setTimeout(() => updateNodeInternals(configNodeId), 50)
@@ -876,7 +876,7 @@ const handleVideoGen = () => {
     sourceHandle: 'right',
     targetHandle: 'left',
     type: 'imageRole',
-    data: { imageRole: 'first_frame_image' } // Default to first frame | 默认首帧
+    data: { imageRole: 'input_reference' }
   })
 
   // Force Vue Flow to recalculate node dimensions | 强制 Vue Flow 重新计算节点尺寸

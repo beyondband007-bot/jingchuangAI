@@ -24,6 +24,13 @@ import {
   getMinimaxH3VideoTask,
   mapMinimaxH3VideoState
 } from "../../providers/minimax/videoGeneration.js";
+import {
+  createTencentVodSeedanceTask,
+  extractTencentVodSeedanceResult,
+  getTencentVodSeedanceTask,
+  listTencentVodPortraitElements,
+  mapTencentVodSeedanceState
+} from "../../providers/tencent/vodVideo.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
@@ -36,7 +43,8 @@ import { serializeVideoTaskError } from "./video.errors.js";
 import {
   resolveArkVideoReference,
   resolveKieVideoReference,
-  resolveMinimaxVideoReference
+  resolveMinimaxVideoReference,
+  resolveTencentVodVideoReference
 } from "./video.references.js";
 import {
   calculateVideoPoints,
@@ -44,6 +52,10 @@ import {
   validateVideoPayload,
   videoCountOptions
 } from "./video.options.js";
+import {
+  getVideoResolutionOption,
+  resolveVideoResolution
+} from "./video.resolutions.js";
 import {
   createVideoTask,
   deleteVideoTask,
@@ -78,6 +90,7 @@ function inferVideoResolution(model = {}) {
 
   if (
     model.provider_type === "ark" ||
+    model.provider_type === "tencent_vod" ||
     String(model.provider_model || "").includes("seedance-2-mini") ||
     String(model.provider_model || "").includes("wan/2-7")
   ) {
@@ -132,7 +145,8 @@ export async function createTask(payload, userId) {
     referenceImageUrls,
     referenceVideoUrl,
     referenceAudioUrl,
-    source
+    source,
+    resolution: requestedResolution
   } = payload;
 
   const pool = getPool();
@@ -142,6 +156,7 @@ export async function createTask(payload, userId) {
   let rmbCost;
   let arkContent;
   let minimaxContent;
+  let tencentReferences;
   let kieReferences;
   let resolution;
 
@@ -163,7 +178,8 @@ export async function createTask(payload, userId) {
       lastFrameImageUrl,
       referenceImageUrls,
       referenceVideoUrl,
-      referenceAudioUrl
+      referenceAudioUrl,
+      resolution: requestedResolution
     });
     const imageInputs = normalizeVideoImageInputs({
       mode,
@@ -175,14 +191,20 @@ export async function createTask(payload, userId) {
     firstFrameImageUrl = imageInputs.firstFrameImageUrl;
     lastFrameImageUrl = imageInputs.lastFrameImageUrl;
     referenceImageUrls = imageInputs.referenceImageUrls;
-    const supportsAdvancedImageRoles = ["ark", "minimax"].includes(modelPrice.provider_type);
+    const supportsAdvancedImageRoles = ["ark", "minimax", "tencent_vod"].includes(modelPrice.provider_type);
     if (!supportsAdvancedImageRoles && (lastFrameImageUrl || referenceImageUrls.length > 1)) {
       throw createHttpError("selected video provider does not support these image roles", 400);
     }
 
-    resolution = inferVideoResolution(modelPrice);
-    costPoints = calculateVideoPoints(modelPrice, duration, count);
-    rmbCost = Number(modelPrice.rmb_per_second || 0) * Number(duration) * Number(count);
+    resolution = resolveVideoResolution(modelPrice, requestedResolution) || inferVideoResolution(modelPrice);
+    const resolutionOption = getVideoResolutionOption(modelPrice, resolution);
+    costPoints = calculateVideoPoints(modelPrice, duration, count, resolution);
+    const rmbPerSecond = resolutionOption
+      ? Number(resolutionOption.rmbPerSecond || 0)
+      : Number(modelPrice.rmb_per_second || 0);
+    rmbCost = rmbPerSecond > 0
+      ? rmbPerSecond * Number(duration) * Number(count)
+      : null;
   } finally {
     lookupConnection.release();
   }
@@ -234,6 +256,27 @@ export async function createTask(payload, userId) {
         kind: "audio",
         referenceIndex
       })));
+    }
+  } else if (modelPrice.provider_type === "tencent_vod") {
+    tencentReferences = {
+      firstFrameImageUrl: "",
+      lastFrameImageUrl: "",
+      referenceImageUrls: [],
+      referenceVideoUrl: ""
+    };
+    const resolveReference = async (url, kind) => {
+      if (!url) return "";
+      referenceIndex += 1;
+      return resolveTencentVodVideoReference({ url, kind, referenceIndex });
+    };
+    tencentReferences.firstFrameImageUrl = await resolveReference(firstFrameImageUrl, "image");
+    tencentReferences.lastFrameImageUrl = await resolveReference(lastFrameImageUrl, "image");
+    for (const imageUrl of referenceImageUrls) {
+      tencentReferences.referenceImageUrls.push(await resolveReference(imageUrl, "image"));
+    }
+    tencentReferences.referenceVideoUrl = await resolveReference(referenceVideoUrl, "video");
+    if (referenceAudioUrl) {
+      throw createHttpError("Tencent VOD Seedance audio reference is not enabled by the current VS contract", 400);
     }
   } else if (modelPrice.provider_type === "minimax") {
     const resolvedReferenceImages = [];
@@ -376,6 +419,20 @@ export async function createTask(payload, userId) {
         generateAudio: true,
         watermark: false
       });
+    } else if (modelPrice.provider_type === "tencent_vod") {
+      provider = await createTencentVodSeedanceTask({
+        modelName: config.tencentCloud.vodVideoModelName,
+        modelVersion: config.tencentCloud.vodVideoModelVersion,
+        prompt: prompt.trim(),
+        firstFrameImageUrl: tencentReferences.firstFrameImageUrl,
+        lastFrameImageUrl: tencentReferences.lastFrameImageUrl,
+        referenceImageUrls: tencentReferences.referenceImageUrls,
+        referenceVideoUrl: tencentReferences.referenceVideoUrl,
+        ratio,
+        duration: Number(duration),
+        resolution: resolution || "720P",
+        generateAudio: true
+      });
     } else if (modelPrice.provider_type === "minimax") {
       provider = await createMinimaxH3VideoTask({
         content: minimaxContent,
@@ -390,6 +447,7 @@ export async function createTask(payload, userId) {
         prompt: prompt.trim(),
         ratio,
         duration: Number(duration),
+        resolution,
         referenceImageUrl: kieReferences.imageUrl || null,
         referenceVideoUrl: kieReferences.videoUrl || null,
         referenceAudioUrl: kieReferences.audioUrl || null
@@ -455,32 +513,48 @@ export async function recoverProcessingVideoTasks() {
   return rows.length;
 }
 
+export async function getTencentPortraitLibrary({ offset = 0, limit = 100 } = {}) {
+  const response = await listTencentVodPortraitElements({ offset, limit });
+  return {
+    items: Array.isArray(response?.ElementSet) ? response.ElementSet : [],
+    total: Number(response?.TotalCount || 0),
+    requestId: response?.RequestId || null
+  };
+}
+
 async function refreshTask(id) {
   const task = await findVideoTaskStatus(id);
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
 
   try {
     const isArkTask = task.provider_type === "ark";
+    const isTencentVodTask = task.provider_type === "tencent_vod";
     const isMinimaxTask = task.provider_type === "minimax";
     const record = isArkTask
       ? await getArkVideoGenerationTask({ taskId: task.provider_task_id })
-      : isMinimaxTask
-        ? await getMinimaxH3VideoTask({ taskId: task.provider_task_id })
-        : await getKieVideoTask({
-            taskId: task.provider_task_id,
-            providerType: task.provider_type
-          });
+      : isTencentVodTask
+        ? await getTencentVodSeedanceTask({ taskId: task.provider_task_id })
+        : isMinimaxTask
+          ? await getMinimaxH3VideoTask({ taskId: task.provider_task_id })
+          : await getKieVideoTask({
+              taskId: task.provider_task_id,
+              providerType: task.provider_type
+            });
     const mapped = isArkTask
       ? mapArkVideoGenerationState(record)
-      : isMinimaxTask
-        ? mapMinimaxH3VideoState(record)
-        : mapKieVideoState(record, task.provider_type);
+      : isTencentVodTask
+        ? mapTencentVodSeedanceState(record)
+        : isMinimaxTask
+          ? mapMinimaxH3VideoState(record)
+          : mapKieVideoState(record, task.provider_type);
     if (mapped === "completed") {
       const providerUrls = isArkTask
         ? [extractArkVideoGenerationResult(record).resultUrl].filter(Boolean)
-        : isMinimaxTask
-          ? [extractMinimaxH3VideoResult(record).resultUrl].filter(Boolean)
-          : extractVideoResultUrls(record, task.provider_type);
+        : isTencentVodTask
+          ? extractTencentVodSeedanceResult(record).resultUrls
+          : isMinimaxTask
+            ? [extractMinimaxH3VideoResult(record).resultUrl].filter(Boolean)
+            : extractVideoResultUrls(record, task.provider_type);
       if (!providerUrls.length) {
         await refundTask(id, null, null, "video generation result missing video URL");
       } else {
@@ -490,9 +564,11 @@ async function refreshTask(id) {
     } else if (mapped === "failed") {
       const providerError = isArkTask
         ? extractArkVideoGenerationResult(record).errorDetail || extractArkVideoGenerationResult(record).errorMessage
-        : isMinimaxTask
-          ? extractMinimaxH3VideoResult(record).errorMessage
-          : "";
+        : isTencentVodTask
+          ? extractTencentVodSeedanceResult(record).errorMessage || extractTencentVodSeedanceResult(record).errorCode
+          : isMinimaxTask
+            ? extractMinimaxH3VideoResult(record).errorMessage
+            : "";
       if (providerError) {
         await refundTask(id, null, null, providerError);
         return;

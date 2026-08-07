@@ -3,6 +3,7 @@ import {
   createTask,
   deleteTask,
   getModels,
+  getTencentPortraitLibrary,
   getTask,
   listTasks,
   toggleFavorite,
@@ -10,6 +11,18 @@ import {
   uploadReferenceAudio,
   uploadReferenceVideo
 } from "./video.service.js";
+
+export async function getTencentVideoPortraitElements(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await getTencentPortraitLibrary({
+      offset: req.query.offset,
+      limit: req.query.limit
+    }));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
 
 export async function getVideoModels(_req, res) {
   try {

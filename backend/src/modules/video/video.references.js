@@ -7,6 +7,7 @@ import {
   waitForVirtualAssetReference
 } from "../digital-human/arkVirtualAssets.service.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import { buildPublicMediaUrl } from "../../shared/publicMedia.js";
 import { createVideoTaskError } from "./video.errors.js";
 
@@ -269,6 +270,75 @@ export async function resolveMinimaxVideoReference({
       referenceIndex
     });
   }
+  await assertVideoReferenceUrlAccessible({
+    url: publicUrl,
+    kind,
+    referenceIndex,
+    fetchImpl
+  });
+  return publicUrl;
+}
+
+export async function resolveTencentVodVideoReference({
+  url,
+  kind,
+  referenceIndex,
+  fetchImpl = globalThis.fetch,
+  uploadImpl = uploadReferenceToTencentVod,
+  storageDir = config.media.storageDir
+}) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^asset:\/\//i.test(value)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `Reference ${referenceIndex} is an Ark-only asset URL and cannot be read by Tencent VOD. Please reconnect the source media.`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+
+  const filePath = getVideoReferenceFilePath(value, storageDir);
+  if (filePath) {
+    try {
+      const fileStat = await stat(filePath);
+      if (!fileStat.isFile() || fileStat.size <= 0) throw new Error("reference file is empty");
+      const upload = await uploadImpl({ filePath, kind });
+      await assertVideoReferenceUrlAccessible({
+        url: upload.url,
+        kind,
+        referenceIndex,
+        fetchImpl
+      });
+      return upload.url;
+    } catch (cause) {
+      if (cause?.errorDetail) throw cause;
+      throw createVideoTaskError({
+        code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+        message: `第${referenceIndex}个参考素材上传腾讯云点播失败，请稍后重试。视频任务尚未提交，未扣除积分。`,
+        status: 502,
+        stage: "reference_upload",
+        referenceType: kind,
+        referenceIndex,
+        cause
+      });
+    }
+  }
+
+  const publicUrl = /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
+  if (!/^https?:\/\//i.test(publicUrl)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `Reference ${referenceIndex} is not a public HTTP(S) URL that Tencent VOD can access.`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+
   await assertVideoReferenceUrlAccessible({
     url: publicUrl,
     kind,

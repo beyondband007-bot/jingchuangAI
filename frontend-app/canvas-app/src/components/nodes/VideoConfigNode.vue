@@ -2,7 +2,7 @@
   <!-- Video config node wrapper | 视频配置节点包裹层 -->
   <div class="video-config-node-wrapper relative" @mouseenter="showHandleMenu = true" @mouseleave="showHandleMenu = false">
     <!-- Video config node | 视频配置节点 -->
-    <div class="video-config-node bg-[var(--bg-secondary)] rounded-xl border min-w-[300px] transition-all duration-200"
+    <div class="video-config-node w-[300px] min-w-[300px] max-w-[300px] bg-[var(--bg-secondary)] rounded-xl border transition-all duration-200"
       :class="{ 'is-selected': data.selected, 'is-processing': isGenerating, 'is-error': error }"
       :aria-busy="isGenerating">
       <!-- Header | 头部 -->
@@ -52,16 +52,12 @@
               放大
             </button>
           </div>
-          <textarea
+          <PromptMentionEditor
             ref="promptInputRef"
-            v-model="localPrompt"
-            rows="3"
+            :model-value="localPrompt"
+            :connected-node-ids="connectedMediaNodeIds"
             placeholder="直接输入视频提示词，输入 @ 可引用已连接的图片、视频或音频"
-            class="nodrag nowheel w-full resize-none rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-2 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-color)]"
-            @input="handlePromptInput"
-            @keydown="handlePromptKeydown"
-            @mousedown.stop
-            @wheel.stop
+            @update:model-value="handlePromptValueChange"
           />
         </div>
 
@@ -102,6 +98,33 @@
           </n-dropdown>
         </div>
 
+        <!-- Resolution selector | 分辨率选择 -->
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-[var(--text-secondary)]">分辨率</span>
+          <n-dropdown :options="resolutionOptions" @select="handleResolutionSelect">
+            <button class="flex items-center gap-1 text-sm text-[var(--text-primary)] hover:text-[var(--accent-color)]">
+              {{ displayResolution }}
+              <n-icon :size="12">
+                <ChevronForwardOutline />
+              </n-icon>
+            </button>
+          </n-dropdown>
+        </div>
+
+        <label class="nodrag flex cursor-pointer items-center justify-between rounded-lg bg-[var(--bg-primary)] px-2.5 py-2" @mousedown.stop>
+          <span>
+            <span class="block text-xs font-medium text-[var(--text-primary)]">首尾帧模式</span>
+            <span class="mt-0.5 block text-[10px] text-[var(--text-tertiary)]">按连接顺序，最多两张图</span>
+          </span>
+          <input
+            type="checkbox"
+            class="h-4 w-4 cursor-pointer accent-[var(--accent-color)]"
+            :checked="firstLastFrameMode"
+            aria-label="首尾帧模式"
+            @change="handleFirstLastFrameModeChange"
+          />
+        </label>
+
         <!-- Connected inputs indicator | 连接输入指示 -->
         <div
           class="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)] py-1 border-t border-[var(--border-color)]">
@@ -109,15 +132,15 @@
             :class="connectedPrompt ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             提示词 {{ connectedPrompt ? '✓' : '○' }}
           </span>
-          <span class="px-2 py-0.5 rounded-full"
+          <span v-if="firstLastFrameMode" class="px-2 py-0.5 rounded-full"
             :class="imagesByRole.firstFrame ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             首帧 {{ imagesByRole.firstFrame ? '✓' : '○' }}
           </span>
-          <span class="px-2 py-0.5 rounded-full"
+          <span v-if="firstLastFrameMode" class="px-2 py-0.5 rounded-full"
             :class="imagesByRole.lastFrame ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             尾帧 {{ imagesByRole.lastFrame ? '✓' : '○' }}
           </span>
-          <span class="px-2 py-0.5 rounded-full"
+          <span v-else class="px-2 py-0.5 rounded-full"
             :class="imagesByRole.referenceImages.length > 0 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'">
             参考图 {{ imagesByRole.referenceImages.length > 0 ? `✓ ${imagesByRole.referenceImages.length}` : '○' }}
           </span>
@@ -171,14 +194,6 @@
       <NodeHandleMenu :nodeId="id" nodeType="videoConfig" :visible="showHandleMenu" :operations="[]" />
     </div>
 
-    <MentionsPicker
-      v-model:visible="showMentionsPicker"
-      :position="mentionsPosition"
-      context="videoConfig"
-      :connected-node-ids="connectedMediaNodeIds"
-      @select="handlePromptMentionSelect"
-    />
-
     <n-modal v-model:show="isPromptExpanded" :mask-closable="true">
       <div class="prompt-editor-modal nodrag nowheel" @mousedown.stop @wheel.stop>
         <div class="flex items-center justify-between border-b border-[var(--border-color)] px-5 py-3">
@@ -195,15 +210,13 @@
             <n-icon :size="18"><ContractOutline /></n-icon>
           </button>
         </div>
-        <textarea
+        <PromptMentionEditor
           ref="expandedPromptInputRef"
-          v-model="localPrompt"
-          class="nodrag nowheel prompt-editor-textarea"
+          :model-value="localPrompt"
+          :connected-node-ids="connectedMediaNodeIds"
+          expanded
           placeholder="描述画面内容、主体动作、镜头语言等，输入 @ 可引用已连接素材"
-          @input="handlePromptInput"
-          @keydown="handlePromptKeydown"
-          @mousedown.stop
-          @wheel.stop
+          @update:model-value="handlePromptValueChange"
         />
       </div>
     </n-modal>
@@ -223,10 +236,11 @@ import { ChevronForwardOutline, ChevronDownOutline, TrashOutline, VideocamOutlin
 import { useVideoGeneration } from '../../hooks'
 import { updateNode, removeNode, duplicateNode, addNode, addEdge, nodes, edges, getNodeInputHash } from '../../stores/canvas'
 import NodeHandleMenu from './NodeHandleMenu.vue'
-import MentionsPicker from '../MentionsPicker.vue'
+import PromptMentionEditor from '../PromptMentionEditor.vue'
 import { useModelStore } from '../../stores/pinia'
-import { getModelRatioOptions, getModelDurationOptions, getModelConfig, DEFAULT_VIDEO_MODEL } from '../../stores/models'
-import { parseMentions } from '../../hooks/useNodeRef'
+import { getModelRatioOptions, getModelDurationOptions, getModelResolutionOptions, getModelConfig, DEFAULT_VIDEO_MODEL } from '../../stores/models'
+import { orderReferenceImagesByMentions, resolvePromptMediaMentions } from '../../utils/promptMediaMentions'
+import { canEnableFirstLastFrameMode, resolveVideoImageModeInputs } from '../../utils/videoImageMode'
 
 // 使用 Pinia store 获取模型选项（根据渠道过滤）
 const modelStore = useModelStore()
@@ -251,64 +265,36 @@ const isGenerating = ref(false)  // 任务创建中状态
 const localModel = ref(props.data?.model || DEFAULT_VIDEO_MODEL)
 const localRatio = ref(props.data?.ratio || '16:9')
 const localDuration = ref(props.data?.duration || props.data?.dur || 5)
+const localResolution = ref(
+  props.data?.resolution || getModelConfig(localModel.value)?.defaultParams?.resolution || '720P'
+)
 const localPrompt = ref(props.data?.prompt || '')
+const firstLastFrameMode = ref(Boolean(props.data?.firstLastFrameMode))
 const promptInputRef = ref(null)
 const expandedPromptInputRef = ref(null)
 const isPromptExpanded = ref(false)
-const showMentionsPicker = ref(false)
-const mentionsPosition = ref({ x: 0, y: 0 })
-const mentionSearchStart = ref(-1)
-const mentionCursorPosition = ref(-1)
 
 const openPromptEditor = () => {
   isPromptExpanded.value = true
   nextTick(() => {
-    expandedPromptInputRef.value?.focus()
-    const end = localPrompt.value.length
-    expandedPromptInputRef.value?.setSelectionRange(end, end)
+    expandedPromptInputRef.value?.focusEnd()
   })
 }
 
-const handlePromptInput = (event) => {
+const handlePromptValueChange = value => {
+  localPrompt.value = value
   updateNode(props.id, { prompt: localPrompt.value })
-  const input = event?.target
-  const cursorPosition = input?.selectionStart ?? localPrompt.value.length
-  const textBeforeCursor = localPrompt.value.slice(0, cursorPosition)
-  const lastAtIndex = textBeforeCursor.lastIndexOf('@')
-  const textAfterAt = lastAtIndex >= 0 ? textBeforeCursor.slice(lastAtIndex + 1) : ''
-  const shouldShow = lastAtIndex >= 0 && !/\s/.test(textAfterAt) && !textAfterAt.includes('[')
+}
 
-  if (shouldShow && input) {
-    const rect = input.getBoundingClientRect()
-    mentionSearchStart.value = lastAtIndex
-    mentionCursorPosition.value = cursorPosition
-    mentionsPosition.value = { x: rect.left + 10, y: rect.bottom + 5 }
-    showMentionsPicker.value = true
-  } else {
-    showMentionsPicker.value = false
+const handleFirstLastFrameModeChange = event => {
+  const enabled = Boolean(event?.target?.checked)
+  if (enabled && !canEnableFirstLastFrameMode(connectedImages.value.length)) {
+    window.$message?.warning('首尾帧模式最多只能连接两张图片，请先断开多余图片')
+    event.target.checked = false
+    return
   }
-}
-
-const handlePromptKeydown = (event) => {
-  if (!showMentionsPicker.value) return
-  if (['Enter', 'Escape', 'ArrowDown', 'ArrowUp'].includes(event.key)) event.preventDefault()
-}
-
-const handlePromptMentionSelect = ({ nodeId, label, type }) => {
-  const start = mentionSearchStart.value
-  const end = mentionCursorPosition.value
-  if (start < 0 || end < start || !connectedMediaNodeIds.value.includes(nodeId)) return
-  const fallbackLabel = type === 'video' ? '视频' : type === 'audio' ? '音频' : '图片'
-  const mention = `@[${nodeId}|${label || fallbackLabel}]`
-  localPrompt.value = `${localPrompt.value.slice(0, start)}${mention} ${localPrompt.value.slice(end)}`
-  updateNode(props.id, { prompt: localPrompt.value })
-  showMentionsPicker.value = false
-  const nextCursor = start + mention.length + 1
-  nextTick(() => {
-    const input = isPromptExpanded.value ? expandedPromptInputRef.value : promptInputRef.value
-    input?.focus()
-    input?.setSelectionRange(nextCursor, nextCursor)
-  })
+  firstLastFrameMode.value = enabled
+  updateNode(props.id, { firstLastFrameMode: enabled })
 }
 
 // Label editing state | Label 编辑状态
@@ -328,8 +314,7 @@ const connectedImages = computed(() => {
         nodeId: sourceNode.id,
         edgeId: edge.id,
         url: sourceNode.data.url,
-        base64: sourceNode.data.base64,
-        role: edge.data?.imageRole || 'first_frame_image' // Default to first frame | 默认首帧
+        base64: sourceNode.data.base64
       })
     }
   }
@@ -376,48 +361,30 @@ const connectedMediaNodeIds = computed(() => [
 ])
 
 const resolveConnectedMediaMentions = (content = '') => {
-  const connectedMedia = new Map(connectedMediaNodeIds.value.map(nodeId => [
-    nodeId,
-    nodes.value.find(node => node.id === nodeId)
-  ]))
-  const imageMentions = []
-  const videoMentions = []
-  const audioMentions = []
-  let resolvedContent = content
-
-  for (const mention of parseMentions(content)) {
-    const sourceNode = connectedMedia.get(mention.nodeId)
-    const mediaUrl = sourceNode?.data?.base64 || sourceNode?.data?.url
-    const escapedNodeId = mention.nodeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const mentionPattern = new RegExp(`@\\[${escapedNodeId}(?:\\|[^\\]]+)?\\]`, 'g')
-    if (!mediaUrl || !['image', 'video', 'audio'].includes(sourceNode?.type)) {
-      resolvedContent = resolvedContent.replace(mentionPattern, mention.name || '')
-      continue
-    }
-    const target = sourceNode.type === 'video'
-      ? videoMentions
-      : sourceNode.type === 'audio'
-        ? audioMentions
-        : imageMentions
-    if (!target.some(item => item.nodeId === sourceNode.id)) {
-      target.push({ nodeId: sourceNode.id, url: mediaUrl })
-    }
-    const referenceLabel = sourceNode.type === 'video'
-      ? '参考视频'
-      : sourceNode.type === 'audio'
-        ? '参考音频'
-        : '参考图片'
-    resolvedContent = resolvedContent.replace(mentionPattern, referenceLabel)
+  const connectedMedia = connectedMediaNodeIds.value
+    .map(nodeId => nodes.value.find(node => node.id === nodeId))
+    .filter(Boolean)
+    .map(node => ({
+      nodeId: node.id,
+      type: node.type,
+      url: node.data?.base64 || node.data?.url || ''
+    }))
+  const result = resolvePromptMediaMentions(content, connectedMedia)
+  if (firstLastFrameMode.value) {
+    result.imageMentions.forEach((mention, promptIndex) => {
+      const connectionIndex = connectedImages.value.findIndex(image => image.nodeId === mention.nodeId)
+      const frameLabel = connectionIndex === 0 ? '首帧' : connectionIndex === 1 ? '尾帧' : ''
+      result.resolvedContent = result.resolvedContent.replaceAll(`参考图${promptIndex + 1}`, frameLabel)
+    })
   }
-
-  return { resolvedContent, imageMentions, videoMentions, audioMentions }
+  return result
 }
 
 // Get images by role | 按角色获取图片
 const imagesByRole = computed(() => {
-  const firstFrame = connectedImages.value.find(img => img.role === 'first_frame_image')
-  const lastFrame = connectedImages.value.find(img => img.role === 'last_frame_image')
-  const referenceImages = connectedImages.value.filter(img => img.role === 'input_reference')
+  const firstFrame = firstLastFrameMode.value ? connectedImages.value[0] : null
+  const lastFrame = firstLastFrameMode.value ? connectedImages.value[1] : null
+  const referenceImages = firstLastFrameMode.value ? [] : connectedImages.value
 
   return {
     firstFrame,
@@ -429,6 +396,7 @@ const imagesByRole = computed(() => {
 // Get current model config | 获取当前模型配置
 const currentModelConfig = computed(() => getModelConfig(localModel.value))
 const allowsMixedReferences = computed(() => localModel.value === 'minimax_h3_2k')
+const usesOrderedImageMentions = computed(() => ['minimax_h3_2k', 'seedance_tc'].includes(localModel.value))
 
 // Model options from Pinia store (filtered by provider) | 从 Pinia store 获取模型选项（根据渠道过滤）
 const modelOptions = computed(() => modelStore.videoModelOptions)
@@ -454,6 +422,14 @@ const durationOptions = computed(() => {
   return getModelDurationOptions(localModel.value)
 })
 
+const resolutionOptions = computed(() => {
+  return getModelResolutionOptions(localModel.value)
+})
+
+const displayResolution = computed(() => {
+  return resolutionOptions.value.find(option => option.key === localResolution.value)?.label || localResolution.value
+})
+
 // Handle model selection | 处理模型选择
 const handleModelSelect = (key) => {
   localModel.value = key
@@ -467,6 +443,10 @@ const handleModelSelect = (key) => {
   if (config?.defaultParams?.duration) {
     localDuration.value = config.defaultParams.duration
     updates.duration = config.defaultParams.duration
+  }
+  if (config?.defaultParams?.resolution) {
+    localResolution.value = config.defaultParams.resolution
+    updates.resolution = config.defaultParams.resolution
   }
   updateNode(props.id, updates)
 }
@@ -494,14 +474,17 @@ const handleDurationSelect = (key) => {
   updateNode(props.id, { duration: key })
 }
 
+const handleResolutionSelect = (key) => {
+  localResolution.value = key
+  updateNode(props.id, { resolution: key })
+}
+
 // Get connected inputs by role | 根据角色获取连接的输入
 const getConnectedInputs = () => {
   const connectedEdges = edges.value.filter(e => e.target === props.id)
 
   let externalPrompt = ''
-  let first_frame_image = ''
-  let last_frame_image = ''
-  const images = [] // input_reference images | 参考图
+  const connectedImageSources = []
 
   for (const edge of connectedEdges) {
     const sourceNode = nodes.value.find(n => n.id === edge.source)
@@ -515,17 +498,14 @@ const getConnectedInputs = () => {
       if (content) externalPrompt = content
     } else if (sourceNode.type === 'image' && sourceNode.data?.url) {
       const imageData = sourceNode.data.base64 || sourceNode.data.url
-      const role = edge.data?.imageRole || 'first_frame_image'
-
-      if (role === 'first_frame_image') {
-        first_frame_image = imageData
-      } else if (role === 'last_frame_image') {
-        last_frame_image = imageData
-      } else if (role === 'input_reference') {
-        images.push(imageData)
-      }
+      connectedImageSources.push(imageData)
     }
   }
+
+  const imageModeInputs = resolveVideoImageModeInputs(connectedImageSources, firstLastFrameMode.value)
+  let first_frame_image = imageModeInputs.firstFrameImage
+  let last_frame_image = imageModeInputs.lastFrameImage
+  const images = [...imageModeInputs.referenceImages]
 
   const mentionResult = resolveConnectedMediaMentions(localPrompt.value)
   const hasImageMentions = mentionResult.imageMentions.length > 0
@@ -534,24 +514,30 @@ const getConnectedInputs = () => {
   const hasConnectedVideo = connectedVideos.value.length > 0
   const hasAudioMentions = mentionResult.audioMentions.length > 0
   const hasConnectedAudio = connectedAudios.value.length > 0
-  const hasFrameImage = Boolean(first_frame_image || last_frame_image)
-  const mediaConflict = allowsMixedReferences.value
-    ? hasFrameImage && (hasImageMentions || hasVideoMentions || hasConnectedVideo || hasAudioMentions || hasConnectedAudio)
-    : (hasImageMentions && hasVideoMentions)
-      || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
+  const mediaConflict = firstLastFrameMode.value
+    ? hasConnectedVideo || hasVideoMentions
+      || (allowsMixedReferences.value && (hasConnectedAudio || hasAudioMentions))
+    : allowsMixedReferences.value
+      ? false
+      : (hasImageMentions && hasVideoMentions)
+        || (!hasImageMentions && !hasVideoMentions && hasConnectedImage && hasConnectedVideo)
 
   let reference_image = hasImageMentions ? mentionResult.imageMentions[0].url : ''
   let reference_video = hasVideoMentions ? mentionResult.videoMentions[0].url : ''
   let reference_audio = hasAudioMentions ? mentionResult.audioMentions[0].url : ''
 
+  if (firstLastFrameMode.value) {
+    reference_image = ''
+  } else if (hasImageMentions && usesOrderedImageMentions.value) {
+    first_frame_image = ''
+    last_frame_image = ''
+    const orderedImages = orderReferenceImagesByMentions(images, mentionResult.imageMentions)
+    images.length = 0
+    images.push(...orderedImages)
+    reference_image = ''
+  }
+
   if (allowsMixedReferences.value) {
-    if (hasImageMentions) {
-      first_frame_image = ''
-      last_frame_image = ''
-      images.length = 0
-      images.push(...mentionResult.imageMentions.map(item => item.url))
-      reference_image = ''
-    }
     if (!reference_video && hasConnectedVideo) {
       reference_video = connectedVideos.value[0].url
     }
@@ -612,7 +598,9 @@ const handleGenerate = async () => {
   } = getConnectedInputs()
 
   if (mediaConflict) {
-    window.$message?.warning('一次视频生成只能引用图片或视频中的一种素材，请在提示词中 @ 指定其中一种')
+    window.$message?.warning(firstLastFrameMode.value
+      ? '首尾帧模式不能同时使用参考视频或参考音频'
+      : '一次视频生成只能引用图片或视频中的一种素材，请在提示词中 @ 指定其中一种')
     isGenerating.value = false
     return
   }
@@ -721,6 +709,10 @@ const handleGenerate = async () => {
       params.duration = localDuration.value
     }
 
+    if (localResolution.value) {
+      params.resolution = localResolution.value
+    }
+
     // 只创建任务，获取 taskId，不在这里轮询
     const { taskId: newTaskId, url } = await createVideoTaskOnly(params)
 
@@ -731,6 +723,7 @@ const handleGenerate = async () => {
         loading: false,
         label: '视频生成',
         model: localModel.value,
+        resolution: localResolution.value,
         inputChanged: false,
         inputHash: params.inputHash,
         updatedAt: Date.now()
@@ -745,6 +738,7 @@ const handleGenerate = async () => {
         loading: true,
         label: '视频生成中...',
         model: localModel.value,
+        resolution: localResolution.value,
         inputChanged: false,
         inputHash: params.inputHash,
         updatedAt: Date.now()
@@ -799,6 +793,10 @@ const handleDelete = () => {
 
 // Initialize on mount | 挂载时初始化
 onMounted(() => {
+  if (firstLastFrameMode.value && !canEnableFirstLastFrameMode(connectedImages.value.length)) {
+    firstLastFrameMode.value = false
+    updateNode(props.id, { firstLastFrameMode: false })
+  }
   // 检查当前模型是否在可用模型列表中
   const availableModels = modelStore.availableVideoModels
   const isModelAvailable = availableModels.some(m => m.key === localModel.value)
@@ -819,6 +817,17 @@ watch(() => props.data?.model, (newModel) => {
 
 watch(() => props.data?.prompt, (newPrompt) => {
   if (String(newPrompt || '') !== localPrompt.value) localPrompt.value = String(newPrompt || '')
+})
+
+watch(() => props.data?.firstLastFrameMode, newValue => {
+  const normalized = Boolean(newValue)
+  if (normalized !== firstLastFrameMode.value) firstLastFrameMode.value = normalized
+})
+
+watch(() => props.data?.resolution, (newResolution) => {
+  if (newResolution && newResolution !== localResolution.value) {
+    localResolution.value = newResolution
+  }
 })
 
 // 修复 Vue Flow visibility: hidden 问题

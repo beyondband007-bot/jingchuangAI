@@ -5,17 +5,51 @@ import {
   normalizeVideoImageInputs,
   validateVideoPayload
 } from "./video.options.js";
+import { getVideoResolutionOption } from "./video.resolutions.js";
 
 const model = {
   supported_ratios: JSON.stringify(["16:9"]),
   supported_durations: JSON.stringify([5])
 };
 
-test("charges MiniMax H3 at its configured 60 points per second", () => {
+test("charges MiniMax H3 at its configured 2K fallback rate", () => {
   assert.equal(calculateVideoPoints({
     price_unit: "per_second",
-    base_points: 60
-  }, 4), 240);
+    base_points: 96
+  }, 4), 384);
+});
+
+test("charges each enabled video model by its selected resolution", () => {
+  assert.equal(calculateVideoPoints({ model_key: "minimax_h3_2k" }, 4, 1, "768P"), 240);
+  assert.equal(calculateVideoPoints({ model_key: "minimax_h3_2k" }, 4, 1, "2K"), 384);
+  assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "480P"), 270);
+  assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "1080P"), 1350);
+  assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_mini" }, 6, 1, "720P"), 738);
+  assert.equal(calculateVideoPoints({ model_key: "kling_3_std" }, 5, 1, "4K"), 2010);
+});
+
+test("keeps MiniMax H3 selling rates at cost times 1.2", () => {
+  for (const resolution of ["768P", "2K"]) {
+    const option = getVideoResolutionOption({ model_key: "minimax_h3_2k" }, resolution);
+    assert.equal(option.pointsPerSecond, option.rmbPerSecond * 1.2 * 100);
+  }
+});
+
+test("rejects an unsupported resolution for a configured video model", () => {
+  assert.throws(
+    () => validateVideoPayload({
+      prompt: "Generate a city shot",
+      model: {
+        ...model,
+        model_key: "seedance_2_0_mini"
+      },
+      ratio: "16:9",
+      duration: 5,
+      count: 1,
+      resolution: "1080P"
+    }),
+    /invalid video resolution/
+  );
 });
 
 test("keeps the unified video rate as a fallback for legacy model rows", () => {

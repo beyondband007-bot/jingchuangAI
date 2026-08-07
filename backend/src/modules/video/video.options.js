@@ -3,6 +3,11 @@ import {
   calculateVideoPoints as calculateUnifiedVideoPoints,
   ceilSeconds
 } from "../../shared/billingRules.js";
+import {
+  getVideoResolutionOption,
+  getVideoResolutionOptions,
+  resolveVideoResolution
+} from "./video.resolutions.js";
 
 export const videoCountOptions = [1];
 
@@ -24,7 +29,14 @@ export function getModelDurations(model) {
   return parseJson(model.supported_durations, []);
 }
 
-export function calculateVideoPoints(model, duration, count = 1) {
+export function calculateVideoPoints(model, duration, count = 1, resolution) {
+  const resolutionOption = getVideoResolutionOption(model, resolution);
+  if (resolutionOption?.pointsPerSecond) {
+    return Math.max(
+      1,
+      Math.ceil(ceilSeconds(duration) * resolutionOption.pointsPerSecond * Number(count))
+    );
+  }
   const pointsPerSecond = Number(model?.base_points);
   if (model?.price_unit === "per_second" && Number.isFinite(pointsPerSecond) && pointsPerSecond > 0) {
     return Math.max(1, Math.ceil(ceilSeconds(duration) * pointsPerSecond * Number(count)));
@@ -76,7 +88,8 @@ export function validateVideoPayload({
   lastFrameImageUrl,
   referenceImageUrls,
   referenceVideoUrl,
-  referenceAudioUrl
+  referenceAudioUrl,
+  resolution
 }) {
   if (!prompt || !prompt.trim()) {
     throw createHttpError("prompt is required", 400);
@@ -86,6 +99,10 @@ export function validateVideoPayload({
   }
   if (!getModelRatios(model).includes(ratio) || !getModelDurations(model).includes(Number(duration))) {
     throw createHttpError("invalid generation options", 400);
+  }
+  const resolutionOptions = getVideoResolutionOptions(model);
+  if (resolutionOptions.length && !resolveVideoResolution(model, resolution)) {
+    throw createHttpError("invalid video resolution", 400);
   }
   if (!videoCountOptions.includes(Number(count))) {
     throw createHttpError("invalid generation count", 400);

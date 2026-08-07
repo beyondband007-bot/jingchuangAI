@@ -10,6 +10,7 @@ export function createJobsInput(
     prompt,
     ratio,
     duration,
+    resolution,
     referenceImageUrl,
     referenceVideoUrl,
     referenceAudioUrl
@@ -37,7 +38,7 @@ export function createJobsInput(
       prompt,
       return_last_frame: false,
       generate_audio: true,
-      resolution: "720p",
+      resolution: String(resolution || "720P").toLowerCase(),
       aspect_ratio: ratio,
       duration: Number(duration),
       web_search: false
@@ -63,7 +64,11 @@ export function createJobsInput(
       sound: true,
       duration: String(duration),
       aspect_ratio: ratio,
-      mode: model.mode || "std",
+      mode: resolution === "4K"
+        ? "4K"
+        : String(resolution || "").toUpperCase() === "1080P"
+          ? "pro"
+          : model.mode || "std",
       multi_shots: false
     };
     if (referenceImageUrl) {
@@ -109,6 +114,7 @@ export async function createKieVideoTask({
   prompt,
   ratio,
   duration,
+  resolution,
   referenceImageUrl,
   referenceVideoUrl,
   referenceAudioUrl
@@ -150,6 +156,7 @@ export async function createKieVideoTask({
         prompt,
         ratio,
         duration,
+        resolution,
         referenceImageUrl,
         referenceVideoUrl,
         referenceAudioUrl

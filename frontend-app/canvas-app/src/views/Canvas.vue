@@ -342,6 +342,7 @@ import { openMyAssets, uploadCanvasMedia } from '../api/facemini'
 import { resumeProjectImageTasks } from '../services/imageTaskRecovery'
 import { resumeProjectVideoTasks } from '../services/videoTaskRecovery'
 import { IMAGE_PROMPT_POLISH_SYSTEM_PROMPT, PROMPT_POLISH_MODEL, VIDEO_PROMPT_POLISH_SYSTEM_PROMPT } from '../config/promptPolish'
+import { canConnectVideoImage } from '../utils/videoImageMode'
 
 // API Settings component | API 设置组件
 import DownloadModal from '../components/DownloadModal.vue'
@@ -761,11 +762,19 @@ const onConnect = (params) => {
   }
   
   if (sourceNode?.type === 'image' && targetNode?.type === 'videoConfig') {
+    const connectedImageCount = edges.value.filter(edge => {
+      if (edge.target !== params.target) return false
+      return nodes.value.find(node => node.id === edge.source)?.type === 'image'
+    }).length
+    if (!canConnectVideoImage(connectedImageCount, Boolean(targetNode.data?.firstLastFrameMode))) {
+      window.$message?.warning('首尾帧模式最多只能连接两张图片')
+      return
+    }
     // Use imageRole edge type | 使用图片角色边类型
     addEdge({
       ...params,
       type: 'imageRole',
-      data: { imageRole: 'first_frame_image' } // Default to first frame | 默认首帧
+      data: { imageRole: 'input_reference' }
     })
   } else if (sourceNode?.type === 'image' && targetNode?.type === 'imageConfig') {
     // Use imageOrder edge type | 使用图片顺序边类型
