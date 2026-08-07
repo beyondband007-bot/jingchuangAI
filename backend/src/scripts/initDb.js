@@ -130,6 +130,20 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS generation_result_reads (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      source_type VARCHAR(40) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+      resource_key VARCHAR(191) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+      read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_generation_result_read (user_id, source_type, resource_key),
+      INDEX idx_generation_result_reads_user_source (user_id, source_type, read_at),
+      CONSTRAINT fk_generation_result_reads_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS credit_accounts (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL UNIQUE,

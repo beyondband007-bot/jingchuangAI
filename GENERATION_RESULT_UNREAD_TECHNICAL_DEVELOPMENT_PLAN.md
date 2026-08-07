@@ -483,6 +483,14 @@ infinite-canvas nav = infinite-canvas-image + infinite-canvas-video
 - 用户 A 不能创建、查询或影响用户 B 的回执。
 - 后端核心测试全部通过。
 
+执行状态（2026-08-07）：`DONE`
+
+- 已完成回执表、按来源配置、静态 Source Registry、批量历史装饰器、单次 `UNION ALL` 汇总、标记已读服务和两条新路由。
+- `GENERATION_UNREAD_SOURCES` 默认空，生产行为保持关闭；阶段 1 没有注册任何业务 Source Adapter。
+- `npm run db:init` 连续执行两次成功，实库表定义与 5.1 节一致；事务内重复写验证只有一行且首次 `read_at` 不变，测试数据已回滚。
+- 后端全量测试 `133/133` 通过；旧 `/running-summary`、新 `/summary` 和游客标记接口完成实际 HTTP 冒烟。
+- 图片、视频、爆款图文等业务 Adapter、历史 mapper 和所有前端能力仍属于后续阶段，本阶段未提前接入。
+
 ### 阶段 2：前端公共能力
 
 目标：完成共享状态、API、数字角标和红点组件，不接业务模块。

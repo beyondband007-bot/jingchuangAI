@@ -1,5 +1,9 @@
-import { sendError } from "../../shared/http.js";
-import { getRunningSummary } from "./generationNotification.service.js";
+import { requireLoggedIn, sendError } from "../../shared/http.js";
+import {
+  getGenerationSummary,
+  getRunningSummary,
+} from "./generationNotification.service.js";
+import { markGenerationResultRead } from "./generationResultRead.service.js";
 
 export async function getGenerationRunningSummary(req, res) {
   try {
@@ -10,5 +14,40 @@ export async function getGenerationRunningSummary(req, res) {
     res.json(await getRunningSummary(req.user.id));
   } catch (error) {
     sendError(res, error);
+  }
+}
+
+export async function getGenerationNotificationSummary(req, res) {
+  try {
+    if (req.user?.isGuest) {
+      res.json({
+        totalRunningCount: 0,
+        totalUnreadCount: 0,
+        unreadAvailable: true,
+        bySource: {},
+        generatedAt: new Date().toISOString(),
+      });
+      return;
+    }
+    res.json(await getGenerationSummary(req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function markGenerationNotificationResultRead(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    await markGenerationResultRead({ userId: req.user.id, input: req.body });
+    res.status(204).end();
+  } catch (error) {
+    if (error?.status === 400 || error?.status === 401) {
+      sendError(res, error);
+      return;
+    }
+    console.error("[generation-unread] mark read unavailable", {
+      error: error?.message || String(error),
+    });
+    res.status(503).json({ error: "Unable to mark generation result as read" });
   }
 }

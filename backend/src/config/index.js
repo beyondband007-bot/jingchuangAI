@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { parseGenerationUnreadConfig } from "./generationUnread.js";
 
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const projectRoot = path.resolve(backendRoot, "..");
@@ -167,5 +168,6 @@ export const config = {
     storageDir: process.env.MEDIA_STORAGE_DIR || "storage",
     publicAssetsDir: process.env.PUBLIC_ASSETS_DIR || "../frontend-app/public",
     publicBaseUrl: publicMediaBaseUrl
-  }
+  },
+  generationUnread: parseGenerationUnreadConfig(process.env)
 };
