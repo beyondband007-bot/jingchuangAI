@@ -77,9 +77,29 @@ function makeDownloadName(prefix = "video-dub", ext = "mp4") {
 
 function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const hasFile = Boolean(fileState?.fileName);
+  const hasPreview = Boolean(previewUrl);
+  const isInteractive = !isUploading;
+
+  useEffect(() => {
+    const file = fileState?.file;
+    if (!file) {
+      setPreviewUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [fileState?.file]);
+
+  function openFilePicker() {
+    if (!isInteractive) return;
+    inputRef.current?.click();
+  }
+
   function pickFile(file) {
-    if (file && !isUploading) onPick(file);
+    if (file && isInteractive) onPick(file);
   }
 
   function clearFile(event) {
@@ -88,11 +108,80 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
     onClear?.();
   }
 
+  const fileInput = (
+    <input
+      ref={inputRef}
+      type="file"
+      accept="video/mp4,video/webm,video/mov,video/avi,video/*"
+      style={{ display: "none" }}
+      disabled={!isInteractive}
+      onChange={(event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        pickFile(file);
+      }}
+    />
+  );
+
+  const clearButton = hasFile && isInteractive ? (
+    <span
+      className="ui-upload-clear-button"
+      role="button"
+      tabIndex={0}
+      aria-label="取消上传"
+      onClick={clearFile}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") clearFile(event);
+      }}
+    >
+      <X size={13} />
+    </span>
+  ) : null;
+
+  if (hasPreview) {
+    return (
+      <div
+        className={`marketing-composer__upload has-file has-preview video-dub-upload-slot ${isUploading ? "is-busy" : ""}`}
+        aria-disabled={!isInteractive}
+        onDragOver={(event) => {
+          if (!isInteractive) return;
+          event.preventDefault();
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          pickFile(event.dataTransfer.files?.[0]);
+        }}
+      >
+        {fileInput}
+        <div
+          className="video-dub-upload-preview"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <video
+            src={previewUrl}
+            controls
+            playsInline
+            preload="metadata"
+            aria-label={fileState?.fileName || "上传视频预览"}
+          />
+        </div>
+        {clearButton}
+        {isUploading ? (
+          <span className="video-dub-upload-busy">
+            <Loader2 size={18} className="is-spinning" />
+            上传中
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <button
-      className={`marketing-composer__upload ${hasFile ? "has-file" : ""}`}
+      className={`marketing-composer__upload video-dub-upload-slot ${hasFile ? "has-file" : ""}`}
       type="button"
-      onClick={() => inputRef.current?.click()}
+      onClick={openFilePicker}
       onDragOver={(event) => {
         event.preventDefault();
       }}
@@ -103,43 +192,16 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
       }}
       disabled={isUploading}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/mp4,video/webm,video/mov,video/avi,video/*"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          event.target.value = "";
-          pickFile(file);
-        }}
-      />
-      {hasFile && !isUploading && (
-        <span
-          className="ui-upload-clear-button"
-          role="button"
-          tabIndex={0}
-          aria-label="取消上传"
-          onClick={clearFile}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") clearFile(event);
-          }}
-        >
-          <X size={13} />
-        </span>
-      )}
+      {fileInput}
       {isUploading ? (
-        <Loader2 size={20} />
+        <Loader2 size={20} className="is-spinning" />
       ) : (
         <span className="marketing-upload-icon" aria-hidden="true">
           <img src="/assets/marketing/upload.svg" alt="" />
         </span>
       )}
-      <strong>{hasFile ? fileState.fileName : "上传视频文件"}</strong>
-      <small>
-        {hasFile
-          ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}`
-          : "支持 mp4 / webm / mov / avi，建议 2GB 以内"}
-      </small>
+      <strong>上传视频文件</strong>
+      <small>支持 mp4 / webm / mov / avi，建议 2GB 以内</small>
     </button>
   );
 }

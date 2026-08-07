@@ -61,6 +61,57 @@
   width: 100%;
 }
 
+.video-dubbing-view-root .video-dub-upload-slot.has-preview {
+  cursor: default;
+  background: #11131a;
+  border-style: solid;
+}
+
+.video-dubbing-view-root .video-dub-upload-slot.has-preview:hover {
+  background: #11131a;
+  border-color: var(--marketing-border-muted, #c9c5d6);
+  box-shadow: none;
+  transform: none;
+}
+
+.video-dubbing-view-root .video-dub-upload-preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #11131a;
+}
+
+.video-dubbing-view-root .video-dub-upload-preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 214px;
+  max-height: 280px;
+  object-fit: contain;
+  background: #11131a;
+}
+
+.video-dubbing-view-root .video-dub-upload-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: #fff;
+  background: rgba(17, 19, 26, 0.72);
+  font-size: 13px;
+}
+
+.video-dubbing-view-root .video-dub-upload-slot .is-spinning,
+.video-dubbing-view-root .video-dub-upload-slot .lucide-loader-2 {
+  animation: video-dub-spin 1s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .video-dubbing-view-root .audio-tool-panel .audio-tool-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
