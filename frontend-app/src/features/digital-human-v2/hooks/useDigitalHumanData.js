@@ -137,7 +137,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     const unsubscribe = digitalHumanApi.subscribe(() => {
       digitalHumanApi.getTasks().then(applyTaskList).catch(() => {});
       digitalHumanApi
-        .getVoices()
+        .getVoices({ force: true })
         .then((value) => {
           if (!mounted) return;
           const nextVoices = value.voices || [];
@@ -146,7 +146,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         })
         .catch(() => {});
       digitalHumanApi
-        .getAvatars()
+        .getAvatars({ force: true })
         .then((value) => {
           if (!mounted) return;
           const resolvedAvatarData = withOfficialAvatarFallback(value);
@@ -169,10 +169,28 @@ export function useDigitalHumanData({ isActive = true } = {}) {
         .catch(() => {});
     });
 
+    const syncAvatarConfigsOnFocus = () => {
+      if (document.visibilityState === "hidden") return;
+      digitalHumanApi
+        .getAvatars({ force: true })
+        .then((value) => {
+          if (!mounted) return;
+          const resolvedAvatarData = withOfficialAvatarFallback(value);
+          updateDataCache({ avatars: resolvedAvatarData });
+          setAvatars(resolvedAvatarData);
+          setSelectedAvatar((current) => resolveAvatarSelection(current, resolvedAvatarData));
+        })
+        .catch(() => {});
+    };
+    window.addEventListener("focus", syncAvatarConfigsOnFocus);
+    document.addEventListener("visibilitychange", syncAvatarConfigsOnFocus);
+
     return () => {
       mounted = false;
       unsubscribe();
       unsubscribePhoto();
+      window.removeEventListener("focus", syncAvatarConfigsOnFocus);
+      document.removeEventListener("visibilitychange", syncAvatarConfigsOnFocus);
     };
   }, [isActive]);
 
@@ -187,7 +205,7 @@ export function useDigitalHumanData({ isActive = true } = {}) {
   }
 
   async function refreshAvatars() {
-    const value = await digitalHumanApi.getAvatars();
+    const value = await digitalHumanApi.getAvatars({ force: true });
     const resolvedAvatarData = withOfficialAvatarFallback(value);
     updateDataCache({ avatars: resolvedAvatarData });
     setAvatars(resolvedAvatarData);
@@ -195,6 +213,14 @@ export function useDigitalHumanData({ isActive = true } = {}) {
       resolveAvatarSelection(current, resolvedAvatarData)
     );
     return resolvedAvatarData;
+  }
+
+  async function refreshVoices() {
+    const value = await digitalHumanApi.getVoices({ force: true });
+    const nextVoices = value.voices || [];
+    updateDataCache({ voices: nextVoices });
+    setVoices(nextVoices);
+    return nextVoices;
   }
 
   return {
@@ -211,5 +237,6 @@ export function useDigitalHumanData({ isActive = true } = {}) {
     setError,
     refreshCredits,
     refreshAvatars,
+    refreshVoices,
   };
 }

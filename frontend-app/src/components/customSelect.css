@@ -16,14 +16,8 @@
   min-height: 40px;
   padding: 0 12px;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at 18% 0%, rgba(141, 99, 255, 0.2), transparent 52%),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.13),
-      rgba(255, 255, 255, 0.07)
-    );
-  border: 1px solid rgba(176, 199, 226, 0.2);
+  background: transparent;
+  border: 1px solid #dedbe8;
   border-radius: var(--radius-lg);
   cursor: pointer;
   font-size: 14px;

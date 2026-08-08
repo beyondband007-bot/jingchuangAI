@@ -29,7 +29,7 @@ export function VoicePickerPanel({
   const [voiceCategory, setVoiceCategory] = useState("all");
   const [isPreviewing, setIsPreviewing] = useState(false);
   const genderFilteredVoices = useMemo(
-    () => filterVoicesByAvatarGender(voices, avatar),
+    () => filterVoicesByAvatarGender(voices, avatar).filter((voice) => voice.source !== "voice-clone"),
     [voices, avatar],
   );
   const filteredVoices = useMemo(

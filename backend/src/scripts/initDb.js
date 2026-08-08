@@ -752,6 +752,41 @@ async function createTables() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS digital_human_avatar_voice_configs (
+      user_id BIGINT UNSIGNED NOT NULL,
+      avatar_id VARCHAR(160) NOT NULL,
+      voice_id VARCHAR(160) NOT NULL,
+      voice_speed DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+      voice_emotion VARCHAR(30) NULL,
+      voice_source VARCHAR(30) NOT NULL DEFAULT 'public',
+      public_voice_id VARCHAR(160) NULL,
+      mine_voice_id VARCHAR(160) NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, avatar_id),
+      CONSTRAINT fk_dh_avatar_voice_config_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  const [avatarVoiceConfigColumns] = await pool.query(
+    `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'digital_human_avatar_voice_configs'`,
+    [config.db.database]
+  );
+  const avatarVoiceConfigColumnNames = new Set(avatarVoiceConfigColumns.map((row) => row.COLUMN_NAME));
+  if (!avatarVoiceConfigColumnNames.has("public_voice_id")) {
+    await pool.query("ALTER TABLE digital_human_avatar_voice_configs ADD COLUMN public_voice_id VARCHAR(160) NULL AFTER voice_source");
+  }
+  if (!avatarVoiceConfigColumnNames.has("mine_voice_id")) {
+    await pool.query("ALTER TABLE digital_human_avatar_voice_configs ADD COLUMN mine_voice_id VARCHAR(160) NULL AFTER public_voice_id");
+  }
+  await pool.query(`
+    UPDATE digital_human_avatar_voice_configs
+    SET public_voice_id = CASE WHEN voice_source = 'public' THEN voice_id ELSE public_voice_id END,
+        mine_voice_id = CASE WHEN voice_source IN ('mine', 'upload') THEN voice_id ELSE mine_voice_id END
+    WHERE public_voice_id IS NULL OR mine_voice_id IS NULL
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS ark_virtual_asset_groups (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,

@@ -80,6 +80,7 @@ export function DigitalHumanWorkspace(props) {
     onCloseLibrary, activeTask, onDeleteTask, onRegenerateTask, onReset,
     onSaveDraft, drafts, onApplyDraft, onDeleteDraft, onOpenAssets,
     aiGeneratingJob, onRetryAiAvatar,
+    onRenameAvatar, onDeleteAvatar, onRenameVoice, onDeleteVoice, onConfirmMineConfig, onPersistMineConfig, onVoiceSaved, onVoiceConfigChange,
   } = props;
 
   return (
@@ -110,6 +111,7 @@ export function DigitalHumanWorkspace(props) {
             onVoiceIdChange={onVoiceIdChange}
             onVoiceSpeedChange={onVoiceSpeedChange}
             onVoiceEmotionChange={onVoiceEmotionChange}
+            onVoiceConfigChange={onVoiceConfigChange}
             previewRequestId={previewRequestId}
             playbackRequestId={playbackRequestId}
             previewPhase={previewPhase}
@@ -157,6 +159,13 @@ export function DigitalHumanWorkspace(props) {
           onSelectMineItem={onSelectMineItem}
           onConfirmAvatar={onConfirmAvatar}
           onCreateAvatar={onCreateAvatar}
+          onRenameAvatar={onRenameAvatar}
+          onDeleteAvatar={onDeleteAvatar}
+          onRenameVoice={onRenameVoice}
+          onDeleteVoice={onDeleteVoice}
+          onConfirmMineConfig={onConfirmMineConfig}
+          onPersistMineConfig={onPersistMineConfig}
+          onVoiceSaved={onVoiceSaved}
           aiGeneratingJob={aiGeneratingJob}
           onRetryAiAvatar={onRetryAiAvatar}
           onClose={selectedAvatar ? onCloseLibrary : null}

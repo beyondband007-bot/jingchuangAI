@@ -34,21 +34,27 @@ import {
 import { imageToImageModelKey } from "../image/image.options.js";
 import * as voiceService from "../voice/voice.service.js";
 import {
+  deleteVoiceCloneAsset,
   findCompletedVoiceCloneAssetByVoiceId,
   markVoiceCloneAssetExpired,
+  renameVoiceCloneAsset,
   touchVoiceCloneAssetLastUsed
 } from "../voice/voice.repository.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
   createVirtualAssetFromLocalFile,
   createVirtualAssetFromRemoteUrl,
+  deleteVirtualAsset,
   isArkOpenApiConfigured,
   listVirtualAssets,
+  renameVirtualAsset,
+  updateVirtualAssetMetadata,
   refreshVirtualAsset,
   waitForVirtualAssetReference
 } from "./arkVirtualAssets.service.js";
 import {
   createDigitalHumanTaskRow,
+  listDigitalHumanAvatarVoiceConfigs,
   deleteDigitalHumanTaskRow,
   findDigitalHumanTaskRow,
   findRefreshableDigitalHumanTasks,
@@ -59,7 +65,8 @@ import {
   setDigitalHumanTaskError,
   setDigitalHumanTaskFailed,
   setDigitalHumanTaskProcessing,
-  setDigitalHumanTaskProviderStarted
+  setDigitalHumanTaskProviderStarted,
+  upsertDigitalHumanAvatarVoiceConfig
 } from "./digitalHuman.repository.js";
 
 const myAvatars = [];
@@ -355,6 +362,7 @@ export function mapVirtualAssetToAvatar(asset) {
     defaultVoiceId: metadata.defaultVoiceId || "",
     defaultVoiceSpeed: normalizeDecimal(metadata.defaultVoiceSpeed, 1),
     defaultVoiceEmotion: metadata.defaultVoiceEmotion || "",
+    defaultVoiceSource: metadata.defaultVoiceSource || "public",
     arkAssetId: asset.id,
     providerAssetId: asset.providerAssetId,
     assetUri: asset.assetUri,
@@ -741,7 +749,25 @@ export function getModels() {
 }
 
 export async function getAvatars(userId) {
-  return { public: publicAvatars, mine: await getMyAvatars(userId) };
+  const configs = await listDigitalHumanAvatarVoiceConfigs(userId);
+  const configByAvatarId = new Map(configs.map((item) => [String(item.avatar_id), item]));
+  const applyConfig = (avatar) => {
+    const voiceConfig = configByAvatarId.get(String(avatar.id));
+    if (!voiceConfig) return avatar;
+    return {
+      ...avatar,
+      defaultVoiceId: voiceConfig.voice_id,
+      defaultVoiceSpeed: normalizeDecimal(voiceConfig.voice_speed, 1),
+      defaultVoiceEmotion: voiceConfig.voice_emotion || "",
+      defaultVoiceSource: voiceConfig.voice_source === "upload" ? "mine" : (voiceConfig.voice_source || "public"),
+      defaultPublicVoiceId: voiceConfig.public_voice_id || (voiceConfig.voice_source === "public" ? voiceConfig.voice_id : ""),
+      defaultMineVoiceId: voiceConfig.mine_voice_id || (voiceConfig.voice_source === "mine" || voiceConfig.voice_source === "upload" ? voiceConfig.voice_id : ""),
+    };
+  };
+  return {
+    public: publicAvatars.map(applyConfig),
+    mine: (await getMyAvatars(userId)).map(applyConfig),
+  };
 }
 
 export async function getVoices(userId) {
@@ -1183,7 +1209,9 @@ export async function createTask(payload, requestUser = null) {
   const voice = driveMode === "audio"
     ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
     : await getVoiceById(voiceId, requestUserId);
-  const taskText = driveMode === "audio" ? audioName || uploadedAudio.originalName || "用户上传音频" : text;
+  // Keep the authored dubbing copy whenever it exists. The uploaded audio name
+  // is transport metadata, not content that should appear in work history.
+  const taskText = String(text || "").trim() || (driveMode === "audio" ? "" : text);
   const billingDuration = driveMode === "audio"
     ? Math.ceil(Number(uploadedAudio?.durationMs || 0) / 1000)
     : estimateSpeechSeconds(text);
@@ -1388,17 +1416,55 @@ export function createAvatar(payload) {
   return avatar;
 }
 
-export function updateAvatar(id, payload) {
-  const avatar = myAvatars.find((item) => item.id === id);
-  if (!avatar) return null;
-  if (payload.name?.trim()) avatar.name = payload.name.trim();
-  return avatar;
+export async function updateAvatar(id, payload, userId) {
+  const match = /^ark-asset-(\d+)$/.exec(String(id || ""));
+  const name = String(payload?.name || "").trim();
+  if (name && match) {
+    return mapVirtualAssetToAvatar(await renameVirtualAsset(match[1], name, userId));
+  }
+  if (name) return null;
+  const hasVoiceConfig = Object.prototype.hasOwnProperty.call(payload || {}, "voiceId")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceSpeed")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceEmotion")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceSource");
+  if (!hasVoiceConfig) throw createHttpError("name or voice configuration is required", 400);
+  const voiceId = String(payload?.voiceId || "").trim();
+  if (!voiceId) throw createHttpError("voiceId is required", 400);
+  const voiceSpeed = Math.min(2, Math.max(0.5, normalizeDecimal(payload?.voiceSpeed, 1)));
+  const voiceEmotion = String(payload?.voiceEmotion || "").trim();
+  const requestedVoiceSource = String(payload?.voiceSource || "public").trim();
+  const voiceSource = requestedVoiceSource === "public" ? "public" : "mine";
+  const publicVoiceId = String(payload?.publicVoiceId || "").trim();
+  const mineVoiceId = String(payload?.mineVoiceId || "").trim();
+  await upsertDigitalHumanAvatarVoiceConfig({ userId, avatarId: id, voiceId, voiceSpeed, voiceEmotion, voiceSource, publicVoiceId, mineVoiceId });
+  if (!match) {
+    const avatar = publicAvatars.find((item) => String(item.id) === String(id));
+    return avatar ? { ...avatar, defaultVoiceId: voiceId, defaultVoiceSpeed: voiceSpeed, defaultVoiceEmotion: voiceEmotion, defaultVoiceSource: voiceSource } : null;
+  }
+  return mapVirtualAssetToAvatar(await updateVirtualAssetMetadata(match[1], {
+    defaultVoiceId: voiceId,
+    defaultVoiceSpeed: voiceSpeed,
+    defaultVoiceEmotion: voiceEmotion,
+    defaultVoiceSource: voiceSource,
+  }, userId));
 }
 
-export function deleteAvatar(id) {
-  const index = myAvatars.findIndex((item) => item.id === id);
-  if (index >= 0) myAvatars.splice(index, 1);
-  return { ok: index >= 0 };
+export async function deleteAvatar(id, userId) {
+  const match = /^ark-asset-(\d+)$/.exec(String(id || ""));
+  if (!match) return { ok: false };
+  return { ok: await deleteVirtualAsset(match[1], userId) };
+}
+
+export async function updateVoice(id, payload, userId) {
+  const name = String(payload?.name || "").trim();
+  if (!name) throw createHttpError("name is required", 400);
+  const updated = await renameVoiceCloneAsset({ userId, voiceId: id, name });
+  if (!updated) return null;
+  return findCompletedVoiceCloneAssetByVoiceId({ userId, voiceId: id });
+}
+
+export async function deleteVoice(id, userId) {
+  return { ok: await deleteVoiceCloneAsset({ userId, voiceId: id }) };
 }
 
 export async function createArkAvatar(payload, file, userId) {

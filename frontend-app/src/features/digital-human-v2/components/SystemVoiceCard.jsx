@@ -19,7 +19,22 @@ export function SystemVoiceCard({
   onVoiceSpeedChange,
   voiceEmotion = "中性",
   onVoiceEmotionChange,
+  onVoiceConfigChange,
 }) {
+  function changeVoice(nextVoiceId) {
+    onVoiceIdChange?.(nextVoiceId);
+    onVoiceConfigChange?.({ voiceId: nextVoiceId, voiceSpeed, voiceEmotion, voiceSource: "public" });
+  }
+
+  function changeSpeed(nextVoiceSpeed) {
+    onVoiceSpeedChange?.(nextVoiceSpeed);
+    onVoiceConfigChange?.({ voiceId, voiceSpeed: nextVoiceSpeed, voiceEmotion, voiceSource: "public" });
+  }
+
+  function changeEmotion(nextVoiceEmotion) {
+    onVoiceEmotionChange?.(nextVoiceEmotion);
+    onVoiceConfigChange?.({ voiceId, voiceSpeed, voiceEmotion: nextVoiceEmotion, voiceSource: "public" });
+  }
   const audioRef = useRef(null);
   const voicePanelRef = useRef(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -124,11 +139,11 @@ export function SystemVoiceCard({
                     voices={voices}
                     avatar={selectedAvatar}
                     voiceId={voiceId}
-                    onVoiceIdChange={onVoiceIdChange}
+                    onVoiceIdChange={changeVoice}
                     voiceSpeed={voiceSpeed}
-                    onVoiceSpeedChange={onVoiceSpeedChange}
+                    onVoiceSpeedChange={changeSpeed}
                     voiceEmotion={voiceEmotion}
-                    onVoiceEmotionChange={onVoiceEmotionChange}
+                    onVoiceEmotionChange={changeEmotion}
                     onClose={closeVoicePicker}
                   />
                 </div>
@@ -182,7 +197,7 @@ export function SystemVoiceCard({
           step="0.1"
           value={voiceSpeed}
           aria-label="语速"
-          onChange={(event) => onVoiceSpeedChange?.(Number(event.target.value))}
+          onChange={(event) => changeSpeed(Number(event.target.value))}
         />
       </div>
 
@@ -204,11 +219,11 @@ export function SystemVoiceCard({
               voices={voices}
               avatar={selectedAvatar}
               voiceId={voiceId}
-              onVoiceIdChange={onVoiceIdChange}
+              onVoiceIdChange={changeVoice}
               voiceSpeed={voiceSpeed}
-              onVoiceSpeedChange={onVoiceSpeedChange}
+              onVoiceSpeedChange={changeSpeed}
               voiceEmotion={voiceEmotion}
-              onVoiceEmotionChange={onVoiceEmotionChange}
+              onVoiceEmotionChange={changeEmotion}
               onClose={closeVoicePicker}
             />
           </div>

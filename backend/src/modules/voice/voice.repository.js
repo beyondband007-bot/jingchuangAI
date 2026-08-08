@@ -85,6 +85,24 @@ export async function findCompletedVoiceCloneAssetByVoiceId({ userId, voiceId })
   return mapVoiceCloneAssetRow(rows[0]);
 }
 
+export async function renameVoiceCloneAsset({ userId, voiceId, name }) {
+  const [result] = await getPool().query(
+    `UPDATE voice_clone_assets
+     SET voice_name = ?
+     WHERE user_id = ? AND voice_id = ? AND status = 'completed'`,
+    [name, userId, voiceId]
+  );
+  return result.affectedRows > 0;
+}
+
+export async function deleteVoiceCloneAsset({ userId, voiceId }) {
+  const [result] = await getPool().query(
+    "DELETE FROM voice_clone_assets WHERE user_id = ? AND voice_id = ? AND status = 'completed'",
+    [userId, voiceId]
+  );
+  return result.affectedRows > 0;
+}
+
 export async function findCompletedVoiceCloneAssetByHash({ userId, audioHash }) {
   if (!audioHash) return null;
   const [rows] = await getPool().query(

@@ -4,6 +4,7 @@ import { recoverStreamingChatMessages } from "./modules/chat/chat.service.js";
 import { recoverProcessingImageTasks } from "./modules/image/image.service.js";
 import { recoverProcessingVideoTasks } from "./modules/video/video.service.js";
 import { recoverInterruptedReplicateTasks } from "./modules/replicate/replicate.service.js";
+import { expireTimedOutTasks as expireTimedOutEnhanceTasks } from "./modules/enhance/enhance.service.js";
 
 const app = createApp();
 
@@ -50,6 +51,25 @@ const initialImageTaskRecovery = setTimeout(runImageTaskRecovery, 1_000);
 initialImageTaskRecovery.unref();
 const imageTaskRecoveryTimer = setInterval(runImageTaskRecovery, 10_000);
 imageTaskRecoveryTimer.unref();
+
+let enhanceTimeoutSweepRunning = false;
+async function runEnhanceTimeoutSweep() {
+  if (enhanceTimeoutSweepRunning) return;
+  enhanceTimeoutSweepRunning = true;
+  try {
+    const expired = await expireTimedOutEnhanceTasks();
+    if (expired > 0) console.log(`Closed ${expired} timed out enhance task(s)`);
+  } catch (error) {
+    console.error("Failed to close timed out enhance tasks", error);
+  } finally {
+    enhanceTimeoutSweepRunning = false;
+  }
+}
+
+const initialEnhanceTimeoutSweep = setTimeout(runEnhanceTimeoutSweep, 2_000);
+initialEnhanceTimeoutSweep.unref();
+const enhanceTimeoutSweepTimer = setInterval(runEnhanceTimeoutSweep, 60_000);
+enhanceTimeoutSweepTimer.unref();
 
 let videoTaskRecoveryRunning = false;
 async function runVideoTaskRecovery() {

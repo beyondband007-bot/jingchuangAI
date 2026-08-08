@@ -112,9 +112,21 @@ export async function findRefreshableEnhanceTasks() {
   return rows;
 }
 
+export async function findTimedOutEnhanceTasks(timeoutMinutes) {
+  const [rows] = await getPool().query(
+    `SELECT id
+     FROM enhance_tasks
+     WHERE status IN ('pending', 'processing')
+       AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+     ORDER BY created_at ASC`,
+    [timeoutMinutes]
+  );
+  return rows;
+}
+
 export async function findEnhanceTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status, media_type FROM enhance_tasks WHERE id = ? LIMIT 1",
+    "SELECT id, provider_task_id, status, media_type, created_at FROM enhance_tasks WHERE id = ? LIMIT 1",
     [id]
   );
   return rows[0] || null;

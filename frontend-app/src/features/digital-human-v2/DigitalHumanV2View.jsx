@@ -13,6 +13,7 @@ import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { DigitalHumanWorkspace } from "./components/DigitalHumanWorkspace";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
+import { RenameAssetDialog } from "./components/RenameAssetDialog";
 import { VideoGenStage } from "../video/VideoGenStage";
 import { useVideoGenStateMachine } from "../video/useVideoGenStateMachine";
 import {
@@ -79,6 +80,7 @@ export function DigitalHumanV2View({
     setError,
     refreshCredits,
     refreshAvatars,
+    refreshVoices,
   } = useDigitalHumanData({ isActive });
 
   const [avatarSource, setAvatarSource] = useState("official");
@@ -98,6 +100,8 @@ export function DigitalHumanV2View({
   const [scriptOptimizeRequest, setScriptOptimizeRequest] = useState(null);
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
   const [cloneAudio, setCloneAudio] = useState(null);
   const [speechDurationMs, setSpeechDurationMs] = useState(0);
@@ -201,11 +205,15 @@ export function DigitalHumanV2View({
   }, [isGenerationStageActive]);
 
   useEffect(() => {
+    if (!selectedAvatar?.id) {
+      if (voiceId) setVoiceId("");
+      return;
+    }
     const nextVoiceId = pickEnabledVoiceId(voices, voiceId);
     if (nextVoiceId && nextVoiceId !== voiceId) {
       setVoiceId(nextVoiceId);
     }
-  }, [voiceId, voices]);
+  }, [selectedAvatar?.id, voiceId, voices]);
 
   useEffect(() => {
     if (!resumeTask?.id || !resumeTask?.resumeToken) return;
@@ -360,6 +368,7 @@ export function DigitalHumanV2View({
     }
     if (isSourceChanged) {
       resetFormConfig({ resetVoice: true });
+      setVoiceId("");
     }
     if (isSourceChanged && selectedAvatar?.id) {
       setSelectedAvatar(null);
@@ -371,6 +380,11 @@ export function DigitalHumanV2View({
     setSelectedAvatar(avatar);
     if (isAvatarChanged) {
       resetFormConfig();
+      const matchedVoice = matchVoiceForAvatar(avatar, voices);
+      const savedVoiceId = pickEnabledVoiceId(voices, avatar?.defaultVoiceId || matchedVoice?.id);
+      if (savedVoiceId) setVoiceId(savedVoiceId);
+      setVoiceSpeed(Number(avatar?.defaultVoiceSpeed) || 1);
+      setVoiceEmotion(avatar?.defaultVoiceEmotion || "中性");
     }
     if (avatarSource !== "mine") {
       setSelectedMineLibraryId(null);
@@ -413,8 +427,9 @@ export function DigitalHumanV2View({
     }
 
     const matchedVoice = matchVoiceForAvatar(item, voices);
-    if (matchedVoice?.id) {
-      setVoiceId(matchedVoice.id);
+    const savedVoiceId = pickEnabledVoiceId(voices, item.defaultVoiceId || matchedVoice?.id);
+    if (savedVoiceId) {
+      setVoiceId(savedVoiceId);
     }
     if (isAvatarChanged) {
       resetFormConfig();
@@ -422,6 +437,51 @@ export function DigitalHumanV2View({
       setVoiceEmotion(item.defaultVoiceEmotion || "中性");
     }
     setSelectedAvatar(item);
+  }
+
+  function handleConfirmMineConfig(item, config) {
+    handleSelectMineItem(item);
+    setVoiceId(pickEnabledVoiceId(voices, config?.voiceId));
+    setVoiceSpeed(Number(config?.voiceSpeed) || 1);
+    setVoiceEmotion(config?.voiceEmotion || "中性");
+    setRightView("preview");
+  }
+
+  async function handlePersistMineConfig(item, config) {
+    if (!item?.id || !config?.voiceId) return;
+    try {
+      const updated = await digitalHumanApi.updateAvatar(item.id, {
+        voiceId: config.voiceId,
+        voiceSpeed: Number(config.voiceSpeed) || 1,
+        voiceEmotion: config.voiceEmotion || "",
+        voiceSource: config.voiceSource || "public",
+        publicVoiceId: config.publicVoiceId || "",
+        mineVoiceId: config.mineVoiceId || "",
+      });
+      if (String(selectedAvatar?.id) === String(item.id)) setSelectedAvatar(updated);
+      await refreshAvatars();
+    } catch (saveError) {
+      showToast(saveError.message || "音色配置保存失败", { type: "error" });
+    }
+  }
+
+  async function handlePersistAvatarVoiceConfig(config) {
+    if (!selectedAvatar?.id || !config?.voiceId) return;
+    try {
+      await digitalHumanApi.updateAvatar(selectedAvatar.id, {
+        voiceId: config.voiceId,
+        voiceSpeed: Number(config.voiceSpeed) || 1,
+        voiceEmotion: config.voiceEmotion || "",
+        voiceSource: config.voiceSource || "public",
+      });
+      await refreshAvatars();
+    } catch (saveError) {
+      showToast(saveError.message || "音色配置保存失败", { type: "error" });
+    }
+  }
+
+  async function handleVoiceSaved() {
+    await refreshVoices();
   }
 
   function handleConfirmAvatar() {
@@ -709,11 +769,92 @@ export function DigitalHumanV2View({
     showToast("已删除生成记录");
   }
 
-  const { requestDelete: deleteTask } = useDeleteConfirmation({
+  const { requestDelete: deleteTask, deleteConfirmDialog: taskDeleteConfirmDialog } = useDeleteConfirmation({
     onConfirm: performDeleteTask,
     title: "删除历史记录？",
     message: "该数字人生成记录会被移除，删除后无法恢复。",
   });
+
+  async function renameAvatar(avatar, onUpdated) {
+    setRenameTarget({ asset: avatar, kind: "形象", onUpdated });
+    return;
+    const name = window.prompt("修改形象名称", avatar?.name || "");
+    if (name === null || !name.trim() || name.trim() === avatar?.name) return;
+    try {
+      await digitalHumanApi.updateAvatar(avatar.id, { name: name.trim() });
+      await refreshAvatars();
+      showToast("形象名称已更新");
+    } catch (renameError) {
+      showToast(renameError.message || "修改形象名称失败");
+    }
+  }
+
+  async function performDeleteAvatar(avatar) {
+    await digitalHumanApi.deleteAvatar(avatar.id);
+    if (String(selectedAvatar?.id) === String(avatar.id)) {
+      setSelectedAvatar(null);
+      setSelectedMineLibraryId(null);
+    }
+    await refreshAvatars();
+    showToast("我的形象已删除");
+  }
+
+  const { requestDelete: requestDeleteAvatar, deleteConfirmDialog: avatarDeleteConfirmDialog } = useDeleteConfirmation({
+    onConfirm: performDeleteAvatar,
+    title: "删除我的形象",
+    message: "删除后将无法恢复，已生成的历史作品不受影响。",
+    confirmText: "确认删除",
+  });
+
+  async function renameVoice(voice) {
+    setRenameTarget({ asset: voice, kind: "音色" });
+    return;
+    const name = window.prompt("修改音色名称", voice?.name || "");
+    if (name === null || !name.trim() || name.trim() === voice?.name) return;
+    try {
+      await digitalHumanApi.updateVoice(voice.id, { name: name.trim() });
+      await refreshVoices();
+      showToast("音色名称已更新");
+    } catch (renameError) {
+      showToast(renameError.message || "修改音色名称失败");
+    }
+  }
+
+  async function performDeleteVoice(voice) {
+    await digitalHumanApi.deleteVoice(voice.id);
+    if (String(voiceId) === String(voice.id)) setVoiceId("");
+    await refreshVoices();
+    showToast("我的音色已删除");
+  }
+
+  const { requestDelete: requestDeleteVoice, deleteConfirmDialog: voiceDeleteConfirmDialog } = useDeleteConfirmation({
+    onConfirm: performDeleteVoice,
+    title: "删除我的音色",
+    message: "删除后将无法恢复，且不能继续用于新的数字人作品。",
+    confirmText: "确认删除",
+  });
+
+  async function submitRename(name) {
+    const target = renameTarget;
+    if (!target?.asset || !name.trim()) return;
+    setIsRenaming(true);
+    try {
+      if (target.kind === "音色") {
+        await digitalHumanApi.updateVoice(target.asset.id, { name: name.trim() });
+        await refreshVoices();
+      } else {
+        const updatedAvatar = await digitalHumanApi.updateAvatar(target.asset.id, { name: name.trim() });
+        await refreshAvatars();
+        target.onUpdated?.({ ...target.asset, ...updatedAvatar, name: name.trim() });
+      }
+      setRenameTarget(null);
+      showToast(`${target.kind}名称已更新`);
+    } catch (renameError) {
+      showToast(renameError.message || `修改${target.kind}名称失败`);
+    } finally {
+      setIsRenaming(false);
+    }
+  }
 
   async function regenerateTask(id) {
     const sourceTask = tasks.find((task) => String(task.id) === String(id));
@@ -773,7 +914,11 @@ export function DigitalHumanV2View({
 
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
-      Message.info("开发中");
+      // Historical works reuse their already-saved avatar. Opening the same
+      // library avoids the previous placeholder Message call and lets users
+      // choose an existing personal avatar immediately.
+      setAvatarSource("mine");
+      setRightView("library");
       return;
     }
     if (mode === "ai" && aiGeneratingJob) {
@@ -879,6 +1024,7 @@ export function DigitalHumanV2View({
         onVoiceSpeedChange={setVoiceSpeed}
         voiceEmotion={voiceEmotion}
         onVoiceEmotionChange={setVoiceEmotion}
+        onVoiceConfigChange={handlePersistAvatarVoiceConfig}
         voiceMode={voiceMode}
         onVoiceModeChange={setVoiceMode}
         isMineAvatar={isMineAvatar}
@@ -930,6 +1076,24 @@ export function DigitalHumanV2View({
         onOpenAssets={onOpenAssets}
         aiGeneratingJob={aiGeneratingJob}
         onRetryAiAvatar={handleRegenerateAiAvatar}
+        onConfirmMineConfig={handleConfirmMineConfig}
+        onPersistMineConfig={handlePersistMineConfig}
+        onVoiceSaved={handleVoiceSaved}
+        onRenameAvatar={renameAvatar}
+        onDeleteAvatar={(avatar) => requestDeleteAvatar(avatar, { targetName: avatar?.name || "我的形象" })}
+        onRenameVoice={renameVoice}
+        onDeleteVoice={(voice) => requestDeleteVoice(voice, { targetName: voice?.name || "我的音色" })}
+      />
+
+      {taskDeleteConfirmDialog}
+      {avatarDeleteConfirmDialog}
+      {voiceDeleteConfirmDialog}
+      <RenameAssetDialog
+        asset={renameTarget?.asset}
+        kind={renameTarget?.kind || "形象"}
+        isSubmitting={isRenaming}
+        onClose={() => !isRenaming && setRenameTarget(null)}
+        onConfirm={submitRename}
       />
 
       {isCreateOpen ? (

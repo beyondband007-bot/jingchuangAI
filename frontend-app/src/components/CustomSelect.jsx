@@ -77,7 +77,8 @@ export function CustomSelect({
   ariaLabel,
   placeholder = "请选择",
   disabled = false,
-  showRatioIcon = false
+  showRatioIcon = false,
+  menuZIndex
 }) {
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -121,7 +122,7 @@ export function CustomSelect({
       top: `${top}px`,
       left: `${left}px`,
       width: `${width}px`,
-      zIndex: "var(--z-dropdown)"
+      zIndex: menuZIndex || "var(--z-dropdown)"
     });
   }
 
@@ -163,7 +164,7 @@ export function CustomSelect({
       window.removeEventListener("resize", closeOnPageInteraction);
       window.removeEventListener("scroll", closeOnPageInteraction, true);
     };
-  }, [open, normalizedOptions.length, showRatioIcon]);
+  }, [open, normalizedOptions.length, showRatioIcon, menuZIndex]);
 
   function pickOption(option) {
     if (disabled) return;

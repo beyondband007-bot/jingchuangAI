@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { Message } from "@arco-design/web-react";
-import { Check, Loader2, Mic2, Play, Upload, X } from "lucide-react";
+import { Check, Loader2, Mic2, Pencil, Play, Trash2, Upload, X } from "lucide-react";
 import { digitalHumanApi } from "../../../api/digitalHumanApi";
 import { formatSpeechDurationFromMs } from "../utils";
 
@@ -35,6 +35,8 @@ export function VoiceAudioLibraryPanel({
   onVoiceIdChange,
   onVoiceSaved,
   refreshCredits,
+  onRenameVoice,
+  onDeleteVoice,
 }) {
   const inputRef = useRef(null);
   const audioRef = useRef(null);
@@ -303,6 +305,14 @@ export function VoiceAudioLibraryPanel({
               >
                 {previewingId === voice.id ? <Loader2 size={14} className="dhv2-spinner" /> : <Play size={14} />}
               </button>
+              <div className="dhv2-audio-asset-card__actions">
+                <button type="button" aria-label={`修改${voice.name || "我的音色"}名称`} onClick={() => onRenameVoice?.(voice)}>
+                  <Pencil size={14} />
+                </button>
+                <button type="button" aria-label={`删除${voice.name || "我的音色"}`} onClick={() => onDeleteVoice?.(voice)}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </article>
           );
         })}

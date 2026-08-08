@@ -67,6 +67,26 @@
   font-size: 14px;
 }
 
+.dhv2-avatar-card__actions {
+  display: none;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dhv2-avatar-card__actions button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--dhv2-text-muted);
+  background: #fff;
+  border: 1px solid var(--dhv2-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dhv2-avatar-card__actions button:last-child:hover { color: #d84141; border-color: #f0b5b5; }
+
 .dhv2-create-card {
   display: grid;
   place-items: center;

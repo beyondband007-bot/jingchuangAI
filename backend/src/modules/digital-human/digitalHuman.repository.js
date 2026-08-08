@@ -1,6 +1,28 @@
 import { getPool } from "../../db/pool.js";
 import { getCurrentExternalId } from "../../shared/userService.js";
 
+export async function listDigitalHumanAvatarVoiceConfigs(userId) {
+  const [rows] = await getPool().query(
+    `SELECT avatar_id, voice_id, voice_speed, voice_emotion, voice_source, public_voice_id, mine_voice_id
+     FROM digital_human_avatar_voice_configs WHERE user_id = ?`,
+    [userId],
+  );
+  return rows;
+}
+
+export async function upsertDigitalHumanAvatarVoiceConfig({ userId, avatarId, voiceId, voiceSpeed, voiceEmotion, voiceSource, publicVoiceId, mineVoiceId }) {
+  await getPool().query(
+    `INSERT INTO digital_human_avatar_voice_configs
+      (user_id, avatar_id, voice_id, voice_speed, voice_emotion, voice_source, public_voice_id, mine_voice_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE voice_id = VALUES(voice_id), voice_speed = VALUES(voice_speed),
+       voice_emotion = VALUES(voice_emotion), voice_source = VALUES(voice_source),
+       public_voice_id = COALESCE(VALUES(public_voice_id), public_voice_id),
+       mine_voice_id = COALESCE(VALUES(mine_voice_id), mine_voice_id)`,
+    [userId, avatarId, voiceId, voiceSpeed, voiceEmotion || null, voiceSource || "public", publicVoiceId || null, mineVoiceId || null],
+  );
+}
+
 export async function createDigitalHumanTaskRow(
   connection,
   { userId, avatarId, avatarName, modelKey, providerModel, driveMode, text, voiceId, voiceName, speed, volume, pitch, emotion, costPoints }

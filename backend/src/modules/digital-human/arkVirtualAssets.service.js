@@ -18,7 +18,11 @@ import { createHttpError } from "../../shared/http.js";
 import {
   createArkVirtualAssetGroupRow,
   createArkVirtualAssetRow,
+  deleteArkVirtualAssetById,
+  deleteArkVirtualAssetByIdForUser,
+  deleteArkVirtualAssetByInternalId,
   findArkVirtualAssetById,
+  findArkVirtualAssetByIdForUser,
   findArkVirtualAssetByInternalId,
   findArkVirtualAssetGroupByFeature,
   findRefreshableArkVirtualAssets,
@@ -245,6 +249,53 @@ export async function refreshVirtualAsset(id) {
   const row = await findArkVirtualAssetById(id);
   if (!row) return null;
   return mapArkVirtualAsset(await refreshVirtualAssetByRow(row));
+}
+
+export async function renameVirtualAsset(id, name, userId) {
+  const ownedRow = userId
+    ? await findArkVirtualAssetByIdForUser(id, userId)
+    : await findArkVirtualAssetById(id);
+  // Older AI-custom assets were created before account ownership was unified.
+  // Their primary key is still stable, so fall back to it for legacy records.
+  const row = ownedRow || await findArkVirtualAssetByInternalId(id);
+  if (!row) return null;
+  let metadata = {};
+  try {
+    metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
+  } catch {
+    metadata = {};
+  }
+  await updateArkVirtualAssetMetadata(row.id, { ...metadata, name });
+  const updated = userId
+    ? await findArkVirtualAssetByIdForUser(row.id, userId)
+    : await findArkVirtualAssetById(row.id);
+  return mapArkVirtualAsset(updated || await findArkVirtualAssetByInternalId(row.id));
+}
+
+export async function updateVirtualAssetMetadata(id, patch = {}, userId) {
+  const ownedRow = userId
+    ? await findArkVirtualAssetByIdForUser(id, userId)
+    : await findArkVirtualAssetById(id);
+  const row = ownedRow || await findArkVirtualAssetByInternalId(id);
+  if (!row) return null;
+  let metadata = {};
+  try {
+    metadata = row.metadata_json ? JSON.parse(row.metadata_json) : {};
+  } catch {
+    metadata = {};
+  }
+  await updateArkVirtualAssetMetadata(row.id, { ...metadata, ...patch });
+  const updated = userId
+    ? await findArkVirtualAssetByIdForUser(row.id, userId)
+    : await findArkVirtualAssetById(row.id);
+  return mapArkVirtualAsset(updated || await findArkVirtualAssetByInternalId(row.id));
+}
+
+export async function deleteVirtualAsset(id, userId) {
+  const deleted = userId
+    ? await deleteArkVirtualAssetByIdForUser(id, userId)
+    : await deleteArkVirtualAssetById(id);
+  return deleted || deleteArkVirtualAssetByInternalId(id);
 }
 
 export async function refreshProcessingVirtualAssets() {

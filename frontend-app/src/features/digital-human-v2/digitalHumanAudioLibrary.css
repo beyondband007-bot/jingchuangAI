@@ -244,6 +244,29 @@
   cursor: wait;
 }
 
+.dhv2-audio-asset-card__actions {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.dhv2-audio-asset-card__actions button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: #7a718d;
+  background: #fff;
+  border: 1px solid #e4deef;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.dhv2-audio-asset-card__actions button:last-child:hover { color: #d84141; border-color: #f0b5b5; }
+
 .dhv2-audio-library__empty {
   flex: 1 1 260px;
 }

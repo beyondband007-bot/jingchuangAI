@@ -36,6 +36,7 @@ export function ScriptCard({
   onVoiceIdChange,
   onVoiceSpeedChange,
   onVoiceEmotionChange,
+  onVoiceConfigChange,
   previewRequestId = 0,
   playbackRequestId = 0,
   previewPhase = "draft",
@@ -338,6 +339,7 @@ export function ScriptCard({
             onVoiceSpeedChange={onVoiceSpeedChange}
             voiceEmotion={voiceEmotion}
             onVoiceEmotionChange={onVoiceEmotionChange}
+            onVoiceConfigChange={onVoiceConfigChange}
           />
         ) : null}
         {isCloneMode ? (

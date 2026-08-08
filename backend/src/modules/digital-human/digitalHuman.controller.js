@@ -159,12 +159,46 @@ export async function saveDigitalHumanAiAvatar(req, res) {
   }
 }
 
-export function updateDigitalHumanAvatar(req, res) {
-  const avatar = service.updateAvatar(req.params.id, req.body || {});
-  if (!avatar) return res.status(404).json({ error: "avatar not found" });
-  return res.json(avatar);
+export async function updateDigitalHumanAvatar(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    const avatar = await service.updateAvatar(req.params.id, req.body || {}, req.user.id);
+    if (!avatar) return res.status(404).json({ error: "avatar not found" });
+    return res.json(avatar);
+  } catch (error) {
+    return sendError(res, error);
+  }
 }
 
-export function deleteDigitalHumanAvatar(req, res) {
-  res.json(service.deleteAvatar(req.params.id));
+export async function deleteDigitalHumanAvatar(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    const result = await service.deleteAvatar(req.params.id, req.user.id);
+    if (!result.ok) return res.status(404).json({ error: "avatar not found" });
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function updateDigitalHumanVoice(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    const voice = await service.updateVoice(req.params.id, req.body || {}, req.user.id);
+    if (!voice) return res.status(404).json({ error: "voice not found" });
+    return res.json(voice);
+  } catch (error) {
+    return sendError(res, error);
+  }
+}
+
+export async function deleteDigitalHumanVoice(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    const result = await service.deleteVoice(req.params.id, req.user.id);
+    if (!result.ok) return res.status(404).json({ error: "voice not found" });
+    return res.json(result);
+  } catch (error) {
+    return sendError(res, error);
+  }
 }

@@ -130,6 +130,10 @@
   font-size: 13px;
 }
 
+.dhv2-upload-editor__select {
+  width: 100%;
+}
+
 .dhv2-upload-editor__form textarea {
   min-height: 88px;
   padding: 10px 12px;
