@@ -339,6 +339,7 @@
 .marketing-composer__footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: var(--space-2);
   align-items: center;
   width: 100%;
   min-height: 60px;
@@ -397,11 +398,16 @@
   cursor: default;
 }
 
+/* The media preview already conveys the selected material; avoid covering it
+   with a duplicated filename and size strip. */
+.marketing-tool-upload > small {
+  display: none;
+}
+
 .marketing-tool-upload__empty {
   display: grid;
   width: 100%;
   height: 100%;
-  min-height: inherit;
   place-items: center;
   gap: var(--space-1);
   padding: 0;
@@ -425,6 +431,20 @@
   background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(2px);
   font-size: 13px;
+}
+
+/* Keep the local preview visible while the file is being persisted. */
+.marketing-tool-upload.has-preview .marketing-tool-upload__busy,
+.marketing-tool-upload.has-preview .watermark-uploading {
+  inset: auto 12px 12px auto;
+  z-index: 5;
+  min-height: 32px;
+  padding: 0 12px;
+  color: #4b2ac8;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(111, 70, 255, 0.18);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6px 16px rgba(68, 46, 140, 0.14);
 }
 
 .marketing-tool-composer__secondary-action {
@@ -453,6 +473,13 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.marketing-preview-lightbox { position: fixed; inset: 0; z-index: var(--z-modal, 1000); display: grid; place-items: center; padding: 24px; }
+.marketing-preview-lightbox__backdrop { position: absolute; inset: 0; border: 0; background: var(--overlay-backdrop); backdrop-filter: blur(10px); cursor: zoom-out; }
+.marketing-preview-lightbox__panel { position: relative; z-index: 1; display: grid; place-items: center; width: min(960px, calc(100vw - 48px)); height: min(800px, calc(100vw - 48px)); margin: 0; padding: 12px; overflow: hidden; background: #f5f3fb; border: 1px solid #e1ddec; border-radius: 16px; box-shadow: 0 30px 90px rgba(33, 25, 64, .28); }
+.marketing-preview-lightbox__panel img, .marketing-preview-lightbox__panel video { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100vh - 120px); object-fit: contain; background: #f5f3fb; border-radius: 8px; }
+.marketing-preview-lightbox__panel video { background: #24212e; }
+.marketing-preview-lightbox__close { position: absolute; top: 12px; right: 12px; z-index: 2; display: inline-flex; width: 36px; height: 36px; align-items: center; justify-content: center; color: #665f79; background: rgba(255,255,255,.88); border: 1px solid #e1ddec; border-radius: 999px; cursor: pointer; }
 
 .marketing-tool-upload__preview-trigger {
   position: absolute;

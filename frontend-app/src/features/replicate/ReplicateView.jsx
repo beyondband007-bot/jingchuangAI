@@ -13,14 +13,13 @@ import {
   Loader2,
   Sparkles,
   Upload,
-  X,
 } from "lucide-react";
 import { replicateApi } from "./replicateApi";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
-import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
+import { MarketingPreviewLightbox, MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
 import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 import { formatBeijingDateTime } from "../../utils/time";
 import { resolveMediaUrl } from "../../api/mediaUrl.js";
@@ -130,39 +129,7 @@ async function waitForReplicateTask(taskId, {
 }
 
 function ReplicateMediaLightbox({ url, title, kind = "image", onClose }) {
-  useEffect(() => {
-    function handleKeyDown(event) {
-      if (event.key === "Escape") onClose();
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose]);
-
-  if (!url) return null;
-
-  return createPortal(
-    <div className="replicate-media-lightbox" role="dialog" aria-modal="true" aria-label={`预览${title}`}>
-      <button type="button" className="replicate-media-lightbox__backdrop" aria-label="关闭预览" onClick={onClose} />
-      <figure className="replicate-media-lightbox__panel" onClick={(event) => event.stopPropagation()}>
-        <button type="button" className="replicate-media-lightbox__close" onClick={onClose} aria-label="关闭">
-          <X size={18} />
-        </button>
-        {kind === "video" ? (
-          <video src={url} controls autoPlay playsInline preload="metadata" />
-        ) : (
-          <img src={url} alt={title} />
-        )}
-      </figure>
-    </div>,
-    document.body,
-  );
+  return <MarketingPreviewLightbox url={url} title={title} video={kind === "video"} onClose={onClose} />;
 }
 
 const ReplicateUpload = forwardRef(function ReplicateUpload(
@@ -634,6 +601,13 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   function handleFile(file) {
     setNotice("");
     setAnalysisStageLabel("");
+    if (!file) return;
+    const expectedType = mode === "image" ? "image/" : "video/";
+    if (!String(file.type || "").startsWith(expectedType)) {
+      setSelectedFile(null);
+      setCurrentResult(null);
+      return;
+    }
     const maxBytes = mode === "image" ? maxImageBytes : maxVideoBytes;
     if (file.size > maxBytes) {
       setSelectedFile(null);
