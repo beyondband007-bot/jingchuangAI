@@ -27,6 +27,7 @@ import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { watermarkApi } from "../../api/watermarkApi";
 import { formatBeijingDateTime } from "../../utils/time";
 import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
+import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
@@ -198,18 +199,18 @@ function WatermarkCenterState({
   );
 }
 
-function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
   const isVideo = task.mediaType === "video";
 
   return (
-    <article className={`watermark-task-card status-${task.status}`}>
+    <article className={`watermark-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
             <video
-              src={task.resultUrl}
+              src={task.thumbnailUrl || task.resultUrl}
               controls
               playsInline
               preload="metadata"
@@ -217,7 +218,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
             />
           ) : (
             <img
-              src={task.resultUrl}
+              src={task.thumbnailUrl || task.resultUrl}
               alt={task.sourceFileName || "去水印结果"}
             />
           )
@@ -558,6 +559,7 @@ export function WatermarkRemovalView({
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [, setCredits] = useState(null);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -787,12 +789,14 @@ export function WatermarkRemovalView({
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="去水印" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

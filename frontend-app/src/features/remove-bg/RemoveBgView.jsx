@@ -18,6 +18,7 @@ import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { PageTitle } from "../../components/PageTitle";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
+import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
 
@@ -113,15 +114,15 @@ function RemoveBgCenterState({
   );
 }
 
-function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
 
   return (
-    <article className={`watermark-task-card remove-bg-task-card status-${task.status}`}>
+    <article className={`watermark-task-card remove-bg-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className="watermark-task-preview remove-bg-task-preview">
         {task.resultUrl && !isFailed ? (
-          <img src={task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
+          <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
             {isProcessing ? <Loader2 size={26} /> : <Image size={26} />}
@@ -306,6 +307,7 @@ export function RemoveBgView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -501,12 +503,14 @@ export function RemoveBgView({ onOpenFeature }) {
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="remove-bg" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

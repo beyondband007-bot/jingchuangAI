@@ -27,6 +27,7 @@ import BillingPoints from "../../components/BillingPoints.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
+import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -132,19 +133,19 @@ function EnhanceCenterState({
   );
 }
 
-function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
   const isVideo = task.mediaType === "video";
 
   return (
-    <article className={`watermark-task-card enhance-task-card status-${task.status}`}>
+    <article className={`watermark-task-card enhance-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className={`watermark-task-preview enhance-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
             <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
           ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
+            <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
@@ -307,6 +308,7 @@ export function EnhanceView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -497,12 +499,14 @@ export function EnhanceView({ onOpenFeature }) {
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="enhance" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

@@ -12,6 +12,8 @@
     "db:check": "node src/scripts/checkDb.js",
     "smoke:image-models": "node src/scripts/smokeTestImageModels.js",
     "media:backfill-images": "node src/scripts/backfillGeneratedImages.js",
+    "media:backfill-marketing-images": "node src/scripts/backfillMarketingToolImages.js",
+    "media:backfill-replicate-thumbnails": "node src/scripts/backfillReplicateThumbnails.js",
     "media:backfill-videos": "node src/scripts/backfillGeneratedVideos.js"
   },
   "dependencies": {

@@ -16,6 +16,7 @@ import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
+import { persistGeneratedImages, removeStoredGeneratedImages } from "../../shared/generatedImageStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapWatermarkAsset, mapWatermarkTask } from "./watermark.mapper.js";
 import {
@@ -261,7 +262,8 @@ async function refreshTask(id) {
           });
           await setWatermarkTaskCompleted(id, { ...result, resultUrl: localUrl });
         } else {
-          await setWatermarkTaskCompleted(id, result);
+          const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "watermark-images", urls: [result.resultUrl] });
+          await setWatermarkTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });
         }
       }
     } else if (mapped === "failed") {
@@ -316,6 +318,7 @@ export async function deleteTask(id) {
     }).catch((error) => {
       console.warn(`delete local watermark video for task ${id} failed:`, error.message);
     });
+    await removeStoredGeneratedImages({ taskId: id, feature: "watermark-images" });
   }
   return result;
 }

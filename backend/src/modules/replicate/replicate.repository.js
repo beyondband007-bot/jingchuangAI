@@ -6,20 +6,22 @@ export async function createReplicateTaskRow({
   source,
   fileName,
   sourceUrl,
+  sourceThumbnailUrl,
   stage = "queued",
   inputDurationSeconds,
   inputSizeBytes
 }) {
   await getPool().query(
     `INSERT INTO replicate_tasks
-     (id, user_id, source, file_name, source_url, status, stage, input_duration_seconds, input_size_bytes)
-     VALUES (?, ?, ?, ?, ?, 'processing', ?, ?, ?)`,
+     (id, user_id, source, file_name, source_url, source_thumbnail_url, status, stage, input_duration_seconds, input_size_bytes)
+     VALUES (?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)`,
     [
       id,
       userId,
       source,
       fileName,
       sourceUrl || null,
+      sourceThumbnailUrl || null,
       stage,
       inputDurationSeconds || null,
       inputSizeBytes || null

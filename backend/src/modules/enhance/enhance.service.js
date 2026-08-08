@@ -19,6 +19,7 @@ import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
+import { persistGeneratedImages, removeStoredGeneratedImages } from "../../shared/generatedImageStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapEnhanceAsset, mapEnhanceTask } from "./enhance.mapper.js";
 import {
@@ -364,7 +365,8 @@ async function refreshTask(id) {
           });
           await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl });
         } else {
-          await setEnhanceTaskCompleted(id, result);
+          const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "enhance-images", urls: [result.resultUrl] });
+          await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });
         }
       }
     } else if (mapped === "failed") {
@@ -419,6 +421,7 @@ export async function deleteTask(id) {
     }).catch((error) => {
       console.warn(`delete local enhanced video for task ${id} failed:`, error.message);
     });
+    await removeStoredGeneratedImages({ taskId: id, feature: "enhance-images" });
   }
   return result;
 }

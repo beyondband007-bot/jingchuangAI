@@ -21,6 +21,7 @@ import { FeatureViewTabs } from "../../components/FeatureViewTabs";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
+import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 import { formatBeijingDateTime } from "../../utils/time";
 import { resolveMediaUrl } from "../../api/mediaUrl.js";
 import {
@@ -88,6 +89,7 @@ function buildHistoryTaskFromApi(task, fallback = {}) {
     tags: task.tags || [],
     source: task.source || fallback.source || "image",
     sourceUrl: task.sourceUrl || fallback.sourceUrl || "",
+    sourceThumbnailUrl: task.sourceThumbnailUrl || fallback.sourceThumbnailUrl || "",
     localPreviewUrl: fallback.localPreviewUrl || "",
     fileName: task.fileName || fallback.fileName || "",
     createdAt: task.createdAt || fallback.createdAt || formatBeijingDateTime(),
@@ -300,7 +302,7 @@ function ReplicatePromptTooltip({ text, open, anchorRef, tooltipRef }) {
   );
 }
 
-function ReplicateRecentCard({ item, onCopy, onDownload }) {
+function ReplicateRecentCard({ item, onCopy, onDownload, onOpen }) {
   const promptText = buildPromptText(item);
   const isProcessing = isReplicateProcessing(item);
   const isFailed = isReplicateFailed(item);
@@ -315,11 +317,12 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
         : item.createdAt
   }`;
   const isVideo = item.source === "video";
-  const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceUrl);
+  const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceThumbnailUrl || item.sourceUrl);
   const videoRef = useRef(null);
   const titleRef = useRef(null);
   const tooltipRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const canTogglePrompt = Boolean(promptText) && !isProcessing;
 
@@ -358,9 +361,9 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
   }
 
   return (
-    <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""} ${isProcessing ? "is-processing" : ""} ${isFailed ? "is-failed" : ""}`}>
+    <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""} ${isProcessing ? "is-processing" : ""} ${isFailed ? "is-failed" : ""}`} role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(item); } }}>
       <div className={`replicate-card-media ${isVideo ? "is-video" : "is-image"}`}>
-        {mediaUrl ? (
+        {mediaUrl && !mediaFailed ? (
           isVideo ? (
             <div className="replicate-card-video">
               <video
@@ -370,6 +373,7 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
                 playsInline
                 preload="metadata"
                 onLoadedMetadata={ensureVideoPosterFrame}
+                onError={() => setMediaFailed(true)}
                 aria-label={item.fileName || "上传视频预览"}
               />
             </div>
@@ -377,11 +381,11 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
             <button
               type="button"
               className="replicate-card-image-trigger"
-              onClick={() => !isProcessing && setLightboxOpen(true)}
+              onClick={(event) => { event.stopPropagation(); onOpen(item); }}
               aria-label="放大预览图片"
               disabled={isProcessing}
             >
-              <img src={mediaUrl} alt={item.fileName || "上传图片预览"} />
+              <img src={mediaUrl} alt={item.fileName || "上传图片预览"} onError={() => setMediaFailed(true)} />
             </button>
           )
         ) : (
@@ -419,12 +423,12 @@ function ReplicateRecentCard({ item, onCopy, onDownload }) {
           <span className="replicate-card-meta">{metaLabel}</span>
           {!isProcessing && !isFailed ? (
             <div className="replicate-card-actions">
-              <button type="button" onClick={() => onCopy(item)} title="复制" aria-label="复制">
+              <button type="button" onClick={(event) => { event.stopPropagation(); onCopy(item); }} title="复制" aria-label="复制">
                 <Copy size={14} />
               </button>
               <button
                 type="button"
-                onClick={() => onDownload(item)}
+                onClick={(event) => { event.stopPropagation(); onDownload(item); }}
                 title="下载"
                 aria-label="下载"
               >
@@ -458,6 +462,7 @@ function ReplicateResult({
   onCopy,
   onReset,
   onOpenGeneration,
+  copied,
 }) {
   const [previewUrl, setPreviewUrl] = useState("");
 
@@ -510,7 +515,7 @@ function ReplicateResult({
               重新生成
             </button>
             <button type="button" onClick={onCopy}>
-              复制提示词
+              {copied ? "已复制" : "复制提示词"}
             </button>
             <button
               type="button"
@@ -537,7 +542,9 @@ export function ReplicateView({ authUser, onOpenFeature }) {
   const [notice, setNotice] = useState("");
   const [analysisStageLabel, setAnalysisStageLabel] = useState("");
   const [currentResult, setCurrentResult] = useState(null);
+  const [copied, setCopied] = useState(false);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [recentResults, setRecentResults] = useState(loadRecentResults);
   const isGuest = Boolean(authUser?.isGuest);
   const processingTaskIds = recentResults
@@ -783,11 +790,18 @@ export function ReplicateView({ authUser, onOpenFeature }) {
     const text = buildPromptText(result);
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
       setNotice("提示词已复制");
     }).catch(() => {
       setNotice("复制失败");
     });
   }
+
+  useEffect(() => {
+    if (!copied) return undefined;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
 
   function resetForNewMaterial() {
     setCurrentResult(null);
@@ -840,6 +854,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                 onCopy={() => copyPrompt()}
                 onReset={resetForNewMaterial}
                 onOpenGeneration={openGeneration}
+                copied={copied}
               />
             )}
 
@@ -921,6 +936,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
                   key={item.id}
                   item={item}
                   onCopy={copyPrompt}
+                  onOpen={setDetailTask}
                   onDownload={(entry) =>
                     downloadText(
                       `replicate-${entry.id || Date.now()}.txt`,
@@ -933,6 +949,7 @@ export function ReplicateView({ authUser, onOpenFeature }) {
           </div>
         )}
       </div>
+      <MarketingHistoryDetailModal task={detailTask} tool="replicate" onClose={() => setDetailTask(null)} />
     </section>
   );
 }

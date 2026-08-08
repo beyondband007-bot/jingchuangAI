@@ -9,14 +9,14 @@ export function MarketingTaskCardActions({ task, onDelete, onFavorite, onRepeat 
       <button
         className={`icon-circle ${task.favorite ? "is-favorite" : ""}`}
         type="button"
-        onClick={() => onFavorite(task.id)}
+        onClick={(event) => { event.stopPropagation(); onFavorite(task.id); }}
         disabled={!isCompleted}
         aria-label="收藏"
       >
         <Star size={17} fill={task.favorite ? "#f8d545" : "none"} />
       </button>
       {isCompleted ? (
-        <a className="card-action-link" href={task.resultUrl} download>
+        <a className="card-action-link" href={task.resultUrl} download onClick={(event) => event.stopPropagation()}>
           <Download size={15} />
           下载
         </a>
@@ -26,11 +26,11 @@ export function MarketingTaskCardActions({ task, onDelete, onFavorite, onRepeat 
           下载
         </button>
       )}
-      <button type="button" onClick={() => onRepeat(task)} disabled={!canRetryOrDelete}>
+      <button type="button" onClick={(event) => { event.stopPropagation(); onRepeat(task); }} disabled={!canRetryOrDelete}>
         <RefreshCcw size={15} />
         再次生成
       </button>
-      <button type="button" onClick={() => onDelete(task.id)} disabled={!canRetryOrDelete}>
+      <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(task.id); }} disabled={!canRetryOrDelete}>
         <Trash2 size={15} />
         删除
       </button>
