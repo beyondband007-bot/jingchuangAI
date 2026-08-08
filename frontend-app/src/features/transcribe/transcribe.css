@@ -61,6 +61,45 @@
   width: 100%;
 }
 
+.transcribe-view-root .transcribe-upload-slot.has-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  padding: 14px;
+  cursor: default;
+}
+
+.transcribe-view-root .transcribe-upload-preview {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.transcribe-view-root .transcribe-upload-preview audio,
+.transcribe-view-root .transcribe-upload-preview video {
+  display: block;
+  width: 100%;
+  max-height: 190px;
+  background: #f3f0fb;
+  border: 1px solid #e1dcef;
+  border-radius: var(--radius-control);
+}
+
+.transcribe-view-root .transcribe-upload-preview audio {
+  height: 42px;
+}
+
+.transcribe-view-root .transcribe-upload-slot.has-preview small {
+  justify-self: start;
+  margin: 0;
+}
+
+.transcribe-view-root .transcribe-upload-slot.has-preview .ui-upload-clear-button {
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+}
+
 .transcribe-view-root .audio-tool-panel .audio-tool-footer {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

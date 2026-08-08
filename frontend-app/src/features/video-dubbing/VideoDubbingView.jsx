@@ -25,6 +25,7 @@ import {
 import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { useToast } from "../../components/ToastProvider";
+import { pauseOtherMedia } from "../../utils/exclusiveMediaPlayback";
 
 const FAVORITES_KEY = "jingchuang.video-dub.favorites";
 const videoDubRunningStatuses = new Set(["pending", "processing"]);
@@ -164,6 +165,7 @@ function VideoUploadSlot({ fileState, isUploading, onPick, onClear }) {
             playsInline
             preload="metadata"
             aria-label={fileState?.fileName || "上传视频预览"}
+            onPlay={(event) => pauseOtherMedia(event.currentTarget)}
           />
         </div>
         {clearButton}
@@ -394,14 +396,20 @@ export function VideoDubbingView({ authUser, onOpenFeature, resetSignal = 0 }) {
   async function pickVideoFile(file) {
     setNotice("");
     try {
+      if (!file.type.startsWith("video/") && !/\.(mp4|webm|mov|avi)$/i.test(file.name)) {
+        throw new Error("请上传 mp4、webm、mov 或 avi 视频文件。");
+      }
       if (file.size > 2 * 1024 * 1024 * 1024) {
         throw new Error("视频文件需小于 2GB");
       }
       const durationMs = await readVideoDuration(file);
+      if (!durationMs) throw new Error("无法读取视频时长，请检查文件是否完整或更换视频格式。");
       setVideoFile({ file, fileName: file.name, size: file.size, durationMs });
       setNotice("视频已选择，可以开始配音");
     } catch (error) {
-      setNotice(error.message || "视频选择失败");
+      const message = error.message || "视频选择失败";
+      setNotice(message);
+      showToast("error", message);
     }
   }
 

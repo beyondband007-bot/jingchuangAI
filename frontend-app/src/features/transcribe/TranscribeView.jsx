@@ -17,6 +17,7 @@ import { useDeleteConfirmation } from "../../components/DeleteConfirmDialog";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { useToast } from "../../components/ToastProvider";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import { pauseOtherMedia } from "../../utils/exclusiveMediaPlayback";
 
 const transcribeRecentStorageKey = "jingchuang.transcribe.recentResults";
 
@@ -81,6 +82,18 @@ function downloadBlob({ content, fileName, type }) {
 function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
   const inputRef = useRef(null);
   const hasFile = Boolean(fileState?.fileName);
+  const [previewUrl, setPreviewUrl] = useState("");
+
+  useEffect(() => {
+    if (!fileState?.file) {
+      setPreviewUrl("");
+      return undefined;
+    }
+    const url = URL.createObjectURL(fileState.file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [fileState?.file]);
+
   function pickFile(file) {
     if (file && !isUploading) onPick(file);
   }
@@ -92,10 +105,20 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
   }
 
   return (
-    <button
-      className={`marketing-composer__upload ${hasFile ? "has-file" : ""}`}
-      type="button"
-      onClick={() => inputRef.current?.click()}
+    <div
+      className={`marketing-composer__upload transcribe-upload-slot ${hasFile ? "has-file has-preview" : ""}`}
+      role="button"
+      tabIndex={isUploading ? -1 : 0}
+      onClick={(event) => {
+        if (event.target.closest(".transcribe-upload-preview, .ui-upload-clear-button")) return;
+        inputRef.current?.click();
+      }}
+      onKeyDown={(event) => {
+        if ((event.key === "Enter" || event.key === " ") && !isUploading) {
+          event.preventDefault();
+          inputRef.current?.click();
+        }
+      }}
       onDragOver={(event) => {
         event.preventDefault();
       }}
@@ -104,12 +127,12 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
         event.stopPropagation();
         pickFile(event.dataTransfer.files?.[0]);
       }}
-      disabled={isUploading}
+      aria-disabled={isUploading}
     >
       <input
         ref={inputRef}
         type="file"
-        accept=".mp3,.m4a,.wav,.flac,.webm,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/webm,video/webm"
+        accept=".mp3,.m4a,.wav,.flac,.webm,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/webm"
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
@@ -130,16 +153,20 @@ function TranscribeUploadSlot({ fileState, isUploading, onPick, onClear }) {
           <X size={13} />
         </span>
       )}
-      {isUploading ? (
+      {hasFile && !isUploading && previewUrl ? (
+        <div className="transcribe-upload-preview" onClick={(event) => event.stopPropagation()}>
+          <audio src={previewUrl} controls preload="metadata" onPlay={(event) => pauseOtherMedia(event.currentTarget)} />
+        </div>
+      ) : isUploading ? (
         <Loader2 size={20} />
       ) : (
         <span className="marketing-upload-icon" aria-hidden="true">
           <img src="/assets/marketing/upload.svg" alt="" />
         </span>
       )}
-      <strong>{hasFile ? fileState.fileName : "上传音频文件"}</strong>
+      {!hasFile || isUploading ? <strong>{hasFile ? fileState.fileName : "上传音频文件"}</strong> : null}
       <small>{hasFile ? `${formatDuration(fileState.durationMs) || "已选择"} · ${formatBytes(fileState.size)}` : "支持 mp3 / wav / flac / m4a / webm，6 秒到 6 分钟"}</small>
-    </button>
+    </div>
   );
 }
 
@@ -221,8 +248,12 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
     setNotice("");
     setResult(null);
     try {
+      if (!file.type.startsWith("audio/") && !/\.(mp3|m4a|wav|flac|webm)$/i.test(file.name)) {
+        throw new Error("请上传音频文件，视频文件请使用视频配音功能。");
+      }
       if (file.size > 50 * 1024 * 1024) throw new Error("音频文件需小于 50MB");
       const durationMs = await readAudioDuration(file);
+      if (!durationMs) throw new Error("无法读取音频时长，请检查文件是否完整。");
       if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
         throw new Error("音频时长需在 6 秒到 6 分钟之间");
       }
@@ -234,7 +265,9 @@ export function TranscribeView({ authUser, onOpenFeature, resetSignal = 0 }) {
       });
       setNotice("音频已选择，可以开始转录");
     } catch (error) {
-      setNotice(error.message || "音频选择失败");
+      const message = error.message || "音频选择失败";
+      setNotice(message);
+      showToast("error", message);
     }
   }
 

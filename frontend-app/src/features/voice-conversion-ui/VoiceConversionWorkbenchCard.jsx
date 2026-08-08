@@ -4,6 +4,7 @@ import { CustomSelect } from "../../components/CustomSelect";
 import BillingPoints from "../../components/BillingPoints.jsx";
 import "./voiceConversionWorkbenchCard.css";
 import "../audio-ui/audioWorkbenchShared.css";
+import { pauseOtherMedia } from "../../utils/exclusiveMediaPlayback";
 
 const voiceConversionModelOptions = [
   { value: "voice-clone-pro", label: "Voice Clone Pro" },
@@ -101,6 +102,7 @@ function UploadBox({
               controls
               preload="metadata"
               controlsList="nodownload noplaybackrate"
+              onPlay={(event) => pauseOtherMedia(event.currentTarget)}
             />
           </div>
         ) : null}

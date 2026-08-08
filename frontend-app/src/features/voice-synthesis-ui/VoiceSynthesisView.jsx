@@ -222,10 +222,16 @@ export function VoiceSynthesisView({
     setNotice("");
     setUploading("clone");
     try {
+      if (!file.type.startsWith("audio/") && !/\.(mp3|m4a|wav)$/i.test(file.name)) {
+        throw new Error("目标音色仅支持 mp3、m4a 或 wav 音频文件。");
+      }
       if (file.size > maxCloneAudioBytes) {
         throw new Error("音频文件需小于 20MB");
       }
       const durationMs = await readAudioDuration(file);
+      if (!durationMs) {
+        throw new Error("无法读取音频时长，请检查文件是否完整或更换音频格式。");
+      }
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
         throw new Error("目标音色音频需在 10 秒到 5 分钟之间，支持 mp3、m4a、wav。");
       }
@@ -254,7 +260,9 @@ export function VoiceSynthesisView({
       setNotice("目标音色上传完成。");
     } catch (error) {
       if (uploadVersion !== uploadVersionRef.current) return;
-      setNotice(error.message || "上传音色失败");
+      const message = error.message || "上传音色失败";
+      setNotice(message);
+      showToast("error", message);
     } finally {
       if (uploadVersion === uploadVersionRef.current) setUploading("");
     }
