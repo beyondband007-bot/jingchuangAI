@@ -29,7 +29,7 @@ function SceneUploadCard({ scene, isUploading = false, onPickScene, onClearScene
       <div className="dhv2-scene-card__head">
         <div>
           <strong>场景背景</strong>
-          <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
+          <span>{scene ? scene.originalName || scene.name : "可选，不上传则沿用当前数字人参考图背景"}</span>
         </div>
       </div>
       <div

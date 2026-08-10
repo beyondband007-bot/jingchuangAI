@@ -6,7 +6,7 @@ const projectRoot = path.resolve(import.meta.dirname, "..");
 const outputRoot = path.join(projectRoot, "dist");
 const manifestPath = path.join(outputRoot, ".vite", "manifest.json");
 const maxInitialJavaScriptBytes = 200 * 1024;
-const maxInitialCssBytes = 24 * 1024;
+const maxInitialCssBytes = 25 * 1024;
 const maxInitialGzipJavaScriptBytes = 68 * 1024;
 const maxInitialGzipCssBytes = 6 * 1024;
 

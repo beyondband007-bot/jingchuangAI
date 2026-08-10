@@ -113,18 +113,10 @@ export function buildSeedanceDigitalHumanPrompt({
   const emotionRule = normalizePromptText(emotion, 30) || "自然";
   const speedRule = Number.isFinite(Number(speed)) ? Number(speed).toFixed(1) : "1.0";
   const normalizedSceneReferenceType =
-    sceneReferenceType === "uploaded" || sceneReferenceType === "default"
-      ? sceneReferenceType
-      : hasSceneReference
-        ? "uploaded"
-        : "none";
-  const sceneReferenceLabel =
-    normalizedSceneReferenceType === "uploaded"
-      ? "用户上传的最终场景参考图"
-      : "所选数字人自带的默认场景图";
-  const sceneRule = normalizedSceneReferenceType !== "none"
+    hasSceneReference && sceneReferenceType === "uploaded" ? "uploaded" : "none";
+  const sceneRule = normalizedSceneReferenceType === "uploaded"
     ? [
-        `图片2是${sceneReferenceLabel}。必须把图片1中的数字人自然放入图片2的场景中，并完整保留场景的空间关系、主体环境和整体氛围。`,
+        "图片2是用户上传的最终场景参考图。必须把图片1中的数字人自然放入图片2的场景中，并完整保留场景的空间关系、主体环境和整体氛围。",
         "根据场景自动适配人物站位、半身构图、画面留白、透视比例、景深、色温、主光方向和阴影，让人物像真实处于该场景，而不是贴图或悬浮。",
         "场景图仅控制背景与环境，不得复制场景图中的其他人物、文字、Logo、商品或水印；人物身份和服装始终以图片1为准。"
       ].join("\n")
@@ -526,10 +518,8 @@ async function getAvatarIdentityImageFile(avatar) {
   return resolveImageAssetFile(assetPath, "avatar");
 }
 
-async function getAvatarSceneImageFile(avatar, uploadedScene) {
-  if (uploadedScene?.filePath) return uploadedScene.filePath;
-  const assetPath = avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover || avatar.threeView || avatar.imagePath;
-  return resolveImageAssetFile(assetPath, "scene");
+export function getUploadedSceneAssetPath(uploadedScene) {
+  return String(uploadedScene?.filePath || "").trim();
 }
 
 async function getAvatarImageProviderUrl(avatar) {
@@ -634,7 +624,7 @@ async function createProviderTask(taskId, payload) {
 
   const generationSpec = parseDigitalHumanVideoSpec(videoSpec);
   const avatarImagePath = await getAvatarIdentityImageFile(avatar);
-  const sceneImagePath = await getAvatarSceneImageFile(avatar, uploadedScene);
+  const sceneImagePath = getUploadedSceneAssetPath(uploadedScene);
 
   console.log(`[digital-human] task ${taskId}: preparing public provider assets with identity reference ${path.basename(avatarImagePath)}`);
   const [kieAudioUpload, kieAvatarImageProviderUrl, kieSceneImageProviderUrl] = await Promise.all([
@@ -645,7 +635,9 @@ async function createProviderTask(taskId, payload) {
       uploadPath: "digital-human/audio"
     }),
     uploadImageToKieReference(avatarImagePath, "digital-human/avatar-image"),
-    uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
+    sceneImagePath
+      ? uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
+      : Promise.resolve("")
   ]);
 
   if (model.provider !== "ark") {
@@ -693,7 +685,7 @@ async function createProviderTask(taskId, payload) {
           resolution: generationSpec.resolution,
           fps: generationSpec.fps,
           hasSceneReference: Boolean(sceneReference),
-          sceneReferenceType: uploadedScene ? "uploaded" : "default"
+          sceneReferenceType: uploadedScene ? "uploaded" : "none"
         })
       },
       buildReferenceImage(avatarReference),

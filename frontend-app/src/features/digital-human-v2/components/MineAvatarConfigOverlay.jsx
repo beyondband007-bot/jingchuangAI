@@ -143,7 +143,7 @@ export function MineAvatarConfigOverlay({
               </span>
             </header>
             <div className="dhv2-mine-config__media">
-              {isVideoCover(avatar.cover) ? <video src={avatar.cover} controls playsInline /> : <img src={avatar.cover} alt={avatar.name || "我的形象"} />}
+              {isVideoCover(avatar.cover) ? <video src={avatar.cover} controls playsInline preload="metadata" /> : <img src={avatar.cover} alt={avatar.name || "我的形象"} />}
             </div>
           </div>
 
