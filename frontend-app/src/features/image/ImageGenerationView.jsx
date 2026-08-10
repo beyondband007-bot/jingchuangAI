@@ -988,8 +988,28 @@ export function ImageGenerationView({
     setFilter("recent");
   }
 
-  function referenceTask(task) {
+  async function referenceTask(task) {
     if (!task?.image) return;
+    let referenceImageUrl = task.imageUrl || task.image;
+    const isLocalGeneratedImage = /^\/media\/generated\/images\//.test(referenceImageUrl);
+    if (isLocalGeneratedImage) {
+      try {
+        showImagePageToast("正在准备原图作为参考图…");
+        const response = await fetch(referenceImageUrl, { credentials: "include" });
+        if (!response.ok) throw new Error("无法读取原图");
+        const blob = await response.blob();
+        const extension = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : "jpg";
+        const uploaded = await imageApi.uploadReference(
+          new File([blob], `generated-reference-${task.id}.${extension}`, {
+            type: blob.type || "image/jpeg",
+          }),
+        );
+        referenceImageUrl = uploaded.referenceImageUrl || uploaded.url;
+      } catch (error) {
+        showImagePageToast(error.message || "参考图准备失败，请重试");
+        return;
+      }
+    }
     const isPersistedTask = cards.some((card) => card.id === task.id);
     setPreviewTask(null);
     if (!isPersistedTask) {
@@ -1018,7 +1038,7 @@ export function ImageGenerationView({
       id: `reference-${task.id}-${Date.now()}`,
       prompt: "",
       referenceImage: {
-        url: task.imageUrl || task.image,
+        url: referenceImageUrl,
         originalName: "引用结果图",
         size: 0,
         mimeType: "image/png",
