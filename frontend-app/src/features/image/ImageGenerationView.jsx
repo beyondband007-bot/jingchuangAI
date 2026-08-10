@@ -793,11 +793,32 @@ export function ImageGenerationView({
     }
   }
 
+  async function performDeleteThread(thread) {
+    const deletedIds = Array.isArray(thread?.ids) ? thread.ids : [];
+    await imageApi.deleteTasks(deletedIds);
+    if (deletedIds.includes(selectedTaskId)) setSelectedTaskId(null);
+    if (deletedIds.includes(submittedTaskId)) {
+      setSubmittedTaskId(null);
+      setActivePrompt("");
+      clearImageGenerationSession();
+    }
+    if (contextTaskIds.some((id) => deletedIds.includes(id))) setActiveThreadId(null);
+    setContextTaskIds((ids) => ids.filter((id) => !deletedIds.includes(id)));
+  }
+
   const { requestDelete: deleteTask, deleteConfirmDialog } =
     useDeleteConfirmation({
       onConfirm: performDeleteTask,
       title: "删除历史记录？",
       message: "该生成记录会被移除，删除后无法恢复。",
+    });
+
+  const { requestDelete: deleteThread, deleteConfirmDialog: deleteThreadConfirmDialog } =
+    useDeleteConfirmation({
+      onConfirm: performDeleteThread,
+      title: "确认删除对话？",
+      message: "该对话中的全部上下文、生成结果都会被删除，且无法恢复。",
+      confirmText: "删除对话",
     });
 
   async function toggleFavorite(id) {
@@ -1047,6 +1068,9 @@ export function ImageGenerationView({
           onPreview={setPreviewTask}
           onReference={referenceTask}
           onRegenerate={requestRegenerate}
+          onDeleteThread={(thread) => deleteThread(thread, {
+            targetName: thread.count > 1 ? `该对话包含 ${thread.count} 条上下文` : "该对话包含 1 条上下文",
+          })}
         />
       ) : (
         <ImageGalleryContent
@@ -1088,6 +1112,7 @@ export function ImageGenerationView({
         onFavorite={togglePreviewFavorite}
       />
       {deleteConfirmDialog}
+      {deleteThreadConfirmDialog}
       {regenerateConfirmDialog}
     </section>
   );

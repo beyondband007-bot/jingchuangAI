@@ -138,6 +138,15 @@ export const imageApi = {
     return result;
   },
 
+  async deleteTasks(taskIds) {
+    const result = await request("/api/image/tasks", {
+      method: "DELETE",
+      body: JSON.stringify({ taskIds }),
+    });
+    taskPolling.notifyNow();
+    return result;
+  },
+
   async toggleFavorite(id) {
     const task = await request(`/api/image/tasks/${id}/favorite`, { method: "POST" });
     taskPolling.notifyNow();
