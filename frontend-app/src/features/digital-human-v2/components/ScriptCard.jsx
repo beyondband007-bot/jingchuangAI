@@ -355,29 +355,6 @@ export function ScriptCard({
         ) : null}
       </header>
 
-      {showCloneUpload ? (
-        <div className="dhv2-segmented-tabs dhv2-voice-mode-tabs" role="tablist" aria-label="配音方式">
-          <button
-            type="button"
-            role="tab"
-            className={!isCloneMode ? "is-active" : ""}
-            aria-selected={!isCloneMode}
-            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.system)}
-          >
-            系统音色
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={isCloneMode ? "is-active" : ""}
-            aria-selected={isCloneMode}
-            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.clone)}
-          >
-            声音克隆
-          </button>
-        </div>
-      ) : null}
-
       <input
         ref={cloneInputRef}
         type="file"
