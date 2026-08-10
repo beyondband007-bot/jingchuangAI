@@ -124,7 +124,13 @@ function ImageFeaturePageContent({
     "video-voice": 0,
   });
   const [imageLaunchSeed, setImageLaunchSeed] = useState(null);
-  const { summary: notificationSummary } = useGenerationNotifications(authUser);
+  const {
+    summary: notificationSummary,
+    center: notificationCenter,
+    refreshCenter: refreshNotificationCenter,
+    markCenterRead: markNotificationCenterRead,
+    markAllCenterRead: markAllNotificationCenterRead,
+  } = useGenerationNotifications(authUser);
 
   useEffect(() => {
     if (showInvite) return;
@@ -429,6 +435,10 @@ function ImageFeaturePageContent({
               digitalHumanMode={digitalHumanMode}
               onDigitalHumanModeChange={setDigitalHumanMode}
               notificationSummary={notificationSummary}
+              notificationCenter={notificationCenter}
+              onRefreshNotificationCenter={refreshNotificationCenter}
+              onReadNotificationCenter={markNotificationCenterRead}
+              onReadAllNotificationCenter={markAllNotificationCenterRead}
             />
           </AppHeader>
         )}

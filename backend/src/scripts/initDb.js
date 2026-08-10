@@ -767,6 +767,47 @@ async function createTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
 
+  // Notification content and read receipts are deliberately stored in MySQL so
+  // they follow the account across browsers and devices.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      user_id BIGINT UNSIGNED NULL,
+      category ENUM('system','task') NOT NULL,
+      event_key VARCHAR(191) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+      title VARCHAR(160) NOT NULL,
+      content TEXT NOT NULL,
+      result_status ENUM('info','success','failed') NOT NULL DEFAULT 'info',
+      target_type VARCHAR(40) NULL,
+      target_id VARCHAR(80) NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_notifications_event (event_key),
+      INDEX idx_notifications_user_category_created (user_id, category, created_at),
+      INDEX idx_notifications_category_created (category, created_at),
+      CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notification_reads (
+      user_id BIGINT UNSIGNED NOT NULL,
+      notification_id BIGINT UNSIGNED NOT NULL,
+      read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, notification_id),
+      INDEX idx_notification_reads_user_read (user_id, read_at),
+      CONSTRAINT fk_notification_reads_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_notification_reads_notification FOREIGN KEY (notification_id) REFERENCES notifications(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    INSERT IGNORE INTO notifications
+      (user_id, category, event_key, title, content, result_status)
+    VALUES
+      (NULL, 'system', 'system:welcome:v1', '欢迎使用 Facemini', '系统通知、订单及任务结果会在这里保存，已读状态会同步到您的账户。', 'info')
+  `);
+
   const [avatarVoiceConfigColumns] = await pool.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'digital_human_avatar_voice_configs'`,
