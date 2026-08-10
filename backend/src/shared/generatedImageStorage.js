@@ -1,10 +1,8 @@
-import { execFile } from "child_process";
 import { randomUUID } from "crypto";
 import { mkdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
-import { promisify } from "util";
+import sharp from "sharp";
 import { config } from "../config/index.js";
-import { ffmpegPath } from "./ffmpegPath.js";
 import { createHttpError } from "./http.js";
 import { parseProxyTargetUrl } from "./mediaProxy.js";
 
@@ -14,8 +12,10 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 // refresh. Keep each refresh bounded instead of blocking history APIs with
 // several long download attempts in one request.
 const DEFAULT_ATTEMPTS = 1;
-const THUMBNAIL_WIDTH = 420;
-const execFileAsync = promisify(execFile);
+export const GENERATED_IMAGE_THUMBNAIL = Object.freeze({
+  width: 420,
+  jpegQuality: 90
+});
 
 const imageExtensions = new Map([
   ["image/jpeg", ".jpg"],
@@ -151,18 +151,10 @@ async function createThumbnail({ outputDir, publicDir, originalUrl, index }) {
   const originalPath = path.join(outputDir, originalName);
   const tempPath = path.join(outputDir, `.${thumbnailName}.${randomUUID()}.jpg`);
   try {
-    await execFileAsync(ffmpegPath, [
-      "-y",
-      "-i",
-      originalPath,
-      "-frames:v",
-      "1",
-      "-vf",
-      `scale='min(${THUMBNAIL_WIDTH},iw)':-2`,
-      "-q:v",
-      "2",
-      tempPath
-    ]);
+    await sharp(originalPath)
+      .resize({ width: GENERATED_IMAGE_THUMBNAIL.width, withoutEnlargement: true })
+      .jpeg({ quality: GENERATED_IMAGE_THUMBNAIL.jpegQuality })
+      .toFile(tempPath);
     await rename(tempPath, thumbnailPath);
     return `${publicDir}/${thumbnailName}`;
   } catch (error) {

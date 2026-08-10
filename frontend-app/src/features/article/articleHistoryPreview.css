@@ -280,18 +280,10 @@
   padding: 0 13px;
   border: 1px solid #dde0ff;
   border-radius: var(--radius-pill);
-  color: #6b7cff;
+  color: #7254ff;
   background: #fafaff;
   font-size: 12px;
   cursor: pointer;
-}
-
-.article-history-full-copy-head button:hover,
-.article-history-full-copy-head button:focus-visible,
-.article-history-full-copy-btn:hover,
-.article-history-full-copy-btn:focus-visible {
-  border-color: #a8afff;
-  background: #f2f3ff;
 }
 
 .article-history-full-copy h2 {
@@ -357,7 +349,7 @@
   padding: 0 16px;
   border: 1px solid #dde0ff;
   border-radius: var(--radius-pill);
-  color: #6b7cff;
+  color: #7254ff;
   background: #fafaff;
   font-size: 13px;
   cursor: pointer;
@@ -371,7 +363,7 @@
   padding: 0 16px;
   border-radius: var(--radius-pill);
   color: #fff;
-  background: linear-gradient(135deg, #9aa6ff, #6b7cff);
+  background: linear-gradient(135deg, #6d3cff, #7254ff);
   font-size: 13px;
   text-decoration: none;
 }
@@ -385,7 +377,7 @@
   border: 0;
   border-radius: var(--radius-pill);
   color: #fff;
-  background: linear-gradient(135deg, #9aa6ff, #6b7cff);
+  background: linear-gradient(135deg, #6d3cff, #7254ff);
   font-size: 13px;
   cursor: pointer;
 }
