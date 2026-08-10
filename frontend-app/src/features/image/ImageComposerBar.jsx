@@ -27,6 +27,10 @@ export function ComposerBar({
   const referenceInputRef = useRef(null);
   const previousResetSignalRef = useRef(resetSignal);
   const appliedSeedIdRef = useRef(null);
+  const selectedModel = options.models.find((item) => item.value === model);
+  const ratioOptions = Array.isArray(selectedModel?.supportedRatios)
+    ? options.ratios.filter((item) => selectedModel.supportedRatios.includes(item))
+    : options.ratios;
 
   useEffect(() => {
     if (!seed) return;
@@ -41,7 +45,11 @@ export function ComposerBar({
     ) {
       setModel(seed.model);
     }
-    if (seed.ratio && options.ratios.includes(seed.ratio)) {
+    const seededModel = options.models.find((item) => item.value === (seed.model || model));
+    const seededRatioOptions = Array.isArray(seededModel?.supportedRatios)
+      ? options.ratios.filter((item) => seededModel.supportedRatios.includes(item))
+      : options.ratios;
+    if (seed.ratio && seededRatioOptions.includes(seed.ratio)) {
       setRatio(seed.ratio);
     }
     if (
@@ -67,10 +75,10 @@ export function ComposerBar({
 
   useEffect(() => {
     if (!model && options.models[0]) setModel(options.models[0].value);
-    if (!ratio && options.ratios[0]) setRatio(options.ratios[0]);
+    if (!ratioOptions.includes(ratio) && ratioOptions[0]) setRatio(ratioOptions[0]);
     if (!quality && options.qualities[0])
       setQuality(options.qualities[0].value);
-  }, [model, options, quality, ratio]);
+  }, [model, options, quality, ratio, ratioOptions]);
 
   const count = 1;
   const price = imageApi.calculatePrice({
@@ -138,7 +146,6 @@ export function ComposerBar({
       return;
     }
 
-    const selectedModel = options.models.find((item) => item.value === model);
     if (referenceImage && selectedModel?.supportsReferenceImage === false) {
       showToast("当前模型不支持参考图");
       return;
@@ -191,7 +198,7 @@ export function ComposerBar({
         modelOptions={options.models}
         ratio={ratio}
         onRatioChange={setRatio}
-        ratioOptions={options.ratios}
+        ratioOptions={ratioOptions}
         quality={quality}
         onQualityChange={setQuality}
         qualityOptions={options.qualities}

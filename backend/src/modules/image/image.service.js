@@ -46,6 +46,7 @@ import {
   imageCountOptions,
   imageQualityOptions,
   imageRatioOptions,
+  getSupportedImageRatios,
   qualityMultiplier,
   supportsImageReference,
   validateImagePayload,
@@ -106,6 +107,7 @@ export async function getModels() {
       .map((model) => ({
         ...model,
         supportsReferenceImage: supportsImageReference(model.value),
+        supportedRatios: getSupportedImageRatios(model.value),
       })),
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
