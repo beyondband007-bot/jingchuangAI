@@ -47,6 +47,7 @@ export function mapImageTask(row) {
     prompt: row.prompt,
     referenceImageUrl: row.reference_image_url || null,
     image: thumbnailUrl || urls[0] || null,
+    thumbnailUrl: thumbnailUrl || null,
     imageUrl: urls[urls.length - 1] || urls[0] || null,
     grid: row.image_count > 1,
     status: row.status,

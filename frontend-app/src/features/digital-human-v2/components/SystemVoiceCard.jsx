@@ -21,19 +21,30 @@ export function SystemVoiceCard({
   onVoiceEmotionChange,
   onVoiceConfigChange,
 }) {
+  function getVoiceSource(targetVoiceId = voiceId) {
+    return voices.find((voice) => voice.id === targetVoiceId)?.source === "voice-clone"
+      ? "mine"
+      : "public";
+  }
+
   function changeVoice(nextVoiceId) {
     onVoiceIdChange?.(nextVoiceId);
-    onVoiceConfigChange?.({ voiceId: nextVoiceId, voiceSpeed, voiceEmotion, voiceSource: "public" });
+    onVoiceConfigChange?.({
+      voiceId: nextVoiceId,
+      voiceSpeed,
+      voiceEmotion,
+      voiceSource: getVoiceSource(nextVoiceId),
+    });
   }
 
   function changeSpeed(nextVoiceSpeed) {
     onVoiceSpeedChange?.(nextVoiceSpeed);
-    onVoiceConfigChange?.({ voiceId, voiceSpeed: nextVoiceSpeed, voiceEmotion, voiceSource: "public" });
+    onVoiceConfigChange?.({ voiceId, voiceSpeed: nextVoiceSpeed, voiceEmotion, voiceSource: getVoiceSource() });
   }
 
   function changeEmotion(nextVoiceEmotion) {
     onVoiceEmotionChange?.(nextVoiceEmotion);
-    onVoiceConfigChange?.({ voiceId, voiceSpeed, voiceEmotion: nextVoiceEmotion, voiceSource: "public" });
+    onVoiceConfigChange?.({ voiceId, voiceSpeed, voiceEmotion: nextVoiceEmotion, voiceSource: getVoiceSource() });
   }
   const audioRef = useRef(null);
   const voicePanelRef = useRef(null);

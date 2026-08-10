@@ -102,7 +102,8 @@ export function DigitalHumanWorkspace(props) {
             voiceEmotion={voiceEmotion}
             voiceMode={voiceMode}
             onVoiceModeChange={onVoiceModeChange}
-            showCloneUpload={isMineAvatar}
+            // 音色克隆统一在右侧「我的音色」资源库完成，左侧只负责使用已选音色。
+            showCloneUpload={false}
             cloneAudio={cloneAudio}
             onCloneAudioChange={onCloneAudioChange}
             onSpeechDurationMsChange={onSpeechDurationMsChange}

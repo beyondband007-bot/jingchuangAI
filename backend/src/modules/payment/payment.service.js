@@ -608,6 +608,7 @@ export async function listCreditTransactions(userId, options = {}) {
   }
 
   const whereSql = where.join(" AND ");
+  const joinedWhereSql = whereSql.replace(/\buser_id\b/g, "ct.user_id");
   const [[countRow]] = await getPool().query(
     `SELECT COUNT(*) AS total FROM credit_transactions WHERE ${whereSql}`,
     params
@@ -617,16 +618,23 @@ export async function listCreditTransactions(userId, options = {}) {
   const safePage = Math.min(page, totalPages);
   const offset = (safePage - 1) * pageSize;
   const [rows] = await getPool().query(
-    `SELECT id, type, amount, balance_after AS balanceAfter, memo,
-       related_user_id AS relatedUserId, invite_binding_id AS inviteBindingId, created_at AS createdAt
-     FROM credit_transactions
-     WHERE ${whereSql}
-     ORDER BY created_at DESC, id DESC
+    `SELECT ct.id, ct.type, ct.amount, ct.balance_after AS balanceAfter, ct.memo,
+       ct.related_user_id AS relatedUserId, ct.invite_binding_id AS inviteBindingId, ct.created_at AS createdAt,
+       image_task.source AS imageSource
+     FROM credit_transactions ct
+     LEFT JOIN image_generation_tasks image_task
+       ON image_task.id = CAST(ct.task_id AS UNSIGNED)
+       AND ct.memo IN ('image generation debit', 'image generation refund')
+     WHERE ${joinedWhereSql}
+     ORDER BY ct.created_at DESC, ct.id DESC
      LIMIT ? OFFSET ?`,
     [...params, pageSize, offset]
   );
   return {
-    transactions: rows.map((row) => ({ ...row, memo: localizeCreditMemo(row.memo) })),
+    transactions: rows.map(({ imageSource, ...row }) => ({
+      ...row,
+      memo: localizeCreditMemo(row.memo, { imageSource })
+    })),
     page: safePage,
     pageSize,
     total,

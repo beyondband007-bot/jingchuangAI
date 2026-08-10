@@ -270,7 +270,7 @@ export async function setImageTaskError(id, message) {
 
 export async function lockImageTaskForRefund(connection, id) {
   const [tasks] = await connection.query(
-    "SELECT user_id, cost_points, refunded FROM image_generation_tasks WHERE id = ? FOR UPDATE",
+    "SELECT user_id, cost_points, refunded, source FROM image_generation_tasks WHERE id = ? FOR UPDATE",
     [id]
   );
   return tasks[0] || null;

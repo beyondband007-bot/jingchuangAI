@@ -6,7 +6,6 @@ import {
   LogIn,
   LogOut,
   ReceiptText,
-  Sparkles,
   UserPlus,
   UserRound,
   WalletCards,
@@ -30,7 +29,6 @@ export function WorkbenchTopbar({
   onLogout,
   onOpenAuth,
   onOpenInvite,
-  onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
   digitalHumanMode = "avatar",
@@ -301,14 +299,6 @@ export function WorkbenchTopbar({
           )}
         </div>
         <div className="fm-top-actions">
-          <button
-            className="fm-top-library"
-            type="button"
-            onClick={() => onOpenLibrary?.()}
-          >
-            <Sparkles size={17} />
-            灵感库
-          </button>
           <button
             className="fm-top-invite"
             type="button"

@@ -50,6 +50,14 @@ import {
   validateImagePayload,
 } from './image.options.js'
 
+function getImageCreditMemo(source, action) {
+  if (source === 'article') return `article image generation ${action}`
+  if (source === 'digital-human-avatar') {
+    return `digital human avatar ai customization image generation ${action}`
+  }
+  return `image generation ${action}`
+}
+
 const hiddenImageModelKeys = new Set([
   gptImage2ImageToImageModelKey,
   'gpt_image_1_5_i2i',
@@ -161,7 +169,6 @@ export async function createTask(payload, userId) {
   const connection = await pool.getConnection()
   let taskId
   let costPoints
-
   try {
     await connection.beginTransaction()
     let modelPrice = await findImageModelPrice(connection, model)
@@ -196,7 +203,7 @@ export async function createTask(payload, userId) {
       userId,
       taskId,
       amount: costPoints,
-      memo: 'image generation debit',
+      memo: getImageCreditMemo(source, 'debit'),
     })
 
     await connection.commit()
@@ -300,7 +307,7 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
         userId,
         taskId: id,
         amount: costPoints,
-        memo: 'image generation refund',
+        memo: getImageCreditMemo(task.source, 'refund'),
       })
       await markImageTaskRefunded(connection, id)
     }

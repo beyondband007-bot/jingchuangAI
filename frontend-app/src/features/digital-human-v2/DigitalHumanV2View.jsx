@@ -134,7 +134,8 @@ export function DigitalHumanV2View({
 
   const model = options.defaults?.model || options.models[0]?.value || "";
   const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
-  const isCloneMode = isMineAvatar && voiceMode === VOICE_DUBBING_MODES.clone;
+  // 音色克隆由「我的音色」资源库管理；工作区只使用已保存、已选中的音色。
+  const isCloneMode = false;
   const estimatedSpeechDurationMs = estimateSpeechSeconds(text) * 1000;
   const isSpeechTooLong = isCloneMode
     ? estimatedSpeechDurationMs > MAX_SPEECH_DURATION_MS

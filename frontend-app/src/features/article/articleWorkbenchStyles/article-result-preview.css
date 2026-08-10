@@ -175,6 +175,10 @@
   .article-model-select
   .fm-popular-template-menu {
   z-index: 60;
+  top: auto;
+  bottom: calc(100% + 8px);
+  max-height: min(240px, calc(100vh - 180px));
+  overflow-y: auto;
 }
 
 [data-feature-module="article"] .article-copy-compact {
