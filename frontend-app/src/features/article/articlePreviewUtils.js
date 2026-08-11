@@ -1,13 +1,18 @@
-export function getArticleImages(task) {
+export function getArticleImages(task, { useThumbnail = false } = {}) {
   if (!task) return [];
   if (task.imageTasks?.length) {
     return task.imageTasks
-      .map((item, index) => ({
-        id: item.id || `${task.id}-image-${index}`,
-        image: item.imageUrl || item.image,
-        title: item.segmentTitle || item.title || `配图 ${index + 1}`,
-        status: item.status,
-      }))
+      .map((item, index) => {
+        const image = useThumbnail
+          ? item.thumbnailUrl || item.image
+          : item.imageUrl || item.image;
+        return {
+          id: item.id || `${task.id}-image-${index}`,
+          image,
+          title: item.segmentTitle || item.title || `配图 ${index + 1}`,
+          status: item.status,
+        };
+      })
       .filter((item) => item.image);
   }
   if (task.images?.length) {
@@ -20,8 +25,9 @@ export function getArticleImages(task) {
       }))
       .filter((item) => item.image);
   }
-  return task.image
-    ? [{ id: task.id, image: task.image, title: "配图 1", status: task.status }]
+  const image = useThumbnail ? task.thumbnailUrl || task.image : task.imageUrl || task.image;
+  return image
+    ? [{ id: task.id, image, title: "配图 1", status: task.status }]
     : [];
 }
 

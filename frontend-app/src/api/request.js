@@ -10,6 +10,7 @@ const ERROR_TRANSLATIONS = [
   { pattern: /insufficient credits?|credit insufficient|not enough credits?|积分不足/i, message: "积分不够，请充值" },
   { pattern: /network error|failed to fetch|network request failed/i, message: "网络连接失败，请检查网络后重试" },
   { pattern: /timeout|timed out/i, message: "请求超时，请稍后重试" },
+  { pattern: /voice clone is already processing/i, message: "该音色正在解析，请稍后再试" },
   { pattern: /source asset id is required|image_url is required|file is required|missing required|required field/i, message: "提交信息不完整，请检查输入后重试" },
   { pattern: /upload failed|upload error|failed to upload/i, message: "上传失败，请稍后重试" },
   { pattern: /task creation failed|failed to create task|create task failed/i, message: "任务创建失败，请稍后重试" },

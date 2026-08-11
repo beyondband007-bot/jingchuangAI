@@ -1,15 +1,12 @@
 import React from "react";
-import { Message } from "@arco-design/web-react";
 import { HistoryEmptyState } from "../../../components/HistoryEmptyState";
 import {
   Bot,
-  Copy,
   Download,
   Loader2,
   RefreshCcw,
   Trash2,
   Undo2,
-  Wand2,
   X,
 } from "lucide-react";
 import {
@@ -87,19 +84,10 @@ export function PreviewPanel({
   const avatarTags = selectedAvatar ? getAvatarTags(selectedAvatar) : [];
   const showAvatarMeta = avatarSource === "official" && selectedAvatar?.name;
   const avatarSourceLabel = avatarSource === "mine" ? "我的形象" : "官方形象";
-  const showSaveDraftAction = !activeTask && !isGenerating;
   const generatingTask = {
     avatarName: activeTask?.avatarName || selectedAvatar?.name || "数字人",
     progress: generatingProgress,
   };
-
-  function handleSaveDraft() {
-    if (onSaveDraft) {
-      onSaveDraft();
-      return;
-    }
-    Message.info("请先配置左侧内容");
-  }
 
   return (
     <main
@@ -133,27 +121,16 @@ export function PreviewPanel({
           <div className="dhv2-preview__top-actions">
             <button
               type="button"
-              className="is-primary"
-              aria-label="编辑文案"
-              onClick={() => Message.info("请在左侧编辑口播文案")}
-            >
-              <Wand2 size={15} />
-            </button>
-            <button
-              type="button"
               aria-label="返回并重置"
+              title="返回编辑并恢复默认配置"
               onClick={() => onReset?.()}
             >
               <Undo2 size={15} />
             </button>
-            {showSaveDraftAction ? (
-              <button type="button" aria-label="保存草稿" onClick={handleSaveDraft}>
-                <Copy size={15} />
-              </button>
-            ) : null}
             <button
               type="button"
               className="dhv2-preview__asset-btn"
+              title="打开我的资产"
               onClick={() => onOpenAssets?.()}
             >
               我的资产

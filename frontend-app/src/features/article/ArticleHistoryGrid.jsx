@@ -16,7 +16,7 @@ export function ArticleHistoryGrid({
     <section className="article-history-section article-history-page">
       <div className="article-history-grid">
         {cards.map((task) => {
-          const taskImages = getArticleImages(task);
+          const taskImages = getArticleImages(task, { useThumbnail: true });
           const isCompleted = ["completed", "partial_completed"].includes(task.status) && taskImages.length > 0;
           const isFailed = task.status === "failed";
           const canRetryOrDelete = isCompleted || isFailed;

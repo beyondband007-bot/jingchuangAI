@@ -11,6 +11,7 @@ import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
+import { persistGeneratedImages, removeStoredGeneratedImages } from "../../shared/generatedImageStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapRemoveBgAsset, mapRemoveBgTask } from "./removeBg.mapper.js";
 import {
@@ -208,7 +209,8 @@ async function refreshTask(id) {
       if (!result.resultUrl) {
         await refundTask(id, null, null, "去背景结果缺少下载链接");
       } else {
-        await setRemoveBgTaskCompleted(id, result);
+        const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "remove-bg-images", urls: [result.resultUrl] });
+        await setRemoveBgTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });
       }
     } else if (mapped === "failed") {
       await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "去背景任务失败");
@@ -254,7 +256,9 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
 }
 
 export async function deleteTask(id) {
-  return deleteRemoveBgTask(id);
+  const result = await deleteRemoveBgTask(id);
+  if (result.ok) await removeStoredGeneratedImages({ taskId: id, feature: "remove-bg-images" });
+  return result;
 }
 
 export async function toggleFavorite(id) {

@@ -2,6 +2,7 @@ import { requireLoggedIn, sendError } from "../../shared/http.js";
 import {
   createTask,
   deleteTask,
+  deleteTasks,
   getModels,
   getTask,
   listInspirationFavorites,
@@ -98,6 +99,14 @@ export async function toggleImageInspirationFavorite(req, res) {
 export async function deleteImageTask(req, res) {
   try {
     res.json(await deleteTask(req.params.id, req.user.id));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function deleteImageTasks(req, res) {
+  try {
+    res.json(await deleteTasks(req.body?.taskIds, req.user.id));
   } catch (error) {
     sendError(res, error);
   }

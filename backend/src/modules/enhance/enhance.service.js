@@ -19,6 +19,7 @@ import {
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
+import { persistGeneratedImages, removeStoredGeneratedImages } from "../../shared/generatedImageStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapEnhanceAsset, mapEnhanceTask } from "./enhance.mapper.js";
 import {
@@ -29,6 +30,7 @@ import {
   findEnhanceTaskRow,
   findEnhanceTaskStatus,
   findRefreshableEnhanceTasks,
+  findTimedOutEnhanceTasks,
   listEnhanceTaskRows,
   lockEnhanceTaskForRefund,
   markEnhanceTaskRefunded,
@@ -42,6 +44,8 @@ import {
 } from "./enhance.repository.js";
 
 const execFileAsync = promisify(execFile);
+export const ENHANCE_TASK_TIMEOUT_MINUTES = 30;
+const enhanceTaskTimeoutMs = ENHANCE_TASK_TIMEOUT_MINUTES * 60 * 1000;
 
 const KIE_COMPATIBLE_IMAGE_FORMATS = {
   jpeg: { mimeType: "image/jpeg", ext: ".jpg" },
@@ -190,12 +194,14 @@ export async function createAsset({ file, user: requestUser } = {}) {
 }
 
 export async function listTasks({ filter = "all" } = {}) {
+  await expireTimedOutTasks();
   await refreshProcessingTasks();
   const rows = await listEnhanceTaskRows({ filter });
   return rows.map(mapEnhanceTask);
 }
 
 export async function getTask(id) {
+  await expireTimedOutTasks();
   await refreshTask(id);
   const row = await findEnhanceTaskRow(id);
   return row ? mapEnhanceTask(row) : null;
@@ -340,13 +346,35 @@ async function uploadEnhanceImageToKie(asset, uploadPath) {
 }
 
 async function refreshProcessingTasks() {
+  await expireTimedOutTasks();
   const rows = await findRefreshableEnhanceTasks();
   await Promise.all(rows.map((row) => refreshTask(row.id)));
+}
+
+function isTaskTimedOut(task) {
+  const createdAt = new Date(task?.created_at).getTime();
+  return Number.isFinite(createdAt) && Date.now() - createdAt >= enhanceTaskTimeoutMs;
+}
+
+export async function expireTimedOutTasks() {
+  const rows = await findTimedOutEnhanceTasks(ENHANCE_TASK_TIMEOUT_MINUTES);
+  await Promise.all(rows.map((task) => refundTask(
+    task.id,
+    null,
+    null,
+    `画质提升任务超时（${ENHANCE_TASK_TIMEOUT_MINUTES} 分钟），已自动关闭并退还积分`
+  )));
+  return rows.length;
 }
 
 async function refreshTask(id) {
   const task = await findEnhanceTaskStatus(id);
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
+
+  if (isTaskTimedOut(task)) {
+    await refundTask(id, null, null, `画质提升任务超时（${ENHANCE_TASK_TIMEOUT_MINUTES} 分钟），已自动关闭并退还积分`);
+    return;
+  }
 
   try {
     const record = await getKieEnhanceTask({ taskId: task.provider_task_id });
@@ -364,7 +392,8 @@ async function refreshTask(id) {
           });
           await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl });
         } else {
-          await setEnhanceTaskCompleted(id, result);
+          const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "enhance-images", urls: [result.resultUrl] });
+          await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });
         }
       }
     } else if (mapped === "failed") {
@@ -419,6 +448,7 @@ export async function deleteTask(id) {
     }).catch((error) => {
       console.warn(`delete local enhanced video for task ${id} failed:`, error.message);
     });
+    await removeStoredGeneratedImages({ taskId: id, feature: "enhance-images" });
   }
   return result;
 }

@@ -20,6 +20,7 @@ import {
   createImageTask,
   assignImageTasksThread,
   deleteImageTask,
+  deleteImageTasks,
   findEnabledImageModels,
   findImageModelPrice,
   findImageTaskRow,
@@ -45,10 +46,19 @@ import {
   imageCountOptions,
   imageQualityOptions,
   imageRatioOptions,
+  getSupportedImageRatios,
   qualityMultiplier,
   supportsImageReference,
   validateImagePayload,
 } from './image.options.js'
+
+function getImageCreditMemo(source, action) {
+  if (source === 'article') return `article image generation ${action}`
+  if (source === 'digital-human-avatar') {
+    return `digital human avatar ai customization image generation ${action}`
+  }
+  return `image generation ${action}`
+}
 
 const hiddenImageModelKeys = new Set([
   gptImage2ImageToImageModelKey,
@@ -97,6 +107,7 @@ export async function getModels() {
       .map((model) => ({
         ...model,
         supportsReferenceImage: supportsImageReference(model.value),
+        supportedRatios: getSupportedImageRatios(model.value),
       })),
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
@@ -161,7 +172,6 @@ export async function createTask(payload, userId) {
   const connection = await pool.getConnection()
   let taskId
   let costPoints
-
   try {
     await connection.beginTransaction()
     let modelPrice = await findImageModelPrice(connection, model)
@@ -196,7 +206,7 @@ export async function createTask(payload, userId) {
       userId,
       taskId,
       amount: costPoints,
-      memo: 'image generation debit',
+      memo: getImageCreditMemo(source, 'debit'),
     })
 
     await connection.commit()
@@ -300,7 +310,7 @@ async function refundTask(id, userIdArg, costPointsArg, message) {
         userId,
         taskId: id,
         amount: costPoints,
-        memo: 'image generation refund',
+        memo: getImageCreditMemo(task.source, 'refund'),
       })
       await markImageTaskRefunded(connection, id)
     }
@@ -322,6 +332,14 @@ export async function deleteTask(id, userId) {
     })
   }
   return result
+}
+
+export async function deleteTasks(ids, userId) {
+  const deletedIds = await deleteImageTasks(ids, userId)
+  await Promise.all(deletedIds.map((taskId) => removeStoredGeneratedImages({ taskId }).catch((error) => {
+    console.warn(`delete local image result files for task ${taskId} failed:`, error.message)
+  })))
+  return { ok: true, deletedIds }
 }
 
 export async function toggleFavorite(id, userId) {

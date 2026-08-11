@@ -7,6 +7,7 @@ import {
   Plus,
   RefreshCcw,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { formatBeijingHistoryTime } from "../../utils/time";
@@ -64,6 +65,7 @@ export function ImageGenerationWorkbench({
   onDownload,
   onReference,
   onRegenerate,
+  onDeleteThread,
 }) {
   const contextRef = useRef(null);
   const wasSubmittingRef = useRef(false);
@@ -267,10 +269,9 @@ export function ImageGenerationWorkbench({
                 task.status === "pending" || task.status === "processing";
               const isTaskFailed = task.status === "failed";
               return (
-                <button
+                <article
                   className={`image-workbench-history-item ${isSelected ? "is-selected" : ""}`}
                   key={thread.id}
-                  type="button"
                   onClick={() => onSelect(thread.id)}
                 >
                   <span className="image-workbench-history-thumb">
@@ -294,7 +295,19 @@ export function ImageGenerationWorkbench({
                             : displayTime || task.ratio || "已完成"}
                     </small>
                   </span>
-                </button>
+                  <button
+                    className="image-workbench-history-delete"
+                    type="button"
+                    aria-label="删除对话"
+                    title="删除对话"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDeleteThread?.(thread);
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </article>
               );
             })
           ) : (

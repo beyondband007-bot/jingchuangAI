@@ -121,6 +121,16 @@ export async function updateArkVirtualAssetMetadata(id, metadata) {
   );
 }
 
+export async function deleteArkVirtualAssetById(id) {
+  const [result] = await getPool().query(
+    `DELETE a FROM ark_virtual_assets a
+     INNER JOIN users u ON u.id = a.user_id
+     WHERE u.external_id = ? AND a.id = ?`,
+    [getCurrentExternalId(), id]
+  );
+  return result.affectedRows > 0;
+}
+
 export async function findArkVirtualAssetById(id) {
   const [rows] = await getPool().query(
     `SELECT a.*, g.provider_group_id, g.project_name
@@ -132,6 +142,34 @@ export async function findArkVirtualAssetById(id) {
     [getCurrentExternalId(), id]
   );
   return rows[0] || null;
+}
+
+export async function findArkVirtualAssetByIdForUser(id, userId) {
+  const [rows] = await getPool().query(
+    `SELECT a.*, g.provider_group_id, g.project_name
+     FROM ark_virtual_assets a
+     INNER JOIN ark_virtual_asset_groups g ON g.id = a.group_id
+     WHERE a.user_id = ? AND a.id = ?
+     LIMIT 1`,
+    [userId, id]
+  );
+  return rows[0] || null;
+}
+
+export async function deleteArkVirtualAssetByIdForUser(id, userId) {
+  const [result] = await getPool().query(
+    "DELETE FROM ark_virtual_assets WHERE user_id = ? AND id = ?",
+    [userId, id]
+  );
+  return result.affectedRows > 0;
+}
+
+export async function deleteArkVirtualAssetByInternalId(id) {
+  const [result] = await getPool().query(
+    "DELETE FROM ark_virtual_assets WHERE id = ?",
+    [id]
+  );
+  return result.affectedRows > 0;
 }
 
 export async function findArkVirtualAssetByInternalId(id) {

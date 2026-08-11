@@ -6,9 +6,11 @@ import path from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import { ffmpegPath } from "./ffmpegPath.js";
+import sharp from "sharp";
 import {
   persistGeneratedImages,
-  removeStoredGeneratedImages
+  removeStoredGeneratedImages,
+  GENERATED_IMAGE_THUMBNAIL
 } from "./generatedImageStorage.js";
 
 const execFileAsync = promisify(execFile);
@@ -58,6 +60,10 @@ test("persists generated images under a stable public media URL", async () => {
     );
     const thumbnail = await readFile(path.join(storageDir, "generated", "images", "42", "thumbnail-1.jpg"));
     assert.deepEqual(thumbnail.subarray(0, 2), Buffer.from([0xff, 0xd8]));
+    const thumbnailMetadata = await sharp(thumbnail).metadata();
+    assert.equal(thumbnailMetadata.format, "jpeg");
+    assert.equal(thumbnailMetadata.width, GENERATED_IMAGE_THUMBNAIL.width);
+    assert.equal(GENERATED_IMAGE_THUMBNAIL.jpegQuality, 90);
     await removeStoredGeneratedImages({ taskId: 42, storageDir });
     await assert.rejects(
       readFile(path.join(storageDir, "generated", "images", "42", "result-1.png")),

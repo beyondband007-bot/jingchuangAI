@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Download, Image, Layers, Loader2, Plus, X, Zap } from "lucide-react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { CheckCircle2, Download, Image, Layers, Loader2, Plus, Upload, X, Zap } from "lucide-react";
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import {
@@ -18,6 +18,7 @@ import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { PageTitle } from "../../components/PageTitle";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
+import { MarketingHistoryDetailModal, MarketingPreviewLightbox } from "../marketing-tool-ui";
 
 const emptyRemoveBgOptions = { models: [], defaults: {}, limits: {} };
 
@@ -113,15 +114,15 @@ function RemoveBgCenterState({
   );
 }
 
-function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
 
   return (
-    <article className={`watermark-task-card remove-bg-task-card status-${task.status}`}>
+    <article className={`watermark-task-card remove-bg-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className="watermark-task-preview remove-bg-task-preview">
         {task.resultUrl && !isFailed ? (
-          <img src={task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
+          <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
             {isProcessing ? <Loader2 size={26} /> : <Image size={26} />}
@@ -145,8 +146,9 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, onClear }) {
+const RemoveBgUploadSlot = forwardRef(function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, onClear, onPreview }, ref) {
   const inputRef = useRef(null);
+  useImperativeHandle(ref, () => ({ openFilePicker: () => inputRef.current?.click() }), []);
   function clearFile(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -154,7 +156,16 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
   }
 
   return (
-    <button className={`marketing-composer__upload marketing-tool-upload watermark-upload-slot remove-bg-upload-slot ${previewUrl ? "has-preview" : ""}`} type="button" onClick={() => inputRef.current?.click()}>
+    <button
+      className={`marketing-composer__upload marketing-tool-upload watermark-upload-slot remove-bg-upload-slot ${previewUrl ? "has-preview" : ""}`}
+      type="button"
+      onClick={() => previewUrl ? onPreview?.() : inputRef.current?.click()}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        onSelect(event.dataTransfer.files?.[0] || null);
+      }}
+    >
       <input
         ref={inputRef}
         type="file"
@@ -188,7 +199,7 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
             if (event.key === "Enter" || event.key === " ") clearFile(event);
           }}
         >
-          <X size={13} />
+          <X size={16} />
         </span>
       )}
       {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
@@ -198,19 +209,15 @@ function RemoveBgUploadSlot({ sourceAsset, previewUrl, isUploading, onSelect, on
           上传中
         </span>
       )}
-      {!isUploading && previewUrl && (
-        <span className="watermark-upload-kind">
-          <Image size={14} />
-          更换图片
-        </span>
-      )}
     </button>
   );
-}
+});
 
 function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
+  const uploadRef = useRef(null);
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -271,17 +278,20 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
+    <>
     <div className="marketing-composer marketing-composer--inline marketing-tool-card watermark-composer remove-bg-composer" aria-label="抠图上传面板">
       <div className="marketing-composer__title remove-bg-composer-title">
         <Layers size={15} />
         图片抠图
       </div>
       <RemoveBgUploadSlot
+        ref={uploadRef}
         sourceAsset={sourceAsset}
         previewUrl={previewUrl}
         isUploading={uploading}
         onSelect={selectSource}
         onClear={clearSource}
+        onPreview={() => setLightboxOpen(true)}
       />
       <div className="marketing-composer__footer marketing-tool-footer watermark-composer-footer remove-bg-composer-footer">
         <span>{notice || "AI 将自动识别主体并输出透明背景图片"}</span>
@@ -294,11 +304,14 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
             "请上传文件"
           )}
         </strong>
+        {previewUrl ? <button type="button" className="marketing-tool-composer__secondary-action" onClick={() => uploadRef.current?.openFilePicker()} disabled={uploading}><Upload size={15} />重新上传文件</button> : null}
         <button className="ui-send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
           {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
         </button>
       </div>
     </div>
+    {lightboxOpen && previewUrl ? <MarketingPreviewLightbox url={previewUrl} onClose={() => setLightboxOpen(false)} /> : null}
+    </>
   );
 }
 
@@ -306,6 +319,7 @@ export function RemoveBgView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyRemoveBgOptions);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -501,12 +515,14 @@ export function RemoveBgView({ onOpenFeature }) {
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="remove-bg" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

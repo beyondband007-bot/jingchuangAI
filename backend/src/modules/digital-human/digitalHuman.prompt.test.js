@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildSeedanceDigitalHumanPrompt,
   getSeedanceDurationSeconds,
+  getUploadedSceneAssetPath,
   isUserAvatarAsset,
   mapVirtualAssetToAvatar,
   parseDigitalHumanVideoSpec,
@@ -48,7 +49,8 @@ test("builds a role-aware prompt with explicit scene adaptation", () => {
     ratio: "16:9",
     resolution: "720p",
     fps: 30,
-    hasSceneReference: true
+    hasSceneReference: true,
+    sceneReferenceType: "uploaded"
   });
 
   assert.match(prompt, /角色定位：企业商务形象；适合企业宣讲和产品介绍/);
@@ -73,19 +75,25 @@ test("does not claim there is a scene reference when none was uploaded", () => {
   assert.doesNotMatch(prompt, /图片2是用户上传的最终场景参考图/);
 });
 
-test("uses the avatar default scene as image 2 when the user uploads no scene", () => {
+test("does not infer a default scene from avatar preview media", () => {
+  assert.equal(getUploadedSceneAssetPath(null), "");
+  assert.equal(
+    getUploadedSceneAssetPath({ filePath: "/storage/digital-human/scene-uploads/user-scene.png" }),
+    "/storage/digital-human/scene-uploads/user-scene.png"
+  );
+
   const prompt = buildSeedanceDigitalHumanPrompt({
     avatarName: "时尚类女主播",
     ratio: "9:16",
     resolution: "720p",
     fps: 30,
-    hasSceneReference: true,
+    hasSceneReference: false,
     sceneReferenceType: "default"
   });
 
-  assert.match(prompt, /图片2是所选数字人自带的默认场景图/);
-  assert.match(prompt, /必须把图片1中的数字人自然放入图片2的场景中/);
-  assert.doesNotMatch(prompt, /用户上传的最终场景参考图/);
+  assert.match(prompt, /没有提供额外场景图/);
+  assert.doesNotMatch(prompt, /图片2是/);
+  assert.doesNotMatch(prompt, /默认场景图/);
 });
 
 test("uses the actual rounded-up audio length instead of duration buckets", () => {

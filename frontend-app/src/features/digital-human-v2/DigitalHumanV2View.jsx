@@ -12,8 +12,8 @@ import { useDigitalHumanData } from "./hooks/useDigitalHumanData";
 import { VOICE_DUBBING_MODES } from "./components/VoiceDubbingModeCard";
 import { DigitalHumanWorkspace } from "./components/DigitalHumanWorkspace";
 import { CreateAvatarModal } from "./components/CreateAvatarModal";
-import { AvatarGeneratingModal } from "./components/AvatarGeneratingModal";
 import { ScriptOptimizeModal } from "./components/ScriptOptimizeModal";
+import { RenameAssetDialog } from "./components/RenameAssetDialog";
 import { VideoGenStage } from "../video/VideoGenStage";
 import { useVideoGenStateMachine } from "../video/useVideoGenStateMachine";
 import {
@@ -37,6 +37,28 @@ import "./digitalHumanV2Styles.css";
 
 const DEFAULT_SCRIPT = "";
 const MAX_SPEECH_DURATION_MS = 15 * 1000;
+const AI_AVATAR_PENDING_STORAGE_KEY = "dhv2-pending-ai-avatar";
+
+function loadPendingAiAvatarJob() {
+  try {
+    const value = JSON.parse(localStorage.getItem(AI_AVATAR_PENDING_STORAGE_KEY));
+    return value && typeof value === "object" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistPendingAiAvatarJob(job) {
+  try {
+    if (job) {
+      localStorage.setItem(AI_AVATAR_PENDING_STORAGE_KEY, JSON.stringify(job));
+    } else {
+      localStorage.removeItem(AI_AVATAR_PENDING_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore unavailable or full storage. The in-memory flow still works.
+  }
+}
 
 export function DigitalHumanV2View({
   isActive = true,
@@ -58,6 +80,7 @@ export function DigitalHumanV2View({
     setError,
     refreshCredits,
     refreshAvatars,
+    refreshVoices,
   } = useDigitalHumanData({ isActive });
 
   const [avatarSource, setAvatarSource] = useState("official");
@@ -73,10 +96,12 @@ export function DigitalHumanV2View({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState("upload");
-  const [aiGeneratingJob, setAiGeneratingJob] = useState(null);
+  const [aiGeneratingJob, setAiGeneratingJob] = useState(loadPendingAiAvatarJob);
   const [scriptOptimizeRequest, setScriptOptimizeRequest] = useState(null);
   const [drafts, setDrafts] = useState(() => loadWorkspaceDrafts());
   const [selectedMineLibraryId, setSelectedMineLibraryId] = useState(null);
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [voiceMode, setVoiceMode] = useState(VOICE_DUBBING_MODES.system);
   const [cloneAudio, setCloneAudio] = useState(null);
   const [speechDurationMs, setSpeechDurationMs] = useState(0);
@@ -109,7 +134,8 @@ export function DigitalHumanV2View({
 
   const model = options.defaults?.model || options.models[0]?.value || "";
   const isMineAvatar = avatarSource === "mine" && Boolean(selectedAvatar?.id);
-  const isCloneMode = isMineAvatar && voiceMode === VOICE_DUBBING_MODES.clone;
+  // 音色克隆由「我的音色」资源库管理；工作区只使用已保存、已选中的音色。
+  const isCloneMode = false;
   const estimatedSpeechDurationMs = estimateSpeechSeconds(text) * 1000;
   const isSpeechTooLong = isCloneMode
     ? estimatedSpeechDurationMs > MAX_SPEECH_DURATION_MS
@@ -180,11 +206,15 @@ export function DigitalHumanV2View({
   }, [isGenerationStageActive]);
 
   useEffect(() => {
+    if (!selectedAvatar?.id) {
+      if (voiceId) setVoiceId("");
+      return;
+    }
     const nextVoiceId = pickEnabledVoiceId(voices, voiceId);
     if (nextVoiceId && nextVoiceId !== voiceId) {
       setVoiceId(nextVoiceId);
     }
-  }, [voiceId, voices]);
+  }, [selectedAvatar?.id, voiceId, voices]);
 
   useEffect(() => {
     if (!resumeTask?.id || !resumeTask?.resumeToken) return;
@@ -223,6 +253,89 @@ export function DigitalHumanV2View({
   }, [drafts]);
 
   useEffect(() => {
+    persistPendingAiAvatarJob(aiGeneratingJob);
+  }, [aiGeneratingJob]);
+
+  useEffect(() => {
+    const taskId = aiGeneratingJob?.id;
+    if (!isActive || !taskId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let polling = false;
+    const request = aiGeneratingJob.request || {};
+
+    async function syncAiAvatarTask() {
+      if (polling) return;
+      polling = true;
+      try {
+        const task = await digitalHumanApi.getAiAvatarTask(taskId);
+        if (cancelled) return;
+
+        if (task?.status === "failed") {
+          setAiGeneratingJob((current) => current ? { ...current, ...task, request } : null);
+          return;
+        }
+
+        if (task?.status === "preview_ready" || task?.status === "saved") {
+          setAiGeneratingJob((current) => current ? {
+            ...current,
+            ...task,
+            request,
+            status: "saving",
+            progress: 100,
+          } : null);
+          try {
+            if (task.status !== "saved") {
+              await digitalHumanApi.saveAiAvatarTask(taskId, {
+                name: String(request.prompt || "AI 定制形象").slice(0, 30),
+              });
+            }
+            persistPendingAiAvatarJob(null);
+            if (cancelled) {
+              setAiGeneratingJob(null);
+              return;
+            }
+            await refreshAvatars().catch(() => null);
+            setAiGeneratingJob(null);
+            showToast("AI 定制形象已自动保存到我的形象");
+            return;
+          } catch (saveError) {
+            if (!cancelled) {
+              setAiGeneratingJob((current) => current ? {
+                ...current,
+                ...task,
+                request,
+                status: "save_failed",
+                error: saveError.message || "自动保存失败，请稍后重试",
+              } : null);
+            }
+          }
+          return;
+        }
+
+        setAiGeneratingJob((current) => current ? { ...current, ...task, request } : null);
+      } catch (pollError) {
+        if (pollError?.status === 404 && !cancelled) {
+          persistPendingAiAvatarJob(null);
+          setAiGeneratingJob(null);
+        }
+        // A temporary polling error should not turn a running provider task into a failed task.
+      } finally {
+        polling = false;
+      }
+    }
+
+    syncAiAvatarTask();
+    const timer = window.setInterval(syncAiAvatarTask, 3500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [aiGeneratingJob?.id, isActive]);
+
+  useEffect(() => {
     setAudioPreviewPhase("draft");
     setIsAudioPreviewing(false);
     setIsAudioPlaying(false);
@@ -256,6 +369,7 @@ export function DigitalHumanV2View({
     }
     if (isSourceChanged) {
       resetFormConfig({ resetVoice: true });
+      setVoiceId("");
     }
     if (isSourceChanged && selectedAvatar?.id) {
       setSelectedAvatar(null);
@@ -267,6 +381,11 @@ export function DigitalHumanV2View({
     setSelectedAvatar(avatar);
     if (isAvatarChanged) {
       resetFormConfig();
+      const matchedVoice = matchVoiceForAvatar(avatar, voices);
+      const savedVoiceId = pickEnabledVoiceId(voices, avatar?.defaultVoiceId || matchedVoice?.id);
+      if (savedVoiceId) setVoiceId(savedVoiceId);
+      setVoiceSpeed(Number(avatar?.defaultVoiceSpeed) || 1);
+      setVoiceEmotion(avatar?.defaultVoiceEmotion || "中性");
     }
     if (avatarSource !== "mine") {
       setSelectedMineLibraryId(null);
@@ -309,8 +428,9 @@ export function DigitalHumanV2View({
     }
 
     const matchedVoice = matchVoiceForAvatar(item, voices);
-    if (matchedVoice?.id) {
-      setVoiceId(matchedVoice.id);
+    const savedVoiceId = pickEnabledVoiceId(voices, item.defaultVoiceId || matchedVoice?.id);
+    if (savedVoiceId) {
+      setVoiceId(savedVoiceId);
     }
     if (isAvatarChanged) {
       resetFormConfig();
@@ -318,6 +438,51 @@ export function DigitalHumanV2View({
       setVoiceEmotion(item.defaultVoiceEmotion || "中性");
     }
     setSelectedAvatar(item);
+  }
+
+  function handleConfirmMineConfig(item, config) {
+    handleSelectMineItem(item);
+    setVoiceId(pickEnabledVoiceId(voices, config?.voiceId));
+    setVoiceSpeed(Number(config?.voiceSpeed) || 1);
+    setVoiceEmotion(config?.voiceEmotion || "中性");
+    setRightView("preview");
+  }
+
+  async function handlePersistMineConfig(item, config) {
+    if (!item?.id || !config?.voiceId) return;
+    try {
+      const updated = await digitalHumanApi.updateAvatar(item.id, {
+        voiceId: config.voiceId,
+        voiceSpeed: Number(config.voiceSpeed) || 1,
+        voiceEmotion: config.voiceEmotion || "",
+        voiceSource: config.voiceSource || "public",
+        publicVoiceId: config.publicVoiceId || "",
+        mineVoiceId: config.mineVoiceId || "",
+      });
+      if (String(selectedAvatar?.id) === String(item.id)) setSelectedAvatar(updated);
+      await refreshAvatars();
+    } catch (saveError) {
+      showToast(saveError.message || "音色配置保存失败", { type: "error" });
+    }
+  }
+
+  async function handlePersistAvatarVoiceConfig(config) {
+    if (!selectedAvatar?.id || !config?.voiceId) return;
+    try {
+      await digitalHumanApi.updateAvatar(selectedAvatar.id, {
+        voiceId: config.voiceId,
+        voiceSpeed: Number(config.voiceSpeed) || 1,
+        voiceEmotion: config.voiceEmotion || "",
+        voiceSource: config.voiceSource || "public",
+      });
+      await refreshAvatars();
+    } catch (saveError) {
+      showToast(saveError.message || "音色配置保存失败", { type: "error" });
+    }
+  }
+
+  async function handleVoiceSaved() {
+    await refreshVoices();
   }
 
   function handleConfirmAvatar() {
@@ -336,9 +501,8 @@ export function DigitalHumanV2View({
     setSelectedMineLibraryId(null);
     setScriptOptimizeRequest(null);
     setIsCreateOpen(false);
-    setAiGeneratingJob(null);
     setError("");
-    Message.success("已恢复默认配置");
+    showToast("已恢复默认配置");
   }
 
   async function handleGenerate() {
@@ -543,19 +707,29 @@ export function DigitalHumanV2View({
   }
 
   async function handleRegenerateAiAvatar(request) {
-    if (!request) return;
+    const sourceJob = request || aiGeneratingJob;
+    if (!sourceJob) return;
+    if (sourceJob.status === "save_failed" && sourceJob.id) {
+      setAiGeneratingJob((current) => current ? {
+        ...current,
+        status: "processing",
+        error: "",
+      } : null);
+      return;
+    }
+    const nextRequest = sourceJob.request || sourceJob;
     setAiGeneratingJob({
-      ...request,
-      request,
+      ...nextRequest,
+      request: nextRequest,
       status: "creating",
     });
     try {
-      const task = await digitalHumanApi.createAiAvatar(request);
+      const task = await digitalHumanApi.createAiAvatar(nextRequest);
       await refreshCredits();
       setAiGeneratingJob({
-        ...request,
+        ...nextRequest,
         ...task,
-        request,
+        request: nextRequest,
       });
     } catch (createError) {
       setAiGeneratingJob((current) => current ? {
@@ -590,58 +764,98 @@ export function DigitalHumanV2View({
     }
   }
 
-  async function handleSaveAiAvatar(task) {
-    if (!task?.id) return;
-    try {
-      const result = await digitalHumanApi.saveAiAvatarTask(task.id, {
-        name: "AI Custom Avatar",
-      });
-      if (result?.avatar) {
-        const refreshedAvatars = await refreshAvatars();
-        const persistedAvatar = refreshedAvatars.mine.find(
-          (item) => String(item.id) === String(result.avatar.id),
-        );
-        const request = task.request || aiGeneratingJob?.request || {};
-        const selectedAiAvatar = {
-          ...(persistedAvatar || result.avatar),
-          description:
-            request.prompt ||
-            persistedAvatar?.description ||
-            result.avatar.description ||
-            "",
-          performance:
-            request.performance ||
-            `保持${request.style || "自然写实"}的人物气质，正视镜头，自然口播`,
-        };
-        setSelectedAvatar(selectedAiAvatar);
-        setAvatarSource("mine");
-        setSelectedMineLibraryId(`avatar-${result.avatar.id}`);
-      }
-      setAiGeneratingJob(null);
-      showToast("个人形象创建成功");
-    } catch (saveError) {
-      const message = saveError.message || "保存形象失败，请稍后重试";
-      setAiGeneratingJob((current) => current ? {
-        ...current,
-        ...task,
-        error: message,
-      } : null);
-      showToast(message, { type: "error" });
-      throw new Error(message);
-    }
-  }
-
   async function performDeleteTask(id) {
     await digitalHumanApi.deleteTask(id);
     setActiveTask((current) => (String(current?.id) === String(id) ? null : current));
     showToast("已删除生成记录");
   }
 
-  const { requestDelete: deleteTask } = useDeleteConfirmation({
+  const { requestDelete: deleteTask, deleteConfirmDialog: taskDeleteConfirmDialog } = useDeleteConfirmation({
     onConfirm: performDeleteTask,
     title: "删除历史记录？",
     message: "该数字人生成记录会被移除，删除后无法恢复。",
   });
+
+  async function renameAvatar(avatar, onUpdated) {
+    setRenameTarget({ asset: avatar, kind: "形象", onUpdated });
+    return;
+    const name = window.prompt("修改形象名称", avatar?.name || "");
+    if (name === null || !name.trim() || name.trim() === avatar?.name) return;
+    try {
+      await digitalHumanApi.updateAvatar(avatar.id, { name: name.trim() });
+      await refreshAvatars();
+      showToast("形象名称已更新");
+    } catch (renameError) {
+      showToast(renameError.message || "修改形象名称失败");
+    }
+  }
+
+  async function performDeleteAvatar(avatar) {
+    await digitalHumanApi.deleteAvatar(avatar.id);
+    if (String(selectedAvatar?.id) === String(avatar.id)) {
+      setSelectedAvatar(null);
+      setSelectedMineLibraryId(null);
+    }
+    await refreshAvatars();
+    showToast("我的形象已删除");
+  }
+
+  const { requestDelete: requestDeleteAvatar, deleteConfirmDialog: avatarDeleteConfirmDialog } = useDeleteConfirmation({
+    onConfirm: performDeleteAvatar,
+    title: "删除我的形象",
+    message: "删除后将无法恢复，已生成的历史作品不受影响。",
+    confirmText: "确认删除",
+  });
+
+  async function renameVoice(voice) {
+    setRenameTarget({ asset: voice, kind: "音色" });
+    return;
+    const name = window.prompt("修改音色名称", voice?.name || "");
+    if (name === null || !name.trim() || name.trim() === voice?.name) return;
+    try {
+      await digitalHumanApi.updateVoice(voice.id, { name: name.trim() });
+      await refreshVoices();
+      showToast("音色名称已更新");
+    } catch (renameError) {
+      showToast(renameError.message || "修改音色名称失败");
+    }
+  }
+
+  async function performDeleteVoice(voice) {
+    await digitalHumanApi.deleteVoice(voice.id);
+    if (String(voiceId) === String(voice.id)) setVoiceId("");
+    await refreshVoices();
+    showToast("我的音色已删除");
+  }
+
+  const { requestDelete: requestDeleteVoice, deleteConfirmDialog: voiceDeleteConfirmDialog } = useDeleteConfirmation({
+    onConfirm: performDeleteVoice,
+    title: "删除我的音色",
+    message: "删除后将无法恢复，且不能继续用于新的数字人作品。",
+    confirmText: "确认删除",
+  });
+
+  async function submitRename(name) {
+    const target = renameTarget;
+    if (!target?.asset || !name.trim()) return;
+    setIsRenaming(true);
+    try {
+      if (target.kind === "音色") {
+        await digitalHumanApi.updateVoice(target.asset.id, { name: name.trim() });
+        await refreshVoices();
+      } else {
+        const updatedAvatar = await digitalHumanApi.updateAvatar(target.asset.id, { name: name.trim() });
+        await refreshAvatars();
+        target.onUpdated?.({ ...target.asset, ...updatedAvatar, name: name.trim() });
+      }
+      setRenameTarget(null);
+      showToast(`${target.kind}名称已更新`);
+    } catch (renameError) {
+      showToast(renameError.message || `修改${target.kind}名称失败`);
+    } finally {
+      setIsRenaming(false);
+    }
+  }
 
   async function regenerateTask(id) {
     const sourceTask = tasks.find((task) => String(task.id) === String(id));
@@ -701,7 +915,17 @@ export function DigitalHumanV2View({
 
   function openCreateModal(mode = "upload") {
     if (mode === "history") {
-      Message.info("开发中");
+      // Historical works reuse their already-saved avatar. Opening the same
+      // library avoids the previous placeholder Message call and lets users
+      // choose an existing personal avatar immediately.
+      setAvatarSource("mine");
+      setRightView("library");
+      return;
+    }
+    if (mode === "ai" && aiGeneratingJob) {
+      setAvatarSource("mine");
+      setRightView("library");
+      showToast("已有 AI 定制形象正在处理中，请在我的形象中查看进度");
       return;
     }
     setCreateMode(mode);
@@ -801,6 +1025,7 @@ export function DigitalHumanV2View({
         onVoiceSpeedChange={setVoiceSpeed}
         voiceEmotion={voiceEmotion}
         onVoiceEmotionChange={setVoiceEmotion}
+        onVoiceConfigChange={handlePersistAvatarVoiceConfig}
         voiceMode={voiceMode}
         onVoiceModeChange={setVoiceMode}
         isMineAvatar={isMineAvatar}
@@ -850,6 +1075,26 @@ export function DigitalHumanV2View({
         onApplyDraft={handleApplyDraft}
         onDeleteDraft={handleDeleteDraft}
         onOpenAssets={onOpenAssets}
+        aiGeneratingJob={aiGeneratingJob}
+        onRetryAiAvatar={handleRegenerateAiAvatar}
+        onConfirmMineConfig={handleConfirmMineConfig}
+        onPersistMineConfig={handlePersistMineConfig}
+        onVoiceSaved={handleVoiceSaved}
+        onRenameAvatar={renameAvatar}
+        onDeleteAvatar={(avatar) => requestDeleteAvatar(avatar, { targetName: avatar?.name || "我的形象" })}
+        onRenameVoice={renameVoice}
+        onDeleteVoice={(voice) => requestDeleteVoice(voice, { targetName: voice?.name || "我的音色" })}
+      />
+
+      {taskDeleteConfirmDialog}
+      {avatarDeleteConfirmDialog}
+      {voiceDeleteConfirmDialog}
+      <RenameAssetDialog
+        asset={renameTarget?.asset}
+        kind={renameTarget?.kind || "形象"}
+        isSubmitting={isRenaming}
+        onClose={() => !isRenaming && setRenameTarget(null)}
+        onConfirm={submitRename}
       />
 
       {isCreateOpen ? (
@@ -862,15 +1107,6 @@ export function DigitalHumanV2View({
           initialVoiceId={voiceId}
           initialVoiceSpeed={voiceSpeed}
           initialVoiceEmotion={voiceEmotion}
-        />
-      ) : null}
-
-      {aiGeneratingJob ? (
-        <AvatarGeneratingModal
-          job={aiGeneratingJob}
-          onClose={() => setAiGeneratingJob(null)}
-          onRegenerate={handleRegenerateAiAvatar}
-          onSave={handleSaveAiAvatar}
         />
       ) : null}
 

@@ -109,7 +109,7 @@ export const MarketingToolUploadSlot = forwardRef(function MarketingToolUploadSl
         if (event.key === "Enter" || event.key === " ") clearFile(event);
       }}
     >
-      <X size={13} />
+      <X size={16} />
     </span>
   ) : null;
 

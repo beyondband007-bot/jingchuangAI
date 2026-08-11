@@ -255,14 +255,12 @@
   left: var(--space-2);
   z-index: var(--z-raised);
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   color: #365b7f;
   background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(164, 192, 220, 0.9);
   border-radius: var(--radius-pill);
-  box-shadow: 0 6px 16px rgba(30, 83, 141, 0.16);
   cursor: pointer;
   transition:
     transform 140ms ease,

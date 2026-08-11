@@ -6,7 +6,6 @@ import {
   LogIn,
   LogOut,
   ReceiptText,
-  Sparkles,
   UserPlus,
   UserRound,
   WalletCards,
@@ -21,6 +20,7 @@ import {
   pendingInviteBonusStorageKey,
 } from "../features/invite/inviteUtils";
 import { navItems } from "./navigation";
+import { NotificationCenter } from "./NotificationCenter";
 
 export function WorkbenchTopbar({
   activeNav,
@@ -30,16 +30,20 @@ export function WorkbenchTopbar({
   onLogout,
   onOpenAuth,
   onOpenInvite,
-  onOpenLibrary,
   articleMode = "home",
   onArticleModeChange,
   digitalHumanMode = "avatar",
   onDigitalHumanModeChange,
   notificationSummary,
+  notificationCenter,
+  onRefreshNotificationCenter,
+  onReadNotificationCenter,
+  onReadAllNotificationCenter,
 }) {
   const current = navItems.find((item) => item.id === activeNav);
   const title = current?.label || "Facemini";
   const isLoggedIn = isLoggedInUser(authUser);
+  const unreadNotificationCount = Math.max(0, Number(notificationCenter?.unreadCount) || 0);
   const credits = isLoggedIn ? authUser.credits : null;
   const profileDisplayName =
     authUser?.displayName || authUser?.username || "Facemini 用户";
@@ -50,11 +54,14 @@ export function WorkbenchTopbar({
       : "Facemini 创作账号";
   const profileMenuId = "facemini-profile-menu";
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
+  const [notificationTab, setNotificationTab] = useState("system");
   const [displayCredits, setDisplayCredits] = useState(credits);
   const [creditDelta, setCreditDelta] = useState(null);
   const [isVideoWorkflowHistoryOpen, setIsVideoWorkflowHistoryOpen] =
     useState(false);
   const profileMenuRef = useRef(null);
+  const notificationCenterRef = useRef(null);
   const showDigitalHumanTabs = activeNav === "digital-human";
   const showArticleTabs = activeNav === "article";
   const showVideoWorkflowHistory =
@@ -145,6 +152,21 @@ export function WorkbenchTopbar({
     };
   }, [showProfileMenu]);
 
+  useEffect(() => {
+    if (!showNotificationCenter) return undefined;
+    onRefreshNotificationCenter?.(notificationTab, 1);
+    const closeOnOutside = (event) => {
+      if (!notificationCenterRef.current?.contains(event.target)) setShowNotificationCenter(false);
+    };
+    const closeOnEscape = (event) => { if (event.key === "Escape") setShowNotificationCenter(false); };
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [showNotificationCenter, notificationTab, onRefreshNotificationCenter]);
+
   function openAssets(tab = "全部", subTab = "") {
     try {
       window.sessionStorage.setItem(assetsViewModeStorageKey, "gallery");
@@ -195,6 +217,15 @@ export function WorkbenchTopbar({
       }),
     );
     setShowProfileMenu(false);
+  }
+
+  function changeNotificationTab(tab) {
+    setNotificationTab(tab);
+    onRefreshNotificationCenter?.(tab, 1);
+  }
+
+  function changeNotificationPage(page) {
+    onRefreshNotificationCenter?.(notificationTab, page);
   }
 
   return (
@@ -302,14 +333,6 @@ export function WorkbenchTopbar({
         </div>
         <div className="fm-top-actions">
           <button
-            className="fm-top-library"
-            type="button"
-            onClick={() => onOpenLibrary?.()}
-          >
-            <Sparkles size={17} />
-            灵感库
-          </button>
-          <button
             className="fm-top-invite"
             type="button"
             onClick={onOpenInvite}
@@ -332,14 +355,18 @@ export function WorkbenchTopbar({
             </button>
           )}
           {isLoggedIn && (
+            <div className="fm-notification-wrap" ref={notificationCenterRef}>
             <button
               className="fm-top-bell"
               type="button"
+              onClick={() => setShowNotificationCenter((value) => !value)}
               aria-label={notificationSummary?.totalRunningCount ? "有任务正在生成" : "通知"}
             >
               <Bell size={21} />
-              {notificationSummary?.totalRunningCount > 0 && <span className="fm-generation-red-dot fm-generation-red-dot--bell" aria-hidden="true" />}
+              {unreadNotificationCount > 0 && <span className="fm-notification-badge" aria-label={`${unreadNotificationCount} 条未读通知`}>{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}
             </button>
+              {showNotificationCenter && <NotificationCenter center={notificationCenter || { systemNotifications: [], taskNotifications: [] }} activeTab={notificationTab} onTabChange={changeNotificationTab} onPageChange={changeNotificationPage} onRead={onReadNotificationCenter} onReadAll={onReadAllNotificationCenter} />}
+            </div>
           )}
           {isLoggedIn ? (
             <div className="fm-profile-menu-wrap" ref={profileMenuRef}>

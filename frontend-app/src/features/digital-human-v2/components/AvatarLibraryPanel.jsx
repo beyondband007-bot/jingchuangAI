@@ -3,7 +3,9 @@ import { Plus, Sparkles, X } from "lucide-react";
 import { CustomSelect } from "../../../components/CustomSelect";
 import { AvatarCard } from "./AvatarCard";
 import { AvatarConfirmOverlay } from "./AvatarConfirmOverlay";
+import { AiAvatarGenerationCard } from "./AiAvatarGenerationCard";
 import { VoiceAudioLibraryPanel } from "./VoiceAudioLibraryPanel";
+import { MineAvatarConfigOverlay } from "./MineAvatarConfigOverlay";
 import {
   ASPECT_RATIO_OPTIONS,
   FILL_MODE_OPTIONS,
@@ -33,10 +35,19 @@ export function AvatarLibraryPanel({
   onConfirmAvatar,
   onCreateAvatar,
   onVoiceSaved,
+  onRenameAvatar,
+  onDeleteAvatar,
+  onRenameVoice,
+  onDeleteVoice,
+  onConfirmMineConfig,
+  onPersistMineConfig,
   refreshCredits,
+  aiGeneratingJob,
+  onRetryAiAvatar,
   onClose,
 }) {
   const [previewAvatar, setPreviewAvatar] = useState(null);
+  const [mineConfigAvatar, setMineConfigAvatar] = useState(null);
   const [activeTab, setActiveTab] = useState(avatarSource === "mine" ? "mine" : "official");
   const isMine = activeTab === "mine";
   const isAudio = activeTab === "audio";
@@ -68,7 +79,7 @@ export function AvatarLibraryPanel({
 
   function handleSelect(item) {
     if (isMine) {
-      onSelectMineItem?.(item);
+      setMineConfigAvatar(item);
       return;
     }
     setPreviewAvatar(item);
@@ -116,7 +127,7 @@ export function AvatarLibraryPanel({
             {isAudio
               ? `我的音色：共计 ${clonedVoiceCount} 个`
               : isMine
-                ? `我的形象：共计 ${mineList.length} 个`
+                ? `我的形象：共计 ${mineList.length + (aiGeneratingJob ? 1 : 0)} 个`
                 : `官方形象：共计 ${officialList.length} 个`}
           </span>
         </div>
@@ -170,6 +181,8 @@ export function AvatarLibraryPanel({
           onVoiceIdChange={onVoiceIdChange}
           onVoiceSaved={onVoiceSaved}
           refreshCredits={refreshCredits}
+          onRenameVoice={onRenameVoice}
+          onDeleteVoice={onDeleteVoice}
         />
       ) : (
         <div
@@ -184,6 +197,10 @@ export function AvatarLibraryPanel({
             </button>
           ) : null}
 
+          {isMine && aiGeneratingJob ? (
+            <AiAvatarGenerationCard job={aiGeneratingJob} onRetry={onRetryAiAvatar} />
+          ) : null}
+
           {list.map((item) => (
             <AvatarCard
               key={item.libraryId || item.id}
@@ -192,6 +209,8 @@ export function AvatarLibraryPanel({
               onSelect={handleSelect}
               variant={isMine ? "mine" : "default"}
               showPlayIcon={isMine && Boolean(item.resultUrl)}
+              onRename={onRenameAvatar}
+              onDelete={onDeleteAvatar}
             />
           ))}
           {!list.length && !isMine ? (
@@ -208,21 +227,37 @@ export function AvatarLibraryPanel({
       {previewAvatar ? (
         <AvatarConfirmOverlay
           avatar={previewAvatar}
-          voices={voices}
-          voiceId={voiceId}
-          onVoiceIdChange={onVoiceIdChange}
-          voiceSpeed={voiceSpeed}
-          onVoiceSpeedChange={onVoiceSpeedChange}
-          voiceEmotion={voiceEmotion}
-          onVoiceEmotionChange={onVoiceEmotionChange}
           onClose={() => setPreviewAvatar(null)}
-          onConfirm={({ avatar, voiceId: nextVoiceId, speed, emotion }) => {
-            onVoiceIdChange?.(nextVoiceId);
-            onVoiceSpeedChange?.(speed);
-            onVoiceEmotionChange?.(emotion);
+          onConfirm={(avatar) => {
             onSelectAvatar?.(avatar);
             onConfirmAvatar?.(avatar);
             setPreviewAvatar(null);
+          }}
+        />
+      ) : null}
+      {mineConfigAvatar ? (
+        <MineAvatarConfigOverlay
+          avatar={mineConfigAvatar}
+          voices={voices}
+          initialVoiceId={mineConfigAvatar.defaultVoiceId || voiceId}
+          initialVoiceSource={mineConfigAvatar.defaultVoiceSource || "public"}
+          initialPublicVoiceId={mineConfigAvatar.defaultPublicVoiceId || (mineConfigAvatar.defaultVoiceSource === "public" ? mineConfigAvatar.defaultVoiceId : "")}
+          initialMineVoiceId={mineConfigAvatar.defaultMineVoiceId || (mineConfigAvatar.defaultVoiceSource === "mine" ? mineConfigAvatar.defaultVoiceId : "")}
+          initialVoiceSpeed={mineConfigAvatar.defaultVoiceSpeed || voiceSpeed}
+          initialVoiceEmotion={mineConfigAvatar.defaultVoiceEmotion || voiceEmotion}
+          onClose={() => setMineConfigAvatar(null)}
+          onRename={(avatar) => onRenameAvatar?.(avatar, (updatedAvatar) => {
+            setMineConfigAvatar((current) => String(current?.id) === String(avatar.id) ? { ...current, ...updatedAvatar } : current);
+          })}
+          onDelete={(avatar) => {
+            setMineConfigAvatar(null);
+            onDeleteAvatar?.(avatar);
+          }}
+          onVoiceSaved={async () => onVoiceSaved?.()}
+          onConfigChange={onPersistMineConfig}
+          onConfirm={(avatar, config) => {
+            onConfirmMineConfig?.(avatar, config);
+            setMineConfigAvatar(null);
           }}
         />
       ) : null}

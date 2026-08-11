@@ -5,6 +5,10 @@ const CREDIT_MEMO_TEXT = new Map([
   ["demo-user initial credits", "\u6f14\u793a\u8d26\u53f7\u521d\u59cb\u79ef\u5206"],
   ["image generation debit", "\u56fe\u7247\u751f\u6210\u6263\u8d39"],
   ["image generation refund", "\u56fe\u7247\u751f\u6210\u9000\u6b3e"],
+  ["article image generation debit", "\u7206\u6b3e\u56fe\u6587\u751f\u56fe\u6263\u8d39"],
+  ["article image generation refund", "\u7206\u6b3e\u56fe\u6587\u751f\u56fe\u9000\u6b3e"],
+  ["digital human avatar ai customization image generation debit", "\u6570\u5b57\u4eba\u5f62\u8c61 AI \u5b9a\u5236\u751f\u56fe\u6263\u8d39"],
+  ["digital human avatar ai customization image generation refund", "\u6570\u5b57\u4eba\u5f62\u8c61 AI \u5b9a\u5236\u751f\u56fe\u9000\u6b3e"],
   ["video generation debit", "\u89c6\u9891\u751f\u6210\u6263\u8d39"],
   ["video generation refund", "\u89c6\u9891\u751f\u6210\u9000\u6b3e"],
   ["chat completion debit", "AI \u5bf9\u8bdd\u6263\u8d39"],
@@ -28,22 +32,40 @@ const CREDIT_MEMO_TEXT = new Map([
   ["remove background generation refund", "\u53bb\u80cc\u666f\u9000\u6b3e"],
   ["music generation debit", "\u97f3\u4e50\u751f\u6210\u6263\u8d39"],
   ["music generation refund", "\u97f3\u4e50\u751f\u6210\u9000\u6b3e"],
-  ["article copy debit", "\u56fe\u6587\u6587\u6848\u6263\u8d39"],
-  ["article copy refund", "\u56fe\u6587\u6587\u6848\u9000\u6b3e"],
+  ["article copy debit", "\u7206\u6b3e\u56fe\u6587\u751f\u6210\u6807\u9898&\u6b63\u6587\u6263\u8d39"],
+  ["article copy refund", "\u7206\u6b3e\u56fe\u6587\u751f\u6210\u6807\u9898&\u6b63\u6587\u9000\u6b3e"],
+  ["article copy invalid response refund", "\u7206\u6b3e\u56fe\u6587\u751f\u6210\u6807\u9898&\u6b63\u6587\u9000\u6b3e"],
   ["image replicate debit", "\u89c6\u89c9\u590d\u523b\u6263\u8d39"],
   ["image replicate failure refund", "\u89c6\u89c9\u590d\u523b\u9000\u6b3e"],
   ["video replicate debit", "\u89c6\u9891\u590d\u523b\u6263\u8d39"],
   ["video replicate failure refund", "\u89c6\u9891\u590d\u523b\u9000\u6b3e"],
+  ["video dubbing debit", "视频配音扣费"],
+  ["video dubbing failure refund", "视频配音退款"],
+  ["voice convert debit", "音色转换扣费"],
+  ["voice convert failure refund", "音色转换退款"],
+  ["transcription debit", "语音转文字扣费"],
+  ["transcription refund", "语音转文字退款"],
+  ["image replicate refund", "\u89c6\u89c9\u590d\u5236\u9000\u6b3e"],
+  ["video replicate refund", "\u89c6\u9891\u590d\u5236\u9000\u6b3e"],
   ["invite gift inviter reward", "\u9080\u8bf7\u6709\u793c\u5956\u52b1"],
   ["invite gift invitee reward", "\u53d7\u9080\u6ce8\u518c\u5956\u52b1"]
 ]);
 
-export function localizeCreditMemo(memo) {
+export function localizeCreditMemo(memo, { imageSource = "" } = {}) {
   const text = String(memo || "").trim();
   if (!text) return "";
+  if (text === "image generation debit") {
+    if (imageSource === "article") return "爆款图文生图扣费";
+    if (imageSource === "digital-human-avatar") return "数字人形象 AI 定制生图扣费";
+  }
+  if (text === "image generation refund") {
+    if (imageSource === "article") return "爆款图文生图退款";
+    if (imageSource === "digital-human-avatar") return "数字人形象 AI 定制生图退款";
+  }
   if (CREDIT_MEMO_TEXT.has(text)) return CREDIT_MEMO_TEXT.get(text);
 
   return text
+    .replace(/^Manual recharge for\s+(.+)$/i, "\u4eba\u5de5\u5145\u503c\uff08\u8d26\u6237\uff1a$1\uff09")
     .replace(/\btask creation failed:\s*/i, "\u4efb\u52a1\u521b\u5efa\u5931\u8d25\uff1a")
     .replace(/\btask failed\b/i, "\u4efb\u52a1\u5931\u8d25")
     .replace(/\bresult missing URL\b/i, "\u7ed3\u679c\u7f3a\u5c11\u94fe\u63a5");

@@ -36,6 +36,7 @@ export function ScriptCard({
   onVoiceIdChange,
   onVoiceSpeedChange,
   onVoiceEmotionChange,
+  onVoiceConfigChange,
   previewRequestId = 0,
   playbackRequestId = 0,
   previewPhase = "draft",
@@ -338,6 +339,7 @@ export function ScriptCard({
             onVoiceSpeedChange={onVoiceSpeedChange}
             voiceEmotion={voiceEmotion}
             onVoiceEmotionChange={onVoiceEmotionChange}
+            onVoiceConfigChange={onVoiceConfigChange}
           />
         ) : null}
         {isCloneMode ? (
@@ -352,29 +354,6 @@ export function ScriptCard({
           </button>
         ) : null}
       </header>
-
-      {showCloneUpload ? (
-        <div className="dhv2-segmented-tabs dhv2-voice-mode-tabs" role="tablist" aria-label="配音方式">
-          <button
-            type="button"
-            role="tab"
-            className={!isCloneMode ? "is-active" : ""}
-            aria-selected={!isCloneMode}
-            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.system)}
-          >
-            系统音色
-          </button>
-          <button
-            type="button"
-            role="tab"
-            className={isCloneMode ? "is-active" : ""}
-            aria-selected={isCloneMode}
-            onClick={() => onVoiceModeChange?.(VOICE_DUBBING_MODES.clone)}
-          >
-            声音克隆
-          </button>
-        </div>
-      ) : null}
 
       <input
         ref={cloneInputRef}
@@ -453,7 +432,7 @@ export function ScriptCard({
           onClick={handleOptimizeClick}
         >
           <Sparkles size={12} />
-          AI 优化台词
+          AI 优化台词丨4 积分
         </button>
       </div>
 

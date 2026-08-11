@@ -1,5 +1,5 @@
 import React from "react";
-import { Drama, History, Sparkles, Upload, UserRound } from "lucide-react";
+import { Drama, Sparkles, Upload, UserRound } from "lucide-react";
 import { getPosterPath, isVideoCover } from "../utils";
 
 export function AvatarSelectionCard({
@@ -68,10 +68,6 @@ export function AvatarSelectionCard({
             <button type="button" onClick={() => onCreateAvatar?.("upload")}>
               <Upload size={14} />
               <span>本地上传</span>
-            </button>
-            <button type="button" onClick={() => onCreateAvatar?.("history")}>
-              <History size={14} />
-              <span>从历史作品选择</span>
             </button>
           </div>
         ) : (

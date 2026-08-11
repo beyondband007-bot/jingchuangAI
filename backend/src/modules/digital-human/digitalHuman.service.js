@@ -34,21 +34,27 @@ import {
 import { imageToImageModelKey } from "../image/image.options.js";
 import * as voiceService from "../voice/voice.service.js";
 import {
+  deleteVoiceCloneAsset,
   findCompletedVoiceCloneAssetByVoiceId,
   markVoiceCloneAssetExpired,
+  renameVoiceCloneAsset,
   touchVoiceCloneAssetLastUsed
 } from "../voice/voice.repository.js";
 import { publicAvatars, digitalHumanModels, voices } from "./digitalHuman.data.js";
 import {
   createVirtualAssetFromLocalFile,
   createVirtualAssetFromRemoteUrl,
+  deleteVirtualAsset,
   isArkOpenApiConfigured,
   listVirtualAssets,
+  renameVirtualAsset,
+  updateVirtualAssetMetadata,
   refreshVirtualAsset,
   waitForVirtualAssetReference
 } from "./arkVirtualAssets.service.js";
 import {
   createDigitalHumanTaskRow,
+  listDigitalHumanAvatarVoiceConfigs,
   deleteDigitalHumanTaskRow,
   findDigitalHumanTaskRow,
   findRefreshableDigitalHumanTasks,
@@ -59,7 +65,8 @@ import {
   setDigitalHumanTaskError,
   setDigitalHumanTaskFailed,
   setDigitalHumanTaskProcessing,
-  setDigitalHumanTaskProviderStarted
+  setDigitalHumanTaskProviderStarted,
+  upsertDigitalHumanAvatarVoiceConfig
 } from "./digitalHuman.repository.js";
 
 const myAvatars = [];
@@ -106,18 +113,10 @@ export function buildSeedanceDigitalHumanPrompt({
   const emotionRule = normalizePromptText(emotion, 30) || "自然";
   const speedRule = Number.isFinite(Number(speed)) ? Number(speed).toFixed(1) : "1.0";
   const normalizedSceneReferenceType =
-    sceneReferenceType === "uploaded" || sceneReferenceType === "default"
-      ? sceneReferenceType
-      : hasSceneReference
-        ? "uploaded"
-        : "none";
-  const sceneReferenceLabel =
-    normalizedSceneReferenceType === "uploaded"
-      ? "用户上传的最终场景参考图"
-      : "所选数字人自带的默认场景图";
-  const sceneRule = normalizedSceneReferenceType !== "none"
+    hasSceneReference && sceneReferenceType === "uploaded" ? "uploaded" : "none";
+  const sceneRule = normalizedSceneReferenceType === "uploaded"
     ? [
-        `图片2是${sceneReferenceLabel}。必须把图片1中的数字人自然放入图片2的场景中，并完整保留场景的空间关系、主体环境和整体氛围。`,
+        "图片2是用户上传的最终场景参考图。必须把图片1中的数字人自然放入图片2的场景中，并完整保留场景的空间关系、主体环境和整体氛围。",
         "根据场景自动适配人物站位、半身构图、画面留白、透视比例、景深、色温、主光方向和阴影，让人物像真实处于该场景，而不是贴图或悬浮。",
         "场景图仅控制背景与环境，不得复制场景图中的其他人物、文字、Logo、商品或水印；人物身份和服装始终以图片1为准。"
       ].join("\n")
@@ -355,6 +354,7 @@ export function mapVirtualAssetToAvatar(asset) {
     defaultVoiceId: metadata.defaultVoiceId || "",
     defaultVoiceSpeed: normalizeDecimal(metadata.defaultVoiceSpeed, 1),
     defaultVoiceEmotion: metadata.defaultVoiceEmotion || "",
+    defaultVoiceSource: metadata.defaultVoiceSource || "public",
     arkAssetId: asset.id,
     providerAssetId: asset.providerAssetId,
     assetUri: asset.assetUri,
@@ -509,15 +509,17 @@ async function resolveImageAssetFile(assetPath, label) {
   return imagePath;
 }
 
+export function getAvatarIdentityAssetPath(avatar = {}) {
+  return avatar.referenceImage || avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+}
+
 async function getAvatarIdentityImageFile(avatar) {
-  const assetPath = avatar.threeView || avatar.imagePath || avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover;
+  const assetPath = getAvatarIdentityAssetPath(avatar);
   return resolveImageAssetFile(assetPath, "avatar");
 }
 
-async function getAvatarSceneImageFile(avatar, uploadedScene) {
-  if (uploadedScene?.filePath) return uploadedScene.filePath;
-  const assetPath = avatar.posterPath || avatar.poster || avatar.assetPath || avatar.cover || avatar.threeView || avatar.imagePath;
-  return resolveImageAssetFile(assetPath, "scene");
+export function getUploadedSceneAssetPath(uploadedScene) {
+  return String(uploadedScene?.filePath || "").trim();
 }
 
 async function getAvatarImageProviderUrl(avatar) {
@@ -622,9 +624,9 @@ async function createProviderTask(taskId, payload) {
 
   const generationSpec = parseDigitalHumanVideoSpec(videoSpec);
   const avatarImagePath = await getAvatarIdentityImageFile(avatar);
-  const sceneImagePath = await getAvatarSceneImageFile(avatar, uploadedScene);
+  const sceneImagePath = getUploadedSceneAssetPath(uploadedScene);
 
-  console.log(`[digital-human] task ${taskId}: preparing public provider assets`);
+  console.log(`[digital-human] task ${taskId}: preparing public provider assets with identity reference ${path.basename(avatarImagePath)}`);
   const [kieAudioUpload, kieAvatarImageProviderUrl, kieSceneImageProviderUrl] = await Promise.all([
     uploadFileToKie({
       filePath: savedAudio.filePath,
@@ -633,7 +635,9 @@ async function createProviderTask(taskId, payload) {
       uploadPath: "digital-human/audio"
     }),
     uploadImageToKieReference(avatarImagePath, "digital-human/avatar-image"),
-    uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
+    sceneImagePath
+      ? uploadImageToKieReference(sceneImagePath, "digital-human/scene-image")
+      : Promise.resolve("")
   ]);
 
   if (model.provider !== "ark") {
@@ -645,7 +649,7 @@ async function createProviderTask(taskId, payload) {
     const [avatarReference, sceneReference, audioReference] = await Promise.all([
       createSeedanceVirtualReferenceFromUrl({
         userId,
-        feature: "digital-human-avatar-three-view",
+        feature: "digital-human-avatar-reference",
         url: kieAvatarImageProviderUrl,
         originalName: path.basename(avatarImagePath),
         mimeType: getImageMimeType(avatarImagePath)
@@ -681,7 +685,7 @@ async function createProviderTask(taskId, payload) {
           resolution: generationSpec.resolution,
           fps: generationSpec.fps,
           hasSceneReference: Boolean(sceneReference),
-          sceneReferenceType: uploadedScene ? "uploaded" : "default"
+          sceneReferenceType: uploadedScene ? "uploaded" : "none"
         })
       },
       buildReferenceImage(avatarReference),
@@ -737,7 +741,25 @@ export function getModels() {
 }
 
 export async function getAvatars(userId) {
-  return { public: publicAvatars, mine: await getMyAvatars(userId) };
+  const configs = await listDigitalHumanAvatarVoiceConfigs(userId);
+  const configByAvatarId = new Map(configs.map((item) => [String(item.avatar_id), item]));
+  const applyConfig = (avatar) => {
+    const voiceConfig = configByAvatarId.get(String(avatar.id));
+    if (!voiceConfig) return avatar;
+    return {
+      ...avatar,
+      defaultVoiceId: voiceConfig.voice_id,
+      defaultVoiceSpeed: normalizeDecimal(voiceConfig.voice_speed, 1),
+      defaultVoiceEmotion: voiceConfig.voice_emotion || "",
+      defaultVoiceSource: voiceConfig.voice_source === "upload" ? "mine" : (voiceConfig.voice_source || "public"),
+      defaultPublicVoiceId: voiceConfig.public_voice_id || (voiceConfig.voice_source === "public" ? voiceConfig.voice_id : ""),
+      defaultMineVoiceId: voiceConfig.mine_voice_id || (voiceConfig.voice_source === "mine" || voiceConfig.voice_source === "upload" ? voiceConfig.voice_id : ""),
+    };
+  };
+  return {
+    public: publicAvatars.map(applyConfig),
+    mine: (await getMyAvatars(userId)).map(applyConfig),
+  };
 }
 
 export async function getVoices(userId) {
@@ -1179,7 +1201,9 @@ export async function createTask(payload, requestUser = null) {
   const voice = driveMode === "audio"
     ? { id: "uploaded-audio", name: audioName || uploadedAudio.originalName || "用户上传音频" }
     : await getVoiceById(voiceId, requestUserId);
-  const taskText = driveMode === "audio" ? audioName || uploadedAudio.originalName || "用户上传音频" : text;
+  // Keep the authored dubbing copy whenever it exists. The uploaded audio name
+  // is transport metadata, not content that should appear in work history.
+  const taskText = String(text || "").trim() || (driveMode === "audio" ? "" : text);
   const billingDuration = driveMode === "audio"
     ? Math.ceil(Number(uploadedAudio?.durationMs || 0) / 1000)
     : estimateSpeechSeconds(text);
@@ -1384,17 +1408,55 @@ export function createAvatar(payload) {
   return avatar;
 }
 
-export function updateAvatar(id, payload) {
-  const avatar = myAvatars.find((item) => item.id === id);
-  if (!avatar) return null;
-  if (payload.name?.trim()) avatar.name = payload.name.trim();
-  return avatar;
+export async function updateAvatar(id, payload, userId) {
+  const match = /^ark-asset-(\d+)$/.exec(String(id || ""));
+  const name = String(payload?.name || "").trim();
+  if (name && match) {
+    return mapVirtualAssetToAvatar(await renameVirtualAsset(match[1], name, userId));
+  }
+  if (name) return null;
+  const hasVoiceConfig = Object.prototype.hasOwnProperty.call(payload || {}, "voiceId")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceSpeed")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceEmotion")
+    || Object.prototype.hasOwnProperty.call(payload || {}, "voiceSource");
+  if (!hasVoiceConfig) throw createHttpError("name or voice configuration is required", 400);
+  const voiceId = String(payload?.voiceId || "").trim();
+  if (!voiceId) throw createHttpError("voiceId is required", 400);
+  const voiceSpeed = Math.min(2, Math.max(0.5, normalizeDecimal(payload?.voiceSpeed, 1)));
+  const voiceEmotion = String(payload?.voiceEmotion || "").trim();
+  const requestedVoiceSource = String(payload?.voiceSource || "public").trim();
+  const voiceSource = requestedVoiceSource === "public" ? "public" : "mine";
+  const publicVoiceId = String(payload?.publicVoiceId || "").trim();
+  const mineVoiceId = String(payload?.mineVoiceId || "").trim();
+  await upsertDigitalHumanAvatarVoiceConfig({ userId, avatarId: id, voiceId, voiceSpeed, voiceEmotion, voiceSource, publicVoiceId, mineVoiceId });
+  if (!match) {
+    const avatar = publicAvatars.find((item) => String(item.id) === String(id));
+    return avatar ? { ...avatar, defaultVoiceId: voiceId, defaultVoiceSpeed: voiceSpeed, defaultVoiceEmotion: voiceEmotion, defaultVoiceSource: voiceSource } : null;
+  }
+  return mapVirtualAssetToAvatar(await updateVirtualAssetMetadata(match[1], {
+    defaultVoiceId: voiceId,
+    defaultVoiceSpeed: voiceSpeed,
+    defaultVoiceEmotion: voiceEmotion,
+    defaultVoiceSource: voiceSource,
+  }, userId));
 }
 
-export function deleteAvatar(id) {
-  const index = myAvatars.findIndex((item) => item.id === id);
-  if (index >= 0) myAvatars.splice(index, 1);
-  return { ok: index >= 0 };
+export async function deleteAvatar(id, userId) {
+  const match = /^ark-asset-(\d+)$/.exec(String(id || ""));
+  if (!match) return { ok: false };
+  return { ok: await deleteVirtualAsset(match[1], userId) };
+}
+
+export async function updateVoice(id, payload, userId) {
+  const name = String(payload?.name || "").trim();
+  if (!name) throw createHttpError("name is required", 400);
+  const updated = await renameVoiceCloneAsset({ userId, voiceId: id, name });
+  if (!updated) return null;
+  return findCompletedVoiceCloneAssetByVoiceId({ userId, voiceId: id });
+}
+
+export async function deleteVoice(id, userId) {
+  return { ok: await deleteVoiceCloneAsset({ userId, voiceId: id }) };
 }
 
 export async function createArkAvatar(payload, file, userId) {

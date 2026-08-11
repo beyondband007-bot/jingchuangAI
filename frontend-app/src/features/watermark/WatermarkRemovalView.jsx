@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Upload } from "@arco-design/web-react";
 import {
   CheckCircle2,
@@ -10,6 +10,7 @@ import {
   Loader2,
   Video,
   X,
+  Upload as UploadIcon,
   Zap,
 } from "lucide-react";
 import BillingPoints from "../../components/BillingPoints.jsx";
@@ -27,6 +28,7 @@ import { hasRunningTasks, taskStatusSignature } from "../../api/taskPolling";
 import { watermarkApi } from "../../api/watermarkApi";
 import { formatBeijingDateTime } from "../../utils/time";
 import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCardActions";
+import { MarketingHistoryDetailModal, MarketingPreviewLightbox } from "../marketing-tool-ui";
 
 function cleanDisplayName(value, fallback = "素材文件") {
   const text = String(value || "").trim();
@@ -198,18 +200,18 @@ function WatermarkCenterState({
   );
 }
 
-function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
   const isVideo = task.mediaType === "video";
 
   return (
-    <article className={`watermark-task-card status-${task.status}`}>
+    <article className={`watermark-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
             <video
-              src={task.resultUrl}
+              src={task.thumbnailUrl || task.resultUrl}
               controls
               playsInline
               preload="metadata"
@@ -217,7 +219,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
             />
           ) : (
             <img
-              src={task.resultUrl}
+              src={task.thumbnailUrl || task.resultUrl}
               alt={task.sourceFileName || "去水印结果"}
             />
           )
@@ -252,7 +254,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat }) {
   );
 }
 
-function WatermarkUploadSlot({
+const WatermarkUploadSlot = forwardRef(function WatermarkUploadSlot({
   mode,
   sourceAsset,
   previewUrl,
@@ -260,8 +262,11 @@ function WatermarkUploadSlot({
   disabled = false,
   onSelect,
   onClear,
+  onPreview,
   onRequireAuth,
-}) {
+}, ref) {
+  const containerRef = useRef(null);
+  useImperativeHandle(ref, () => ({ openFilePicker: () => containerRef.current?.querySelector('input[type="file"]')?.click() }), []);
   const isVideo = mode === "video";
 
   function clearFile(event) {
@@ -273,6 +278,7 @@ function WatermarkUploadSlot({
   function renderUploadSlot(uploadDisabled = false) {
     return (
       <div
+        ref={containerRef}
         className={`marketing-composer__upload marketing-tool-upload watermark-upload-slot ${previewUrl ? "has-preview" : ""}`}
         role="button"
         tabIndex={uploadDisabled ? 0 : -1}
@@ -288,9 +294,9 @@ function WatermarkUploadSlot({
       >
         {previewUrl ? (
           isVideo ? (
-            <video src={previewUrl} muted playsInline preload="metadata" />
+            <video src={previewUrl} muted controls playsInline preload="metadata" onClick={(event) => event.stopPropagation()} />
           ) : (
-            <img src={previewUrl} alt="上传素材预览" />
+            <img src={previewUrl} alt="上传素材预览" onClick={(event) => { event.preventDefault(); event.stopPropagation(); onPreview?.(); }} />
           )
         ) : (
           <>
@@ -314,7 +320,7 @@ function WatermarkUploadSlot({
               if (event.key === "Enter" || event.key === " ") clearFile(event);
             }}
           >
-            <X size={13} />
+            <X size={16} />
           </span>
         )}
         {sourceAsset && (
@@ -326,12 +332,6 @@ function WatermarkUploadSlot({
           <span className="watermark-uploading">
             <Loader2 size={16} />
             上传中
-          </span>
-        )}
-        {!isUploading && previewUrl && (
-          <span className="watermark-upload-kind">
-            {isVideo ? <Film size={14} /> : <Image size={14} />}
-            更换素材
           </span>
         )}
       </div>
@@ -360,7 +360,7 @@ function WatermarkUploadSlot({
       {renderUploadSlot(false)}
     </Upload>
   );
-}
+});
 
 function WatermarkComposer({
   options,
@@ -370,9 +370,12 @@ function WatermarkComposer({
   onOpenAuth,
   isActive = true,
 }) {
+  const uploadRef = useRef(null);
+  const reuploadInputRef = useRef(null);
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
   const activeRef = useRef(isActive);
@@ -486,7 +489,19 @@ function WatermarkComposer({
   }
 
   return (
+    <>
     <div className="marketing-composer marketing-composer--inline marketing-tool-card watermark-composer" aria-label="去水印上传面板">
+      <input
+        ref={reuploadInputRef}
+        type="file"
+        accept={mode === "video" ? "video/*" : "image/*"}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0] || null;
+          event.target.value = "";
+          if (file) selectSource(file);
+        }}
+      />
       <div className="marketing-composer__tabs marketing-tool-tabs watermark-mode-tabs">
         <button
           className={mode === "image" ? "is-active" : ""}
@@ -506,6 +521,7 @@ function WatermarkComposer({
         </button>
       </div>
       <WatermarkUploadSlot
+        ref={uploadRef}
         mode={mode}
         sourceAsset={sourceAsset}
         previewUrl={previewUrl}
@@ -513,6 +529,7 @@ function WatermarkComposer({
         disabled={isGuest}
         onSelect={selectSource}
         onClear={clearSource}
+        onPreview={() => setLightboxOpen(true)}
         onRequireAuth={() => {
           setNotice("请先登录");
           onOpenAuth?.("login");
@@ -534,6 +551,7 @@ function WatermarkComposer({
             "请上传文件"
           )}
         </strong>
+        {previewUrl ? <button type="button" className="marketing-tool-composer__secondary-action" onClick={() => reuploadInputRef.current?.click()} disabled={uploading}><UploadIcon size={15} />重新上传文件</button> : null}
         <button
           className="ui-send-button"
           type="button"
@@ -545,6 +563,8 @@ function WatermarkComposer({
         </button>
       </div>
     </div>
+    {lightboxOpen && previewUrl && mode === "image" ? <MarketingPreviewLightbox url={previewUrl} onClose={() => setLightboxOpen(false)} /> : null}
+    </>
   );
 }
 
@@ -558,6 +578,7 @@ export function WatermarkRemovalView({
   const [options, setOptions] = useState(emptyWatermarkOptions);
   const [, setCredits] = useState(null);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -787,12 +808,14 @@ export function WatermarkRemovalView({
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="去水印" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

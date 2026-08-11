@@ -24,6 +24,11 @@ import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 const voiceConvertRecentStorageKey = "jingchuang.voiceConvert.recentResults";
 const maxTargetAudioBytes = 20 * 1024 * 1024;
 const maxSourceAudioBytes = 50 * 1024 * 1024;
+const audioFilePattern = /\.(mp3|m4a|wav|flac|webm)$/i;
+
+function isSupportedAudioFile(file) {
+  return Boolean(file && (file.type.startsWith("audio/") || audioFilePattern.test(file.name)));
+}
 
 const CONVERSION_STAGE_TEXTS = [
   "正在读取目标音色特征",
@@ -224,10 +229,16 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     setNotice("");
     setUploading("target");
     try {
+      if (!isSupportedAudioFile(file) || !/\.(mp3|m4a|wav)$/i.test(file.name)) {
+        throw new Error("目标音色仅支持 mp3、m4a 或 wav 音频文件。");
+      }
       if (file.size > maxTargetAudioBytes) {
         throw new Error("目标音色文件需小于 20MB");
       }
       const durationMs = await readAudioDuration(file);
+      if (!durationMs) {
+        throw new Error("无法读取目标音色时长，请检查文件是否完整。");
+      }
       if (durationMs && (durationMs < 10000 || durationMs > 5 * 60 * 1000)) {
         throw new Error("目标音色需为 10 秒到 5 分钟的 mp3、m4a 或 wav。");
       }
@@ -279,8 +290,14 @@ export function VoiceConvertView({ onOpenFeature, resetSignal = 0 }) {
     sourcePickVersionRef.current = pickVersion;
     setNotice("");
     try {
+      if (!isSupportedAudioFile(file)) {
+        throw new Error("请上传 mp3、m4a、wav、flac 或 webm 音频文件。");
+      }
       if (file.size > maxSourceAudioBytes) throw new Error("源音频文件需小于 50MB");
       const durationMs = await readAudioDuration(file);
+      if (!durationMs) {
+        throw new Error("无法读取源音频时长，请检查文件是否完整。");
+      }
       if (pickVersion !== sourcePickVersionRef.current) return;
       if (durationMs && (durationMs < 6000 || durationMs > 6 * 60 * 1000)) {
         throw new Error("源音频需为 6 秒到 6 分钟的 mp3、wav、flac、m4a 或 webm。");

@@ -100,7 +100,7 @@
   height: 34px;
   align-items: center;
   justify-content: center;
-  color: #236dcc;
+  color: #623bff;
   background: #fff;
   border: 1px solid #d5e4f4;
   border-radius: var(--radius-xs);
@@ -238,7 +238,7 @@
   overflow: hidden;
   place-items: center;
   color: #2b83ef;
-  background: #11131a;
+  background: #f4f1fb;
   border-radius: 14px 14px 0 0;
 }
 
@@ -247,8 +247,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: #11131a;
+  object-fit: cover;
+  background: #f4f1fb;
 }
 
 .replicate-card-image-trigger,
@@ -271,8 +271,8 @@
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: #11131a;
+  object-fit: cover;
+  background: #f4f1fb;
 }
 
 .replicate-card-media-fallback {
@@ -430,7 +430,7 @@
   gap: var(--space-1);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .replicate-view .replicate-recent-list {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 12px;
@@ -469,7 +469,7 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(2, 4, 10, 0.86);
+  background: var(--overlay-backdrop);
   backdrop-filter: blur(10px);
   cursor: zoom-out;
 }
@@ -591,13 +591,15 @@
   grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
   gap: 12px;
   align-items: stretch;
+  min-height: 280px;
 }
 
 .replicate-view .marketing-result.replicate-result-composer .replicate-result-source {
-  aspect-ratio: 3 / 4;
-  min-height: 280px;
-  max-height: min(460px, 54vh);
-  background: #11131a;
+  aspect-ratio: auto;
+  min-height: 0;
+  height: 100%;
+  max-height: none;
+  background: #f4f1fb;
   border-color: #e2ddec;
 }
 
@@ -606,11 +608,17 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #11131a;
+  background: #f4f1fb;
 }
 
 .replicate-view .marketing-result.replicate-result-composer .replicate-result-prompt textarea {
-  min-height: 280px;
+  min-height: 0;
+  height: 100%;
+}
+
+.replicate-view .marketing-result.replicate-result-composer .replicate-result-prompt {
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
 }
 
 .replicate-view .replicate-result-diagnostics {
@@ -636,7 +644,7 @@
   border-color: #f6d58d;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 768px) {
   .replicate-view .marketing-result.replicate-result-composer .marketing-result__body {
     grid-template-columns: 1fr;
   }

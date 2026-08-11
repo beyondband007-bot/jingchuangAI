@@ -8,6 +8,7 @@ import {
   useRegenerateConfirmation,
 } from "../../components/DeleteConfirmDialog";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
+import { formatBeijingDateTime } from "../../utils/time";
 import "./digitalHumanHistory.css";
 
 function getAvatarSource(task) {
@@ -28,7 +29,9 @@ function normalizeAvatarTask(task) {
     avatarSource,
     title: task.avatarName || "数字人形象",
     previewUrl: task.thumbnailUrl || "",
-    subtitle: task.voiceName || getAvatarSourceLabel(avatarSource),
+    subtitle: task.voiceName && !/\.(mp3|m4a|wav|webm)$/i.test(task.voiceName)
+      ? task.voiceName
+      : "系统配音",
   };
 }
 
@@ -39,7 +42,9 @@ function normalizePhotoTask(task) {
     avatarSource: "mine",
     title: task.avatarName || "我的形象",
     previewUrl: task.thumbnailUrl || task.portraitUrl || "",
-    subtitle: task.voiceName || "我的形象",
+    subtitle: task.voiceName && !/\.(mp3|m4a|wav|webm)$/i.test(task.voiceName)
+      ? task.voiceName
+      : "系统配音",
   };
 }
 
@@ -47,6 +52,15 @@ function getStatusTag(status) {
   if (status === "completed") return { color: "green", label: "完成" };
   if (status === "failed") return { color: "red", label: "失败" };
   return { color: "arcoblue", label: "生成中" };
+}
+
+function getDubbingContent(task) {
+  const candidates = [task?.dubbingText, task?.script, task?.text];
+  const content = candidates.find((value) => {
+    const normalized = String(value || "").trim();
+    return normalized && !/\.(mp3|m4a|wav|aac|ogg|webm)$/i.test(normalized);
+  });
+  return String(content || "暂无配音内容").trim();
 }
 
 function HistoryPreviewModal({ task, onClose }) {
@@ -307,10 +321,10 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
                   <strong>{task.title}</strong>
                   <p>{task.subtitle}</p>
                   <p className="dh-history-card__script">
-                    {(task.text || "").trim() || "暂无口播文案"}
+                    {getDubbingContent(task)}
                   </p>
                   <div className="dh-history-card__meta">
-                    <span>{task.time || task.createdAt}</span>
+                    <span>{formatBeijingDateTime(task.createdAt || task.time)}</span>
                     {task.costPoints ? <span>消耗 {task.costPoints} 积分</span> : null}
                   </div>
                 </div>

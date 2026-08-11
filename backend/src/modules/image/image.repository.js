@@ -270,7 +270,7 @@ export async function setImageTaskError(id, message) {
 
 export async function lockImageTaskForRefund(connection, id) {
   const [tasks] = await connection.query(
-    "SELECT user_id, cost_points, refunded FROM image_generation_tasks WHERE id = ? FOR UPDATE",
+    "SELECT user_id, cost_points, refunded, source FROM image_generation_tasks WHERE id = ? FOR UPDATE",
     [id]
   );
   return tasks[0] || null;
@@ -291,6 +291,25 @@ export async function deleteImageTask(id, userId) {
     [userId, id]
   );
   return { ok: result.affectedRows > 0 };
+}
+
+export async function deleteImageTasks(ids, userId) {
+  const uniqueIds = [...new Set((ids || []).map(Number).filter(Number.isSafeInteger))];
+  if (!uniqueIds.length) return [];
+  const placeholders = uniqueIds.map(() => "?").join(",");
+  const pool = getPool();
+  const [rows] = await pool.query(
+    `SELECT id FROM image_generation_tasks WHERE user_id = ? AND id IN (${placeholders})`,
+    [userId, ...uniqueIds],
+  );
+  const ownedIds = rows.map((row) => row.id);
+  if (ownedIds.length) {
+    await pool.query(
+      `DELETE FROM image_generation_tasks WHERE user_id = ? AND id IN (${ownedIds.map(() => "?").join(",")})`,
+      [userId, ...ownedIds],
+    );
+  }
+  return ownedIds;
 }
 
 export async function toggleImageTaskFavorite(id, userId) {

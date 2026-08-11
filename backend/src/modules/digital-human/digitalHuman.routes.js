@@ -10,6 +10,7 @@ import {
   createDigitalHumanTask,
   createDigitalHumanVoiceClone,
   deleteDigitalHumanAvatar,
+  deleteDigitalHumanVoice,
   deleteDigitalHumanTask,
   getDigitalHumanAiAvatarTask,
   designDigitalHumanVoice,
@@ -24,7 +25,8 @@ import {
   uploadDigitalHumanAudio,
   uploadDigitalHumanVoiceCloneAudio,
   uploadDigitalHumanScene,
-  updateDigitalHumanAvatar
+  updateDigitalHumanAvatar,
+  updateDigitalHumanVoice
 } from "./digitalHuman.controller.js";
 
 export const digitalHumanRouter = Router();
@@ -158,6 +160,8 @@ digitalHumanRouter.post("/voices/design", designDigitalHumanVoice);
 digitalHumanRouter.post("/voices/preview", previewDigitalHumanVoice);
 digitalHumanRouter.post("/voices/uploads/clone-audio", uploadVoiceCloneAudio, uploadDigitalHumanVoiceCloneAudio);
 digitalHumanRouter.post("/voices/clones", createDigitalHumanVoiceClone);
+digitalHumanRouter.put("/voices/:id", updateDigitalHumanVoice);
+digitalHumanRouter.delete("/voices/:id", deleteDigitalHumanVoice);
 digitalHumanRouter.post("/uploads/audio", uploadAudio, uploadDigitalHumanAudio);
 digitalHumanRouter.post("/uploads/scene", uploadScene, uploadDigitalHumanScene);
 digitalHumanRouter.get("/tasks", listDigitalHumanTasks);

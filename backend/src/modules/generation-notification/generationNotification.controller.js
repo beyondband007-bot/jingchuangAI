@@ -4,6 +4,11 @@ import {
   getRunningSummary,
 } from "./generationNotification.service.js";
 import { markGenerationResultRead } from "./generationResultRead.service.js";
+import {
+  getNotificationCenter,
+  readAllNotificationCenterItems,
+  readNotificationCenterItems,
+} from "./notificationCenter.service.js";
 
 export async function getGenerationRunningSummary(req, res) {
   try {
@@ -49,5 +54,34 @@ export async function markGenerationNotificationResultRead(req, res) {
       error: error?.message || String(error),
     });
     res.status(503).json({ error: "Unable to mark generation result as read" });
+  }
+}
+
+export async function getNotificationCenterItems(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    res.json(await getNotificationCenter(req.user.id, req.query));
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function markNotificationCenterItemsRead(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    await readNotificationCenterItems(req.user.id, req.body);
+    res.status(204).end();
+  } catch (error) {
+    sendError(res, error);
+  }
+}
+
+export async function markAllNotificationCenterItemsRead(req, res) {
+  try {
+    requireLoggedIn(req.user);
+    await readAllNotificationCenterItems(req.user.id, req.body);
+    res.status(204).end();
+  } catch (error) {
+    sendError(res, error);
   }
 }

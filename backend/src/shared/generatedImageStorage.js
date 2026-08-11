@@ -1,10 +1,8 @@
-import { execFile } from "child_process";
 import { randomUUID } from "crypto";
 import { mkdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
-import { promisify } from "util";
+import sharp from "sharp";
 import { config } from "../config/index.js";
-import { ffmpegPath } from "./ffmpegPath.js";
 import { createHttpError } from "./http.js";
 import { parseProxyTargetUrl } from "./mediaProxy.js";
 
@@ -14,8 +12,10 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 // refresh. Keep each refresh bounded instead of blocking history APIs with
 // several long download attempts in one request.
 const DEFAULT_ATTEMPTS = 1;
-const THUMBNAIL_WIDTH = 500;
-const execFileAsync = promisify(execFile);
+export const GENERATED_IMAGE_THUMBNAIL = Object.freeze({
+  width: 420,
+  jpegQuality: 90
+});
 
 const imageExtensions = new Map([
   ["image/jpeg", ".jpg"],
@@ -151,18 +151,10 @@ async function createThumbnail({ outputDir, publicDir, originalUrl, index }) {
   const originalPath = path.join(outputDir, originalName);
   const tempPath = path.join(outputDir, `.${thumbnailName}.${randomUUID()}.jpg`);
   try {
-    await execFileAsync(ffmpegPath, [
-      "-y",
-      "-i",
-      originalPath,
-      "-frames:v",
-      "1",
-      "-vf",
-      `scale='min(${THUMBNAIL_WIDTH},iw)':-2`,
-      "-q:v",
-      "3",
-      tempPath
-    ]);
+    await sharp(originalPath)
+      .resize({ width: GENERATED_IMAGE_THUMBNAIL.width, withoutEnlargement: true })
+      .jpeg({ quality: GENERATED_IMAGE_THUMBNAIL.jpegQuality })
+      .toFile(tempPath);
     await rename(tempPath, thumbnailPath);
     return `${publicDir}/${thumbnailName}`;
   } catch (error) {
@@ -174,6 +166,7 @@ async function createThumbnail({ outputDir, publicDir, originalUrl, index }) {
 async function createGeneratedImageThumbnails({
   taskId,
   originalUrls,
+  feature = "images",
   storageDir = config.media.storageDir
 }) {
   const normalizedTaskId = String(taskId || "").trim();
@@ -187,8 +180,9 @@ async function createGeneratedImageThumbnails({
     throw createHttpError("generated image original URL is missing", 500);
   }
 
-  const outputDir = path.resolve(process.cwd(), storageDir, "generated", "images", normalizedTaskId);
-  const publicDir = `/media/generated/images/${normalizedTaskId}`;
+  const normalizedFeature = String(feature || "images").replace(/[^a-z0-9-]/gi, "") || "images";
+  const outputDir = path.resolve(process.cwd(), storageDir, "generated", normalizedFeature, normalizedTaskId);
+  const publicDir = `/media/generated/${normalizedFeature}/${normalizedTaskId}`;
   return Promise.all(
     urls.map((originalUrl, index) =>
       createThumbnail({ outputDir, publicDir, originalUrl, index })
@@ -199,6 +193,7 @@ async function createGeneratedImageThumbnails({
 export async function persistGeneratedImages({
   taskId,
   urls,
+  feature = "images",
   fetchImpl = fetch,
   storageDir = config.media.storageDir,
   maxBytes = DEFAULT_MAX_IMAGE_BYTES,
@@ -214,8 +209,9 @@ export async function persistGeneratedImages({
     throw createHttpError("KIE image result URL is missing", 502);
   }
 
-  const outputDir = path.resolve(process.cwd(), storageDir, "generated", "images", normalizedTaskId);
-  const publicDir = `/media/generated/images/${normalizedTaskId}`;
+  const normalizedFeature = String(feature || "images").replace(/[^a-z0-9-]/gi, "") || "images";
+  const outputDir = path.resolve(process.cwd(), storageDir, "generated", normalizedFeature, normalizedTaskId);
+  const publicDir = `/media/generated/${normalizedFeature}/${normalizedTaskId}`;
   await mkdir(outputDir, { recursive: true });
 
   const originalUrls = await Promise.all(
@@ -236,6 +232,7 @@ export async function persistGeneratedImages({
   await createGeneratedImageThumbnails({
     taskId: normalizedTaskId,
     originalUrls,
+    feature: normalizedFeature,
     storageDir
   });
 
@@ -244,10 +241,12 @@ export async function persistGeneratedImages({
 
 export async function removeStoredGeneratedImages({
   taskId,
+  feature = "images",
   storageDir = config.media.storageDir
 }) {
   const normalizedTaskId = String(taskId || "").trim();
   if (!/^\d+$/.test(normalizedTaskId)) return;
-  const outputDir = path.resolve(process.cwd(), storageDir, "generated", "images", normalizedTaskId);
+  const normalizedFeature = String(feature || "images").replace(/[^a-z0-9-]/gi, "") || "images";
+  const outputDir = path.resolve(process.cwd(), storageDir, "generated", normalizedFeature, normalizedTaskId);
   await rm(outputDir, { recursive: true, force: true });
 }

@@ -1,6 +1,6 @@
 import React from "react";
-import { getAvatarCategoryLabel, isVideoCover } from "../utils";
-import { Play } from "lucide-react";
+import { isVideoCover } from "../utils";
+import { Pencil, Play, Trash2 } from "lucide-react";
 
 export function AvatarCard({
   avatar,
@@ -8,13 +8,13 @@ export function AvatarCard({
   onSelect,
   variant = "default",
   showPlayIcon = false,
+  onRename,
+  onDelete,
 }) {
   const cover = avatar.cover;
   const isVideo = isVideoCover(cover);
   const isAiCustom = String(cover || "").includes("/digital-human/avatars/ai/");
-  const category = isAiCustom ? "AI Custom" : getAvatarCategoryLabel(avatar);
-  const name = isAiCustom ? "AI Custom Avatar" : avatar.name || "My Avatar";
-  const overlayLabel = variant === "mine" ? `${name} · ${category}` : category;
+  const name = avatar.name || (isAiCustom ? "AI 定制形象" : "我的形象");
 
   return (
     <article
@@ -26,7 +26,7 @@ export function AvatarCard({
         type="button"
         className="dhv2-avatar-card__cover"
         onClick={() => onSelect?.(avatar)}
-        aria-label={`Select ${name}`}
+        aria-label={`选择${name}`}
       >
         {cover ? (
           isVideo ? (
@@ -48,12 +48,19 @@ export function AvatarCard({
             <Play size={18} fill="currentColor" />
           </span>
         ) : null}
-        {variant !== "mine" ? (
-          <span className="dhv2-avatar-card__tag">{overlayLabel}</span>
-        ) : null}
       </button>
       {variant === "default" ? (
         <strong className="dhv2-avatar-card__name">{name}</strong>
+      ) : null}
+      {variant === "mine" ? (
+        <div className="dhv2-avatar-card__actions">
+          <button type="button" aria-label={`修改${name}名称`} onClick={() => onRename?.(avatar)}>
+            <Pencil size={14} />
+          </button>
+          <button type="button" aria-label={`删除${name}`} onClick={() => onDelete?.(avatar)}>
+            <Trash2 size={14} />
+          </button>
+        </div>
       ) : null}
     </article>
   );

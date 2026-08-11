@@ -1,6 +1,8 @@
 import { randomUUID } from "crypto";
+import { execFile } from "child_process";
 import { copyFile, mkdir, rm, writeFile } from "fs/promises";
 import path from "path";
+import { promisify } from "util";
 import { config } from "../../config/index.js";
 import { analyzeImageWithMinimax } from "../../providers/minimax/vision.js";
 import {
@@ -9,6 +11,7 @@ import {
 } from "../../providers/qwen/videoReverse.js";
 import { uploadQwenTemporaryFile } from "../../providers/qwen/temporaryFile.js";
 import { extractVideoAnalysisFrames, probeVideo } from "../../providers/ffmpeg/video.js";
+import { ffmpegPath } from "../../shared/ffmpegPath.js";
 import { createHttpError } from "../../shared/http.js";
 import { formatBeijingDateTime } from "../../shared/time.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
@@ -37,6 +40,8 @@ const allowedVideoTypes = new Set([
 ]);
 const allowedVideoExts = new Set([".mp4", ".webm", ".mov", ".avi"]);
 const replicateSourcesDir = path.resolve(process.cwd(), config.media.storageDir, "replicate", "sources");
+const replicateThumbnailsDir = path.resolve(process.cwd(), config.media.storageDir, "replicate", "thumbnails");
+const execFileAsync = promisify(execFile);
 
 function getExt(fileName = "") {
   const match = String(fileName).toLowerCase().match(/\.[a-z0-9]+$/);
@@ -59,6 +64,7 @@ function mapReplicateTask(row) {
     source: row.source,
     fileName: row.file_name,
     sourceUrl: row.source_url || "",
+    sourceThumbnailUrl: row.source_thumbnail_url || "",
     prompt: row.prompt || "",
     description: row.description || "",
     style: row.style || "",
@@ -104,9 +110,17 @@ async function persistSourceMedia(taskId, file, { fallbackExt = ".bin" } = {}) {
     throw createHttpError("上传文件无效", 400);
   }
 
+  let sourceThumbnailUrl = "";
+  if (allowedImageExts.has(ext)) {
+    await mkdir(replicateThumbnailsDir, { recursive: true });
+    const thumbnailName = `${taskId}.jpg`;
+    await execFileAsync(ffmpegPath, ["-y", "-i", targetPath, "-frames:v", "1", "-vf", "scale='min(420,iw)':-2", "-q:v", "2", path.join(replicateThumbnailsDir, thumbnailName)]);
+    sourceThumbnailUrl = `/media/replicate/thumbnails/${thumbnailName}`;
+  }
   return {
     sourceUrl: sourcePublicUrl(storedName),
-    sourcePath: targetPath
+    sourcePath: targetPath,
+    sourceThumbnailUrl
   };
 }
 
@@ -356,13 +370,15 @@ export async function analyzeImage({ file, userId }) {
 
   let sourceUrl = "";
   try {
-    ({ sourceUrl } = await persistSourceMedia(taskId, file, { fallbackExt: ".jpg" }));
+    const saved = await persistSourceMedia(taskId, file, { fallbackExt: ".jpg" });
+    sourceUrl = saved.sourceUrl;
     await createReplicateTaskRow({
       id: taskId,
       userId,
       source: "image",
       fileName: file.originalname,
-      sourceUrl
+      sourceUrl,
+      sourceThumbnailUrl: saved.sourceThumbnailUrl
     });
   } catch (error) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "image replicate refund" });
@@ -378,6 +394,7 @@ export async function analyzeImage({ file, userId }) {
     source: "image",
     file_name: file.originalname,
     source_url: sourceUrl,
+    source_thumbnail_url: "",
     status: "processing",
     created_at: new Date()
   });

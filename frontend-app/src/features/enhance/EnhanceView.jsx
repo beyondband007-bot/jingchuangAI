@@ -6,6 +6,7 @@ import {
   Image,
   Loader2,
   Plus,
+  Upload,
   Wand2,
   Zap
 } from "lucide-react";
@@ -26,7 +27,8 @@ import { MarketingTaskCardActions } from "../marketing-tool-ui/MarketingTaskCard
 import BillingPoints from "../../components/BillingPoints.jsx";
 import { MarketingToolPanel } from "../../components/MarketingToolPanel";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
-import { MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
+import { MarketingPreviewLightbox, MarketingToolComposer, MarketingToolUploadSlot } from "../marketing-tool-ui";
+import { MarketingHistoryDetailModal } from "../marketing-tool-ui";
 
 const emptyEnhanceOptions = { models: [], defaults: {}, limits: {} };
 
@@ -132,19 +134,19 @@ function EnhanceCenterState({
   );
 }
 
-function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
+function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
   const isProcessing = task.status === "processing";
   const isFailed = task.status === "failed";
   const isVideo = task.mediaType === "video";
 
   return (
-    <article className={`watermark-task-card enhance-task-card status-${task.status}`}>
+    <article className={`watermark-task-card enhance-task-card status-${task.status}`} role="button" tabIndex={0} onClick={() => onOpen(task)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(task); } }}>
       <div className={`watermark-task-preview enhance-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
             <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
           ) : (
-            <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
+            <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
@@ -170,9 +172,11 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat }) {
 }
 
 function EnhanceComposer({ options, onSubmit, isSubmitting }) {
+  const uploadRef = useRef(null);
   const [mode, setMode] = useState("image");
   const [sourceAsset, setSourceAsset] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
 
@@ -250,6 +254,7 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
   }
 
   return (
+    <>
     <MarketingToolComposer
       ariaLabel="画质增强上传面板"
       className="watermark-composer enhance-composer"
@@ -262,13 +267,22 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
       tabsDisabled={!isReady}
       upload={(
         <MarketingToolUploadSlot
+          ref={uploadRef}
           className="watermark-upload-slot enhance-upload-slot"
+          dragDrop
           accept={mode === "video" ? "video/*" : "image/*"}
           disabled={!isReady}
           hasPreview={Boolean(previewUrl)}
           hasFile={Boolean(sourceAsset)}
           previewUrl={previewUrl}
           isVideo={mode === "video"}
+          renderPreview={({ previewUrl: url, isVideo }) => isVideo ? (
+            <video src={url} muted playsInline preload="metadata" controls />
+          ) : (
+            <button type="button" className="marketing-tool-upload__preview-trigger" onClick={() => setLightboxOpen(true)} aria-label="放大预览图片">
+              <img src={url} alt="上传图片预览" />
+            </button>
+          )}
           emptyTitle={mode === "video" ? "上传视频文件" : "上传图片文件"}
           emptyHint={mode === "video" ? "建议 15 秒内，最大 200MB" : "支持 JPG/PNG/WebP，最大 10MB"}
           onSelect={selectSource}
@@ -276,12 +290,6 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
           isBusy={uploading}
           busyLabel="上传中"
           previewMeta={sourceAsset ? `${sourceAsset.fileName} · ${formatBytes(sourceAsset.sizeBytes)}` : ""}
-          previewBadge={!uploading && previewUrl ? (
-            <span className="watermark-upload-kind">
-              {mode === "video" ? <Film size={14} /> : <Image size={14} />}
-              更换素材
-            </span>
-          ) : null}
         />
       )}
       footerHint={notice || (mode === "video"
@@ -294,12 +302,19 @@ function EnhanceComposer({ options, onSubmit, isSubmitting }) {
       ) : (
         "请上传文件"
       )}
+      footerExtra={previewUrl ? (
+        <button type="button" className="marketing-tool-composer__secondary-action" onClick={() => uploadRef.current?.openFilePicker()} disabled={uploading}>
+          <Upload size={15} />重新上传文件
+        </button>
+      ) : null}
       actionIcon={<Zap size={18} />}
       actionLabel="开始提升"
       onAction={submit}
       actionDisabled={!canSubmit}
       actionLoading={isSubmitting}
     />
+    {lightboxOpen && previewUrl && mode === "image" ? <MarketingPreviewLightbox url={previewUrl} onClose={() => setLightboxOpen(false)} /> : null}
+    </>
   );
 }
 
@@ -307,6 +322,7 @@ export function EnhanceView({ onOpenFeature }) {
   const [tasks, setTasks] = useState([]);
   const [options, setOptions] = useState(emptyEnhanceOptions);
   const [viewTab, setViewTab] = useState("home");
+  const [detailTask, setDetailTask] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submittedTaskId, setSubmittedTaskId] = useState(null);
@@ -497,12 +513,14 @@ export function EnhanceView({ onOpenFeature }) {
               onDelete={deleteTask}
               onFavorite={toggleFavorite}
               onRepeat={requestRepeat}
+              onOpen={setDetailTask}
             />
           ))}
         </div>
       </div>
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <MarketingHistoryDetailModal task={detailTask} tool="enhance" onClose={() => setDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Info, Loader2, RefreshCcw, Upload, X } from "lucide-react";
+import { CustomSelect } from "../../../components/CustomSelect";
 import { VOICE_EMOTION_OPTIONS, isDigitalHumanVoiceEnabled } from "../utils";
 import { stripFileExtension } from "../../../utils/fileName";
 import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../../utils/uploadLimits";
@@ -211,10 +212,15 @@ export function CreateAvatarModal({
                   <div className="dhv2-upload-editor__form">
                     <label>
                       <span>场景</span>
-                      <select value={scene} onChange={(event) => setScene(event.target.value)}>
-                        <option value="">请选择使用场景</option>
-                        {SCENE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
-                      </select>
+                      <CustomSelect
+                        className="dhv2-upload-editor__select"
+                        ariaLabel="选择使用场景"
+                        value={scene}
+                        placeholder="请选择使用场景"
+                        options={[{ value: "", label: "请选择使用场景" }, ...SCENE_OPTIONS.map((item) => ({ value: item, label: item }))]}
+                        onChange={setScene}
+                        menuZIndex="1201"
+                      />
                     </label>
                     <label>
                       <span>形象昵称</span>
@@ -226,9 +232,15 @@ export function CreateAvatarModal({
                     </label>
                     <label>
                       <span>常用音色</span>
-                      <select value={voiceId} onChange={(event) => setVoiceId(event.target.value)}>
-                        {enabledVoices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}
-                      </select>
+                      <CustomSelect
+                        className="dhv2-upload-editor__select"
+                        ariaLabel="选择常用音色"
+                        value={voiceId}
+                        placeholder="请选择常用音色"
+                        options={enabledVoices.map((voice) => ({ value: voice.id, label: voice.name }))}
+                        onChange={setVoiceId}
+                        menuZIndex="1201"
+                      />
                     </label>
                     <label className="dhv2-upload-editor__speed">
                       <span>语速 <strong>{Number(voiceSpeed).toFixed(1)}x</strong></span>

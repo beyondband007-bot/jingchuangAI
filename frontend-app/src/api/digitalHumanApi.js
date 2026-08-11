@@ -35,9 +35,10 @@ export const digitalHumanApi = {
     return modelsPromise;
   },
 
-  async getAvatars() {
+  async getAvatars({ force = false } = {}) {
+    if (force) avatarsPromise = undefined;
     if (!avatarsPromise) {
-      avatarsPromise = request("/api/digital-human/avatars").catch((err) => {
+      avatarsPromise = request("/api/digital-human/avatars", force ? { cache: "no-store" } : {}).catch((err) => {
         avatarsPromise = undefined;
         return Promise.reject(err);
       });
@@ -45,9 +46,10 @@ export const digitalHumanApi = {
     return avatarsPromise;
   },
 
-  async getVoices() {
+  async getVoices({ force = false } = {}) {
+    if (force) voicesPromise = undefined;
     if (!voicesPromise) {
-      voicesPromise = request("/api/digital-human/voices").catch((err) => {
+      voicesPromise = request("/api/digital-human/voices", force ? { cache: "no-store" } : {}).catch((err) => {
         voicesPromise = undefined;
         return Promise.reject(err);
       });
@@ -199,6 +201,23 @@ export const digitalHumanApi = {
   async deleteAvatar(id) {
     const result = await request(`/api/digital-human/avatars/${id}`, { method: "DELETE" });
     avatarsPromise = undefined;
+    taskPolling.notifyNow();
+    return result;
+  },
+
+  async updateVoice(id, payload) {
+    const voice = await request(`/api/digital-human/voices/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    voicesPromise = undefined;
+    taskPolling.notifyNow();
+    return voice;
+  },
+
+  async deleteVoice(id) {
+    const result = await request(`/api/digital-human/voices/${id}`, { method: "DELETE" });
+    voicesPromise = undefined;
     taskPolling.notifyNow();
     return result;
   }

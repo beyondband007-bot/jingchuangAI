@@ -193,6 +193,7 @@
   border-color: transparent;
 }
 
+
 @media (prefers-reduced-motion: reduce) {
   .marketing-tool-root .watermark-task-card.status-processing .watermark-task-placeholder svg,
   .marketing-tool-root .remove-bg-task-card.status-processing .watermark-task-placeholder svg,

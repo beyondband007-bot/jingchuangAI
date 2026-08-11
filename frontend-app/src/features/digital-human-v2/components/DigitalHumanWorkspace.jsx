@@ -29,7 +29,7 @@ function SceneUploadCard({ scene, isUploading = false, onPickScene, onClearScene
       <div className="dhv2-scene-card__head">
         <div>
           <strong>场景背景</strong>
-          <span>{scene ? scene.originalName || scene.name : "可选，不上传则使用当前数字人默认背景"}</span>
+          <span>{scene ? scene.originalName || scene.name : "可选，不上传则沿用当前数字人参考图背景"}</span>
         </div>
       </div>
       <div
@@ -79,6 +79,8 @@ export function DigitalHumanWorkspace(props) {
     onFillModeChange, onSelectAvatar, onSelectMineItem, onConfirmAvatar,
     onCloseLibrary, activeTask, onDeleteTask, onRegenerateTask, onReset,
     onSaveDraft, drafts, onApplyDraft, onDeleteDraft, onOpenAssets,
+    aiGeneratingJob, onRetryAiAvatar,
+    onRenameAvatar, onDeleteAvatar, onRenameVoice, onDeleteVoice, onConfirmMineConfig, onPersistMineConfig, onVoiceSaved, onVoiceConfigChange,
   } = props;
 
   return (
@@ -100,7 +102,8 @@ export function DigitalHumanWorkspace(props) {
             voiceEmotion={voiceEmotion}
             voiceMode={voiceMode}
             onVoiceModeChange={onVoiceModeChange}
-            showCloneUpload={isMineAvatar}
+            // 音色克隆统一在右侧「我的音色」资源库完成，左侧只负责使用已选音色。
+            showCloneUpload={false}
             cloneAudio={cloneAudio}
             onCloneAudioChange={onCloneAudioChange}
             onSpeechDurationMsChange={onSpeechDurationMsChange}
@@ -109,6 +112,7 @@ export function DigitalHumanWorkspace(props) {
             onVoiceIdChange={onVoiceIdChange}
             onVoiceSpeedChange={onVoiceSpeedChange}
             onVoiceEmotionChange={onVoiceEmotionChange}
+            onVoiceConfigChange={onVoiceConfigChange}
             previewRequestId={previewRequestId}
             playbackRequestId={playbackRequestId}
             previewPhase={previewPhase}
@@ -156,6 +160,15 @@ export function DigitalHumanWorkspace(props) {
           onSelectMineItem={onSelectMineItem}
           onConfirmAvatar={onConfirmAvatar}
           onCreateAvatar={onCreateAvatar}
+          onRenameAvatar={onRenameAvatar}
+          onDeleteAvatar={onDeleteAvatar}
+          onRenameVoice={onRenameVoice}
+          onDeleteVoice={onDeleteVoice}
+          onConfirmMineConfig={onConfirmMineConfig}
+          onPersistMineConfig={onPersistMineConfig}
+          onVoiceSaved={onVoiceSaved}
+          aiGeneratingJob={aiGeneratingJob}
+          onRetryAiAvatar={onRetryAiAvatar}
           onClose={selectedAvatar ? onCloseLibrary : null}
         />
       ) : (

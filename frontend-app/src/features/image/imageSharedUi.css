@@ -180,6 +180,46 @@ section.image-gen-view.is-generation-workbench .image-workbench-layout {
   border-color: #dcd4ff;
 }
 
+.image-workbench-history-item {
+  position: relative;
+  grid-template-columns: 58px minmax(0, 1fr) 28px;
+  padding-right: 38px;
+}
+
+.image-workbench-history-delete {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  place-items: center;
+  color: #a6a1b2;
+  background: #fff;
+  border: 1px solid #ebe8f2;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(47, 39, 76, 0.08);
+  cursor: pointer;
+  opacity: 0;
+  transition: color 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.image-workbench-history-delete:hover,
+.image-workbench-history-delete:focus-visible {
+  color: #d94141;
+  background: #fff3f3;
+  border-color: #ffcaca;
+  box-shadow: 0 4px 10px rgba(217, 65, 65, 0.17);
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.image-workbench-history-item:hover .image-workbench-history-delete,
+.image-workbench-history-item:focus-within .image-workbench-history-delete {
+  opacity: 1;
+}
+
 .image-workbench-history-thumb {
   background: #fff;
   border: 1px solid #e2dfec;
