@@ -186,7 +186,7 @@
   line-height: 26px;
   text-align: left;
   text-overflow: ellipsis;
-  background: transparent;
+  border-radius: var(--space-1);
   border: 0;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

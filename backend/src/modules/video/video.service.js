@@ -34,6 +34,7 @@ import {
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
@@ -559,7 +560,14 @@ async function refreshTask(id) {
         await refundTask(id, null, null, "video generation result missing video URL");
       } else {
         const localUrls = await persistGeneratedVideos({ taskId: id, urls: providerUrls });
-        await setVideoTaskCompleted(id, localUrls, { providerUrls });
+        const thumbnailUrl = await createGeneratedVideoThumbnail({
+          taskId: id,
+          videoUrl: localUrls[0]
+        }).catch((error) => {
+          console.warn(`[Video ${id}] Thumbnail generation failed: ${error.message}`);
+          return null;
+        });
+        await setVideoTaskCompleted(id, localUrls, { providerUrls, thumbnailUrl });
       }
     } else if (mapped === "failed") {
       const providerError = isArkTask

@@ -429,6 +429,7 @@ async function createTables() {
       reference_image_url TEXT NULL,
       result_urls JSON NULL,
       provider_result_urls JSON NULL,
+      thumbnail_url VARCHAR(1000) NULL,
       error_message TEXT NULL,
       refunded BOOLEAN NOT NULL DEFAULT FALSE,
       favorite BOOLEAN NOT NULL DEFAULT FALSE,
@@ -694,6 +695,16 @@ async function createTables() {
   );
   if (videoProviderResultColumns.length === 0) {
     await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN provider_result_urls JSON NULL AFTER result_urls");
+  }
+
+  const [videoThumbnailColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'video_generation_tasks' AND COLUMN_NAME = 'thumbnail_url'`,
+    [config.db.database]
+  );
+  if (videoThumbnailColumns.length === 0) {
+    await pool.query("ALTER TABLE video_generation_tasks ADD COLUMN thumbnail_url VARCHAR(1000) NULL AFTER provider_result_urls");
   }
 
   await pool.query(`

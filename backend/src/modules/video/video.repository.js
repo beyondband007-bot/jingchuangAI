@@ -1,6 +1,7 @@
 import { getPool } from "../../db/pool.js";
 
 let providerResultUrlsColumnPromise;
+let thumbnailUrlColumnPromise;
 
 async function hasProviderResultUrlsColumn() {
   if (!providerResultUrlsColumnPromise) {
@@ -17,6 +18,23 @@ async function hasProviderResultUrlsColumn() {
       .catch(() => false);
   }
   return providerResultUrlsColumnPromise;
+}
+
+async function hasThumbnailUrlColumn() {
+  if (!thumbnailUrlColumnPromise) {
+    thumbnailUrlColumnPromise = getPool()
+      .query(
+        `SELECT COLUMN_NAME
+         FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND TABLE_NAME = 'video_generation_tasks'
+           AND COLUMN_NAME = 'thumbnail_url'
+         LIMIT 1`
+      )
+      .then(([rows]) => rows.length > 0)
+      .catch(() => false);
+  }
+  return thumbnailUrlColumnPromise;
 }
 
 export async function findEnabledVideoModels(connection = getPool()) {
@@ -155,8 +173,19 @@ export async function setVideoTaskProviderTaskId(id, providerTaskId) {
   ]);
 }
 
-export async function setVideoTaskCompleted(id, urls, { providerUrls = [] } = {}) {
-  if (await hasProviderResultUrlsColumn()) {
+export async function setVideoTaskCompleted(id, urls, { providerUrls = [], thumbnailUrl = null } = {}) {
+  const [hasProviderUrls, hasThumbnail] = await Promise.all([
+    hasProviderResultUrlsColumn(),
+    hasThumbnailUrlColumn()
+  ]);
+  if (hasProviderUrls && hasThumbnail) {
+    const [result] = await getPool().query(
+      "UPDATE video_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, thumbnail_url = ?, error_message = NULL WHERE id = ? AND status <> 'completed'",
+      [JSON.stringify(urls), JSON.stringify(providerUrls), thumbnailUrl, id]
+    );
+    return result.affectedRows > 0;
+  }
+  if (hasProviderUrls) {
     const [result] = await getPool().query(
       "UPDATE video_generation_tasks SET status = 'completed', result_urls = ?, provider_result_urls = ?, error_message = NULL WHERE id = ? AND status <> 'completed'",
       [JSON.stringify(urls), JSON.stringify(providerUrls), id]
