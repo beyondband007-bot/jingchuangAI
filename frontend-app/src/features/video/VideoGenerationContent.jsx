@@ -102,8 +102,8 @@ export function VideoGenerationContent({
           灵感广场
         </button>
         <button
-          className={filter === "recent" ? "selected" : ""}
-          onClick={() => setFilter("recent")}
+          className={filter === "all" ? "selected" : ""}
+          onClick={() => setFilter("all")}
           type="button"
         >
           历史记录

@@ -57,6 +57,10 @@ export const videoDubbingApi = {
     return normalizeTask(task);
   },
 
+  async deleteTask(taskId) {
+    return request(`/api/video-dub/tasks/${taskId}`, { method: "DELETE" });
+  },
+
   async getTasks(params = {}) {
     const query = new URLSearchParams(params).toString();
     const result = await request(`/api/video-dub/tasks${query ? `?${query}` : ""}`);

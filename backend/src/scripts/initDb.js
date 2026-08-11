@@ -1390,6 +1390,39 @@ async function createTables() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS video_dub_tasks (
+      id VARCHAR(120) NOT NULL PRIMARY KEY,
+      user_id BIGINT UNSIGNED NOT NULL,
+      status VARCHAR(64) NOT NULL DEFAULT 'uploaded',
+      stage VARCHAR(64) NOT NULL DEFAULT 'uploaded',
+      source_file_name VARCHAR(255) NOT NULL,
+      source_url VARCHAR(1000) NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+      mime_type VARCHAR(160) NULL,
+      thumbnail_url VARCHAR(1000) NULL,
+      voice_id VARCHAR(160) NULL,
+      language VARCHAR(32) NULL,
+      bgm_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+      bgm_volume DECIMAL(4,3) NOT NULL DEFAULT 0.250,
+      qwen_mode VARCHAR(64) NULL,
+      source_duration_seconds DECIMAL(10,3) NULL,
+      cost_points INT NOT NULL DEFAULT 0,
+      analysis_json JSON NULL,
+      dubbing_json JSON NULL,
+      bgm_json JSON NULL,
+      result_json JSON NULL,
+      billing_json JSON NULL,
+      error_message TEXT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_video_dub_user_created (user_id, created_at),
+      INDEX idx_video_dub_status (status),
+      CONSTRAINT fk_video_dub_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS voice_clone_assets (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
       user_id BIGINT UNSIGNED NOT NULL,
