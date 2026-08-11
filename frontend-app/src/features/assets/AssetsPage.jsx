@@ -16,6 +16,7 @@ import { useToast } from "../../components/ToastProvider";
 import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 import { FaceminiInspirationModal } from "../image/FaceminiInspirationModal";
 import { VideoInspirationModal } from "../video/VideoCards";
+import { ArticleHistoryPreviewDialog } from "../article/ArticleHistoryPreviewDialog";
 import { videoDubbingApi } from "../video-dubbing/videoDubbingApi";
 import {
   assetGalleryTabStorageKey,
@@ -1242,7 +1243,13 @@ export function AssetsPage({
     />
   );
   const favoritePreviewModal =
-    previewAsset?.isInspiration && previewAsset.isVideo ? (
+    previewAsset?.type === "爆款图文" ? (
+      <ArticleHistoryPreviewDialog
+        task={previewAsset}
+        authUser={authUser}
+        onClose={() => setPreviewAsset(null)}
+      />
+    ) : previewAsset?.isInspiration && previewAsset.isVideo ? (
       <VideoInspirationModal
         getInitialFavorite={isInspirationFavorite}
         item={previewAsset}
@@ -1275,7 +1282,14 @@ export function AssetsPage({
         isLoading={isLoading}
         timeFilterControl={assetTimeFilterControl}
         previewModal={
-          <FaceminiInspirationModal
+          previewAsset?.type === "爆款图文" ? (
+            <ArticleHistoryPreviewDialog
+              task={previewAsset}
+              authUser={authUser}
+              onClose={() => setPreviewAsset(null)}
+            />
+          ) : (
+            <FaceminiInspirationModal
             getInitialFavorite={isInspirationFavorite}
             item={previewAsset}
             onClose={() => setPreviewAsset(null)}
@@ -1286,7 +1300,8 @@ export function AssetsPage({
                 ? togglePreviewAssetFavorite
                 : undefined
             }
-          />
+            />
+          )
         }
         deleteConfirmDialog={deleteConfirmDialog}
         onSelectTab={selectAssetTab}

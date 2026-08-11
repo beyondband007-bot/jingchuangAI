@@ -21,6 +21,13 @@ function getAvatarSourceLabel(source) {
   return source === "official" ? "官方形象" : "我的形象";
 }
 
+function getTaskCreatedAtMs(task) {
+  const timestamp = Number(task?.createdAtMs);
+  if (Number.isFinite(timestamp) && timestamp > 0) return timestamp;
+  const parsed = new Date(task?.createdAt || task?.time || 0).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function normalizeAvatarTask(task) {
   const avatarSource = getAvatarSource(task);
   return {
@@ -142,7 +149,11 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
       filter === "all"
         ? merged
         : merged.filter((task) => task.avatarSource === filter);
-    return filtered.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    return filtered.sort(
+      (a, b) =>
+        getTaskCreatedAtMs(b) - getTaskCreatedAtMs(a) ||
+        Number(b.id) - Number(a.id),
+    );
   }, [avatarTasks, filter, photoTasks]);
 
   useEffect(() => {

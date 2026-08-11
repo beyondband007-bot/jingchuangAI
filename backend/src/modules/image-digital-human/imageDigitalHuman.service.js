@@ -17,6 +17,7 @@ import { saveMinimaxSpeechAudio, synthesizeMinimaxSpeech } from "../../providers
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
@@ -136,6 +137,7 @@ function mapTask(row) {
     resultUrl: row.result_url || "",
     thumbnailUrl: row.thumbnail_url || "",
     error: row.error_message || "",
+    createdAtMs: new Date(row.created_at).getTime(),
     createdAt: nowLabel(row.created_at),
     time: displayTime(row.created_at)
   };
@@ -458,7 +460,15 @@ async function refreshTask(id) {
           feature: "image-digital-human-videos",
           urls: [result.resultUrl]
         });
-        await setImageDigitalHumanTaskCompleted(id, { ...result, resultUrl: localUrl });
+        const thumbnailUrl = await createGeneratedVideoThumbnail({
+          taskId: id,
+          feature: "image-digital-human-videos",
+          videoUrl: localUrl
+        }).catch((error) => {
+          console.warn(`[Image digital human ${id}] Thumbnail generation failed: ${error.message}`);
+          return null;
+        });
+        await setImageDigitalHumanTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl });
       }
     } else if (mapped === "failed") {
       if (isArkTask) {

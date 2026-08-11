@@ -133,9 +133,9 @@ function firstImageMediaUrl(...urls) {
 function getAssetTaskPreview(type, task) {
   if (type === "AI 图片") {
     return firstImageMediaUrl(
+      task?.thumbnailUrl,
       task?.image,
       task?.imageUrl,
-      task?.thumbnailUrl,
       task?.resultUrl,
     );
   }
@@ -150,7 +150,7 @@ function getAssetTaskPreview(type, task) {
       task?.cover ||
       ""
     );
-  return task?.image || task?.thumbnailUrl || task?.cover || "";
+  return task?.thumbnailUrl || task?.image || task?.cover || "";
 }
 
 function getAssetTaskResolution(task) {
@@ -230,13 +230,27 @@ export function mapAssetTasks(type, tasks = []) {
 export function mapArticleAssets(tasks = []) {
   const source = Array.isArray(tasks) ? tasks : [];
   return source.map((task) => {
+    const imageTasks = Array.isArray(task?.imageTasks) ? task.imageTasks : [];
+    const images = imageTasks
+      .map((item) => item?.imageUrl || item?.image)
+      .filter(Boolean);
+    const thumbnails = imageTasks
+      .map((item) => item?.thumbnailUrl || item?.image)
+      .filter(Boolean);
     const preview =
+      thumbnails[0] ||
+      task?.thumbnailUrl ||
       task?.image ||
+      task?.images?.[0] ||
+      images[0] ||
+      task?.imageUrl ||
+      "";
+    const fullImage =
+      images[0] ||
       task?.imageUrl ||
       task?.images?.[0] ||
-      task?.imageTasks?.[0]?.imageUrl ||
-      task?.imageTasks?.[0]?.image ||
-      "";
+      task?.image ||
+      preview;
     const title =
       task?.copy?.title ||
       task?.title ||
@@ -248,7 +262,9 @@ export function mapArticleAssets(tasks = []) {
       type: "爆款图文",
       src: preview,
       image: preview,
-      imageUrl: preview,
+      imageUrl: fullImage,
+      images: images.length ? images : (task?.images || [fullImage]).filter(Boolean),
+      imageTasks,
       poster: preview,
       video: "",
       videoUrl: "",
