@@ -59,6 +59,7 @@ export function mapVideoTask(row) {
     points: row.cost_points,
     prompt: row.prompt,
     video: urls[0] || null,
+    thumbnailUrl: row.thumbnail_url || null,
     status: row.status,
     providerTaskId: row.provider_task_id || null,
     favorite: Boolean(row.favorite),

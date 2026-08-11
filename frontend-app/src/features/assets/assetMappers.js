@@ -139,7 +139,7 @@ function getAssetTaskPreview(type, task) {
       task?.resultUrl,
     );
   }
-  if (type === "AI 视频")
+  if (type === "AI 视频" || type === "视频配音")
     return task?.poster || task?.thumbnailUrl || task?.image || task?.cover || "";
   if (type === "数字人" || type === "照片数字人")
     return (
@@ -188,11 +188,11 @@ export function mapAssetTasks(type, tasks = []) {
   return source.map((task) => {
     const preview = getAssetTaskPreview(type, task);
     const video =
-      type === "AI 视频" || isDigitalHumanAssetType(type)
-        ? task?.video || task?.resultUrl || task?.url || ""
+      type === "AI 视频" || type === "视频配音" || isDigitalHumanAssetType(type)
+        ? task?.video || task?.resultUrl || task?.result?.videoUrl || task?.url || ""
         : "";
     const isVideo =
-      Boolean(video) || type === "AI 视频" || isDigitalHumanAssetType(type);
+      Boolean(video) || type === "AI 视频" || type === "视频配音" || isDigitalHumanAssetType(type);
     const highRes =
       type === "AI 图片"
         ? firstImageMediaUrl(task?.imageUrl, task?.image, preview) || preview
@@ -200,6 +200,7 @@ export function mapAssetTasks(type, tasks = []) {
     return {
       id: `${type}-${task.id}`,
       rawId: task.id,
+      assetAction: task.assetAction || "",
       type,
       src: isVideo ? preview : preview || video,
       image: preview,

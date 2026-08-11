@@ -16,6 +16,7 @@ import { useToast } from "../../components/ToastProvider";
 import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
 import { FaceminiInspirationModal } from "../image/FaceminiInspirationModal";
 import { VideoInspirationModal } from "../video/VideoCards";
+import { videoDubbingApi } from "../video-dubbing/videoDubbingApi";
 import {
   assetGalleryTabStorageKey,
   assetsViewModeStorageKey,
@@ -241,6 +242,7 @@ export function AssetsPage({
         digitalHumanTasks,
         imageDigitalHumanTasks,
         articleTasks,
+        videoDubTasks,
         inspirationFavoriteState,
       ] = await Promise.all([
         refreshCachedCredits(),
@@ -265,6 +267,7 @@ export function AssetsPage({
         digitalHumanApi.getTasks().catch(() => []),
         imageDigitalHumanApi.getTasks().catch(() => []),
         articleApi.getTasks({ filter: "all" }).catch(() => []),
+        videoDubbingApi.getTasks().then((data) => data.tasks || data || []).catch(() => []),
         loadInspirationFavorites().catch(() => []),
       ]);
       const monthStart = new Date();
@@ -296,6 +299,10 @@ export function AssetsPage({
           ...mapAssetTasks("AI 视频", videoTasks),
           ...mapAssetTasks("数字人", digitalHumanTasks),
           ...mapAssetTasks("照片数字人", imageDigitalHumanTasks),
+          ...mapAssetTasks(
+            "视频配音",
+            videoDubTasks.map((task) => ({ ...task, assetAction: "video-dub" })),
+          ),
           ...mapArticleAssets(articleTasks),
         ].sort((a, b) => b.sortTime - a.sortTime),
       );
@@ -528,7 +535,7 @@ export function AssetsPage({
     }
   }
 
-  const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "数字人", "爆款图文"];
+  const assetGalleryTabs = ["全部", "AI 图片", "AI 视频", "视频配音", "数字人", "爆款图文"];
   const assetGalleryCards = useMemo(() => {
     return userAssets
       .filter((item) => matchesAssetGalleryTab(item, activeAssetTab))
@@ -746,6 +753,12 @@ export function AssetsPage({
   async function performDeleteAsset(item) {
     if (!item) return;
     if (item.isInspiration) return;
+    if (item.assetAction === "video-dub") {
+      await videoDubbingApi.deleteTask(item.rawId);
+      setPreviewAsset((current) => (current?.id === item.id ? null : current));
+      await refreshAssets();
+      return;
+    }
     if (item.type === "AI 图片") await imageApi.deleteTask(item.rawId);
     if (item.type === "爆款图文") await articleApi.deleteTask(item.rawId);
     if (item.type === "AI 视频") await videoApi.deleteTask(item.rawId);

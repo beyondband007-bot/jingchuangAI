@@ -9,6 +9,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 import "./imageSharedUi.css";
 
 function ResultPrompt({ text }) {
@@ -160,7 +161,9 @@ export function ResultCard({
       {!isImageGallery && (
         <div className="result-meta">
           <div className="tag-row">
-            <span className="model-tag">{card.model}</span>
+            <span className="model-tag">
+              {getFrontendModelDisplayName(card.model)}
+            </span>
             <span className="ratio-tag">{card.ratio}</span>
             <span className="quality-tag">{card.quality}</span>
             {card.referenceImageUrl && (

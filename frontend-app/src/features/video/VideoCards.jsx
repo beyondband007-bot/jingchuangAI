@@ -2,6 +2,7 @@
 import { Download, Loader2, Play, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { LazyPreviewVideo } from "../../components/LazyPreviewVideo";
 import { formatBeijingDateTime } from "../../utils/time";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 import { FaceminiInspirationModal } from "../image/FaceminiInspirationModal";
 import "./videoCards.css";
 
@@ -153,7 +154,9 @@ export function VideoResultCard({
       </div>
       <div className="result-meta">
         <div className="tag-row">
-          <span className="model-tag">{card.model}</span>
+          <span className="model-tag">
+            {getFrontendModelDisplayName(card.model)}
+          </span>
           <span className="ratio-tag">{card.ratio}</span>
           <span className="quality-tag">{card.duration}秒</span>
           <span className="count-tag">{generationTypeLabel}</span>

@@ -1,13 +1,22 @@
 import { randomUUID } from "crypto";
+import { execFile } from "child_process";
 import { mkdir, open, rename, rm, stat, unlink } from "fs/promises";
 import path from "path";
+import { promisify } from "util";
 import { config } from "../config/index.js";
 import { createHttpError } from "./http.js";
+import { ffmpegPath } from "./ffmpegPath.js";
+import { probeVideo } from "../providers/ffmpeg/video.js";
 import { parseProxyTargetUrl } from "./mediaProxy.js";
 
 const DEFAULT_MAX_VIDEO_BYTES = 1024 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_ATTEMPTS = 1;
+const thumbnailWidth = 500;
+const thumbnailJpegQuality = 3;
+const blackFramePercent = 98;
+const blackPixelThreshold = 32;
+const execFileAsync = promisify(execFile);
 
 const videoExtensions = new Map([
   ["video/mp4", ".mp4"],
@@ -47,6 +56,79 @@ async function fileExistsWithContent(filePath) {
   } catch {
     return false;
   }
+}
+
+function thumbnailCandidateTimes(durationSeconds) {
+  const duration = Math.max(0, Number(durationSeconds) || 0);
+  const maxTime = Math.max(0, duration - 0.1);
+  return [0.12, 0.24, 0.38, 0.52, 0.68, 0.82]
+    .map((fraction) => Math.min(maxTime, duration * fraction))
+    .filter((value, index, values) => index === 0 || Math.abs(value - values[index - 1]) > 0.05);
+}
+
+async function isBlackVideoFrame(videoPath, timestampSeconds) {
+  try {
+    const { stderr = "" } = await execFileAsync(ffmpegPath, [
+      "-hide_banner",
+      "-ss", String(Math.max(0, timestampSeconds)),
+      "-i", videoPath,
+      "-frames:v", "1",
+      "-vf", `blackframe=amount=${blackFramePercent}:threshold=${blackPixelThreshold}`,
+      "-f", "null",
+      "-"
+    ]);
+    const match = String(stderr).match(/pblack:([0-9.]+)/i);
+    return Boolean(match && Number(match[1]) >= blackFramePercent);
+  } catch {
+    return false;
+  }
+}
+
+async function writeThumbnail(videoPath, outputPath, timestampSeconds) {
+  await execFileAsync(ffmpegPath, [
+    "-y",
+    "-ss", String(Math.max(0, timestampSeconds)),
+    "-i", videoPath,
+    "-frames:v", "1",
+    "-vf", `scale=${thumbnailWidth}:-2:force_original_aspect_ratio=decrease`,
+    "-q:v", String(thumbnailJpegQuality),
+    outputPath
+  ]);
+  if (!await fileExistsWithContent(outputPath)) {
+    throw new Error("ffmpeg produced an empty thumbnail");
+  }
+}
+
+export async function createGeneratedVideoThumbnail({
+  taskId,
+  feature = "videos",
+  storageDir = config.media.storageDir,
+  videoUrl
+}) {
+  const normalizedTaskId = String(taskId || "").trim();
+  const normalizedFeature = String(feature || "").trim();
+  if (!/^\d+$/.test(normalizedTaskId) || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(normalizedFeature)) {
+    throw createHttpError("generated video thumbnail target is invalid", 500);
+  }
+  const fileName = path.basename(String(videoUrl || ""));
+  if (!/^result-\d+\.(mp4|mov|webm)$/i.test(fileName)) {
+    throw createHttpError("generated video thumbnail source is invalid", 500);
+  }
+  const outputDir = path.resolve(process.cwd(), storageDir, "generated", normalizedFeature, normalizedTaskId);
+  const videoPath = path.join(outputDir, fileName);
+  const thumbnailPath = path.join(outputDir, `${path.parse(fileName).name}-thumbnail.jpg`);
+  if (await fileExistsWithContent(thumbnailPath)) {
+    return `/media/generated/${normalizedFeature}/${normalizedTaskId}/${path.basename(thumbnailPath)}`;
+  }
+
+  const metadata = await probeVideo(videoPath);
+  const candidates = thumbnailCandidateTimes(metadata.durationSeconds);
+  for (const timestamp of candidates) {
+    if (await isBlackVideoFrame(videoPath, timestamp)) continue;
+    await writeThumbnail(videoPath, thumbnailPath, timestamp);
+    return `/media/generated/${normalizedFeature}/${normalizedTaskId}/${path.basename(thumbnailPath)}`;
+  }
+  throw new Error("every sampled video frame is black");
 }
 
 async function streamResponseToFile(response, filePath, maxBytes) {

@@ -88,7 +88,8 @@ export function VideoGenerationWorkflow({
   buildCreatePayload,
   renderExtraConfig,
   emptyOptions,
-  estimatedTimeText = "1-3 分钟",
+  hideCharacterOrientation = false,
+  estimatedTimeText = "3-5 分钟",
   progressSimulation = null,
 }) {
   const { showToast, dismissToast } = useToast();
@@ -756,7 +757,7 @@ export function VideoGenerationWorkflow({
           options={resolutionOptions}
         />
       </div>
-      {options.characterOrientations?.length > 0 && (
+      {!hideCharacterOrientation && options.characterOrientations?.length > 0 && (
         <div className="vgw-config-chip">
           <span>朝向</span>
           <CustomSelect

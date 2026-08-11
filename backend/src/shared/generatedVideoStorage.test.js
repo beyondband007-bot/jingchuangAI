@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
+import { ffmpegPath } from "./ffmpegPath.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "./generatedVideoStorage.js";
+
+const execFileAsync = promisify(execFile);
 
 async function withTempStorage(run) {
   const storageDir = await mkdtemp(path.join(os.tmpdir(), "generated-video-storage-"));
@@ -110,5 +116,30 @@ test("removes a partial file when the configured limit is exceeded", async () =>
     const taskDir = path.join(storageDir, "generated", "videos", "44");
     const entries = await import("node:fs/promises").then(({ readdir }) => readdir(taskDir));
     assert.deepEqual(entries, []);
+  });
+});
+
+test("creates a 500px JPEG thumbnail from a non-black generated video frame", async () => {
+  await withTempStorage(async (storageDir) => {
+    const taskDir = path.join(storageDir, "generated", "videos", "45");
+    await import("node:fs/promises").then(({ mkdir }) => mkdir(taskDir, { recursive: true }));
+    const videoPath = path.join(taskDir, "result-1.mp4");
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-f", "lavfi", "-i", "color=c=black:s=640x360:d=1",
+      "-f", "lavfi", "-i", "color=c=red:s=640x360:d=2",
+      "-filter_complex", "[0:v][1:v]concat=n=2:v=1:a=0",
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", videoPath
+    ]);
+
+    const thumbnailUrl = await createGeneratedVideoThumbnail({
+      taskId: 45,
+      videoUrl: "/media/generated/videos/45/result-1.mp4",
+      storageDir
+    });
+    const thumbnail = await readFile(path.join(taskDir, "result-1-thumbnail.jpg"));
+    assert.equal(thumbnailUrl, "/media/generated/videos/45/result-1-thumbnail.jpg");
+    assert.deepEqual([...thumbnail.subarray(0, 2)], [0xff, 0xd8]);
+    assert.ok(thumbnail.length > 1_000);
   });
 });

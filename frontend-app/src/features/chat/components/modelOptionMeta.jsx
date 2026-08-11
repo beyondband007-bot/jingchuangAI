@@ -1,4 +1,5 @@
 import React from "react";
+import { getFrontendModelDisplayName } from "../../../utils/modelDisplayNames.js";
 
 const iconBase = "/assets/model-icons";
 
@@ -14,12 +15,12 @@ const modelOptionMeta = {
     icon: `${iconBase}/qwen.svg`,
   },
   "gpt-5-6-codex": {
-    title: "GPT5.6-codex",
+    title: "facemini-codex",
     description: "旗舰编程推理，适合复杂代码、调试与自动化",
     icon: `${iconBase}/openai.svg`,
   },
   "gemini-3-6-flash-openai": {
-    title: "Gemini 3.6",
+    title: "facemini",
     description: "高效多模态，适合图文理解、知识工作与创意生成",
     icon: `${iconBase}/gemini.svg`,
   },
@@ -29,22 +30,22 @@ const modelOptionMeta = {
     icon: `${iconBase}/qwen.svg`,
   },
   "gpt-5-4": {
-    title: "GPT Codex 系列",
+    title: "facemini-codex",
     description: "专用写代码、自动化脚本",
     icon: `${iconBase}/openai.svg`,
   },
   "gpt-5-5": {
-    title: "GPT Codex 系列",
+    title: "facemini-codex",
     description: "专用写代码、自动化脚本",
     icon: `${iconBase}/openai.svg`,
   },
   "gemini-3-pro": {
-    title: "Gemini 3 Pro",
+    title: "facemini",
     description: "多模态图文，适合海外短视频脚本",
     icon: `${iconBase}/gemini.svg`,
   },
   "gemini-3.1-pro-openai": {
-    title: "Gemini 3 Pro",
+    title: "facemini",
     description: "多模态图文，适合海外短视频脚本",
     icon: `${iconBase}/gemini.svg`,
   },
@@ -59,17 +60,17 @@ const modelOptionMeta = {
     icon: `${iconBase}/claude.svg`,
   },
   gpt_image_2: {
-    title: "GPT Image 2",
+    title: "Facemini Image 2",
     description: "全能通用，适配海报、插画、多元素创意画面",
     icon: `${iconBase}/openai.svg`,
   },
   gpt_image_2_i2i: {
-    title: "GPT Image 2",
+    title: "Facemini Image 2",
     description: "全能通用，适配海报、插画、多元素创意画面",
     icon: `${iconBase}/openai.svg`,
   },
   nano_banana_pro: {
-    title: "Nano Banana Pro",
+    title: "Facemini Banana Pro",
     description: "人像专精，写真、人物肖像、数字人配套配图专用",
     icon: `${iconBase}/spark.svg`,
   },
@@ -111,7 +112,7 @@ const modelOptionMeta = {
 };
 
 function getFallbackMeta(item = {}) {
-  const label = item.label || item.value || "模型";
+  const label = getFrontendModelDisplayName(item, item.label || item.value || "模型");
   return {
     title: label,
     description: item.description || "",

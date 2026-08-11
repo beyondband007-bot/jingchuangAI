@@ -10,6 +10,10 @@ export const gptImage2ModelKey = "gpt_image_2";
 export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 export const imageToImageModelKey = gptImage2ImageToImageModelKey;
 
+const unsupportedImageRatiosByModel = new Map([
+  ["flux_2_pro", new Set(["21:9"])],
+]);
+
 const imageReferenceModelKeys = new Set([
   gptImage2ModelKey,
   gptImage2ImageToImageModelKey,
@@ -28,6 +32,12 @@ export function supportsImageReference(modelKey) {
   return imageReferenceModelKeys.has(modelKey);
 }
 
+export function getSupportedImageRatios(modelKey) {
+  const unsupportedRatios = unsupportedImageRatiosByModel.get(modelKey);
+  if (!unsupportedRatios) return imageRatioOptions;
+  return imageRatioOptions.filter((ratio) => !unsupportedRatios.has(ratio));
+}
+
 export function qualityMultiplier(quality) {
   return imageQualityOptions.find((item) => item.value === quality)?.multiplier || 1;
 }
@@ -43,7 +53,7 @@ export function validateImagePayload({ prompt, ratio, quality, count, model, ref
     throw createHttpError("当前模型不支持参考图", 400);
   }
   if (
-    !imageRatioOptions.includes(ratio) ||
+    !getSupportedImageRatios(model).includes(ratio) ||
     !imageQualityOptions.some((item) => item.value === quality) ||
     !imageCountOptions.includes(Number(count))
   ) {

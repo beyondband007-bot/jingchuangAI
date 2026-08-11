@@ -6,6 +6,7 @@ import { config } from "../../config/index.js";
 import {
   createImageTask,
   deleteImageTask,
+  deleteImageTasks,
   getImageModels,
   getImageTask,
   listImageInspirationFavorites,
@@ -61,6 +62,7 @@ imageRouter.get("/inspiration-favorites", listImageInspirationFavorites);
 imageRouter.post("/inspiration-favorites/:id", toggleImageInspirationFavorite);
 imageRouter.get("/tasks", listImageTasks);
 imageRouter.post("/tasks", createImageTask);
+imageRouter.delete("/tasks", deleteImageTasks);
 imageRouter.get("/tasks/:id", getImageTask);
 imageRouter.post("/tasks/:id/favorite", toggleImageFavorite);
 imageRouter.delete("/tasks/:id", deleteImageTask);

@@ -114,11 +114,11 @@ export const imageInspirationCategoryTabs = [
 ];
 
 const imageInspirationModelByCategory = {
-  baokuan: "GPT Image 2",
-  sheying: "GPT Image 2",
-  dianshang: "Nano Banana Pro",
-  dongman: "Nano Banana Pro",
-  chahua: "Nano Banana Pro",
+  baokuan: "Facemini Image 2",
+  sheying: "Facemini Image 2",
+  dianshang: "Facemini Banana Pro",
+  dongman: "Facemini Banana Pro",
+  chahua: "Facemini Banana Pro",
 };
 
 // The source package contains a number of images whose descriptive fields were
@@ -180,7 +180,7 @@ export const imageInspirationMaterials = imgInspirationManifest.map((item) => ({
   model:
     item.model ||
     imageInspirationModelByCategory[item.categoryId] ||
-    "GPT Image 2",
+    "Facemini Image 2",
 }));
 
 export const exampleImages = imageInspirationMaterials.map((item, index) => ({
@@ -236,7 +236,7 @@ export const fmImageGenerationInspirations = exampleImages.map((item, index) => 
   height: item.height,
   resolution: item.resolution,
   aspect: item.aspect,
-  model: item.model || "GPT Image 2",
+  model: item.model || "Facemini Image 2",
   material: "高清原图",
 }));
 
@@ -543,7 +543,7 @@ export const fmImageInspirations = [
     ratio: formatFaceminiImageRatio(id),
     aspect: width && height ? width / height : "portrait",
     model: isGeneratedImage
-      ? (index % 2 === 0 ? "GPT Image 2" : "Nano Banana Pro")
+      ? (index % 2 === 0 ? "Facemini Image 2" : "Facemini Banana Pro")
       : undefined,
   };
 });
@@ -689,7 +689,7 @@ export function getCreationCenterInspirations(activeTab, videoInspirations = [])
 }
 
 const fmInspirationCategoryRouteMap = {
-  图片灵感: { feature: "image", target: "image", model: "GPT Image 2" },
+  图片灵感: { feature: "image", target: "image", model: "Facemini Image 2" },
   视频灵感: { feature: "video", target: "video", model: "Kling Video" },
   数字人形象: {
     feature: "digital-human",

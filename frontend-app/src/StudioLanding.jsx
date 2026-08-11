@@ -8,6 +8,11 @@ import "./StudioLandingBottomCta.css";
 import "./StudioLandingFooter.css";
 import "./StudioLandingResponsive.css";
 
+const brandedStudioLandingHtml = studioLandingHtml.replace(
+  "接入GPT、Gemini、Claude等主流大模型能力",
+  "接入 Facemini 全系列大模型能力",
+);
+
 export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterApp, onEnterCreation }) {
   const rootRef = useRef(null);
 
@@ -368,7 +373,7 @@ export const StudioLanding = memo(function StudioLanding({ onOpenAuth, onEnterAp
       ref={rootRef}
       className="studio-landing"
       onClick={handleClick}
-      dangerouslySetInnerHTML={{ __html: studioLandingHtml }}
+      dangerouslySetInnerHTML={{ __html: brandedStudioLandingHtml }}
     />
   );
 });

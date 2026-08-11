@@ -558,10 +558,6 @@ export async function createPackage(payload, userId) {
     throw createHttpError("selected article style template not found", 400);
   }
   const model = normalizeText(payload.model || "gpt_image_2", 80);
-  const hasUserReferenceImage = Boolean(getUserReferenceImageUrl({ ...payload, imagePromptPlan }));
-  if ((selectedTemplate || hasUserReferenceImage) && model !== "gpt_image_2" && model !== "gpt_image_2_i2i") {
-    throw createHttpError("参考素材图生图需要使用 GPT Image 2 模型", 400);
-  }
   const templateReferenceImageUrl = selectedTemplate
     ? await uploadTemplateReferenceImage(selectedTemplate)
     : "";

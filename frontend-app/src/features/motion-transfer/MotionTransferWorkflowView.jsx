@@ -9,10 +9,7 @@ const emptyOptions = {
     resolution: "720p",
     characterOrientation: "image",
   },
-  characterOrientations: [
-    { value: "image", label: "图片朝向" },
-    { value: "video", label: "视频朝向" },
-  ],
+  characterOrientations: [],
   modes: [
     { value: "720p", label: "720p" },
     { value: "1080p", label: "1080p" },
@@ -31,6 +28,7 @@ export function MotionTransferWorkflowView({ isActive = true }) {
       activeTaskKey="jingchuang-ai:motion:active-task-id"
       moduleId="motion"
       emptyOptions={emptyOptions}
+      hideCharacterOrientation
       header={{
         title: "动作迁移生成",
         description: "上传人物图与动作参考视频，让静态角色自然完成同款动作",
@@ -54,7 +52,7 @@ export function MotionTransferWorkflowView({ isActive = true }) {
         videoAssetId: input.videoAsset.id,
         model: input.model,
         resolution: input.resolution,
-        characterOrientation: input.characterOrientation,
+        characterOrientation: "image",
       })}
     />
   );

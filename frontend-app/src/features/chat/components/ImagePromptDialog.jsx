@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { ModelOptionContent } from "./modelOptionMeta.jsx";
+import { getModelOptionMeta, ModelOptionContent } from "./modelOptionMeta.jsx";
 import { PromptDropdown } from "./PromptDropdown.jsx";
 import { PromptRatioPreview } from "./PromptRatioPreview.jsx";
 
@@ -151,6 +151,9 @@ export function ImagePromptDialog({
             placement={dropdownPlacement}
             renderOption={(item, isSelected) => (
               <ModelOptionContent item={item} selected={isSelected} />
+            )}
+            renderValue={(option) => (
+              <span>{getModelOptionMeta(option?.raw).title}</span>
             )}
             triggerClassName="fm-prompt-control"
             value={model}

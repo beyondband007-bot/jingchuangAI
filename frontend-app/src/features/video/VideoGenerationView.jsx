@@ -94,7 +94,7 @@ export function VideoGenerationView({
       if (task?.video) {
         setPlayingTask(task);
       } else {
-        setFilter("recent");
+        setFilter("all");
       }
       setIsSubmitting(false);
       scrollFeatureTo(0, { behavior: "smooth" });

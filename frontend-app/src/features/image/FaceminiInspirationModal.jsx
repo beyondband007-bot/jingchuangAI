@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Copy, Image, Sparkles, Star, X } from "lucide-react";
 import { BaseModal } from "../../components/BaseModal";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 import "../../components/faceminiDetailModal.css";
 
 function formatInspirationResolution(item) {
@@ -195,7 +196,11 @@ export function FaceminiInspirationModal({
             </div>
             <div>
               <dt>使用模型</dt>
-              <dd>{item.model || (isVideo ? "Kling Video" : "Kling Image")}</dd>
+              <dd>
+                {getFrontendModelDisplayName(
+                  item.model || (isVideo ? "Kling Video" : "Kling Image"),
+                )}
+              </dd>
             </div>
           </dl>
           <div className="fm-detail-actions">

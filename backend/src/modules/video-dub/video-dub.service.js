@@ -3,13 +3,19 @@ import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 import { config } from "../../config/index.js";
 import { createHttpError } from "../../shared/http.js";
-import { formatBeijingDateTime } from "../../shared/time.js";
 import { analyzeFramesWithQwen } from "../../providers/qwen/video.js";
 import { extractKeyFrames, composeFinalVideo, getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
 import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
 import { calculateBillingQuote } from "../../shared/billingRules.js";
 import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
+import {
+  createVideoDubTask,
+  deleteVideoDubTask,
+  findVideoDubTask,
+  listVideoDubTasks,
+  updateVideoDubTask
+} from "./video-dub.repository.js";
 
 const maxVideoBytes = 2 * 1024 * 1024 * 1024; // 2GB per Qwen limit
 const allowedVideoTypes = new Set([
@@ -22,7 +28,6 @@ const allowedVideoExts = new Set([".mp4", ".webm", ".mov", ".avi"]);
 
 const storageBase = path.resolve(process.cwd(), config.media.storageDir, "video-dub");
 
-const tasks = new Map();
 const minimaxTtsEmotions = new Set(["happy", "sad", "angry", "fearful", "disgusted", "surprised", "calm"]);
 
 function getExt(fileName = "") {
@@ -99,7 +104,11 @@ export function getConfig() {
   };
 }
 
-export async function uploadVideo({ file }) {
+async function saveTask(task) {
+  await updateVideoDubTask(task);
+}
+
+export async function uploadVideo({ file, userId }) {
   assertVideoFile(file);
 
   const taskId = `video-dub-${Date.now()}-${randomUUID().slice(0, 8)}`;
@@ -126,15 +135,15 @@ export async function uploadVideo({ file }) {
     bgm: null,
     result: null,
     error: null,
-    createdAt: formatBeijingDateTime()
+    userId
   };
 
-  tasks.set(taskId, task);
+  await createVideoDubTask(task);
   return task;
 }
 
 export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled, bgmVolume, qwenMode, userId }) {
-  const task = tasks.get(sourceAssetId);
+  const task = await findVideoDubTask({ id: sourceAssetId, userId });
   if (!task) {
     throw createHttpError("源素材不存在，请重新上传", 404);
   }
@@ -170,12 +179,17 @@ export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled,
   task.costPoints = quote.points;
   task.billing = quote;
   task.sourceDurationSeconds = sourceDurationSeconds;
+  await saveTask(task);
 
   // Kick off async pipeline
   processPipeline(task).catch((err) => {
     console.error(`[VideoDub ${task.id}] Pipeline failed:`, err);
     task.status = "failed";
     task.stage = "failed";
+    task.error = err.message || "Video dubbing pipeline failed";
+    saveTask(task).catch((saveError) =>
+      console.error(`[VideoDub ${task.id}] Could not save failed task:`, saveError)
+    );
     refundChargedCredits({
       userId: task.userId,
       taskId: task.id,
@@ -199,10 +213,12 @@ async function processPipeline(task) {
   // Step 1: Extract frames (Phase 3: FFmpeg required)
   task.stage = "extracting_frames";
   task.status = "extracting_frames";
+  await saveTask(task);
   let framesBase64 = [];
   try {
     framesBase64 = await extractVideoFrames(task.filePath, paths.framesDir);
     task.thumbnailUrl = buildFrameUrl(task.id);
+    await saveTask(task);
   } catch (frameError) {
     console.error(`[VideoDub ${task.id}] Frame extraction failed:`, frameError.message);
     throw new Error(`视频抽帧失败：${frameError.message}`);
@@ -214,6 +230,7 @@ async function processPipeline(task) {
   // Step 2: Analyze with Qwen
   task.stage = "analyzing_video";
   task.status = "analyzing_video";
+  await saveTask(task);
   let analysis;
   try {
     analysis = await analyzeFramesWithQwen({
@@ -233,10 +250,12 @@ async function processPipeline(task) {
     emotionTag: analysis.emotionTag,
     targetDurationMs: Math.round(sourceDurationSeconds * 1000)
   };
+  await saveTask(task);
 
   // Step 3: Generate voice with MiniMax TTS
   task.stage = "generating_voice";
   task.status = "generating_voice";
+  await saveTask(task);
   const ttsEmotion = normalizeTtsEmotion(analysis.emotionTag);
   const ttsResult = await synthesizeMinimaxSpeech({
     text: analysis.text,
@@ -256,11 +275,13 @@ async function processPipeline(task) {
     audioUrl: `/media/video-dub/voice/${task.id}/${voiceFileName}`,
     durationMs: ttsResult.durationMs
   };
+  await saveTask(task);
 
   // Step 4: Generate BGM with MiniMax Music
   if (task.bgmEnabled) {
     task.stage = "generating_bgm";
     task.status = "generating_bgm";
+    await saveTask(task);
     const bgmPrompt = buildBgmPrompt(analysis);
 
     const musicResult = await generateMinimaxMusic({
@@ -278,11 +299,13 @@ async function processPipeline(task) {
       prompt: bgmPrompt,
       durationMs: musicResult.durationMs
     };
+    await saveTask(task);
   }
 
   // Step 5: Compose final video with FFmpeg
   task.stage = "composing_video";
   task.status = "composing_video";
+  await saveTask(task);
 
   const resultFileName = `${task.id}-dubbed.mp4`;
   const resultFilePath = path.join(paths.resultsDir, resultFileName);
@@ -302,6 +325,7 @@ async function processPipeline(task) {
   task.result = {
     videoUrl: `/media/video-dub/results/${task.id}/${resultFileName}`
   };
+  await saveTask(task);
 }
 
 async function extractVideoFrames(videoPath, framesDir) {
@@ -331,21 +355,19 @@ function buildBgmPrompt(analysis) {
   return `${genre}, ${mood} atmosphere, ${style} feeling, instrumental only, no vocals, soft background music, cinematic`;
 }
 
-export function getTaskById(taskId) {
-  const task = tasks.get(taskId);
+export async function getTaskById(taskId, userId) {
+  const task = await findVideoDubTask({ id: taskId, userId });
   if (!task) throw createHttpError("任务不存在", 404);
   return sanitizeTask(task);
 }
 
-export function getRecentTasks() {
-  return Array.from(tasks.values())
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 50)
-    .map(sanitizeTask);
+export async function getRecentTasks(userId) {
+  const tasks = await listVideoDubTasks({ userId });
+  return tasks.map(sanitizeTask);
 }
 
-export async function deleteTask(taskId) {
-  const task = tasks.get(taskId);
+export async function deleteTask(taskId, userId) {
+  const task = await findVideoDubTask({ id: taskId, userId });
   if (!task) throw createHttpError("任务不存在", 404);
 
   const paths = buildStoragePaths(taskId);
@@ -355,7 +377,7 @@ export async function deleteTask(taskId) {
     // ignore cleanup errors
   }
 
-  tasks.delete(taskId);
+  await deleteVideoDubTask({ id: taskId, userId });
   return { ok: true };
 }
 

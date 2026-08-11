@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Download, Sparkles, X } from "lucide-react";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 
 export function QuickTemplatePreviewDialog({ template, onClose, onApply }) {
   useEffect(() => {
@@ -65,7 +66,10 @@ export function LegacyArticlePreview({ task, onClose }) {
     <aside className="article-preview-overlay" aria-label="爆款图文预览">
       <div className="article-preview-dialog">
         <div className="article-preview-head">
-          <div><span>生成结果</span><strong>{task.model || "AI 图文"}</strong></div>
+          <div>
+            <span>生成结果</span>
+            <strong>{getFrontendModelDisplayName(task.model || "AI 图文")}</strong>
+          </div>
           <button type="button" onClick={onClose} aria-label="关闭预览"><X size={18} /></button>
         </div>
         <div className="article-preview-stage"><img src={task.image} alt="爆款图文生成结果" /></div>

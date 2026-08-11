@@ -16,7 +16,7 @@ export async function getConfig(req, res) {
 export async function uploadVideo(req, res) {
   try {
     requireCredits(req.user);
-    const result = await service.uploadVideo({ file: req.file });
+    const result = await service.uploadVideo({ file: req.file, userId: req.user.id });
     res.status(201).json(result);
   } catch (error) {
     sendError(res, error);
@@ -43,7 +43,7 @@ export async function createTask(req, res) {
 
 export async function getTask(req, res) {
   try {
-    const result = service.getTaskById(req.params?.taskId);
+    const result = await service.getTaskById(req.params?.taskId, req.user.id);
     res.json(result);
   } catch (error) {
     sendError(res, error);
@@ -52,7 +52,7 @@ export async function getTask(req, res) {
 
 export async function getTasks(req, res) {
   try {
-    const result = service.getRecentTasks();
+    const result = await service.getRecentTasks(req.user.id);
     res.json(result);
   } catch (error) {
     sendError(res, error);
@@ -61,7 +61,7 @@ export async function getTasks(req, res) {
 
 export async function deleteTask(req, res) {
   try {
-    const result = await service.deleteTask(req.params?.taskId);
+    const result = await service.deleteTask(req.params?.taskId, req.user.id);
     res.json(result);
   } catch (error) {
     sendError(res, error);

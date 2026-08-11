@@ -20,6 +20,7 @@ import {
   createImageTask,
   assignImageTasksThread,
   deleteImageTask,
+  deleteImageTasks,
   findEnabledImageModels,
   findImageModelPrice,
   findImageTaskRow,
@@ -45,6 +46,7 @@ import {
   imageCountOptions,
   imageQualityOptions,
   imageRatioOptions,
+  getSupportedImageRatios,
   qualityMultiplier,
   supportsImageReference,
   validateImagePayload,
@@ -105,6 +107,7 @@ export async function getModels() {
       .map((model) => ({
         ...model,
         supportsReferenceImage: supportsImageReference(model.value),
+        supportedRatios: getSupportedImageRatios(model.value),
       })),
     ratios: imageRatioOptions,
     qualities: imageQualityOptions,
@@ -329,6 +332,14 @@ export async function deleteTask(id, userId) {
     })
   }
   return result
+}
+
+export async function deleteTasks(ids, userId) {
+  const deletedIds = await deleteImageTasks(ids, userId)
+  await Promise.all(deletedIds.map((taskId) => removeStoredGeneratedImages({ taskId }).catch((error) => {
+    console.warn(`delete local image result files for task ${taskId} failed:`, error.message)
+  })))
+  return { ok: true, deletedIds }
 }
 
 export async function toggleFavorite(id, userId) {

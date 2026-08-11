@@ -43,6 +43,7 @@ import {
 import { formatBeijingDateTime } from "../../utils/time";
 import { useToast } from "../../components/ToastProvider";
 import { getFileSizeLimitError, UPLOAD_SIZE_LIMITS } from "../../utils/uploadLimits";
+import { withFrontendModelDisplayNames } from "../../utils/modelDisplayNames.js";
 
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
 const PENDING_GENERATION_SEED_KEY = "facemini:pending-generation-seed";
@@ -76,7 +77,11 @@ function formatArticleError(error, fallback = "创建爆款图文任务失败") 
   if (message.toLowerCase().includes("invalid generation options")) {
     return "生成参数无效，请检查模型、尺寸比例和配图数量";
   }
-  return message || fallback;
+  return (
+    message
+      .replaceAll("GPT Image 2", "Facemini Image 2")
+      .replaceAll("Nano Banana Pro", "Facemini Banana Pro") || fallback
+  );
 }
 
 function buildDraftCopy(form) {
@@ -239,8 +244,12 @@ export function ArticleGenerationView({
       .getModels()
       .then((value) => {
         if (!mounted) return;
-        setOptions(value);
-        setModel(pickDefaultModel(value.models));
+        const displayOptions = {
+          ...value,
+          models: withFrontendModelDisplayNames(value.models),
+        };
+        setOptions(displayOptions);
+        setModel(pickDefaultModel(displayOptions.models));
         setForm((current) => ({
           ...current,
           ratio: value.ratios.includes(current.ratio)
