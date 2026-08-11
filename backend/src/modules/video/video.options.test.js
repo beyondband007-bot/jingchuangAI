@@ -24,7 +24,6 @@ test("charges each enabled video model by its selected resolution", () => {
   assert.equal(calculateVideoPoints({ model_key: "minimax_h3_2k" }, 4, 1, "2K"), 384);
   assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "480P"), 270);
   assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "1080P"), 1350);
-  assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_mini" }, 6, 1, "720P"), 738);
   assert.equal(calculateVideoPoints({ model_key: "kling_3_std" }, 5, 1, "4K"), 2010);
 });
 
@@ -41,12 +40,12 @@ test("rejects an unsupported resolution for a configured video model", () => {
       prompt: "Generate a city shot",
       model: {
         ...model,
-        model_key: "seedance_2_0_mini"
+        model_key: "kling_3_std"
       },
       ratio: "16:9",
       duration: 5,
       count: 1,
-      resolution: "1080P"
+        resolution: "2K"
     }),
     /invalid video resolution/
   );

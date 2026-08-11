@@ -58,13 +58,6 @@ const VIDEO_RESOLUTION_RULES = {
       }
     ]
   },
-  seedance_2_0_mini: {
-    defaultResolution: "720P",
-    options: [
-      { value: "480P", pointsPerSecond: 57 },
-      { value: "720P", pointsPerSecond: 123 }
-    ]
-  },
   kling_3_std: {
     defaultResolution: "720P",
     options: [

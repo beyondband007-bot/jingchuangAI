@@ -33,31 +33,6 @@ export function createJobsInput(
     return input;
   }
 
-  if (model.provider_model.includes("seedance-2-mini")) {
-    const input = {
-      prompt,
-      return_last_frame: false,
-      generate_audio: true,
-      resolution: String(resolution || "720P").toLowerCase(),
-      aspect_ratio: ratio,
-      duration: Number(duration),
-      web_search: false
-    };
-    const hasMultimodalReferences = Boolean(referenceVideoUrl || referenceAudioUrl);
-    if (referenceImageUrl && hasMultimodalReferences) {
-      input.reference_image_urls = [referenceImageUrl];
-    } else if (referenceImageUrl) {
-      input.first_frame_url = referenceImageUrl;
-    }
-    if (referenceVideoUrl) {
-      input.reference_video_urls = [referenceVideoUrl];
-    }
-    if (referenceAudioUrl) {
-      input.reference_audio_urls = [referenceAudioUrl];
-    }
-    return input;
-  }
-
   if (model.provider_model.includes("kling-3.0")) {
     const input = {
       prompt,

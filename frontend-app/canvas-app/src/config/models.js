@@ -66,17 +66,6 @@ export const VIDEO_MODELS = [{
   defaultResolution: '2K',
   defaultParams: { ratio: '16:9', duration: 4, resolution: '2K', generateAudio: true }
 }, {
-  label: 'Seedance 2.0 Mini',
-  key: 'seedance_2_0_mini',
-  provider: ['kie'],
-  type: 't2v+i2v+r2v',
-  ratios: ['21:9', ...VIDEO_RATIO_LIST.map(item => item.key)],
-  durs: Array.from({ length: 14 }, (_, index) => index + 2).map(key => ({ label: `${key}s`, key })),
-  resolutions: ['480P', '720P'],
-  resolutionPoints: { '480P': 57, '720P': 123 },
-  defaultResolution: '720P',
-  defaultParams: { ratio: '16:9', duration: 6, resolution: '720P', generateAudio: true }
-}, {
   label: 'Kling 3.0',
   key: 'kling_3_std',
   provider: ['kie'],

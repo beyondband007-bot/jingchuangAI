@@ -91,7 +91,6 @@ function inferVideoResolution(model = {}) {
   if (
     model.provider_type === "ark" ||
     model.provider_type === "tencent_vod" ||
-    String(model.provider_model || "").includes("seedance-2-mini") ||
     String(model.provider_model || "").includes("wan/2-7")
   ) {
     return "720P";

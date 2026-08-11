@@ -1616,8 +1616,6 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
         ('seedance_tc', 'tencent_vod', 'VS/2.0', 'Seedance TC', 'multimodal', 'per_second', 120, 0.994,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, TRUE, 82),
-        ('seedance_2_0_mini', 'jobs', 'bytedance/seedance-2-mini', 'Seedance 2.0 Mini', 'mini', 'per_second', 123, 0.875,
-          JSON_ARRAY('16:9','9:16','1:1','4:3','3:4','21:9'), JSON_ARRAY(2,3,4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 6, TRUE, 85),
         ('wan_2_7_720p', 'jobs', 'wan/2-7-text-to-video', 'Wan 2.7 720P', 'first-frame', 'per_second', 56, 0.560,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(2,3,4,5,6,8,10,15), '16:9', 6, TRUE, 90)
       ON DUPLICATE KEY UPDATE
@@ -1644,15 +1642,20 @@ async function seedDemoData() {
             WHEN model_key = 'minimax_h3_2k' THEN 96
             WHEN model_key = 'seedance_2_0_720p' THEN 120
             WHEN model_key = 'seedance_tc' THEN 120
-            WHEN model_key = 'seedance_2_0_mini' THEN 123
             WHEN model_key = 'kling_3_std' THEN 120
             ELSE base_points
           END,
           enabled = CASE
-            WHEN model_key IN ('minimax_h3_2k', 'seedance_2_0_720p', 'seedance_tc', 'seedance_2_0_mini', 'kling_3_std') THEN TRUE
+            WHEN model_key IN ('minimax_h3_2k', 'seedance_2_0_720p', 'seedance_tc', 'kling_3_std') THEN TRUE
             ELSE FALSE
           END
     `);
+
+    // The Mini provider route is intentionally retired: retain historical task
+    // rows for audit, but remove it from the active model catalogue.
+    await connection.query(
+      "DELETE FROM video_model_prices WHERE model_key = 'seedance_2_0_mini'"
+    );
 
     await connection.query(`
       INSERT INTO chat_model_prices

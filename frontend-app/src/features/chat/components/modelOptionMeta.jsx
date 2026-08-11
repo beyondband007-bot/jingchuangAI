@@ -93,9 +93,14 @@ const modelOptionMeta = {
     description: "多模态旗舰视频模型，人物稳定、运镜流畅",
     icon: `${iconBase}/spark.svg`,
   },
-  seedance_2_0_mini: {
-    title: "Seedance 2.0 Mini",
-    description: "高速高性价比，适合快速出片与批量视频创作",
+  seedance_tc: {
+    title: "Seedance TC",
+    description: "腾讯云多模态视频模型，支持图像、视频、音频参考",
+    icon: `${iconBase}/spark.svg`,
+  },
+  minimax_h3_2k: {
+    title: "MiniMax H3",
+    description: "多模态参考能力强，适合图像、视频、音频联合创作",
     icon: `${iconBase}/spark.svg`,
   },
   kling_3_std: {

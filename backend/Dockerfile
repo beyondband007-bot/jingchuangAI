@@ -14,7 +14,7 @@ COPY backend/package*.json ./
 RUN npm config set fetch-retries 5 \
   && npm config set fetch-retry-mintimeout 10000 \
   && npm config set fetch-retry-maxtimeout 120000 \
-  && npm ci --omit=dev --omit=optional \
+  && npm ci --omit=dev \
   && test -x "$FFMPEG_PATH" \
   && test -x "$FFPROBE_PATH" \
   && "$FFMPEG_PATH" -version \
