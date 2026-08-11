@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { formatBeijingDateTime } from "../../utils/time";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 import { FaceminiInspirationModal } from "./FaceminiInspirationModal";
 import "../history/historyRail.css";
 
@@ -26,7 +27,7 @@ export function ExampleCanvas({ exampleImages }) {
               <img src={item.src} alt={item.label} />
             </span>
             <span className="example-card-tags">
-              <span>{item.model}</span>
+              <span>{getFrontendModelDisplayName(item.model)}</span>
               <span>{item.ratio}</span>
               <span>{item.quality}</span>
             </span>

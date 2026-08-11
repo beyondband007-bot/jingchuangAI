@@ -28,9 +28,9 @@ export const copyTones = ["种草口语风", "干货测评风", "温柔分享风
 export const ratios = ["3:4", "1:1", "4:3", "9:16", "16:9"];
 export const imageCounts = [1, 2, 3, 4];
 export const fallbackModelOptions = [
-  { value: "nano_banana2", label: "Nano Banana 2" },
-  { value: "nano_banana_pro", label: "Nano Banana Pro" },
-  { value: "gpt_image_2", label: "GPT Image 2" },
+  { value: "nano_banana2", label: "Facemini Banana 2" },
+  { value: "nano_banana_pro", label: "Facemini Banana Pro" },
+  { value: "gpt_image_2", label: "Facemini Image 2" },
   { value: "seedream_45", label: "Seedream 4.5" },
 ];
 

@@ -2,6 +2,7 @@ import React from "react";
 import { CircleAlert, Loader2, RefreshCcw, Star, Trash2 } from "lucide-react";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { formatBeijingDateTime } from "../../utils/time";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 import { getArticleImages } from "./articlePreviewUtils";
 
 export function ArticleHistoryGrid({
@@ -47,7 +48,11 @@ export function ArticleHistoryGrid({
                 )}
               </button>
               <div className="article-history-meta">
-                <strong>{task.copy?.title || task.title || task.model || "爆款图文"}</strong>
+                <strong>
+                  {task.copy?.title ||
+                    task.title ||
+                    getFrontendModelDisplayName(task.model || "爆款图文")}
+                </strong>
                 <p>
                   {taskImages.length || task.count || 1} 张 · {task.ratio} ·{" "}
                   {formatBeijingDateTime(task.createdAt || task.created_at || task.time) || task.time}

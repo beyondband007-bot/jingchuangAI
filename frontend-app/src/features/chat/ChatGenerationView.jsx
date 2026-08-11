@@ -16,7 +16,7 @@ import {
   getOrderedChatModels,
   toChatContext,
 } from "./ChatConversationCanvas";
-import { ModelOptionContent } from "./components/modelOptionMeta.jsx";
+import { getModelOptionMeta, ModelOptionContent } from "./components/modelOptionMeta.jsx";
 import "./chatStyles.css";
 
 function isLoggedInUser(authUser) {
@@ -64,7 +64,7 @@ function ChatComposerBar({
     canInterruptSubmit &&
     !isUploadingAttachment;
   const modelLabel = isReady
-    ? selectedModel?.label || "DeepSeek V4 Pro"
+    ? getModelOptionMeta(selectedModel).title || "DeepSeek V4 Pro"
     : "模型加载中";
   const visibleReasoningEfforts = options.reasoningEfforts
     .filter((item) => item.value === "none" || item.value === "low")

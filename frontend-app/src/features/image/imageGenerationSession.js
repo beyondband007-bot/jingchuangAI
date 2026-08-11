@@ -1,3 +1,5 @@
+import { withFrontendModelDisplayNames } from "../../utils/modelDisplayNames.js";
+
 const emptyOptions = { models: [], ratios: [], qualities: [], counts: [] };
 const imageGenerationSessionKey = "jingchuang:image-generation-session";
 const imageGenerationThreadsKey = "jingchuang:image-generation-threads";
@@ -6,7 +8,7 @@ export function normalizeImageOptions(value) {
   return {
     ...emptyOptions,
     ...(value && typeof value === "object" && !Array.isArray(value) ? value : {}),
-    models: Array.isArray(value?.models) ? value.models : [],
+    models: withFrontendModelDisplayNames(value?.models),
     ratios: Array.isArray(value?.ratios) ? value.ratios : [],
     qualities: Array.isArray(value?.qualities) ? value.qualities : [],
     counts: Array.isArray(value?.counts) ? value.counts : [],

@@ -7,6 +7,7 @@ import {
   Star,
 } from "lucide-react";
 import { parseVideoAspectRatio } from "./videoUtils";
+import { getFrontendModelDisplayName } from "../../utils/modelDisplayNames.js";
 
 export function VideoGenerationResultPlayer({
   task,
@@ -68,7 +69,9 @@ export function VideoGenerationResultPlayer({
       </div>
 
       <div className="video-gen-result-meta">
-        <span className="video-gen-result-tag">{task.model}</span>
+        <span className="video-gen-result-tag">
+          {getFrontendModelDisplayName(task.model)}
+        </span>
         <span className="video-gen-result-tag">{task.ratio}</span>
         <span className="video-gen-result-tag">{task.duration} 秒</span>
         {task.time ? (

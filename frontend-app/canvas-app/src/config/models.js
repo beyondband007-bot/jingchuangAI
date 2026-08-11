@@ -9,8 +9,8 @@ export const SEEDREAM_QUALITY_OPTIONS = [
 export const BANANA_SIZE_OPTIONS = SEEDREAM_SIZE_OPTIONS
 
 export const IMAGE_MODELS = [
-  { label: 'GPT Image 2', key: 'gpt_image_2', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } },
-  { label: 'Nano Banana Pro', key: 'nano_banana_pro', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } },
+  { label: 'Facemini Image 2', key: 'gpt_image_2', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } },
+  { label: 'Facemini Banana Pro', key: 'nano_banana_pro', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } },
   { label: 'Flux 2 Pro', key: 'flux_2_pro', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } },
   { label: 'Seedream 4.5', key: 'seedream_4_5', provider: ['kie'], sizes: RATIOS, defaultParams: { size: '1:1', quality: '1K', style: 'vivid' } }
 ]
