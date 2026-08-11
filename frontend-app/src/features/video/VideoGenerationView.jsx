@@ -243,7 +243,9 @@ export function VideoGenerationView({
           .catch(() => {});
       }
     }
-    videoApi.getModels().then((value) => mounted && setOptions(value));
+    videoApi
+      .getModels({ force: true })
+      .then((value) => mounted && setOptions(value));
     videoApi
       .getCredits()
       .then((value) => mounted && applyCreditsUpdate(setCredits, value));
@@ -278,7 +280,7 @@ export function VideoGenerationView({
       mounted = false;
       unsubscribe();
     };
-  }, [filter]);
+  }, [filter, isActive]);
 
   useEffect(() => {
     const scrollContainer = getFeatureScrollContainer();
