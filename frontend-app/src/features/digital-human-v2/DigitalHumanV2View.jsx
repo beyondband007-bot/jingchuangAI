@@ -571,7 +571,9 @@ export function DigitalHumanV2View({
       const createPayload = {
         avatarId: selectedAvatar.id,
         avatarName: selectedAvatar.name,
-        driveMode: !isCloneMode && confirmedPreviewAudio?.audioFileId ? "audio" : "text",
+        // Confirmed preview audio is only for auditioning the selected system
+        // voice. It must not replace that voice with uploaded-audio mode.
+        driveMode: "text",
         text: text.trim(),
         performance:
           selectedAvatar.performance ||
@@ -587,10 +589,6 @@ export function DigitalHumanV2View({
         emotion: getVoiceEmotionValue(voiceEmotion),
         videoSpec,
       };
-      if (!isCloneMode && confirmedPreviewAudio?.audioFileId) {
-        createPayload.audioFileId = confirmedPreviewAudio.audioFileId;
-        createPayload.audioName = confirmedPreviewAudio.originalName || "试听音频";
-      }
       if (selectedScene?.sceneFileId) {
         createPayload.sceneFileId = selectedScene.sceneFileId;
       }

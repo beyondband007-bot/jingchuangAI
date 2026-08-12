@@ -172,10 +172,50 @@
   font-size: 12px;
 }
 
+.dh-history-card__voice-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  color: #8d8999;
+  font-size: 12px;
+}
+
+.dh-history-card__voice-settings div {
+  display: inline-flex;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dh-history-card__voice-settings dt,
+.dh-history-card__voice-settings dd {
+  margin: 0;
+}
+
+.dh-history-card__voice-settings dt {
+  color: #aaa6b5;
+}
+
+.dh-history-card__voice-settings dd {
+  max-width: 190px;
+  overflow: hidden;
+  color: #676270;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dh-history-card__script {
+  display: flex;
+  gap: 6px;
+  max-width: min(100%, 760px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dh-history-card__script span {
+  flex: 0 0 auto;
+  color: #aaa6b5;
 }
 
 .dh-history-card__meta {

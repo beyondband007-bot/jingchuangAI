@@ -9,12 +9,15 @@ import {
 } from "../../components/DeleteConfirmDialog";
 import { HistoryEmptyState } from "../../components/HistoryEmptyState";
 import { formatBeijingDateTime } from "../../utils/time";
+import { getVoiceEmotionLabel } from "../digital-human-v2/utils";
 import "./digitalHumanHistory.css";
 
 function getAvatarSource(task) {
   if (task?.taskType === "photo") return "mine";
   const avatarId = String(task?.avatarId || "");
-  return avatarId.startsWith("public-") ? "official" : "mine";
+  return avatarId.startsWith("official-") || avatarId.startsWith("public-")
+    ? "official"
+    : "mine";
 }
 
 function getAvatarSourceLabel(source) {
@@ -68,6 +71,19 @@ function getDubbingContent(task) {
     return normalized && !/\.(mp3|m4a|wav|aac|ogg|webm)$/i.test(normalized);
   });
   return String(content || "暂无配音内容").trim();
+}
+
+function getVoiceSettings(task, voiceNamesById) {
+  const voice = task?.voiceName && !/\.(mp3|m4a|wav|webm)$/i.test(task.voiceName)
+    ? task.voiceName
+    : voiceNamesById.get(String(task?.voiceId || "")) || "系统配音";
+  const speed = Number(task?.speed ?? task?.voiceSpeed);
+  const emotion = String(task?.emotion ?? task?.voiceEmotion ?? "").trim();
+  return {
+    voice,
+    speed: `${Number.isFinite(speed) && speed > 0 ? speed : 1}x`,
+    emotion: getVoiceEmotionLabel(emotion),
+  };
 }
 
 function HistoryPreviewModal({ task, onClose }) {
@@ -139,6 +155,7 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
   const [photoTasks, setPhotoTasks] = useState([]);
   const [filter, setFilter] = useState("all");
   const [previewTask, setPreviewTask] = useState(null);
+  const [voiceNamesById, setVoiceNamesById] = useState(() => new Map());
 
   const tasks = useMemo(() => {
     const merged = [
@@ -164,13 +181,26 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
     async function load() {
       setLoading(true);
       try {
-        const [avatarData, photoData] = await Promise.all([
+        const [avatarData, photoData, voicesData] = await Promise.all([
           digitalHumanApi.getTasks(),
           imageDigitalHumanApi.getTasks(),
+          digitalHumanApi.getVoices(),
         ]);
         if (!mounted) return;
         setAvatarTasks(Array.isArray(avatarData) ? avatarData : []);
         setPhotoTasks(Array.isArray(photoData) ? photoData : []);
+        const voices = Array.isArray(voicesData)
+          ? voicesData
+          : Array.isArray(voicesData?.voices)
+            ? voicesData.voices
+            : [];
+        setVoiceNamesById(
+          new Map(
+            voices
+              .filter((voice) => voice?.id && voice?.name)
+              .map((voice) => [String(voice.id), voice.name]),
+          ),
+        );
       } catch (error) {
         if (mounted) Message.error(error.message || "加载历史记录失败");
       } finally {
@@ -267,6 +297,7 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
         <div className="dh-history__list">
           {tasks.map((task) => {
             const status = getStatusTag(task.status);
+            const voiceSettings = getVoiceSettings(task, voiceNamesById);
             const isProcessing = !["completed", "failed"].includes(task.status);
             const canPreview = task.status === "completed" && Boolean(task.resultUrl);
             const canResume = isProcessing && task.taskType === "avatar";
@@ -330,8 +361,13 @@ export function DigitalHumanHistoryView({ isActive = true, onResumeTask }) {
                     <Tag color={status.color}>{status.label}</Tag>
                   </div>
                   <strong>{task.title}</strong>
-                  <p>{task.subtitle}</p>
+                  <dl className="dh-history-card__voice-settings">
+                    <div><dt>音色</dt><dd>{voiceSettings.voice}</dd></div>
+                    <div><dt>语速</dt><dd>{voiceSettings.speed}</dd></div>
+                    <div><dt>情感</dt><dd>{voiceSettings.emotion}</dd></div>
+                  </dl>
                   <p className="dh-history-card__script">
+                    <span>配音内容</span>
                     {getDubbingContent(task)}
                   </p>
                   <div className="dh-history-card__meta">
