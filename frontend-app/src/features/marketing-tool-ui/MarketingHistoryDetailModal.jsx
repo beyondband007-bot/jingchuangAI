@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, FileImage, FileVideo, X } from "lucide-react";
 import { formatBeijingDateTime } from "../../utils/time";
@@ -24,16 +24,24 @@ function decodeMojibakeText(value) {
   }
 }
 
-function Media({ src, video, alt, transparent = false }) {
+function Media({ src, video, alt, transparent = false, videoRef, onPlay }) {
   if (!src) {
     return <span className="marketing-history-detail__empty-media">{video ? <FileVideo size={34} /> : <FileImage size={34} />}</span>;
   }
-  return video ? <video src={src} controls playsInline preload="metadata" /> : <img className={transparent ? "is-transparent" : ""} src={src} alt={alt} />;
+  return video ? <video ref={videoRef} src={src} controls playsInline preload="metadata" onPlay={onPlay} /> : <img className={transparent ? "is-transparent" : ""} src={src} alt={alt} />;
 }
 
 export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
   const [copied, setCopied] = useState(false);
   const [wideMedia, setWideMedia] = useState(false);
+  const sourceVideoRef = useRef(null);
+  const resultVideoRef = useRef(null);
+
+  function pauseOtherVideo(activeVideo) {
+    [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
+      if (video && video !== activeVideo && !video.paused) video.pause();
+    });
+  }
   useEffect(() => {
     if (!task) return undefined;
     const onKeyDown = (event) => event.key === "Escape" && onClose?.();
@@ -41,6 +49,8 @@ export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
     return () => {
+      sourceVideoRef.current?.pause();
+      resultVideoRef.current?.pause();
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
@@ -103,11 +113,11 @@ export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
       <section className={`marketing-history-detail__panel${isReplicate ? " marketing-history-detail__panel--replicate" : ""}${wideMedia ? " marketing-history-detail__panel--wide" : ""}`}>
         <div className="marketing-history-detail__media">
           {isReplicate ? (
-            <Media src={sourceUrl} video={video} alt={title} />
+            <Media src={sourceUrl} video={video} alt={title} videoRef={sourceVideoRef} onPlay={(event) => pauseOtherVideo(event.currentTarget)} />
           ) : (
             <div className="marketing-history-detail__compare">
-              <figure><figcaption>原始素材</figcaption><Media src={sourceUrl || resultUrl} video={video} alt={`${title} 原始素材`} /></figure>
-              <figure><figcaption>处理结果</figcaption><Media src={resultUrl} video={video} alt={`${title} 处理结果`} transparent={tool === "remove-bg"} /></figure>
+              <figure><figcaption>原始素材</figcaption><Media src={sourceUrl || resultUrl} video={video} alt={`${title} 原始素材`} videoRef={sourceVideoRef} onPlay={(event) => pauseOtherVideo(event.currentTarget)} /></figure>
+              <figure><figcaption>处理结果</figcaption><Media src={resultUrl} video={video} alt={`${title} 处理结果`} transparent={tool === "remove-bg"} videoRef={resultVideoRef} onPlay={(event) => pauseOtherVideo(event.currentTarget)} /></figure>
             </div>
           )}
         </div>
