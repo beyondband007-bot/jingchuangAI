@@ -76,6 +76,12 @@ import {
   toggleVideoTaskFavorite
 } from "./video.repository.js";
 
+function getVideoCreditMemo(source, action) {
+  return source === "infinite-canvas"
+    ? `infinite canvas video generation ${action}`
+    : `video generation ${action}`;
+}
+
 function inferVideoResolution(model = {}) {
   const description = [
     model.display_name,
@@ -396,7 +402,7 @@ export async function createTask(payload, userId) {
       userId,
       taskId,
       amount: costPoints,
-      memo: "video generation debit"
+      memo: getVideoCreditMemo(source, "debit")
     });
 
     await connection.commit();
@@ -621,7 +627,7 @@ async function refundTask(id, userIdArg, costPointsArg, error) {
         userId,
         taskId: id,
         amount: costPoints,
-        memo: "video generation refund"
+        memo: getVideoCreditMemo(task.source, "refund")
       });
       await markVideoTaskRefunded(connection, id);
     }
