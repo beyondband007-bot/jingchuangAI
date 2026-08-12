@@ -236,17 +236,26 @@ export function DigitalHumanV2View({
     const pendingSeed = takePendingGenerationSeed("digital-human");
     if (!pendingSeed) return;
 
-    const avatar = avatars.public.find(
+    const avatar = [...(avatars.public || []), ...(avatars.mine || [])].find(
       (item) => String(item.id) === String(pendingSeed.avatarId),
     );
     if (avatar) {
-      setAvatarSource("official");
+      setAvatarSource(
+        (avatars.mine || []).some(
+          (item) => String(item.id) === String(pendingSeed.avatarId),
+        )
+          ? "mine"
+          : "official",
+      );
       setSelectedAvatar(avatar);
       setRightView("library");
     }
+    if (pendingSeed.voiceId) {
+      setVoiceId(pickEnabledVoiceId(voices, pendingSeed.voiceId));
+    }
     if (pendingSeed.prompt) setText(pendingSeed.prompt);
     if (pendingSeed.notice) showToast(pendingSeed.notice);
-  }, [avatars.public, isActive, loading, setSelectedAvatar, showToast]);
+  }, [avatars.mine, avatars.public, isActive, loading, setSelectedAvatar, showToast, voices]);
 
   useEffect(() => {
     persistWorkspaceDrafts(drafts);

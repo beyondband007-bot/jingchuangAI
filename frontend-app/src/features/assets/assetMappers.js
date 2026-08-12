@@ -212,6 +212,10 @@ export function mapAssetTasks(type, tasks = []) {
       prompt:
         task.prompt || task.text || task.error || getAssetTaskTitle(type, task),
       title: getAssetTaskTitle(type, task),
+      avatarId: task.avatarId || task.avatar?.id || "",
+      avatarName: task.avatarName || task.avatar?.name || "",
+      voiceId: task.voiceId || "",
+      voiceName: task.voiceName || "",
       category: type,
       model: task.model || task.modelKey || task.providerModel || "",
       resolution: getAssetTaskResolution(task),

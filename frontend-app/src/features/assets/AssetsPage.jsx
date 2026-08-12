@@ -827,11 +827,20 @@ export function AssetsPage({
     }
   }
 
+  function getAssetGenerationTarget(item) {
+    if (item?.launchTarget) return item.launchTarget;
+    if (isDigitalHumanAssetType(item?.type)) return "digital-human";
+    if (item?.type === "爆款图文") return "article";
+    return item?.isVideo ? "video" : "image";
+  }
+
   function remixAsset(item) {
-    const target = item.launchTarget || (item.isVideo ? "video" : "image");
+    const target = getAssetGenerationTarget(item);
     writePendingGenerationSeed({
       target,
       prompt: item.prompt || item.title,
+      avatarId: target === "digital-human" ? item.avatarId || null : null,
+      voiceId: target === "digital-human" ? item.voiceId || null : null,
       notice: "已填入同款提示词",
     });
     setPreviewAsset(null);
@@ -839,12 +848,28 @@ export function AssetsPage({
   }
 
   function referenceAsset(item) {
-    const target = item.isVideo ? "video" : "image";
+    const target = getAssetGenerationTarget(item);
+    if (target === "digital-human") {
+      writePendingGenerationSeed({
+        target,
+        prompt: item.prompt || item.title || "",
+        avatarId: item.avatarId || null,
+        voiceId: item.voiceId || null,
+        notice: "已填入数字人文案",
+      });
+      setPreviewAsset(null);
+      onOpenFeature?.(target);
+      return;
+    }
+    const referenceUrl = item.isVideo
+      ? item.poster || item.posterUrl || item.image || item.src || ""
+      : item.imageUrl || item.image || item.src || item.poster || "";
+    if (!referenceUrl) return;
     writePendingGenerationSeed({
       target,
-      prompt: target === "video" ? item.prompt || "" : undefined,
+      prompt: item.prompt || item.title || "",
       referenceImage: {
-        url: item.image || item.src || item.poster,
+        url: referenceUrl,
         originalName: `${item.title || (item.isVideo ? "视频封面" : "参考图")}.png`,
         size: 0,
         mimeType: "image/png",
@@ -855,6 +880,14 @@ export function AssetsPage({
     });
     setPreviewAsset(null);
     onOpenFeature?.(target);
+  }
+
+  function canReferenceAsset(item) {
+    return Boolean(
+      item?.isVideo
+        ? item.poster || item.posterUrl || item.image || item.src
+        : item?.imageUrl || item?.image || item?.src || item?.poster,
+    );
   }
 
   function goToFavoritesView() {
@@ -1268,7 +1301,7 @@ export function AssetsPage({
         item={previewAsset}
         onClose={() => setPreviewAsset(null)}
         onRemix={remixAsset}
-        onReference={referenceAsset}
+        onReference={canReferenceAsset(previewAsset) ? referenceAsset : undefined}
         onFavorite={
           canFavoriteAsset(previewAsset)
             ? togglePreviewAssetFavorite
@@ -1298,7 +1331,7 @@ export function AssetsPage({
             item={previewAsset}
             onClose={() => setPreviewAsset(null)}
             onRemix={remixAsset}
-            onReference={referenceAsset}
+            onReference={canReferenceAsset(previewAsset) ? referenceAsset : undefined}
             onFavorite={
               canFavoriteAsset(previewAsset)
                 ? togglePreviewAssetFavorite
