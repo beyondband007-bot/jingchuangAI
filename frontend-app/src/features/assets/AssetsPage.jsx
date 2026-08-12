@@ -839,18 +839,22 @@ export function AssetsPage({
   }
 
   function referenceAsset(item) {
+    const target = item.isVideo ? "video" : "image";
     writePendingGenerationSeed({
-      target: "image",
+      target,
+      prompt: target === "video" ? item.prompt || "" : undefined,
       referenceImage: {
         url: item.image || item.src || item.poster,
-        originalName: `${item.title || "参考图"}.png`,
+        originalName: `${item.title || (item.isVideo ? "视频封面" : "参考图")}.png`,
         size: 0,
         mimeType: "image/png",
       },
-      notice: "已添加为参考图",
+      notice: item.isVideo
+        ? "已添加视频封面作为视频参考图"
+        : "已添加为参考图",
     });
     setPreviewAsset(null);
-    onOpenFeature?.("image");
+    onOpenFeature?.(target);
   }
 
   function goToFavoritesView() {

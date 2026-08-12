@@ -212,14 +212,16 @@ export function FaceminiInspirationModal({
               <Sparkles size={16} />
               生成同款
             </button>
-            <button
-              className="is-secondary"
-              type="button"
-              onClick={() => onReference?.(item)}
-            >
-              <Image size={16} />
-              用作参考
-            </button>
+            {onReference && (
+              <button
+                className="is-secondary"
+                type="button"
+                onClick={() => onReference(item)}
+              >
+                <Image size={16} />
+                用作参考
+              </button>
+            )}
             {onFavorite && (
               <button
                 className={`is-favorite ${isFavorite ? "is-active" : ""}`}
