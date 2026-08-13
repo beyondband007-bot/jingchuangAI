@@ -113,14 +113,18 @@ button:focus-visible {
   }
 }
 
-.lucide-loader-2 {
+.lucide-loader-2,
+.lucide-loader-circle,
+.is-spinning {
   animation: spin 1s linear infinite;
   transform-box: fill-box;
   transform-origin: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lucide-loader-2 {
+  .lucide-loader-2,
+  .lucide-loader-circle,
+  .is-spinning {
     animation: none;
   }
 }

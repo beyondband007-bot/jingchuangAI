@@ -130,7 +130,7 @@ function EnhanceCenterState({
   return (
     <section className="marketing-runtime-state marketing-runtime-state--processing" aria-live="polite">
       <span className="marketing-runtime-spinner">
-        <Loader2 size={30} />
+        <Loader2 size={30} className="is-spinning" />
       </span>
       <strong>{isSubmitting ? "正在创建画质增强任务" : "正在智能提升画质"}</strong>
       <p>素材正在处理中，完成后会自动回填到这里。</p>
@@ -154,14 +154,14 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
           isVideo ? (
             <div className="watermark-task-video-thumb">
               <img src={task.thumbnailUrl || task.sourceUrl} alt={task.sourceFileName || "画质提升视频缩略图"} />
-              <Film size={26} aria-hidden="true" />
+              <span className="replicate-card-video-icon" aria-hidden="true"><Film size={28} /></span>
             </div>
           ) : (
             <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
-            {isProcessing ? <Loader2 size={26} /> : isVideo ? <Film size={26} /> : <Image size={26} />}
+            {isProcessing ? <Loader2 size={26} className="is-spinning" /> : isVideo ? <Film size={26} /> : <Image size={26} />}
             <strong>{isFailed ? "增强失败" : "增强中"}</strong>
           </div>
         )}

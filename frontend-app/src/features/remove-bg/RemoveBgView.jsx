@@ -102,7 +102,7 @@ function RemoveBgCenterState({
   return (
     <section className="marketing-runtime-state marketing-runtime-state--processing" aria-live="polite">
       <span className="marketing-runtime-spinner">
-        <Loader2 size={30} />
+        <Loader2 size={30} className="is-spinning" />
       </span>
       <strong>{isSubmitting ? "正在创建抠图任务" : "正在智能抠图"}</strong>
       <p>图片正在处理中，完成后会自动回填到这里。</p>
@@ -125,7 +125,7 @@ function RemoveBgTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
           <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "抠图结果"} />
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
-            {isProcessing ? <Loader2 size={26} /> : <Image size={26} />}
+            {isProcessing ? <Loader2 size={26} className="is-spinning" /> : <Image size={26} />}
             <strong>{isFailed ? "抠图失败" : "抠图中"}</strong>
           </div>
         )}
@@ -205,7 +205,7 @@ const RemoveBgUploadSlot = forwardRef(function RemoveBgUploadSlot({ sourceAsset,
       {sourceAsset && <small>{sourceAsset.fileName} · {formatBytes(sourceAsset.sizeBytes)}</small>}
       {isUploading && (
         <span className="watermark-uploading">
-          <Loader2 size={16} />
+          <Loader2 size={16} className="is-spinning" />
           上传中
         </span>
       )}
@@ -306,7 +306,7 @@ function RemoveBgComposer({ options, onSubmit, isSubmitting }) {
         </strong>
         {previewUrl ? <button type="button" className="marketing-tool-composer__secondary-action" onClick={() => uploadRef.current?.openFilePicker()} disabled={uploading}><Upload size={15} />重新上传文件</button> : null}
         <button className="ui-send-button" type="button" onClick={submit} disabled={!canSubmit} aria-label="开始抠图">
-          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+          {isSubmitting ? <Loader2 size={18} className="is-spinning" /> : <Zap size={18} />}
         </button>
       </div>
     </div>

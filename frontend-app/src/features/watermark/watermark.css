@@ -162,15 +162,18 @@
   object-fit: cover;
 }
 
-.watermark-task-video-thumb svg {
+.watermark-task-video-thumb .replicate-card-video-icon {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  padding: 8px;
+  inset: 0;
+  display: grid;
+  place-items: center;
   color: #fff;
-  background: rgba(18, 24, 43, .68);
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  background: rgba(12, 16, 32, .28);
+  pointer-events: none;
+}
+
+.watermark-task-video-thumb .replicate-card-video-icon svg {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .48));
 }
 
 .marketing-tool-root .watermark-task-placeholder {
