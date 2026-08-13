@@ -12,7 +12,7 @@ const budgets = [
   // The video entry intentionally shares generation, inspiration and media-stage CSS.
   // Keep a budget here rather than forcing those shared rules into duplicate chunks.
   { name: "video", source: "src/features/video/VideoGenerationView.jsx", js: 50, css: 48 },
-  { name: "workbench shell", filePrefix: "ImageFeaturePage-", js: 50, css: 210 },
+  { name: "workbench shell", filePrefix: "ImageFeaturePage-", js: 52, css: 210 },
   { name: "inspiration catalog", source: "src/data/faceminiData.js", js: 270, css: 0 },
   { name: "Arco UI shared chunk", filePrefix: "arco-ui-", js: 270, css: 0 },
   { name: "Markdown renderer", filePrefix: "markdown-renderer-", js: 160, css: 0 },

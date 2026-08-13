@@ -12,7 +12,7 @@
   height: 5%;
   min-height: 34px;
   padding-bottom: 8px;
-  border-bottom: none !important;
+  border-bottom: none;
 }
 
 [data-feature-module="article"] .article-result-card > header strong {

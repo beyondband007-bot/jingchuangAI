@@ -116,7 +116,7 @@ export function validateVideoPayload({
   });
   const hasFrameImages = Boolean(imageInputs.firstFrameImageUrl || imageInputs.lastFrameImageUrl);
   const hasReferenceImages = imageInputs.referenceImageUrls.length > 0;
-  const isMinimaxH3 = model.provider_type === "minimax" && model.provider_model === "MiniMax-H3";
+  const isMinimaxH3 = ["minimax", "metaso_h3"].includes(model.provider_type) && model.provider_model === "MiniMax-H3";
   const allImageUrls = [
     imageInputs.firstFrameImageUrl,
     imageInputs.lastFrameImageUrl,

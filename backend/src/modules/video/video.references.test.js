@@ -8,6 +8,7 @@ import {
   getLocalMediaFilePath,
   resolveArkVideoReference,
   resolveKieVideoReference,
+  resolveMetasoH3VideoReference,
   resolveMinimaxVideoReference,
   resolveTencentVodVideoReference
 } from "./video.references.js";
@@ -253,6 +254,73 @@ test("keeps KIE video models on the temporary upload path", async () => {
     assert.equal(result, "https://tempfile.example.com/product.png");
     assert.equal(uploadArgs.uploadPath, "video-references/18");
     assert.equal(uploadArgs.mimeType, "image/png");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("uploads METASO H3 canvas references through Tencent VOD before submission", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "metaso-h3-reference-"));
+  const canvasDir = path.join(tempDir, "canvas", "uploads");
+  await mkdir(canvasDir, { recursive: true });
+  const filePath = path.join(canvasDir, "product.png");
+  await writeFile(filePath, Buffer.from("png-bytes"));
+
+  let uploadArgs;
+  let requestedUrl;
+  try {
+    const result = await resolveMetasoH3VideoReference({
+      url: "/media/canvas/uploads/product.png",
+      kind: "image",
+      referenceIndex: 1,
+      storageDir: tempDir,
+      uploadImpl: async (args) => {
+        uploadArgs = args;
+        return { url: "https://vod.example.com/metaso/product.png", fileId: "file-456" };
+      },
+      fetchImpl: async (url) => {
+        requestedUrl = url;
+        return new Response(Buffer.from("image"), {
+          status: 206,
+          headers: { "Content-Type": "image/png" }
+        });
+      }
+    });
+
+    assert.equal(result, "https://vod.example.com/metaso/product.png");
+    assert.equal(uploadArgs.filePath, filePath);
+    assert.equal(uploadArgs.kind, "image");
+    assert.equal(requestedUrl, "https://vod.example.com/metaso/product.png");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("returns a no-charge error when METASO H3 Tencent VOD upload fails", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "metaso-h3-reference-"));
+  const referencesDir = path.join(tempDir, "video", "references");
+  await mkdir(referencesDir, { recursive: true });
+  await writeFile(path.join(referencesDir, "product.png"), Buffer.from("png-bytes"));
+
+  try {
+    await assert.rejects(
+      resolveMetasoH3VideoReference({
+        url: "/media/video/references/product.png",
+        kind: "image",
+        referenceIndex: 3,
+        storageDir: tempDir,
+        uploadImpl: async () => {
+          throw new Error("CommitUpload denied");
+        }
+      }),
+      (error) => {
+        assert.equal(error.code, "VIDEO_REFERENCE_UPLOAD_FAILED");
+        assert.equal(error.errorDetail.stage, "reference_upload");
+        assert.equal(error.errorDetail.referenceIndex, 3);
+        assert.match(error.message, /未扣除积分/);
+        return true;
+      }
+    );
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }

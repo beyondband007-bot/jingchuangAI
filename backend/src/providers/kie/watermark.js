@@ -38,24 +38,6 @@ export async function createKieWatermarkImageTask({ model, prompt, sourceUrl, re
   return extractTaskId(result, "watermark image");
 }
 
-export async function createKieWatermarkVideoTask({ model, prompt, sourceUrl, resolution }) {
-  const result = await requestKie("/api/v1/jobs/createTask", {
-    method: "POST",
-    body: JSON.stringify({
-      model,
-      input: {
-        video_url: sourceUrl,
-        prompt,
-        resolution,
-        audio_setting: "origin",
-        watermark: false
-      }
-    })
-  });
-
-  return extractTaskId(result, "watermark video");
-}
-
 export async function getKieWatermarkTask({ taskId }) {
   return getKieTask(taskId);
 }

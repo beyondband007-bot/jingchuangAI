@@ -22,6 +22,8 @@ test("charges MiniMax H3 at its configured 2K fallback rate", () => {
 test("charges each enabled video model by its selected resolution", () => {
   assert.equal(calculateVideoPoints({ model_key: "minimax_h3_2k" }, 4, 1, "768P"), 240);
   assert.equal(calculateVideoPoints({ model_key: "minimax_h3_2k" }, 4, 1, "2K"), 384);
+  assert.equal(calculateVideoPoints({ model_key: "metaso_h3_2k" }, 4, 1, "768P"), 40);
+  assert.equal(calculateVideoPoints({ model_key: "metaso_h3_2k" }, 4, 1, "2K"), 72);
   assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "480P"), 270);
   assert.equal(calculateVideoPoints({ model_key: "seedance_2_0_720p" }, 5, 1, "1080P"), 1350);
   assert.equal(calculateVideoPoints({ model_key: "kling_3_std" }, 5, 1, "4K"), 2010);
@@ -32,6 +34,11 @@ test("keeps MiniMax H3 selling rates at cost times 1.2", () => {
     const option = getVideoResolutionOption({ model_key: "minimax_h3_2k" }, resolution);
     assert.equal(option.pointsPerSecond, option.rmbPerSecond * 1.2 * 100);
   }
+});
+
+test("uses the requested METASO H3 selling rates", () => {
+  assert.equal(getVideoResolutionOption({ model_key: "metaso_h3_2k" }, "768P").pointsPerSecond, 10);
+  assert.equal(getVideoResolutionOption({ model_key: "metaso_h3_2k" }, "2K").pointsPerSecond, 18);
 });
 
 test("rejects an unsupported resolution for a configured video model", () => {
@@ -106,6 +113,19 @@ test("allows MiniMax H3 to combine reference image, video, and audio", () => {
   assert.doesNotThrow(() => validateVideoPayload({
     prompt: "Use all references to generate a coherent scene",
     model: h3Model,
+    ratio: "16:9",
+    duration: 5,
+    count: 1,
+    referenceImageUrls: ["/media/image.png"],
+    referenceVideoUrl: "/media/video.mp4",
+    referenceAudioUrl: "/media/voice.mp3"
+  }));
+});
+
+test("allows METASO H3 to combine reference image, video, and audio", () => {
+  assert.doesNotThrow(() => validateVideoPayload({
+    prompt: "Use all references to generate a coherent scene",
+    model: { ...model, provider_type: "metaso_h3", provider_model: "MiniMax-H3" },
     ratio: "16:9",
     duration: 5,
     count: 1,

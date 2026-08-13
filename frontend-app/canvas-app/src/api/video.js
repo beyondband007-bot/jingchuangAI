@@ -12,7 +12,7 @@ export async function createVideoTask(data, { onTaskCreated = () => {} } = {}) {
   } = resolveVideoImageSources(data)
   const videoReference = data.reference_video?.url || data.reference_video || ''
   const audioReference = data.reference_audio?.url || data.reference_audio || ''
-  const isMinimaxH3 = data.model === 'minimax_h3_2k'
+  const isMinimaxH3 = ['minimax_h3_2k', 'metaso_h3_2k'].includes(data.model)
   const hasFrameImages = Boolean(firstFrameImage || lastFrameImage)
   const hasImageReferences = referenceImages.length > 0
   if ((hasFrameImages || (!isMinimaxH3 && hasImageReferences)) && videoReference) {

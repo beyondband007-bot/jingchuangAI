@@ -25,6 +25,12 @@ import {
   mapMinimaxH3VideoState
 } from "../../providers/minimax/videoGeneration.js";
 import {
+  createMetasoH3VideoTask,
+  extractMetasoH3VideoResult,
+  getMetasoH3VideoTask,
+  mapMetasoH3VideoState
+} from "../../providers/metaso-h3/videoGeneration.js";
+import {
   createTencentVodSeedanceTask,
   extractTencentVodSeedanceResult,
   getTencentVodSeedanceTask,
@@ -44,6 +50,7 @@ import { serializeVideoTaskError } from "./video.errors.js";
 import {
   resolveArkVideoReference,
   resolveKieVideoReference,
+  resolveMetasoH3VideoReference,
   resolveMinimaxVideoReference,
   resolveTencentVodVideoReference
 } from "./video.references.js";
@@ -191,7 +198,7 @@ export async function createTask(payload, userId) {
     firstFrameImageUrl = imageInputs.firstFrameImageUrl;
     lastFrameImageUrl = imageInputs.lastFrameImageUrl;
     referenceImageUrls = imageInputs.referenceImageUrls;
-    const supportsAdvancedImageRoles = ["ark", "minimax", "tencent_vod"].includes(modelPrice.provider_type);
+    const supportsAdvancedImageRoles = ["ark", "minimax", "metaso_h3", "tencent_vod"].includes(modelPrice.provider_type);
     if (!supportsAdvancedImageRoles && (lastFrameImageUrl || referenceImageUrls.length > 1)) {
       throw createHttpError("selected video provider does not support these image roles", 400);
     }
@@ -278,7 +285,10 @@ export async function createTask(payload, userId) {
     if (referenceAudioUrl) {
       throw createHttpError("Tencent VOD Seedance audio reference is not enabled by the current VS contract", 400);
     }
-  } else if (modelPrice.provider_type === "minimax") {
+  } else if (["minimax", "metaso_h3"].includes(modelPrice.provider_type)) {
+    const resolveH3Reference = modelPrice.provider_type === "metaso_h3"
+      ? resolveMetasoH3VideoReference
+      : resolveMinimaxVideoReference;
     const resolvedReferenceImages = [];
     let resolvedFirstFrame = null;
     let resolvedLastFrame = null;
@@ -286,7 +296,7 @@ export async function createTask(payload, userId) {
     let resolvedReferenceAudio = null;
     if (firstFrameImageUrl) {
       referenceIndex += 1;
-      resolvedFirstFrame = await resolveMinimaxVideoReference({
+      resolvedFirstFrame = await resolveH3Reference({
         userId,
         url: firstFrameImageUrl,
         kind: "image",
@@ -295,7 +305,7 @@ export async function createTask(payload, userId) {
     }
     if (lastFrameImageUrl) {
       referenceIndex += 1;
-      resolvedLastFrame = await resolveMinimaxVideoReference({
+      resolvedLastFrame = await resolveH3Reference({
         userId,
         url: lastFrameImageUrl,
         kind: "image",
@@ -304,7 +314,7 @@ export async function createTask(payload, userId) {
     }
     for (const imageUrl of referenceImageUrls) {
       referenceIndex += 1;
-      resolvedReferenceImages.push(await resolveMinimaxVideoReference({
+      resolvedReferenceImages.push(await resolveH3Reference({
         userId,
         url: imageUrl,
         kind: "image",
@@ -313,7 +323,7 @@ export async function createTask(payload, userId) {
     }
     if (referenceVideoUrl) {
       referenceIndex += 1;
-      resolvedReferenceVideo = await resolveMinimaxVideoReference({
+      resolvedReferenceVideo = await resolveH3Reference({
         userId,
         url: referenceVideoUrl,
         kind: "video",
@@ -322,7 +332,7 @@ export async function createTask(payload, userId) {
     }
     if (referenceAudioUrl) {
       referenceIndex += 1;
-      resolvedReferenceAudio = await resolveMinimaxVideoReference({
+      resolvedReferenceAudio = await resolveH3Reference({
         userId,
         url: referenceAudioUrl,
         kind: "audio",
@@ -441,6 +451,15 @@ export async function createTask(payload, userId) {
         duration: Number(duration),
         watermark: false
       });
+    } else if (modelPrice.provider_type === "metaso_h3") {
+      provider = await createMetasoH3VideoTask({
+        model: "MiniMax-H3",
+        content: minimaxContent,
+        resolution: resolution || "2K",
+        ratio,
+        duration: Number(duration),
+        aigc_watermark: false
+      });
     } else {
       provider = await createKieVideoTask({
         model: modelPrice,
@@ -530,12 +549,15 @@ async function refreshTask(id) {
     const isArkTask = task.provider_type === "ark";
     const isTencentVodTask = task.provider_type === "tencent_vod";
     const isMinimaxTask = task.provider_type === "minimax";
+    const isMetasoH3Task = task.provider_type === "metaso_h3";
     const record = isArkTask
       ? await getArkVideoGenerationTask({ taskId: task.provider_task_id })
       : isTencentVodTask
         ? await getTencentVodSeedanceTask({ taskId: task.provider_task_id })
         : isMinimaxTask
           ? await getMinimaxH3VideoTask({ taskId: task.provider_task_id })
+          : isMetasoH3Task
+            ? await getMetasoH3VideoTask({ taskId: task.provider_task_id })
           : await getKieVideoTask({
               taskId: task.provider_task_id,
               providerType: task.provider_type
@@ -546,6 +568,8 @@ async function refreshTask(id) {
         ? mapTencentVodSeedanceState(record)
         : isMinimaxTask
           ? mapMinimaxH3VideoState(record)
+          : isMetasoH3Task
+            ? mapMetasoH3VideoState(record)
           : mapKieVideoState(record, task.provider_type);
     if (mapped === "completed") {
       const providerUrls = isArkTask
@@ -554,6 +578,8 @@ async function refreshTask(id) {
           ? extractTencentVodSeedanceResult(record).resultUrls
           : isMinimaxTask
             ? [extractMinimaxH3VideoResult(record).resultUrl].filter(Boolean)
+            : isMetasoH3Task
+              ? [extractMetasoH3VideoResult(record).resultUrl].filter(Boolean)
             : extractVideoResultUrls(record, task.provider_type);
       if (!providerUrls.length) {
         await refundTask(id, null, null, "video generation result missing video URL");
@@ -575,6 +601,8 @@ async function refreshTask(id) {
           ? extractTencentVodSeedanceResult(record).errorMessage || extractTencentVodSeedanceResult(record).errorCode
           : isMinimaxTask
             ? extractMinimaxH3VideoResult(record).errorMessage
+            : isMetasoH3Task
+              ? extractMetasoH3VideoResult(record).errorMessage
             : "";
       if (providerError) {
         await refundTask(id, null, null, providerError);

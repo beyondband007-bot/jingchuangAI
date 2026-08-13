@@ -1,4 +1,5 @@
 import { config } from "../config/index.js";
+import { calculateTencentMpsWatermarkPoints } from "../modules/watermark/watermark.pricing.js";
 
 export const BILLING_RULES = Object.freeze({
   imagePointsPerItem: 30,
@@ -127,7 +128,13 @@ export function calculateBillingQuote(feature, payload = {}) {
       break;
     case "watermark":
       items.push(mediaKind === "video"
-        ? item("video", "视频去水印", config.kie.watermarkVideoPoints || calculateVideoPoints(durationSeconds))
+        ? item("video", "视频去水印", calculateTencentMpsWatermarkPoints({
+          durationSeconds,
+          width: payload.width || payload.videoWidth || 1280,
+          height: payload.height || payload.videoHeight || 720,
+          model: config.tencentCloud.mpsWatermarkModel,
+          markup: config.tencentCloud.mpsWatermarkMarkup
+        }))
         : item("image", "图片去水印", config.kie.watermarkImagePoints || BILLING_RULES.imagePointsPerItem));
       break;
     case "enhance":
@@ -161,7 +168,13 @@ export function getPublicBillingRules() {
   return {
     ...BILLING_RULES,
     watermarkImagePoints: config.kie.watermarkImagePoints,
-    watermarkVideoPoints: config.kie.watermarkVideoPoints,
+    watermarkVideoPointsPerMinute: calculateTencentMpsWatermarkPoints({
+      durationSeconds: 60,
+      width: 1280,
+      height: 720,
+      model: config.tencentCloud.mpsWatermarkModel,
+      markup: config.tencentCloud.mpsWatermarkMarkup
+    }),
     enhanceImagePoints: config.kie.enhanceImagePoints,
     enhanceVideoPoints: config.kie.enhanceVideoPoints,
     rulesVersion: "2026-08-04"

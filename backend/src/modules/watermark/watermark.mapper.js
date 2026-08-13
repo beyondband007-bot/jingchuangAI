@@ -13,6 +13,10 @@ export function mapWatermarkAsset(row) {
     mimeType: row.mime_type,
     sizeBytes: Number(row.size_bytes || 0),
     providerUrl: row.provider_url || "",
+    providerAssetId: row.provider_asset_id || "",
+    durationSeconds: Number(row.duration_seconds || 0),
+    width: Number(row.width || 0),
+    height: Number(row.height || 0),
     createdAt: row.created_at
   };
 }

@@ -66,6 +66,17 @@ export const VIDEO_MODELS = [{
   defaultResolution: '2K',
   defaultParams: { ratio: '16:9', duration: 4, resolution: '2K', generateAudio: true }
 }, {
+  label: 'MiniMax H3 · METASO',
+  key: 'metaso_h3_2k',
+  provider: ['kie'],
+  type: 't2v+i2v+r2v',
+  ratios: ['21:9', ...VIDEO_RATIO_LIST.map(item => item.key)],
+  durs: Array.from({ length: 12 }, (_, index) => index + 4).map(key => ({ label: `${key}s`, key })),
+  resolutions: ['768P', '2K'],
+  resolutionPoints: { '768P': 10, '2K': 18 },
+  defaultResolution: '2K',
+  defaultParams: { ratio: '16:9', duration: 4, resolution: '2K', generateAudio: true }
+}, {
   label: 'Kling 3.0',
   key: 'kling_3_std',
   provider: ['kie'],

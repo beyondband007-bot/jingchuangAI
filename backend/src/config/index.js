@@ -68,9 +68,6 @@ export const config = {
     watermarkImageModel: process.env.KIE_WATERMARK_IMAGE_MODEL || "gpt-image-2-image-to-image",
     watermarkImageResolution: process.env.KIE_WATERMARK_IMAGE_RESOLUTION || "2K",
     watermarkImagePoints: Number(process.env.KIE_WATERMARK_IMAGE_POINTS || 25),
-    watermarkVideoModel: process.env.KIE_WATERMARK_VIDEO_MODEL || process.env.KIE_MOTION_TRANSFER_MODEL || "wan/2-7-r2v",
-    watermarkVideoResolution: process.env.KIE_WATERMARK_VIDEO_RESOLUTION || "720p",
-    watermarkVideoPoints: Number(process.env.KIE_WATERMARK_VIDEO_POINTS || 100),
     enhanceImageModel: process.env.KIE_ENHANCE_IMAGE_MODEL || "gpt-image-2-image-to-image",
     enhanceVideoModel: process.env.KIE_ENHANCE_VIDEO_MODEL || "topaz/video-upscale",
     enhanceUpscaleFactor: process.env.KIE_ENHANCE_UPSCALE_FACTOR || "2",
@@ -99,6 +96,10 @@ export const config = {
     baseUrl: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com",
     ttsModel: process.env.MINIMAX_TTS_MODEL || "speech-2.8-turbo"
   },
+  metasoH3: {
+    apiKey: process.env.METASO_H3_API_KEY || "",
+    baseUrl: process.env.METASO_H3_BASE_URL || "https://metaso.cn/api/minimax"
+  },
   qwen: {
     apiKey: process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY || "",
     baseUrl: process.env.QWEN_BASE_URL || "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -123,6 +124,9 @@ export const config = {
     vodVideoModelVersion: process.env.TENCENTCLOUD_VOD_VIDEO_MODEL_VERSION || "2.0",
     vodStorageMode: process.env.TENCENTCLOUD_VOD_STORAGE_MODE || "Temporary",
     vodReferenceExpireHours: Number(process.env.TENCENTCLOUD_VOD_REFERENCE_EXPIRE_HOURS || 24),
+    mpsWatermarkMethod: process.env.TENCENTCLOUD_MPS_WATERMARK_METHOD || "auto",
+    mpsWatermarkModel: process.env.TENCENTCLOUD_MPS_WATERMARK_MODEL || "basic",
+    mpsWatermarkMarkup: Number(process.env.TENCENTCLOUD_MPS_WATERMARK_MARKUP || 1.2),
     asrRegion: process.env.TENCENTCLOUD_ASR_REGION || process.env.TENCENTCLOUD_REGION || "ap-guangzhou",
     asrEngine: process.env.TENCENTCLOUD_ASR_ENGINE || "16k_zh",
     asrResTextFormat: Number(process.env.TENCENTCLOUD_ASR_RES_TEXT_FORMAT || 3),

@@ -279,6 +279,74 @@ export async function resolveMinimaxVideoReference({
   return publicUrl;
 }
 
+export async function resolveMetasoH3VideoReference({
+  url,
+  kind,
+  referenceIndex,
+  fetchImpl = globalThis.fetch,
+  uploadImpl = uploadReferenceToTencentVod,
+  storageDir = config.media.storageDir
+}) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  if (/^asset:\/\//i.test(value)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `第 ${referenceIndex} 个参考素材是火山资产地址，METASO H3 无法访问。请重新上传素材后重试。视频任务尚未提交，未扣除积分。`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+
+  const filePath = getLocalMediaFilePath(value, storageDir);
+  if (filePath) {
+    try {
+      const fileStat = await stat(filePath);
+      if (!fileStat.isFile() || fileStat.size <= 0) throw new Error("reference file is empty");
+      const upload = await uploadImpl({ filePath, kind });
+      await assertVideoReferenceUrlAccessible({
+        url: upload.url,
+        kind,
+        referenceIndex,
+        fetchImpl
+      });
+      return upload.url;
+    } catch (cause) {
+      if (cause?.errorDetail) throw cause;
+      throw createVideoTaskError({
+        code: "VIDEO_REFERENCE_UPLOAD_FAILED",
+        message: `第 ${referenceIndex} 个参考素材上传腾讯云 VOD 失败，请稍后重试。视频任务尚未提交，未扣除积分。`,
+        status: 502,
+        stage: "reference_upload",
+        referenceType: kind,
+        referenceIndex,
+        cause
+      });
+    }
+  }
+
+  const publicUrl = /^\/media\//i.test(value) ? buildPublicMediaUrl(value) : value;
+  if (!/^https?:\/\//i.test(publicUrl)) {
+    throw createVideoTaskError({
+      code: "VIDEO_REFERENCE_URL_UNREACHABLE",
+      message: `第 ${referenceIndex} 个参考素材不是 METASO H3 可访问的公网地址。视频任务尚未提交，未扣除积分。`,
+      status: 422,
+      stage: "reference_preflight",
+      referenceType: kind,
+      referenceIndex
+    });
+  }
+  await assertVideoReferenceUrlAccessible({
+    url: publicUrl,
+    kind,
+    referenceIndex,
+    fetchImpl
+  });
+  return publicUrl;
+}
+
 export async function resolveTencentVodVideoReference({
   url,
   kind,

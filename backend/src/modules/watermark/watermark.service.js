@@ -3,13 +3,20 @@ import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
   createKieWatermarkImageTask,
-  createKieWatermarkVideoTask,
   extractWatermarkResult,
   getKieWatermarkTask,
   mapKieWatermarkState
 } from "../../providers/kie/watermark.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
-import { getVideoDuration } from "../../providers/ffmpeg/video.js";
+import { probeVideo } from "../../providers/ffmpeg/video.js";
+import {
+  createTencentMpsWatermarkTask,
+  extractTencentMpsWatermarkError,
+  extractTencentMpsWatermarkResult,
+  getTencentMpsWatermarkTask,
+  mapTencentMpsWatermarkState
+} from "../../providers/tencent/mpsWatermark.js";
+import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
@@ -19,6 +26,7 @@ import {
 import { persistGeneratedImages, removeStoredGeneratedImages } from "../../shared/generatedImageStorage.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { mapWatermarkAsset, mapWatermarkTask } from "./watermark.mapper.js";
+import { calculateTencentMpsWatermarkPoints } from "./watermark.pricing.js";
 import {
   createWatermarkAsset,
   createWatermarkTask,
@@ -30,7 +38,7 @@ import {
   listWatermarkTaskRows,
   lockWatermarkTaskForRefund,
   markWatermarkTaskRefunded,
-  setWatermarkAssetProviderUrl,
+  setWatermarkAssetProvider,
   setWatermarkTaskCompleted,
   setWatermarkTaskError,
   setWatermarkTaskFailed,
@@ -40,6 +48,20 @@ import {
 } from "./watermark.repository.js";
 
 const defaultPrompt = "去除画面中的水印、Logo、文字覆盖物，并自然修复背景，不改变主体内容。";
+
+function getTencentMpsProviderModel() {
+  return `smart-erase-${config.tencentCloud.mpsWatermarkModel}-${config.tencentCloud.mpsWatermarkMethod}`;
+}
+
+function getDefaultVideoPointsPerMinute() {
+  return calculateTencentMpsWatermarkPoints({
+    durationSeconds: 60,
+    width: 1280,
+    height: 720,
+    model: config.tencentCloud.mpsWatermarkModel,
+    markup: config.tencentCloud.mpsWatermarkMarkup
+  });
+}
 
 function getModelDefinitions() {
   return [
@@ -53,13 +75,15 @@ function getModelDefinitions() {
       resolution: config.kie.watermarkImageResolution
     },
     {
-      value: "kie-watermark-video",
+      value: "tencent-mps-watermark-video",
       label: "视频去水印",
       kind: "video",
-      provider: "kie",
-      providerModel: config.kie.watermarkVideoModel,
-      basePoints: config.kie.watermarkVideoPoints,
-      resolution: config.kie.watermarkVideoResolution
+      provider: "tencent-mps",
+      providerModel: getTencentMpsProviderModel(),
+      basePoints: getDefaultVideoPointsPerMinute(),
+      pointsPerMinute: getDefaultVideoPointsPerMinute(),
+      billingUnit: "per_minute",
+      resolution: "source"
     }
   ];
 }
@@ -91,13 +115,15 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
-      configured: Boolean(config.kie.apiKey)
+      configured: model.provider === "tencent-mps"
+        ? Boolean(config.tencentCloud.secretId && config.tencentCloud.secretKey && config.tencentCloud.vodSubAppId)
+        : Boolean(config.kie.apiKey)
     })),
     defaults: {
       imageModel: "kie-watermark-image",
-      videoModel: "kie-watermark-video",
+      videoModel: "tencent-mps-watermark-video",
       imageResolution: config.kie.watermarkImageResolution,
-      videoResolution: config.kie.watermarkVideoResolution
+      videoResolution: "source"
     },
     limits: {
       maxImageBytes: 10 * 1024 * 1024,
@@ -111,6 +137,7 @@ export async function createAsset({ file, user: requestUser } = {}) {
   if (!file) throw createHttpError("请上传文件", 400);
 
   const kind = inferKind(file);
+  const videoMetadata = kind === "video" ? await probeVideo(file.path) : null;
   const localUrl = `/media/watermark/${kind === "image" ? "images" : "videos"}/${file.filename}`;
   const connection = await getPool().getConnection();
   let assetId;
@@ -127,7 +154,10 @@ export async function createAsset({ file, user: requestUser } = {}) {
       storedName: file.filename,
       originalName: file.originalname || file.filename,
       mimeType: file.mimetype || "application/octet-stream",
-      sizeBytes: file.size || 0
+      sizeBytes: file.size || 0,
+      durationSeconds: videoMetadata?.durationSeconds || null,
+      width: videoMetadata?.width || null,
+      height: videoMetadata?.height || null
     });
     await connection.commit();
   } catch (error) {
@@ -137,7 +167,17 @@ export async function createAsset({ file, user: requestUser } = {}) {
     connection.release();
   }
 
-  return mapWatermarkAsset(await findWatermarkAssetForUser(assetId, userId, kind));
+  const asset = mapWatermarkAsset(await findWatermarkAssetForUser(assetId, userId, kind));
+  if (kind === "video") {
+    asset.estimatedPoints = calculateTencentMpsWatermarkPoints({
+      durationSeconds: asset.durationSeconds,
+      width: asset.width,
+      height: asset.height,
+      model: config.tencentCloud.mpsWatermarkModel,
+      markup: config.tencentCloud.mpsWatermarkMarkup
+    });
+  }
+  return asset;
 }
 
 export async function listTasks({ filter = "all" } = {}) {
@@ -164,11 +204,26 @@ export async function createTask(payload, requestUser = null) {
 
   const model = getModelForKind(sourceAsset.kind, payload.model);
   const prompt = String(payload.prompt || defaultPrompt).trim() || defaultPrompt;
-  const resolution = normalizeResolution(payload.resolution || model.resolution, model.resolution);
+  let videoMetadata = null;
   if (sourceAsset.kind === "video") {
-    await getVideoDuration(sourceAsset.file_path);
+    videoMetadata = sourceAsset.duration_seconds && sourceAsset.width && sourceAsset.height
+      ? {
+          durationSeconds: Number(sourceAsset.duration_seconds),
+          width: Number(sourceAsset.width),
+          height: Number(sourceAsset.height)
+        }
+      : await probeVideo(sourceAsset.file_path);
   }
-  const costPoints = Math.max(0, Math.ceil(Number(model.basePoints) || 0));
+  const resolution = sourceAsset.kind === "video"
+    ? `${videoMetadata.width}x${videoMetadata.height}`
+    : normalizeResolution(payload.resolution || model.resolution, model.resolution);
+  const costPoints = sourceAsset.kind === "video"
+    ? calculateTencentMpsWatermarkPoints({
+        ...videoMetadata,
+        model: config.tencentCloud.mpsWatermarkModel,
+        markup: config.tencentCloud.mpsWatermarkMarkup
+      })
+    : Math.max(0, Math.ceil(Number(model.basePoints) || 0));
 
   const connection = await getPool().getConnection();
   let userId;
@@ -202,19 +257,17 @@ export async function createTask(payload, requestUser = null) {
   connection.release();
 
   try {
-    const upload = await uploadAssetToKie(sourceAsset, `watermark/${sourceAsset.kind}`);
     const provider = sourceAsset.kind === "image"
       ? await createKieWatermarkImageTask({
         model: model.providerModel,
         prompt,
-        sourceUrl: upload.url,
+        sourceUrl: (await uploadAssetToKie(sourceAsset, "watermark/image")).url,
         resolution
       })
-      : await createKieWatermarkVideoTask({
-        model: model.providerModel,
-        prompt,
-        sourceUrl: upload.url,
-        resolution
+      : await createTencentMpsWatermarkTask({
+        fileId: (await uploadAssetToTencentVod(sourceAsset)).fileId,
+        method: config.tencentCloud.mpsWatermarkMethod,
+        model: config.tencentCloud.mpsWatermarkModel
       });
     await setWatermarkTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
@@ -222,7 +275,7 @@ export async function createTask(payload, requestUser = null) {
     await refundTask(taskId, userId, costPoints, `去水印任务创建失败：${error.message}`);
   }
 
-  return getTask(taskId);
+  return mapWatermarkTask(await findWatermarkTaskRow(taskId));
 }
 
 async function uploadAssetToKie(asset, uploadPath) {
@@ -233,8 +286,21 @@ async function uploadAssetToKie(asset, uploadPath) {
     mimeType: asset.mime_type || "application/octet-stream",
     uploadPath
   });
-  await setWatermarkAssetProviderUrl(asset.id, result.url);
+  await setWatermarkAssetProvider(asset.id, { providerUrl: result.url });
   return result;
+}
+
+async function uploadAssetToTencentVod(asset) {
+  if (asset.provider_asset_id) {
+    return { fileId: asset.provider_asset_id, url: asset.provider_url || "" };
+  }
+  const result = await uploadReferenceToTencentVod({ filePath: asset.file_path });
+  if (!result.fileId) throw new Error("Tencent Cloud VOD upload response missing FileId");
+  await setWatermarkAssetProvider(asset.id, {
+    providerUrl: result.mediaUrl,
+    providerAssetId: result.fileId
+  });
+  return { fileId: result.fileId, url: result.mediaUrl };
 }
 
 async function refreshProcessingTasks() {
@@ -247,10 +313,17 @@ async function refreshTask(id) {
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
 
   try {
-    const record = await getKieWatermarkTask({ taskId: task.provider_task_id });
-    const mapped = mapKieWatermarkState(record);
+    const isTencentMpsVideo = task.media_type === "video" && String(task.provider_model || "").startsWith("smart-erase-");
+    const record = isTencentMpsVideo
+      ? await getTencentMpsWatermarkTask({ taskId: task.provider_task_id })
+      : await getKieWatermarkTask({ taskId: task.provider_task_id });
+    const mapped = isTencentMpsVideo
+      ? mapTencentMpsWatermarkState(record)
+      : mapKieWatermarkState(record);
     if (mapped === "completed") {
-      const result = extractWatermarkResult(record);
+      const result = isTencentMpsVideo
+        ? extractTencentMpsWatermarkResult(record)
+        : extractWatermarkResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "去水印结果缺少下载链接");
       } else {
@@ -267,7 +340,10 @@ async function refreshTask(id) {
         }
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "去水印任务失败");
+      const failureMessage = isTencentMpsVideo
+        ? extractTencentMpsWatermarkError(record)
+        : record.data?.failMsg || record.data?.errorMessage || "去水印任务失败";
+      await refundTask(id, null, null, failureMessage);
     } else {
       await setWatermarkTaskProcessing(id);
     }

@@ -1,12 +1,24 @@
 import { getPool } from "../../db/pool.js";
 import { getCurrentExternalId } from "../../shared/userService.js";
 
-export async function createWatermarkAsset(connection, { userId, kind, localUrl, filePath, storedName, originalName, mimeType, sizeBytes }) {
+export async function createWatermarkAsset(connection, {
+  userId,
+  kind,
+  localUrl,
+  filePath,
+  storedName,
+  originalName,
+  mimeType,
+  sizeBytes,
+  durationSeconds = null,
+  width = null,
+  height = null
+}) {
   const [result] = await connection.query(
     `INSERT INTO watermark_assets
-     (user_id, kind, local_url, file_path, stored_name, original_name, mime_type, size_bytes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [userId, kind, localUrl, filePath, storedName, originalName, mimeType, sizeBytes]
+     (user_id, kind, local_url, file_path, stored_name, original_name, mime_type, size_bytes, duration_seconds, width, height)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [userId, kind, localUrl, filePath, storedName, originalName, mimeType, sizeBytes, durationSeconds, width, height]
   );
   return result.insertId;
 }
@@ -48,8 +60,11 @@ export async function findWatermarkAssetForUser(id, userId, kind) {
   return rows[0] || null;
 }
 
-export async function setWatermarkAssetProviderUrl(id, providerUrl) {
-  await getPool().query("UPDATE watermark_assets SET provider_url = ? WHERE id = ?", [providerUrl, id]);
+export async function setWatermarkAssetProvider(id, { providerUrl, providerAssetId = null }) {
+  await getPool().query(
+    "UPDATE watermark_assets SET provider_url = ?, provider_asset_id = COALESCE(?, provider_asset_id) WHERE id = ?",
+    [providerUrl, providerAssetId, id]
+  );
 }
 
 export async function createWatermarkTask(connection, { userId, sourceAssetId, mediaType, modelKey, providerModel, prompt, resolution, costPoints }) {
@@ -114,7 +129,7 @@ export async function findRefreshableWatermarkTasks() {
 
 export async function findWatermarkTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status, media_type FROM watermark_tasks WHERE id = ? LIMIT 1",
+    "SELECT id, provider_task_id, status, media_type, provider_model FROM watermark_tasks WHERE id = ? LIMIT 1",
     [id]
   );
   return rows[0] || null;

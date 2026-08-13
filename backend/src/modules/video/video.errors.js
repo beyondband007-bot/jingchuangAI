@@ -7,6 +7,9 @@ function extractRequestId(message = "") {
 
 function inferErrorCode(message = "") {
   const value = String(message || "");
+  if (/text content contains sensitive content/i.test(value)) {
+    return "VIDEO_PROMPT_CONTENT_REJECTED";
+  }
   if (/InputTextSensitiveContentDetected|input text 'content\[0\]' may contain sensitive information|文本安全审核/i.test(value)) {
     return "VIDEO_PROMPT_CONTENT_REJECTED";
   }

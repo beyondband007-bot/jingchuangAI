@@ -990,6 +990,10 @@ async function createTables() {
       mime_type VARCHAR(160) NOT NULL,
       size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
       provider_url VARCHAR(1000) NULL,
+      provider_asset_id VARCHAR(160) NULL,
+      duration_seconds DECIMAL(12,3) NULL,
+      width INT UNSIGNED NULL,
+      height INT UNSIGNED NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_motion_assets_user_created (user_id, created_at),
@@ -997,6 +1001,25 @@ async function createTables() {
       CONSTRAINT fk_motion_transfer_assets_user FOREIGN KEY (user_id) REFERENCES users(id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  const [watermarkAssetColumns] = await pool.query(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'watermark_assets'`,
+    [config.db.database]
+  );
+  const watermarkAssetColumnNames = new Set(watermarkAssetColumns.map((column) => column.COLUMN_NAME));
+  const watermarkAssetColumnDefinitions = {
+    provider_asset_id: "VARCHAR(160) NULL AFTER provider_url",
+    duration_seconds: "DECIMAL(12,3) NULL AFTER provider_asset_id",
+    width: "INT UNSIGNED NULL AFTER duration_seconds",
+    height: "INT UNSIGNED NULL AFTER width"
+  };
+  for (const [columnName, definition] of Object.entries(watermarkAssetColumnDefinitions)) {
+    if (!watermarkAssetColumnNames.has(columnName)) {
+      await pool.query(`ALTER TABLE watermark_assets ADD COLUMN ${columnName} ${definition}`);
+    }
+  }
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS motion_transfer_tasks (
@@ -1697,6 +1720,8 @@ async function seedDemoData() {
           JSON_ARRAY('16:9','9:16','1:1'), JSON_ARRAY(3,4,5,6,8,10,15), '16:9', 6, TRUE, 70),
         ('minimax_h3_2k', 'minimax', 'MiniMax-H3', 'MiniMax H3', 'multimodal', 'per_second', 96, 0.800,
           JSON_ARRAY('21:9','16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 4, TRUE, 75),
+        ('metaso_h3_2k', 'metaso_h3', 'MiniMax-H3', 'MiniMax H3 · METASO', 'multimodal', 'per_second', 18, 0.150,
+          JSON_ARRAY('21:9','16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,7,8,9,10,11,12,13,14,15), '16:9', 4, TRUE, 76),
         ('seedance_2_0_720p', 'ark', 'doubao-seedance-2-0-260128', 'Seedance 2.0', 'first-frame', 'per_second', 120, 0.994,
           JSON_ARRAY('16:9','9:16','1:1','4:3','3:4'), JSON_ARRAY(4,5,6,8,10,15), '16:9', 6, FALSE, 80),
         ('seedance_tc', 'tencent_vod', 'VS/2.0', 'Seedance TC', 'multimodal', 'per_second', 120, 0.994,
@@ -1725,13 +1750,14 @@ async function seedDemoData() {
       UPDATE video_model_prices
       SET base_points = CASE
             WHEN model_key = 'minimax_h3_2k' THEN 96
+            WHEN model_key = 'metaso_h3_2k' THEN 18
             WHEN model_key = 'seedance_2_0_720p' THEN 120
             WHEN model_key = 'seedance_tc' THEN 120
             WHEN model_key = 'kling_3_std' THEN 120
             ELSE base_points
           END,
           enabled = CASE
-            WHEN model_key IN ('minimax_h3_2k', 'seedance_2_0_720p', 'seedance_tc', 'kling_3_std') THEN TRUE
+            WHEN model_key IN ('minimax_h3_2k', 'metaso_h3_2k', 'seedance_2_0_720p', 'seedance_tc', 'kling_3_std') THEN TRUE
             ELSE FALSE
           END
     `);

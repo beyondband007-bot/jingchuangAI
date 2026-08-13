@@ -6,6 +6,13 @@ const VIDEO_RESOLUTION_RULES = {
       { value: "2K", pointsPerSecond: 96, rmbPerSecond: 0.8 }
     ]
   },
+  metaso_h3_2k: {
+    defaultResolution: "2K",
+    options: [
+      { value: "768P", pointsPerSecond: 10, rmbPerSecond: 0.09 },
+      { value: "2K", pointsPerSecond: 18, rmbPerSecond: 0.15 }
+    ]
+  },
   seedance_2_0_720p: {
     defaultResolution: "720P",
     options: [

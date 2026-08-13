@@ -62,19 +62,21 @@ const emptyWatermarkOptions = {
       resolution: "2K",
     },
     {
-      value: "kie-watermark-video",
+      value: "tencent-mps-watermark-video",
       label: "视频去水印",
       kind: "video",
-      providerModel: "wan/2-7-r2v",
-      basePoints: 100,
-      resolution: "720p",
+      providerModel: "smart-erase-basic-auto",
+      basePoints: 21,
+      pointsPerMinute: 21,
+      billingUnit: "per_minute",
+      resolution: "source",
     },
   ],
   defaults: {
     imageModel: "kie-watermark-image",
-    videoModel: "kie-watermark-video",
+    videoModel: "tencent-mps-watermark-video",
     imageResolution: "2K",
-    videoResolution: "720p",
+    videoResolution: "source",
   },
   limits: {
     maxImageBytes: 10 * 1024 * 1024,
@@ -401,9 +403,11 @@ function WatermarkComposer({
     options.models.find((item) => item.kind === mode) || options.models[0];
   const resolution =
     mode === "video"
-      ? options.defaults?.videoResolution || "720p"
+      ? options.defaults?.videoResolution || "source"
       : options.defaults?.imageResolution || "2K";
-  const price = selectedModel?.basePoints || 0;
+  const price = mode === "video" && sourceAsset?.estimatedPoints
+    ? sourceAsset.estimatedPoints
+    : selectedModel?.basePoints || 0;
   const canSubmit = Boolean(
     !isGuest && sourceAsset && !uploading && !isSubmitting,
   );

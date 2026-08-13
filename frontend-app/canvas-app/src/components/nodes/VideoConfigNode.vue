@@ -395,8 +395,8 @@ const imagesByRole = computed(() => {
 
 // Get current model config | 获取当前模型配置
 const currentModelConfig = computed(() => getModelConfig(localModel.value))
-const allowsMixedReferences = computed(() => localModel.value === 'minimax_h3_2k')
-const usesOrderedImageMentions = computed(() => ['minimax_h3_2k', 'seedance_tc'].includes(localModel.value))
+const allowsMixedReferences = computed(() => ['minimax_h3_2k', 'metaso_h3_2k'].includes(localModel.value))
+const usesOrderedImageMentions = computed(() => ['minimax_h3_2k', 'metaso_h3_2k', 'seedance_tc'].includes(localModel.value))
 
 // Model options from Pinia store (filtered by provider) | 从 Pinia store 获取模型选项（根据渠道过滤）
 const modelOptions = computed(() => modelStore.videoModelOptions)
