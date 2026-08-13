@@ -92,6 +92,15 @@ function WatermarkCenterState({
   onDismiss,
   onRecharge,
 }) {
+  const sourceVideoRef = useRef(null);
+  const resultVideoRef = useRef(null);
+
+  function pauseOtherVideo(activeVideo) {
+    [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
+      if (video && video !== activeVideo && !video.paused) video.pause();
+    });
+  }
+
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
     return (
@@ -108,11 +117,13 @@ function WatermarkCenterState({
             <figcaption>原图</figcaption>
             {isVideo ? (
               <video
+                ref={sourceVideoRef}
                 src={task.sourceUrl}
                 controls
                 playsInline
                 preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
+                onPlay={(event) => pauseOtherVideo(event.currentTarget)}
               />
             ) : (
               <img
@@ -125,11 +136,13 @@ function WatermarkCenterState({
             <figcaption>处理后</figcaption>
             {isVideo ? (
               <video
+                ref={resultVideoRef}
                 src={task.resultUrl}
                 controls
                 playsInline
                 preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
+                onPlay={(event) => pauseOtherVideo(event.currentTarget)}
               />
             ) : (
               <img
@@ -210,13 +223,10 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
       <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
-            <video
-              src={task.thumbnailUrl || task.resultUrl}
-              controls
-              playsInline
-              preload="metadata"
-              poster={task.thumbnailUrl || task.sourceUrl}
-            />
+            <div className="watermark-task-video-thumb">
+              <img src={task.thumbnailUrl || task.sourceUrl} alt={task.sourceFileName || "去水印视频缩略图"} />
+              <Film size={26} aria-hidden="true" />
+            </div>
           ) : (
             <img
               src={task.thumbnailUrl || task.resultUrl}

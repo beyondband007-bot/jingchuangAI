@@ -111,10 +111,14 @@ async function persistSourceMedia(taskId, file, { fallbackExt = ".bin" } = {}) {
   }
 
   let sourceThumbnailUrl = "";
-  if (allowedImageExts.has(ext)) {
+  if (allowedImageExts.has(ext) || allowedVideoExts.has(ext)) {
     await mkdir(replicateThumbnailsDir, { recursive: true });
     const thumbnailName = `${taskId}.jpg`;
-    await execFileAsync(ffmpegPath, ["-y", "-i", targetPath, "-frames:v", "1", "-vf", "scale='min(420,iw)':-2", "-q:v", "2", path.join(replicateThumbnailsDir, thumbnailName)]);
+    const thumbnailPath = path.join(replicateThumbnailsDir, thumbnailName);
+    const thumbnailArgs = allowedVideoExts.has(ext)
+      ? ["-y", "-skip_frame", "nokey", "-i", targetPath, "-frames:v", "1", "-vf", "scale='min(420,iw)':-2", "-q:v", "2", thumbnailPath]
+      : ["-y", "-i", targetPath, "-frames:v", "1", "-vf", "scale='min(420,iw)':-2", "-q:v", "2", thumbnailPath];
+    await execFileAsync(ffmpegPath, thumbnailArgs);
     sourceThumbnailUrl = `/media/replicate/thumbnails/${thumbnailName}`;
   }
   return {
@@ -426,15 +430,17 @@ export async function analyzeVideo({ file, userId }) {
   }
 
   let sourceUrl = "";
+  let sourceThumbnailUrl = "";
   let sourcePath = file.path;
   try {
-    ({ sourceUrl, sourcePath } = await persistSourceMedia(taskId, file, { fallbackExt: ".mp4" }));
+    ({ sourceUrl, sourcePath, sourceThumbnailUrl } = await persistSourceMedia(taskId, file, { fallbackExt: ".mp4" }));
     await createReplicateTaskRow({
       id: taskId,
       userId,
       source: "video",
       fileName: file.originalname,
       sourceUrl,
+      sourceThumbnailUrl,
       stage: "queued",
       inputDurationSeconds: metadata.durationSeconds,
       inputSizeBytes: file.size
@@ -466,6 +472,7 @@ export async function analyzeVideo({ file, userId }) {
     source: "video",
     file_name: file.originalname,
     source_url: sourceUrl,
+    source_thumbnail_url: sourceThumbnailUrl,
     status: "processing",
     stage: "queued",
     input_duration_seconds: metadata.durationSeconds,

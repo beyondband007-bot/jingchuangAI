@@ -36,6 +36,11 @@ export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
   const [wideMedia, setWideMedia] = useState(false);
   const sourceVideoRef = useRef(null);
   const resultVideoRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   function pauseOtherVideo(activeVideo) {
     [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
@@ -43,8 +48,9 @@ export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
     });
   }
   useEffect(() => {
-    if (!task) return undefined;
-    const onKeyDown = (event) => event.key === "Escape" && onClose?.();
+    const taskId = task?.id;
+    if (!taskId) return undefined;
+    const onKeyDown = (event) => event.key === "Escape" && onCloseRef.current?.();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKeyDown);
@@ -54,7 +60,7 @@ export function MarketingHistoryDetailModal({ task, tool, onClose, onRepeat }) {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [task, onClose]);
+  }, [task?.id]);
 
   useEffect(() => {
     if (!copied) return undefined;

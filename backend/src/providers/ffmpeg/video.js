@@ -118,6 +118,34 @@ export async function getVideoDuration(videoPath) {
   return metadata.durationSeconds;
 }
 
+export async function normalizeVideoToSource({ videoPath, sourcePath, outputPath }) {
+  const source = await probeVideo(sourcePath);
+  const duration = source.durationSeconds;
+  const padDuration = Math.max(0, duration - (await getVideoDuration(videoPath)));
+  const videoFilter = [
+    `scale=${source.width}:${source.height}:force_original_aspect_ratio=decrease`,
+    `pad=${source.width}:${source.height}:(ow-iw)/2:(oh-ih)/2`,
+    ...(padDuration > 0.01 ? [`tpad=stop_mode=clone:stop_duration=${padDuration.toFixed(3)}`] : [])
+  ].join(",");
+  await runFfmpeg([
+    "-y",
+    "-i", videoPath,
+    "-vf", videoFilter,
+    "-af", "apad",
+    "-map", "0:v:0",
+    "-map", "0:a?",
+    "-c:v", "libx264",
+    "-crf", "18",
+    "-preset", "medium",
+    "-pix_fmt", "yuv420p",
+    "-c:a", "aac",
+    "-t", duration.toFixed(3),
+    "-movflags", "+faststart",
+    outputPath
+  ]);
+  return { outputPath, width: source.width, height: source.height, durationSeconds: duration };
+}
+
 export async function preserveOriginalAudio({ videoPath, originalVideoPath, outputPath }) {
   const [generatedDuration, originalDuration] = await Promise.all([
     getVideoDuration(videoPath),

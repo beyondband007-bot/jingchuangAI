@@ -207,7 +207,6 @@
   max-width: none;
   min-height: 0;
   margin: 0;
-  padding: 32px 0 0;
 }
 
 .replicate-recent-card {
@@ -273,6 +272,20 @@
   height: 100%;
   object-fit: cover;
   background: #f4f1fb;
+}
+
+.replicate-card-video-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: rgba(12, 16, 32, 0.28);
+  pointer-events: none;
+}
+
+.replicate-card-video-icon svg {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.48));
 }
 
 .replicate-card-media-fallback {

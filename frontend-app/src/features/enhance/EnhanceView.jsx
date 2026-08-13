@@ -49,6 +49,14 @@ function EnhanceCenterState({
   onRecharge,
 }) {
   const isVideo = task?.mediaType === "video";
+  const sourceVideoRef = useRef(null);
+  const resultVideoRef = useRef(null);
+
+  function pauseOtherVideo(activeVideo) {
+    [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
+      if (video && video !== activeVideo && !video.paused) video.pause();
+    });
+  }
 
   if (task?.status === "completed" && task.resultUrl) {
     return (
@@ -61,7 +69,7 @@ function EnhanceCenterState({
           <figure>
             <figcaption>原图</figcaption>
             {isVideo ? (
-              <video src={task.sourceUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+              <video ref={sourceVideoRef} src={task.sourceUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} onPlay={(event) => pauseOtherVideo(event.currentTarget)} />
             ) : (
               <img src={task.sourceUrl || task.resultUrl} alt={task.sourceFileName || "原图"} />
             )}
@@ -69,7 +77,7 @@ function EnhanceCenterState({
           <figure>
             <figcaption>处理后</figcaption>
             {isVideo ? (
-              <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+              <video ref={resultVideoRef} src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} onPlay={(event) => pauseOtherVideo(event.currentTarget)} />
             ) : (
               <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
             )}
@@ -144,7 +152,10 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
       <div className={`watermark-task-preview enhance-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
-            <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+            <div className="watermark-task-video-thumb">
+              <img src={task.thumbnailUrl || task.sourceUrl} alt={task.sourceFileName || "画质提升视频缩略图"} />
+              <Film size={26} aria-hidden="true" />
+            </div>
           ) : (
             <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )

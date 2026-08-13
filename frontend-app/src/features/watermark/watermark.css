@@ -148,6 +148,31 @@
   object-fit: cover;
 }
 
+.watermark-task-video-thumb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #edf1f8;
+}
+
+.watermark-task-video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watermark-task-video-thumb svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 8px;
+  color: #fff;
+  background: rgba(18, 24, 43, .68);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .marketing-tool-root .watermark-task-placeholder {
   display: grid;
   width: 100%;
