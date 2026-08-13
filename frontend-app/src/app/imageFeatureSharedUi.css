@@ -18,7 +18,7 @@
 .feature-page-shell .feature-main .image-filter-tabs {
   position: fixed;
   top: 0;
-  left: calc(var(--app-sidebar-width, 220px) + 152px);
+  left: calc(var(--app-sidebar-width, 220px) + 136px);
   right: 420px;
   z-index: var(--z-header);
   display: flex;
