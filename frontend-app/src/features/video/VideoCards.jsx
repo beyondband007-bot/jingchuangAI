@@ -66,6 +66,18 @@ function hasVideoReferenceImage(card) {
   return false;
 }
 
+function getVideoReferencePoster(task) {
+  return (
+    task?.poster ||
+    task?.cover ||
+    task?.thumbnail ||
+    task?.thumbnailUrl ||
+    task?.referenceImageUrl ||
+    task?.image ||
+    ""
+  );
+}
+
 function getVideoGenerationTypeLabel(card) {
   return hasVideoReferenceImage(card) ? "图生视频" : "文生视频";
 }
@@ -270,6 +282,7 @@ export function VideoTaskDetailModal({
   onFavorite,
 }) {
   if (!task) return null;
+  const referencePoster = getVideoReferencePoster(task);
   return (
     <FaceminiInspirationModal
       getInitialFavorite={getInitialFavorite}
@@ -281,8 +294,8 @@ export function VideoTaskDetailModal({
         mediaType: "video",
         videoSrc: task.video,
         video: task.video,
-        image: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
-        poster: task.poster || task.cover || task.thumbnail || task.referenceImageUrl,
+        image: referencePoster,
+        poster: referencePoster,
         ratio: task.ratio || "16:9",
         model: task.model || task.modelKey || "Seedance 2.0",
         material: "历史生成",
@@ -291,7 +304,7 @@ export function VideoTaskDetailModal({
       }}
       onClose={onClose}
       onRemix={() => onRemix?.(task)}
-      onReference={() => onReference?.(task)}
+      onReference={referencePoster ? () => onReference?.(task) : undefined}
       onFavorite={onFavorite ? () => onFavorite(task) : undefined}
     />
   );

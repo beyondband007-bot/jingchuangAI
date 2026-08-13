@@ -5,13 +5,18 @@ const CREDIT_MEMO_TEXT = new Map([
   ["demo-user initial credits", "\u6f14\u793a\u8d26\u53f7\u521d\u59cb\u79ef\u5206"],
   ["image generation debit", "\u56fe\u7247\u751f\u6210\u6263\u8d39"],
   ["image generation refund", "\u56fe\u7247\u751f\u6210\u9000\u6b3e"],
+  ["infinite canvas image generation debit", "\u65e0\u9650\u753b\u5e03 \u00b7 \u56fe\u7247\u751f\u6210\u6263\u8d39"],
+  ["infinite canvas image generation refund", "\u65e0\u9650\u753b\u5e03 \u00b7 \u56fe\u7247\u751f\u6210\u9000\u6b3e"],
   ["article image generation debit", "\u7206\u6b3e\u56fe\u6587\u751f\u56fe\u6263\u8d39"],
   ["article image generation refund", "\u7206\u6b3e\u56fe\u6587\u751f\u56fe\u9000\u6b3e"],
   ["digital human avatar ai customization image generation debit", "\u6570\u5b57\u4eba\u5f62\u8c61 AI \u5b9a\u5236\u751f\u56fe\u6263\u8d39"],
   ["digital human avatar ai customization image generation refund", "\u6570\u5b57\u4eba\u5f62\u8c61 AI \u5b9a\u5236\u751f\u56fe\u9000\u6b3e"],
   ["video generation debit", "\u89c6\u9891\u751f\u6210\u6263\u8d39"],
   ["video generation refund", "\u89c6\u9891\u751f\u6210\u9000\u6b3e"],
+  ["infinite canvas video generation debit", "\u65e0\u9650\u753b\u5e03 \u00b7 \u89c6\u9891\u751f\u6210\u6263\u8d39"],
+  ["infinite canvas video generation refund", "\u65e0\u9650\u753b\u5e03 \u00b7 \u89c6\u9891\u751f\u6210\u9000\u6b3e"],
   ["chat completion debit", "AI \u5bf9\u8bdd\u6263\u8d39"],
+  ["infinite canvas text generation debit", "\u65e0\u9650\u753b\u5e03 \u00b7 \u6587\u6848\u751f\u6210\u6263\u8d39"],
   ["voice clone debit", "\u97f3\u8272\u590d\u523b\u6263\u8d39"],
   ["voice clone refund", "\u97f3\u8272\u590d\u523b\u9000\u6b3e"],
   ["voice synthesis debit", "\u8bed\u97f3\u5408\u6210\u6263\u8d39"],
@@ -51,16 +56,27 @@ const CREDIT_MEMO_TEXT = new Map([
   ["invite gift invitee reward", "\u53d7\u9080\u6ce8\u518c\u5956\u52b1"]
 ]);
 
-export function localizeCreditMemo(memo, { imageSource = "" } = {}) {
+export function localizeCreditMemo(memo, { imageSource = "", chatSource = "", videoSource = "" } = {}) {
   const text = String(memo || "").trim();
   if (!text) return "";
-  if (text === "image generation debit") {
+  if (text === "image generation debit" || text === "图片生成扣费") {
+    if (imageSource === "infinite-canvas") return CREDIT_MEMO_TEXT.get("infinite canvas image generation debit");
     if (imageSource === "article") return "爆款图文生图扣费";
     if (imageSource === "digital-human-avatar") return "数字人形象 AI 定制生图扣费";
   }
-  if (text === "image generation refund") {
+  if (text === "image generation refund" || text === "图片生成退款") {
+    if (imageSource === "infinite-canvas") return CREDIT_MEMO_TEXT.get("infinite canvas image generation refund");
     if (imageSource === "article") return "爆款图文生图退款";
     if (imageSource === "digital-human-avatar") return "数字人形象 AI 定制生图退款";
+  }
+  if ((text === "chat completion debit" || text === "AI 对话扣费") && chatSource === "infinite-canvas") {
+    return CREDIT_MEMO_TEXT.get("infinite canvas text generation debit");
+  }
+  if ((text === "video generation debit" || text === "视频生成扣费") && videoSource === "infinite-canvas") {
+    return CREDIT_MEMO_TEXT.get("infinite canvas video generation debit");
+  }
+  if ((text === "video generation refund" || text === "视频生成退款") && videoSource === "infinite-canvas") {
+    return CREDIT_MEMO_TEXT.get("infinite canvas video generation refund");
   }
   if (CREDIT_MEMO_TEXT.has(text)) return CREDIT_MEMO_TEXT.get(text);
 

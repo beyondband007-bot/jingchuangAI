@@ -157,18 +157,29 @@ export function CreationCenterView({
         item?.videoSrc ||
         item?.videoUrl,
     );
-    const launchSeed = buildImageLaunchSeedPayload({
+    const referenceImage = imageUrl
+      ? {
+          url: imageUrl,
+          originalName: `${item.title || (isVideo ? "视频封面" : "参考图")}.${isVideo ? "jpg" : "png"}`,
+          size: 0,
+          mimeType: isVideo ? "image/jpeg" : "image/png",
+        }
+      : null;
+    const referenceNotice = isVideo
+      ? "已添加视频封面作为视频参考图"
+      : "已添加为参考图";
+    const launchSeed = route.target === "video"
+      ? {
+          prompt: item.prompt || "",
+          referenceImage,
+          referenceVideo: null,
+          notice: referenceNotice,
+        }
+      : buildImageLaunchSeedPayload({
       prompt: item.prompt || "",
-      referenceImage: imageUrl
-        ? {
-            url: imageUrl,
-            originalName: `${item.title || (isVideo ? "视频封面" : "参考图")}.${isVideo ? "jpg" : "png"}`,
-            size: 0,
-            mimeType: isVideo ? "image/jpeg" : "image/png",
-          }
-        : null,
+      referenceImage,
       model: "gpt_image_2",
-      notice: "已添加为参考图",
+      notice: referenceNotice,
     });
     writePendingGenerationSeed({
       target: route.target,

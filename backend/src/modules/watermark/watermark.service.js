@@ -8,7 +8,7 @@ import {
   mapKieWatermarkState
 } from "../../providers/kie/watermark.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
-import { probeVideo } from "../../providers/ffmpeg/video.js";
+import { normalizeVideoToSource, probeVideo } from "../../providers/ffmpeg/video.js";
 import {
   createTencentMpsWatermarkTask,
   extractTencentMpsWatermarkError,
@@ -20,6 +20,7 @@ import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.j
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
@@ -333,7 +334,17 @@ async function refreshTask(id) {
             feature: "watermark-videos",
             urls: [result.resultUrl]
           });
-          await setWatermarkTaskCompleted(id, { ...result, resultUrl: localUrl });
+          const normalizedUrl = await normalizeWatermarkVideo({
+            taskId: id,
+            sourcePath: task.source_file_path,
+            videoUrl: localUrl
+          });
+          const thumbnailUrl = await createGeneratedVideoThumbnail({
+            taskId: id,
+            feature: "watermark-videos",
+            videoUrl: normalizedUrl
+          }).catch(() => "");
+          await setWatermarkTaskCompleted(id, { ...result, resultUrl: normalizedUrl, thumbnailUrl });
         } else {
           const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "watermark-images", urls: [result.resultUrl] });
           await setWatermarkTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });
@@ -350,6 +361,38 @@ async function refreshTask(id) {
   } catch (error) {
     await setWatermarkTaskError(id, `查询去水印状态失败：${error.message}`);
   }
+}
+
+async function getVideoAspectRatio(filePath) {
+  const { width, height } = await probeVideo(filePath);
+  if (!width || !height) return "";
+  const divisor = greatestCommonDivisor(width, height);
+  return `${Math.round(width / divisor)}:${Math.round(height / divisor)}`;
+}
+
+function greatestCommonDivisor(left, right) {
+  let a = Math.abs(Number(left) || 0);
+  let b = Math.abs(Number(right) || 0);
+  while (b) [a, b] = [b, a % b];
+  return a || 1;
+}
+
+async function normalizeWatermarkVideo({ taskId, sourcePath, videoUrl }) {
+  if (!sourcePath) return videoUrl;
+  const outputPath = path.resolve(
+    process.cwd(),
+    config.media.storageDir,
+    "generated",
+    "watermark-videos",
+    String(taskId),
+    "result-2.mp4"
+  );
+  await normalizeVideoToSource({
+    videoPath: path.resolve(process.cwd(), config.media.storageDir, videoUrl.replace(/^\/media\//, "")),
+    sourcePath,
+    outputPath
+  });
+  return `/media/generated/watermark-videos/${taskId}/result-2.mp4`;
 }
 
 async function refundTask(id, userIdArg, costPointsArg, message) {

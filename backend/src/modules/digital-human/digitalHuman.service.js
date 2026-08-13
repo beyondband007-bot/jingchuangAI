@@ -21,6 +21,7 @@ import { designMinimaxVoice } from "../../providers/minimax/voiceDesign.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
@@ -421,6 +422,7 @@ function mapTask(row) {
     resultUrl: row.result_url || "",
     thumbnailUrl: row.thumbnail_url || "",
     error: row.error_message || "",
+    createdAtMs: new Date(row.created_at).getTime(),
     createdAt: nowLabel(row.created_at),
     time: displayTime(row.created_at)
   };
@@ -1315,7 +1317,15 @@ async function refreshTask(id) {
           feature: "digital-human-videos",
           urls: [result.resultUrl]
         });
-        await setDigitalHumanTaskCompleted(id, { ...result, resultUrl: localUrl });
+        const thumbnailUrl = await createGeneratedVideoThumbnail({
+          taskId: id,
+          feature: "digital-human-videos",
+          videoUrl: localUrl
+        }).catch((error) => {
+          console.warn(`[Digital human ${id}] Thumbnail generation failed: ${error.message}`);
+          return null;
+        });
+        await setDigitalHumanTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl });
       }
     } else if (mapped === "failed") {
       const result = extractArkVideoGenerationResult(record);

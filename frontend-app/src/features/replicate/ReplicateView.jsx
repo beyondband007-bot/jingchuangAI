@@ -284,8 +284,8 @@ function ReplicateRecentCard({ item, onCopy, onDownload, onOpen }) {
         : item.createdAt
   }`;
   const isVideo = item.source === "video";
-  const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceThumbnailUrl || item.sourceUrl);
-  const videoRef = useRef(null);
+  const mediaUrl = item.localPreviewUrl || resolveMediaUrl(item.sourceUrl);
+  const thumbnailUrl = resolveMediaUrl(item.sourceThumbnailUrl);
   const titleRef = useRef(null);
   const tooltipRef = useRef(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -316,33 +316,19 @@ function ReplicateRecentCard({ item, onCopy, onDownload, onOpen }) {
     };
   }, [tooltipOpen]);
 
-  function ensureVideoPosterFrame(event) {
-    const video = event.currentTarget;
-    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-    if (video.currentTime > 0.05) return;
-    try {
-      video.currentTime = Math.min(0.1, video.duration * 0.01);
-    } catch {
-      // Some browsers reject seeking before enough data is buffered.
-    }
-  }
-
   return (
     <article className={`replicate-recent-card ${tooltipOpen ? "is-tooltip-open" : ""} ${isProcessing ? "is-processing" : ""} ${isFailed ? "is-failed" : ""}`} role="button" tabIndex={0} onClick={() => onOpen(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onOpen(item); } }}>
       <div className={`replicate-card-media ${isVideo ? "is-video" : "is-image"}`}>
-        {mediaUrl && !mediaFailed ? (
+        {(isVideo ? thumbnailUrl : mediaUrl) && !mediaFailed ? (
           isVideo ? (
             <div className="replicate-card-video">
-              <video
-                ref={videoRef}
-                src={mediaUrl}
-                controls={!isProcessing}
-                playsInline
-                preload="metadata"
-                onLoadedMetadata={ensureVideoPosterFrame}
+              <img
+                src={thumbnailUrl}
+                alt={item.fileName || "视频封面"}
                 onError={() => setMediaFailed(true)}
                 aria-label={item.fileName || "上传视频预览"}
               />
+              <span className="replicate-card-video-icon" aria-hidden="true"><Film size={28} /></span>
             </div>
           ) : (
             <button

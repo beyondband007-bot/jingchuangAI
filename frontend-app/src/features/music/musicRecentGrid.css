@@ -1,11 +1,11 @@
 /* Layout and card surface owned by MusicRecentGrid. */
-.music-ref-recent { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.music-ref-recent {  margin: 0 auto; }
 .music-ref-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .music-ref-section-head h3 { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: #16131f; font-size: 16px; }
 .music-ref-section-head h3 svg { color: #6b5ce7; }
 .music-ref-link { display: inline-flex; align-items: center; gap: var(--space-0); padding: 0; color: #8b8798; background: transparent; border: 0; font-size: 13px; cursor: pointer; transition: color 0.15s ease; }
 .music-ref-link:hover { color: #6b5ce7; }
-.music-ref-recent-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.music-ref-recent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); }
 .music-ref-recent-card { display: flex; flex-direction: column; overflow: hidden; cursor: pointer; background: #ffffff; border: 1px solid rgba(107, 92, 231, 0.08); border-radius: var(--radius-xl); box-shadow: 0 4px 16px rgba(107, 92, 231, 0.06); transition: all 0.18s ease; }
 .music-ref-recent-card:hover { border-color: rgba(107, 92, 231, 0.16); box-shadow: 0 10px 28px rgba(107, 92, 231, 0.12); transform: translateY(-2px); }
 .music-ref-recent-card.is-failed { cursor: default; border-color: #fecdd3; box-shadow: 0 4px 16px rgba(229, 72, 77, 0.08); }

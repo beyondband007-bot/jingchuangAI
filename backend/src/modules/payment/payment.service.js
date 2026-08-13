@@ -620,20 +620,30 @@ export async function listCreditTransactions(userId, options = {}) {
   const [rows] = await getPool().query(
     `SELECT ct.id, ct.type, ct.amount, ct.balance_after AS balanceAfter, ct.memo,
        ct.related_user_id AS relatedUserId, ct.invite_binding_id AS inviteBindingId, ct.created_at AS createdAt,
-       image_task.source AS imageSource
+       image_task.source AS imageSource,
+       chat_conversation.source AS chatSource,
+       video_task.source AS videoSource
      FROM credit_transactions ct
      LEFT JOIN image_generation_tasks image_task
        ON image_task.id = CAST(ct.task_id AS UNSIGNED)
-       AND ct.memo IN ('image generation debit', 'image generation refund')
+       AND ct.memo IN ('image generation debit', 'image generation refund', '图片生成扣费', '图片生成退款')
+     LEFT JOIN chat_messages chat_message
+       ON chat_message.id = CAST(ct.task_id AS UNSIGNED)
+       AND ct.memo IN ('chat completion debit', 'AI 对话扣费')
+     LEFT JOIN chat_conversations chat_conversation
+       ON chat_conversation.id = chat_message.conversation_id
+     LEFT JOIN video_generation_tasks video_task
+       ON video_task.id = CAST(ct.task_id AS UNSIGNED)
+       AND ct.memo IN ('video generation debit', 'video generation refund', '视频生成扣费', '视频生成退款')
      WHERE ${joinedWhereSql}
      ORDER BY ct.created_at DESC, ct.id DESC
      LIMIT ? OFFSET ?`,
     [...params, pageSize, offset]
   );
   return {
-    transactions: rows.map(({ imageSource, ...row }) => ({
+    transactions: rows.map(({ imageSource, chatSource, videoSource, ...row }) => ({
       ...row,
-      memo: localizeCreditMemo(row.memo, { imageSource })
+      memo: localizeCreditMemo(row.memo, { imageSource, chatSource, videoSource })
     })),
     page: safePage,
     pageSize,

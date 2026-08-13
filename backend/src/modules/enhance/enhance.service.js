@@ -16,6 +16,7 @@ import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
@@ -390,7 +391,12 @@ async function refreshTask(id) {
             feature: "enhance-videos",
             urls: [result.resultUrl]
           });
-          await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl });
+          const thumbnailUrl = await createGeneratedVideoThumbnail({
+            taskId: id,
+            feature: "enhance-videos",
+            videoUrl: localUrl
+          }).catch(() => "");
+          await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl });
         } else {
           const [localUrl] = await persistGeneratedImages({ taskId: id, feature: "enhance-images", urls: [result.resultUrl] });
           await setEnhanceTaskCompleted(id, { ...result, resultUrl: localUrl, thumbnailUrl: localUrl.replace(/\/result-1\.[^/]+$/, "/thumbnail-1.jpg") });

@@ -49,6 +49,14 @@ function EnhanceCenterState({
   onRecharge,
 }) {
   const isVideo = task?.mediaType === "video";
+  const sourceVideoRef = useRef(null);
+  const resultVideoRef = useRef(null);
+
+  function pauseOtherVideo(activeVideo) {
+    [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
+      if (video && video !== activeVideo && !video.paused) video.pause();
+    });
+  }
 
   if (task?.status === "completed" && task.resultUrl) {
     return (
@@ -61,7 +69,7 @@ function EnhanceCenterState({
           <figure>
             <figcaption>原图</figcaption>
             {isVideo ? (
-              <video src={task.sourceUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+              <video ref={sourceVideoRef} src={task.sourceUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} onPlay={(event) => pauseOtherVideo(event.currentTarget)} />
             ) : (
               <img src={task.sourceUrl || task.resultUrl} alt={task.sourceFileName || "原图"} />
             )}
@@ -69,7 +77,7 @@ function EnhanceCenterState({
           <figure>
             <figcaption>处理后</figcaption>
             {isVideo ? (
-              <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+              <video ref={resultVideoRef} src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} onPlay={(event) => pauseOtherVideo(event.currentTarget)} />
             ) : (
               <img src={task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
             )}
@@ -122,7 +130,7 @@ function EnhanceCenterState({
   return (
     <section className="marketing-runtime-state marketing-runtime-state--processing" aria-live="polite">
       <span className="marketing-runtime-spinner">
-        <Loader2 size={30} />
+        <Loader2 size={30} className="is-spinning" />
       </span>
       <strong>{isSubmitting ? "正在创建画质增强任务" : "正在智能提升画质"}</strong>
       <p>素材正在处理中，完成后会自动回填到这里。</p>
@@ -144,13 +152,16 @@ function EnhanceTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
       <div className={`watermark-task-preview enhance-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
-            <video src={task.resultUrl} controls playsInline preload="metadata" poster={task.thumbnailUrl || task.sourceUrl} />
+            <div className="watermark-task-video-thumb">
+              <img src={task.thumbnailUrl || task.sourceUrl} alt={task.sourceFileName || "画质提升视频缩略图"} />
+              <span className="replicate-card-video-icon" aria-hidden="true"><Film size={28} /></span>
+            </div>
           ) : (
             <img src={task.thumbnailUrl || task.resultUrl} alt={task.sourceFileName || "画质提升结果"} />
           )
         ) : (
           <div className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}>
-            {isProcessing ? <Loader2 size={26} /> : isVideo ? <Film size={26} /> : <Image size={26} />}
+            {isProcessing ? <Loader2 size={26} className="is-spinning" /> : isVideo ? <Film size={26} /> : <Image size={26} />}
             <strong>{isFailed ? "增强失败" : "增强中"}</strong>
           </div>
         )}

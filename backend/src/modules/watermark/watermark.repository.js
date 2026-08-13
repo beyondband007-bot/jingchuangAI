@@ -129,7 +129,11 @@ export async function findRefreshableWatermarkTasks() {
 
 export async function findWatermarkTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status, media_type, provider_model FROM watermark_tasks WHERE id = ? LIMIT 1",
+    `SELECT t.id, t.provider_task_id, t.status, t.media_type, t.provider_model,
+            source.file_path AS source_file_path
+     FROM watermark_tasks t
+     LEFT JOIN watermark_assets source ON source.id = t.source_asset_id
+     WHERE t.id = ? LIMIT 1`,
     [id]
   );
   return rows[0] || null;

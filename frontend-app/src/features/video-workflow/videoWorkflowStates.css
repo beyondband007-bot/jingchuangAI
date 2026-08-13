@@ -501,18 +501,13 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 0;
-  padding: var(--space-5);
-  border: 1px solid var(--vgw-border);
-  border-radius: var(--space-5);
-  background: rgba(255, 255, 255, 0.92);
 }
 
 .vgw-history__list {
   display: grid;
   flex: 1 1 auto;
   min-height: 0;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-4);
   align-content: start;
 }
@@ -535,7 +530,7 @@
 }
 
 .vgw-history__preview {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   background: #f0f2f8;
 }
 

@@ -103,7 +103,7 @@
 
 .marketing-tool-root .watermark-results-feed {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   align-content: start;
   justify-content: start;
   gap: var(--space-20px);
@@ -146,6 +146,34 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.watermark-task-video-thumb {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #edf1f8;
+}
+
+.watermark-task-video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.watermark-task-video-thumb .replicate-card-video-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(12, 16, 32, .28);
+  pointer-events: none;
+}
+
+.watermark-task-video-thumb .replicate-card-video-icon svg {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .48));
 }
 
 .marketing-tool-root .watermark-task-placeholder {

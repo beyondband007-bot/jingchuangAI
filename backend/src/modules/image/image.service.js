@@ -53,6 +53,7 @@ import {
 } from './image.options.js'
 
 function getImageCreditMemo(source, action) {
+  if (source === 'infinite-canvas') return `infinite canvas image generation ${action}`
   if (source === 'article') return `article image generation ${action}`
   if (source === 'digital-human-avatar') {
     return `digital human avatar ai customization image generation ${action}`

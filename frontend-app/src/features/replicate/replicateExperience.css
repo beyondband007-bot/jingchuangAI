@@ -183,7 +183,7 @@
 
 .replicate-recent-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--space-14px);
   width: 100%;
 }
@@ -192,13 +192,13 @@
   display: block;
   width: 100%;
   min-height: calc(100vh - 96px);
-  padding: 0 24px 24px;
+  padding: var(--space-5);
   overflow: auto;
   background: #ffffff;
 }
 
 .replicate-view .replicate-recent-list {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   align-content: start;
   align-items: stretch;
   justify-content: start;
@@ -207,7 +207,6 @@
   max-width: none;
   min-height: 0;
   margin: 0;
-  padding: 32px 0 0;
 }
 
 .replicate-recent-card {
@@ -273,6 +272,20 @@
   height: 100%;
   object-fit: cover;
   background: #f4f1fb;
+}
+
+.replicate-card-video-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: rgba(12, 16, 32, 0.28);
+  pointer-events: none;
+}
+
+.replicate-card-video-icon svg {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.48));
 }
 
 .replicate-card-media-fallback {

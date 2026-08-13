@@ -28,13 +28,17 @@ export function VoicePickerPanel({
   const audioRef = useRef(null);
   const [voiceCategory, setVoiceCategory] = useState("all");
   const [isPreviewing, setIsPreviewing] = useState(false);
-  const genderFilteredVoices = useMemo(
-    () => filterVoicesByAvatarGender(voices, avatar).filter((voice) => voice.source !== "voice-clone"),
-    [voices, avatar],
-  );
   const filteredVoices = useMemo(
-    () => filterVoicesByCategory(genderFilteredVoices, voiceCategory),
-    [voiceCategory, genderFilteredVoices],
+    () => {
+      const mineVoices = voices.filter((voice) => voice.source === "voice-clone");
+      if (voiceCategory === "mine") return mineVoices;
+      const officialVoices = voices.filter((voice) => voice.source !== "voice-clone");
+      return filterVoicesByCategory(
+        filterVoicesByAvatarGender(officialVoices, avatar),
+        voiceCategory,
+      );
+    },
+    [avatar, voiceCategory, voices],
   );
 
   useEffect(() => {

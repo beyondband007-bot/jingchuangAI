@@ -42,6 +42,12 @@ function normalizeChatSource(value) {
   return value === "infinite-canvas" ? "infinite-canvas" : "chat";
 }
 
+function getChatCreditMemo(source) {
+  return source === "infinite-canvas"
+    ? "infinite canvas text generation debit"
+    : "chat completion debit";
+}
+
 function calculatePoints(_model, _kieCreditsConsumed, text, messages = []) {
   return calculateTextPoints({
     outputChars: String(text || "").length,
@@ -253,7 +259,7 @@ export async function sendMessage(payload, userId) {
       userId,
       taskId: assistantMessageId,
       amount: costPoints,
-      memo: "chat completion debit"
+      memo: getChatCreditMemo(source)
     });
     await touchChatConversation(chargeConnection, resolvedConversationId);
     await chargeConnection.commit();
@@ -333,7 +339,7 @@ async function prepareChatMessage(payload, userId) {
     setupConnection.release();
   }
 
-  return { conversationId: resolvedConversationId, modelPrice, messages, model, reasoningEffort };
+  return { conversationId: resolvedConversationId, modelPrice, messages, model, reasoningEffort, source };
 }
 
 async function createStreamingAssistantMessage({ conversationId, model }) {
@@ -366,7 +372,7 @@ export async function recoverStreamingChatMessages() {
   return stopOrphanedStreamingChatMessages(new Date(Date.now() - staleAfterMs));
 }
 
-async function persistAssistantMessage({ messageId, conversationId, modelPrice, provider, userId, messages }) {
+async function persistAssistantMessage({ messageId, conversationId, modelPrice, provider, userId, messages, source }) {
   const costPoints = calculatePoints(modelPrice, provider.kieCreditsConsumed, provider.text, messages);
   const chargeConnection = await getPool().getConnection();
   try {
@@ -383,7 +389,7 @@ async function persistAssistantMessage({ messageId, conversationId, modelPrice, 
       userId,
       taskId: messageId,
       amount: costPoints,
-      memo: "chat completion debit"
+      memo: getChatCreditMemo(source)
     });
     await touchChatConversation(chargeConnection, conversationId);
     await chargeConnection.commit();
@@ -468,7 +474,7 @@ export async function streamMessage(payload, userId, { onStarted, onDelta, signa
             userId,
             taskId: assistantMessageId,
             amount: costPoints,
-            memo: "chat completion debit"
+            memo: getChatCreditMemo(prepared.source)
           });
         }
       }
@@ -491,7 +497,8 @@ export async function streamMessage(payload, userId, { onStarted, onDelta, signa
       modelPrice: prepared.modelPrice,
       provider,
       userId,
-      messages: prepared.messages
+      messages: prepared.messages,
+      source: prepared.source
     });
   } catch (error) {
     let connection;

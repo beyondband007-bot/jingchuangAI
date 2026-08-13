@@ -243,7 +243,9 @@ export function VideoGenerationView({
           .catch(() => {});
       }
     }
-    videoApi.getModels().then((value) => mounted && setOptions(value));
+    videoApi
+      .getModels({ force: true })
+      .then((value) => mounted && setOptions(value));
     videoApi
       .getCredits()
       .then((value) => mounted && applyCreditsUpdate(setCredits, value));
@@ -278,7 +280,7 @@ export function VideoGenerationView({
       mounted = false;
       unsubscribe();
     };
-  }, [filter]);
+  }, [filter, isActive]);
 
   useEffect(() => {
     const scrollContainer = getFeatureScrollContainer();
@@ -399,6 +401,7 @@ export function VideoGenerationView({
       item?.poster ||
       item?.cover ||
       item?.thumbnail ||
+      item?.thumbnailUrl ||
       item?.referenceImageUrl ||
       item?.image ||
       "";
@@ -407,18 +410,32 @@ export function VideoGenerationView({
       return;
     }
     writePendingGenerationSeed({
-      target: "image",
+      target: "video",
+      prompt: item?.prompt || "",
       referenceImage: {
         url: referenceUrl,
         originalName: `${item?.title || "视频封面"}.png`,
         size: 0,
         mimeType: "image/png",
       },
-      notice: "已添加视频封面作为参考图",
+      notice: "已添加视频封面作为视频参考图",
+    });
+    openVideoComposer({
+      id: `reference-video-${item?.id || Date.now()}-${Date.now()}`,
+      prompt: item?.prompt || "",
+      referenceImage: {
+        url: referenceUrl,
+        originalName: `${item?.title || "视频封面"}.png`,
+        size: 0,
+        mimeType: "image/png",
+      },
+      referenceVideo: null,
+      notice: "已添加视频封面作为视频参考图",
     });
     onDone?.();
-    window.history.pushState(null, "", "#/image");
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    if (window.location.hash !== "#/video") {
+      window.location.hash = "/video";
+    }
   }
 
   function referenceVideoTask(task) {
@@ -529,23 +546,30 @@ export function VideoGenerationView({
     setVideoInspirationCatalogRetryKey((value) => value + 1);
   }
 
-  function useVideoInspiration(item) {
+  function openVideoComposer(seed) {
+    setPlayingTask(null);
+    setSelectedHistoryTask(null);
     setSelectedInspiration(null);
     setFilter("inspiration");
-    setComposerSeed({
-      id: `${item.id}-${Date.now()}`,
-      prompt: item.prompt,
-      notice: "已填入同款提示词",
-    });
+    setIsComposerPastThreshold(false);
+    setIsComposerFocused(true);
+    setComposerSeed(seed);
+    // The composer is not mounted while viewing history. Scroll only after it
+    // has rendered, otherwise its old/unmounted position keeps the user in history.
     window.requestAnimationFrame(() => {
-      const scrollContainer = getFeatureScrollContainer();
-      const containerTop = scrollContainer?.getBoundingClientRect().top || 0;
-      const top =
-        (videoComposerRef.current?.getBoundingClientRect().top || 0) +
-        getFeatureScrollTop() -
-        containerTop -
-        92;
-      scrollFeatureTo(Math.max(0, top), { behavior: "smooth" });
+      window.requestAnimationFrame(() => {
+        scrollFeatureTo(0, { behavior: "smooth" });
+      });
+    });
+  }
+
+  function useVideoInspiration(item) {
+    openVideoComposer({
+      id: `${item.id}-${Date.now()}`,
+      prompt: item.prompt || "",
+      referenceImage: null,
+      referenceVideo: null,
+      notice: "已填入同款提示词",
     });
   }
 

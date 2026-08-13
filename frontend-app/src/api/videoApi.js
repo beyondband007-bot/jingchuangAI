@@ -21,7 +21,8 @@ export const videoApi = {
     return refreshCachedCredits();
   },
 
-  async getModels() {
+  async getModels({ force = false } = {}) {
+    if (force) modelsPromise = undefined;
     if (!modelsPromise) {
       modelsPromise = request("/api/video/models").catch((err) => {
         modelsPromise = undefined;

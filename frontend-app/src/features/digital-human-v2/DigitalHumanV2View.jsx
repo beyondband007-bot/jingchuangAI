@@ -236,17 +236,26 @@ export function DigitalHumanV2View({
     const pendingSeed = takePendingGenerationSeed("digital-human");
     if (!pendingSeed) return;
 
-    const avatar = avatars.public.find(
+    const avatar = [...(avatars.public || []), ...(avatars.mine || [])].find(
       (item) => String(item.id) === String(pendingSeed.avatarId),
     );
     if (avatar) {
-      setAvatarSource("official");
+      setAvatarSource(
+        (avatars.mine || []).some(
+          (item) => String(item.id) === String(pendingSeed.avatarId),
+        )
+          ? "mine"
+          : "official",
+      );
       setSelectedAvatar(avatar);
       setRightView("library");
     }
+    if (pendingSeed.voiceId) {
+      setVoiceId(pickEnabledVoiceId(voices, pendingSeed.voiceId));
+    }
     if (pendingSeed.prompt) setText(pendingSeed.prompt);
     if (pendingSeed.notice) showToast(pendingSeed.notice);
-  }, [avatars.public, isActive, loading, setSelectedAvatar, showToast]);
+  }, [avatars.mine, avatars.public, isActive, loading, setSelectedAvatar, showToast, voices]);
 
   useEffect(() => {
     persistWorkspaceDrafts(drafts);
@@ -562,7 +571,9 @@ export function DigitalHumanV2View({
       const createPayload = {
         avatarId: selectedAvatar.id,
         avatarName: selectedAvatar.name,
-        driveMode: !isCloneMode && confirmedPreviewAudio?.audioFileId ? "audio" : "text",
+        // Confirmed preview audio is only for auditioning the selected system
+        // voice. It must not replace that voice with uploaded-audio mode.
+        driveMode: "text",
         text: text.trim(),
         performance:
           selectedAvatar.performance ||
@@ -578,10 +589,6 @@ export function DigitalHumanV2View({
         emotion: getVoiceEmotionValue(voiceEmotion),
         videoSpec,
       };
-      if (!isCloneMode && confirmedPreviewAudio?.audioFileId) {
-        createPayload.audioFileId = confirmedPreviewAudio.audioFileId;
-        createPayload.audioName = confirmedPreviewAudio.originalName || "试听音频";
-      }
       if (selectedScene?.sceneFileId) {
         createPayload.sceneFileId = selectedScene.sceneFileId;
       }

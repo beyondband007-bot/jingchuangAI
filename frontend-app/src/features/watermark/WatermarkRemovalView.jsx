@@ -94,6 +94,15 @@ function WatermarkCenterState({
   onDismiss,
   onRecharge,
 }) {
+  const sourceVideoRef = useRef(null);
+  const resultVideoRef = useRef(null);
+
+  function pauseOtherVideo(activeVideo) {
+    [sourceVideoRef.current, resultVideoRef.current].forEach((video) => {
+      if (video && video !== activeVideo && !video.paused) video.pause();
+    });
+  }
+
   if (task?.status === "completed") {
     const isVideo = task.mediaType === "video";
     return (
@@ -110,11 +119,13 @@ function WatermarkCenterState({
             <figcaption>原图</figcaption>
             {isVideo ? (
               <video
+                ref={sourceVideoRef}
                 src={task.sourceUrl}
                 controls
                 playsInline
                 preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
+                onPlay={(event) => pauseOtherVideo(event.currentTarget)}
               />
             ) : (
               <img
@@ -127,11 +138,13 @@ function WatermarkCenterState({
             <figcaption>处理后</figcaption>
             {isVideo ? (
               <video
+                ref={resultVideoRef}
                 src={task.resultUrl}
                 controls
                 playsInline
                 preload="metadata"
                 poster={task.thumbnailUrl || task.sourceUrl}
+                onPlay={(event) => pauseOtherVideo(event.currentTarget)}
               />
             ) : (
               <img
@@ -186,7 +199,7 @@ function WatermarkCenterState({
       aria-live="polite"
     >
       <span className="marketing-runtime-spinner">
-        <Loader2 size={30} />
+        <Loader2 size={30} className="is-spinning" />
       </span>
       <strong>
         {isSubmitting ? "正在创建去水印任务" : "正在智能去除水印"}
@@ -212,13 +225,10 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
       <div className={`watermark-task-preview ${isVideo ? "is-video" : ""}`}>
         {task.resultUrl && !isFailed ? (
           isVideo ? (
-            <video
-              src={task.thumbnailUrl || task.resultUrl}
-              controls
-              playsInline
-              preload="metadata"
-              poster={task.thumbnailUrl || task.sourceUrl}
-            />
+            <div className="watermark-task-video-thumb">
+              <img src={task.thumbnailUrl || task.sourceUrl} alt={task.sourceFileName || "去水印视频缩略图"} />
+              <span className="replicate-card-video-icon" aria-hidden="true"><Film size={28} /></span>
+            </div>
           ) : (
             <img
               src={task.thumbnailUrl || task.resultUrl}
@@ -230,7 +240,7 @@ function WatermarkTaskCard({ task, onDelete, onFavorite, onRepeat, onOpen }) {
             className={`watermark-task-placeholder ${isFailed ? "is-failed" : ""}`}
           >
             {isProcessing ? (
-              <Loader2 size={26} />
+              <Loader2 size={26} className="is-spinning" />
             ) : isVideo ? (
               <Video size={26} />
             ) : (
@@ -332,7 +342,7 @@ const WatermarkUploadSlot = forwardRef(function WatermarkUploadSlot({
         )}
         {isUploading && (
           <span className="watermark-uploading">
-            <Loader2 size={16} />
+            <Loader2 size={16} className="is-spinning" />
             上传中
           </span>
         )}
@@ -563,7 +573,7 @@ function WatermarkComposer({
           disabled={!canSubmit}
           aria-label="开始去水印"
         >
-          {isSubmitting ? <Loader2 size={18} /> : <Zap size={18} />}
+          {isSubmitting ? <Loader2 size={18} className="is-spinning" /> : <Zap size={18} />}
         </button>
       </div>
     </div>

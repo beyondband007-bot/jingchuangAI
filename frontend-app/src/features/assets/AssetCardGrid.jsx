@@ -32,14 +32,20 @@ export function AssetCardGrid({
             key={card.id}
             onClick={() => onSelect?.(card)}
           >
-            {card.isVideo && card.video ? (
-              <video
-                src={card.video}
-                poster={card.poster || undefined}
-                muted
-                playsInline
-                preload="none"
-              />
+            {card.isVideo ? (
+              card.poster || card.src ? (
+                <img
+                  src={card.poster || card.src}
+                  alt={card.title}
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
+                />
+              ) : (
+                <div className="fm-asset-placeholder">
+                  <Video size={28} />
+                </div>
+              )
             ) : card.src ? (
               <img
                 src={card.src}
@@ -74,9 +80,9 @@ export function AssetCardGrid({
                 </button>
               )}
               {!isInspiration &&
-                (card.video || card.image ? (
+                (card.video || card.imageUrl || card.image ? (
                   <a
-                    href={card.video || card.image}
+                    href={card.video || card.imageUrl || card.image}
                     download
                     aria-label="下载"
                     onClick={(event) => event.stopPropagation()}
