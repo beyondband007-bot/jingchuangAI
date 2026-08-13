@@ -190,7 +190,7 @@
 /* Asset gallery layout migrated from the global home stylesheet. */
 .fm-assets-gallery-view {
   min-height: var(--app-content-height);
-  padding: 24px 52px;
+  padding: var(--space-5);
   background: #fff;
 }
 
@@ -342,7 +342,7 @@
 
 .fm-assets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: var(--space-2);
   width: 100%;
 }

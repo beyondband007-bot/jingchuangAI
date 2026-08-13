@@ -149,13 +149,12 @@
 
 .video-dub-recent-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 320px));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   align-content: start;
   line-height: 1.2;
   justify-content: start;
   gap: var(--space-4);
   width: 100%;
-  padding: 8px;
 }
 
 .video-dub-recent-panel.has-items {

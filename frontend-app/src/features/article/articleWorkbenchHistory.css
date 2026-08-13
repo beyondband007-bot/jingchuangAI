@@ -1,5 +1,4 @@
 ﻿.article-history-grid {
-  padding: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
@@ -93,11 +92,6 @@
 
 .article-history-grid {
   justify-content: flex-start;
-}
-
-.article-history-card {
-  flex: 0 0 auto;
-  width: 220px;
 }
 
 .article-history-card > div > div {

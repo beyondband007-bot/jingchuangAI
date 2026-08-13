@@ -103,7 +103,7 @@
 
 .marketing-tool-root .watermark-results-feed {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   align-content: start;
   justify-content: start;
   gap: var(--space-20px);

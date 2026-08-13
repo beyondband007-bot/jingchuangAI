@@ -34,7 +34,6 @@
   overflow: hidden;
   box-sizing: border-box;
   padding: 16px 20px 20px;
-  background: #f5f6ff;
 }
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-page {
@@ -71,23 +70,22 @@
 }
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-grid {
-  flex: 1 1 auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-content: start;
+  align-items: stretch;
+  justify-content: start;
+  justify-items: stretch;
+  gap: var(--space-4);
+  max-width: none;
   min-height: 0;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  margin: 0;
 }
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-card {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  width: 220px;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #dedbea;
@@ -98,7 +96,6 @@
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-preview {
   position: relative;
   flex: 0 0 293px;
-  width: 220px;
   height: 293px;
   padding: 0;
   overflow: hidden;

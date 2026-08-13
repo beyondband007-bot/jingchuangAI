@@ -21,8 +21,8 @@
 .fm-profile-billing-view .assets-balance-hero,
 .fm-profile-billing-view .fm-billing-workspace,
 .fm-profile-billing-view .assets-login-panel {
-  width: min(1180px, 100%);
-  max-width: 1180px;
+  width: min(1480px, 100%);
+  max-width: 1480px;
   margin-right: auto;
   margin-left: auto;
 }
