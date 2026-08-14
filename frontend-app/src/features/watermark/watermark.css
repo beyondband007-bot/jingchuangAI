@@ -129,16 +129,12 @@
 .marketing-tool-root .watermark-task-preview {
   position: relative;
   display: grid;
-  aspect-ratio: 4 / 3;
+  height: 280px;
   margin: var(--space-3) var(--space-3) 0;
   overflow: hidden;
   place-items: center;
   background: #e8eef5;
   border-radius: var(--radius-sm);
-}
-
-.marketing-tool-root .watermark-task-preview.is-video {
-  aspect-ratio: 16 / 9;
 }
 
 .marketing-tool-root .watermark-task-preview img,
