@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import sharp from "sharp";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import os from "node:os";
@@ -119,7 +120,7 @@ test("removes a partial file when the configured limit is exceeded", async () =>
   });
 });
 
-test("creates a 500px JPEG thumbnail from a non-black generated video frame", async () => {
+test("creates a 420px JPEG thumbnail from a non-black generated video frame", async () => {
   await withTempStorage(async (storageDir) => {
     const taskDir = path.join(storageDir, "generated", "videos", "45");
     await import("node:fs/promises").then(({ mkdir }) => mkdir(taskDir, { recursive: true }));
@@ -138,8 +139,10 @@ test("creates a 500px JPEG thumbnail from a non-black generated video frame", as
       storageDir
     });
     const thumbnail = await readFile(path.join(taskDir, "result-1-thumbnail.jpg"));
+    const metadata = await sharp(thumbnail).metadata();
     assert.equal(thumbnailUrl, "/media/generated/videos/45/result-1-thumbnail.jpg");
     assert.deepEqual([...thumbnail.subarray(0, 2)], [0xff, 0xd8]);
-    assert.ok(thumbnail.length > 1_000);
+    assert.equal(metadata.width, 420);
+    assert.equal(metadata.format, "jpeg");
   });
 });

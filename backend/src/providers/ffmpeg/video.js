@@ -181,6 +181,32 @@ export async function preserveOriginalAudio({ videoPath, originalVideoPath, outp
   };
 }
 
+/**
+ * Keeps the generated picture while taking the audio track from the reference
+ * video.  Unlike preserveOriginalAudio, the output length follows the
+ * generated video so a provider returning a shorter result is not padded.
+ */
+export async function mergeReferenceAudio({ videoPath, originalVideoPath, outputPath }) {
+  const duration = await getVideoDuration(videoPath);
+  await runFfmpeg([
+    "-y",
+    "-i", videoPath,
+    "-i", originalVideoPath,
+    "-map", "0:v:0",
+    "-map", "1:a:0?",
+    "-c:v", "copy",
+    "-c:a", "aac",
+    "-b:a", "192k",
+    "-t", duration.toFixed(3),
+    "-movflags", "+faststart",
+    outputPath
+  ]);
+  return {
+    outputPath,
+    videoDuration: await getVideoDuration(outputPath)
+  };
+}
+
 function buildAtempoFilter(ratio) {
   let remaining = Number(ratio) || 1;
   const filters = [];

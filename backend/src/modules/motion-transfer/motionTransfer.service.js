@@ -10,14 +10,19 @@ import {
   getArkVideoGenerationTask,
   mapArkVideoGenerationState
 } from "../../providers/volcengine/videoGeneration.js";
-import { getVideoDuration } from "../../providers/ffmpeg/video.js";
+import { getVideoDuration, mergeReferenceAudio, probeVideo } from "../../providers/ffmpeg/video.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { assertPublicMediaUrlAccessible, buildPublicMediaUrl } from "../../shared/publicMedia.js";
 import {
+  createGeneratedVideoThumbnail,
   persistGeneratedVideos,
   removeStoredGeneratedVideos
 } from "../../shared/generatedVideoStorage.js";
-import { calculateVideoPoints } from "../../shared/billingRules.js";
+import {
+  calculateMotionTransferPoints,
+  MOTION_TRANSFER_POINTS_PER_SECOND
+} from "../../shared/billingRules.js";
 import { getDemoUser, getDemoUserCredits } from "../../shared/userService.js";
 import { createVirtualAssetFromLocalFile, waitForVirtualAssetReference } from "../digital-human/arkVirtualAssets.service.js";
 import { mapMotionTransferAsset, mapMotionTransferTask } from "./motionTransfer.mapper.js";
@@ -45,6 +50,13 @@ const defaultPrompt =
   "让图片中的虚拟角色跟随参考视频完成同款动作，保持角色身份、服装和画面主体稳定，动作自然流畅。";
 
 function getModelDefinitions() {
+  const resolutions = Object.entries(MOTION_TRANSFER_POINTS_PER_SECOND).map(
+    ([value, pointsPerSecond]) => ({
+      value,
+      label: `${value} · ${pointsPerSecond}积分/秒`,
+      pointsPerSecond
+    })
+  );
   return [
     {
       value: "motion-transfer",
@@ -53,6 +65,7 @@ function getModelDefinitions() {
       providerModel: config.ark.videoModel,
       basePoints: config.kie.motionTransferPoints,
       resolution: config.kie.motionTransferResolution,
+      resolutions,
       characterOrientation: config.kie.motionTransferCharacterOrientation
     }
   ];
@@ -95,6 +108,32 @@ function getProviderDuration() {
   return duration === 10 ? 10 : 5;
 }
 
+async function createMotionTransferProviderTask({
+  model,
+  prompt,
+  resolution,
+  duration,
+  imageReference,
+  videoReference
+}) {
+  return createArkVideoGenerationTask({
+    model: model.providerModel,
+    content: [
+      {
+        type: "text",
+        text: `${prompt}\nUse image 1 as the character identity reference and video 1 as the motion and camera reference. Preserve the character identity and appearance, use the video background, and produce natural continuous motion.`
+      },
+      buildReferenceImage(imageReference),
+      buildReferenceVideo(videoReference)
+    ],
+    resolution,
+    ratio: "adaptive",
+    duration,
+    generateAudio: false,
+    watermark: false
+  });
+}
+
 export async function getCredits() {
   return getDemoUserCredits();
 }
@@ -104,8 +143,8 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
-      estimatedPoints: calculateVideoPoints(getProviderDuration()),
-      price: `${calculateVideoPoints(getProviderDuration())} 积分`,
+      estimatedPoints: calculateMotionTransferPoints(getProviderDuration(), model.resolution),
+      price: `${calculateMotionTransferPoints(getProviderDuration(), model.resolution)} 积分`,
       configured: Boolean(config.ark.apiKey && config.ark.accessKeyId && config.ark.secretAccessKey && config.media.publicBaseUrl)
     })),
     defaults: {
@@ -113,10 +152,7 @@ export function getModels() {
       resolution: models[0].resolution,
       characterOrientation: models[0].characterOrientation
     },
-    modes: [
-      { value: "720p", label: "720p" },
-      { value: "1080p", label: "1080p" }
-    ],
+    modes: models[0].resolutions,
     characterOrientations: [
       { value: "image", label: "图片朝向", maxSeconds: 15 },
       { value: "video", label: "视频朝向", maxSeconds: 15 }
@@ -168,7 +204,7 @@ export async function createAsset({ kind, file }) {
 
   const asset = mapMotionTransferAsset(await findMotionTransferAsset(assetId, kind));
   return duration
-    ? { ...asset, duration, estimatedPoints: calculateVideoPoints(duration) }
+    ? { ...asset, duration, estimatedPoints: calculateMotionTransferPoints(duration) }
     : asset;
 }
 
@@ -202,7 +238,7 @@ export async function createTask(payload) {
   const resolution = normalizeResolution(payload.resolution || model.resolution);
   const characterOrientation = normalizeCharacterOrientation(payload.characterOrientation || model.characterOrientation);
   const duration = await getSourceVideoDuration(videoAsset);
-  const costPoints = calculateVideoPoints(duration);
+  const costPoints = calculateMotionTransferPoints(duration, resolution);
 
   const connection = await getPool().getConnection();
   let userId;
@@ -237,8 +273,10 @@ export async function createTask(payload) {
   }
   connection.release();
 
+  let imageUri = "";
+  let videoUri = "";
   try {
-    const [imageUri, videoUri] = await Promise.all([
+    [imageUri, videoUri] = await Promise.all([
       uploadAssetToArk(imageAsset, "motion-transfer-image", userId),
       uploadAssetToArk(videoAsset, "motion-transfer-video", userId)
     ]);
@@ -260,6 +298,28 @@ export async function createTask(payload) {
     });
     await setMotionTransferTaskProviderTaskId(taskId, provider.taskId);
   } catch (error) {
+    if (error?.code === "VIDEO_REFERENCE_DOWNLOAD_FAILED") {
+      try {
+        const imagePublicUrl = buildPublicMediaUrl(imageAsset.local_url);
+        const videoPublicUrl = buildPublicMediaUrl(videoAsset.local_url);
+        await Promise.all([
+          assertPublicMediaUrlAccessible(imagePublicUrl, "动作迁移图片素材"),
+          assertPublicMediaUrlAccessible(videoPublicUrl, "动作迁移视频素材")
+        ]);
+        const provider = await createMotionTransferProviderTask({
+          model,
+          prompt,
+          resolution,
+          duration,
+          imageReference: imagePublicUrl,
+          videoReference: videoPublicUrl
+        });
+        await setMotionTransferTaskProviderTaskId(taskId, provider.taskId);
+        return getTask(taskId);
+      } catch (fallbackError) {
+        error = fallbackError;
+      }
+    }
     console.error("Create motion transfer provider task failed:", error.message, error.body || "");
     await refundTask(taskId, userId, costPoints, `动作迁移任务创建失败：${error.message}`);
   }
@@ -288,6 +348,41 @@ async function refreshProcessingTasks() {
   await Promise.all(rows.map((row) => refreshTask(row.id)));
 }
 
+async function retainReferenceAudio({ taskId, localUrl, referenceVideoPath }) {
+  if (!referenceVideoPath) return localUrl;
+
+  const reference = await probeVideo(referenceVideoPath).catch(() => null);
+  if (!reference?.hasAudio) return localUrl;
+
+  const extension = path.extname(localUrl) || ".mp4";
+  const audioLocalUrl = localUrl.replace(/result-1\.(mp4|mov|webm)$/i, `result-2${extension}`);
+  if (audioLocalUrl === localUrl) return localUrl;
+
+  const outputPath = path.resolve(
+    process.cwd(),
+    config.media.storageDir,
+    audioLocalUrl.replace(/^\/media\//, "")
+  );
+  const generatedPath = path.resolve(
+    process.cwd(),
+    config.media.storageDir,
+    localUrl.replace(/^\/media\//, "")
+  );
+
+  try {
+    await mergeReferenceAudio({
+      videoPath: generatedPath,
+      originalVideoPath: referenceVideoPath,
+      outputPath
+    });
+    return audioLocalUrl;
+  } catch (error) {
+    await unlink(outputPath).catch(() => {});
+    console.warn(`Motion transfer ${taskId}: unable to retain reference audio: ${error.message}`);
+    return localUrl;
+  }
+}
+
 async function refreshTask(id) {
   const task = await findMotionTransferTaskStatus(id);
   if (!task || !task.provider_task_id || !["pending", "processing"].includes(task.status)) return;
@@ -305,7 +400,17 @@ async function refreshTask(id) {
           feature: "motion-transfer-videos",
           urls: [result.resultUrl]
         });
-        await setMotionTransferTaskCompleted(id, { ...result, resultUrl: localUrl });
+        const resultUrl = await retainReferenceAudio({
+          taskId: id,
+          localUrl,
+          referenceVideoPath: task.video_file_path
+        });
+        const thumbnailUrl = await createGeneratedVideoThumbnail({
+          taskId: id,
+          feature: "motion-transfer-videos",
+          videoUrl: resultUrl
+        }).catch(() => "");
+        await setMotionTransferTaskCompleted(id, { ...result, resultUrl, thumbnailUrl });
       }
     } else if (mapped === "failed") {
       const result = extractArkVideoGenerationResult(record);

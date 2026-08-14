@@ -20,6 +20,11 @@ export const BILLING_RULES = Object.freeze({
   defaultMusicSeconds: 30
 });
 
+export const MOTION_TRANSFER_POINTS_PER_SECOND = Object.freeze({
+  "720p": 120,
+  "1080p": 270
+});
+
 function positiveNumber(value, fallback = 0) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : fallback;
@@ -41,6 +46,14 @@ export function calculateImagePoints(count = 1) {
 
 export function calculateVideoPoints(durationSeconds) {
   return ceilSeconds(durationSeconds) * BILLING_RULES.videoPointsPerSecond;
+}
+
+export function calculateMotionTransferPoints(durationSeconds, resolution = "720p") {
+  const normalizedResolution = String(resolution || "720p").trim().toLowerCase();
+  const pointsPerSecond =
+    MOTION_TRANSFER_POINTS_PER_SECOND[normalizedResolution] ||
+    MOTION_TRANSFER_POINTS_PER_SECOND["720p"];
+  return ceilSeconds(durationSeconds) * pointsPerSecond;
 }
 
 export function calculateVoicePoints({ durationSeconds, durationMs, text } = {}) {
@@ -85,10 +98,12 @@ export function calculateBillingQuote(feature, payload = {}) {
       items.push(item("image", "生成图片", calculateImagePoints(payload.count || payload.imageCount || 1)));
       break;
     case "video":
-    case "motion-transfer":
     case "face-swap":
       items.push(item("video", "生成视频", calculateVideoPoints(durationSeconds)));
       if (payload.generateImage) items.push(item("image", "生成首帧图片", calculateImagePoints(payload.imageCount || 1)));
+      break;
+    case "motion-transfer":
+      items.push(item("video", "动作迁移视频", calculateMotionTransferPoints(durationSeconds, payload.resolution)));
       break;
     case "digital-human":
     case "image-digital-human":

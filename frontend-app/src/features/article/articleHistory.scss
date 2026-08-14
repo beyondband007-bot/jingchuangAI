@@ -93,9 +93,7 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  /* Reserve room for title, task details, and actions at every column width. */
-  min-height: 420px;
-  height: auto;
+  height: 450px;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #dedbea;
@@ -106,7 +104,7 @@
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-preview {
   position: relative;
   flex: 0 0 auto;
-  height: clamp(220px, 30vw, 300px);
+  height: 335px;
   aspect-ratio: auto;
   padding: 0;
   overflow: hidden;

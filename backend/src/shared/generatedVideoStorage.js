@@ -3,6 +3,7 @@ import { execFile } from "child_process";
 import { mkdir, open, rename, rm, stat, unlink } from "fs/promises";
 import path from "path";
 import { promisify } from "util";
+import sharp from "sharp";
 import { config } from "../config/index.js";
 import { createHttpError } from "./http.js";
 import { ffmpegPath } from "./ffmpegPath.js";
@@ -12,8 +13,8 @@ import { parseProxyTargetUrl } from "./mediaProxy.js";
 const DEFAULT_MAX_VIDEO_BYTES = 1024 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 180_000;
 const DEFAULT_ATTEMPTS = 1;
-const thumbnailWidth = 500;
-const thumbnailJpegQuality = 3;
+const thumbnailWidth = 420;
+const thumbnailJpegQuality = 90;
 const blackFramePercent = 98;
 const blackPixelThreshold = 32;
 const execFileAsync = promisify(execFile);
@@ -85,17 +86,24 @@ async function isBlackVideoFrame(videoPath, timestampSeconds) {
 }
 
 async function writeThumbnail(videoPath, outputPath, timestampSeconds) {
-  await execFileAsync(ffmpegPath, [
-    "-y",
-    "-ss", String(Math.max(0, timestampSeconds)),
-    "-i", videoPath,
-    "-frames:v", "1",
-    "-vf", `scale=${thumbnailWidth}:-2:force_original_aspect_ratio=decrease`,
-    "-q:v", String(thumbnailJpegQuality),
-    outputPath
-  ]);
-  if (!await fileExistsWithContent(outputPath)) {
-    throw new Error("ffmpeg produced an empty thumbnail");
+  const framePath = `${outputPath}.frame.jpg`;
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-ss", String(Math.max(0, timestampSeconds)),
+      "-i", videoPath,
+      "-frames:v", "1",
+      framePath
+    ]);
+    await sharp(framePath)
+      .resize({ width: thumbnailWidth, withoutEnlargement: true })
+      .jpeg({ quality: thumbnailJpegQuality })
+      .toFile(outputPath);
+    if (!await fileExistsWithContent(outputPath)) {
+      throw new Error("thumbnail generation produced an empty file");
+    }
+  } finally {
+    await unlink(framePath).catch(() => {});
   }
 }
 

@@ -11,6 +11,7 @@ import {
 import { emitCreditsUpdated } from "../../api/creditsEvents";
 import { ActionBar } from "./components/ActionBar";
 import { HistoryPanel } from "./components/HistoryPanel";
+import { HistoryDetailModal } from "./components/HistoryDetailModal";
 import { InputSection } from "./components/InputSection";
 import { ProcessTimeline } from "./components/ProcessTimeline";
 import { ResultViewer } from "./components/ResultViewer";
@@ -23,6 +24,7 @@ import {
   readVideoFileDuration,
 } from "./utils";
 import "./videoWorkflow.css";
+import "./videoWorkflowHistoryModal.css";
 import "./videoWorkflowStates.css";
 
 function applyCreditsUpdate(setCredits, credits) {
@@ -96,6 +98,7 @@ export function VideoGenerationWorkflow({
   const [options, setOptions] = useState(emptyOptions);
   const [credits, setCredits] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const [historyDetailTask, setHistoryDetailTask] = useState(null);
   const [taskState, setTaskState] = useState(() => createInitialTaskState(activeTaskKey));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -149,23 +152,36 @@ export function VideoGenerationWorkflow({
 
   const selectedModel =
     options.models.find((m) => m.value === taskState.input.model) || options.models[0] || null;
+  const selectedResolutionOption = (selectedModel?.resolutions || []).find(
+    (option) => String(option.value).toLowerCase() === String(taskState.input.resolution).toLowerCase(),
+  );
+  const selectedResolutionPointsPerSecond = Number(selectedResolutionOption?.pointsPerSecond);
+  const uploadedVideoDuration = Number(taskState.input.videoAsset?.duration);
   const estimatedPoints =
-    Number(taskState.input.videoAsset?.estimatedPoints) ||
+    Number.isFinite(selectedResolutionPointsPerSecond) && selectedResolutionPointsPerSecond > 0 && uploadedVideoDuration > 0
+      ? Math.ceil(uploadedVideoDuration) * selectedResolutionPointsPerSecond
+      : Number(taskState.input.videoAsset?.estimatedPoints) ||
     Number(selectedModel?.estimatedPoints) ||
     Number(selectedModel?.basePoints) ||
     0;
 
   const resolutionOptions = useMemo(() => {
-    const values = new Set();
+    const values = new Map();
+    const addOption = (option) => {
+      const value = String(typeof option === "object" ? option?.value : option || "");
+      if (!value || values.has(value)) return;
+      values.set(value, typeof option === "object" ? option : { value, label: value });
+    };
     options.models.forEach((item) => {
-      if (item.resolution) values.add(String(item.resolution));
+      (item.resolutions || []).forEach(addOption);
+      addOption(item.resolution);
     });
-    if (options.defaults?.resolution) values.add(String(options.defaults.resolution));
+    addOption(options.defaults?.resolution);
     if (options.modes?.length) {
-      options.modes.forEach((mode) => values.add(String(mode.value)));
+      options.modes.forEach(addOption);
     }
-    if (!values.size) values.add("720p");
-    return Array.from(values).map((value) => ({ value, label: value }));
+    if (!values.size) addOption("720p");
+    return Array.from(values.values());
   }, [options]);
 
   const canGenerate =
@@ -789,6 +805,7 @@ export function VideoGenerationWorkflow({
           onRepeat={requestRepeat}
           onDelete={deleteTask}
           onFavorite={toggleFavorite}
+          onOpen={setHistoryDetailTask}
         />
       ) : (
         <>
@@ -845,8 +862,6 @@ export function VideoGenerationWorkflow({
                 beforeUrl={sourceVideoUrl}
                 afterUrl={resultUrl}
                 posterUrl={activeTask?.thumbnailUrl || activeTask?.imageUrl || ""}
-                compareLabels={compareLabels}
-                showCompare={Boolean(sourceVideoUrl)}
               />
             )}
           </main>
@@ -869,6 +884,7 @@ export function VideoGenerationWorkflow({
 
       {deleteConfirmDialog}
       {regenerateConfirmDialog}
+      <HistoryDetailModal task={historyDetailTask} onClose={() => setHistoryDetailTask(null)} onRepeat={requestRepeat} />
     </section>
   );
 }
