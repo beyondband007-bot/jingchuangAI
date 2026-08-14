@@ -1212,6 +1212,38 @@ test("article history renders processing, completed and failed tasks", async ({ 
   await expect(history).toHaveScreenshot("article-history-task-states.png");
 });
 
+test("article history keeps metadata accessible when there are many tasks", async ({ page }) => {
+  const tasks = Array.from({ length: 14 }, (_, index) => ({
+    id: `article-history-many-${index}`,
+    status: "completed",
+    title: `History article ${index + 1}`,
+    ratio: "3:4",
+    quality: "standard",
+    image: "/assets/imgInspiration/img-sheying/ig_0dc22d0dacb7119f016a38e7d1b158819183ceb9c05a436ea4.webp",
+    createdAt: "2026-01-02 12:00:00",
+  }));
+  await mockArticleWorkspace(page, { tasks });
+  await page.goto("/#/article");
+  await page.getByRole("button", { name: "历史图文", exact: true }).click();
+
+  const history = page.locator(".article-history-page");
+  const grid = history.locator(".article-history-grid");
+  await expect(history.locator(".article-history-card")).toHaveCount(tasks.length);
+  await expect(grid).toHaveCSS("overflow-y", "auto");
+  await expect(history.locator(".article-history-meta").first()).toBeVisible();
+  await expect(history.locator(".article-history-meta").last()).toBeVisible();
+
+  for (const width of [1024, 1440, 2048]) {
+    await page.setViewportSize({ width, height: 900 });
+    const card = history.locator(".article-history-card").first();
+    const meta = card.locator(".article-history-meta");
+    const [cardBox, metaBox] = await Promise.all([card.boundingBox(), meta.boundingBox()]);
+    expect(cardBox).not.toBeNull();
+    expect(metaBox).not.toBeNull();
+    expect(metaBox.y + metaBox.height).toBeLessThanOrEqual(cardBox.y + cardBox.height);
+  }
+});
+
 test("article quick template opens its preview", async ({ page }) => {
   await mockArticleWorkspace(page);
   await page.goto("/#/article");
