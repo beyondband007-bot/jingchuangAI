@@ -104,6 +104,11 @@ const modelOptionMeta = {
     description: "多模态参考能力强，适合图像、视频、音频联合创作",
     icon: `${iconBase}/spark.svg`,
   },
+  metaso_h3_2k: {
+    title: "MiniMax H3 · METASO",
+    description: "多模态参考能力强，支持图像、视频、音频联合创作，性价比更高",
+    icon: `${iconBase}/spark.svg`,
+  },
   kling_3_std: {
     title: "Kling 3.0",
     description: "电影级画质，原生音效与镜头叙事更自然",

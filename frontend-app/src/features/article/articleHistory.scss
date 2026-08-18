@@ -71,12 +71,19 @@
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* Keep each card wide enough for its metadata and controls. */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  flex: 1 1 auto;
   align-content: start;
   align-items: stretch;
   justify-content: start;
   justify-items: stretch;
   gap: var(--space-4);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0 2px 20px;
   max-width: none;
   min-height: 0;
   margin: 0;
@@ -86,6 +93,7 @@
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
+  height: 450px;
   overflow: hidden;
   background: #ffffff;
   border: 1px solid #dedbea;
@@ -95,8 +103,9 @@
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-preview {
   position: relative;
-  flex: 0 0 293px;
-  height: 293px;
+  flex: 0 0 auto;
+  height: 335px;
+  aspect-ratio: auto;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -152,6 +161,9 @@
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-meta {
   display: flex;
+  flex: 0 0 auto;
+  min-height: 104px;
+  box-sizing: border-box;
   flex-direction: column;
   gap: var(--space-2);
   padding: 12px;
@@ -167,7 +179,7 @@
   font-size: 14px;
   line-height: 1.45;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
 }
 
 [data-feature-module="article"] .article-view-root.article-history-mode .article-history-meta p {
@@ -224,7 +236,7 @@
 
   [data-feature-module="article"] .article-view-root.article-history-mode .article-history-preview {
     flex: 0 0 auto;
-    height: auto;
-    aspect-ratio: 3 / 4;
+    height: clamp(220px, 42vw, 320px);
+    aspect-ratio: auto;
   }
 }
