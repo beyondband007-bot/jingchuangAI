@@ -30,7 +30,7 @@ export const imageCounts = [1, 2, 3, 4];
 export const fallbackModelOptions = [
   { value: "nano_banana2", label: "Facemini Banana 2" },
   { value: "nano_banana_pro", label: "Facemini Banana Pro" },
-  { value: "gpt_image_2", label: "Facemini Image 2" },
+  { value: "gpt_image_2", label: "Facemini Image2" },
   { value: "seedream_45", label: "Seedream 4.5" },
 ];
 

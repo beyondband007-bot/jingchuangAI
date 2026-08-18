@@ -60,14 +60,14 @@ const modelOptionMeta = {
     icon: `${iconBase}/claude.svg`,
   },
   gpt_image_2: {
-    title: "Facemini Image 2",
-    description: "全能通用，适配海报、插画、多元素创意画面",
-    icon: `${iconBase}/openai.svg`,
+    title: "Facemini Image2",
+    description: "低成本通用生图，支持文生图与参考图生成",
+    icon: `${iconBase}/spark.svg`,
   },
   gpt_image_2_i2i: {
-    title: "Facemini Image 2",
-    description: "全能通用，适配海报、插画、多元素创意画面",
-    icon: `${iconBase}/openai.svg`,
+    title: "Facemini Image2（图生图）",
+    description: "以参考图为输入，保留主体并按提示词重绘",
+    icon: `${iconBase}/spark.svg`,
   },
   nano_banana_pro: {
     title: "Facemini Banana Pro",

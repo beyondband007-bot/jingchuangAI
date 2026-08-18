@@ -416,7 +416,7 @@ const handleSelect = (item) => {
 
     // Create imageConfig node
     const configNodeId = addNode('imageConfig', { x: nodeX + 360, y: nodeY }, {
-      model: 'gpt-image-2-text-to-image',
+      model: 'gpt_image_2',
       size: '2048x2048',
       label: '生图配置'
     })
@@ -604,7 +604,7 @@ const createInpaintWorkflow = () => {
   
   // Create imageConfig node for inpainting | 创建图生图配置节点
   const configNodeId = addNode('imageConfig', { x: nodeX + 360, y: nodeY }, {
-    model: 'gpt-image-2-text-to-image',
+    model: 'gpt_image_2',
     size: '2048x2048',
     label: '局部重绘',
     inpaintMode: true
@@ -806,7 +806,7 @@ const handleImageGen = () => {
 
   // Create imageConfig node for generation | 创建生图配置节点
   const configNodeId = addNode('imageConfig', { x: nodeX + 900, y: nodeY }, {
-    model: 'gpt-image-2-text-to-image',
+    model: 'gpt_image_2',
     size: '2048x2048',
     label: '生图配置'
   })

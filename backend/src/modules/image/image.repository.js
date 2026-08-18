@@ -225,7 +225,7 @@ export async function findRefreshableImageTasks() {
 
 export async function findImageTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, user_id, provider_task_id, status FROM image_generation_tasks WHERE id = ? LIMIT 1",
+    "SELECT id, user_id, provider_task_id, model_key, status FROM image_generation_tasks WHERE id = ? LIMIT 1",
     [id]
   );
   return rows[0] || null;

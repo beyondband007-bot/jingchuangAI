@@ -98,26 +98,3 @@ test("builds the documented Nano Banana Pro image-to-image request", () => {
     },
   );
 });
-
-test("builds the documented GPT Image 2 image-to-image request", () => {
-  const referenceImageUrls = ["https://cdn.example.com/reference.png"];
-  assert.equal(
-    mapImageModelToKie("gpt_image_2_i2i"),
-    "gpt-image-2-image-to-image",
-  );
-  assert.deepEqual(
-    buildKieImageInput({
-      prompt,
-      modelKey: "gpt_image_2_i2i",
-      ratio: "1:1",
-      quality: "1K",
-      referenceImageUrls,
-    }),
-    {
-      prompt,
-      input_urls: referenceImageUrls,
-      aspect_ratio: "1:1",
-      resolution: "1K",
-    },
-  );
-});

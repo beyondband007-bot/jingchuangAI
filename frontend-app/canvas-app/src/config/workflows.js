@@ -82,7 +82,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + nodeSpacing, y: startPosition.y + rowSpacing * 1.5 },
         data: {
           label: '主角色图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -146,7 +146,7 @@ export const WORKFLOW_TEMPLATES = [
           position: { x: currentX, y: angleY },
           data: {
             label: `${angleConfig.label} (${angleConfig.english})`,
-            model: 'gpt-image-2-text-to-image',
+            model: 'gpt_image_2',
             size: '2048x2048'
           }
         })
@@ -282,7 +282,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y },
         data: {
           label: '生成模特图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -295,7 +295,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y + rowSpacing },
         data: {
           label: '侧面展示图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -308,7 +308,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y + rowSpacing * 2 },
         data: {
           label: '俯瞰展示图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -321,7 +321,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y + rowSpacing * 3 },
         data: {
           label: '拆解图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -508,7 +508,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y },
         data: {
           label: '生成正面全身图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '1440x2560'
         }
       })
@@ -570,7 +570,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing },
         data: {
           label: '侧面半身图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -583,7 +583,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing * 2 },
         data: {
           label: '表情特写图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })
@@ -596,7 +596,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing * 3 },
         data: {
           label: '背面全身图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '1440x2560'
         }
       })
@@ -754,7 +754,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y },
         data: {
           label: '生成基础场景',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2560x1440'
         }
       })
@@ -816,7 +816,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing },
         data: {
           label: '傍晚场景',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2560x1440'
         }
       })
@@ -829,7 +829,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing * 2 },
         data: {
           label: '夜晚场景',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2560x1440'
         }
       })
@@ -842,7 +842,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 4 + 100, y: startPosition.y + rowSpacing * 3 },
         data: {
           label: '雨天场景',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2560x1440'
         }
       })
@@ -997,7 +997,7 @@ export const WORKFLOW_TEMPLATES = [
   //       position: { x: startPosition.x + colSpacing * 2, y: startPosition.y + rowSpacing },
   //       data: {
   //         label: '分镜画面',
-  //         model: 'gpt-image-2-text-to-image',
+  //         model: 'gpt_image_2',
   //         size: '2560x1440'
   //       }
   //     })
@@ -1124,7 +1124,7 @@ export const WORKFLOW_TEMPLATES = [
         position: { x: startPosition.x + colSpacing * 2, y: startPosition.y - rowSpacing },
         data: {
           label: '角色参考图',
-          model: 'gpt-image-2-text-to-image',
+          model: 'gpt_image_2',
           size: '2048x2048'
         }
       })

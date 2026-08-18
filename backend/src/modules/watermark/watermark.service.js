@@ -2,12 +2,19 @@ import path from "path";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
-  createKieWatermarkImageTask,
+  TENCENT_IMAGE2_PROVIDER_MODEL,
+  createTencentImage2Task,
+  extractTencentImage2Error,
+  extractTencentImage2ResultUrls,
+  getTencentImage2Task,
+  isTencentImage2ProviderModel,
+  mapTencentImage2State
+} from "../../providers/tencent/aigcImage.js";
+import {
   extractWatermarkResult,
   getKieWatermarkTask,
   mapKieWatermarkState
 } from "../../providers/kie/watermark.js";
-import { uploadFileToKie } from "../../providers/kie/upload.js";
 import { normalizeVideoToSource, probeVideo } from "../../providers/ffmpeg/video.js";
 import {
   createTencentMpsWatermarkTask,
@@ -68,12 +75,12 @@ function getModelDefinitions() {
   return [
     {
       value: "kie-watermark-image",
-      label: "图片去水印",
+      label: "图片去水印（Facemini Image2）",
       kind: "image",
-      provider: "kie",
-      providerModel: config.kie.watermarkImageModel,
-      basePoints: config.kie.watermarkImagePoints,
-      resolution: config.kie.watermarkImageResolution
+      provider: "tencent-vod",
+      providerModel: TENCENT_IMAGE2_PROVIDER_MODEL,
+      basePoints: config.tencentCloud.image2WatermarkPoints,
+      resolution: config.tencentCloud.image2WatermarkResolution
     },
     {
       value: "tencent-mps-watermark-video",
@@ -116,14 +123,14 @@ export function getModels() {
   return {
     models: models.map((model) => ({
       ...model,
-      configured: model.provider === "tencent-mps"
+      configured: model.provider.startsWith("tencent-")
         ? Boolean(config.tencentCloud.secretId && config.tencentCloud.secretKey && config.tencentCloud.vodSubAppId)
         : Boolean(config.kie.apiKey)
     })),
     defaults: {
       imageModel: "kie-watermark-image",
       videoModel: "tencent-mps-watermark-video",
-      imageResolution: config.kie.watermarkImageResolution,
+      imageResolution: config.tencentCloud.image2WatermarkResolution,
       videoResolution: "source"
     },
     limits: {
@@ -259,11 +266,10 @@ export async function createTask(payload, requestUser = null) {
 
   try {
     const provider = sourceAsset.kind === "image"
-      ? await createKieWatermarkImageTask({
-        model: model.providerModel,
+      ? await createTencentImage2Task({
         prompt,
-        sourceUrl: (await uploadAssetToKie(sourceAsset, "watermark/image")).url,
-        resolution
+        quality: resolution === "1K" ? "1K" : "2K",
+        referenceFileIds: [(await uploadAssetToTencentVod(sourceAsset)).fileId]
       })
       : await createTencentMpsWatermarkTask({
         fileId: (await uploadAssetToTencentVod(sourceAsset)).fileId,
@@ -277,18 +283,6 @@ export async function createTask(payload, requestUser = null) {
   }
 
   return mapWatermarkTask(await findWatermarkTaskRow(taskId));
-}
-
-async function uploadAssetToKie(asset, uploadPath) {
-  if (asset.provider_url) return { url: asset.provider_url };
-  const result = await uploadFileToKie({
-    filePath: asset.file_path,
-    fileName: asset.original_name || path.basename(asset.file_path),
-    mimeType: asset.mime_type || "application/octet-stream",
-    uploadPath
-  });
-  await setWatermarkAssetProvider(asset.id, { providerUrl: result.url });
-  return result;
 }
 
 async function uploadAssetToTencentVod(asset) {
@@ -315,16 +309,23 @@ async function refreshTask(id) {
 
   try {
     const isTencentMpsVideo = task.media_type === "video" && String(task.provider_model || "").startsWith("smart-erase-");
+    const isTencentImage2 = isTencentImage2ProviderModel(task.provider_model);
     const record = isTencentMpsVideo
       ? await getTencentMpsWatermarkTask({ taskId: task.provider_task_id })
-      : await getKieWatermarkTask({ taskId: task.provider_task_id });
+      : isTencentImage2
+        ? await getTencentImage2Task({ taskId: task.provider_task_id })
+        : await getKieWatermarkTask({ taskId: task.provider_task_id });
     const mapped = isTencentMpsVideo
       ? mapTencentMpsWatermarkState(record)
-      : mapKieWatermarkState(record);
+      : isTencentImage2
+        ? mapTencentImage2State(record)
+        : mapKieWatermarkState(record);
     if (mapped === "completed") {
       const result = isTencentMpsVideo
         ? extractTencentMpsWatermarkResult(record)
-        : extractWatermarkResult(record);
+        : isTencentImage2
+          ? { resultUrl: extractTencentImage2ResultUrls(record)[0] || "", thumbnailUrl: "" }
+          : extractWatermarkResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "去水印结果缺少下载链接");
       } else {
@@ -353,7 +354,7 @@ async function refreshTask(id) {
     } else if (mapped === "failed") {
       const failureMessage = isTencentMpsVideo
         ? extractTencentMpsWatermarkError(record)
-        : record.data?.failMsg || record.data?.errorMessage || "去水印任务失败";
+        : isTencentImage2 ? extractTencentImage2Error(record) : record.data?.failMsg || record.data?.errorMessage || "去水印任务失败";
       await refundTask(id, null, null, failureMessage);
     } else {
       await setWatermarkTaskProcessing(id);

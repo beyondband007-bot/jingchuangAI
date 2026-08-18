@@ -79,7 +79,7 @@ function formatArticleError(error, fallback = "创建爆款图文任务失败") 
   }
   return (
     message
-      .replaceAll("GPT Image 2", "Facemini Image 2")
+      .replaceAll("GPT Image 2", "Facemini Image2")
       .replaceAll("Nano Banana Pro", "Facemini Banana Pro") || fallback
   );
 }

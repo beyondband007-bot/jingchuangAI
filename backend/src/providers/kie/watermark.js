@@ -12,20 +12,14 @@ function extractTaskId(result, label) {
 }
 
 export async function createKieWatermarkImageTask({ model, prompt, sourceUrl, resolution }) {
-  const input = model === "gpt-image-2-image-to-image"
-    ? {
-      prompt,
-      input_urls: [sourceUrl],
-      aspect_ratio: "auto"
-    }
-    : {
-      prompt,
-      image_input: [sourceUrl],
-      aspect_ratio: "auto",
-      resolution,
-      output_format: "png",
-      google_search: false
-    };
+  const input = {
+    prompt,
+    image_input: [sourceUrl],
+    aspect_ratio: "auto",
+    resolution,
+    output_format: "png",
+    google_search: false
+  };
 
   const result = await requestKie("/api/v1/jobs/createTask", {
     method: "POST",

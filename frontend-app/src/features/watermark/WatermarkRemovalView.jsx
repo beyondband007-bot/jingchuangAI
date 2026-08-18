@@ -57,7 +57,7 @@ const emptyWatermarkOptions = {
       value: "kie-watermark-image",
       label: "图片去水印",
       kind: "image",
-      providerModel: "gpt-image-2-image-to-image",
+      providerModel: "OG/image2_low",
       basePoints: 25,
       resolution: "2K",
     },

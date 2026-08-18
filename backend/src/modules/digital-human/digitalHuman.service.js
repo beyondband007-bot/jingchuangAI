@@ -8,6 +8,7 @@ import { decodeMojibakeFileName } from "../../shared/fileName.js";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import {
   buildReferenceAudio,
   buildReferenceImage,
@@ -824,13 +825,8 @@ async function uploadAiAvatarReference(payload) {
   const referencePath = selectAiAvatarReference(payload);
   const filePath = resolveAssetFilePath(referencePath);
   await assertFileExists(filePath, `AI avatar reference image not found: ${referencePath}`);
-  const upload = await uploadFileToKie({
-    filePath,
-    fileName: path.basename(filePath),
-    mimeType: "image/jpeg",
-    uploadPath: "digital-human/ai-avatar-reference"
-  });
-  return { referencePath, referenceImageUrl: upload.url };
+  const upload = await uploadReferenceToTencentVod({ filePath });
+  return { referencePath, referenceImageUrl: upload.mediaUrl };
 }
 
 function normalizeAiAvatarRatio(value) {

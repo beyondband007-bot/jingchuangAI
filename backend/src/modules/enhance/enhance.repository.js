@@ -126,7 +126,7 @@ export async function findTimedOutEnhanceTasks(timeoutMinutes) {
 
 export async function findEnhanceTaskStatus(id) {
   const [rows] = await getPool().query(
-    "SELECT id, provider_task_id, status, media_type, created_at FROM enhance_tasks WHERE id = ? LIMIT 1",
+    "SELECT id, provider_task_id, provider_model, status, media_type, created_at FROM enhance_tasks WHERE id = ? LIMIT 1",
     [id]
   );
   return rows[0] || null;

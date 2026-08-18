@@ -1,18 +1,23 @@
 import path from "path";
-import { execFile } from "child_process";
-import { mkdir, readFile, rm } from "fs/promises";
-import { promisify } from "util";
-import { ffmpegPath } from "../../shared/ffmpegPath.js";
 import { config } from "../../config/index.js";
 import { getPool } from "../../db/pool.js";
 import {
-  createKieEnhanceImageTask,
   createKieEnhanceVideoTask,
   extractEnhanceResult,
   getKieEnhanceTask,
   mapKieEnhanceState
 } from "../../providers/kie/enhance.js";
 import { uploadFileToKie } from "../../providers/kie/upload.js";
+import {
+  TENCENT_IMAGE2_PROVIDER_MODEL,
+  createTencentImage2Task,
+  extractTencentImage2Error,
+  extractTencentImage2ResultUrls,
+  getTencentImage2Task,
+  isTencentImage2ProviderModel,
+  mapTencentImage2State
+} from "../../providers/tencent/aigcImage.js";
+import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import { debitCredits, refundCredits } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
 import {
@@ -44,15 +49,8 @@ import {
   toggleEnhanceTaskFavorite
 } from "./enhance.repository.js";
 
-const execFileAsync = promisify(execFile);
 export const ENHANCE_TASK_TIMEOUT_MINUTES = 30;
 const enhanceTaskTimeoutMs = ENHANCE_TASK_TIMEOUT_MINUTES * 60 * 1000;
-
-const KIE_COMPATIBLE_IMAGE_FORMATS = {
-  jpeg: { mimeType: "image/jpeg", ext: ".jpg" },
-  png: { mimeType: "image/png", ext: ".png" },
-  webp: { mimeType: "image/webp", ext: ".webp" }
-};
 
 const defaultImageEnhancePrompt = [
   "Enhance the image quality while preserving the original composition, identity, layout, colors, and subject.",
@@ -65,11 +63,11 @@ function getModelDefinitions() {
   return [
     {
       value: "kie-enhance-image",
-      label: "\u56fe\u7247\u753b\u8d28\u589e\u5f3a",
+      label: "\u56fe\u7247\u753b\u8d28\u589e\u5f3a（Facemini Image2）",
       kind: "image",
-      provider: "kie",
-      providerModel: config.kie.enhanceImageModel,
-      basePoints: config.kie.enhanceImagePoints,
+      provider: "tencent-vod",
+      providerModel: TENCENT_IMAGE2_PROVIDER_MODEL,
+      basePoints: config.tencentCloud.image2EnhancePoints,
       upscaleFactor: config.kie.enhanceUpscaleFactor
     },
     {
@@ -102,36 +100,6 @@ function normalizeUpscaleFactor(value, fallback) {
   return factor || "2";
 }
 
-function detectImageFormat(buffer) {
-  if (!buffer || buffer.length < 12) return "";
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpeg";
-  if (
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47 &&
-    buffer[4] === 0x0d &&
-    buffer[5] === 0x0a &&
-    buffer[6] === 0x1a &&
-    buffer[7] === 0x0a
-  ) {
-    return "png";
-  }
-  if (
-    buffer.toString("ascii", 0, 4) === "RIFF" &&
-    buffer.toString("ascii", 8, 12) === "WEBP"
-  ) {
-    return "webp";
-  }
-  return "";
-}
-
-function buildKieImageFileName(asset, ext) {
-  const baseName = path.basename(asset.original_name || asset.stored_name || "source", path.extname(asset.original_name || asset.stored_name || ""));
-  const safeBaseName = baseName.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || `enhance-${asset.id}`;
-  return `${safeBaseName}${ext}`;
-}
-
 export async function getCredits() {
   return getDemoUserCredits();
 }
@@ -146,7 +114,9 @@ export function getModels() {
       provider: model.provider,
       basePoints: model.basePoints,
       upscaleFactor: model.upscaleFactor,
-      configured: Boolean(config.kie.apiKey)
+      configured: model.provider === "tencent-vod"
+        ? Boolean(config.tencentCloud.secretId && config.tencentCloud.secretKey && config.tencentCloud.vodSubAppId)
+        : Boolean(config.kie.apiKey)
     })),
     defaults: {
       imageModel: "kie-enhance-image",
@@ -255,17 +225,15 @@ export async function createTask(payload, requestUser = null) {
   connection.release();
 
   try {
-    const upload = await uploadAssetToKie(sourceAsset, `enhance/${sourceAsset.kind}`);
     const provider = sourceAsset.kind === "image"
-      ? await createKieEnhanceImageTask({
-        model: model.providerModel,
-        sourceUrl: upload.url,
+      ? await createTencentImage2Task({
         prompt: defaultImageEnhancePrompt,
-        upscaleFactor
+        quality: Number(upscaleFactor) >= 2 ? "2K" : "1K",
+        referenceFileIds: [(await uploadAssetToTencentVod(sourceAsset)).fileId]
       })
       : await createKieEnhanceVideoTask({
         model: model.providerModel,
-        sourceUrl: upload.url,
+        sourceUrl: (await uploadAssetToKie(sourceAsset, `enhance/${sourceAsset.kind}`)).url,
         upscaleFactor
       });
     await setEnhanceTaskProviderTaskId(taskId, provider.taskId);
@@ -278,13 +246,7 @@ export async function createTask(payload, requestUser = null) {
 }
 
 async function uploadAssetToKie(asset, uploadPath) {
-  if (asset.provider_url && asset.kind !== "image") return { url: asset.provider_url };
-
-  if (asset.kind === "image") {
-    const result = await uploadEnhanceImageToKie(asset, uploadPath);
-    await setEnhanceAssetProviderUrl(asset.id, result.url);
-    return result;
-  }
+  if (asset.provider_url) return { url: asset.provider_url };
 
   const result = await uploadFileToKie({
     filePath: asset.file_path,
@@ -296,54 +258,11 @@ async function uploadAssetToKie(asset, uploadPath) {
   return result;
 }
 
-async function uploadEnhanceImageToKie(asset, uploadPath) {
-  const bytes = await readFile(asset.file_path);
-  const format = detectImageFormat(bytes);
-  const compatible = KIE_COMPATIBLE_IMAGE_FORMATS[format];
-  if (compatible) {
-    return uploadFileToKie({
-      filePath: asset.file_path,
-      fileName: buildKieImageFileName(asset, compatible.ext),
-      mimeType: compatible.mimeType,
-      uploadPath
-    });
-  }
-
-  const convertedDir = path.resolve(process.cwd(), config.media.storageDir, "enhance", "kie-compatible");
-  await mkdir(convertedDir, { recursive: true });
-  const convertedPath = path.join(convertedDir, `${Date.now()}-${asset.id}.jpg`);
-
-  try {
-    await execFileAsync(ffmpegPath, [
-      "-y",
-      "-i",
-      asset.file_path,
-      "-frames:v",
-      "1",
-      "-vf",
-      "format=yuv420p",
-      "-q:v",
-      "2",
-      convertedPath
-    ]);
-
-    return await uploadFileToKie({
-      filePath: convertedPath,
-      fileName: buildKieImageFileName(asset, ".jpg"),
-      mimeType: "image/jpeg",
-      uploadPath
-    });
-  } catch (error) {
-    const message = String(error?.stderr || error?.message || "").slice(-400);
-    const wrapped = createHttpError(
-      `图片格式不支持，请上传 JPEG、PNG 或 WEBP 格式图片${message ? `（${message}）` : ""}`,
-      400
-    );
-    wrapped.cause = error;
-    throw wrapped;
-  } finally {
-    await rm(convertedPath, { force: true }).catch(() => {});
-  }
+async function uploadAssetToTencentVod(asset) {
+  const result = await uploadReferenceToTencentVod({ filePath: asset.file_path });
+  if (!result.fileId) throw new Error("Tencent Cloud VOD upload response missing FileId");
+  await setEnhanceAssetProviderUrl(asset.id, result.mediaUrl);
+  return result;
 }
 
 async function refreshProcessingTasks() {
@@ -378,10 +297,17 @@ async function refreshTask(id) {
   }
 
   try {
-    const record = await getKieEnhanceTask({ taskId: task.provider_task_id });
-    const mapped = mapKieEnhanceState(record);
+    const isTencentImage2 = isTencentImage2ProviderModel(task.provider_model);
+    const record = isTencentImage2
+      ? await getTencentImage2Task({ taskId: task.provider_task_id })
+      : await getKieEnhanceTask({ taskId: task.provider_task_id });
+    const mapped = isTencentImage2
+      ? mapTencentImage2State(record)
+      : mapKieEnhanceState(record);
     if (mapped === "completed") {
-      const result = extractEnhanceResult(record);
+      const result = isTencentImage2
+        ? { resultUrl: extractTencentImage2ResultUrls(record)[0] || "", thumbnailUrl: "" }
+        : extractEnhanceResult(record);
       if (!result.resultUrl) {
         await refundTask(id, null, null, "画质增强结果缺少下载链接");
       } else {
@@ -403,7 +329,12 @@ async function refreshTask(id) {
         }
       }
     } else if (mapped === "failed") {
-      await refundTask(id, null, null, record.data?.failMsg || record.data?.errorMessage || "画质增强任务失败");
+      await refundTask(
+        id,
+        null,
+        null,
+        isTencentImage2 ? extractTencentImage2Error(record) : record.data?.failMsg || record.data?.errorMessage || "画质增强任务失败"
+      );
     } else {
       await setEnhanceTaskProcessing(id);
     }

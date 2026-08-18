@@ -114,8 +114,8 @@ export const imageInspirationCategoryTabs = [
 ];
 
 const imageInspirationModelByCategory = {
-  baokuan: "Facemini Image 2",
-  sheying: "Facemini Image 2",
+  baokuan: "Facemini Image2",
+  sheying: "Facemini Image2",
   dianshang: "Facemini Banana Pro",
   dongman: "Facemini Banana Pro",
   chahua: "Facemini Banana Pro",
@@ -180,7 +180,7 @@ export const imageInspirationMaterials = imgInspirationManifest.map((item) => ({
   model:
     item.model ||
     imageInspirationModelByCategory[item.categoryId] ||
-    "Facemini Image 2",
+    "Facemini Image2",
 }));
 
 export const exampleImages = imageInspirationMaterials.map((item, index) => ({
@@ -236,7 +236,7 @@ export const fmImageGenerationInspirations = exampleImages.map((item, index) => 
   height: item.height,
   resolution: item.resolution,
   aspect: item.aspect,
-  model: item.model || "Facemini Image 2",
+  model: item.model || "Facemini Image2",
   material: "高清原图",
 }));
 
@@ -543,7 +543,7 @@ export const fmImageInspirations = [
     ratio: formatFaceminiImageRatio(id),
     aspect: width && height ? width / height : "portrait",
     model: isGeneratedImage
-      ? (index % 2 === 0 ? "Facemini Image 2" : "Facemini Banana Pro")
+      ? (index % 2 === 0 ? "Facemini Image2" : "Facemini Banana Pro")
       : undefined,
   };
 });
@@ -689,7 +689,7 @@ export function getCreationCenterInspirations(activeTab, videoInspirations = [])
 }
 
 const fmInspirationCategoryRouteMap = {
-  图片灵感: { feature: "image", target: "image", model: "Facemini Image 2" },
+  图片灵感: { feature: "image", target: "image", model: "Facemini Image2" },
   视频灵感: { feature: "video", target: "video", model: "Kling Video" },
   数字人形象: {
     feature: "digital-human",
