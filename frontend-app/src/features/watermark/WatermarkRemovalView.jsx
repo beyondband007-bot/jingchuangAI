@@ -565,6 +565,11 @@ function WatermarkComposer({
             "请上传文件"
           )}
         </strong>
+        {mode === "video" ? (
+          <span className="watermark-billing-note">
+            按分钟向上取整计费（不足 1 分钟按 1 分钟）
+          </span>
+        ) : null}
         {previewUrl ? <button type="button" className="marketing-tool-composer__secondary-action" onClick={() => reuploadInputRef.current?.click()} disabled={uploading}><UploadIcon size={15} />重新上传文件</button> : null}
         <button
           className="ui-send-button"

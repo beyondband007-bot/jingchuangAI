@@ -92,12 +92,12 @@ const modelOptionMeta = {
   seedance_2_0_720p: {
     title: "Seedance 2.0",
     description: "多模态旗舰视频模型，人物稳定、运镜流畅",
-    icon: `${iconBase}/spark.svg`,
+    icon: `${iconBase}/seedream.svg`,
   },
   seedance_tc: {
     title: "Seedance TC",
     description: "腾讯云多模态视频模型，支持图像、视频、音频参考",
-    icon: `${iconBase}/spark.svg`,
+    icon: `${iconBase}/seedream.svg`,
   },
   minimax_h3_2k: {
     title: "MiniMax H3",

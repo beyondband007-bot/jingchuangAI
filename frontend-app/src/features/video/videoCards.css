@@ -17,7 +17,7 @@
   min-height: 0;
   aspect-ratio: 16 / 9;
   flex: 0 0 auto;
-  margin: 16px 16px 0;
+  margin: var(--space-4) var(--space-4) 0;
   overflow: hidden;
   background: #9fb6cc;
 }

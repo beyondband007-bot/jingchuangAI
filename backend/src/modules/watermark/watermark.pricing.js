@@ -52,7 +52,10 @@ export function calculateTencentMpsWatermarkPoints({
   const seconds = positiveNumber(durationSeconds);
   if (!seconds) return 0;
   const rate = getTencentMpsWatermarkRate({ width, height, model });
-  const points = seconds / 60
+  // Tencent MPS video watermark removal is billed in started one-minute units:
+  // 0 < duration <= 60s bills as 1 minute, 60 < duration <= 120s as 2, etc.
+  const billableMinutes = Math.ceil(seconds / 60);
+  const points = billableMinutes
     * rate.rmbPerMinute
     * positiveNumber(markup, 1.2)
     * positiveNumber(pointsPerRmb, 100);
