@@ -69,7 +69,7 @@ function mapTaskFromApi(task, fallback = {}) {
     title: task.title || fallback.title || "",
     coverUrl: task.coverUrl || fallback.coverUrl || "",
     lyrics: task.lyrics || fallback.lyrics || "",
-    model: task.model || fallback.model || "music-2.6-free",
+    model: task.model || fallback.model || "V5_5",
     isInstrumental: isInstrumentalFlag(task.isInstrumental ?? fallback.isInstrumental),
     audioUrl: task.audioUrl || "",
     durationMs: task.durationMs || 0,
@@ -154,6 +154,8 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const [lyrics, setLyrics] = useState("");
   const [isInstrumental, setIsInstrumental] = useState(false);
   const [lyricsOptimizer, setLyricsOptimizer] = useState(false);
+  const [activeModel, setActiveModel] = useState("V5_5");
+  const [musicEnabled, setMusicEnabled] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notice, setNotice] = useState("");
   const [viewTab, setViewTab] = useState("home");
@@ -175,12 +177,18 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
   const generationContextRef = useRef({ lyrics: "", isInstrumental: false });
 
   const hasRequiredMusicFields = prompt.trim().length > 0 && title.trim().length > 0;
-  const canGenerate = isInstrumental
+  const canGenerate = musicEnabled && (isInstrumental
     ? hasRequiredMusicFields
-    : hasRequiredMusicFields && lyrics.trim().length > 0;
+    : hasRequiredMusicFields && (lyrics.trim().length > 0 || lyricsOptimizer));
 
   useEffect(() => {
     let mounted = true;
+    musicApi.getConfig().then((musicConfig) => {
+      if (!mounted) return;
+      const configuredModel = musicConfig?.models?.[0]?.value;
+      if (configuredModel) setActiveModel(configuredModel);
+      setMusicEnabled(musicConfig?.enabled !== false);
+    }).catch(() => {});
     musicApi.getTasks().then((items) => {
       if (mounted) setRecentResults(items);
     }).catch(() => {});
@@ -390,24 +398,29 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
     } catch (error) {
       if (token !== pollTokenRef.current) return;
       const failedTask = await musicApi.getTask(taskId).catch(() => null);
+      const failureMessage = failedTask?.error || error.message || "音乐生成失败，请稍后重试";
       if (failedTask) {
         applyTaskUpdate(taskId, failedTask, fallback);
       } else {
         setPlayerTask((current) => (current?.id === taskId
-          ? { ...current, status: "failed", error: error.message }
+          ? { ...current, status: "failed", error: failureMessage }
           : current));
         setRecentResults((items) => updateRecentItem(items, taskId, {
           status: "failed",
-          error: error.message || "音乐生成失败"
+          error: failureMessage
         }));
       }
-      setNotice(error.message || "生成失败");
-      showToast("error", "音乐生成失败，请稍后重试");
+      setNotice(failureMessage);
+      showToast("error", failureMessage);
       resetGenerationFlow();
     }
   }
 
   async function generate() {
+    if (!musicEnabled) {
+      setNotice("AI 音乐服务正在维护中，请稍后再试。");
+      return;
+    }
     if (!prompt.trim()) {
       setNotice("请输入风格描述。");
       return;
@@ -426,7 +439,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
       title: title.trim(),
       coverUrl: "",
       lyrics: isInstrumental ? "" : lyrics.trim(),
-      model: "music-2.6-free",
+      model: activeModel,
       isInstrumental
     };
 
@@ -453,7 +466,6 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
         title: fallback.title,
         cover,
         lyrics: fallback.lyrics,
-        model: fallback.model,
         isInstrumental,
         lyricsOptimizer: isInstrumental ? false : lyricsOptimizer
       });
@@ -471,8 +483,9 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
 
       pollGenerationResult(pendingTask.id, fallback, pollToken);
     } catch (error) {
-      setNotice(error.message || "生成失败");
-      showToast("error", "音乐生成失败，请稍后重试");
+      const failureMessage = error.message || "音乐生成失败，请稍后重试";
+      setNotice(failureMessage);
+      showToast("error", failureMessage);
       setIsGenerating(false);
       resetGenerationFlow();
     }
@@ -749,7 +762,7 @@ export function MusicGenerationView({ onOpenFeature, resetSignal = 0 }) {
                 lyrics,
                 isInstrumental,
                 lyricsOptimizer,
-                model: "music-2.6-free",
+                model: activeModel,
                 isGenerating,
                 canGenerate,
                 notice,

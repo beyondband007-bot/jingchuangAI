@@ -6,7 +6,7 @@ import { createHttpError } from "../../shared/http.js";
 import { analyzeFramesWithQwen } from "../../providers/qwen/video.js";
 import { extractKeyFrames, composeFinalVideo, getVideoDuration } from "../../providers/ffmpeg/video.js";
 import { synthesizeMinimaxSpeech } from "../../providers/minimax/tts.js";
-import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
+import { generateKieMusic } from "../../providers/kie/musicGeneration.js";
 import { calculateBillingQuote } from "../../shared/billingRules.js";
 import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
 import {
@@ -159,6 +159,9 @@ export async function createTask({ sourceAssetId, voiceId, language, bgmEnabled,
   if (!config.minimax.apiKey) {
     throw createHttpError("MiniMax API 未配置，请联系管理员", 500);
   }
+  if (bgmEnabled !== false && (!config.kie.musicEnabled || !config.kie.apiKey)) {
+    throw createHttpError("AI 背景音乐服务正在维护中，请关闭背景音乐后重试", 503);
+  }
 
   const sourceDurationSeconds = await getVideoDuration(task.filePath);
   const quote = calculateBillingQuote("video-dub", {
@@ -277,17 +280,19 @@ async function processPipeline(task) {
   };
   await saveTask(task);
 
-  // Step 4: Generate BGM with MiniMax Music
+  // Step 4: Generate BGM with KIE Suno
   if (task.bgmEnabled) {
     task.stage = "generating_bgm";
     task.status = "generating_bgm";
     await saveTask(task);
     const bgmPrompt = buildBgmPrompt(analysis);
 
-    const musicResult = await generateMinimaxMusic({
+    const musicResult = await generateKieMusic({
       prompt: bgmPrompt,
-      model: "music-2.6-free",
-      isInstrumental: true
+      title: `${analysis.genre || "Video"} BGM`.slice(0, 80),
+      model: config.kie.musicModel,
+      isInstrumental: true,
+      durationSeconds: sourceDurationSeconds
     });
 
     const bgmFileName = `${task.id}-bgm.mp3`;

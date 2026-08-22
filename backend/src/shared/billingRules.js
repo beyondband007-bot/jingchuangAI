@@ -7,8 +7,7 @@ export const BILLING_RULES = Object.freeze({
   voiceGenerationPoints: 2000,
   voiceConversionPoints: 2000,
   voicePointsPerSecond: 1,
-  musicPointsPerSecond: 2,
-  musicMinimumPoints: 30,
+  musicGenerationPoints: 150,
   transcribePointsPerSecond: 1,
   voiceClonePoints: 2000,
   articleTextPoints: 10,
@@ -16,8 +15,7 @@ export const BILLING_RULES = Object.freeze({
   replicateVideoPoints: 50,
   textBasePoints: 2,
   textPointsPer1000Chars: 2,
-  speechCharactersPerSecond: 4,
-  defaultMusicSeconds: 30
+  speechCharactersPerSecond: 4
 });
 
 export const MOTION_TRANSFER_POINTS_PER_SECOND = Object.freeze({
@@ -63,9 +61,8 @@ export function calculateVoicePoints({ durationSeconds, durationMs, text } = {})
   return Math.max(1, seconds * BILLING_RULES.voicePointsPerSecond);
 }
 
-export function calculateMusicPoints(durationSeconds) {
-  const seconds = ceilSeconds(durationSeconds || BILLING_RULES.defaultMusicSeconds);
-  return Math.max(BILLING_RULES.musicMinimumPoints, seconds * BILLING_RULES.musicPointsPerSecond);
+export function calculateMusicPoints() {
+  return BILLING_RULES.musicGenerationPoints;
 }
 
 export function calculateTranscribePoints({ durationSeconds, durationMs } = {}) {
@@ -175,7 +172,7 @@ export function calculateBillingQuote(feature, payload = {}) {
     feature: key,
     points: items.reduce((sum, entry) => sum + entry.points, 0),
     items,
-    rulesVersion: "2026-08-04"
+    rulesVersion: "2026-08-22"
   };
 }
 
@@ -192,6 +189,6 @@ export function getPublicBillingRules() {
     }),
     enhanceImagePoints: config.kie.enhanceImagePoints,
     enhanceVideoPoints: config.kie.enhanceVideoPoints,
-    rulesVersion: "2026-08-04"
+    rulesVersion: "2026-08-22"
   };
 }

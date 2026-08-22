@@ -71,7 +71,15 @@ export const config = {
     enhanceVideoPoints: Number(process.env.KIE_ENHANCE_VIDEO_POINTS || 100),
     removeBgImageModel: process.env.KIE_REMOVE_BG_IMAGE_MODEL || "recraft/remove-background",
     removeBgImagePoints: Number(process.env.KIE_REMOVE_BG_IMAGE_POINTS || 25),
-    fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co"
+    fileUploadBaseUrl: process.env.KIE_FILE_UPLOAD_BASE_URL || "https://kieai.redpandaai.co",
+    musicModel: process.env.KIE_MUSIC_MODEL || "V5_5",
+    musicEnabled: process.env.KIE_MUSIC_ENABLED !== "false",
+    musicCallbackUrl:
+      process.env.KIE_MUSIC_CALLBACK_URL ||
+      (publicBaseUrl ? `${publicBaseUrl}/api/music/kie-callback` : ""),
+    musicPollIntervalMs: Number(process.env.KIE_MUSIC_POLL_INTERVAL_MS || 5000),
+    musicPollAttempts: Number(process.env.KIE_MUSIC_POLL_ATTEMPTS || 72),
+    musicDownloadTimeoutMs: Number(process.env.KIE_MUSIC_DOWNLOAD_TIMEOUT_MS || 120000)
   },
   ark: {
     apiKey: process.env.ARK_API_KEY || "",
@@ -90,7 +98,9 @@ export const config = {
     apiKey: process.env.MINIMAX_API_KEY || "",
     groupId: process.env.MINIMAX_GROUP_ID || "",
     baseUrl: process.env.MINIMAX_BASE_URL || "https://api.minimaxi.com",
-    ttsModel: process.env.MINIMAX_TTS_MODEL || "speech-2.8-turbo"
+    ttsModel: process.env.MINIMAX_TTS_MODEL || "speech-2.8-turbo",
+    musicModel: process.env.MINIMAX_MUSIC_MODEL || "music-3.0-free",
+    musicEnabled: process.env.MINIMAX_MUSIC_ENABLED !== "false"
   },
   metasoH3: {
     apiKey: process.env.METASO_H3_API_KEY || "",

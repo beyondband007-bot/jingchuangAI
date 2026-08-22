@@ -8,6 +8,10 @@ function toApiUrl(url) {
 }
 
 export const musicApi = {
+  async getConfig() {
+    return request("/api/music/config");
+  },
+
   async getTasks() {
     const items = await request("/api/music/tasks");
     return items.map((item) => ({
@@ -26,11 +30,11 @@ export const musicApi = {
     };
   },
 
-  async generate({ prompt, title, cover, lyrics, model = "music-2.6-free", isInstrumental, lyricsOptimizer }) {
+  async generate({ prompt, title, cover, lyrics, isInstrumental, lyricsOptimizer }) {
     const result = await request("/api/music/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, title, cover, lyrics, model, isInstrumental, lyricsOptimizer })
+      body: JSON.stringify({ prompt, title, cover, lyrics, isInstrumental, lyricsOptimizer })
     });
     return {
       ...result,

@@ -2,6 +2,12 @@ import { sendError } from "../../shared/http.js";
 import * as service from "./music.service.js";
 import { syncMusicLyrics } from "./lyricsSync.service.js";
 
+export function receiveKieCallback(req, res) {
+  // Task completion is still read from KIE's record-info endpoint. This public
+  // endpoint exists because KIE requires a callback URL when creating a task.
+  res.json({ code: 200, msg: "success" });
+}
+
 export async function getConfig(req, res) {
   try {
     res.json(service.getConfig());
@@ -36,6 +42,11 @@ export async function generate(req, res) {
     const result = await service.generateMusic(req.body || {}, req.user.id);
     res.status(202).json(result);
   } catch (error) {
+    console.error("music task submission failed", {
+      userId: req.user?.id,
+      status: error.status,
+      message: error.message
+    });
     sendError(res, error);
   }
 }

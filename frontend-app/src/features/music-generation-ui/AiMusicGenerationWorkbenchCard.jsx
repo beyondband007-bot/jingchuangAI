@@ -189,7 +189,7 @@ export function AiMusicGenerationWorkbenchCard({
             <Wand2 size={20} />
             {isGenerating ? "生成中..." : "立即生成音乐"}
           </button>
-          <p>预计消耗 <strong><BillingPoints feature="music" payload={{ durationSeconds: 30 }} fallbackPoints={60} /></strong> 积分</p>
+          <p>预计消耗 <strong><BillingPoints feature="music" fallbackPoints={150} /></strong> 积分</p>
         </div>
 
         {notice ? <div className="ai-music-workbench__notice">{notice}</div> : null}

@@ -5,12 +5,16 @@ import {
   getConfig,
   getRecent,
   getTask,
+  receiveKieCallback,
   syncLyrics,
   updateTaskCover,
   updateTaskTitle
 } from "./music.controller.js";
 
 export const musicRouter = Router();
+export const musicPublicRouter = Router();
+
+musicPublicRouter.post("/kie-callback", receiveKieCallback);
 
 musicRouter.get("/config", getConfig);
 musicRouter.get("/recent", getRecent);

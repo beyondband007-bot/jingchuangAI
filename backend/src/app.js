@@ -19,7 +19,7 @@ import { voiceRouter } from "./modules/voice/voice.routes.js";
 import { videoRouter } from "./modules/video/video.routes.js";
 import { voiceConvertRouter } from "./modules/voice-convert/voiceConvert.routes.js";
 import { transcribeRouter } from "./modules/transcribe/transcribe.routes.js";
-import { musicRouter } from "./modules/music/music.routes.js";
+import { musicPublicRouter, musicRouter } from "./modules/music/music.routes.js";
 import { paymentPublicRouter, paymentRouter } from "./modules/payment/payment.routes.js";
 import { replicateRouter } from "./modules/replicate/replicate.routes.js";
 import { videoDubRouter } from "./modules/video-dub/video-dub.routes.js";
@@ -66,6 +66,7 @@ export function createApp() {
   app.use("/api/auth", authRouter);
   app.use("/api/payment", paymentPublicRouter);
   app.use("/api/v1", paymentPublicRouter);
+  app.use("/api/music", musicPublicRouter);
   app.use("/api", attachCurrentUser);
   app.use("/api/me/generation-notifications", generationNotificationRouter);
 

@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { stat, unlink } from "fs/promises";
-import { generateMinimaxMusic } from "../../providers/minimax/musicGeneration.js";
+import { generateKieMusic } from "../../providers/kie/musicGeneration.js";
 import { createHttpError } from "../../shared/http.js";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
@@ -24,6 +24,12 @@ import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.
 
 function normalizeString(value) {
   return String(value || "").trim();
+}
+
+export function resolveMusicGenerationModel(_requestedModel) {
+  // Keep this explicit compatibility boundary while old browser bundles still
+  // submit MiniMax model names. New work always uses the server-side KIE model.
+  return config.kie.musicModel;
 }
 
 function safeJson(value, fallback = null) {
@@ -65,8 +71,8 @@ function mapMusicTask(row) {
 function assertPrompt(prompt) {
   const trimmed = normalizeString(prompt);
   if (!trimmed) throw createHttpError("请输入提示词", 400);
-  if (trimmed.length > 2000)
-    throw createHttpError("提示词长度不能超过 2000 个字符", 400);
+  if (trimmed.length > 1000)
+    throw createHttpError("提示词长度不能超过 1000 个字符", 400);
   return trimmed;
 }
 
@@ -171,10 +177,10 @@ async function unlinkMusicCoverFile(coverUrl) {
 export function getConfig() {
   return {
     models: [
-      { value: "music-2.6-free", label: "Music 2.6 Free" },
-      { value: "music-2.6", label: "Music 2.6" }
+      { value: config.kie.musicModel, label: `KIE Suno ${config.kie.musicModel.replaceAll("_", ".")}` }
     ],
-    maxPromptLength: 2000,
+    enabled: config.kie.musicEnabled && Boolean(config.kie.apiKey),
+    maxPromptLength: 1000,
     maxLyricsLength: 3500,
     audioSettings: {
       sampleRate: 44100,
@@ -272,7 +278,7 @@ export async function updateMusicTaskName(id, userId, payload = {}) {
 function cleanGenerationError(error) {
   const message = String(error?.message || "音乐生成失败，请稍后重试");
   if (/<html|504 Gateway Time-out|Gateway Time-out|nginx/i.test(message)) {
-    return "MiniMax 音乐生成服务暂时超时，请稍后重试";
+    return "KIE 音乐生成服务暂时超时，请稍后重试";
   }
   return message;
 }
@@ -280,11 +286,12 @@ function cleanGenerationError(error) {
 async function runMusicGeneration(
   taskId,
   userId,
-  { prompt, lyrics, model, isInstrumental, lyricsOptimizer, costPoints }
+  { prompt, title, lyrics, model, isInstrumental, lyricsOptimizer, costPoints }
 ) {
   try {
-    const result = await generateMinimaxMusic({
+    const result = await generateKieMusic({
       prompt,
+      title,
       lyrics,
       model,
       isInstrumental,
@@ -324,20 +331,33 @@ async function runMusicGeneration(
       }
     }
   } catch (error) {
+    console.error("music generation task failed", {
+      taskId,
+      userId,
+      message: error.message,
+      traceId: error.traceId || ""
+    });
     await failMusicTaskRow(taskId, cleanGenerationError(error));
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "music generation refund" });
   }
 }
 
 export async function generateMusic(payload, userId) {
+  if (!config.kie.musicEnabled || !config.kie.apiKey) {
+    throw createHttpError("AI 音乐服务正在维护中，暂不支持创建新任务", 503);
+  }
   const prompt = assertPrompt(payload.prompt);
   const title = assertRequiredTitle(payload.title);
   const isInstrumental = Boolean(payload.isInstrumental);
-  const lyrics = assertLyrics(payload.lyrics, isInstrumental);
-  const model = normalizeString(payload.model) || "music-2.6-free";
   const lyricsOptimizer = Boolean(payload.lyricsOptimizer);
+  const lyrics = lyricsOptimizer && !isInstrumental && !normalizeString(payload.lyrics)
+    ? ""
+    : assertLyrics(payload.lyrics, isInstrumental);
+  // The server owns model selection. This deliberately maps legacy client
+  // values such as music-3.0-free to the active KIE Suno configuration.
+  const model = resolveMusicGenerationModel(payload.model);
   const taskId = `music-${Date.now()}-${randomUUID().slice(0, 8)}`;
-  const costPoints = calculateMusicPoints(payload.durationSeconds);
+  const costPoints = calculateMusicPoints();
   const coverPayload = normalizeString(payload.cover);
   if (coverPayload) {
     const parsedCover = parseCoverDataUrl(coverPayload);
@@ -378,6 +398,7 @@ export async function generateMusic(payload, userId) {
 
   runMusicGeneration(taskId, userId, {
     prompt,
+    title,
     lyrics,
     model,
     isInstrumental,
