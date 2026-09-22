@@ -46,16 +46,16 @@ function getImageExtension(contentType, sourceUrl) {
   if ([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"].includes(extension)) {
     return extension === ".jpeg" ? ".jpg" : extension;
   }
-  throw createHttpError(`KIE image result has unsupported content type: ${normalizedType || "unknown"}`, 502);
+  throw createHttpError(`Image provider result has unsupported content type: ${normalizedType || "unknown"}`, 502);
 }
 
 async function readResponseBytes(response, maxBytes) {
   const declaredLength = Number(response.headers.get("content-length") || 0);
   if (declaredLength > maxBytes) {
-    throw createHttpError(`KIE image result exceeds ${Math.floor(maxBytes / 1024 / 1024)}MB`, 502);
+    throw createHttpError(`Image provider result exceeds ${Math.floor(maxBytes / 1024 / 1024)}MB`, 502);
   }
   if (!response.body) {
-    throw createHttpError("KIE image result response is empty", 502);
+    throw createHttpError("Image provider result response is empty", 502);
   }
 
   const reader = response.body.getReader();
@@ -68,7 +68,7 @@ async function readResponseBytes(response, maxBytes) {
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
         await reader.cancel();
-        throw createHttpError(`KIE image result exceeds ${Math.floor(maxBytes / 1024 / 1024)}MB`, 502);
+        throw createHttpError(`Image provider result exceeds ${Math.floor(maxBytes / 1024 / 1024)}MB`, 502);
       }
       chunks.push(Buffer.from(value));
     }
@@ -77,7 +77,7 @@ async function readResponseBytes(response, maxBytes) {
   }
 
   if (!totalBytes) {
-    throw createHttpError("KIE image result file is empty", 502);
+    throw createHttpError("Image provider result file is empty", 502);
   }
   return Buffer.concat(chunks, totalBytes);
 }
@@ -112,7 +112,7 @@ async function downloadImage({
         signal: AbortSignal.timeout(timeoutMs)
       });
       if (!response.ok) {
-        throw createHttpError(`KIE image result download returned ${response.status}`, 502);
+        throw createHttpError(`Image provider result download returned ${response.status}`, 502);
       }
 
       const extension = getImageExtension(response.headers.get("content-type"), validatedUrl);
@@ -135,7 +135,7 @@ async function downloadImage({
   }
 
   throw createHttpError(
-    `KIE image result ${index + 1} could not be saved locally for task ${taskId}: ${lastError?.message || "download failed"}`,
+    `Image provider result ${index + 1} could not be saved locally for task ${taskId}: ${lastError?.message || "download failed"}`,
     502
   );
 }
@@ -206,7 +206,7 @@ export async function persistGeneratedImages({
   }
   const sourceUrls = Array.isArray(urls) ? urls.map((url) => String(url || "").trim()).filter(Boolean) : [];
   if (!sourceUrls.length) {
-    throw createHttpError("KIE image result URL is missing", 502);
+    throw createHttpError("Image provider result URL is missing", 502);
   }
 
   const normalizedFeature = String(feature || "images").replace(/[^a-z0-9-]/gi, "") || "images";

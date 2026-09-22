@@ -50,7 +50,7 @@ export async function generateImage(data, { onTaskCreated = () => {} } = {}) {
   const task = await faceminiRequest('/image/tasks', {
     method: 'POST',
     body: JSON.stringify({
-      model: data.model || 'gpt_image_2',
+      model: data.model === 'gpt-image-2-text-to-image' ? 'gpt_image_2' : (data.model || 'gpt_image_2'),
       prompt: data.prompt,
       ratio: normalizeRatio(data.size),
       quality: ['1K', '2K'].includes(data.quality) ? data.quality : '1K',

@@ -49,7 +49,6 @@ export const config = {
   kie: {
     apiKey: process.env.KIE_API_KEY || "",
     baseUrl: process.env.KIE_API_BASE_URL || "https://api.kie.ai",
-    imageModel: process.env.KIE_IMAGE_MODEL || "nano-banana-2",
     digitalHumanModel: process.env.KIE_DIGITAL_HUMAN_MODEL || "kling/ai-avatar-pro",
     digitalHumanResolution: process.env.KIE_DIGITAL_HUMAN_RESOLUTION || "720p",
     digitalHumanDuration: Number(process.env.KIE_DIGITAL_HUMAN_DURATION || 5),

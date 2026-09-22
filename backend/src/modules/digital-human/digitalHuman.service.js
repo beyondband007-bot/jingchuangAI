@@ -858,7 +858,7 @@ export async function createAiCustomAvatarTask(payload = {}, userId) {
   const task = await createImageGenerationTask({
     prompt,
     model: imageToImageModelKey,
-    fallbackModel: "nano_banana2",
+    fallbackModel: "nano_banana_pro",
     ratio: normalizeAiAvatarRatio(payload.ratio),
     quality: "1K",
     count: 1,

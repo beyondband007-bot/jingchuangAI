@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { getPool } from "../../db/pool.js";
 import { createDeepSeekChatResponse } from "../../providers/deepseek/chat.js";
-import { uploadFileToKie } from "../../providers/kie/upload.js";
+import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import { createHttpError } from "../../shared/http.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
 import { chargeCredits, refundChargedCredits } from "../../shared/billingCharge.js";
@@ -53,13 +53,6 @@ function getTemplateForPayload(payload = {}) {
     templateId,
     visualStyle: normalizeText(payload.visualStyle || payload.imagePromptPlan?.visualStyle, 80)
   });
-}
-
-function mimeTypeFromTemplate(template) {
-  const ext = String(template?.filename || "").split(".").pop()?.toLowerCase();
-  if (ext === "png") return "image/png";
-  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
-  return "image/webp";
 }
 
 function getUserReferenceImageUrl(payload = {}) {
@@ -355,12 +348,7 @@ export function buildImagePromptPlan({ copy, payload }) {
 
 async function uploadTemplateReferenceImage(template) {
   if (!template?.filePath) return "";
-  const upload = await uploadFileToKie({
-    filePath: template.filePath,
-    fileName: template.filename || "article-template.webp",
-    mimeType: mimeTypeFromTemplate(template),
-    uploadPath: "article-templates"
-  });
+  const upload = await uploadReferenceToTencentVod({ filePath: template.filePath });
   return upload.url || "";
 }
 

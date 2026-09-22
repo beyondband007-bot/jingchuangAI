@@ -1,8 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getPool } from "../db/pool.js";
-import { getKieTask, requestKie } from "../providers/kie/client.js";
-import { uploadFileToKie } from "../providers/kie/upload.js";
+import {
+  extractTencentVodImageResult,
+  getTencentVodImageTask,
+  mapTencentVodImageState
+} from "../providers/tencent/vodImage.js";
+import { uploadReferenceToTencentVod } from "../providers/tencent/vodUpload.js";
 import { createTask, getCredits, getTask } from "../modules/image/image.service.js";
 
 const runId = process.env.IMAGE_SMOKE_RUN_ID || `codex-image-model-smoke-${Date.now()}`;
@@ -17,11 +21,10 @@ const reportPath = String(process.env.IMAGE_SMOKE_REPORT_PATH || "").trim();
 const supportedModelKeys = new Set([
   "gpt_image_2",
   "nano_banana_pro",
-  "flux_2_pro",
   "seedream_4_5",
 ]);
 const modelKeys = String(
-  process.env.IMAGE_SMOKE_MODELS || "flux_2_pro,seedream_4_5",
+  process.env.IMAGE_SMOKE_MODELS || "gpt_image_2,nano_banana_pro,seedream_4_5",
 )
   .split(",")
   .map((value) => value.trim())
@@ -42,30 +45,17 @@ function parseJson(value, fallback = []) {
   }
 }
 
-async function getProviderCredits() {
-  const response = await requestKie("/api/v1/chat/credit", { method: "GET" });
-  return Number(response.data);
-}
-
 async function run() {
   if (!modelKeys.length) {
     throw new Error("IMAGE_SMOKE_MODELS does not contain a supported model key");
   }
   console.log(`[${runId}] starting real image model smoke test for ${modelKeys.join(", ")}`);
-  const [appCreditsBefore, providerCreditsBefore] = await Promise.all([
-    getCredits(userId),
-    getProviderCredits(),
-  ]);
+  const appCreditsBefore = await getCredits(userId);
 
   let referenceImageUrl = "";
   if (referencePath) {
     console.log(`[${runId}] uploading reference image ${referencePath}`);
-    const upload = await uploadFileToKie({
-      filePath: referencePath,
-      fileName: path.basename(referencePath),
-      mimeType: "image/png",
-      uploadPath: "image-generation-smoke",
-    });
+    const upload = await uploadReferenceToTencentVod({ filePath: referencePath });
     referenceImageUrl = upload.url;
     console.log(`[${runId}] reference image uploaded`);
   }
@@ -114,22 +104,19 @@ async function run() {
   const providerRecords = await Promise.all(
     rows.map(async (row) => {
       if (!row.provider_task_id) return null;
-      const record = await getKieTask(row.provider_task_id);
+      const record = await getTencentVodImageTask({ taskId: row.provider_task_id });
+      const result = extractTencentVodImageResult(record);
       return {
         taskId: row.provider_task_id,
-        model: record.data?.model || null,
-        state: record.data?.state || null,
-        creditsConsumed: Number(record.data?.creditsConsumed || 0),
-        failCode: record.data?.failCode || null,
-        failMsg: record.data?.failMsg || null,
-        costTime: Number(record.data?.costTime || 0),
+        model: record.AigcImageTask?.Input?.ModelName || null,
+        modelVersion: record.AigcImageTask?.Input?.ModelVersion || null,
+        state: mapTencentVodImageState(record),
+        failCode: result.errorCode,
+        failMsg: result.errorMessage || null,
       };
     }),
   );
-  const [appCreditsAfter, providerCreditsAfter] = await Promise.all([
-    getCredits(userId),
-    getProviderCredits(),
-  ]);
+  const appCreditsAfter = await getCredits(userId);
 
   const report = {
     runId,
@@ -140,15 +127,12 @@ async function run() {
       : null,
     startedWith: {
       appCredits: Number(appCreditsBefore.balance),
-      providerCredits: providerCreditsBefore,
     },
     endedWith: {
       appCredits: Number(appCreditsAfter.balance),
-      providerCredits: providerCreditsAfter,
     },
     deltas: {
       appCredits: Number(appCreditsAfter.balance) - Number(appCreditsBefore.balance),
-      providerCredits: providerCreditsAfter - providerCreditsBefore,
     },
     tasks: rows.map((row, index) => ({
       localTaskId: row.id,

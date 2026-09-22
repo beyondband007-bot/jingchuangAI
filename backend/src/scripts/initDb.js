@@ -1684,12 +1684,12 @@ async function seedDemoData() {
     await connection.query(`
       INSERT INTO image_model_prices (model_key, display_name, base_points, enabled)
       VALUES
-        ('gpt_image_1_5_i2i', 'GPT Image 1.5 图生图', 35, TRUE),
-        ('gpt_image_2', 'Facemini Image2', 35, TRUE),
-        ('gpt_image_2_i2i', 'Facemini Image2 图生图', 35, TRUE),
+        ('gpt_image_1_5_i2i', 'GPT Image 1.5 图生图', 35, FALSE),
+        ('gpt_image_2', 'GPT Image 2', 35, TRUE),
+        ('gpt_image_2_i2i', 'GPT Image 2 图生图', 35, TRUE),
         ('four_o_image', '4o Image', 21, FALSE),
         ('nano_banana_pro', 'Nano Banana Pro', 63, TRUE),
-        ('flux_2_pro', 'Flux 2 Pro', 18, TRUE),
+        ('flux_2_pro', 'Flux 2 Pro', 18, FALSE),
         ('seedream_4_5', 'Seedream 4.5', 22, TRUE),
         ('nano_banana2', 'nano_banana2', 25, FALSE),
         ('midjourney', 'Midjourney', 35, FALSE)

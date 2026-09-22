@@ -8,7 +8,6 @@ import {
 const visibleModels = [
   "gpt_image_2",
   "nano_banana_pro",
-  "flux_2_pro",
   "seedream_4_5",
 ];
 

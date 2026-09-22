@@ -17,6 +17,7 @@ frontend-app/test-results/
 .env.*.local
 docker-compose.override.yml
 secrets/payment-keys/
+TENCENT_CLOUD_INTEGRATION_PRIVATE.md
 
 # Logs
 *.log

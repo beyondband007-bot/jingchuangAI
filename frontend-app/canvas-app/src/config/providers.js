@@ -1,6 +1,6 @@
 export const PROVIDERS = {
   kie: {
-    label: 'Facemini（服务端托管）',
+    label: '腾讯云（服务端托管）',
     defaultBaseUrl: '/api',
     serverManaged: true,
     endpoints: {

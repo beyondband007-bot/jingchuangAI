@@ -65,7 +65,6 @@ function takePendingArticleSeed() {
 function pickDefaultModel(models) {
   return (
     models.find((item) => item.value === "gpt_image_2")?.value ||
-    models.find((item) => item.value === "nano_banana2")?.value ||
     models.find((item) => item.value === "nano_banana_pro")?.value ||
     models[0]?.value ||
     ""

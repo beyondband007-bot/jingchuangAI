@@ -11,7 +11,6 @@ export const gptImage2ImageToImageModelKey = "gpt_image_2_i2i";
 export const imageToImageModelKey = gptImage2ImageToImageModelKey;
 
 const unsupportedImageRatiosByModel = new Map([
-  ["flux_2_pro", new Set(["21:9"])],
 ]);
 
 const imageReferenceModelKeys = new Set([
@@ -19,7 +18,6 @@ const imageReferenceModelKeys = new Set([
   gptImage2ImageToImageModelKey,
   "gpt_image_1_5_i2i",
   "nano_banana_pro",
-  "flux_2_pro",
   "seedream_4_5",
 ]);
 

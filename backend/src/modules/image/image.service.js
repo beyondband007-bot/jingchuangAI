@@ -5,14 +5,13 @@ import {
   getKieTask,
   mapKieState,
 } from '../../providers/kie/client.js'
-import { createKieImageTask } from '../../providers/kie/image.js'
 import {
-  createTencentImage2Task,
-  extractTencentImage2Error,
-  extractTencentImage2ResultUrls,
-  getTencentImage2Task,
-  mapTencentImage2State,
-} from '../../providers/tencent/aigcImage.js'
+  createTencentVodImageTask,
+  extractTencentVodImageResult,
+  getTencentVodImageTask,
+  isTencentVodImageTaskId,
+  mapTencentVodImageState,
+} from '../../providers/tencent/vodImage.js'
 import { uploadReferenceToTencentVod } from '../../providers/tencent/vodUpload.js'
 import { debitCredits, refundCredits } from '../../shared/creditService.js'
 import {
@@ -54,7 +53,6 @@ import {
   imageQualityOptions,
   imageRatioOptions,
   getSupportedImageRatios,
-  qualityMultiplier,
   supportsImageReference,
   validateImagePayload,
 } from './image.options.js'
@@ -72,15 +70,6 @@ const hiddenImageModelKeys = new Set([
   gptImage2ImageToImageModelKey,
   'gpt_image_1_5_i2i',
 ])
-
-function isTencentImage2Model(modelKey) {
-  return modelKey === gptImage2ModelKey || modelKey === gptImage2ImageToImageModelKey
-}
-
-function isTencentImage2Task(task) {
-  return isTencentImage2Model(task?.model_key)
-    && /-AigcImage(?:Task)?-/i.test(String(task?.provider_task_id || ''))
-}
 
 function normalizeThreadId(value) {
   const threadId = typeof value === 'string' ? value.trim() : ''
@@ -235,7 +224,7 @@ export async function createTask(payload, userId) {
     let provider
     let providerModel = model
     try {
-      provider = await createImageProviderTask({
+      provider = await createTencentVodImageTask({
         prompt: prompt.trim(),
         modelKey: model,
         ratio,
@@ -249,7 +238,7 @@ export async function createTask(payload, userId) {
         primaryError.message,
         primaryError.body || '',
       )
-      provider = await createImageProviderTask({
+      provider = await createTencentVodImageTask({
         prompt: prompt.trim(),
         modelKey: fallbackModel,
         ratio,
@@ -288,50 +277,30 @@ async function refreshTask(id) {
     return
 
   try {
-    const isTencentImage2 = isTencentImage2Task(task)
-    const record = isTencentImage2
-      ? await getTencentImage2Task({ taskId: task.provider_task_id })
+    const isTencentTask = isTencentVodImageTaskId(task.provider_task_id)
+    const record = isTencentTask
+      ? await getTencentVodImageTask({ taskId: task.provider_task_id })
       : await getKieTask(task.provider_task_id)
-    const mapped = isTencentImage2
-      ? mapTencentImage2State(record)
+    const mapped = isTencentTask
+      ? mapTencentVodImageState(record)
       : mapKieState(record.data?.state)
     if (mapped === 'completed') {
-      const providerUrls = isTencentImage2
-        ? extractTencentImage2ResultUrls(record)
+      const providerUrls = isTencentTask
+        ? extractTencentVodImageResult(record).resultUrls
         : extractResultUrls(record)
       const localUrls = await persistGeneratedImages({ taskId: id, urls: providerUrls })
       await setImageTaskCompleted(id, localUrls, { providerUrls })
     } else if (mapped === 'failed') {
-      await refundTask(
-        id,
-        null,
-        null,
-        isTencentImage2 ? extractTencentImage2Error(record) : record.data?.failMsg || '创建任务失败',
-      )
+      const providerError = isTencentTask
+        ? extractTencentVodImageResult(record).errorMessage
+        : record.data?.failMsg
+      await refundTask(id, null, null, providerError || '创建任务失败')
     } else {
       await setImageTaskProcessing(id)
     }
   } catch (error) {
     await setImageTaskError(id, `同步任务结果失败：${error.message}`)
   }
-}
-
-async function createImageProviderTask({ prompt, modelKey, ratio, quality, referenceImageUrls }) {
-  if (isTencentImage2Model(modelKey)) {
-    return createTencentImage2Task({
-      prompt,
-      ratio,
-      quality,
-      referenceImageUrls,
-    })
-  }
-  return createKieImageTask({
-    prompt,
-    modelKey,
-    ratio,
-    quality,
-    referenceImageUrls,
-  })
 }
 
 async function refundTask(id, userIdArg, costPointsArg, message) {
