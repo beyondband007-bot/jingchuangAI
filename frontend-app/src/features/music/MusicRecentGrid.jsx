@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Download, ImagePlus, Loader2, MoreHorizontal, Music, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
+import { CircleAlert, Download, ImagePlus, Loader2, MoreHorizontal, Music, Pencil, Play, RotateCcw, Trash2 } from "lucide-react";
 import { getLyricSubtitle } from "./musicPlayerUtils";
 import "./musicRecentGrid.css";
 
@@ -80,6 +80,9 @@ export function MusicRecentGrid({
         const isGenerating = isItemGenerating(item, generatingId);
         const isFailed = item.status === "failed";
         const isMenuOpen = openMenuId === item.id;
+        const displayTitle = isFailed
+          ? (String(item.title || "").trim() || "未命名音乐")
+          : getLyricSubtitle(item);
 
         return (
           <div
@@ -96,7 +99,7 @@ export function MusicRecentGrid({
                 if (!isGenerating && !isFailed) onSelectItem?.(item);
               }}
               disabled={isGenerating || isFailed}
-              aria-label={isFailed ? `${getLyricSubtitle(item)} 生成失败` : `打开 ${getLyricSubtitle(item)} 播放器`}
+              aria-label={isFailed ? `${displayTitle} 生成失败` : `打开 ${displayTitle} 播放器`}
             >
               {item.coverUrl ? (
                 <img
@@ -112,7 +115,7 @@ export function MusicRecentGrid({
             </button>
             <div className="music-ref-recent-body">
               <div className="music-ref-recent-main">
-                <strong>{getLyricSubtitle(item)}</strong>
+                <strong>{displayTitle}</strong>
                 <span>
                   {item.isInstrumental ? "纯音乐" : "带歌词"}
                   {!item.title && item.prompt ? ` · ${item.prompt}` : ""}
@@ -128,8 +131,8 @@ export function MusicRecentGrid({
                 ) : isFailed ? (
                   <>
                     <span className="music-ref-recent-failed-status" role="alert">
+                      <CircleAlert size={14} />
                       <strong>生成失败</strong>
-                      <small>{item.error || "请重新创作或删除此记录"}</small>
                     </span>
                     <button
                       type="button"

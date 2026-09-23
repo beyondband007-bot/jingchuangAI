@@ -39,6 +39,7 @@
   min-height: 0;
   overflow: auto;
   display: grid;
+  grid-template-columns: 1fr 1fr;
   align-content: start;
   grid-auto-rows: max-content;
   gap: var(--space-3);

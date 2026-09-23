@@ -8,8 +8,10 @@
 .music-ref-recent-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); }
 .music-ref-recent-card { display: flex; flex-direction: column; overflow: hidden; cursor: pointer; background: #ffffff; border: 1px solid rgba(107, 92, 231, 0.08); border-radius: var(--radius-xl); box-shadow: 0 4px 16px rgba(107, 92, 231, 0.06); transition: all 0.18s ease; }
 .music-ref-recent-card:hover { border-color: rgba(107, 92, 231, 0.16); box-shadow: 0 10px 28px rgba(107, 92, 231, 0.12); transform: translateY(-2px); }
-.music-ref-recent-card.is-failed { cursor: default; border-color: #fecdd3; box-shadow: 0 4px 16px rgba(229, 72, 77, 0.08); }
-.music-ref-recent-card.is-failed:hover { border-color: #fecdd3; box-shadow: 0 4px 16px rgba(229, 72, 77, 0.08); transform: none; }
+.music-ref-recent-card.is-failed { cursor: default; border-color: rgba(240, 68, 56, 0.22); box-shadow: 0 6px 20px rgba(229, 72, 77, 0.08); }
+.music-ref-recent-card.is-failed:hover { border-color: rgba(240, 68, 56, 0.22); box-shadow: 0 6px 20px rgba(229, 72, 77, 0.08); transform: none; }
+.music-ref-recent-card.is-failed .music-ref-recent-cover { filter: saturate(0.72); }
+.music-ref-recent-card.is-failed .music-ref-recent-cover::after { background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(91, 33, 33, 0.24)); }
 .music-ref-recent-cover { position: relative; display: grid; width: 100%; aspect-ratio: 1 / 1; padding: 0; overflow: hidden; place-items: center; color: rgba(255, 255, 255, 0.9); background: transparent; border: 0; cursor: pointer; appearance: none; }
 .music-ref-recent-cover:focus-visible { outline: 3px solid rgba(107, 92, 231, 0.45); outline-offset: -3px; }
 .music-ref-recent-cover:disabled { cursor: default; }
@@ -17,16 +19,18 @@
 .music-ref-recent-cover svg { position: relative; z-index: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2)); }
 .music-ref-recent-cover-image { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 .music-ref-recent-body { display: flex; align-items: center; gap: var(--space-10px); padding: 12px 14px; }
+.music-ref-recent-card.is-failed .music-ref-recent-body { display: grid; min-height: 94px; align-content: space-between; gap: 12px; padding: 13px 14px 12px; }
 .music-ref-recent-main { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; gap: var(--space-0); }
 .music-ref-recent-main strong { overflow: hidden; color: #16131f; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
 .music-ref-recent-main span { color: #8b8798; font-size: 12px; }
 .music-ref-recent-actions { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-1); }
-.music-ref-recent-failed-status { display: grid; min-width: 0; gap: 2px; color: #b42318; font-size: 12px; line-height: 1.35; text-align: right; }
-.music-ref-recent-failed-status strong { color: #b42318; font-size: 12px; font-weight: 600; }
-.music-ref-recent-failed-status small { overflow: hidden; max-width: 126px; color: #b5473a; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.music-ref-recent-card.is-failed .music-ref-recent-actions { width: 100%; justify-content: flex-end; padding-top: 10px; border-top: 1px solid #fee4e2; }
+.music-ref-recent-failed-status { display: inline-flex; min-width: 0; align-items: center; gap: 5px; margin-right: auto; color: #b42318; }
+.music-ref-recent-failed-status svg { flex: 0 0 auto; }
+.music-ref-recent-failed-status strong { color: #b42318; font-size: 12px; font-weight: 650; }
 .music-ref-recent-play,
 .music-ref-recent-more { display: grid; width: 30px; height: 30px; place-items: center; padding: 0; color: #6b5ce7; background: #f3f0ff; border: 0; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.15s ease; }
-.music-ref-recent-retry { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; color: #b42318; background: #fff1f2; border: 1px solid #fecdd3; border-radius: var(--radius-pill); font-size: 11px; font-weight: 600; cursor: pointer; }
+.music-ref-recent-retry { display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 0 11px; color: #b42318; background: #fff5f5; border: 1px solid #fecaca; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; cursor: pointer; transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease; }
 .music-ref-recent-retry:hover,
 .music-ref-recent-retry:focus-visible { color: #ffffff; background: #d92d20; border-color: #d92d20; }
 .music-ref-recent-play:hover,
