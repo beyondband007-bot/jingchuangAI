@@ -60,22 +60,22 @@ const modelOptionMeta = {
     icon: `${iconBase}/claude.svg`,
   },
   gpt_image_2: {
-    title: "GPT Image 2（腾讯云）",
+    title: "GPT Image 2",
     description: "全能通用，适配海报、插画、多元素创意画面",
     icon: `${iconBase}/openai.svg`,
   },
   gpt_image_2_i2i: {
-    title: "GPT Image 2（腾讯云）",
+    title: "GPT Image 2",
     description: "全能通用，适配海报、插画、多元素创意画面",
     icon: `${iconBase}/openai.svg`,
   },
   nano_banana_pro: {
-    title: "Nano Banana Pro（腾讯云）",
+    title: "Nano Banana Pro",
     description: "人像专精，写真、人物肖像、数字人配套配图专用",
     icon: `${iconBase}/spark.svg`,
   },
   seedream_4_5: {
-    title: "Seedream 4.5（腾讯云）",
+    title: "Seedream 4.5",
     description: "国风 / 电商优化，适合商品图、中式场景、日常写实创作",
     icon: `${iconBase}/seedream.svg`,
   },
