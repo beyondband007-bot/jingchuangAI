@@ -16,8 +16,6 @@ export function BillingCenterView({
   isGuest,
   authUser,
   credits,
-  amount,
-  points,
   activePreset,
   paymentProvider,
   error,
@@ -38,7 +36,6 @@ export function BillingCenterView({
   paymentResultCountdown,
   onOpenAuth,
   onSelectPreset,
-  onUpdateAmount,
   onPaymentProviderChange,
   onCreateOrder,
   onShowTransactionsModalChange,
@@ -113,32 +110,24 @@ export function BillingCenterView({
                 <strong>在线充值</strong>
               </div>
               <div className="assets-presets">
-                {rechargePresets.map((value) => (
+                {rechargePresets.map((preset) => (
                   <button
-                    className={activePreset === value ? "is-active" : ""}
-                    key={value}
+                    className={activePreset === preset.amount ? "is-active" : ""}
+                    key={preset.amount}
                     type="button"
-                    onClick={() => onSelectPreset(value)}
+                    aria-pressed={activePreset === preset.amount}
+                    onClick={() => onSelectPreset(preset.amount)}
                   >
-                    <span>{value} 元</span>
-                    <small>{value * 100} 积分</small>
+                    {preset.recommended && (
+                      <span className="fm-billing-recommend-badge">推荐</span>
+                    )}
+                    <span>{preset.amount.toLocaleString("zh-CN")} 元</span>
+                    <small>{preset.bonusYuan ? `送 ${preset.bonusYuan} 元` : "无赠送"}</small>
+                    <small>到账 {preset.points.toLocaleString("zh-CN")} 积分</small>
                   </button>
                 ))}
               </div>
               <div className="fm-billing-pay-row">
-                <label className="assets-custom-amount fm-billing-custom-field">
-                  <span>自定义金额</span>
-                  <div className="fm-billing-custom-control">
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={amount}
-                      onChange={(event) => onUpdateAmount(event.target.value)}
-                    />
-                    <em>{points} 积分</em>
-                  </div>
-                </label>
                 <div className="assets-payment-method-row fm-billing-payment-field">
                   <span>支付方式</span>
                   <div

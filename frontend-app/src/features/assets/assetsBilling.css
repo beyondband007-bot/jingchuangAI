@@ -145,50 +145,32 @@
 }
 
 .fm-billing-recharge-card .assets-presets {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .fm-billing-recharge-card .assets-payment-method-row,
-.fm-billing-recharge-card .assets-custom-amount,
 .fm-billing-recharge-card .assets-primary-action {
   width: 100%;
 }
 
 .fm-billing-pay-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-50px);
-  align-items: start;
+  display: block;
   margin-top: 16px;
   margin-bottom: 32px;
 }
 
-.fm-billing-pay-row .fm-billing-custom-field,
 .fm-billing-pay-row .fm-billing-payment-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   width: 100%;
-  max-width: none;
+  max-width: 465px;
   margin: 0;
 }
 
-.fm-billing-pay-row .fm-billing-custom-field > span,
 .fm-billing-pay-row .fm-billing-payment-field > span {
   color: var(--fm-billing-muted);
   font-size: 14px;
-}
-
-.fm-billing-custom-control {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-10px);
-}
-
-.fm-billing-custom-control input {
-  width: 100%;
-  min-width: 0;
 }
 
 .fm-billing-recharge-card .assets-primary-action {
@@ -212,12 +194,32 @@
 }
 
 .fm-profile-billing-view .fm-billing-recharge-card .assets-presets button {
-  min-height: 72px;
+  position: relative;
+  min-height: 88px;
   color: var(--fm-billing-ink);
   background: #fff;
   border: 1px solid var(--fm-billing-line);
   border-radius: var(--radius-lg);
   box-shadow: none;
+}
+
+.fm-profile-billing-view .fm-billing-recharge-card .fm-billing-recommend-badge {
+  position: absolute;
+  top: -11px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 7px 7px 7px 0;
+  color: #fff;
+  background: var(--fm-billing-brand);
+  box-shadow: 0 4px 9px rgba(109, 60, 255, 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .fm-profile-billing-view .fm-billing-recharge-card .assets-presets button small {
@@ -234,31 +236,6 @@
   background: var(--fm-billing-brand-soft);
   border-color: #cfc1ff;
   box-shadow: inset 0 0 0 1px rgba(109, 60, 255, 0.08);
-}
-
-.fm-profile-billing-view .fm-billing-recharge-card .assets-custom-amount {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-2);
-  width: 100%;
-  margin: 0;
-  color: var(--fm-billing-muted);
-}
-
-.fm-profile-billing-view .fm-billing-recharge-card .fm-billing-custom-control input {
-  color: var(--fm-billing-ink);
-  background: #fff;
-  border: 1px solid var(--fm-billing-line);
-  border-radius: var(--radius-lg);
-}
-
-.fm-profile-billing-view .fm-billing-recharge-card .fm-billing-custom-control input:focus {
-  border-color: #cfc1ff;
-  box-shadow: 0 0 0 3px rgba(109, 60, 255, 0.12);
-}
-
-.fm-profile-billing-view .fm-billing-recharge-card .assets-custom-amount em {
-  color: var(--fm-billing-brand);
 }
 
 .fm-profile-billing-view .fm-billing-recharge-card .assets-payment-methods {
@@ -609,13 +586,9 @@
   }
 
   .fm-billing-recharge-card .assets-presets {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }@media (max-width: 768px) {
-  .fm-billing-pay-row {
-    grid-template-columns: 1fr;
-  }
-
   .fm-billing-latest-tx {
     align-items: flex-start;
     flex-direction: column;

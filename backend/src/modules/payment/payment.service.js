@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { getPool } from "../../db/pool.js";
 import { localizeCreditMemo } from "../../shared/creditService.js";
 import { createHttpError } from "../../shared/http.js";
+import { getRechargeTier } from "./rechargeTiers.js";
 import {
   buildPrecreateParams,
   buildQueryParams,
@@ -22,7 +23,6 @@ import {
   verifyWechatPayNotify
 } from "./wechatpayClient.js";
 
-const POINTS_PER_YUAN = 100;
 const ORDER_TTL_SECONDS = 3 * 60;
 const ORDER_TTL_MS = ORDER_TTL_SECONDS * 1000;
 const FINAL_ORDER_STATUSES = new Set(["PAID", "CANCELED", "CLOSED", "REFUNDED", "AMOUNT_MISMATCH"]);
@@ -36,14 +36,6 @@ function hashToken(token) {
 
 function generateOutTradeNo() {
   return `RC${Date.now()}${randomBytes(4).toString("hex").toUpperCase()}`;
-}
-
-function normalizeAmount(value) {
-  const amount = Number(value);
-  if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount < 1) {
-    throw createHttpError("\u5145\u503c\u91d1\u989d\u4e0d\u80fd\u4f4e\u4e8e 1 \u5143\uff0c\u4e14\u5fc5\u987b\u4e3a\u6574\u6570\u5143", 400);
-  }
-  return amount;
 }
 
 function normalizeProvider(value) {
@@ -347,13 +339,12 @@ export async function listRechargeOrders(userId) {
 export async function createRechargeOrder(user, input) {
   if (user?.isGuest) throw createHttpError("\u8bf7\u5148\u767b\u5f55\u540e\u518d\u5145\u503c", 401);
   const provider = normalizeProvider(input.provider);
-  const amount = normalizeAmount(input.amount);
+  const { amount, points } = getRechargeTier(input.amount);
   if (provider === "alipay" && !isAlipayConfigured()) throw createHttpError("\u652f\u4ed8\u5b9d\u652f\u4ed8\u672a\u914d\u7f6e\uff0c\u8bf7\u5148\u914d\u7f6e\u540e\u518d\u5145\u503c", 503);
   if (provider === "wechat" && !isWechatPayConfigured()) throw createHttpError("\u5fae\u4fe1\u652f\u4ed8\u672a\u914d\u7f6e\uff0c\u8bf7\u5148\u914d\u7f6e\u540e\u518d\u5145\u503c", 503);
 
   const outTradeNo = generateOutTradeNo();
   const orderToken = randomBytes(24).toString("base64url");
-  const points = amount * POINTS_PER_YUAN;
   const subject = `\u79ef\u5206\u5145\u503c ${amount} \u5143`;
 
   await getPool().query(

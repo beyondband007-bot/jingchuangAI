@@ -52,7 +52,6 @@ import {
   paymentCodeTtlSeconds,
   paymentResultInfo,
   paymentResultTtlSeconds,
-  rechargePresets,
 } from "./paymentUtils";
 import {
   buildClientInviteLink,
@@ -110,8 +109,7 @@ export function AssetsPage({
   const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const [monthlyConsumedCredits, setMonthlyConsumedCredits] = useState(0);
   const [favoriteTab, setFavoriteTab] = useState("图片灵感");
-  const [amount, setAmount] = useState(1);
-  const [activePreset, setActivePreset] = useState(1);
+  const [amount, setAmount] = useState(200);
   const [paymentProvider, setPaymentProvider] = useState("alipay");
   const [activeTab, setActiveTab] = useState("recharge");
   const [transactionsPage, setTransactionsPage] = useState(1);
@@ -171,7 +169,6 @@ export function AssetsPage({
   const [previewAsset, setPreviewAsset] = useState(null);
   const effectiveViewMode = pageMode || viewMode;
 
-  const points = Math.max(1, Number(amount) || 1) * 100;
   const totalCreations = userAssets.length;
   const profileDisplayName =
     authUser?.displayName || authUser?.username || "用户";
@@ -489,14 +486,7 @@ export function AssetsPage({
   }, [paymentResultDialog?.status, paymentResultDialog?.order?.outTradeNo]);
 
   function selectPreset(value) {
-    setActivePreset(value);
     setAmount(value);
-  }
-
-  function updateAmount(value) {
-    const nextAmount = Math.max(1, Number.parseInt(value || "1", 10) || 1);
-    setAmount(nextAmount);
-    setActivePreset(rechargePresets.includes(nextAmount) ? nextAmount : null);
   }
 
   async function createOrder() {
@@ -1441,9 +1431,7 @@ export function AssetsPage({
       isGuest={isGuest}
       authUser={authUser}
       credits={credits}
-      amount={amount}
-      points={points}
-      activePreset={activePreset}
+      activePreset={amount}
       paymentProvider={paymentProvider}
       error={error}
       isCreating={isCreating}
@@ -1463,7 +1451,6 @@ export function AssetsPage({
       paymentResultCountdown={paymentResultCountdown}
       onOpenAuth={onOpenAuth}
       onSelectPreset={selectPreset}
-      onUpdateAmount={updateAmount}
       onPaymentProviderChange={setPaymentProvider}
       onCreateOrder={createOrder}
       onShowTransactionsModalChange={setShowTransactionsModal}

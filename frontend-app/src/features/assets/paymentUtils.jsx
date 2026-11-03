@@ -1,7 +1,12 @@
 import { IconAlipayCircle, IconWechat } from "@arco-design/web-react/icon";
 import { CheckCircle2, CircleAlert, RefreshCcw, Timer, X } from "lucide-react";
 
-export const rechargePresets = [1, 10, 30, 50, 100, 200];
+export const rechargePresets = [
+  { amount: 50, bonusYuan: 0, points: 5000 },
+  { amount: 200, bonusYuan: 10, points: 21000, recommended: true },
+  { amount: 1000, bonusYuan: 100, points: 110000 },
+  { amount: 5000, bonusYuan: 500, points: 550000 },
+];
 export const paymentCodeTtlSeconds = 3 * 60;
 export const paymentResultTtlSeconds = 3;
 export const paymentProviderOptions = [
