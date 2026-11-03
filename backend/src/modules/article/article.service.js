@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { getPool } from "../../db/pool.js";
 import { createDeepSeekChatResponse } from "../../providers/deepseek/chat.js";
+import { createQwenChatResponse } from "../../providers/qwen/chat.js";
 import { uploadReferenceToTencentVod } from "../../providers/tencent/vodUpload.js";
 import { createHttpError } from "../../shared/http.js";
 import { BILLING_RULES } from "../../shared/billingRules.js";
@@ -30,7 +31,11 @@ import {
 
 const ARTICLE_SOURCE = "article";
 const ARTICLE_PROMPT_MARKER = "爆款图文设计";
-const DEFAULT_COPY_MODEL = "deepseek-v4-pro";
+const COPY_PROVIDER_TIMEOUT_MS = 45000;
+const COPY_MODEL_CANDIDATES = [
+  { key: "qwen3.7-plus", providerType: "qwen", createResponse: createQwenChatResponse },
+  { key: "deepseek-v4-pro", providerType: "deepseek", createResponse: createDeepSeekChatResponse }
+];
 const allowedImageCounts = new Set([1, 2, 3, 4]);
 const validPackageStatuses = new Set(["pending", "processing", "partial_completed", "completed", "failed"]);
 
@@ -207,7 +212,11 @@ function extractJsonObject(text) {
     const start = candidate.indexOf("{");
     const end = candidate.lastIndexOf("}");
     if (start >= 0 && end > start) {
-      return JSON.parse(candidate.slice(start, end + 1));
+      try {
+        return JSON.parse(candidate.slice(start, end + 1));
+      } catch {
+        return null;
+      }
     }
   }
   return null;
@@ -352,14 +361,31 @@ async function uploadTemplateReferenceImage(template) {
   return upload.url || "";
 }
 
-async function getDeepSeekCopyModel() {
-  const model = await findChatModel(getPool(), DEFAULT_COPY_MODEL);
-  if (model) return model;
-  return {
-    provider_type: "deepseek",
-    provider_model: DEFAULT_COPY_MODEL,
-    model_key: DEFAULT_COPY_MODEL
-  };
+async function generateCopyResponse(messages) {
+  let lastError;
+  for (const candidate of COPY_MODEL_CANDIDATES) {
+    const model = await findChatModel(getPool(), candidate.key) || {
+      provider_type: candidate.providerType,
+      provider_model: candidate.key,
+      model_key: candidate.key
+    };
+    try {
+      const response = await candidate.createResponse({
+        model,
+        messages,
+        reasoningEffort: "none",
+        signal: AbortSignal.timeout(COPY_PROVIDER_TIMEOUT_MS)
+      });
+      if (!extractJsonObject(response.text)) {
+        throw createHttpError("模型返回内容不是有效 JSON", 502);
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      console.warn(`[article.copy] ${candidate.providerType} generation failed:`, error.message);
+    }
+  }
+  throw lastError;
 }
 
 function isArticleTask(task) {
@@ -457,20 +483,15 @@ export async function getModels() {
 
 export async function createCopyDraft(payload, userId) {
   const copyPrompt = buildCopyPrompt(payload);
-  const model = await getDeepSeekCopyModel();
   const taskId = `article-copy-${Date.now()}-${randomUUID().slice(0, 8)}`;
   const costPoints = BILLING_RULES.articleTextPoints;
   await chargeCredits({ userId, taskId, amount: costPoints, memo: "article copy debit" });
   let provider;
   try {
-    provider = await createDeepSeekChatResponse({
-      model,
-      messages: [
-        { role: "system", content: "你只输出用户要求的严格 JSON。" },
-        { role: "user", content: copyPrompt.prompt }
-      ],
-      reasoningEffort: "none"
-    });
+    provider = await generateCopyResponse([
+      { role: "system", content: "你只输出用户要求的严格 JSON。" },
+      { role: "user", content: copyPrompt.prompt }
+    ]);
   } catch (error) {
     await refundChargedCredits({ userId, taskId, amount: costPoints, memo: "article copy refund" });
     throw createHttpError(`Facemini 文案生成失败：${error.message}`, error.status || 502);
